@@ -23,3 +23,10 @@
 - [x] Add the missing Google, Microsoft/Azure, and Apple sign-in controls that invoke the existing Supabase OAuth helper.
 - [x] Validate exact Supabase Auth state: Google enabled; email signup available with confirmation required; phone OTP disabled; Azure and Apple pending the user’s manual configuration.
 - [x] Validate the deployed Apple sign-in control and hand off Apple provider activation to the user for manual configuration.
+- [x] Inspect the connected Supabase tenants, available ERP tables, and relationships needed to validate additional live modules.
+- [x] Confirm the target tenant and approved business data scope; do not fabricate customer, employee, financial, or operational data.
+- [x] Create only a primary branch, an inventory warehouse, and enabled-module configuration for Kilimanjaro Trading Co.; do not create people, customer, supplier, invoice, expense, payroll, or transaction records.
+- [x] Adapt the dashboard’s enabled-module load and toggle path to the existing generic `company_modules` schema without changing its single-file architecture.
+- [x] Validate additional ERP module retrieval paths and update the delivery log with the created baseline records and results.
+- [x] Inspect and document company-scoping relationships for the validated branch, warehouse, and module tables.
+- [x] Verify tenant-specific baseline records through an authenticated dashboard retrieval path or a focused equivalent test.

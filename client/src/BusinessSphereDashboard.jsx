@@ -44681,7 +44681,10 @@ function SmartManager() {
     sb("company_modules").select("*").eq("company_id", company.id).run()
       .then((rows) => {
         if (!rows || rows.length === 0) return;
-        const disabled = new Set(rows.filter((r) => !r.enabled).map((r) => r.module_key));
+        const disabled = new Set(rows
+          .filter((r) => (r.data?.enabled ?? r.enabled ?? r.status !== "disabled") === false)
+          .map((r) => r.data?.module_key ?? r.module_key ?? r.name)
+          .filter(Boolean));
         setEnabledModules(new Set(MODULES.map((m) => m.id).filter((id) => !disabled.has(id))));
       })
       .catch(() => { /* keep the "everything enabled" default rather than block on a failed fetch */ });
@@ -44698,21 +44701,19 @@ function SmartManager() {
     if (turningOff && active === id) setActive("dashboard");
 
     if (IS_CONFIGURED && company.id) {
-      // A genuine upsert, not an UPDATE assuming the row already exists —
-      // a brand-new company (including one created through this session's
-      // own signup flow) may have no company_modules row yet for this
-      // module at all, and UPDATE silently affects zero rows rather than
-      // creating one. Insert first for the common "first time toggling
-      // this module" case; fall back to update only if a row already
-      // exists and the insert hit a primary-key conflict.
+      // The connected project keeps tenant setup data in the generic
+      // name/status/data schema. The nested fields preserve the dashboard's
+      // module key and enabled flag without altering the one-file design.
       try {
-        await sb("company_modules").insert({ company_id: company.id, module_key: id, enabled: !turningOff }).run();
-      } catch (_e) {
-        try {
-          await sb("company_modules").eq("module_key", id).update({ enabled: !turningOff }).run();
-        } catch (e) {
-          notify("Couldn't save the module setting to the server.", "error");
+        const existing = await sb("company_modules").select("id").eq("company_id", company.id).eq("name", id).run();
+        const record = { company_id: company.id, name: id, status: !turningOff ? "active" : "disabled", data: { module_key: id, enabled: !turningOff } };
+        if (existing?.[0]?.id) {
+          await sb("company_modules").eq("id", existing[0].id).update(record).run();
+        } else {
+          await sb("company_modules").insert(record).run();
         }
+      } catch (e) {
+        notify("Couldn't save the module setting to the server.", "error");
       }
     }
   }

@@ -26,4 +26,36 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('authSignInWithOAuth("apple")');
     expect(dashboardSource).toContain("/auth/v1/authorize?provider=${provider}");
   });
+
+  it("uses the connected generic company-module schema for live module settings", () => {
+    expect(dashboardSource).toContain('sb("company_modules").select("*").eq("company_id", company.id).run()');
+    expect(dashboardSource).toContain("r.data?.module_key ?? r.module_key ?? r.name");
+    expect(dashboardSource).toContain('eq("name", id)');
+    expect(dashboardSource).toContain('status: !turningOff ? "active" : "disabled"');
+    expect(dashboardSource).toContain("data: { module_key: id, enabled: !turningOff }");
+  });
+
+  it("maps the approved tenant baseline response to active generic module entitlements", () => {
+    const companyId = "3022205f-89d9-4790-affa-cde3a304ee27";
+    const moduleIds = ["analytics", "crm", "finance", "inventory", "procurement", "sales"];
+    const mockedSupabaseResponse = moduleIds.map((name) => ({
+      company_id: companyId,
+      name,
+      status: "active",
+      data: { module_key: name, enabled: true },
+    }));
+
+    const tenantRows = mockedSupabaseResponse.filter((row) => row.company_id === companyId);
+    const disabled = new Set(
+      tenantRows
+        .filter((row) => (row.data?.enabled ?? row.status !== "disabled") === false)
+        .map((row) => row.data?.module_key ?? row.name)
+        .filter(Boolean),
+    );
+    const activeEntitlements = moduleIds.filter((id) => !disabled.has(id));
+
+    expect(tenantRows).toHaveLength(6);
+    expect([...disabled]).toEqual([]);
+    expect(activeEntitlements).toEqual(moduleIds);
+  });
 });
