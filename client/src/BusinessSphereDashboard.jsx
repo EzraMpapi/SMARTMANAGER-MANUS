@@ -14,7 +14,7 @@ import {
   Cog, ShieldCheck, Wrench, Kanban, Flag, ListTodo,
   Headphones, Ticket, MessageCircle, BookOpen, PhoneCall, LoaderCircle, Gauge,
   Hash, Video, Mic, PenTool, QrCode, MapPin, EyeOff, User, UserCircle, ArrowRight, LogOut,
-  Target, Crosshair, GitBranch, Circle, ScanText, History, Calendar, ChevronLeft, Sparkles, Zap, HeartPulse, HardHat, Fingerprint, Activity
+  Target, Crosshair, GitBranch, Circle, ScanText, History, Calendar, ChevronLeft, Sparkles, Zap, HeartPulse, HardHat, Fingerprint, Activity, FolderKanban
 , PiggyBank, HandCoins, Users2, Coins, BookHeart, TreePine, Scale, CircleUserRound, BadgeDollarSign, Shield, ArrowRightLeft,
   School, Bus, Tablets, TestTube, Building, Hotel, Bed, Car, BookMarked, CalendarDays, UserCheck, Library, NotebookPen, Clipboard, DollarSign, BadgeCheck, Microscope, Syringe, UtensilsCrossed, ChefHat, Utensils, CookingPot, ConciergeBell, BedDouble, Key, DoorOpen, Split, MinusCircle, PlusCircle, RefreshCw, Shuffle, ArrowLeftRight, Wallet2, Coffee, Wine, ShoppingBasket, Pizza, Timer, Salad, CheckCircle, XCircle, RotateCcw, Archive, Moon, Sun, Sliders, SortAsc, SortDesc, CheckSquare, Undo2, BellRing, BarChart2, BadgePercent, Calculator, FolderSync, Database, Cpu, Globe2, Languages, GanttChart, KanbanSquare, Wifi, WifiOff, RefreshCcw, PanelLeftClose, PanelLeftOpen, ArrowUpCircle, ChevronFirst, ChevronLast, ImageIcon, Palette, Save, Info} from "lucide-react";
 import {
@@ -1152,7 +1152,10 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
     const pipeVal  = openOpps.reduce((s, l) => s + (l.value || 0), 0);
 
     // HR
-    const emps      = employees || [];
+    // `employees` is the shared useCompanyTable result in the authenticated
+    // dashboard, while standalone callers may still supply an array. Normalize
+    // both shapes before the briefing applies filter/reduce operations.
+    const emps      = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
     const activeEmps= emps.filter(e => e.status === "Active");
     const onLeave   = (leaveRequests?.rows || []).filter(l =>
       l.status === "Approved" && l.startDate <= today && l.endDate >= today

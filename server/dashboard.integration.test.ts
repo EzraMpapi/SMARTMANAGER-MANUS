@@ -58,4 +58,20 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect([...disabled]).toEqual([]);
     expect(activeEntitlements).toEqual(moduleIds);
   });
+
+  it("normalizes the shared employee table result before Daily Briefing filters it", () => {
+    expect(dashboardSource).toContain("Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : [])");
+
+    const employeeTableResult = { rows: [{ status: "Active" }, { status: "On Leave" }] };
+    const employees = Array.isArray(employeeTableResult?.rows)
+      ? employeeTableResult.rows
+      : (Array.isArray(employeeTableResult) ? employeeTableResult : []);
+
+    expect(employees.filter((employee) => employee.status === "Active")).toHaveLength(1);
+  });
+
+  it("imports the project quick-action icon before rendering dashboard shortcuts", () => {
+    expect(dashboardSource).toContain("FolderKanban");
+    expect(dashboardSource).toContain("icon:FolderKanban");
+  });
 });

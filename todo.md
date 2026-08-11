@@ -30,3 +30,8 @@
 - [x] Validate additional ERP module retrieval paths and update the delivery log with the created baseline records and results.
 - [x] Inspect and document company-scoping relationships for the validated branch, warehouse, and module tables.
 - [x] Verify tenant-specific baseline records through an authenticated dashboard retrieval path or a focused equivalent test.
+- [x] Diagnose and fix the `$s.filter is not a function` runtime error without refactoring the preserved dashboard.
+- [x] Add a focused regression test for the affected data-shape boundary and verify the repaired ERP route.
+- [x] Resolve the `FolderKanban is not defined` dashboard startup error exposed after the data-shape repair.
+- [ ] Publish the demo-entry runtime repairs and verify the live production `/app` route.
+- [ ] Confirm the published Preview demo flow reaches an interactive dashboard without either repaired error.
