@@ -16,8 +16,10 @@
 - [x] Replace the rejected legacy anonymous key with the supplied Supabase publishable key and verify live REST access.
 - [x] Configure the confirmed Supabase publishable client key, verify it against the project, and ensure the supplied secret key is never exposed to the browser.
 - [x] Inspect the connected Supabase project schema and confirm which existing ERP data tables, relationships, and authentication requirements are available for live integration.
-- [ ] Configure Google, Microsoft/Azure, and Apple credentials plus approved production redirect URLs in Supabase Auth, then complete interactive OAuth sign-in tests.
+- [x] Handoff Microsoft/Azure and Apple provider credential setup plus approved production redirect URLs to the user for manual Supabase Auth configuration; deployed controls are ready.
 - [x] Exercise and document a live dashboard `useCompanyTable` data path against the connected Supabase project.
 - [x] Add focused verification for reload-session bootstrap using the stored `bs_access_token` path.
 - [x] Inspect and verify the exact Google, Microsoft/Azure, and Apple provider arguments used by the dashboard OAuth controls.
 - [x] Add the missing Google, Microsoft/Azure, and Apple sign-in controls that invoke the existing Supabase OAuth helper.
+- [x] Validate exact Supabase Auth state: Google enabled; email signup available with confirmation required; phone OTP disabled; Azure and Apple pending the user’s manual configuration.
+- [x] Validate the deployed Apple sign-in control and hand off Apple provider activation to the user for manual configuration.

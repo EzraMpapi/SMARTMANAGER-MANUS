@@ -49,7 +49,7 @@ The landing-page-to-dashboard transition and the dashboard authentication shell 
 
 ## Live Supabase and authentication status
 
-The dashboard’s hand-rolled Supabase client now receives its URL and browser-safe publishable key through managed Vite variables. The configured Auth settings endpoint accepted the project configuration during automated testing, and the connected Supabase project was inspected for its company/profile schema and publishable-key availability.
+The dashboard’s hand-rolled Supabase client now receives its URL and browser-safe publishable key through managed Vite variables. The configured Auth settings endpoint accepted the project configuration during automated testing, and the connected Supabase project was inspected for its company/profile schema and publishable-key availability. The latest settings check shows Google enabled, signup allowed, email confirmation required, and phone OTP disabled. Azure and Apple provider activation remain a user-managed Supabase Dashboard task.
 
 The existing dashboard contains native email/password sign-up, sign-in, sign-out, session-token storage, reload-session checking, and OAuth redirect construction for Google, Microsoft/Azure, and Apple. The login screen now exposes provider-specific controls that call the existing helper with `google`, `azure`, and `apple`; the helper builds the Supabase `/auth/v1/authorize` URL. The project’s Auth settings expose Google, Azure, and Apple provider fields, but the management connection does not expose a reliable enabled/disabled-provider result. Consequently, the controls are correctly wired; actual provider login completion still requires the corresponding OAuth credentials, allowed redirect URLs, and providers to be enabled in the Supabase Dashboard.
 
@@ -70,4 +70,4 @@ The existing dashboard contains native email/password sign-up, sign-in, sign-out
 
 ## Remaining deployment steps
 
-The application is built and ready for review. Before public use, configure the production redirect URL in Supabase Auth and enable/configure the Google, Microsoft/Azure, and Apple providers if those social-login paths are required. Confirm that the connected project contains the ERP tables and RLS policies expected by the intended modules. To publish this prepared project, create a project checkpoint and then select **Publish** in the project interface.
+The deployed production landing page is reachable at `https://bserp-dashbo-xgm6fauw.manus.space` and its public launch routes are available. Before public OAuth use, configure the production redirect URL in Supabase Auth and enable/configure the Google, Microsoft/Azure, and Apple providers if those social-login paths are required. Confirm that the connected project contains the ERP tables and RLS policies expected by the intended modules.
