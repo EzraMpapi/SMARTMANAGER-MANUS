@@ -36404,6 +36404,17 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
                 </button>
               </form>
 
+              {IS_CONFIGURED && (
+                <div className="mt-5">
+                  <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-wide text-slate-400"><span className="h-px flex-1 bg-slate-100" />or continue with<span className="h-px flex-1 bg-slate-100" /></div>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("google")} className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"><GoogleGlyph size={14} />Google</button>
+                    <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("azure")} className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"><MicrosoftGlyph size={14} />Microsoft</button>
+                    <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("apple")} className="rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50">Apple</button>
+                  </div>
+                </div>
+              )}
+
               <p className="text-center text-[12.5px] text-slate-500 mt-5">
                 Don't have an account? <button type="button" onClick={onSwitchToSignup} className="font-semibold text-[#16A34A] hover:underline">Create one</button>
               </p>

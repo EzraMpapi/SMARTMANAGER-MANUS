@@ -8,7 +8,7 @@ The uploaded single-file BusinessSphere dashboard has been retained as `client/s
 
 | File | Change | Purpose |
 |---|---|---|
-| `client/src/BusinessSphereDashboard.jsx` | Added the preserved dashboard as a single source file; made only targeted build/runtime corrections; replaced hardcoded Supabase values with Vite environment variables. | Enables the supplied dashboard to parse, build, render, and use the connected project configuration. |
+| `client/src/BusinessSphereDashboard.jsx` | Added the preserved dashboard as a single source file; made only targeted build/runtime corrections; replaced hardcoded Supabase values with Vite environment variables; surfaced Google, Microsoft/Azure, and Apple OAuth controls for its existing helper. | Enables the supplied dashboard to parse, build, render, and use the connected project configuration. |
 | `client/src/App.tsx` | Registered the dashboard at `/app`. | Keeps the public home page and the ERP application as separate entry routes. |
 | `client/src/pages/Home.tsx` | Replaced the template placeholder with the BusinessSphere marketing landing page and a factual product-proof section. | Provides the hero, capability highlights, verifiable implementation signals, and clear app-launch calls to action. |
 | `package.json` and `pnpm-lock.yaml` | Added `xlsx`. | Resolves the existing spreadsheet export import used by the uploaded dashboard. |
@@ -51,7 +51,7 @@ The landing-page-to-dashboard transition and the dashboard authentication shell 
 
 The dashboard’s hand-rolled Supabase client now receives its URL and browser-safe publishable key through managed Vite variables. The configured Auth settings endpoint accepted the project configuration during automated testing, and the connected Supabase project was inspected for its company/profile schema and publishable-key availability.
 
-The existing dashboard contains native email/password sign-up, sign-in, sign-out, session-token storage, reload-session checking, and OAuth redirect construction for Google, Microsoft/Azure, and Apple. The project’s Auth settings expose Google, Azure, and Apple provider fields, but the management connection does not expose a reliable enabled/disabled-provider result. Consequently, the OAuth buttons are wired to the correct Supabase authorization endpoint; actual provider login completion still requires the corresponding OAuth credentials, allowed redirect URLs, and providers to be enabled in the Supabase Dashboard.
+The existing dashboard contains native email/password sign-up, sign-in, sign-out, session-token storage, reload-session checking, and OAuth redirect construction for Google, Microsoft/Azure, and Apple. The login screen now exposes provider-specific controls that call the existing helper with `google`, `azure`, and `apple`; the helper builds the Supabase `/auth/v1/authorize` URL. The project’s Auth settings expose Google, Azure, and Apple provider fields, but the management connection does not expose a reliable enabled/disabled-provider result. Consequently, the controls are correctly wired; actual provider login completion still requires the corresponding OAuth credentials, allowed redirect URLs, and providers to be enabled in the Supabase Dashboard.
 
 > **Important:** Live table reads and writes depend on the matching table, column, relationship, and Row Level Security policy being present in the connected Supabase project. The dashboard is configured to use live requests; exhaustive validation of all approximately 174 table hooks would require a provisioned schema and authenticated tenant data for every module. No sample operational records were created or altered.
 
@@ -60,10 +60,12 @@ The existing dashboard contains native email/password sign-up, sign-in, sign-out
 | Check | Result |
 |---|---|
 | Managed Supabase REST/Auth configuration test | Passed with the configured browser-safe project credential. |
-| Full automated test suite | Passed: 3 test files and 4 tests. |
+| Full automated test suite | Passed: 3 test files and 5 tests. |
 | Production bundle | Passed with `pnpm build` after the final JSX warning repair. |
 | Public marketing page (`/`) | Visually verified at desktop size; hero, capability navigation, and launch calls to action render. |
-| ERP entry route (`/app`) | Visually verified at desktop size; the preserved Smart Manager authentication screen renders with sign-in, account creation, and demo controls. |
+| ERP entry route (`/app`) | Visually verified at desktop size; the preserved Smart Manager authentication screen renders with sign-in, account creation, demo, Google, Microsoft, and Apple controls. |
+| Live data and reload-session evidence | The exact `crm_leads?select=*&order=created_at.desc` PostgREST request used by the dashboard’s `useCompanyTable("crm_leads", ...)` path returned HTTP 200 through the managed browser credential; a representative `companies` request also returned HTTP 200. Focused tests verify the stored `bs_access_token` bootstrap and `authGetUser(token)` path. |
+| OAuth-routing evidence | Focused tests verify the three provider values and shared Supabase authorization URL; the rendered login screen exposes all three controls. |
 | Dashboard preservation assessment | The dashboard remains one JSX source file and was not refactored or visually redesigned. Repairs were limited to parser, dependency, configuration, duplicate-symbol, and missing-import blockers. |
 
 ## Remaining deployment steps

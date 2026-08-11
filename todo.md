@@ -4,8 +4,8 @@
 - [x] Identify the exact package dependencies required by the uploaded dashboard and add only missing dependencies needed to build it.
 - [x] Place the uploaded single-file ERP source into the web application runtime without splitting its internal components, hooks, API logic, or state management.
 - [x] Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as managed environment variables rather than hardcoding credentials.
-- [ ] Verify the dashboard's live Supabase REST data requests, authentication endpoints, and reload session handling against the supplied Supabase project.
-- [ ] Verify that Google, Microsoft, and Apple OAuth links are correctly routed to the configured Supabase providers, while documenting any provider-side configuration still required.
+- [x] Verify the dashboard's live Supabase REST data requests, authentication endpoints, and reload session handling against the supplied Supabase project.
+- [x] Verify that Google, Microsoft, and Apple OAuth links are correctly routed to the configured Supabase providers, while documenting any provider-side configuration still required.
 - [x] Create a public marketing landing page with a hero, ERP feature highlights, responsible social-proof messaging, and clear app-launch calls to action.
 - [x] Route the landing-page Launch App and Get Started calls to the preserved ERP dashboard.
 - [x] Add focused automated tests for routing, configuration validation, and the dashboard integration boundary.
@@ -17,3 +17,7 @@
 - [x] Configure the confirmed Supabase publishable client key, verify it against the project, and ensure the supplied secret key is never exposed to the browser.
 - [x] Inspect the connected Supabase project schema and confirm which existing ERP data tables, relationships, and authentication requirements are available for live integration.
 - [ ] Configure Google, Microsoft/Azure, and Apple credentials plus approved production redirect URLs in Supabase Auth, then complete interactive OAuth sign-in tests.
+- [x] Exercise and document a live dashboard `useCompanyTable` data path against the connected Supabase project.
+- [x] Add focused verification for reload-session bootstrap using the stored `bs_access_token` path.
+- [x] Inspect and verify the exact Google, Microsoft/Azure, and Apple provider arguments used by the dashboard OAuth controls.
+- [x] Add the missing Google, Microsoft/Azure, and Apple sign-in controls that invoke the existing Supabase OAuth helper.

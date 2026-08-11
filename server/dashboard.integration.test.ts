@@ -17,4 +17,13 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("import.meta.env.VITE_SUPABASE_ANON_KEY");
     expect(dashboardSource).not.toContain("bqrpiookucsdjvcvjrul.supabase.co");
   });
+
+  it("keeps reload-session and provider-specific OAuth routes in the dashboard", () => {
+    expect(dashboardSource).toContain('window.localStorage.getItem("bs_access_token")');
+    expect(dashboardSource).toContain("authGetUser(token)");
+    expect(dashboardSource).toContain('authSignInWithOAuth("google")');
+    expect(dashboardSource).toContain('authSignInWithOAuth("azure")');
+    expect(dashboardSource).toContain('authSignInWithOAuth("apple")');
+    expect(dashboardSource).toContain("/auth/v1/authorize?provider=${provider}");
+  });
 });
