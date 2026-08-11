@@ -33,5 +33,5 @@
 - [x] Diagnose and fix the `$s.filter is not a function` runtime error without refactoring the preserved dashboard.
 - [x] Add a focused regression test for the affected data-shape boundary and verify the repaired ERP route.
 - [x] Resolve the `FolderKanban is not defined` dashboard startup error exposed after the data-shape repair.
-- [ ] Publish the demo-entry runtime repairs and verify the live production `/app` route.
-- [ ] Confirm the published Preview demo flow reaches an interactive dashboard without either repaired error.
+- [x] Publish the demo-entry runtime repairs and verify the live production `/app` route.
+- [x] Confirm the published Preview demo flow reaches an interactive dashboard without either repaired error.

@@ -78,7 +78,7 @@ All three baseline tables—`branches`, `inventory_warehouses`, and `company_mod
 | OAuth-routing evidence | Focused tests verify the three provider values and shared Supabase authorization URL; the rendered login screen exposes all three controls. |
 | Baseline module retrieval endpoints | `branches`, `inventory_warehouses`, and `company_modules` each returned HTTP 200 through the managed browser credential; direct database verification confirmed 1 branch, 1 warehouse, and 6 active module records for the tenant. |
 | Tenant-scoping relationship and loader | Foreign-key inspection confirmed each baseline table’s `company_id` references `companies.id`; the focused module-loader test passed against the tenant-scoped `company_modules` query and generic mapping. |
-| Demo-entry runtime regression | In-browser development verification successfully opened and dismissed the Daily Briefing, then rendered the interactive dashboard workspace. No browser-console exception was recorded after the repaired flow. |
+| Demo-entry runtime regression | The published production bundle was verified in-browser: **Preview demo** opened the Daily Briefing, the briefing dismissed successfully, and the interactive dashboard workspace remained available. Neither `$s.filter is not a function` nor `FolderKanban is not defined` appeared, and no browser-console exception was recorded. |
 | Dashboard preservation assessment | The dashboard remains one JSX source file and was not refactored or visually redesigned. Repairs were limited to parser, dependency, configuration, duplicate-symbol, and missing-import blockers. |
 
 ## Remaining deployment steps
