@@ -8,12 +8,12 @@ The uploaded single-file BusinessSphere dashboard has been retained as `client/s
 
 | File | Change | Purpose |
 |---|---|---|
-| `client/src/BusinessSphereDashboard.jsx` | Added the preserved dashboard as a single source file; made only targeted build/runtime corrections; replaced hardcoded Supabase values with Vite environment variables; surfaced Google, Microsoft/Azure, and Apple OAuth controls; adapted module-setting reads and writes to the connected generic `company_modules` schema; normalized the Daily Briefing employee source; and imported the existing project shortcut icon. | Enables the supplied dashboard to parse, build, render, and use the connected project configuration. |
+| `client/src/BusinessSphereDashboard.jsx` | Added the preserved dashboard as a single source file; made only targeted build/runtime corrections; replaced hardcoded Supabase values with Vite environment variables; surfaced Google, Microsoft/Azure, and Apple OAuth controls; adapted module-setting reads and writes to the connected generic `company_modules` schema; normalized the Daily Briefing employee source; imported the existing project shortcut icon; and added a directly tested Daily Briefing fetch-state helper with live-data loading, retry, error, and demo-fallback handling. | Enables the supplied dashboard to parse, build, render, and use the connected project configuration. |
 | `client/src/App.tsx` | Registered the dashboard at `/app`. | Keeps the public home page and the ERP application as separate entry routes. |
 | `client/src/pages/Home.tsx` | Replaced the template placeholder with the BusinessSphere marketing landing page and a factual product-proof section. | Provides the hero, capability highlights, verifiable implementation signals, and clear app-launch calls to action. |
 | `package.json` and `pnpm-lock.yaml` | Added `xlsx`. | Resolves the existing spreadsheet export import used by the uploaded dashboard. |
 | `server/supabase.config.test.ts` | Added configured Supabase REST/auth setting validation. | Verifies the managed project URL and publishable browser key are accepted. |
-| `server/dashboard.integration.test.ts` | Added route, managed-config, authentication-routing, generic module-schema, executable baseline-entitlement mapping, Daily Briefing data-shape, and project-icon import tests. | Confirms the launch path, lack of the originally hardcoded Supabase URL, compatible module-setting persistence path, expected treatment of the approved generic baseline rows, and both repaired demo-entry boundaries. |
+| `server/dashboard.integration.test.ts` | Added route, managed-config, authentication-routing, generic module-schema, executable baseline-entitlement mapping, Daily Briefing data-shape and direct fetch-state-helper, plus project-icon import tests. | Confirms the launch path, lack of the originally hardcoded Supabase URL, compatible module-setting persistence path, expected treatment of the approved generic baseline rows, demo-entry boundaries, and Daily Briefing loading/error behavior. |
 | `todo.md` | Recorded implementation, validation, and remaining configuration work. | Keeps project work auditable. |
 | `CHANGELOG.md` | Created this delivery record. | Documents scope, fixes, validation, and remaining requirements. |
 
@@ -65,13 +65,17 @@ The connected `company_modules` table uses its generic `name`, `status`, and JSO
 
 All three baseline tables—`branches`, `inventory_warehouses`, and `company_modules`—are linked to `companies.id` through their `company_id` foreign key. The dashboard’s enabled-module loader explicitly queries `company_modules` with the active tenant’s `company.id`. Its focused integration coverage verifies that tenant-scoped read, the generic record mapping, and a mocked response containing the six approved active baseline rows yield the expected active entitlement set.
 
+## Daily Briefing data-state handling
+
+The Daily Briefing now gathers the existing shared-table `loading`, `error`, and `reload` signals for its live inputs. While any live source is loading, it displays an accessible animated preparation state. When a source fails, it shows a safe explanation and a retry action that reloads the available briefing sources in parallel; the dashboard remains usable behind the modal. Preview demo deliberately bypasses those live failure signals so its seeded report stays available even if a prior live request failed.
+
 ## Validation evidence
 
 | Check | Result |
 |---|---|
 | Managed Supabase REST/Auth configuration test | Passed with the configured browser-safe project credential. |
-| Full automated test suite | Passed: 3 test files and 9 tests. |
-| Production bundle | Passed with `pnpm build` after the demo-entry runtime repairs. |
+| Full automated test suite | Passed: 3 test files and 10 tests. |
+| Production bundle | Passed with `pnpm build` after the Daily Briefing data-state enhancement. |
 | Public marketing page (`/`) | Visually verified at desktop size; hero, capability navigation, and launch calls to action render. |
 | ERP entry route (`/app`) | Visually verified at desktop size; the preserved Smart Manager authentication screen renders with sign-in, account creation, demo, Google, Microsoft, and Apple controls. |
 | Live data and reload-session evidence | The exact `crm_leads?select=*&order=created_at.desc` PostgREST request used by the dashboard’s `useCompanyTable("crm_leads", ...)` path returned HTTP 200 through the managed browser credential; a representative `companies` request also returned HTTP 200. Focused tests verify the stored `bs_access_token` bootstrap and `authGetUser(token)` path. |
@@ -79,6 +83,7 @@ All three baseline tables—`branches`, `inventory_warehouses`, and `company_mod
 | Baseline module retrieval endpoints | `branches`, `inventory_warehouses`, and `company_modules` each returned HTTP 200 through the managed browser credential; direct database verification confirmed 1 branch, 1 warehouse, and 6 active module records for the tenant. |
 | Tenant-scoping relationship and loader | Foreign-key inspection confirmed each baseline table’s `company_id` references `companies.id`; the focused module-loader test passed against the tenant-scoped `company_modules` query and generic mapping. |
 | Demo-entry runtime regression | The published production bundle was verified in-browser: **Preview demo** opened the Daily Briefing, the briefing dismissed successfully, and the interactive dashboard workspace remained available. Neither `$s.filter is not a function` nor `FolderKanban is not defined` appeared, and no browser-console exception was recorded. |
+| Daily Briefing data-state handling | Development verification rendered the retryable briefing-unavailable state and its controls, then exercised the animated loading overlay and watched it resolve into the normal report in the **same browser session**. The loading/error preview is development-only; production behavior remains driven only by real shared-table loading and failure signals. Focused tests now invoke the dashboard’s exported local fetch-state helper to validate live-loading, failure, retry, and demo-bypass gates. |
 | Dashboard preservation assessment | The dashboard remains one JSX source file and was not refactored or visually redesigned. Repairs were limited to parser, dependency, configuration, duplicate-symbol, and missing-import blockers. |
 
 ## Remaining deployment steps

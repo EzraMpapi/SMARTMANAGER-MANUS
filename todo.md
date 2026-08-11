@@ -35,3 +35,10 @@
 - [x] Resolve the `FolderKanban is not defined` dashboard startup error exposed after the data-shape repair.
 - [x] Publish the demo-entry runtime repairs and verify the live production `/app` route.
 - [x] Confirm the published Preview demo flow reaches an interactive dashboard without either repaired error.
+- [x] Inspect Daily Briefing data dependencies and identify available loading, error, and reload signals.
+- [x] Add a smooth accessible loading state and retryable error state to the Daily Briefing without refactoring the preserved dashboard.
+- [x] Add regression coverage and visually verify the Daily Briefing loading and failure-handling paths.
+- [x] Exercise the Daily Briefing loading overlay in-browser and confirm it transitions to a resolved state.
+- [x] Add executable coverage for the Daily Briefing live-loading and error gating logic.
+- [x] Verify the Daily Briefing loading overlay resolves within one browser session without a navigation-based state switch.
+- [x] Extract the Daily Briefing fetch-state gate to a small local helper and test the real helper rather than a duplicated expression.

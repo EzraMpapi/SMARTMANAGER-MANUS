@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { resolveDailyBriefingFetchState } from "../client/src/BusinessSphereDashboard.jsx";
 
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
 const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
@@ -73,5 +74,23 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("imports the project quick-action icon before rendering dashboard shortcuts", () => {
     expect(dashboardSource).toContain("FolderKanban");
     expect(dashboardSource).toContain("icon:FolderKanban");
+  });
+
+  it("exposes loading and retryable error handling for Daily Briefing data sources", () => {
+    expect(dashboardSource).toContain("daily-briefing-preview");
+    expect(dashboardSource).toContain("export function resolveDailyBriefingFetchState");
+    expect(dashboardSource).toContain("if (!open || briefingPreviewState !== \"loading\" || typeof window === \"undefined\") return");
+    expect(dashboardSource).toContain("const timer = window.setTimeout(() => setBriefingPreviewState(\"resolved\"), duration)");
+    expect(dashboardSource).toContain("const usingDemoBriefing = DEMO_OVERRIDE || !IS_CONFIGURED");
+    expect(dashboardSource).toContain("resolveDailyBriefingFetchState({");
+    expect(dashboardSource).toContain("await Promise.all(briefingSources.map((source) => source.reload?.()).filter(Boolean))");
+    expect(dashboardSource).toContain("Building today’s Daily Briefing");
+    expect(dashboardSource).toContain("Retry data fetch");
+
+    expect(resolveDailyBriefingFetchState({ sources: [{ loading: true, error: null }], usingDemoBriefing: false }).loading).toBe(true);
+    expect(resolveDailyBriefingFetchState({ sources: [{ loading: false, error: new Error("timeout") }], usingDemoBriefing: false }).error?.message).toBe("timeout");
+    expect(resolveDailyBriefingFetchState({ sources: [{ loading: false, error: new Error("timeout") }], usingDemoBriefing: true }).error).toBeNull();
+    expect(resolveDailyBriefingFetchState({ sources: [], usingDemoBriefing: true, previewState: "loading" }).loading).toBe(true);
+    expect(resolveDailyBriefingFetchState({ sources: [], usingDemoBriefing: true, previewState: "error" }).error?.message).toBe("Daily Briefing preview fetch failed");
   });
 });

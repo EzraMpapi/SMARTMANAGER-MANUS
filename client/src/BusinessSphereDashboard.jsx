@@ -1095,6 +1095,17 @@ const BRIEFING_EXEC_ROLES = new Set([
   "Finance Manager","HR Manager","Sales Manager","Project Manager","Warehouse Manager",
 ]);
 
+// Kept beside DailyBriefing so the live-data state decision remains local to
+// the preserved dashboard while also being directly testable.
+export function resolveDailyBriefingFetchState({ sources = [], usingDemoBriefing = false, previewState = null }) {
+  const safeSources = Array.isArray(sources) ? sources : [];
+  const previewError = previewState === "error" ? new Error("Daily Briefing preview fetch failed") : null;
+  return {
+    loading: previewState === "loading" || (!usingDemoBriefing && safeSources.some((source) => source?.loading)),
+    error: previewError || (!usingDemoBriefing ? safeSources.find((source) => source?.error)?.error : null),
+  };
+}
+
 function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
   expenses, crm, employees, leaveRequests, workOrders, subscriptions, smartAlerts, enabledModules }) {
 
@@ -1108,6 +1119,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
     try { return !localStorage.getItem(briKey); } catch { return false; }
   });
   const [printing, setPrinting] = useState(false);
+  const [retryingData, setRetryingData] = useState(false);
 
   useEffect(() => {
     if (open) { try { localStorage.setItem(briKey, "1"); } catch {} }
@@ -1118,6 +1130,41 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
     window.__openDailyBrief = () => setOpen(true);
     return () => { delete window.__openDailyBrief; };
   }, []);
+
+  // Each shared table hook exposes loading, error, and reload. Keep the
+  // briefing honest: it should wait for its live inputs and explain a failed
+  // fetch instead of presenting an incomplete report as if it were complete.
+  const briefingSources = [invoices, inventory, expenses, crm, employees, leaveRequests, workOrders, subscriptions]
+    .filter((source) => source && typeof source === "object" && !Array.isArray(source));
+  const usingDemoBriefing = DEMO_OVERRIDE || !IS_CONFIGURED;
+  // Development-only preview states allow the loading and retry overlays to
+  // be verified without weakening or altering production data behavior.
+  const [briefingPreviewState, setBriefingPreviewState] = useState(() => {
+    if (!import.meta.env.DEV || typeof window === "undefined") return null;
+    const requested = new URLSearchParams(window.location.search).get("daily-briefing-preview");
+    return ["loading", "error"].includes(requested) ? requested : null;
+  });
+  useEffect(() => {
+    if (!open || briefingPreviewState !== "loading" || typeof window === "undefined") return;
+    const requestedDuration = Number(new URLSearchParams(window.location.search).get("daily-briefing-preview-duration"));
+    const duration = Number.isFinite(requestedDuration) ? Math.min(Math.max(requestedDuration, 400), 6000) : 1600;
+    const timer = window.setTimeout(() => setBriefingPreviewState("resolved"), duration);
+    return () => window.clearTimeout(timer);
+  }, [briefingPreviewState, open]);
+  const { loading: briefingLoading, error: briefingError } = resolveDailyBriefingFetchState({
+    sources: briefingSources,
+    usingDemoBriefing,
+    previewState: briefingPreviewState,
+  });
+
+  async function retryBriefingData() {
+    setRetryingData(true);
+    try {
+      await Promise.all(briefingSources.map((source) => source.reload?.()).filter(Boolean));
+    } finally {
+      setRetryingData(false);
+    }
+  }
 
   // ── Compute all section data ─────────────────────────────────────────
   const data = useMemo(() => {
@@ -1189,6 +1236,48 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
       employees, leaveRequests?.rows, workOrders?.rows, subscriptions?.rows, smartAlerts]);
 
   if (!open) return null;
+
+  if (briefingLoading || retryingData) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(13,34,20,0.7)", backdropFilter: "blur(4px)" }} role="status" aria-live="polite" aria-busy="true">
+        <div className="w-full max-w-md rounded-2xl bg-white px-7 py-8 text-center shadow-2xl border border-slate-200/70" style={{ animation: "fadeInUp .2s cubic-bezier(.23,1,.32,1)" }}>
+          <div className="relative mx-auto mb-5 flex h-14 w-14 items-center justify-center">
+            <div className="absolute inset-0 rounded-2xl bg-[#16A34A]/15 motion-safe:animate-ping" />
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0D2214] shadow-sm">
+              <RefreshCw size={22} className="text-white motion-safe:animate-spin" style={{ animationDuration: "1.1s" }} />
+            </div>
+          </div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#16A34A]">Preparing your workspace</p>
+          <h2 className="mt-2 text-[19px] font-semibold text-[#111827]" style={{ fontFamily: "Poppins,Inter,sans-serif" }}>Building today’s Daily Briefing</h2>
+          <p className="mt-2 text-[13px] leading-relaxed text-slate-500">Connecting your sales, inventory, people, and finance signals.</p>
+          <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+            <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-[#16A34A] via-[#4ADE80] to-[#16A34A] motion-safe:animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (briefingError) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(13,34,20,0.7)", backdropFilter: "blur(4px)" }} role="alert" aria-live="assertive">
+        <div className="w-full max-w-md rounded-2xl bg-white px-7 py-8 text-center shadow-2xl border border-slate-200/70" style={{ animation: "fadeInUp .2s cubic-bezier(.23,1,.32,1)" }}>
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+            <AlertCircle size={23} className="text-[#DC2626]" />
+          </div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#DC2626]">Briefing unavailable</p>
+          <h2 className="mt-2 text-[19px] font-semibold text-[#111827]" style={{ fontFamily: "Poppins,Inter,sans-serif" }}>We couldn’t prepare the Daily Briefing</h2>
+          <p className="mt-2 text-[13px] leading-relaxed text-slate-500">One or more live data sources did not respond. Your server data is unchanged; retry when you are ready.</p>
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
+            <button type="button" onClick={() => setOpen(false)} className="rounded-xl px-4 py-2.5 text-[13px] font-semibold text-slate-500 hover:bg-slate-50 transition-colors">Close</button>
+            <button type="button" onClick={retryBriefingData} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D2214] px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-[#17452b] active:scale-[.97]">
+              <RefreshCw size={15} /> Retry data fetch
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const { fmt, today, todayInvs, totalBilled, totalCollected, overdueInvs, overdueAmt,
     unpaidInvs, lowStock, outOfStock, stockValue, expRows, todayExp, totalExp,
