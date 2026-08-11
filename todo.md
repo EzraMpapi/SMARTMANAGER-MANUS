@@ -1,0 +1,19 @@
+# Project TODO
+
+- [x] Preserve the uploaded 45,756-line ERP application as one dashboard source file without altering its UI, business logic, feature set, or internal architecture.
+- [x] Identify the exact package dependencies required by the uploaded dashboard and add only missing dependencies needed to build it.
+- [x] Place the uploaded single-file ERP source into the web application runtime without splitting its internal components, hooks, API logic, or state management.
+- [x] Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as managed environment variables rather than hardcoding credentials.
+- [ ] Verify the dashboard's live Supabase REST data requests, authentication endpoints, and reload session handling against the supplied Supabase project.
+- [ ] Verify that Google, Microsoft, and Apple OAuth links are correctly routed to the configured Supabase providers, while documenting any provider-side configuration still required.
+- [x] Create a public marketing landing page with a hero, ERP feature highlights, responsible social-proof messaging, and clear app-launch calls to action.
+- [x] Route the landing-page Launch App and Get Started calls to the preserved ERP dashboard.
+- [x] Add focused automated tests for routing, configuration validation, and the dashboard integration boundary.
+- [x] Build the application, inspect runtime and browser errors, and make only minimal changes required for successful operation.
+- [x] Capture visual verification of the landing page and ERP dashboard to confirm the dashboard design remains unchanged.
+- [x] Prepare a complete change log that lists all modified files, exact errors, minimal fixes, validation evidence, and preservation confirmations.
+- [x] Replace the initially rejected Supabase credentials with the newly supplied project URL and anonymous key, then rerun live REST validation.
+- [x] Replace the rejected legacy anonymous key with the supplied Supabase publishable key and verify live REST access.
+- [x] Configure the confirmed Supabase publishable client key, verify it against the project, and ensure the supplied secret key is never exposed to the browser.
+- [x] Inspect the connected Supabase project schema and confirm which existing ERP data tables, relationships, and authentication requirements are available for live integration.
+- [ ] Configure Google, Microsoft/Azure, and Apple credentials plus approved production redirect URLs in Supabase Auth, then complete interactive OAuth sign-in tests.

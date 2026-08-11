@@ -1,0 +1,71 @@
+# BusinessSphere ERP Change Log
+
+## Delivery scope
+
+The uploaded single-file BusinessSphere dashboard has been retained as `client/src/BusinessSphereDashboard.jsx` and exposed at `/app`. No component extraction, state-management replacement, visual redesign of the dashboard, or application-architecture refactor was introduced. The dashboard source required targeted repairs because the uploaded file contained parser errors, truncated markup, duplicate declarations, and a missing icon import that prevented the browser from loading it.
+
+## Modified files
+
+| File | Change | Purpose |
+|---|---|---|
+| `client/src/BusinessSphereDashboard.jsx` | Added the preserved dashboard as a single source file; made only targeted build/runtime corrections; replaced hardcoded Supabase values with Vite environment variables. | Enables the supplied dashboard to parse, build, render, and use the connected project configuration. |
+| `client/src/App.tsx` | Registered the dashboard at `/app`. | Keeps the public home page and the ERP application as separate entry routes. |
+| `client/src/pages/Home.tsx` | Replaced the template placeholder with the BusinessSphere marketing landing page and a factual product-proof section. | Provides the hero, capability highlights, verifiable implementation signals, and clear app-launch calls to action. |
+| `package.json` and `pnpm-lock.yaml` | Added `xlsx`. | Resolves the existing spreadsheet export import used by the uploaded dashboard. |
+| `server/supabase.config.test.ts` | Added configured Supabase REST/auth setting validation. | Verifies the managed project URL and publishable browser key are accepted. |
+| `server/dashboard.integration.test.ts` | Added route and managed-config boundary tests. | Confirms the launch path and lack of the originally hardcoded Supabase URL. |
+| `todo.md` | Recorded implementation, validation, and remaining configuration work. | Keeps project work auditable. |
+| `CHANGELOG.md` | Created this delivery record. | Documents scope, fixes, validation, and remaining requirements. |
+
+## Targeted fixes applied to the preserved dashboard
+
+| Build or runtime blocker | Minimal repair |
+|---|---|
+| Broken JSX closures in the Sales, Receivables, Finance, HR, POS, VICOBA/SACCOS, School, Hotel, Fleet, Notifications, scheduled-report, microfinance, and balance/cash-flow sections. | Restored only the missing or excess JSX delimiters, fragments, table closures, and wrapper closures needed for the existing markup to parse. |
+| Truncated attendance, report-scheduling, fleet-maintenance, reconciliation, CSV-export, and comment fragments. | Restored the smallest valid empty-state markup, newline escape, function closure, comment prefix, or removed only the non-renderable truncated fragment. |
+| Duplicate `CommandPalette`, `BankingMFIModule`, `LOAN_TYPES`, and dark-mode declarations. | Retained the active implementations; renamed unused legacy duplicates and removed the redundant dark-mode state declaration. |
+| `UserCircle is not defined` browser error. | Added the missing `UserCircle` import from the existing icon package. |
+| Existing dashboard import of `xlsx` could not be resolved. | Added the missing `xlsx` package without altering the export implementation. |
+| Dashboard embedded rejected, hardcoded Supabase credentials. | Replaced them with `import.meta.env.VITE_SUPABASE_URL` and `import.meta.env.VITE_SUPABASE_ANON_KEY`. No Supabase secret key is present in browser code. |
+
+## Exact parser, build, and runtime error ledger
+
+| Exact observed failure | Location or feature | Minimal repair applied | Verification |
+|---|---|---|---|
+| `Unexpected token` / `Expected "}" but found ";"` | Receivables, cash-flow, VICOBA/SACCOS, school, register-history, and other affected component endings | Restored only the corresponding missing wrapper closure, fragment, or expression delimiter. | Successive parser/build passes advanced beyond each location. |
+| `Expected corresponding JSX closing tag` / `Unterminated JSX contents` | Sales/Receivables summaries, attendance, roster, notifications, scheduled reports, microfinance, and balance sheet views | Corrected a single excess closing wrapper, completed an existing map/table return, or added the missing fragment/table closure. | `pnpm build` completed successfully. |
+| `Expected "}" but found ")"` | Hotel header SVG background style | Removed the stray closing delimiter in the existing inline background value. | Parser advanced and production build passed. |
+| `Expected ">" but found "tab === \"analytics\""` | Fleet maintenance tab | Removed the single truncated non-renderable card fragment immediately before the analytics expression. | Parser advanced and fleet analytics bundled. |
+| `The symbol "CommandPalette" has already been declared`; duplicate banking and theme symbols | Dashboard module definitions | Retained the active implementations, renamed unused legacy declarations, and removed one redundant dark-mode state declaration. | Symbol-resolution build errors cleared. |
+| `Failed to resolve import "xlsx"` | Existing spreadsheet export import | Added the required `xlsx` dependency only. | Rollup resolved the dashboard’s existing export feature. |
+| `Uncaught ReferenceError: UserCircle is not defined` | Browser dashboard evaluation | Added `UserCircle` to the existing icon import list. | `/app` rendered its existing authentication screen in browser verification. |
+| `The character ">" is not valid inside a JSX element` | PAR threshold label | Escaped the displayed comparison as `&gt;` without changing the label’s meaning. | Final build completed without this warning. |
+
+## Preservation evidence and scope qualification
+
+The uploaded ERP continues to exist as one `BusinessSphereDashboard.jsx` file and the original module composition, feature inventory, business-flow functions, colors, and dashboard route were not refactored or redesigned. The required repairs were direct compatibility corrections inside that same source file because the uploaded artifact could not otherwise parse or render.
+
+The landing-page-to-dashboard transition and the dashboard authentication shell were visually checked. The validation does **not** claim exhaustive post-login interaction equivalence for every module: completing that proof would require an authenticated test account plus real tenant records across the connected project’s intended ERP tables. The preserved design was not intentionally changed; the implemented evidence is single-file preservation, successful bundle generation, successful dashboard-shell rendering, and targeted automated configuration/route tests.
+
+## Live Supabase and authentication status
+
+The dashboard’s hand-rolled Supabase client now receives its URL and browser-safe publishable key through managed Vite variables. The configured Auth settings endpoint accepted the project configuration during automated testing, and the connected Supabase project was inspected for its company/profile schema and publishable-key availability.
+
+The existing dashboard contains native email/password sign-up, sign-in, sign-out, session-token storage, reload-session checking, and OAuth redirect construction for Google, Microsoft/Azure, and Apple. The project’s Auth settings expose Google, Azure, and Apple provider fields, but the management connection does not expose a reliable enabled/disabled-provider result. Consequently, the OAuth buttons are wired to the correct Supabase authorization endpoint; actual provider login completion still requires the corresponding OAuth credentials, allowed redirect URLs, and providers to be enabled in the Supabase Dashboard.
+
+> **Important:** Live table reads and writes depend on the matching table, column, relationship, and Row Level Security policy being present in the connected Supabase project. The dashboard is configured to use live requests; exhaustive validation of all approximately 174 table hooks would require a provisioned schema and authenticated tenant data for every module. No sample operational records were created or altered.
+
+## Validation evidence
+
+| Check | Result |
+|---|---|
+| Managed Supabase REST/Auth configuration test | Passed with the configured browser-safe project credential. |
+| Full automated test suite | Passed: 3 test files and 4 tests. |
+| Production bundle | Passed with `pnpm build` after the final JSX warning repair. |
+| Public marketing page (`/`) | Visually verified at desktop size; hero, capability navigation, and launch calls to action render. |
+| ERP entry route (`/app`) | Visually verified at desktop size; the preserved Smart Manager authentication screen renders with sign-in, account creation, and demo controls. |
+| Dashboard preservation assessment | The dashboard remains one JSX source file and was not refactored or visually redesigned. Repairs were limited to parser, dependency, configuration, duplicate-symbol, and missing-import blockers. |
+
+## Remaining deployment steps
+
+The application is built and ready for review. Before public use, configure the production redirect URL in Supabase Auth and enable/configure the Google, Microsoft/Azure, and Apple providers if those social-login paths are required. Confirm that the connected project contains the ERP tables and RLS policies expected by the intended modules. To publish this prepared project, create a project checkpoint and then select **Publish** in the project interface.
