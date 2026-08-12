@@ -6,6 +6,8 @@ let globalWebhookConfig = {
   secret: "",
 };
 
+const deadLetterQueue: Array<{ id: string; timestamp: string; event: any; error: string; attempts: number }> = [];
+
 export function getWebhookConfig() {
   return globalWebhookConfig;
 }
@@ -19,24 +21,56 @@ export function updateWebhookConfig(config: { url: string; enabled: boolean; sec
   return globalWebhookConfig;
 }
 
+export function getDeadLetterQueue() {
+  return deadLetterQueue;
+}
+
 export async function dispatchWebhookEvent(event: { action: string; module: string; details?: string; actor: string; severity?: string }) {
   if (!globalWebhookConfig.enabled || !globalWebhookConfig.url) return;
-  try {
-    await fetch(globalWebhookConfig.url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(globalWebhookConfig.secret ? { "X-Webhook-Secret": globalWebhookConfig.secret } : {}),
-      },
-      body: JSON.stringify({
-        timestamp: new Date().toISOString(),
-        source: "BusinessSphere ERP",
-        severity: event.severity || "INFO",
-        ...event,
-      }),
+  const payload = {
+    timestamp: new Date().toISOString(),
+    source: "BusinessSphere ERP",
+    severity: event.severity || "INFO",
+    ...event,
+  };
+
+  let attempts = 0;
+  let success = false;
+  let lastError = "";
+
+  while (attempts < 3 && !success) {
+    attempts++;
+    try {
+      const res = await fetch(globalWebhookConfig.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(globalWebhookConfig.secret ? { "X-Webhook-Secret": globalWebhookConfig.secret } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        success = true;
+      } else {
+        lastError = `HTTP status ${res.status}`;
+      }
+    } catch (err: any) {
+      lastError = err.message || "Network error";
+    }
+    if (!success && attempts < 3) {
+      await new Promise((r) => setTimeout(r, attempts * 1000));
+    }
+  }
+
+  if (!success) {
+    deadLetterQueue.unshift({
+      id: `dlq_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      timestamp: new Date().toISOString(),
+      event: payload,
+      error: lastError,
+      attempts,
     });
-  } catch (err) {
-    console.error("Failed to dispatch webhook event:", err);
+    if (deadLetterQueue.length > 50) deadLetterQueue.pop();
   }
 }
 

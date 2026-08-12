@@ -216,3 +216,8 @@
 - [x] Implement compliance digest schedule management UI and tRPC procedure.
 - [x] Implement severity badges and severity filtering across audit records.
 - [x] Run full test suite, verify production build, document feature contract, and publish final checkpoint.
+
+- [x] Implement executive report schedule controls in the reporting/dashboard views.
+- [x] Implement severity level filter in audit CSV exports.
+- [x] Implement webhook persistent retry and dead-letter queue mechanism.
+- [x] Run full test suite, verify production build, document feature contract, and publish final published checkpoint.

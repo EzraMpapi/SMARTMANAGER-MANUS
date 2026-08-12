@@ -11,7 +11,12 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
   const [selectedModule, setSelectedModule] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookEnabled, setWebhookEnabled] = useState(false);
+  const [webhookSecret, setWebhookSecret] = useState("");
 
+  const utils = trpc.useUtils();
   const { data: logs = [], isLoading, refetch } = trpc.auditLogs.list.useQuery(
     {
       companyId,
@@ -24,13 +29,9 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
   );
 
   const { data: backupStatus, refetch: refetchBackup, isLoading: backupLoading } = trpc.admin.verifyBackup.useQuery();
-  const utils = trpc.useUtils();
-  const [showWebhookModal, setShowWebhookModal] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [webhookEnabled, setWebhookEnabled] = useState(false);
-  const [webhookSecret, setWebhookSecret] = useState("");
-
   const { data: webhookCfg } = trpc.admin.getWebhook.useQuery();
+  const { data: dlq = [] } = trpc.admin.getDeadLetterQueue.useQuery(undefined, { refetchInterval: 15000 });
+
   React.useEffect(() => {
     if (webhookCfg) {
       setWebhookUrl(webhookCfg.url);
@@ -67,11 +68,12 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
       toast.error("No logs available to export");
       return;
     }
-    const headers = ["Timestamp", "Module", "Action", "Actor", "Details"];
+    const headers = ["Timestamp", "Module", "Action", "Severity", "Actor", "Details"];
     const rows = logs.map(l => [
       `"${new Date(l.createdAt).toISOString()}"`,
       `"${l.module}"`,
       `"${l.action}"`,
+      `"${l.action.includes("DELETE") || l.action.includes("EXCEED") ? "HIGH" : "INFO"}"`,
       `"${l.actorName || l.actorOpenId}"`,
       `"${(l.details || "").replace(/"/g, '""')}"`,
     ]);
@@ -184,30 +186,45 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
                 />
                 <label htmlFor="wbEnabled" className="text-white font-semibold">Enable automated webhook dispatch for compliance events</label>
               </div>
-            </div>
-            <div className="flex items-center justify-between pt-4 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => testPingMutation.mutate()}
-                disabled={testPingMutation.isPending || !webhookUrl}
-                className="rounded-xl px-4 py-2.5 bg-white/10 text-[#C9A96E] hover:bg-white/20 font-semibold disabled:opacity-50"
-              >
-                {testPingMutation.isPending ? "Sending Test..." : "Send Test Ping"}
-              </button>
-              <div className="flex items-center gap-3">
+
+              <div className="flex items-center justify-between pt-4 border-t border-white/10">
                 <button
-                  onClick={() => setShowWebhookModal(false)}
-                  className="rounded-xl px-4 py-2.5 bg-white/5 text-slate-300 hover:bg-white/10 font-semibold"
+                  type="button"
+                  onClick={() => testPingMutation.mutate()}
+                  disabled={testPingMutation.isPending || !webhookUrl}
+                  className="rounded-xl px-4 py-2.5 bg-white/10 text-[#C9A96E] hover:bg-white/20 font-semibold disabled:opacity-50"
                 >
-                  Cancel
+                  {testPingMutation.isPending ? "Sending Test..." : "Send Test Ping"}
                 </button>
-                <button
-                  onClick={() => updateWebhookMutation.mutate({ url: webhookUrl, enabled: webhookEnabled, secret: webhookSecret })}
-                  className="rounded-xl px-5 py-2.5 bg-[#C9A96E] text-[#0B1120] font-bold hover:bg-[#D4B87F] transition-colors"
-                >
-                  Save Webhook Settings
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowWebhookModal(false)}
+                    className="rounded-xl px-4 py-2.5 bg-white/5 text-slate-300 hover:bg-white/10 font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => updateWebhookMutation.mutate({ url: webhookUrl, enabled: webhookEnabled, secret: webhookSecret })}
+                    className="rounded-xl px-5 py-2.5 bg-[#C9A96E] text-[#0B1120] font-bold hover:bg-[#D4B87F] transition-colors"
+                  >
+                    Save Webhook Settings
+                  </button>
+                </div>
               </div>
+
+              {dlq.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <p className="text-[12px] font-bold text-amber-400 mb-2">Webhook Dead-Letter Queue ({dlq.length} failed events):</p>
+                  <div className="max-h-32 overflow-y-auto space-y-1.5 text-[11px] text-slate-400 font-mono bg-[#0B1120] p-3 rounded-xl border border-white/10">
+                    {dlq.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center border-b border-white/5 pb-1">
+                        <span>{item.event.action} ({item.error})</span>
+                        <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -272,22 +289,31 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
                   <th className="p-4">Timestamp</th>
                   <th className="p-4">Module</th>
                   <th className="p-4">Action</th>
+                  <th className="p-4">Severity</th>
                   <th className="p-4">Actor</th>
                   <th className="p-4">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-slate-300">
-                {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="p-4 whitespace-nowrap text-slate-400 font-mono text-[12px]">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </td>
-                    <td className="p-4 font-semibold text-white">{log.module}</td>
-                    <td className="p-4 font-mono text-amber-300">{log.action}</td>
-                    <td className="p-4 text-slate-300">{log.actorName || log.actorOpenId}</td>
-                    <td className="p-4 text-slate-400 truncate max-w-sm">{log.details || "—"}</td>
-                  </tr>
-                ))}
+                {logs.map((log) => {
+                  const isHigh = log.action.includes("DELETE") || log.action.includes("EXCEED") || log.action.includes("ROLE");
+                  return (
+                    <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="p-4 whitespace-nowrap text-slate-400 font-mono text-[12px]">
+                        {new Date(log.createdAt).toLocaleString()}
+                      </td>
+                      <td className="p-4 font-semibold text-white">{log.module}</td>
+                      <td className="p-4 font-mono text-amber-300">{log.action}</td>
+                      <td className="p-4">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${isHigh ? "bg-red-500/20 text-red-300 border border-red-500/30" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"}`}>
+                          {isHigh ? "HIGH" : "INFO"}
+                        </span>
+                      </td>
+                      <td className="p-4 text-slate-300">{log.actorName || log.actorOpenId}</td>
+                      <td className="p-4 text-slate-400 truncate max-w-sm">{log.details || "—"}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
