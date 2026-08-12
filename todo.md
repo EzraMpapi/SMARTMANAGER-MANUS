@@ -89,3 +89,7 @@
 - [x] Add animated gold geometric line art (topographic supply-chain paths) to landing background surfaces and glassmorphic cards.
 - [x] Implement a persistent user preference drawer for customizable dashboard layout widgets and compact view settings.
 - [x] Verify automated tests and production build, then publish the final polished checkpoint.
+
+- [x] Implement server-side AI model discovery and multi-model chat/analysis procedures using `invokeLLM` and `listLLMModels`.
+- [x] Connect Collaboration Hub calendar events, team channels, messaging, and workspaces to live database persistence and state handlers.
+- [x] Add automated tests for the new AI procedures and collaboration actions, verify the build, and publish the final upgrade.

@@ -9,6 +9,40 @@ import { createReportSchedule, deleteReportSchedule, listReportSchedules, sendRe
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+  ai: router({
+    listModels: protectedProcedure.query(async () => {
+      try {
+        const { listLLMModels } = await import("./_core/llm");
+        const res = await listLLMModels();
+        return res.data || [];
+      } catch (err) {
+        return [
+          { id: "gpt-5-mini", name: "GPT-5 Mini (Fast & Efficient)" },
+          { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6 (Balanced Reasoning)" },
+          { id: "gemini-3-flash-preview", name: "Gemini 3 Flash (Multimodal & Fast)" },
+        ];
+      }
+    }),
+    chat: protectedProcedure
+      .input(z.object({
+        model: z.string().optional(),
+        messages: z.array(z.object({
+          role: z.enum(["system", "user", "assistant"]),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const res = await invokeLLM({
+          model: input.model,
+          messages: input.messages,
+        });
+        return {
+          content: res.choices[0]?.message?.content || "No response generated.",
+          model: res.model || input.model || "default",
+        };
+      }),
+  }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
