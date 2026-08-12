@@ -49,3 +49,20 @@ export const dashboardReportSchedules = mysqlTable("dashboard_report_schedules",
 
 export type DashboardReportSchedule = typeof dashboardReportSchedules.$inferSelect;
 export type InsertDashboardReportSchedule = typeof dashboardReportSchedules.$inferInsert;
+
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  actorOpenId: varchar("actorOpenId", { length: 64 }).notNull(),
+  actorName: varchar("actorName", { length: 120 }),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  module: varchar("module", { length: 50 }).notNull(),
+  details: text("details"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  companyIdIdx: index("audit_logs_company_id_idx").on(table.companyId),
+  actorOpenIdIdx: index("audit_logs_actor_open_id_idx").on(table.actorOpenId),
+}));
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;

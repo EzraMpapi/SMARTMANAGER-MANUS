@@ -1,0 +1,50 @@
+import { TRPCError } from "@trpc/server";
+import { auditLogs, type AuditLog, type User } from "../drizzle/schema";
+import { getDb } from "./db";
+import { desc, eq, and } from "drizzle-orm";
+
+export type AuditLogInput = {
+  companyId: string;
+  action: string;
+  module: string;
+  details?: string;
+};
+
+async function requireDb() {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Audit logs database is unavailable." });
+  return db;
+}
+
+export async function recordAuditLog(user: User, input: AuditLogInput): Promise<AuditLog> {
+  const db = await requireDb();
+  const [insertResult] = await db.insert(auditLogs).values({
+    actorOpenId: user.openId,
+    actorName: user.name || "System User",
+    companyId: input.companyId,
+    action: input.action,
+    module: input.module,
+    details: input.details || null,
+  });
+  const logId = Number((insertResult as { insertId?: number }).insertId);
+  const rows = await db.select().from(auditLogs).where(eq(auditLogs.id, logId)).limit(1);
+  return rows[0] || {
+    id: logId,
+    actorOpenId: user.openId,
+    actorName: user.name || "System User",
+    companyId: input.companyId,
+    action: input.action,
+    module: input.module,
+    details: input.details || null,
+    createdAt: new Date(),
+  };
+}
+
+export async function listAuditLogs(companyId: string, limit = 50): Promise<AuditLog[]> {
+  const db = await requireDb();
+  const rows = await db.select().from(auditLogs)
+    .where(eq(auditLogs.companyId, companyId))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(limit);
+  return rows;
+}
