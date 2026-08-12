@@ -105,6 +105,118 @@ export const appRouter = router({
           return { findings: fallback(), model: input.model || "deterministic-fallback", source: "rule-based-fallback" as const };
         }
       }),
+    configurePreferences: protectedProcedure
+      .input(z.object({
+        model: z.string().optional(),
+        goal: z.string().min(2).max(300),
+        current: z.object({
+          theme: z.enum(["dark", "light"]),
+          language: z.enum(["en", "sw"]),
+          currency: z.enum(["TZS", "USD"]),
+          density: z.enum(["comfortable", "compact"]),
+          showMetricsStrip: z.boolean(),
+          showActivityFeed: z.boolean(),
+          showQuickActions: z.boolean(),
+          showSmartAlerts: z.boolean(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const fallbackPreferences = () => {
+          const lower = input.goal.toLowerCase();
+          const target = { ...input.current };
+          if (lower.includes("compact") || lower.includes("dense") || lower.includes("space")) target.density = "compact";
+          if (lower.includes("comfortable") || lower.includes("spacious")) target.density = "comfortable";
+          if (lower.includes("usd") || lower.includes("dollar") || lower.includes("international")) target.currency = "USD";
+          if (lower.includes("tzs") || lower.includes("tanzania") || lower.includes("shilling")) target.currency = "TZS";
+          if (lower.includes("swahili") || lower.includes("kiswahili")) target.language = "sw";
+          if (lower.includes("english") || lower.includes("en")) target.language = "en";
+          if (lower.includes("dark") || lower.includes("night") || lower.includes("boardroom")) target.theme = "dark";
+          if (lower.includes("light") || lower.includes("bright")) target.theme = "light";
+          if (lower.includes("minimal") || lower.includes("focus")) {
+            target.showActivityFeed = false;
+            target.showQuickActions = false;
+          }
+          if (lower.includes("all") || lower.includes("complete") || lower.includes("full")) {
+            target.showMetricsStrip = true;
+            target.showActivityFeed = true;
+            target.showQuickActions = true;
+            target.showSmartAlerts = true;
+          }
+          return {
+            preferences: target,
+            explanation: `Applied recommended adjustments based on your goal: "${input.goal}".`,
+            source: "rule-based-fallback" as const,
+          };
+        };
+
+        try {
+          const res = await invokeLLM({
+            model: input.model,
+            maxTokens: 1200,
+            messages: [
+              {
+                role: "system",
+                content: "You are Smart Manager's AI Assistant for executive dashboard preferences. Given the user's natural language goal and their current preferences, return a JSON object with 'preferences' (updated values for theme, language, currency, density, showMetricsStrip, showActivityFeed, showQuickActions, showSmartAlerts) and a concise 'explanation' (1-2 sentences in English describing why these changes match their goal).",
+              },
+              {
+                role: "user",
+                content: JSON.stringify(input),
+              },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "dashboard_ai_preferences",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    preferences: {
+                      type: "object",
+                      properties: {
+                        theme: { type: "string", enum: ["dark", "light"] },
+                        language: { type: "string", enum: ["en", "sw"] },
+                        currency: { type: "string", enum: ["TZS", "USD"] },
+                        density: { type: "string", enum: ["comfortable", "compact"] },
+                        showMetricsStrip: { type: "boolean" },
+                        showActivityFeed: { type: "boolean" },
+                        showQuickActions: { type: "boolean" },
+                        showSmartAlerts: { type: "boolean" },
+                      },
+                      required: ["theme", "language", "currency", "density", "showMetricsStrip", "showActivityFeed", "showQuickActions", "showSmartAlerts"],
+                      additionalProperties: false,
+                    },
+                    explanation: { type: "string" },
+                  },
+                  required: ["preferences", "explanation"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+          const content = res.choices[0]?.message?.content;
+          const parsed = typeof content === "string" ? JSON.parse(content) : content;
+          if (!parsed?.preferences) return fallbackPreferences();
+          return {
+            preferences: {
+              theme: parsed.preferences.theme || input.current.theme,
+              language: parsed.preferences.language || input.current.language,
+              currency: parsed.preferences.currency || input.current.currency,
+              density: parsed.preferences.density || input.current.density,
+              showMetricsStrip: typeof parsed.preferences.showMetricsStrip === "boolean" ? parsed.preferences.showMetricsStrip : input.current.showMetricsStrip,
+              showActivityFeed: typeof parsed.preferences.showActivityFeed === "boolean" ? parsed.preferences.showActivityFeed : input.current.showActivityFeed,
+              showQuickActions: typeof parsed.preferences.showQuickActions === "boolean" ? parsed.preferences.showQuickActions : input.current.showQuickActions,
+              showSmartAlerts: typeof parsed.preferences.showSmartAlerts === "boolean" ? parsed.preferences.showSmartAlerts : input.current.showSmartAlerts,
+            },
+            explanation: parsed.explanation || `Configured according to your goal: "${input.goal}".`,
+            model: res.model || input.model || "default",
+            source: "ai" as const,
+          };
+        } catch (_err) {
+          return fallbackPreferences();
+        }
+      }),
   }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

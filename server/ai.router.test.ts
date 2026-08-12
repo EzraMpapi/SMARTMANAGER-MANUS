@@ -26,4 +26,13 @@ describe("AI router and grounded dashboard signals", () => {
     expect(dashboardSource).toContain("inventoryRows.filter((item) => item.qty <= item.reorder");
     expect(dashboardSource).toContain("Business signals");
   });
+
+  it("exposes configurePreferences procedure and AI preferences drawer assistant", () => {
+    expect(routersSource).toContain("configurePreferences: protectedProcedure");
+    expect(routersSource).toContain("dashboard_ai_preferences");
+    const drawerSource = readFileSync(new URL("../client/src/components/DashboardPreferencesDrawer.tsx", import.meta.url), "utf8");
+    expect(drawerSource).toContain("trpc.ai.configurePreferences.useMutation");
+    expect(drawerSource).toContain("AI Assistant");
+    expect(drawerSource).toContain("Apply AI Recommendations");
+  });
 });

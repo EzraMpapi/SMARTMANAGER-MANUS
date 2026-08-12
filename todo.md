@@ -111,3 +111,8 @@
 - [x] Fix the scope or fallback for `preferences` so executive command strip currency toggle renders safely.
 - [x] Run test suite and production build to verify the fix.
 - [x] Save and publish checkpoint with the error resolved.
+
+- [x] Add `ai.configurePreferences` tRPC procedure using `invokeLLM` with structured JSON schema output for safe configuration recommendations.
+- [x] Integrate an interactive AI configuration assistant tab/section into `DashboardPreferencesDrawer.tsx`.
+- [x] Add automated regression coverage for the AI configuration procedure and preference application flow.
+- [x] Run test suite, verify production build, and publish the AI-enhanced preferences checkpoint.
