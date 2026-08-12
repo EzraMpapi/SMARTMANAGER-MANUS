@@ -318,3 +318,30 @@ describe("BusinessSphere launch and live-data integration", () => {
     const sortName = [...rawDepartments].sort((a, b) => a.name.localeCompare(b.name));
     expect(sortName[0].name).toBe("Finance");
   });
+
+  it("sorts departmental chart data with ascending and descending direction toggles", () => {
+    const rawDepartments = [
+      { name: "Operations", actual: 15000, budgetLimit: 20000, variance: 5000 },
+      { name: "Sales", actual: 35000, budgetLimit: 30000, variance: -5000 },
+      { name: "Finance", actual: 10000, budgetLimit: 12000, variance: 2000 },
+    ];
+
+    const sortFn = (sortBy: string, sortDir: string) => {
+      const mapped = [...rawDepartments].map(d => ({ ...d }));
+      let sorted = [];
+      if (sortBy === "variance") {
+        sorted = mapped.sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
+      } else if (sortBy === "actual") {
+        sorted = mapped.sort((a, b) => b.actual - a.actual);
+      } else {
+        sorted = mapped.sort((a, b) => a.name.localeCompare(b.name));
+      }
+      return sortDir === "asc" ? sorted.reverse() : sorted;
+    };
+
+    const descActual = sortFn("actual", "desc");
+    expect(descActual[0].name).toBe("Sales"); // 35000
+
+    const ascActual = sortFn("actual", "asc");
+    expect(ascActual[0].name).toBe("Finance"); // 10000
+  });
