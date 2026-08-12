@@ -85,3 +85,7 @@
 - [x] Implement persistent theme preference (Noble Dark vs Light / High Contrast) and bilingual English/Kiswahili language state.
 - [x] Add discoverable header toggles for theme and language on both landing page and dashboard shell.
 - [x] Verify test suite, production build, and publish the final polished version.
+
+- [ ] Add animated gold geometric line art (topographic supply-chain paths) to landing background surfaces and glassmorphic cards.
+- [ ] Implement a persistent user preference drawer for customizable dashboard layout widgets and compact view settings.
+- [ ] Verify automated tests and production build, then publish the final polished checkpoint.

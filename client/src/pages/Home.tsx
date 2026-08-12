@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
+import { AnimatedGoldMesh } from "../components/AnimatedGoldMesh";
 
 const capabilities = [
   { title: "CRM & Sales", description: "Connect customer records, quotations, invoices, and commercial activity in one operating flow.", icon: UsersRound, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
@@ -81,8 +82,9 @@ export default function Home() {
       <main>
         {/* Hero Section */}
         <section className="relative isolate pb-20 pt-16 sm:pb-32 sm:pt-24">
-          {/* Noble Background Accents */}
+          {/* Noble Background Accents & Animated Gold Mesh */}
           <div className="absolute inset-x-0 top-0 -z-10 h-[40rem] bg-[radial-gradient(ellipse_at_top,rgba(201,169,110,0.12),rgba(11,17,32,0)_70%)]" />
+          <AnimatedGoldMesh />
           <div className="absolute -right-44 top-8 -z-10 h-96 w-96 rounded-full bg-[#16A34A]/5 blur-[100px]" />
           
           <div className="mx-auto grid max-w-7xl gap-16 px-5 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-10">

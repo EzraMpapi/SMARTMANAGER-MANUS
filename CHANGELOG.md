@@ -154,3 +154,10 @@ The scheduled callback remains mounted at `/api/scheduled/dashboardReport`, auth
 - Added discoverable theme and language toggle buttons to the Smart Manager public landing page header.
 - Preserved all live Supabase data workflows, filtered CSV/PDF exports, and recurring Resend report scheduling.
 - Validation: 34 Vitest tests passing, production build successful.
+
+## Animated Gold Mesh & Dashboard Preference Drawer — 2026-08-12
+
+- Added reusable animated gold topographic line art (`AnimatedGoldMesh.tsx`) to landing hero and CTA backgrounds.
+- Implemented `DashboardPreferencesContext` to store user dashboard layout and view customizations in `localStorage`.
+- Preserved all live Supabase data connections, tRPC routers, filtered exports, and recurring Resend report schedules.
+- Validation: 34 Vitest tests passing, production build successful.
