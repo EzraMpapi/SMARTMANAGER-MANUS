@@ -156,5 +156,8 @@
 - [x] Add departmental spending comparison and visual alert cards in Finance module view.
 - [x] Add regression tests, verify production build, and publish checkpoint.
 
-- [ ] Add inline departmental budget adjustment section to Finance module view.
-- [ ] Add automated test coverage, run build and tests, and publish checkpoint.
+- [x] Add inline departmental budget adjustment section to Finance module view.
+- [x] Add automated test coverage, run build and tests, and publish checkpoint.
+
+- [ ] Implement departmental budget vs actual bar chart in `BudgetsView` within `BusinessSphereDashboard.jsx` using Recharts.
+- [ ] Add automated test coverage and verify successful build and test suite.

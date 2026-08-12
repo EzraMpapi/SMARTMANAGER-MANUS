@@ -280,7 +280,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 });
 
-  it("supports departmental budget thresholds and inline limit adjustments with alert status classification", () => {
+  it("supports departmental budget thresholds, inline limit adjustments, alert status classification, and visual comparison bar chart", () => {
     const prefsContext = readFileSync(new URL("../client/src/contexts/DashboardPreferencesContext.tsx", import.meta.url), "utf8");
     expect(prefsContext).toContain("departmentBudgets");
     expect(dashboardSource).toContain("Departmental Cost Center Budgets");
@@ -289,4 +289,6 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("Exceeded");
     expect(dashboardSource).toContain("Warning");
     expect(dashboardSource).toContain("Normal");
+    expect(dashboardSource).toContain("Departmental Budgets vs. Actual Spending");
+    expect(dashboardSource).toContain("ComposedChart data={departmentLines");
   });
