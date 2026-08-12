@@ -66,3 +66,24 @@ export const auditLogs = mysqlTable("audit_logs", {
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+export const webhookDeliveries = mysqlTable("webhook_deliveries", {
+  id: int("id").autoincrement().primaryKey(),
+  deliveryId: varchar("deliveryId", { length: 80 }).notNull().unique(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  module: varchar("module", { length: 50 }).notNull(),
+  severity: varchar("severity", { length: 16 }).notNull(),
+  status: mysqlEnum("status", ["success", "failed", "retrying"]).notNull(),
+  attempts: int("attempts").notNull().default(0),
+  responseCode: int("responseCode"),
+  error: text("error"),
+  eventSummary: text("eventSummary"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  companyStatusIdx: index("webhook_delivery_company_status_idx").on(table.companyId, table.status),
+  createdAtIdx: index("webhook_delivery_created_at_idx").on(table.createdAt),
+}));
+
+export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;

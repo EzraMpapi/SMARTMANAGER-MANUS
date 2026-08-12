@@ -241,3 +241,8 @@
 - [x] Add a realtime workspace presence indicator for active connected users.
 - [x] Add an administrator webhook delivery dashboard for successful and failed events.
 - [x] Add focused tests, verify production build, and publish the completed work.
+
+- [x] Add durable database-backed webhook delivery history with migration coverage.
+- [x] Add secure per-delivery retry procedures and retry controls in the administrator dashboard.
+- [x] Add an approval-gated production migration workflow that uses protected deployment secrets.
+- [x] Add regression tests, run full verification, and publish the completed release.

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { dispatchWebhookEvent, getWebhookDeliveryHistory, updateWebhookConfig } from "./webhooks";
+import { dispatchWebhookEvent, getWebhookDeliveryHistory, retryWebhookDelivery, updateWebhookConfig } from "./webhooks";
 
 describe("webhook delivery activity", () => {
   afterEach(() => {
@@ -26,5 +26,18 @@ describe("webhook delivery activity", () => {
 
     const latest = getWebhookDeliveryHistory()[0];
     expect(latest).toMatchObject({ status: "failed", attempts: 3, responseCode: 503 });
+  });
+
+  it("replays a selected failed delivery through the protected retry path", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 502 }));
+    updateWebhookConfig({ url: "https://example.test/audit", enabled: true });
+    await dispatchWebhookEvent({ action: "DELETE_INVOICE", module: "Finance", actor: "admin" });
+    const failedId = getWebhookDeliveryHistory()[0].id;
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 202 }));
+    const result = await retryWebhookDelivery(failedId);
+
+    expect(result).toMatchObject({ success: true, responseCode: 202 });
+    expect(getWebhookDeliveryHistory()[0]).toMatchObject({ status: "success", responseCode: 202 });
   });
 });

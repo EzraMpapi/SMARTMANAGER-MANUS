@@ -31,8 +31,10 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
 
   const { data: backupStatus, refetch: refetchBackup, isLoading: backupLoading } = trpc.admin.verifyBackup.useQuery();
   const { data: webhookCfg } = trpc.admin.getWebhook.useQuery();
-  const { data: dlq = [] } = trpc.admin.getDeadLetterQueue.useQuery(undefined, { refetchInterval: 15000 });
-  const { data: deliveries = [] } = trpc.admin.getWebhookDeliveries.useQuery(undefined, { refetchInterval: 5000 });
+  const { data: dlqData = [] } = trpc.admin.getDeadLetterQueue.useQuery(undefined, { refetchInterval: 15000 });
+  const { data: deliveryData = [] } = trpc.admin.getWebhookDeliveries.useQuery(undefined, { refetchInterval: 5000 });
+  const dlq = dlqData as Array<{ id: string; timestamp: string; event: Record<string, unknown>; error: string }>;
+  const deliveries = deliveryData as Array<{ id: string; timestamp: string; status: "success" | "failed" | "retrying"; event: Record<string, unknown>; attempts: number; responseCode?: number; error?: string }>;
 
   React.useEffect(() => {
     if (webhookCfg) {
@@ -63,6 +65,15 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
     onError: (err) => {
       toast.error(err.message || "Webhook test ping failed");
     },
+  });
+
+  const retryDeliveryMutation = trpc.admin.retryWebhookDelivery.useMutation({
+    onSuccess: () => {
+      toast.success("Webhook delivery retry submitted");
+      utils.admin.getWebhookDeliveries.invalidate();
+      utils.admin.getDeadLetterQueue.invalidate();
+    },
+    onError: (err) => toast.error(err.message || "Webhook delivery retry failed"),
   });
 
   const handleExportCsv = () => {
@@ -226,7 +237,7 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
                   <div className="max-h-32 overflow-y-auto space-y-1.5 text-[11px] text-slate-400 font-mono bg-[#0B1120] p-3 rounded-xl border border-white/10">
                     {dlq.map((item) => (
                       <div key={item.id} className="flex justify-between items-center border-b border-white/5 pb-1">
-                        <span>{item.event.action} ({item.error})</span>
+                        <span>{String(item.event.action || "WEBHOOK_EVENT")} ({item.error})</span>
                         <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
                       </div>
                     ))}
@@ -275,12 +286,21 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${item.status === "success" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
                           {item.status === "success" ? "DELIVERED" : "FAILED"}
                         </span>
-                        <p className="mt-2 font-mono text-[12px] text-white">{item.event?.action || item.event?.event || "WEBHOOK_EVENT"}</p>
+                        <p className="mt-2 font-mono text-[12px] text-white">{String(item.event.action || item.event.event || "WEBHOOK_EVENT")}</p>
                         <p className="mt-1 text-[11px] text-slate-400">{new Date(item.timestamp).toLocaleString()} · {item.attempts} attempt{item.attempts === 1 ? "" : "s"}</p>
                       </div>
                       <div className="text-right text-[11px]">
                         <p className="font-semibold text-slate-200">{item.responseCode ? `HTTP ${item.responseCode}` : "Network error"}</p>
                         {item.error && <p className="mt-1 max-w-[170px] text-red-300">{item.error}</p>}
+                        {item.status === "failed" && (
+                          <button
+                            onClick={() => retryDeliveryMutation.mutate({ deliveryId: item.id })}
+                            disabled={retryDeliveryMutation.isPending}
+                            className="mt-2 rounded-lg border border-[#C9A96E]/35 bg-[#C9A96E]/10 px-2.5 py-1 text-[10px] font-bold text-[#E6CF9D] hover:bg-[#C9A96E]/20 disabled:opacity-50"
+                          >
+                            {retryDeliveryMutation.isPending ? "Retrying…" : "Retry delivery"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -7,7 +7,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createReportSchedule, deleteReportSchedule, listReportSchedules, sendReportScheduleNow, updateReportSchedule } from "./reportSchedules";
 import { listAuditLogs, recordAuditLog } from "./auditLogs";
 import { verifyDatabaseBackupStatus } from "./backupVerification";
-import { getWebhookConfig, updateWebhookConfig, testWebhookPing, getDeadLetterQueue, getWebhookDeliveryHistory } from "./webhooks";
+import { getWebhookConfig, updateWebhookConfig, testWebhookPing, getDeadLetterQueue, listWebhookDeliveryHistory, retryWebhookDelivery } from "./webhooks";
 import { TRPCError } from "@trpc/server";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -314,9 +314,13 @@ export const appRouter = router({
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       return getDeadLetterQueue();
     }),
-    getWebhookDeliveries: protectedProcedure.query(({ ctx }) => {
+    getWebhookDeliveries: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      return getWebhookDeliveryHistory();
+      return listWebhookDeliveryHistory();
+    }),
+    retryWebhookDelivery: protectedProcedure.input(z.object({ deliveryId: z.string().min(1) })).mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return retryWebhookDelivery(input.deliveryId);
     }),
   }),
 });
