@@ -65,3 +65,11 @@
 - [x] Implement CSV and PDF downloads for the dashboard chart data with accessible controls and stable filenames.
 - [x] Add focused automated coverage for CSV serialization, PDF export preparation, and the dashboard export controls.
 - [x] Visually verify the export controls in the dashboard, update delivery documentation, and publish the enhancement.
+
+- [x] Add date-range and module filters to manual dashboard CSV/PDF exports, with clear active-filter labels and stable filenames.
+- [x] Add managed recurring dashboard report schedules with recipient, frequency, format, and filter settings, delivered by email through the platform notification path.
+- [x] Add schema/API/test coverage for report schedules, verify manual and scheduled flows, update documentation, and publish the enhancement.
+
+- [x] Bridge the ERP dashboard Supabase session to the report-schedule API with validated bearer tokens and tenant-access checks.
+- [x] Add integration tests for schedule CRUD, Supabase company authorization, cron callback execution, and mocked Resend delivery.
+- [x] Save and publish a final checkpoint after the hardened scheduled-report flow passes tests, build, and visual verification.

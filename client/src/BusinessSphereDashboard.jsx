@@ -26,6 +26,7 @@ import {
 } from "recharts";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
+import { trpc } from "./lib/trpc";
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -454,6 +455,7 @@ function mapLeadRow(r) {
     industry: r.industry || "General", score: r.score ?? 50,
     lastActivity: r.last_activity_at ? new Date(r.last_activity_at).toLocaleDateString() : "—",
     expectedCloseDate: r.expected_close_date || null,
+    createdAt: r.created_at || null,
   };
 }
 
@@ -4626,17 +4628,28 @@ export function buildDashboardChartSections({
   kpis = [], revenueExpenseTrend = [], arAging = [], pipelineByStage = [], stockByCategory = [], workOrdersByStatus = [], topCustomers = [],
 } = {}) {
   return [
-    { title: "Executive KPIs", rows: kpis },
-    { title: "Revenue vs Expenses Trend", rows: revenueExpenseTrend },
-    { title: "Accounts Receivable Aging", rows: arAging },
-    { title: "CRM Pipeline by Stage", rows: pipelineByStage },
-    { title: "Inventory Value by Category", rows: stockByCategory },
-    { title: "Work Orders by Status", rows: workOrdersByStatus },
-    { title: "Top Customers by Billed Value", rows: topCustomers },
+    { title: "Executive KPIs", module: "executive", rows: kpis },
+    { title: "Revenue vs Expenses Trend", module: "finance", rows: revenueExpenseTrend },
+    { title: "Accounts Receivable Aging", module: "finance", rows: arAging },
+    { title: "CRM Pipeline by Stage", module: "crm", rows: pipelineByStage },
+    { title: "Inventory Value by Category", module: "inventory", rows: stockByCategory },
+    { title: "Work Orders by Status", module: "operations", rows: workOrdersByStatus },
+    { title: "Top Customers by Billed Value", module: "sales", rows: topCustomers },
   ].filter((section) => Array.isArray(section.rows) && section.rows.length > 0);
 }
 
-export function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", sections = [] } = {}) {
+export function filterDashboardChartSections(sections = [], enabledModules = {}) {
+  return sections.filter((section) => section.module === "executive" || enabledModules[section.module] !== false);
+}
+
+export function buildDashboardExportFilterSummary({ startDate = "", endDate = "", enabledModules = {} } = {}) {
+  const moduleLabels = { finance: "Finance", sales: "Sales", crm: "CRM", inventory: "Inventory", operations: "Operations" };
+  const activeModules = Object.entries(moduleLabels).filter(([key]) => enabledModules[key] !== false).map(([, label]) => label);
+  const dates = startDate || endDate ? `${startDate || "start"} → ${endDate || "today"}` : "All available dates";
+  return `${activeModules.length === 5 ? "All modules" : activeModules.join(", ") || "Executive KPIs only"} · ${dates}`;
+}
+
+export function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", filterSummary = "All modules · All available dates", sections = [] } = {}) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 36;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -4664,6 +4677,9 @@ export function createDashboardPdfDocument({ companyName = "BusinessSphere ERP",
   doc.setFontSize(9);
   doc.text("Dashboard chart data export", margin, 52);
   doc.text(`${compact(companyName, 42)} · ${compact(periodLabel, 28)}`, pageWidth - margin, 52, { align: "right" });
+  doc.setFontSize(7.5);
+  doc.setTextColor(226, 232, 240);
+  doc.text(`Filters: ${compact(filterSummary, 92)}`, margin, 67);
   y = 96;
 
   sections.forEach((section) => {
@@ -4729,6 +4745,48 @@ function safeExportFilePart(value) {
   return String(value || "businesssphere").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "businesssphere";
 }
 
+function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClose, onSaved }) {
+  const [name, setName] = useState("Executive dashboard report");
+  const [recipientEmail, setRecipientEmail] = useState(currentUser?.email || "");
+  const [frequency, setFrequency] = useState("weekly");
+  const [format, setFormat] = useState("pdf");
+  const schedules = trpc.reportSchedules.list.useQuery(undefined, { enabled: Boolean(company?.id) });
+  const createSchedule = trpc.reportSchedules.create.useMutation({
+    onSuccess: () => { schedules.refetch(); onSaved(); },
+  });
+  const removeSchedule = trpc.reportSchedules.remove.useMutation({
+    onSuccess: () => schedules.refetch(),
+  });
+  function submit(event) {
+    event.preventDefault();
+    createSchedule.mutate({ companyId: company.id, name, recipientEmail, frequency, format, modules, dateRange });
+  }
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true" aria-label="Schedule dashboard report">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-slate-100">
+          <div><p className="text-[15px] font-bold text-slate-900">Schedule email report</p><p className="mt-1 text-[11px] text-slate-500">Runs in the background at the selected UTC frequency and sends the saved filters as an attachment.</p></div>
+          <button onClick={onClose} aria-label="Close schedule dialog" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X size={16} /></button>
+        </div>
+        <form onSubmit={submit} className="space-y-4 p-5">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-[11px] font-semibold text-slate-600">Report name<input value={name} onChange={(event) => setName(event.target.value)} required maxLength={120} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-[12px] font-normal outline-none focus:border-[#16A34A]" /></label>
+            <label className="text-[11px] font-semibold text-slate-600">Recipient email<input type="email" value={recipientEmail} onChange={(event) => setRecipientEmail(event.target.value)} required className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-[12px] font-normal outline-none focus:border-[#16A34A]" /></label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-[11px] font-semibold text-slate-600">Frequency<select value={frequency} onChange={(event) => setFrequency(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-[12px] font-normal"><option value="daily">Daily · 09:00 UTC</option><option value="weekly">Weekly · Monday 09:00 UTC</option><option value="monthly">Monthly · 1st at 09:00 UTC</option></select></label>
+            <label className="text-[11px] font-semibold text-slate-600">Attachment format<select value={format} onChange={(event) => setFormat(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-[12px] font-normal"><option value="pdf">PDF report</option><option value="csv">CSV data</option></select></label>
+          </div>
+          <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-[11px] text-slate-600"><span className="font-semibold">Saved filters:</span> {Object.entries(modules).filter(([, enabled]) => enabled).map(([module]) => module).join(", ") || "Executive KPIs only"} · {dateRange.start || "all dates"}{dateRange.end ? ` → ${dateRange.end}` : ""}</div>
+          {createSchedule.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-red-700">{createSchedule.error.message}</p>}
+          <div className="flex items-center justify-end gap-2"><button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3.5 py-2 text-[12px] font-semibold text-slate-600 hover:bg-slate-50">Cancel</button><button type="submit" disabled={createSchedule.isPending} className="rounded-lg bg-[#16A34A] px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-[#15803D] disabled:opacity-50">{createSchedule.isPending ? "Saving…" : "Create schedule"}</button></div>
+        </form>
+        <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-4"><p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Existing schedules</p>{schedules.isLoading ? <p className="text-[11px] text-slate-400">Loading schedules…</p> : schedules.data?.length ? <div className="space-y-2">{schedules.data.map((schedule) => <div key={schedule.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 border border-slate-200"><div className="min-w-0"><p className="truncate text-[11px] font-semibold text-slate-700">{schedule.name}</p><p className="text-[10px] text-slate-400">{schedule.frequency} · {schedule.format.toUpperCase()} · {schedule.recipientEmail}</p></div><button onClick={() => removeSchedule.mutate({ id: schedule.id })} disabled={removeSchedule.isPending} aria-label={`Delete ${schedule.name}`} className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={13} /></button></div>)}</div> : <p className="text-[11px] text-slate-400">No recurring reports yet.</p>}</div>
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, onQuickAction, onNavigate }) {
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
@@ -4747,6 +4805,11 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const PERIOD_LABELS = { day: "Today", week: "Last 7 days", month: "This month", year: "This year" };
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exportBusy, setExportBusy] = useState(null);
+  const [exportFiltersOpen, setExportFiltersOpen] = useState(false);
+  const [exportStartDate, setExportStartDate] = useState("");
+  const [exportEndDate, setExportEndDate] = useState("");
+  const [exportModules, setExportModules] = useState({ finance: true, sales: true, crm: true, inventory: true, operations: true });
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
 
   const financials = useMemo(() => {
@@ -4828,27 +4891,77 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return buckets.map(({ bucket, items }) => ({ bucket, invoice_count: items.length, amount_tzs_k: Math.round(items.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0) / 1000) }));
   }, [invoices.rows]);
 
-  const dashboardExportSections = useMemo(() => buildDashboardChartSections({
-    kpis: financeKpis.map((kpi) => ({ metric: kpi.label, value: kpi.value, detail: kpi.delta })),
-    revenueExpenseTrend,
-    arAging,
-    pipelineByStage: pipelineByStage.map(({ stage, value }) => ({ stage, deal_count: value })),
-    stockByCategory: stockByCategory.map(({ category, value }) => ({ category, stock_value_tzs_k: value })),
-    workOrdersByStatus: workOrdersByStatus.map(({ status, value }) => ({ status, order_count: value })),
-    topCustomers: topCustomers.map(({ customer, value }) => ({ customer, billed_value_tzs_k: value })),
-  }), [financeKpis, revenueExpenseTrend, arAging, pipelineByStage, stockByCategory, workOrdersByStatus, topCustomers]);
+  const exportDateMatches = useCallback((row) => {
+    if (!exportStartDate && !exportEndDate) return true;
+    const value = row?.date || row?.createdAt || row?.startDate || row?.orderDate || row?.issueDate || row?.expectedCloseDate;
+    if (!value) return false;
+    const date = String(value).slice(0, 10);
+    return (!exportStartDate || date >= exportStartDate) && (!exportEndDate || date <= exportEndDate);
+  }, [exportStartDate, exportEndDate]);
+
+  const filteredExportRows = useMemo(() => ({
+    invoices: invoices.rows.filter(exportDateMatches),
+    expenses: expenses.rows.filter(exportDateMatches),
+    crm: crm.rows.filter(exportDateMatches),
+    workOrders: workOrders.rows.filter(exportDateMatches),
+    inventory: inventory.rows,
+  }), [invoices.rows, expenses.rows, crm.rows, workOrders.rows, inventory.rows, exportDateMatches]);
+
+  const filteredExportSections = useMemo(() => {
+    const exportInvoices = filteredExportRows.invoices;
+    const exportExpenses = filteredExportRows.expenses;
+    const exportRevenue = exportInvoices.reduce((sum, invoice) => sum + (invoice.status === "Paid" ? lineTotal(invoice.items || []).total : (invoice.amountPaid || 0)), 0);
+    const exportExpenseTotal = exportExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    const exportPipelineByStage = STAGES.map((stage) => ({ stage, deal_count: filteredExportRows.crm.filter((lead) => lead.stage === stage).length }));
+    const exportStockByCategory = Object.entries(filteredExportRows.inventory.reduce((map, item) => ({ ...map, [item.category]: (map[item.category] || 0) + item.qty * item.unitCost }), {})).map(([category, value]) => ({ category, stock_value_tzs_k: Math.round(value) }));
+    const exportWorkOrdersByStatus = ["Planned", "In Progress", "Completed", "Cancelled"].map((status) => ({ status, order_count: filteredExportRows.workOrders.filter((workOrder) => workOrder.status === status).length }));
+    const customerTotals = {};
+    exportInvoices.forEach((invoice) => { customerTotals[invoice.customer] = (customerTotals[invoice.customer] || 0) + lineTotal(invoice.items || []).total; });
+    const exportTopCustomers = Object.entries(customerTotals).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([customer, value]) => ({ customer, billed_value_tzs_k: value }));
+    const exportUnpaid = exportInvoices.filter((invoice) => invoice.status !== "Paid");
+    const exportAging = [
+      { bucket: "Current", items: exportUnpaid.filter((invoice) => !invoice.dueDate || new Date(invoice.dueDate) >= TODAY) },
+      { bucket: "1–30 days", items: exportUnpaid.filter((invoice) => invoice.dueDate && (TODAY - new Date(invoice.dueDate)) > 0 && (TODAY - new Date(invoice.dueDate)) <= 30 * 86400000) },
+      { bucket: "31–60 days", items: exportUnpaid.filter((invoice) => invoice.dueDate && (TODAY - new Date(invoice.dueDate)) > 30 * 86400000 && (TODAY - new Date(invoice.dueDate)) <= 60 * 86400000) },
+      { bucket: "60+ days", items: exportUnpaid.filter((invoice) => invoice.dueDate && (TODAY - new Date(invoice.dueDate)) > 60 * 86400000) },
+    ].map(({ bucket, items }) => ({ bucket, invoice_count: items.length, amount_tzs_k: Math.round(items.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0) / 1000) }));
+    const trendMonths = Array.from({ length: 6 }, (_, index) => { const date = new Date(TODAY); date.setMonth(date.getMonth() - 5 + index); return date.toISOString().slice(0, 7); });
+    const exportTrend = trendMonths.map((month) => {
+      const revenue = exportInvoices.filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+      const expenseValue = exportExpenses.filter((expense) => expense.date?.startsWith(month)).reduce((sum, expense) => sum + (expense.amount || 0), 0);
+      return { month: new Date(`${month}-01`).toLocaleDateString("en", { month: "short" }), revenue_tzs_k: Math.round(revenue / 1000), expenses_tzs_k: Math.round(expenseValue / 1000), profit_tzs_k: Math.round((revenue - expenseValue) / 1000) };
+    });
+    const sections = buildDashboardChartSections({
+      kpis: [
+        { metric: "Revenue Collected", value: `TZS ${money(Math.round(exportRevenue))}k`, detail: exportInvoices.length + " invoices" },
+        { metric: "Expenses", value: `TZS ${money(Math.round(exportExpenseTotal))}k`, detail: exportExpenses.length + " expenses" },
+        { metric: "Profit", value: `TZS ${money(Math.round(exportRevenue - exportExpenseTotal))}k`, detail: "Collected − Expenses" },
+        { metric: "Pipeline", value: `TZS ${money(Math.round(filteredExportRows.crm.filter((lead) => !["Won", "Lost"].includes(lead.stage)).reduce((sum, lead) => sum + (lead.value || 0), 0) / 1000))}k`, detail: filteredExportRows.crm.length + " leads" },
+      ],
+      revenueExpenseTrend: exportTrend,
+      arAging: exportAging,
+      pipelineByStage: exportPipelineByStage,
+      stockByCategory: exportStockByCategory,
+      workOrdersByStatus: exportWorkOrdersByStatus,
+      topCustomers: exportTopCustomers,
+    });
+    return filterDashboardChartSections(sections, exportModules);
+  }, [filteredExportRows, exportModules, exportStartDate, exportEndDate, revenueExpenseTrend]);
+
+  const exportFilterSummary = useMemo(() => buildDashboardExportFilterSummary({ startDate: exportStartDate, endDate: exportEndDate, enabledModules: exportModules }), [exportStartDate, exportEndDate, exportModules]);
 
   function exportDashboard(format) {
     if (exportBusy) return;
     setExportBusy(format);
     try {
-      const base = `${safeExportFilePart(company.name)}-dashboard-${TODAY.toISOString().slice(0, 10)}`;
+      const filterSuffix = exportStartDate || exportEndDate ? `-${exportStartDate || "start"}-${exportEndDate || "today"}` : "-all-dates";
+      const base = `${safeExportFilePart(company.name)}-dashboard${filterSuffix}-${TODAY.toISOString().slice(0, 10)}`;
       if (format === "csv") {
-        downloadDashboardCsv(dashboardExportSections, `${base}.csv`);
-        notify("Dashboard chart data downloaded as CSV.");
+        downloadDashboardCsv(filteredExportSections, `${base}.csv`);
+        notify("Filtered dashboard chart data downloaded as CSV.");
       } else {
-        createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], sections: dashboardExportSections }).save(`${base}.pdf`);
-        notify("Dashboard chart data downloaded as PDF.");
+        createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], filterSummary: exportFilterSummary, sections: filteredExportSections }).save(`${base}.pdf`);
+        notify("Filtered dashboard chart data downloaded as PDF.");
       }
     } catch (_e) {
       notify("Dashboard export failed — please try again.", "error");
@@ -5051,6 +5164,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   return (
     <div className="space-y-5">
+      {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
 
       {/* ══════════════════ COMMAND STRIP ══════════════════ */}
       <div className="rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 55%,#16A34A 130%)"}}>
@@ -5083,14 +5197,42 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                   <Download size={13} /> Export Charts <ChevronDown size={13} className={`transition-transform ${exportMenuOpen ? "rotate-180" : ""}`} />
                 </button>
                 {exportMenuOpen && (
-                  <div role="menu" aria-label="Export dashboard chart data" className="absolute right-0 top-full mt-2 z-20 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                  <div role="menu" aria-label="Export dashboard chart data" className="absolute right-0 top-full mt-2 z-20 w-72 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                    <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{exportFilterSummary}</div>
+                    <button role="menuitem" onClick={() => setExportFiltersOpen((open) => !open)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50">
+                      <Sliders size={15} className="text-[#7C3AED]" />
+                      <span><span className="block">Filter export</span><span className="block text-[10px] font-normal text-slate-400">Choose date range and modules</span></span>
+                      <ChevronDown size={13} className={`ml-auto transition-transform ${exportFiltersOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    {exportFiltersOpen && (
+                      <div role="group" aria-label="Dashboard export filters" className="mx-1 mb-1 rounded-lg bg-slate-50 p-2.5">
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <label className="text-[10px] font-semibold text-slate-500">From<input aria-label="Export start date" type="date" value={exportStartDate} onChange={(event) => setExportStartDate(event.target.value)} className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-700" /></label>
+                          <label className="text-[10px] font-semibold text-slate-500">To<input aria-label="Export end date" type="date" value={exportEndDate} onChange={(event) => setExportEndDate(event.target.value)} className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-700" /></label>
+                        </div>
+                        <p className="mb-1.5 text-[10px] font-semibold text-slate-500">Include modules</p>
+                        <div className="grid grid-cols-2 gap-1">
+                          {["finance", "sales", "crm", "inventory", "operations"].map((module) => (
+                            <label key={module} className="flex items-center gap-1.5 rounded px-1 py-1 text-[11px] text-slate-600 hover:bg-white">
+                              <input type="checkbox" checked={exportModules[module]} onChange={(event) => setExportModules((current) => ({ ...current, [module]: event.target.checked }))} />
+                              {module[0].toUpperCase() + module.slice(1)}
+                            </label>
+                          ))}
+                        </div>
+                        <button onClick={() => { setExportStartDate(""); setExportEndDate(""); setExportModules({ finance: true, sales: true, crm: true, inventory: true, operations: true }); }} className="mt-2 text-[10px] font-semibold text-[#7C3AED] hover:underline">Clear filters</button>
+                      </div>
+                    )}
                     <button role="menuitem" onClick={() => exportDashboard("csv")} disabled={Boolean(exportBusy)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
                       <FileSpreadsheet size={15} className="text-[#16A34A]" />
-                      <span><span className="block">Download CSV</span><span className="block text-[10px] font-normal text-slate-400">All chart sections and KPIs</span></span>
+                      <span><span className="block">Download CSV</span><span className="block text-[10px] font-normal text-slate-400">Filtered chart sections and KPIs</span></span>
                     </button>
                     <button role="menuitem" onClick={() => exportDashboard("pdf")} disabled={Boolean(exportBusy)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
                       <FileText size={15} className="text-[#2563EB]" />
-                      <span><span className="block">Download PDF</span><span className="block text-[10px] font-normal text-slate-400">Formatted chart-data report</span></span>
+                      <span><span className="block">Download PDF</span><span className="block text-[10px] font-normal text-slate-400">Filtered chart-data report</span></span>
+                    </button>
+                    <button role="menuitem" onClick={() => company.id ? setScheduleDialogOpen(true) : notify("Sign in to a live company before scheduling reports.", "error")} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50">
+                      <Mail size={15} className="text-[#EA580C]" />
+                      <span><span className="block">Schedule email report</span><span className="block text-[10px] font-normal text-slate-400">Runs automatically in the background</span></span>
                     </button>
                   </div>
                 )}

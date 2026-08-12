@@ -60,6 +60,12 @@ const trpcClient = trpc.createClient({
         } catch {
           // sessionStorage unavailable
         }
+        try {
+          const supabaseToken = localStorage.getItem("bs_access_token");
+          if (supabaseToken) return { Authorization: `Bearer ${supabaseToken}` };
+        } catch {
+          // localStorage unavailable
+        }
         return {};
       },
       fetch(input, init) {

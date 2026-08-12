@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, createDashboardPdfDocument, mapContactRow, mapInventoryRow, resolveDailyBriefingFetchState, runCompanyTableQuery, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, resolveDailyBriefingFetchState, runCompanyTableQuery, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -168,6 +168,17 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(csv.endsWith("\r\n")).toBe(true);
   });
 
+  it("filters chart sections by module and exposes the active date range summary", () => {
+    const sections = buildDashboardChartSections({
+      kpis: [{ metric: "Pipeline", value: "TZS 125,700k", detail: "6 open deals" }],
+      pipelineByStage: [{ stage: "Proposal", deal_count: 2 }],
+      stockByCategory: [{ category: "Storage", stock_value_tzs_k: 4800 }],
+    });
+    const filtered = filterDashboardChartSections(sections, { finance: true, sales: true, crm: false, inventory: true, operations: true });
+    expect(filtered.map((section) => section.title)).toEqual(["Executive KPIs", "Inventory Value by Category"]);
+    expect(buildDashboardExportFilterSummary({ startDate: "2026-08-01", endDate: "2026-08-12", enabledModules: { finance: true, sales: true, crm: false, inventory: true, operations: true } })).toContain("2026-08-01 → 2026-08-12");
+  });
+
   it("creates a non-empty PDF document for the chart export report", () => {
     const pdf = createDashboardPdfDocument({
       companyName: "Kilimanjaro Trading Co.",
@@ -178,10 +189,14 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(pdf.output("arraybuffer").byteLength).toBeGreaterThan(500);
   });
 
-  it("exposes dashboard CSV and PDF export controls in the command strip", () => {
+  it("exposes filtered CSV/PDF and recurring email-report controls in the command strip", () => {
     expect(dashboardSource).toContain('aria-label="Export dashboard chart data"');
     expect(dashboardSource).toContain('onClick={() => exportDashboard("csv")}');
     expect(dashboardSource).toContain('onClick={() => exportDashboard("pdf")}');
+    expect(dashboardSource).toContain("aria-label=\"Export start date\"");
+    expect(dashboardSource).toContain("Include modules");
+    expect(dashboardSource).toContain("Schedule email report");
+    expect(dashboardSource).toContain("trpc.reportSchedules.create.useMutation");
     expect(dashboardSource).toContain("createDashboardPdfDocument");
     expect(dashboardSource).toContain("serializeDashboardSectionsToCsv");
   });
