@@ -38,6 +38,14 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   app.post("/api/scheduled/dashboardReport", scheduledDashboardReportHandler);
+  app.post("/api/webhooks/backup-complete", async (req, res) => {
+    try {
+      const { handleBackupCompletionWebhook } = await import("../backupWebhook");
+      await handleBackupCompletionWebhook(req, res);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
   // tRPC API
   app.use(
     "/api/trpc",

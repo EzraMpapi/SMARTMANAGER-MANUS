@@ -226,3 +226,8 @@
 - [x] Verify Supabase table availability, RLS policies, and server mappers across ERP modules.
 - [x] Generate SUPABASE_PERSISTENCE_GUIDE.md detailing table schemas, RLS policies, parameterized query builders, and React integration examples.
 - [x] Run full test suite, verify production build, document feature contract, and publish final checkpoint.
+
+- [x] Verify Supabase schema migration script and execution workflow.
+- [x] Implement Supabase Realtime subscription hook with graceful fallback.
+- [x] Implement backup-completion webhook notification handler and documentation.
+- [x] Run full test suite, verify production build, document implementation contract, and publish final checkpoint.
