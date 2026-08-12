@@ -42,3 +42,11 @@
 - [x] Add executable coverage for the Daily Briefing live-loading and error gating logic.
 - [x] Verify the Daily Briefing loading overlay resolves within one browser session without a navigation-based state switch.
 - [x] Extract the Daily Briefing fetch-state gate to a small local helper and test the real helper rather than a duplicated expression.
+
+- [ ] Audit every ERP table request against the connected Supabase schema and current API/Postgres logs.
+- [ ] Repair shared Supabase request fallbacks for unsupported relationships and missing order columns.
+- [ ] Add bounded retry handling for transient Supabase failures and preserve loaded rows during refresh.
+- [ ] Treat absent tables as honest unavailable/empty states rather than generic connection failures.
+- [ ] Add executable regression coverage for all-table fallback, retry, and missing-table behavior.
+- [ ] Validate representative real-data modules and flicker-free navigation, then publish the repair.
+- [ ] Deliver a table-audit report separating connection defects from missing operational data or user-managed schema prerequisites.

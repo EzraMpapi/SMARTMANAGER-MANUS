@@ -1,6 +1,17 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
-import { resolveDailyBriefingFetchState } from "../client/src/BusinessSphereDashboard.jsx";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { resolveDailyBriefingFetchState, runCompanyTableQuery } from "../client/src/BusinessSphereDashboard.jsx";
+
+const jsonResponse = (body: unknown, status = 200) => ({
+  ok: status >= 200 && status < 300,
+  status,
+  json: async () => body,
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
 const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
@@ -74,6 +85,63 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("imports the project quick-action icon before rendering dashboard shortcuts", () => {
     expect(dashboardSource).toContain("FolderKanban");
     expect(dashboardSource).toContain("icon:FolderKanban");
+  });
+
+  it("executes a compatible parent-table fallback when nested relationships are unavailable", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ code: "PGRST200", message: "Could not find a relationship between documents and profiles" }, 400))
+      .mockResolvedValueOnce(jsonResponse([{ id: "doc-1", name: "Quarterly report" }]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCompanyTableQuery("documents", {
+      select: "*,profiles(full_name)",
+      order: { col: "created_at", ascending: false },
+    });
+
+    expect(result.rows).toEqual([{ id: "doc-1", name: "Quarterly report" }]);
+    expect(result.usedFallback).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1][0])).toContain("select=*");
+    expect(String(fetchMock.mock.calls[1][0])).not.toContain("profiles");
+  });
+
+  it("drops an unsupported order column after the parent-table fallback fails", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ code: "42703", message: "column sales_subscriptions.next_billing_date does not exist" }, 400))
+      .mockResolvedValueOnce(jsonResponse([{ id: "sub-1", name: "Starter" }]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCompanyTableQuery("sales_subscriptions", {
+      order: { col: "next_billing_date", ascending: true },
+    });
+
+    expect(result.rows).toEqual([{ id: "sub-1", name: "Starter" }]);
+    expect(result.usedFallback).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1][0])).not.toContain("next_billing_date");
+  });
+
+  it("retries a transient network failure once before returning live rows", async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(jsonResponse([{ id: "lead-1" }]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCompanyTableQuery("crm_leads");
+
+    expect(result.rows).toEqual([{ id: "lead-1" }]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns an honest unavailable state for a requested table absent from the connected schema", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ code: "PGRST205", message: "Could not find the table audit_log" }, 404));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCompanyTableQuery("audit_log");
+
+    expect(result.rows).toEqual([]);
+    expect(result.unavailable).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("exposes loading and retryable error handling for Daily Briefing data sources", () => {

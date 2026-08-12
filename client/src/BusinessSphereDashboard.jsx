@@ -203,9 +203,17 @@ function sb(table) {
         },
         body,
       });
-      if (!res.ok) throw new Error(`Supabase ${method} ${table} failed: ${res.status}`);
-      const data = await res.json();
-      return single ? data[0] : data;
+      const raw = await res.json().catch(() => null);
+      if (!res.ok) {
+        const message = raw?.message || raw?.error_description || raw?.hint || raw?.details || `Supabase ${method} ${table} failed: ${res.status}`;
+        const error = new Error(message);
+        error.status = res.status;
+        error.code = raw?.code;
+        error.details = raw?.details;
+        throw error;
+      }
+      const data = raw;
+      return single ? (Array.isArray(data) ? data[0] : data) : data;
     },
     // allow `await sb(table).select().eq(...)` directly, like supabase-js
     then(resolve, reject) {
@@ -288,50 +296,125 @@ function useSortableTable(rows = []) {
   return { sorted, sortCol, sortDir, doSort, filterQ, setFilterQ, SortHeader };
 }
 
+const TRANSIENT_SUPABASE_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const MISSING_TABLE_CODES = new Set(["PGRST205", "42P01"]);
+const SCHEMA_COMPATIBILITY_CODES = new Set(["PGRST200", "PGRST201", "PGRST204", "42703", "42883"]);
+
+function getSupabaseErrorText(error) {
+  return String(error?.message || error || "").toLowerCase();
+}
+
+function isMissingTableError(error) {
+  const text = getSupabaseErrorText(error);
+  return MISSING_TABLE_CODES.has(error?.code) || error?.status === 404 || /relation .* does not exist|could not find the table|table .* does not exist/.test(text);
+}
+
+function isSchemaCompatibilityError(error) {
+  const text = getSupabaseErrorText(error);
+  return SCHEMA_COMPATIBILITY_CODES.has(error?.code) || error?.status === 400 || /column .* does not exist|relationship .* does not exist|could not find a relationship|failed to parse|embedded resource/.test(text);
+}
+
+function isTransientSupabaseError(error) {
+  const text = getSupabaseErrorText(error);
+  return TRANSIENT_SUPABASE_STATUSES.has(error?.status) || error?.name === "TypeError" || /failed to fetch|network|timeout|load failed|fetch failed/.test(text);
+}
+
+function waitForSupabaseRetry(ms) {
+  return new Promise((resolve) => {
+    const timer = typeof window !== "undefined" ? window.setTimeout : setTimeout;
+    timer(resolve, ms);
+  });
+}
+
+export async function runCompanyTableQuery(table, { select = "*", order } = {}) {
+  const queryVariants = [];
+  const addVariant = (variantSelect, variantOrder) => {
+    const signature = `${variantSelect}|${variantOrder?.col || ""}|${variantOrder?.ascending !== false}`;
+    if (!queryVariants.some((variant) => variant.signature === signature)) {
+      queryVariants.push({ signature, select: variantSelect, order: variantOrder });
+    }
+  };
+
+  addVariant(select, order);
+  if (select !== "*" || order) addVariant("*", order);
+  if (select !== "*" || order) addVariant("*", undefined);
+
+  let lastError = null;
+  for (const variant of queryVariants) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        let query = sb(table).select(variant.select);
+        if (variant.order) query = query.order(variant.order.col, { ascending: variant.order.ascending });
+        const data = await query.run();
+        return { rows: Array.isArray(data) ? data : (data == null ? [] : [data]), usedFallback: variant.signature !== queryVariants[0].signature, unavailable: false };
+      } catch (error) {
+        lastError = error;
+        if (isMissingTableError(error)) return { rows: [], usedFallback: false, unavailable: true, error: null };
+        if (isTransientSupabaseError(error) && attempt === 0) {
+          await waitForSupabaseRetry(180);
+          continue;
+        }
+        if (isSchemaCompatibilityError(error)) break;
+        throw error;
+      }
+    }
+  }
+
+  throw lastError || new Error(`Supabase could not load ${table}`);
+}
+
 function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
-  // Demo mode serves the seed instantly. Live mode starts empty and loading —
-  // flashing demo rows and then swapping them for real data reads as a glitch.
-  // isLive folds in DEMO_OVERRIDE too — a person previewing the demo despite
-  // real credentials being configured should see the same instant, honest
-  // seed data as someone with no Supabase project connected at all, not a
-  // broken screen quietly trying to fetch real data with no real session.
+  // Demo mode serves seed rows instantly. Live mode starts empty and, once a
+  // module has rows, keeps them visible during refreshes so navigation does
+  // not blank or flicker the page.
   const isLive = IS_CONFIGURED && !DEMO_OVERRIDE;
-  const [rows, setRows] = useState(isLive ? [] : seed);
+  const [rowsState, setRowsState] = useState(isLive ? [] : seed);
+  const rowsRef = useRef(isLive ? [] : seed);
   const [loading, setLoading] = useState(isLive);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [unavailable, setUnavailable] = useState(false);
+  const selectRef = useRef(select);
+  const orderRef = useRef(order);
+  const mapRowRef = useRef(mapRow);
+  selectRef.current = select;
+  orderRef.current = order;
+  mapRowRef.current = mapRow;
+
+  const setRows = useCallback((nextRows) => {
+    setRowsState((previous) => {
+      const next = typeof nextRows === "function" ? nextRows(previous) : nextRows;
+      const safeRows = Array.isArray(next) ? next : [];
+      rowsRef.current = safeRows;
+      return safeRows;
+    });
+  }, []);
 
   const reload = useCallback(async () => {
     if (!isLive) return;
-    setLoading(true);
+    const hasRows = rowsRef.current.length > 0;
+    setLoading(!hasRows);
+    setRefreshing(hasRows);
     setError(null);
+    setUnavailable(false);
     try {
-      // Company scoping is enforced entirely by RLS's current_company_id()
-      // (reading the real authenticated session — see section 32 of the
-      // handover doc), not filtered again here. A hardcoded ACTIVE_COMPANY_ID
-      // constant could never correctly scope queries once real multi-user
-      // login exists — different signed-in users belong to different
-      // companies, so the one thing that must never happen is the client
-      // supplying its own company_id filter; RLS is the single source of
-      // truth for which rows a given session can see.
-      let q = sb(table).select(select);
-      if (order) q = q.order(order.col, { ascending: order.ascending });
-      const data = await q.run();
-      // mapRow translates the database's snake_case/UUID-keyed shape into
-      // the UI's camelCase shape (see mapRow functions below). Every mapped
-      // row keeps its real UUID on `dbId` so mutation handlers can target
-      // the correct database row even though the UI displays a friendlier
-      // id. Tables without a mapper pass through unchanged (demo-only tables).
-      setRows(mapRow ? data.map(mapRow) : data);
+      const result = await runCompanyTableQuery(table, { select: selectRef.current, order: orderRef.current });
+      const mapper = mapRowRef.current;
+      setRows(mapper ? result.rows.map(mapper) : result.rows);
+      setUnavailable(result.unavailable);
     } catch (e) {
-      setError(e.message);
+      // Preserve the last successful rows during refresh failures. Only a
+      // first-load failure is surfaced as a module error.
+      if (!hasRows) setError(e.message || `Could not load ${table}`);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [table, select, order, mapRow]);
+  }, [isLive, table]);
 
   useEffect(() => { reload(); }, [reload]);
 
-  return { rows, setRows, loading, error, reload };
+  return { rows: rowsState, setRows, loading, refreshing, error, unavailable, reload };
 }
 
 /* =============================================================================
