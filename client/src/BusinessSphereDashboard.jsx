@@ -4806,6 +4806,7 @@ function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClos
 }
 
 function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, onQuickAction, onNavigate }) {
+  const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
   // Time period filter — Day/Week/Month/Year. The filter cuts both invoice

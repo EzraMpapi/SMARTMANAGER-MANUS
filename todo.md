@@ -106,3 +106,8 @@
 - [x] Ensure robust fallback and tenant-scoping normalization across live inventory, invoice, expense, and CRM table loading helpers.
 - [x] Add regression tests confirming non-empty rows for Inventory, Finance, and CRM modules.
 - [x] Run test suite, verify build, and publish checkpoint with restored live data modules.
+
+- [x] Locate the undefined `preferences` reference in BusinessSphereDashboard.jsx.
+- [x] Fix the scope or fallback for `preferences` so executive command strip currency toggle renders safely.
+- [x] Run test suite and production build to verify the fix.
+- [x] Save and publish checkpoint with the error resolved.
