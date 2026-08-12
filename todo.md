@@ -179,5 +179,5 @@
 - [x] Implement click-to-filter interaction on departmental budget comparison chart bars in `BudgetsView` to filter transaction ledger / expenses by department.
 - [x] Add reset filter control, regression test coverage, verify build and test suite, and publish checkpoint.
 
-- [ ] Implement department summary card above filtered ledger in `BudgetsView` showing transaction count and total spending sum.
-- [ ] Add regression test coverage, verify test suite and production build, and publish checkpoint.
+- [x] Implement department summary card above filtered ledger in `BudgetsView` showing transaction count and total spending sum.
+- [x] Add regression test coverage, verify test suite and production build, and publish checkpoint.
