@@ -28,6 +28,7 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
           currency: data.preferences.currency,
           timezone: preferences.timezone,
           fxRateOverride: preferences.fxRateOverride,
+          departmentBudgets: preferences.departmentBudgets,
         },
         explanation: data.explanation,
       });

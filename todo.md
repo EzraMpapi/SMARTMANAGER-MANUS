@@ -151,3 +151,7 @@
 - [x] Add department and cost center fields to expense row mapper (`mapExpenseRow`), mutation helper, and expense form modal.
 - [x] Add departmental breakdown summary in the Finance module and export columns.
 - [x] Add automated regression tests, run test suite and production build, and publish checkpoint.
+
+- [x] Implement departmental budget threshold state in `DashboardPreferencesContext.tsx`.
+- [x] Add departmental spending comparison and visual alert cards in Finance module view.
+- [x] Add regression tests, verify production build, and publish checkpoint.

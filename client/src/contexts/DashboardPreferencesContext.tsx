@@ -9,6 +9,7 @@ interface DashboardPreferences {
   currency: "TZS" | "USD";
   timezone: string;
   fxRateOverride: number;
+  departmentBudgets: Record<string, number>;
 }
 
 interface DashboardPreferencesContextType {
@@ -19,6 +20,14 @@ interface DashboardPreferencesContextType {
   formatLocalDate: (dateStringOrTimestamp: string | number | Date) => string;
 }
 
+const defaultDepartmentBudgets: Record<string, number> = {
+  Operations: 25000,
+  Sales: 15000,
+  Finance: 10000,
+  Warehouse: 20000,
+  Admin: 30000,
+};
+
 const defaultPreferences: DashboardPreferences = {
   compactDensity: false,
   showKpiBanner: true,
@@ -28,6 +37,7 @@ const defaultPreferences: DashboardPreferences = {
   currency: "TZS",
   timezone: "Africa/Dar_es_Salaam",
   fxRateOverride: 2600,
+  departmentBudgets: defaultDepartmentBudgets,
 };
 
 const DashboardPreferencesContext = createContext<DashboardPreferencesContextType | undefined>(undefined);
@@ -37,7 +47,14 @@ export function DashboardPreferencesProvider({ children }: { children: React.Rea
     if (typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("smart_manager_dashboard_prefs");
-        if (stored) return { ...defaultPreferences, ...JSON.parse(stored) };
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return {
+            ...defaultPreferences,
+            ...parsed,
+            departmentBudgets: { ...defaultDepartmentBudgets, ...(parsed.departmentBudgets || {}) },
+          };
+        }
       } catch (_e) {
         // fallback
       }
