@@ -49,6 +49,19 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
     },
   });
 
+  const testPingMutation = trpc.admin.testWebhookPing.useMutation({
+    onSuccess: (res) => {
+      if (res.ok) {
+        toast.success(`Webhook test ping sent successfully (HTTP ${res.status})`);
+      } else {
+        toast.warning(`Webhook endpoint responded with HTTP ${res.status}`);
+      }
+    },
+    onError: (err) => {
+      toast.error(err.message || "Webhook test ping failed");
+    },
+  });
+
   const handleExportCsv = () => {
     if (!logs || logs.length === 0) {
       toast.error("No logs available to export");
@@ -172,19 +185,29 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
                 <label htmlFor="wbEnabled" className="text-white font-semibold">Enable automated webhook dispatch for compliance events</label>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+            <div className="flex items-center justify-between pt-4 border-t border-white/10">
               <button
-                onClick={() => setShowWebhookModal(false)}
-                className="rounded-xl px-4 py-2.5 bg-white/5 text-slate-300 hover:bg-white/10 font-semibold"
+                type="button"
+                onClick={() => testPingMutation.mutate()}
+                disabled={testPingMutation.isPending || !webhookUrl}
+                className="rounded-xl px-4 py-2.5 bg-white/10 text-[#C9A96E] hover:bg-white/20 font-semibold disabled:opacity-50"
               >
-                Cancel
+                {testPingMutation.isPending ? "Sending Test..." : "Send Test Ping"}
               </button>
-              <button
-                onClick={() => updateWebhookMutation.mutate({ url: webhookUrl, enabled: webhookEnabled, secret: webhookSecret })}
-                className="rounded-xl px-5 py-2.5 bg-[#C9A96E] text-[#0B1120] font-bold hover:bg-[#D4B87F] transition-colors"
-              >
-                Save Webhook Settings
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowWebhookModal(false)}
+                  className="rounded-xl px-4 py-2.5 bg-white/5 text-slate-300 hover:bg-white/10 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => updateWebhookMutation.mutate({ url: webhookUrl, enabled: webhookEnabled, secret: webhookSecret })}
+                  className="rounded-xl px-5 py-2.5 bg-[#C9A96E] text-[#0B1120] font-bold hover:bg-[#D4B87F] transition-colors"
+                >
+                  Save Webhook Settings
+                </button>
+              </div>
             </div>
           </div>
         </div>

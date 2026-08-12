@@ -7,7 +7,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createReportSchedule, deleteReportSchedule, listReportSchedules, sendReportScheduleNow, updateReportSchedule } from "./reportSchedules";
 import { listAuditLogs, recordAuditLog } from "./auditLogs";
 import { verifyDatabaseBackupStatus } from "./backupVerification";
-import { getWebhookConfig, updateWebhookConfig } from "./webhooks";
+import { getWebhookConfig, updateWebhookConfig, testWebhookPing } from "./webhooks";
 import { TRPCError } from "@trpc/server";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -305,6 +305,10 @@ export const appRouter = router({
     updateWebhook: protectedProcedure.input(z.object({ url: z.string(), enabled: z.boolean(), secret: z.string().optional() })).mutation(({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       return updateWebhookConfig(input);
+    }),
+    testWebhookPing: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return testWebhookPing();
     }),
   }),
 });

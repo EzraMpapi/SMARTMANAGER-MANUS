@@ -19,7 +19,7 @@ export function updateWebhookConfig(config: { url: string; enabled: boolean; sec
   return globalWebhookConfig;
 }
 
-export async function dispatchWebhookEvent(event: { action: string; module: string; details?: string; actor: string }) {
+export async function dispatchWebhookEvent(event: { action: string; module: string; details?: string; actor: string; severity?: string }) {
   if (!globalWebhookConfig.enabled || !globalWebhookConfig.url) return;
   try {
     await fetch(globalWebhookConfig.url, {
@@ -31,10 +31,31 @@ export async function dispatchWebhookEvent(event: { action: string; module: stri
       body: JSON.stringify({
         timestamp: new Date().toISOString(),
         source: "BusinessSphere ERP",
+        severity: event.severity || "INFO",
         ...event,
       }),
     });
   } catch (err) {
     console.error("Failed to dispatch webhook event:", err);
   }
+}
+
+export async function testWebhookPing() {
+  if (!globalWebhookConfig.url) {
+    throw new Error("No webhook URL configured.");
+  }
+  const response = await fetch(globalWebhookConfig.url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(globalWebhookConfig.secret ? { "X-Webhook-Secret": globalWebhookConfig.secret } : {}),
+    },
+    body: JSON.stringify({
+      timestamp: new Date().toISOString(),
+      source: "BusinessSphere ERP",
+      event: "PING_TEST",
+      message: "Test webhook connectivity successfully dispatched.",
+    }),
+  });
+  return { ok: response.ok, status: response.status };
 }

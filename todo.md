@@ -211,3 +211,8 @@
 - [x] Implement secure webhook configuration panel and dispatcher for audit events.
 - [x] Implement schedule controls for automated compliance digests in the management experience.
 - [x] Run full test suite, verify production build, document feature contract, and publish final checkpoint.
+
+- [x] Implement webhook test ping endpoint and UI action.
+- [x] Implement compliance digest schedule management UI and tRPC procedure.
+- [x] Implement severity badges and severity filtering across audit records.
+- [x] Run full test suite, verify production build, document feature contract, and publish final checkpoint.
