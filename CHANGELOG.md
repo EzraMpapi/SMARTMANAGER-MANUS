@@ -8,12 +8,12 @@ The uploaded single-file BusinessSphere dashboard has been retained as `client/s
 
 | File | Change | Purpose |
 |---|---|---|
-| `client/src/BusinessSphereDashboard.jsx` | Added the preserved dashboard as a single source file; made only targeted build/runtime corrections; replaced hardcoded Supabase values with Vite environment variables; surfaced Google, Microsoft/Azure, and Apple OAuth controls; adapted module-setting reads and writes to the connected generic `company_modules` schema; normalized the Daily Briefing employee source; imported the existing project shortcut icon; and added a directly tested Daily Briefing fetch-state helper with live-data loading, retry, error, and demo-fallback handling. | Enables the supplied dashboard to parse, build, render, and use the connected project configuration. |
+| `client/src/BusinessSphereDashboard.jsx` | Added the preserved dashboard as a single source file; made only targeted build/runtime corrections; replaced hardcoded Supabase values with Vite environment variables; surfaced Google, Microsoft/Azure, and Apple OAuth controls; adapted module-setting reads and writes to the connected generic `company_modules` schema; normalized the Daily Briefing employee source; imported the existing project shortcut icon; added a directly tested Daily Briefing fetch-state helper with live-data loading, retry, error, and demo-fallback handling; and adapted CRM/inventory mappers to the deployed generic schema aliases. | Enables the supplied dashboard to parse, build, render, and use the connected project configuration and live sample rows. |
 | `client/src/App.tsx` | Registered the dashboard at `/app`. | Keeps the public home page and the ERP application as separate entry routes. |
 | `client/src/pages/Home.tsx` | Replaced the template placeholder with the BusinessSphere marketing landing page and a factual product-proof section. | Provides the hero, capability highlights, verifiable implementation signals, and clear app-launch calls to action. |
 | `package.json` and `pnpm-lock.yaml` | Added `xlsx`. | Resolves the existing spreadsheet export import used by the uploaded dashboard. |
 | `server/supabase.config.test.ts` | Added configured Supabase REST/auth setting validation. | Verifies the managed project URL and publishable browser key are accepted. |
-| `server/dashboard.integration.test.ts` | Added route, managed-config, authentication-routing, generic module-schema, executable baseline-entitlement mapping, Daily Briefing data-shape and direct fetch-state-helper, plus project-icon import tests. | Confirms the launch path, lack of the originally hardcoded Supabase URL, compatible module-setting persistence path, expected treatment of the approved generic baseline rows, demo-entry boundaries, and Daily Briefing loading/error behavior. |
+| `server/dashboard.integration.test.ts` | Added route, managed-config, authentication-routing, generic module-schema, executable baseline-entitlement mapping, CRM/inventory alias-mapper, Daily Briefing data-shape and direct fetch-state-helper, plus project-icon import tests. | Confirms the launch path, lack of the originally hardcoded Supabase URL, compatible module-setting persistence path, expected treatment of the approved generic baseline rows, live chart-row mapping, demo-entry boundaries, and Daily Briefing loading/error behavior. |
 | `todo.md` | Recorded implementation, validation, and remaining configuration work. | Keeps project work auditable. |
 | `CHANGELOG.md` | Created this delivery record. | Documents scope, fixes, validation, and remaining requirements. |
 
@@ -55,7 +55,7 @@ The dashboard’s hand-rolled Supabase client now receives its URL and browser-s
 
 The existing dashboard contains native email/password sign-up, sign-in, sign-out, session-token storage, reload-session checking, and OAuth redirect construction for Google, Microsoft/Azure, and Apple. The login screen now exposes provider-specific controls that call the existing helper with `google`, `azure`, and `apple`; the helper builds the Supabase `/auth/v1/authorize` URL. The project’s Auth settings expose Google, Azure, and Apple provider fields, but the management connection does not expose a reliable enabled/disabled-provider result. Consequently, the controls are correctly wired; actual provider login completion still requires the corresponding OAuth credentials, allowed redirect URLs, and providers to be enabled in the Supabase Dashboard.
 
-> **Important:** Live table reads and writes depend on the matching table, column, relationship, and Row Level Security policy being present in the connected Supabase project. The dashboard is configured to use live requests; exhaustive validation of all approximately 174 table hooks would require a provisioned schema and authenticated tenant data for every module. No sample operational records were created or altered.
+> **Important:** Live table reads and writes depend on the matching table, column, relationship, and Row Level Security policy being present in the connected Supabase project. The dashboard is configured to use live requests; exhaustive validation of all approximately 174 table hooks would require a provisioned schema and authenticated tenant data for every module. At the initial baseline checkpoint, no sample operational records were created or altered. The later, explicitly requested sample-data population is documented in the section below and is tagged for safe identification.
 
 ## Baseline live tenant configuration
 
@@ -74,7 +74,7 @@ The Daily Briefing now gathers the existing shared-table `loading`, `error`, and
 | Check | Result |
 |---|---|
 | Managed Supabase REST/Auth configuration test | Passed with the configured browser-safe project credential. |
-| Full automated test suite | Passed: 3 test files and 10 tests. |
+| Full automated test suite | Passed: 3 test files and 15 tests. |
 | Production bundle | Passed with `pnpm build` after the Daily Briefing data-state enhancement. |
 | Public marketing page (`/`) | Visually verified at desktop size; hero, capability navigation, and launch calls to action render. |
 | ERP entry route (`/app`) | Visually verified at desktop size; the preserved Smart Manager authentication screen renders with sign-in, account creation, demo, Google, Microsoft, and Apple controls. |
@@ -94,3 +94,18 @@ The deployed production landing page is reachable at `https://bserp-dashbo-xgm6f
 ## Supabase reconnect-success notification
 
 The shared `runCompanyTableQuery` retry path now records when a request recovers after a transient network failure and emits the existing visual toast bus event: **“Connection restored — live data is up to date.”** The toast uses the dashboard’s existing success styling and auto-dismiss behavior, so it informs the user without blocking module navigation or changing the preserved dashboard architecture. A three-second cooldown prevents a burst of simultaneous table retries from producing a notification storm. Focused integration coverage confirms the retry succeeds, reports `recoveredAfterRetry`, and publishes the expected success toast event.
+
+
+## Live CRM and inventory sample data
+
+At the user's request, the connected **Kilimanjaro Trading Co.** tenant (`3022205f-89d9-4790-affa-cde3a304ee27`) now contains clearly labeled, non-personal sample records for chart validation. Every inserted row is scoped to that tenant, uses synthetic names and `example.test` addresses, and carries `data.sample_batch = "erp-chart-sample-2026-08"` plus `data.is_sample = true` so the batch can be identified and removed deliberately later without touching unrelated tenant data.
+
+| Table | Inserted records | Purpose |
+|---|---:|---|
+| `crm_contacts` | 5 | Populates contact coverage for the CRM workspace. |
+| `crm_leads` | 6 | Populates lead stages, scores, owners, dates, and pipeline-value charts. |
+| `inventory_items` | 8 | Populates SKU, category, quantity, reorder, unit-cost, price, and location charts. |
+
+The live verification query returned **6 CRM leads** with a combined pipeline value of **TZS 125,700,000**, **5 CRM contacts**, and **8 inventory items** totaling **1,000 units**. Two inventory items are intentionally at or below their reorder level so the low-stock indicator has a visible live state. The sample items cover safety equipment, storage equipment, construction materials, electronics, furniture, and workshop equipment across Dar es Salaam, Arusha, and Mwanza.
+
+The deployed schema uses generic aliases such as `item_sku`, `item_name`, and `quantity`, while the preserved dashboard mapper historically expected `sku`, `name`, and `qty_on_hand`. The minimal compatibility patch now accepts both forms, preserves richer-schema support, and maps CRM contact aliases (`contact_name`, `company_name`, `role`) into the existing dashboard row shape. Focused integration coverage and the complete 15-test suite passed; the production build also completed successfully.

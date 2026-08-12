@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveDailyBriefingFetchState, runCompanyTableQuery, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { mapContactRow, mapInventoryRow, resolveDailyBriefingFetchState, runCompanyTableQuery, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -140,6 +140,18 @@ describe("BusinessSphere launch and live-data integration", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(receivedToasts).toContainEqual({ id: expect.any(Number), message: "Connection restored — live data is up to date.", type: "success" });
+  });
+
+  it("maps deployed generic CRM and inventory aliases into the dashboard row shape", () => {
+    const contact = mapContactRow({
+      id: "contact-1", contact_name: "Asha Mtemi", role: "Procurement Lead", company_name: "Sample Retail Group", email: "asha@example.test", phone: "+255 700 000 001",
+    });
+    const item = mapInventoryRow({
+      id: "item-1", item_sku: "SAMPLE-001", item_name: "Warehouse shelving unit", category: "Storage Equipment", quantity: "62", reorder_level: "25", unit_cost: "78", location: "Dar es Salaam", data: { unit: "unit" },
+    });
+
+    expect(contact).toMatchObject({ name: "Asha Mtemi", title: "Procurement Lead", company: "Sample Retail Group" });
+    expect(item).toMatchObject({ sku: "SAMPLE-001", name: "Warehouse shelving unit", qty: 62, reorder: 25, unitCost: 78, warehouse: "Dar es Salaam" });
   });
 
   it("returns an honest unavailable state for a requested table absent from the connected schema", async () => {

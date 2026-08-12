@@ -456,20 +456,21 @@ function mapLeadRow(r) {
   };
 }
 
-function mapContactRow(r) {
+export function mapContactRow(r) {
   return {
     id: r.id, dbId: r.id,
-    name: r.name, title: r.title || "", company: r.company, email: r.email || "", phone: r.phone || "", isPrimary: r.is_primary,
+    name: r.name || r.contact_name || "", title: r.title || r.role || "", company: r.company || r.company_name || "", email: r.email || "", phone: r.phone || "", isPrimary: r.is_primary,
   };
 }
 
-function mapInventoryRow(r) {
+export function mapInventoryRow(r) {
+  const sku = r.sku || r.item_sku || r.data?.sku;
   return {
-    sku: r.sku, dbId: r.id,
-    name: r.name, category: r.category || "General", warehouse: r.warehouse_id,
-    qty: Number(r.qty_on_hand) || 0, reorder: Number(r.reorder_level) || 0,
-    unitCost: Number(r.unit_cost) || 0, unit: r.unit || "unit",
-    barcode: r.barcode || generateBarcode(r.sku), expiryDate: r.expiry_date || null,
+    sku, dbId: r.id,
+    name: r.name || r.item_name || "", category: r.category || "General", warehouse: r.warehouse_id || r.location,
+    qty: Number(r.qty_on_hand ?? r.quantity) || 0, reorder: Number(r.reorder_level) || 0,
+    unitCost: Number(r.unit_cost) || 0, unit: r.unit || r.data?.unit || "unit",
+    barcode: r.barcode || r.data?.barcode || generateBarcode(sku), expiryDate: r.expiry_date || r.data?.expiry_date || null,
   };
 }
 

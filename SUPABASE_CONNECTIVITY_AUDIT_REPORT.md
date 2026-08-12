@@ -36,13 +36,26 @@ The preserved dashboard contains requests across **124 unique table names**. The
 ## 3. Operational Data Status & User-Managed Prerequisites
 
 - **Tenant Baseline**: Non-personal baseline records for Kilimanjaro Trading Co. (1 branch, 1 warehouse, 6 active module entitlements) remain active and validated.
-- **Operational Records**: Tables for CRM leads, inventory items, finance expenses, and newly provisioned banking/audit tables are fully reachable. As real users create leads, invoices, or transactions through the live ERP UI, rows are automatically scoped to their authenticated session via Supabase RLS.
+- **Operational Records**: Tables for CRM leads, inventory items, finance expenses, and newly provisioned banking/audit tables are fully reachable. The explicitly requested chart-validation batch now includes 5 synthetic CRM contacts, 6 synthetic CRM leads, and 8 synthetic inventory items for Kilimanjaro Trading Co.; all rows are tenant-scoped and tagged with `data.sample_batch = 'erp-chart-sample-2026-08'` and `data.is_sample = true`. As real users create leads, invoices, or transactions through the live ERP UI, rows are automatically scoped to their authenticated session via Supabase RLS.
 - **OAuth Prerequisites**: Google OAuth is active. Microsoft Azure and Apple sign-in controls are fully wired in the frontend, but require the user to enable those providers in the Supabase Dashboard (`Authentication > Providers`) with their respective client IDs and redirect URL (`https://bserp-dashbo-xgm6fauw.manus.space/app`).
 
 ---
 
 ## 4. Validation Evidence
 
-- **Automated Tests**: 12 passing tests in `server/dashboard.integration.test.ts` covering route registration, environment config, OAuth routes, module schema mapping, Daily Briefing fetch states, table-query fallbacks, transient retries, and missing-table handling.
+- **Automated Tests**: 15 passing tests across the project test suite, including CRM/inventory alias-mapper coverage in `server/dashboard.integration.test.ts`, route registration, environment config, OAuth routes, module schema mapping, Daily Briefing fetch states, table-query fallbacks, transient retries, and missing-table handling.
 - **Production Build**: Clean production build (`pnpm build`) completed successfully.
-- **Visual Verification**: The marketing landing page and ERP dashboard render cleanly at desktop size, with stable module navigation and no page flicker.
+- **Visual Verification**: The marketing landing page and ERP authentication entry route render cleanly at desktop size. The authenticated post-login chart view still requires a user session to inspect interactively; the live database verification below confirms the chart source rows and aggregate values.
+
+
+## 5. Chart-validation sample batch
+
+The requested sample batch was inserted into the live Kilimanjaro Trading Co. tenant (`3022205f-89d9-4790-affa-cde3a304ee27`) using deterministic UUIDs and `ON CONFLICT (id) DO NOTHING` for idempotent reruns. The records are non-personal, use synthetic names and `example.test` addresses, and are marked with `data.sample_batch = 'erp-chart-sample-2026-08'` and `data.is_sample = true`.
+
+| Live source | Rows | Aggregate verification |
+|---|---:|---|
+| `crm_contacts` | 5 | Synthetic contact/company/role rows available for the CRM workspace. |
+| `crm_leads` | 6 | Pipeline value verified at TZS 125,700,000 across New, Contacted, Qualified, Proposal, Negotiation, and Won stages. |
+| `inventory_items` | 8 | 1,000 total units; 2 items at or below reorder level; categories and locations span the sample chart dimensions. |
+
+The deployed `inventory_items` schema exposes `item_sku`, `item_name`, and `quantity`, whereas the preserved dashboard mapper originally expected `sku`, `name`, and `qty_on_hand`. The mapper now accepts both deployed generic aliases and richer legacy fields. CRM contacts likewise accept `contact_name`, `company_name`, and `role` aliases while preserving the existing dashboard shape. The focused mapper test, complete 15-test suite, and production build all passed after this compatibility update.

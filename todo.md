@@ -54,3 +54,9 @@
 - [x] Emit a visual success toast when a Supabase request succeeds after a transient network retry.
 - [x] Add focused regression coverage for the retry-success notification signal.
 - [x] Visually verify the toast in the dashboard and publish the enhancement.
+
+- [x] Inspect the connected CRM and inventory table schemas and current Kilimanjaro Trading Co. rows.
+- [x] Insert clearly labeled non-personal sample CRM and inventory records with tenant scoping.
+- [x] Verify the inserted rows through live Supabase reads and representative ERP chart data paths.
+- [x] Document the sample-data population and publish the update.
+- [x] Adapt the inventory and CRM contact mappers to the deployed tenant schema aliases so live sample rows render with quantities and labels.
