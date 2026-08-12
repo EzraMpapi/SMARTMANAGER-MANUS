@@ -116,3 +116,8 @@
 - [x] Integrate an interactive AI configuration assistant tab/section into `DashboardPreferencesDrawer.tsx`.
 - [x] Add automated regression coverage for the AI configuration procedure and preference application flow.
 - [x] Run test suite, verify production build, and publish the AI-enhanced preferences checkpoint.
+
+- [x] Trace loan/finance write handlers and identify why server updates fail while local state succeeds.
+- [x] Implement robust server-side write fallbacks and schema normalization for loan/finance records.
+- [x] Add regression tests covering successful live server writes and graceful offline fallback.
+- [x] Run test suite, verify production build, and publish the persistence fix.

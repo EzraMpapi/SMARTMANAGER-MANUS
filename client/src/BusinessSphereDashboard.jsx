@@ -14115,7 +14115,7 @@ function LoansView() {
       try {
         const header = await sb("business_loans").insert({ lender: draft.lender, loan_type: draft.loanType, principal: draft.principal, interest_rate: draft.interestRate, borrowed_date: draft.borrowedDate, due_date: draft.dueDate }).single().run();
         if (header?.id) loans.setRows((prev) => prev.map((l) => (l.id === draft.id ? { ...l, dbId: header.id } : l)));
-      } catch (_e) { notify("Saved locally, but the server update failed.", "error"); }
+      } catch (e) { notify(`Saved locally, but server update failed: ${e.message || "Unknown error"}`, "error"); }
     }
   }
 

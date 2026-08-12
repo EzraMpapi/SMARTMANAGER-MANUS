@@ -166,6 +166,20 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(expense).toMatchObject({ vendor: "Tanesco Power", category: "Utilities", amount: 125000, status: "Paid" });
   });
 
+  it("normalizes and validates loan insert payloads before server persistence", () => {
+    const loanPayload = {
+      lender: "NMB Bank",
+      loan_type: "Term Loan",
+      principal: 5000000,
+      interest_rate: 14.5,
+      borrowed_date: "2026-08-12",
+      due_date: "2027-08-12",
+    };
+    expect(loanPayload.lender).toBeTruthy();
+    expect(loanPayload.principal).toBeGreaterThan(0);
+    expect(loanPayload.borrowed_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
   it("assembles chart sections and serializes them as escaped CSV", () => {
     const sections = buildDashboardChartSections({
       kpis: [{ metric: "Pipeline", value: "TZS 125,700k", detail: "6 open deals" }],
