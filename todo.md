@@ -231,3 +231,8 @@
 - [x] Implement Supabase Realtime subscription hook with graceful fallback.
 - [x] Implement backup-completion webhook notification handler and documentation.
 - [x] Run full test suite, verify production build, document implementation contract, and publish final checkpoint.
+
+- [x] Wire `useSupabaseRealtime` into Inventory and Finance ledger data queries for instant multi-client reactivity.
+- [x] Implement HMAC SHA-256 signature verification for incoming backup webhook payloads.
+- [x] Create CLI migration runner script (`server/runMigrations.mjs`) for automated CI/CD database schema deployment.
+- [x] Run full test suite, verify production build, document implementation contract, and publish final checkpoint.

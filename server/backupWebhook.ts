@@ -1,10 +1,23 @@
 import { Request, Response } from "express";
-import { dispatchWebhookEvent } from "./webhooks";
+import { dispatchWebhookEvent, getWebhookConfig } from "./webhooks";
+import crypto from "crypto";
 
 export async function handleBackupCompletionWebhook(req: Request, res: Response) {
   try {
+    const signature = req.headers["x-supabase-signature"] || req.headers["x-webhook-signature"] || "";
+    const config = getWebhookConfig();
+
+    if (config.secret && signature) {
+      const computedSig = crypto
+        .createHmac("sha256", config.secret)
+        .update(JSON.stringify(req.body))
+        .digest("hex");
+      if (signature !== computedSig && signature !== `sha256=${computedSig}`) {
+        return res.status(401).json({ error: "Invalid webhook HMAC signature" });
+      }
+    }
+
     const payload = req.body;
-    // Handle Supabase or scheduled backup completion notification
     await dispatchWebhookEvent({
       action: "BACKUP_SNAPSHOT_COMPLETE",
       module: "Admin",
