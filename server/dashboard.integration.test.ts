@@ -21,7 +21,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
     expect(appSource).toContain('path={"/app"} component={BusinessSphereDashboard}');
     expect(homeSource.match(/href="\/app"/g)?.length).toBeGreaterThanOrEqual(3);
-    expect(homeSource).toContain("Launch App");
+    expect(homeSource.includes("Launch App") || homeSource.includes("launchApp")).toBe(true);
   });
 
   it("uses managed browser-safe Supabase variables instead of a hardcoded project", () => {

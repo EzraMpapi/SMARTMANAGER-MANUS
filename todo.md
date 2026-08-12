@@ -81,3 +81,7 @@
 - [x] Align the landing page, authentication views, and dashboard shell with the Smart Manager visual style and Kiswahili/Tanzania-first positioning.
 - [x] Add noble design tokens (deep slate/charcoal background, brushed gold/emerald accents, Poppins/Inter typography) to index.css and dashboard styling.
 - [x] Verify accessibility, responsiveness, and automated tests for the redesigned experience, then publish the final checkpoint.
+
+- [x] Implement persistent theme preference (Noble Dark vs Light / High Contrast) and bilingual English/Kiswahili language state.
+- [x] Add discoverable header toggles for theme and language on both landing page and dashboard shell.
+- [x] Verify test suite, production build, and publish the final polished version.

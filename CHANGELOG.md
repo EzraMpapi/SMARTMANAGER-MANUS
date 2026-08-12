@@ -147,3 +147,10 @@ The scheduled callback remains mounted at `/api/scheduled/dashboardReport`, auth
 - Integrated Tanzania-first positioning (`Imetengenezwa Tanzania` with national flag references and Kiswahili-friendly microcopy).
 - Preserved all live Supabase data layers, tRPC procedures, dashboard module routing, export filters, and recurring Resend report scheduling.
 - Validation: 34 Vitest tests pass cleanly, production build passes, and CSS warning resolved by placing Google Font imports at the head of `index.css`.
+
+## Theme Preferences & Bilingual English/Kiswahili Support — 2026-08-12
+
+- Added persistent Theme context (`ThemeProvider` with switchable dark/light storage) and Language context (`LanguageProvider` supporting English and Kiswahili translation dictionaries).
+- Added discoverable theme and language toggle buttons to the Smart Manager public landing page header.
+- Preserved all live Supabase data workflows, filtered CSV/PDF exports, and recurring Resend report scheduling.
+- Validation: 34 Vitest tests passing, production build successful.

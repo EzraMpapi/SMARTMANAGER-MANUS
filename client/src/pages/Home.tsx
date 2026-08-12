@@ -13,7 +13,12 @@ import {
   Sparkles,
   UsersRound,
   WalletCards,
+  Sun,
+  Moon,
+  Globe,
 } from "lucide-react";
+import { useTheme } from "../contexts/ThemeContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const capabilities = [
   { title: "CRM & Sales", description: "Connect customer records, quotations, invoices, and commercial activity in one operating flow.", icon: UsersRound, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
@@ -25,6 +30,9 @@ const capabilities = [
 ];
 
 export default function Home() {
+  const { theme, toggleTheme } = useTheme();
+  const { lang, setLang, t } = useLanguage();
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0B1120] text-[#F8FAFC]">
       {/* Navigation */}
@@ -35,18 +43,39 @@ export default function Home() {
             <div className="absolute inset-0 bg-black/10" />
           </div>
           <div>
-            <span className="block text-[16px] font-bold tracking-tight text-white font-heading">Smart Manager</span>
-            <span className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C9A96E]">Operational ERP</span>
+            <span className="block text-[16px] font-bold tracking-tight text-white font-heading">{t("brandTitle")}</span>
+            <span className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C9A96E]">{t("brandSubtitle")}</span>
           </div>
         </Link>
-        <nav className="hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
-          <a href="#capabilities" className="transition-colors hover:text-[#C9A96E]">Capabilities</a>
-          <a href="#why-smart-manager" className="transition-colors hover:text-[#C9A96E]">Why Us</a>
-          <a href="#launch" className="transition-colors hover:text-[#C9A96E]">Launch</a>
-        </nav>
-        <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-[#C9A96E] px-5 py-2.5 text-[13px] font-bold text-[#0B1120] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
-          Launch App <ArrowRight size={14} />
-        </Link>
+        <div className="flex items-center gap-4">
+          <nav className="hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
+            <a href="#capabilities" className="transition-colors hover:text-[#C9A96E]">{t("capabilities")}</a>
+            <a href="#why-smart-manager" className="transition-colors hover:text-[#C9A96E]">{t("whyUs")}</a>
+            <a href="#launch" className="transition-colors hover:text-[#C9A96E]">{t("launch")}</a>
+          </nav>
+          
+          <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+            <button
+              onClick={toggleTheme}
+              className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
+              title="Toggle theme"
+            >
+              {theme === "dark" ? <Sun size={15} className="text-[#C9A96E]" /> : <Moon size={15} className="text-[#C9A96E]" />}
+            </button>
+            <button
+              onClick={() => setLang(lang === "en" ? "sw" : "en")}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/10"
+              title="Switch language"
+            >
+              <Globe size={14} className="text-[#16A34A]" />
+              <span>{lang.toUpperCase()}</span>
+            </button>
+          </div>
+
+          <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-[#C9A96E] px-5 py-2.5 text-[13px] font-bold text-[#0B1120] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
+            {t("launchApp")} <ArrowRight size={14} />
+          </Link>
+        </div>
       </header>
 
       <main>
