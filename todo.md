@@ -126,3 +126,8 @@
 - [x] Upgrade loan, expense, CRM, inventory, and banking mutation handlers to await server confirmation and sync state.
 - [x] Add persistence integration tests asserting server-confirmed mutation helpers and reload safety.
 - [x] Run test suite, verify production build, and publish checkpoint with bulletproof database persistence.
+
+- [x] Implement server-save loading indicators and success toast notifications across module forms.
+- [x] Ensure AI preferences assistant in `DashboardPreferencesDrawer.tsx` provides full preview and apply functionality with error handling.
+- [x] Add custom date range presets (This Month, Last Quarter, Year-to-Date, All Time) to analytics report builder and filter financial metrics.
+- [x] Add automated integration tests covering the new features, verify build, and publish checkpoint.

@@ -21483,7 +21483,23 @@ function BalanceSheetReport({ invoices, expenses, inventory, posTransactions, co
 }
 // to catch, not commit.
 function CashFlowReport({ invoices, expenses, posTransactions, company }) {
-  const [period, setPeriod] = useState("ytd"); // "month" | "ytd"
+  const [period, setPeriod] = useState("ytd"); // "month" | "quarter" | "ytd" | "all"
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+
+  const periodStart = useMemo(() => {
+    if (period === "month") {
+      return `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}-01`;
+    }
+    if (period === "quarter") {
+      const qMonth = Math.floor(TODAY.getMonth() / 3) * 3 + 1;
+      return `${TODAY.getFullYear()}-${String(qMonth).padStart(2, "0")}-01`;
+    }
+    if (period === "all") {
+      return "2000-01-01";
+    }
+    return `${TODAY.getFullYear()}-01-01`;
+  }, [period]);
   const assetsHook = useCompanyTable("finance_assets", financeAssetsSeed, { mapRow: mapAssetRow });
   // Real loan data — see section (Loans) for why this exists: the
   // Financing Activities section below used to be honestly labeled "not
@@ -21491,9 +21507,7 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
   // It does now, and this reads real numbers from it.
   const loansHook = useCompanyTable("business_loans", [], { mapRow: (r) => ({ id: r.id, dbId: r.id, principal: Number(r.principal) || 0, borrowedDate: r.borrowed_date, repayments: (r.loan_repayments || []).map((rp) => ({ amount: Number(rp.amount) || 0, date: rp.repayment_date })) }), select: "*,loan_repayments(*)" });
 
-  const periodStart = period === "month"
-    ? `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}-01`
-    : `${TODAY.getFullYear()}-01-01`;
+
 
   const figures = useMemo(() => {
     const ledger = buildLedger(invoices.rows, expenses, posTransactions || []);
@@ -21599,12 +21613,14 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-3.5 border-b border-slate-100">
         <div>
           <h3 className="text-[14px] font-semibold text-[#111827]">Cash Flow Statement — {company.name}</h3>
-          <p className="text-[11.5px] text-slate-400">{period === "month" ? "This month" : "Year to date"} · from {periodStart} · TZS thousands</p>
+          <p className="text-[11.5px] text-slate-400">{period === "month" ? "This month" : period === "quarter" ? "This quarter" : period === "all" ? "All time" : "Year to date"} · from {periodStart} · TZS thousands</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 flex-wrap">
             <button onClick={() => setPeriod("month")} className={`text-[11.5px] font-medium px-2.5 py-1 rounded-md transition-colors ${period === "month" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>This Month</button>
+            <button onClick={() => setPeriod("quarter")} className={`text-[11.5px] font-medium px-2.5 py-1 rounded-md transition-colors ${period === "quarter" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>This Quarter</button>
             <button onClick={() => setPeriod("ytd")} className={`text-[11.5px] font-medium px-2.5 py-1 rounded-md transition-colors ${period === "ytd" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>Year to Date</button>
+            <button onClick={() => setPeriod("all")} className={`text-[11.5px] font-medium px-2.5 py-1 rounded-md transition-colors ${period === "all" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>All Time</button>
           </div>
           <ExportMenu
             title="Cash Flow Statement" filename="cash-flow" sheetName="Cash Flow"
