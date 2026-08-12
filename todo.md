@@ -155,3 +155,6 @@
 - [x] Implement departmental budget threshold state in `DashboardPreferencesContext.tsx`.
 - [x] Add departmental spending comparison and visual alert cards in Finance module view.
 - [x] Add regression tests, verify production build, and publish checkpoint.
+
+- [ ] Add inline departmental budget adjustment section to Finance module view.
+- [ ] Add automated test coverage, run build and tests, and publish checkpoint.

@@ -13743,9 +13743,12 @@ function ChartOfAccountsView({ invoices, expenses, posTransactions, company }) {
 // cover the identical EXPENSE_CATEGORIES_LIST the expense form itself
 // uses, so every recorded expense lands in exactly one budget line.
 function BudgetsView({ expenses }) {
+  const { preferences, updatePreference } = useDashboardPreferences();
   const budgets = useCompanyTable("expense_budgets", [], { mapRow: (r) => ({ id: r.id, dbId: r.id, category: r.category, monthlyLimit: Number(r.monthly_limit) || 0 }) });
-  const [editing, setEditing] = useState(null); // category being edited
+  const [editing, setEditing] = useState(null); // category or department being edited
   const [draftLimit, setDraftLimit] = useState("");
+  const [editingDept, setEditingDept] = useState(null);
+  const [draftDeptLimit, setDraftDeptLimit] = useState("");
 
   const monthStart = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}-01`;
 
@@ -13754,6 +13757,13 @@ function BudgetsView({ expenses }) {
     const actual = expenses.filter((e) => e.category === cat && e.date >= monthStart).reduce((s, e) => s + e.amount, 0);
     const pct = budget && budget.monthlyLimit > 0 ? (actual / budget.monthlyLimit) * 100 : null;
     return { category: cat, budget, actual, pct };
+  });
+
+  const departmentLines = ["Operations", "Sales", "Finance", "Warehouse", "Admin"].map((dept) => {
+    const limit = preferences.departmentBudgets?.[dept] || 20000;
+    const actual = expenses.filter((e) => (e.department || "Operations") === dept && e.date >= monthStart).reduce((s, e) => s + e.amount, 0);
+    const pct = limit > 0 ? (actual / limit) * 100 : 0;
+    return { department: dept, limit, actual, pct };
   });
 
   const totalBudget = lines.reduce((s, l) => s + (l.budget?.monthlyLimit || 0), 0);
@@ -13792,6 +13802,16 @@ function BudgetsView({ expenses }) {
         }
       } catch (_e) { notify("Saved locally, but the server update failed.", "error"); }
     }
+  }
+
+  function saveDepartmentBudget(dept) {
+    const limit = Number(draftDeptLimit);
+    if (isNaN(limit) || limit < 0) return;
+    const updated = { ...(preferences.departmentBudgets || {}), [dept]: limit };
+    updatePreference("departmentBudgets", updated);
+    setEditingDept(null);
+    setDraftDeptLimit("");
+    notify(`Department budget updated: ${dept} — TZS ${money(limit)}k / month`);
   }
 
 
@@ -13873,6 +13893,49 @@ function BudgetsView({ expenses }) {
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4"><p className="text-[11px] text-slate-400 mb-1">Over Budget</p><p className={`text-[16px] font-mono font-bold ${overCount > 0 ? "text-[#EF4444]" : "text-[#16A34A]"}`}>{overCount} {overCount === 1 ? "category" : "categories"}</p></div>
       </div>
 
+      <div>
+        <h3 className="text-[15px] font-semibold text-[#111827] mt-6 mb-2">Departmental Cost Center Budgets</h3>
+        <p className="text-[12px] text-slate-500 mb-3">Live spending tracking across company departments with interactive inline budget limit adjustments.</p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm divide-y divide-slate-50 mb-6">
+        {departmentLines.map((d) => {
+          const barColor = d.pct > 100 ? "#EF4444" : d.pct >= 80 ? "#F59E0B" : "#16A34A";
+          return (
+            <div key={d.department} className="px-4 py-3.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <p className="text-[13px] font-medium text-[#111827]">{d.department}</p>
+                  <span className={`text-[10.5px] px-2 py-0.5 rounded-full font-semibold ${d.pct > 100 ? "bg-red-100 text-red-700" : d.pct >= 80 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
+                    {d.pct > 100 ? "Exceeded" : d.pct >= 80 ? "Warning" : "Normal"}
+                  </span>
+                </div>
+                {editingDept === d.department ? (
+                  <div className="flex items-center gap-1.5">
+                    <input type="number" min="0" value={draftDeptLimit} onChange={(e) => setDraftDeptLimit(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && saveDepartmentBudget(d.department)} className="w-24 text-right text-[12px] bg-slate-50 border border-slate-200 rounded-md px-2 py-1" placeholder="Limit" />
+                    <button onClick={() => saveDepartmentBudget(d.department)} className="text-[11.5px] font-medium btn-primary text-white rounded-md px-2.5 py-1">Save</button>
+                    <button onClick={() => { setEditingDept(null); setDraftDeptLimit(""); }} className="text-[11.5px] text-slate-400 px-1" aria-label="Cancel editing">✕</button>
+                  </div>
+                ) : (
+                  <button onClick={() => { setEditingDept(d.department); setDraftDeptLimit(String(d.limit)); }} className="text-[11.5px] font-medium text-[#C9A96E] hover:underline">
+                    TZS {money(d.limit)}k / mo · Edit Limit
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, d.pct)}%`, backgroundColor: barColor }} />
+                </div>
+                <span className="text-[11.5px] font-mono text-slate-500 shrink-0 w-36 text-right">
+                  TZS {money(Math.round(d.actual))}k / TZS {money(d.limit)}k ({Math.round(d.pct)}%)
+                </span>
+              </div>
+              {d.pct > 100 && <p className="text-[10.5px] text-[#EF4444] mt-1">Department over budget by TZS {money(Math.round(d.actual - d.limit))}k.</p>}
+            </div>
+          );
+        })}
+      </div>
+
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm divide-y divide-slate-50">
         {budgets.loading && <p className="text-[12.5px] text-slate-400 text-center py-8">Loading...</p>}
         {!budgets.loading && lines.map((l) => {
@@ -13898,7 +13961,7 @@ function BudgetsView({ expenses }) {
                   <div className="h-full rounded-full transition-all" style={{ width: `${l.pct === null ? 0 : Math.min(100, l.pct)}%`, backgroundColor: barColor }} />
                 </div>
                 <span className="text-[11.5px] font-mono text-slate-500 shrink-0 w-32 text-right">
-                  {money(Math.round(l.actual))}k {l.budget ? `/ ${money(l.budget.monthlyLimit)}k` : "· no budget"}
+                  TZS {money(Math.round(l.actual))}k / {l.budget ? "TZS " + money(l.budget.monthlyLimit) + "k" : "Unset"}
                 </span>
               </div>
               {l.pct !== null && l.pct > 100 && <p className="text-[10.5px] text-[#EF4444] mt-1">Over budget by TZS {money(Math.round(l.actual - l.budget.monthlyLimit))}k this month.</p>}

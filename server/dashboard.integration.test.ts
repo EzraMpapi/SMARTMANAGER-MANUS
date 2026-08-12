@@ -279,3 +279,14 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(resolveDailyBriefingFetchState({ sources: [], usingDemoBriefing: true, previewState: "error" }).error?.message).toBe("Daily Briefing preview fetch failed");
   });
 });
+
+  it("supports departmental budget thresholds and inline limit adjustments with alert status classification", () => {
+    const prefsContext = readFileSync(new URL("../client/src/contexts/DashboardPreferencesContext.tsx", import.meta.url), "utf8");
+    expect(prefsContext).toContain("departmentBudgets");
+    expect(dashboardSource).toContain("Departmental Cost Center Budgets");
+    expect(dashboardSource).toContain("saveDepartmentBudget");
+    expect(dashboardSource).toContain("editingDept");
+    expect(dashboardSource).toContain("Exceeded");
+    expect(dashboardSource).toContain("Warning");
+    expect(dashboardSource).toContain("Normal");
+  });
