@@ -146,3 +146,8 @@
 - [x] Add timezone selector and customizable FX rate override to `DashboardPreferencesContext.tsx` and `DashboardPreferencesDrawer.tsx`.
 - [x] Wire timezone-aware date formatting and FX conversion into dashboard modules and financial summaries.
 - [x] Add automated test coverage for timezone and FX preference handling, run build and tests, and publish checkpoint.
+
+- [x] Audit expense mapper and form handlers for multi-department cost center support.
+- [x] Add department and cost center fields to expense row mapper (`mapExpenseRow`), mutation helper, and expense form modal.
+- [x] Add departmental breakdown summary in the Finance module and export columns.
+- [x] Add automated regression tests, run test suite and production build, and publish checkpoint.

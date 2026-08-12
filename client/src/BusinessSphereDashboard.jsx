@@ -572,6 +572,8 @@ export function mapExpenseRow(r) {
     amount: Number(r.amount || r.cost || r.value) || 0,
     status: r.status || "Paid",
     method: r.method || "Bank Transfer",
+    department: r.department || r.dept || "Operations",
+    costCenter: r.cost_center || r.costCenter || r.cost_code || "CC-GENERAL",
   };
 }
 
@@ -3576,14 +3578,14 @@ const EXPENSE_CATEGORIES_LIST = ["Rent & Utilities", "Salaries", "Logistics", "M
 
 
 const expensesSeed = [
-  { id: "EX-4501", vendor: "Kilimanjaro Property Holdings", category: "Rent & Utilities", date: "2026-06-28", dueDate: "2026-07-28", amount: 8200, status: "Paid", method: "Bank Transfer" },
-  { id: "EX-4500", vendor: "Payroll — June", category: "Salaries", date: "2026-06-27", dueDate: "2026-06-27", amount: 41500, status: "Paid", method: "Bank Transfer" },
-  { id: "EX-4499", vendor: "Coastal Freight Movers", category: "Logistics", date: "2026-06-25", dueDate: "2026-07-25", amount: 6340, status: "Paid", method: "Mobile Money" },
-  { id: "EX-4498", vendor: "Nexus Digital Marketing", category: "Marketing", date: "2026-06-22", dueDate: "2026-07-07", amount: 3100, status: "Pending", method: "Bank Transfer" },
-  { id: "EX-4497", vendor: "OfficeMart Supplies Ltd", category: "Supplies", date: "2026-06-20", dueDate: "2026-07-20", amount: 980, status: "Paid", method: "Cash" },
-  { id: "EX-4496", vendor: "Bahati & Partners Audit", category: "Professional Fees", date: "2026-06-18", dueDate: "2026-06-25", amount: 4500, status: "Scheduled", method: "Bank Transfer" },
-  { id: "EX-4495", vendor: "TANESCO", category: "Rent & Utilities", date: "2026-06-15", dueDate: "2026-07-15", amount: 1620, status: "Paid", method: "Mobile Money" },
-  { id: "EX-4494", vendor: "Zuridata Cloud Hosting", category: "Supplies", date: "2026-06-12", dueDate: "2026-07-12", amount: 740, status: "Paid", method: "Card" },
+  { id: "EX-4501", vendor: "Kilimanjaro Property Holdings", category: "Rent & Utilities", date: "2026-06-28", dueDate: "2026-07-28", amount: 8200, status: "Paid", method: "Bank Transfer", department: "Operations", costCenter: "CC-OPS-01" },
+  { id: "EX-4500", vendor: "Payroll — June", category: "Salaries", date: "2026-06-27", dueDate: "2026-06-27", amount: 41500, status: "Paid", method: "Bank Transfer", department: "Admin", costCenter: "CC-ADM-01" },
+  { id: "EX-4499", vendor: "Coastal Freight Movers", category: "Logistics", date: "2026-06-25", dueDate: "2026-07-25", amount: 6340, status: "Paid", method: "Mobile Money", department: "Warehouse", costCenter: "CC-WH-02" },
+  { id: "EX-4498", vendor: "Nexus Digital Marketing", category: "Marketing", date: "2026-06-22", dueDate: "2026-07-07", amount: 3100, status: "Pending", method: "Bank Transfer", department: "Sales", costCenter: "CC-SALES-01" },
+  { id: "EX-4497", vendor: "OfficeMart Supplies Ltd", category: "Supplies", date: "2026-06-20", dueDate: "2026-07-20", amount: 980, status: "Paid", method: "Cash", department: "Admin", costCenter: "CC-ADM-02" },
+  { id: "EX-4496", vendor: "Bahati & Partners Audit", category: "Professional Fees", date: "2026-06-18", dueDate: "2026-06-25", amount: 4500, status: "Scheduled", method: "Bank Transfer", department: "Finance", costCenter: "CC-FIN-01" },
+  { id: "EX-4495", vendor: "TANESCO", category: "Rent & Utilities", date: "2026-06-15", dueDate: "2026-07-15", amount: 1620, status: "Paid", method: "Mobile Money", department: "Operations", costCenter: "CC-OPS-02" },
+  { id: "EX-4494", vendor: "Zuridata Cloud Hosting", category: "Supplies", date: "2026-06-12", dueDate: "2026-07-12", amount: 740, status: "Paid", method: "Card", department: "Operations", costCenter: "CC-OPS-03" },
 ];
 
 const CASHFLOW_TREND = [
@@ -12656,6 +12658,8 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
       amount: Number(form.amount) || 0,
       status: form.status || "Pending",
       method: form.method || "Bank Transfer",
+      department: form.department || "Operations",
+      costCenter: form.costCenter || "CC-OPS-01",
     };
 
     setExpenses((prev) => [draft, ...prev]);
@@ -12671,6 +12675,8 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
           amount: Number(form.amount) || 0,
           status: form.status,
           method: form.method,
+          department: form.department || "Operations",
+          cost_center: form.costCenter || "CC-OPS-01",
         }).single().run();
         if (header?.id) {
           setExpenses((prev) => prev.map((e) => (e.id === draft.id ? { ...e, dbId: header.id } : e)));
@@ -13332,7 +13338,7 @@ function ExpensePanel({ expense, onClose, onSetStatus, onDelete }) {
 function ExpenseFormPanel({ onClose, onSubmit }) {
   const [form, setForm] = useState({
     vendor: "", category: EXPENSE_CATEGORIES_LIST[0], date: TODAY.toISOString().slice(0, 10), dueDate: "",
-    amount: "", status: "Paid", method: "Bank Transfer",
+    amount: "", status: "Paid", method: "Bank Transfer", department: "Operations", costCenter: "CC-OPS-01",
   });
   const [touched, setTouched] = useState(false);
   const valid = form.vendor.trim() && Number(form.amount) > 0;
@@ -13403,6 +13409,17 @@ function ExpenseFormPanel({ onClose, onSubmit }) {
               <select className={inputClass} value={form.status} onChange={(e) => set("status", e.target.value)}>
                 {["Paid", "Pending", "Scheduled"].map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Department">
+              <select className={inputClass} value={form.department} onChange={(e) => set("department", e.target.value)}>
+                {["Operations", "Sales", "Finance", "Warehouse", "Admin"].map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </FormField>
+            <FormField label="Cost Center Code">
+              <input className={inputClass} value={form.costCenter} onChange={(e) => set("costCenter", e.target.value)} placeholder="e.g. CC-OPS-01" />
             </FormField>
           </div>
 

@@ -159,11 +159,11 @@ describe("BusinessSphere launch and live-data integration", () => {
       id: "lead-1", contact_name: "Baraka Msuya", company_name: "Kilimanjaro Logistics", stage: "Qualified", value_amount: "450000", currency: "TZS",
     });
     const expense = mapExpenseRow({
-      id: "exp-1", payee: "Tanesco Power", category: "Utilities", expense_date: "2026-08-01", amount: "125000", status: "Paid",
+      id: "exp-1", payee: "Tanesco Power", category: "Utilities", expense_date: "2026-08-01", amount: "125000", status: "Paid", department: "Operations", cost_center: "CC-OPS-99",
     });
 
     expect(lead).toMatchObject({ name: "Baraka Msuya", company: "Kilimanjaro Logistics", stage: "Qualified", value: 450000 });
-    expect(expense).toMatchObject({ vendor: "Tanesco Power", category: "Utilities", amount: 125000, status: "Paid" });
+    expect(expense).toMatchObject({ vendor: "Tanesco Power", category: "Utilities", amount: 125000, status: "Paid", department: "Operations", costCenter: "CC-OPS-99" });
   });
 
   it("normalizes and validates loan insert payloads before server persistence", () => {
