@@ -1,0 +1,39 @@
+name: Verify database migrations
+
+on:
+  pull_request:
+    paths:
+      - 'drizzle/**'
+      - 'drizzle.config.ts'
+      - 'server/runMigrations.mjs'
+      - '.github/workflows/verify-migrations.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  migration-preflight:
+    name: Verify migration contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Type-check and test
+        run: |
+          pnpm check
+          pnpm test
+      - name: Verify migration runner
+        run: pnpm exec tsx server/runMigrations.mjs --verify
+        env:
+          # Pull requests use a non-mutating preflight. Production schema changes
+          # run only in a protected deployment workflow with DATABASE_URL configured.
+          APPLY_MIGRATIONS: 'false'

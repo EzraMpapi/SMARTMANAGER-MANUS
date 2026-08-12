@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-describe("Supabase server credentials", () => {
+const describeRemote = process.env.RUN_REMOTE_INTEGRATION_TESTS === "true" ? describe : describe.skip;
+
+describeRemote("Supabase server credentials", () => {
   it("can authenticate a read-only companies query without mutating data", async () => {
     const url = process.env.VITE_SUPABASE_URL;
     const secret = process.env.SUPABASE_SECRET_KEY;

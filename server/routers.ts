@@ -7,7 +7,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createReportSchedule, deleteReportSchedule, listReportSchedules, sendReportScheduleNow, updateReportSchedule } from "./reportSchedules";
 import { listAuditLogs, recordAuditLog } from "./auditLogs";
 import { verifyDatabaseBackupStatus } from "./backupVerification";
-import { getWebhookConfig, updateWebhookConfig, testWebhookPing, getDeadLetterQueue } from "./webhooks";
+import { getWebhookConfig, updateWebhookConfig, testWebhookPing, getDeadLetterQueue, getWebhookDeliveryHistory } from "./webhooks";
 import { TRPCError } from "@trpc/server";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -313,6 +313,10 @@ export const appRouter = router({
     getDeadLetterQueue: protectedProcedure.query(({ ctx }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       return getDeadLetterQueue();
+    }),
+    getWebhookDeliveries: protectedProcedure.query(({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return getWebhookDeliveryHistory();
     }),
   }),
 });

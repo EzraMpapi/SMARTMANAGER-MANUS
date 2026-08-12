@@ -236,3 +236,8 @@
 - [x] Implement HMAC SHA-256 signature verification for incoming backup webhook payloads.
 - [x] Create CLI migration runner script (`server/runMigrations.mjs`) for automated CI/CD database schema deployment.
 - [x] Run full test suite, verify production build, document implementation contract, and publish final checkpoint.
+
+- [x] Add a GitHub Actions pull-request workflow that runs the CI-safe migration verification command.
+- [x] Add a realtime workspace presence indicator for active connected users.
+- [x] Add an administrator webhook delivery dashboard for successful and failed events.
+- [x] Add focused tests, verify production build, and publish the completed work.

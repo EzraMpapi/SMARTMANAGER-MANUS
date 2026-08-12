@@ -12,6 +12,7 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [showDeliveryDrawer, setShowDeliveryDrawer] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookEnabled, setWebhookEnabled] = useState(false);
   const [webhookSecret, setWebhookSecret] = useState("");
@@ -31,6 +32,7 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
   const { data: backupStatus, refetch: refetchBackup, isLoading: backupLoading } = trpc.admin.verifyBackup.useQuery();
   const { data: webhookCfg } = trpc.admin.getWebhook.useQuery();
   const { data: dlq = [] } = trpc.admin.getDeadLetterQueue.useQuery(undefined, { refetchInterval: 15000 });
+  const { data: deliveries = [] } = trpc.admin.getWebhookDeliveries.useQuery(undefined, { refetchInterval: 5000 });
 
   React.useEffect(() => {
     if (webhookCfg) {
@@ -140,6 +142,12 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
             Webhook Config
           </button>
           <button
+            onClick={() => setShowDeliveryDrawer(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-violet-500/10 border border-violet-400/25 px-4 py-2.5 text-[13px] font-semibold text-violet-200 hover:bg-violet-500/20 transition-colors"
+          >
+            Delivery Activity
+          </button>
+          <button
             onClick={() => refetch()}
             className="inline-flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-[13px] font-semibold text-[#C9A96E] hover:bg-white/10 transition-colors"
           >
@@ -227,6 +235,59 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {showDeliveryDrawer && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/55 backdrop-blur-sm">
+          <button aria-label="Close webhook delivery activity" onClick={() => setShowDeliveryDrawer(false)} className="absolute inset-0 cursor-default" />
+          <aside className="relative h-full w-full max-w-xl overflow-y-auto border-l border-white/15 bg-[#10182A] p-6 text-white shadow-2xl">
+            <div className="mb-6 flex items-start justify-between border-b border-white/10 pb-5">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#C9A96E]">Admin monitoring</p>
+                <h4 className="mt-1 text-[20px] font-bold">Webhook Delivery Activity</h4>
+                <p className="mt-1 text-[12px] text-slate-400">Live status for recent test and automated audit event deliveries.</p>
+              </div>
+              <button onClick={() => setShowDeliveryDrawer(false)} className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white">✕</button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-300">Successful</p>
+                <p className="mt-1 text-2xl font-bold">{deliveries.filter((item) => item.status === "success").length}</p>
+              </div>
+              <div className="rounded-xl border border-red-500/25 bg-red-500/10 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-red-300">Failed / queued</p>
+                <p className="mt-1 text-2xl font-bold">{deliveries.filter((item) => item.status === "failed").length}</p>
+              </div>
+            </div>
+
+            {deliveries.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-8 text-center text-[13px] text-slate-400">
+                No webhook deliveries have been recorded yet. Use <strong className="text-[#C9A96E]">Send Test Ping</strong> to validate your endpoint.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {deliveries.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${item.status === "success" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                          {item.status === "success" ? "DELIVERED" : "FAILED"}
+                        </span>
+                        <p className="mt-2 font-mono text-[12px] text-white">{item.event?.action || item.event?.event || "WEBHOOK_EVENT"}</p>
+                        <p className="mt-1 text-[11px] text-slate-400">{new Date(item.timestamp).toLocaleString()} · {item.attempts} attempt{item.attempts === 1 ? "" : "s"}</p>
+                      </div>
+                      <div className="text-right text-[11px]">
+                        <p className="font-semibold text-slate-200">{item.responseCode ? `HTTP ${item.responseCode}` : "Network error"}</p>
+                        {item.error && <p className="mt-1 max-w-[170px] text-red-300">{item.error}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </aside>
         </div>
       )}
 

@@ -3,7 +3,9 @@ import { appRouter } from "./routers";
 import { runScheduledDashboardReport } from "./dashboardReports";
 import { getReportScheduleByTaskUid } from "./reportSchedules";
 
-describe("Dashboard report schedule persistence and execution flow", () => {
+const describeRemote = process.env.RUN_REMOTE_INTEGRATION_TESTS === "true" ? describe : describe.skip;
+
+describeRemote("Dashboard report schedule persistence and execution flow", () => {
   it("resolves a persisted report schedule by its task UID", async () => {
     const schedule = await getReportScheduleByTaskUid("nonexistent-task-uid");
     expect(schedule).toBeUndefined();

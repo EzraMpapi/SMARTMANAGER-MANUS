@@ -29,6 +29,7 @@ import { jsPDF } from "jspdf";
 import { trpc } from "./lib/trpc";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
+import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -46060,6 +46061,7 @@ function SmartManager() {
                 {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
               </button>
             )}
+            <WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} />
             {/* ── Dark mode toggle ── */}
             <button
               onClick={()=>setDarkMode(d=>!d)}

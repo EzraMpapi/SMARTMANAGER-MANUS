@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-describe("managed Supabase configuration", () => {
+const describeRemote = process.env.RUN_REMOTE_INTEGRATION_TESTS === "true" ? describe : describe.skip;
+
+describeRemote("managed Supabase configuration", () => {
   it("authenticates a lightweight Auth settings request", async () => {
     const url = process.env.VITE_SUPABASE_URL;
     const anonKey = process.env.VITE_SUPABASE_ANON_KEY;

@@ -1,34 +1,27 @@
 import "dotenv/config";
-import { getDb } from "./db.js";
-import { sql } from "drizzle-orm";
+import { access } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+
+const apply = process.argv.includes("--apply") || process.env.APPLY_MIGRATIONS === "true";
 
 async function runMigrations() {
-  console.log("Starting CI/CD database migration check...");
-  const db = await getDb();
-  if (!db) {
-    console.error("Database connection unavailable.");
-    process.exit(1);
+  await access("drizzle.config.ts");
+  await access("drizzle");
+
+  if (!apply) {
+    console.log("Migration preflight passed. No database changes were applied.");
+    return;
   }
-  try {
-    // Ensure audit_logs table exists
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS public.audit_logs (
-        id SERIAL PRIMARY KEY,
-        company_id TEXT NOT NULL,
-        actor_open_id TEXT NOT NULL,
-        actor_name TEXT,
-        action TEXT NOT NULL,
-        module TEXT NOT NULL,
-        details TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
-      );
-    `);
-    console.log("Database migrations verified and applied successfully.");
-    process.exit(0);
-  } catch (err) {
-    console.error("Migration execution failed:", err);
-    process.exit(1);
+
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is required when applying migrations.");
   }
+
+  execFileSync("pnpm", ["exec", "drizzle-kit", "migrate"], { stdio: "inherit", env: process.env });
+  console.log("Database migrations applied successfully.");
 }
 
-runMigrations();
+runMigrations().catch((error) => {
+  console.error("Migration runner failed:", error.message || error);
+  process.exit(1);
+});

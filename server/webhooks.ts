@@ -7,6 +7,7 @@ let globalWebhookConfig = {
 };
 
 const deadLetterQueue: Array<{ id: string; timestamp: string; event: any; error: string; attempts: number }> = [];
+const deliveryHistory: Array<{ id: string; timestamp: string; status: "success" | "failed"; event: any; attempts: number; responseCode?: number; error?: string }> = [];
 
 export function getWebhookConfig() {
   return globalWebhookConfig;
@@ -25,6 +26,15 @@ export function getDeadLetterQueue() {
   return deadLetterQueue;
 }
 
+export function getWebhookDeliveryHistory() {
+  return deliveryHistory;
+}
+
+function recordDelivery(delivery: { status: "success" | "failed"; event: any; attempts: number; responseCode?: number; error?: string }) {
+  deliveryHistory.unshift({ id: `wh_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, timestamp: new Date().toISOString(), ...delivery });
+  if (deliveryHistory.length > 100) deliveryHistory.pop();
+}
+
 export async function dispatchWebhookEvent(event: { action: string; module: string; details?: string; actor: string; severity?: string }) {
   if (!globalWebhookConfig.enabled || !globalWebhookConfig.url) return;
   const payload = {
@@ -37,6 +47,7 @@ export async function dispatchWebhookEvent(event: { action: string; module: stri
   let attempts = 0;
   let success = false;
   let lastError = "";
+  let responseCode: number | undefined;
 
   while (attempts < 3 && !success) {
     attempts++;
@@ -49,6 +60,7 @@ export async function dispatchWebhookEvent(event: { action: string; module: stri
         },
         body: JSON.stringify(payload),
       });
+      responseCode = res.status;
       if (res.ok) {
         success = true;
       } else {
@@ -62,7 +74,10 @@ export async function dispatchWebhookEvent(event: { action: string; module: stri
     }
   }
 
-  if (!success) {
+  if (success) {
+    recordDelivery({ status: "success", event: payload, attempts, responseCode });
+  } else {
+    recordDelivery({ status: "failed", event: payload, attempts, responseCode, error: lastError });
     deadLetterQueue.unshift({
       id: `dlq_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       timestamp: new Date().toISOString(),
@@ -91,5 +106,7 @@ export async function testWebhookPing() {
       message: "Test webhook connectivity successfully dispatched.",
     }),
   });
+  const event = { event: "PING_TEST", source: "BusinessSphere ERP" };
+  recordDelivery({ status: response.ok ? "success" : "failed", event, attempts: 1, responseCode: response.status, error: response.ok ? undefined : `HTTP status ${response.status}` });
   return { ok: response.ok, status: response.status };
 }
