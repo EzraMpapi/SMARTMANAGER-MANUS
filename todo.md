@@ -73,3 +73,7 @@
 - [x] Bridge the ERP dashboard Supabase session to the report-schedule API with validated bearer tokens and tenant-access checks.
 - [x] Add integration tests for schedule CRUD, Supabase company authorization, cron callback execution, and mocked Resend delivery.
 - [x] Save and publish a final checkpoint after the hardened scheduled-report flow passes tests, build, and visual verification.
+
+- [x] Add pause/resume toggles and a "Send now" trigger to the report schedule dialog and API router.
+- [x] Add automated coverage for pause/resume state changes and immediate manual test-dispatch.
+- [x] Save and publish a final checkpoint with the updated schedule controls.

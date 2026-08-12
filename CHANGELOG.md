@@ -133,3 +133,10 @@ Validation completed: all 18 automated tests passed across the three Vitest file
 The recurring-report workflow now forwards the dashboard’s `bs_access_token` through the tRPC client, validates it against Supabase Auth on the server, and checks the requested company through the user’s Supabase RLS-visible `companies` row before any schedule is persisted. Heartbeat jobs are created, updated, and deleted as project-owned jobs using the SDK’s documented empty-session owner fallback; the returned real task UID is stored in `dashboard_report_schedules`, and failed creation rolls the database row back. This avoids passing a Supabase JWT into a scheduler API that expects a Manus session token.
 
 The scheduled callback remains mounted at `/api/scheduled/dashboardReport`, authenticates cron requests through the SDK, resolves schedules exclusively by the authenticated task UID, and keeps the Resend attachment delivery idempotent at the application level. Validation now includes real service-level mocks for Heartbeat task persistence, Supabase company authorization, schedule CRUD routing, database-backed orphan lookup, the HTTP cron handler, mocked Resend delivery, and the manual filtered export helpers. The final suite passes 33 tests, the production build passes, and the public landing page plus ERP authentication shell were visually rechecked. No live customer email was sent during validation.
+
+## Schedule pause/resume and Send now controls — 2026-08-12
+
+- Added interactive **Pause**, **Resume**, and **Send now** controls to each schedule item in the report scheduling dialog.
+- Added protected tRPC mutations `reportSchedules.toggleActive` and `reportSchedules.sendNow` with schedule ownership verification.
+- Added focused service and router tests covering pause state updates and immediate manual report dispatch.
+- Validation: 34 Vitest tests pass, production build passes, and schedule actions integrate smoothly into the existing ERP dashboard layout.

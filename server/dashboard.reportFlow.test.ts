@@ -13,12 +13,13 @@ vi.mock("./reportSchedules", async (importOriginal) => {
     createReportSchedule: vi.fn(),
     updateReportSchedule: vi.fn(),
     deleteReportSchedule: vi.fn(),
+    sendReportScheduleNow: vi.fn(),
   };
 });
 
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
-import { assertSupabaseCompanyAccess, createReportSchedule, deleteReportSchedule, listReportSchedules } from "./reportSchedules";
+import { assertSupabaseCompanyAccess, createReportSchedule, deleteReportSchedule, listReportSchedules, sendReportScheduleNow, updateReportSchedule } from "./reportSchedules";
 
 describe("Dashboard report schedules and Supabase-authenticated flow", () => {
   const schedule = {
@@ -50,10 +51,12 @@ describe("Dashboard report schedules and Supabase-authenticated flow", () => {
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/rest/v1/companies?"), expect.objectContaining({ headers: expect.objectContaining({ authorization: "Bearer mock-supabase-access-token" }) }));
   });
 
-  it("exercises schedule create, list, and delete through the protected router", async () => {
+  it("exercises schedule create, list, pause/resume, sendNow, and delete through the protected router", async () => {
     vi.mocked(createReportSchedule).mockResolvedValue(schedule as any);
     vi.mocked(listReportSchedules).mockResolvedValue([schedule] as any);
     vi.mocked(deleteReportSchedule).mockResolvedValue({ success: true });
+    vi.mocked(updateReportSchedule).mockResolvedValue({ ...schedule, isActive: false } as any);
+    vi.mocked(sendReportScheduleNow).mockResolvedValue({ ok: true, scheduleId: 17, format: "pdf" } as any);
     const caller = appRouter.createCaller({
       req: { headers: { authorization: "Bearer mock-supabase-access-token" } } as any,
       res: {} as any,
@@ -71,12 +74,18 @@ describe("Dashboard report schedules and Supabase-authenticated flow", () => {
 
     const created = await caller.reportSchedules.create(input);
     const listed = await caller.reportSchedules.list();
+    const toggled = await caller.reportSchedules.toggleActive({ id: 17, isActive: false });
+    const sentNow = await caller.reportSchedules.sendNow({ id: 17 });
     const removed = await caller.reportSchedules.remove({ id: 17 });
 
     expect(created).toMatchObject({ id: 17, format: "pdf" });
     expect(listed).toHaveLength(1);
+    expect(toggled).toMatchObject({ isActive: false });
+    expect(sentNow).toMatchObject({ ok: true, scheduleId: 17 });
     expect(removed).toEqual({ success: true });
     expect(createReportSchedule).toHaveBeenCalledWith(expect.objectContaining({ openId: "sup_mock-supabase-access-token" }), "mock-supabase-access-token", input);
+    expect(updateReportSchedule).toHaveBeenCalledWith("sup_mock-supabase-access-token", "mock-supabase-access-token", 17, { isActive: false });
+    expect(sendReportScheduleNow).toHaveBeenCalledWith("sup_mock-supabase-access-token", 17);
     expect(deleteReportSchedule).toHaveBeenCalledWith("sup_mock-supabase-access-token", "mock-supabase-access-token", 17);
   });
 });

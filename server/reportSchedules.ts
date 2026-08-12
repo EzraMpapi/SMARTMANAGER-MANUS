@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { dashboardReportSchedules, type DashboardReportSchedule } from "../drizzle/schema";
 import { getDb } from "./db";
+import { runScheduledDashboardReport } from "./dashboardReports";
 import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { ENV } from "./_core/env";
 
@@ -176,6 +177,12 @@ export async function deleteReportSchedule(ownerOpenId: string, sessionToken: st
   if (row.scheduleCronTaskUid) await deleteHeartbeatJob(row.scheduleCronTaskUid, "");
   await db.delete(dashboardReportSchedules).where(and(eq(dashboardReportSchedules.id, id), eq(dashboardReportSchedules.ownerOpenId, ownerOpenId)));
   return { success: true as const };
+}
+
+export async function sendReportScheduleNow(ownerOpenId: string, id: number) {
+  const { row } = await getOwnedSchedule(id, ownerOpenId);
+  if (!row.scheduleCronTaskUid) throw new TRPCError({ code: "BAD_REQUEST", message: "Report schedule task is not configured." });
+  return runScheduledDashboardReport(row.scheduleCronTaskUid);
 }
 
 export async function getReportScheduleByTaskUid(taskUid: string) {

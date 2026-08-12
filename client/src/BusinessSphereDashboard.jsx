@@ -4755,7 +4755,14 @@ function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClos
     onSuccess: () => { schedules.refetch(); onSaved(); },
   });
   const removeSchedule = trpc.reportSchedules.remove.useMutation({
-    onSuccess: () => schedules.refetch(),
+    onSuccess: () => { schedules.refetch(); notify("Report schedule deleted."); },
+  });
+  const toggleActive = trpc.reportSchedules.toggleActive.useMutation({
+    onSuccess: (data) => { schedules.refetch(); notify(data.isActive ? "Report schedule resumed." : "Report schedule paused."); },
+  });
+  const sendNow = trpc.reportSchedules.sendNow.useMutation({
+    onSuccess: () => notify("Report sent successfully."),
+    onError: (err) => notify(err.message, "error"),
   });
   function submit(event) {
     event.preventDefault();
@@ -4781,7 +4788,7 @@ function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClos
           {createSchedule.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-red-700">{createSchedule.error.message}</p>}
           <div className="flex items-center justify-end gap-2"><button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3.5 py-2 text-[12px] font-semibold text-slate-600 hover:bg-slate-50">Cancel</button><button type="submit" disabled={createSchedule.isPending} className="rounded-lg bg-[#16A34A] px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-[#15803D] disabled:opacity-50">{createSchedule.isPending ? "Saving…" : "Create schedule"}</button></div>
         </form>
-        <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-4"><p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Existing schedules</p>{schedules.isLoading ? <p className="text-[11px] text-slate-400">Loading schedules…</p> : schedules.data?.length ? <div className="space-y-2">{schedules.data.map((schedule) => <div key={schedule.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 border border-slate-200"><div className="min-w-0"><p className="truncate text-[11px] font-semibold text-slate-700">{schedule.name}</p><p className="text-[10px] text-slate-400">{schedule.frequency} · {schedule.format.toUpperCase()} · {schedule.recipientEmail}</p></div><button onClick={() => removeSchedule.mutate({ id: schedule.id })} disabled={removeSchedule.isPending} aria-label={`Delete ${schedule.name}`} className="shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={13} /></button></div>)}</div> : <p className="text-[11px] text-slate-400">No recurring reports yet.</p>}</div>
+        <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-4"><p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Existing schedules</p>{schedules.isLoading ? <p className="text-[11px] text-slate-400">Loading schedules…</p> : schedules.data?.length ? <div className="space-y-2">{schedules.data.map((schedule) => <div key={schedule.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 border border-slate-200"><div className="min-w-0"><p className="truncate text-[11px] font-semibold text-slate-700">{schedule.name}</p><p className="text-[10px] text-slate-400">{schedule.frequency} · {schedule.format.toUpperCase()} · {schedule.recipientEmail} · <span className={schedule.isActive ? "text-emerald-600 font-medium" : "text-amber-600 font-medium"}>{schedule.isActive ? "Active" : "Paused"}</span></p></div><div className="flex items-center gap-1 shrink-0"><button type="button" onClick={() => sendNow.mutate({ id: schedule.id })} disabled={sendNow.isPending} title="Send now" className="rounded-md px-2 py-1 text-[11px] font-semibold text-[#16A34A] bg-[#16A34A]/10 hover:bg-[#16A34A]/20 disabled:opacity-50">Send now</button><button type="button" onClick={() => toggleActive.mutate({ id: schedule.id, isActive: !schedule.isActive })} disabled={toggleActive.isPending} title={schedule.isActive ? "Pause schedule" : "Resume schedule"} className="rounded-md px-2 py-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-50">{schedule.isActive ? "Pause" : "Resume"}</button><button type="button" onClick={() => removeSchedule.mutate({ id: schedule.id })} disabled={removeSchedule.isPending} aria-label={`Delete ${schedule.name}`} className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={13} /></button></div></div>)}</div> : <p className="text-[11px] text-slate-400">No recurring reports yet.</p>}</div>
       </div>
     </div>
   );
