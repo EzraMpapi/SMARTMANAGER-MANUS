@@ -6,12 +6,14 @@ interface DashboardPreferences {
   showActivityTimeline: boolean;
   showPendingApprovals: boolean;
   accentColor: "gold" | "emerald";
+  currency: "TZS" | "USD";
 }
 
 interface DashboardPreferencesContextType {
   preferences: DashboardPreferences;
   updatePreference: <K extends keyof DashboardPreferences>(key: K, value: DashboardPreferences[K]) => void;
   resetPreferences: () => void;
+  formatMoney: (amountInTzs: number, overrideCurrency?: "TZS" | "USD") => string;
 }
 
 const defaultPreferences: DashboardPreferences = {
@@ -20,7 +22,10 @@ const defaultPreferences: DashboardPreferences = {
   showActivityTimeline: true,
   showPendingApprovals: true,
   accentColor: "gold",
+  currency: "TZS",
 };
+
+const TZS_TO_USD_RATE = 2600;
 
 const DashboardPreferencesContext = createContext<DashboardPreferencesContextType | undefined>(undefined);
 
@@ -49,8 +54,18 @@ export function DashboardPreferencesProvider({ children }: { children: React.Rea
 
   const resetPreferences = () => setPreferences(defaultPreferences);
 
+  const formatMoney = (amountInTzs: number, overrideCurrency?: "TZS" | "USD") => {
+    const cur = overrideCurrency || preferences.currency || "TZS";
+    const val = Number(amountInTzs) || 0;
+    if (cur === "USD") {
+      const usdVal = val / TZS_TO_USD_RATE;
+      return `US$ ${Math.round(usdVal).toLocaleString()}`;
+    }
+    return `TZS ${Math.round(val).toLocaleString()}`;
+  };
+
   return (
-    <DashboardPreferencesContext.Provider value={{ preferences, updatePreference, resetPreferences }}>
+    <DashboardPreferencesContext.Provider value={{ preferences, updatePreference, resetPreferences, formatMoney }}>
       {children}
     </DashboardPreferencesContext.Provider>
   );

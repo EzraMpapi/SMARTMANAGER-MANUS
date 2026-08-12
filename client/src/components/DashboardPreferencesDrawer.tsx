@@ -1,5 +1,5 @@
 import React from "react";
-import { Sliders, X, Check, RotateCcw } from "lucide-react";
+import { Sliders, X, Check, RotateCcw, DollarSign } from "lucide-react";
 import { useDashboardPreferences } from "../contexts/DashboardPreferencesContext";
 
 interface DashboardPreferencesDrawerProps {
@@ -35,6 +35,34 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
           </div>
 
           <div className="mt-6 space-y-6">
+            <div className="space-y-3">
+              <label className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">Executive Currency</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => updatePreference("currency", "TZS")}
+                  className={`flex items-center justify-center gap-2 rounded-xl border p-3.5 text-[13px] font-bold transition-all ${
+                    preferences.currency === "TZS"
+                      ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]"
+                      : "border-white/10 bg-[#0B1120] text-[#94A3B8] hover:border-white/25 hover:text-white"
+                  }`}
+                >
+                  <span>TZS</span>
+                  <span className="text-[11px] opacity-70">Tanzanian Shilling</span>
+                </button>
+                <button
+                  onClick={() => updatePreference("currency", "USD")}
+                  className={`flex items-center justify-center gap-2 rounded-xl border p-3.5 text-[13px] font-bold transition-all ${
+                    preferences.currency === "USD"
+                      ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]"
+                      : "border-white/10 bg-[#0B1120] text-[#94A3B8] hover:border-white/25 hover:text-white"
+                  }`}
+                >
+                  <span>USD</span>
+                  <span className="text-[11px] opacity-70">US Dollar ($2.6k)</span>
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-3">
               <label className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">View Density</label>
               <div

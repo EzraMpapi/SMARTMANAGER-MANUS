@@ -96,4 +96,8 @@
 
 - [x] Implement AI prompt suggestion bar in the dashboard assistant and automated cash-flow/stock-level anomaly detection in the server router.
 - [x] Verify automated tests and production build, then publish the final AI-enhanced checkpoint.
-- [ ] Save and publish a new checkpoint/version after the AI prompt suggestion bar and anomaly-detection changes.
+- [x] Save and publish a new checkpoint/version after the AI prompt suggestion bar and anomaly-detection changes.
+
+- [ ] Implement persistent TZS/USD currency preference and transparent display conversion helper in dashboard context.
+- [ ] Add currency toggle button to the executive command strip and format KPIs and chart tooltips accordingly.
+- [ ] Verify automated tests and production build, then publish the final currency-enhanced checkpoint.

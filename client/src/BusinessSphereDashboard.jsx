@@ -28,6 +28,7 @@ import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import { trpc } from "./lib/trpc";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
+import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -5253,6 +5254,13 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               <button onClick={()=>typeof window.__openDailyBrief==="function"&&window.__openDailyBrief()} className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]">
                 <BarChart3 size={13}/> Daily Brief
               </button>
+              <button
+                onClick={() => updatePreference("currency", preferences.currency === "TZS" ? "USD" : "TZS")}
+                className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]"
+                title="Toggle Executive Currency (TZS / USD)"
+              >
+                <DollarSign size={13}/> {preferences.currency}
+              </button>
               <button onClick={() => setPreferencesDrawerOpen(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]">
                 <Sliders size={13}/> Preferences
               </button>
@@ -5279,14 +5287,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             return (
               <div className="grid grid-cols-4 lg:grid-cols-8 gap-px bg-[rgba(255,255,255,.06)] rounded-xl overflow-hidden">
                 {[
-                  {l:"AR Billed",   v:"TZS "+money(Math.round(totalBilled/1000))+"k",  col:"#4ADE80",  sub:invRows.length+" invoices"},
-                  {l:"Collected",   v:"TZS "+money(Math.round(totalCollected/1000))+"k",col:"#60A5FA",  sub:Math.round(totalBilled>0?totalCollected/totalBilled*100:0)+"% rate"},
-                  {l:"Overdue AR",  v:"TZS "+money(Math.round(overdueAmt/1000))+"k",   col:overdueAmt>0?"#F87171":"#4ADE80", sub:overdueInvs.length+" invoices"},
-                  {l:"Gross P&L",   v:(grossProfit>=0?"+":"")+money(Math.round(Math.abs(grossProfit)/1000))+"k",col:grossProfit>=0?"#4ADE80":"#F87171",sub:"Collected − Exp"},
-                  {l:"Inventory",   v:money(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)/1000>>0)+"k TZS",col:"#C4B5FD",sub:inventory.rows.length+" SKUs"},
+                  {l:"AR Billed",   v:formatMoney(totalBilled),  col:"#4ADE80",  sub:invRows.length+" invoices"},
+                  {l:"Collected",   v:formatMoney(totalCollected),col:"#60A5FA",  sub:Math.round(totalBilled>0?totalCollected/totalBilled*100:0)+"% rate"},
+                  {l:"Overdue AR",  v:formatMoney(overdueAmt),   col:overdueAmt>0?"#F87171":"#4ADE80", sub:overdueInvs.length+" invoices"},
+                  {l:"Gross P&L",   v:(grossProfit>=0?"+":"")+formatMoney(Math.abs(grossProfit)),col:grossProfit>=0?"#4ADE80":"#F87171",sub:"Collected − Exp"},
+                  {l:"Inventory",   v:formatMoney(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)),col:"#C4B5FD",sub:inventory.rows.length+" SKUs"},
                   {l:"Low Stock",   v:String(lowStock),col:lowStock>0?"#F87171":"#4ADE80",sub:inventory.rows.filter(it=>it.qty<=0).length+" out"},
-                  {l:"Pipeline",    v:money(Math.round(crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).reduce((s,l)=>s+(l.value||0),0)/1000))+"k",col:"#F9A8D4",sub:openLeads+" open deals"},
-                  {l:"MRR",         v:"TZS "+money(Math.round(MRR))+"k",col:"#34D399",sub:activeSubs.length+" active subs"},
+                  {l:"Pipeline",    v:formatMoney(crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).reduce((s,l)=>s+(l.value||0),0)),col:"#F9A8D4",sub:openLeads+" open deals"},
+                  {l:"MRR",         v:formatMoney(MRR),col:"#34D399",sub:activeSubs.length+" active subs"},
                 ].map(({l,v,col,sub})=>(
                   <div key={l} className="bg-[rgba(0,0,0,.25)] px-3 py-3 text-center">
                     <p className="text-[9.5px] font-bold uppercase tracking-wide text-[rgba(255,255,255,.45)] mb-1">{l}</p>
@@ -45085,6 +45093,7 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
 
 
 function SmartManager() {
+  const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   // Real session state. Demo mode (no Supabase project connected) skips
   // authentication entirely and goes straight to the sample company,
   // matching every other demo-mode behavior already documented in this
