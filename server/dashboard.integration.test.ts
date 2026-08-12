@@ -290,7 +290,10 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("Warning");
     expect(dashboardSource).toContain("Normal");
     expect(dashboardSource).toContain("Departmental Budgets vs. Actual Spending (Comparative Bars)");
-    expect(dashboardSource).toContain("BarChart data={departmentLines");
+    expect(dashboardSource).toContain("BarChart data={");
     expect(dashboardSource).toContain("dataKey=\"budgetLimit\"");
     expect(dashboardSource).toContain("Variance:");
+    expect(dashboardSource).toContain("chartSortBy");
+    expect(dashboardSource).toContain("Largest Budget Variance");
+    expect(dashboardSource).toContain("Highest Actual Spending");
   });

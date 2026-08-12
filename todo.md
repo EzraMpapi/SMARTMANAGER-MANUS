@@ -162,5 +162,8 @@
 - [x] Implement departmental budget vs actual bar chart in `BudgetsView` within `BusinessSphereDashboard.jsx` using Recharts.
 - [x] Add automated test coverage and verify successful build and test suite.
 
-- [ ] Implement exact variance tooltip on the departmental budget comparison bar chart in `BudgetsView`.
-- [ ] Add regression test coverage, run build and test suite, and publish checkpoint.
+- [x] Implement exact variance tooltip on the departmental budget comparison bar chart in `BudgetsView`.
+- [x] Add regression test coverage, run build and test suite, and publish checkpoint.
+
+- [ ] Implement sorting state and dropdown above the departmental budget comparison chart in `BudgetsView` (by name, largest variance, highest actual spending).
+- [ ] Add automated regression coverage, verify build and test suite, and publish checkpoint.

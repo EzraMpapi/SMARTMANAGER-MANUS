@@ -13749,6 +13749,7 @@ function BudgetsView({ expenses }) {
   const [draftLimit, setDraftLimit] = useState("");
   const [editingDept, setEditingDept] = useState(null);
   const [draftDeptLimit, setDraftDeptLimit] = useState("");
+  const [chartSortBy, setChartSortBy] = useState("variance"); // "variance" | "actual" | "name"
 
   const monthStart = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}-01`;
 
@@ -13938,10 +13939,31 @@ function BudgetsView({ expenses }) {
 
       {/* Departmental Budget vs Actual Comparative Bar Chart */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 mb-6">
-        <h3 className="text-[14px] font-semibold text-[#111827] mb-1">Departmental Budgets vs. Actual Spending (Comparative Bars)</h3>
-        <p className="text-[12px] text-slate-400 mb-3">Comparing adjusted departmental budget limits side-by-side with actual monthly spending</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+          <div>
+            <h3 className="text-[14px] font-semibold text-[#111827] mb-0.5">Departmental Budgets vs. Actual Spending (Comparative Bars)</h3>
+            <p className="text-[12px] text-slate-400">Comparing adjusted departmental budget limits side-by-side with actual monthly spending</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11.5px] text-slate-500 font-medium">Sort by:</span>
+            <select value={chartSortBy} onChange={(e) => setChartSortBy(e.target.value)} className="text-[12px] bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-[#C9A96E]">
+              <option value="variance">Largest Budget Variance</option>
+              <option value="actual">Highest Actual Spending</option>
+              <option value="name">Department Name</option>
+            </select>
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={departmentLines.map(d => ({ name: d.department, actual: Math.round(d.actual), budgetLimit: d.limit, variance: Math.round(d.limit - d.actual), over: d.actual > d.limit && d.limit > 0 }))} margin={{ left: -10, right: 4, top: 0, bottom: 20 }}>
+          <BarChart data={(() => {
+            const mapped = departmentLines.map(d => ({ name: d.department, actual: Math.round(d.actual), budgetLimit: d.limit, variance: Math.round(d.limit - d.actual), over: d.actual > d.limit && d.limit > 0 }));
+            if (chartSortBy === "variance") {
+              return mapped.sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
+            } else if (chartSortBy === "actual") {
+              return mapped.sort((a, b) => b.actual - a.actual);
+            } else {
+              return mapped.sort((a, b) => a.name.localeCompare(b.name));
+            }
+          })()} margin={{ left: -10, right: 4, top: 0, bottom: 20 }}>
             <CartesianGrid vertical={false} stroke="#F3F4F6"/>
             <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
             <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
