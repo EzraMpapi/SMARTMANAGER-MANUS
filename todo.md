@@ -102,7 +102,7 @@
 - [x] Add currency toggle button to the executive command strip and format KPIs and chart tooltips accordingly.
 - [x] Verify automated tests and production build, then publish the final currency-enhanced checkpoint.
 
-- [ ] Diagnose live Supabase table queries and company ID filtering for Inventory, Finance (invoices/expenses), and CRM modules.
-- [ ] Ensure robust fallback and tenant-scoping normalization across live inventory, invoice, expense, and CRM table loading helpers.
-- [ ] Add regression tests confirming non-empty rows for Inventory, Finance, and CRM modules.
-- [ ] Run test suite, verify build, and publish checkpoint with restored live data modules.
+- [x] Diagnose live Supabase table queries and company ID filtering for Inventory, Finance (invoices/expenses), and CRM modules.
+- [x] Ensure robust fallback and tenant-scoping normalization across live inventory, invoice, expense, and CRM table loading helpers.
+- [x] Add regression tests confirming non-empty rows for Inventory, Finance, and CRM modules.
+- [x] Run test suite, verify build, and publish checkpoint with restored live data modules.

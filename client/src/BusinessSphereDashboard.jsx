@@ -448,7 +448,7 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
    do not yet have mappers — see the handover doc for the remaining list.
    ============================================================================= */
 
-function mapLeadRow(r) {
+export function mapLeadRow(r) {
   return {
     id: r.id, dbId: r.id,
     name: r.contact_name || r.name || r.lead_name || "",
@@ -533,7 +533,7 @@ function mapProcurementContractRow(r) {
   };
 }
 
-function mapExpenseRow(r) {
+export function mapExpenseRow(r) {
   return {
     id: r.id, dbId: r.id,
     vendor: r.vendor || r.payee || r.supplier || "Vendor",

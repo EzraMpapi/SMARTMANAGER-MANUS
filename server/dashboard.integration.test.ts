@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, resolveDailyBriefingFetchState, runCompanyTableQuery, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, resolveDailyBriefingFetchState, runCompanyTableQuery, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -154,19 +154,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(item).toMatchObject({ sku: "SAMPLE-001", name: "Warehouse shelving unit", qty: 62, reorder: 25, unitCost: 78, warehouse: "Dar es Salaam" });
   });
 
-  it("robustly maps CRM lead and finance expense rows with alternate aliases", () => {
-    // Lead mapping test
-    const lead = {
-      id: "lead-1",
-      contact_name: "Baraka Msuya",
-      company_name: "Kilimanjaro Logistics",
-      stage: "Qualified",
-      value_amount: "450000",
-      currency: "TZS",
-    };
-    // We can test mapLeadRow directly if exported or test through standard mapping logic
-    expect(lead.contact_name).toBe("Baraka Msuya");
-    expect(lead.value_amount).toBe("450000");
+  it("robustly maps Inventory, CRM lead, and Finance expense rows with alternate aliases", () => {
+    const lead = mapLeadRow({
+      id: "lead-1", contact_name: "Baraka Msuya", company_name: "Kilimanjaro Logistics", stage: "Qualified", value_amount: "450000", currency: "TZS",
+    });
+    const expense = mapExpenseRow({
+      id: "exp-1", payee: "Tanesco Power", category: "Utilities", expense_date: "2026-08-01", amount: "125000", status: "Paid",
+    });
+
+    expect(lead).toMatchObject({ name: "Baraka Msuya", company: "Kilimanjaro Logistics", stage: "Qualified", value: 450000 });
+    expect(expense).toMatchObject({ vendor: "Tanesco Power", category: "Utilities", amount: 125000, status: "Paid" });
   });
 
   it("assembles chart sections and serializes them as escaped CSV", () => {
