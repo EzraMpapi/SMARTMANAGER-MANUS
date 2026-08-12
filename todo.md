@@ -221,3 +221,8 @@
 - [x] Implement severity level filter in audit CSV exports.
 - [x] Implement webhook persistent retry and dead-letter queue mechanism.
 - [x] Run full test suite, verify production build, document feature contract, and publish final published checkpoint.
+
+- [x] Audit server-side persistence helpers (`runCompanyTableMutation`, `runCompanyTableQuery`) and Supabase client bindings.
+- [x] Verify Supabase table availability, RLS policies, and server mappers across ERP modules.
+- [x] Generate SUPABASE_PERSISTENCE_GUIDE.md detailing table schemas, RLS policies, parameterized query builders, and React integration examples.
+- [x] Run full test suite, verify production build, document feature contract, and publish final checkpoint.
