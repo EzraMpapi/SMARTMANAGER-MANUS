@@ -131,3 +131,6 @@
 - [x] Ensure AI preferences assistant in `DashboardPreferencesDrawer.tsx` provides full preview and apply functionality with error handling.
 - [x] Add custom date range presets (This Month, Last Quarter, Year-to-Date, All Time) to analytics report builder and filter financial metrics.
 - [x] Add automated integration tests covering the new features, verify build, and publish checkpoint.
+
+- [x] Make desktop sidebar responsive on lg+ viewports and ensure main content area respects sidebar gutter.
+- [x] Run test suite and save final responsive checkpoint.
