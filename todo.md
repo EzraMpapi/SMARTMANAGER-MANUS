@@ -121,3 +121,8 @@
 - [x] Implement robust server-side write fallbacks and schema normalization for loan/finance records.
 - [x] Add regression tests covering successful live server writes and graceful offline fallback.
 - [x] Run test suite, verify production build, and publish the persistence fix.
+
+- [x] Implement `runCompanyTableMutation` helper in `BusinessSphereDashboard.jsx` for robust server inserts/updates with automatic retry and error propagation.
+- [x] Upgrade loan, expense, CRM, inventory, and banking mutation handlers to await server confirmation and sync state.
+- [x] Add persistence integration tests asserting server-confirmed mutation helpers and reload safety.
+- [x] Run test suite, verify production build, and publish checkpoint with bulletproof database persistence.

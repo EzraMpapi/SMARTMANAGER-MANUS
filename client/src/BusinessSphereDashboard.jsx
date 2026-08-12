@@ -379,6 +379,35 @@ export async function runCompanyTableQuery(table, { select = "*", order } = {}) 
   throw lastError || new Error(`Supabase could not load ${table}`);
 }
 
+export async function runCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      let query = sb(table);
+      let res = null;
+      if (operation === "insert") {
+        res = await query.insert(payload).single().run();
+      } else if (operation === "update") {
+        res = await query.eq(matchCol, matchVal).update(payload).run();
+      } else if (operation === "delete") {
+        res = await query.eq(matchCol, matchVal).delete().run();
+      }
+      return { data: res, error: null };
+    } catch (error) {
+      lastError = error;
+      if (isMissingTableError(error)) {
+        return { data: null, error: new Error(`Table ${table} is unavailable`) };
+      }
+      if (isTransientSupabaseError(error) && attempt === 0) {
+        await waitForSupabaseRetry(180);
+        continue;
+      }
+      break;
+    }
+  }
+  return { data: null, error: lastError || new Error(`Supabase ${operation} on ${table} failed`) };
+}
+
 function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   // Demo mode serves seed rows instantly. Live mode starts empty and, once a
   // module has rows, keeps them visible during refreshes so navigation does
@@ -14112,10 +14141,19 @@ function LoansView() {
     setForm({ lender: "", loanType: LOAN_TYPES[0], principal: "", interestRate: "", borrowedDate: TODAY.toISOString().slice(0, 10), dueDate: "" });
     notify(`Loan recorded: ${draft.lender} — TZS ${money(draft.principal)}k`);
     if (IS_CONFIGURED) {
-      try {
-        const header = await sb("business_loans").insert({ lender: draft.lender, loan_type: draft.loanType, principal: draft.principal, interest_rate: draft.interestRate, borrowed_date: draft.borrowedDate, due_date: draft.dueDate }).single().run();
-        if (header?.id) loans.setRows((prev) => prev.map((l) => (l.id === draft.id ? { ...l, dbId: header.id } : l)));
-      } catch (e) { notify(`Saved locally, but server update failed: ${e.message || "Unknown error"}`, "error"); }
+      const { data: header, error } = await runCompanyTableMutation("business_loans", "insert", {
+        lender: draft.lender,
+        loan_type: draft.loanType,
+        principal: draft.principal,
+        interest_rate: draft.interestRate,
+        borrowed_date: draft.borrowedDate,
+        due_date: draft.dueDate,
+      });
+      if (error || !header?.id) {
+        notify(`Saved locally, but server persistence failed: ${error?.message || "Unknown error"}`, "error");
+      } else {
+        loans.setRows((prev) => prev.map((l) => (l.id === draft.id ? { ...l, dbId: header.id } : l)));
+      }
     }
   }
 
@@ -14136,10 +14174,17 @@ function LoansView() {
     notify(msg, newStatus === "Paid" ? "success" : "info");
     logAudit(`Loan repayment: ${loan.lender}`, "Finance", "User", `TZS ${money(amt)}k via ${repayMethod}. Balance: TZS ${money(Math.round(Math.max(0, balance - amt)))}k`);
     if (IS_CONFIGURED && loan.dbId) {
-      try {
-        await sb("loan_repayments").insert({ loan_id: loan.dbId, amount: amt, repayment_date: draft.date, method: draft.method }).run();
-        if (newStatus === "Paid") await sb("business_loans").eq("id", loan.dbId).update({ status: "Paid" }).run();
-      } catch (_e) { notify("Saved locally — server update failed.", "error"); }
+      const { error: repayError } = await runCompanyTableMutation("loan_repayments", "insert", {
+        loan_id: loan.dbId,
+        amount: amt,
+        repayment_date: draft.date,
+        method: draft.method,
+      });
+      if (repayError) {
+        notify(`Repayment saved locally, but server update failed: ${repayError.message}`, "error");
+      } else if (newStatus === "Paid") {
+        await runCompanyTableMutation("business_loans", "update", { status: "Paid" }, { matchCol: "id", matchVal: loan.dbId });
+      }
     }
   }
 

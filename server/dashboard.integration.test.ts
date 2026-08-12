@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, resolveDailyBriefingFetchState, runCompanyTableQuery, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -178,6 +178,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(loanPayload.lender).toBeTruthy();
     expect(loanPayload.principal).toBeGreaterThan(0);
     expect(loanPayload.borrowed_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("handles runCompanyTableMutation transient retry and missing table errors", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ message: "Network gateway timeout" }, 502)).mockResolvedValueOnce(jsonResponse({ id: "loan-uuid-99" }, 201));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCompanyTableMutation("business_loans", "insert", { lender: "CRDB Bank", principal: 2000000 });
+    expect(result.error).toBeNull();
+    expect(result.data).toMatchObject({ id: "loan-uuid-99" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("assembles chart sections and serializes them as escaped CSV", () => {
