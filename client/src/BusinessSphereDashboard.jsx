@@ -13936,26 +13936,26 @@ function BudgetsView({ expenses }) {
         })}
       </div>
 
-      {/* Departmental Budget vs Actual ComposedChart */}
+      {/* Departmental Budget vs Actual Comparative Bar Chart */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 mb-6">
-        <h3 className="text-[14px] font-semibold text-[#111827] mb-1">Departmental Budgets vs. Actual Spending</h3>
-        <p className="text-[12px] text-slate-400 mb-3">Comparing adjusted departmental limits against recorded monthly outflows</p>
-        <ResponsiveContainer width="100%" height={220}>
-          <ComposedChart data={departmentLines.map(d => ({ name: d.department, actual: Math.round(d.actual), limit: d.limit, over: d.actual > d.limit && d.limit > 0 }))} margin={{ left: -10, right: 4, top: 0, bottom: 20 }}>
+        <h3 className="text-[14px] font-semibold text-[#111827] mb-1">Departmental Budgets vs. Actual Spending (Comparative Bars)</h3>
+        <p className="text-[12px] text-slate-400 mb-3">Comparing adjusted departmental budget limits side-by-side with actual monthly spending</p>
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={departmentLines.map(d => ({ name: d.department, actual: Math.round(d.actual), budgetLimit: d.limit, over: d.actual > d.limit && d.limit > 0 }))} margin={{ left: -10, right: 4, top: 0, bottom: 20 }}>
             <CartesianGrid vertical={false} stroke="#F3F4F6"/>
             <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
             <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
             <Tooltip formatter={(v, n) => ["TZS " + money(v) + "k", n === "actual" ? "Actual Spend" : "Budget Limit"]}/>
-            <Bar dataKey="actual" name="actual" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="budgetLimit" name="budgetLimit" fill="#C9A96E" radius={[4, 4, 0, 0]} barSize={16}/>
+            <Bar dataKey="actual" name="actual" radius={[4, 4, 0, 0]} barSize={16}>
               {departmentLines.map((d, i) => <Cell key={i} fill={d.actual > d.limit && d.limit > 0 ? "#EF4444" : "#16A34A"}/>)}
             </Bar>
-            <Line type="monotone" dataKey="limit" stroke="#C9A96E" strokeWidth={2} dot={{ r: 4, fill: "#C9A96E" }} strokeDasharray="5 3" name="limit"/>
-          </ComposedChart>
+          </BarChart>
         </ResponsiveContainer>
         <div className="flex gap-4 mt-2 text-[11.5px]">
-          <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#16A34A]"/><span className="text-slate-500">Actual Spend (Under Budget)</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#C9A96E]"/><span className="text-slate-500">Adjusted Budget Limit</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#16A34A]"/><span className="text-slate-500">Actual Spend (Normal)</span></div>
           <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#EF4444]"/><span className="text-slate-500">Actual Spend (Exceeded)</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-5 h-0.5 bg-[#C9A96E] border-dashed border-t-2 border-[#C9A96E]"/><span className="text-slate-500">Adjusted Budget Limit</span></div>
         </div>
       </div>
 

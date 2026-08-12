@@ -289,6 +289,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("Exceeded");
     expect(dashboardSource).toContain("Warning");
     expect(dashboardSource).toContain("Normal");
-    expect(dashboardSource).toContain("Departmental Budgets vs. Actual Spending");
-    expect(dashboardSource).toContain("ComposedChart data={departmentLines");
+    expect(dashboardSource).toContain("Departmental Budgets vs. Actual Spending (Comparative Bars)");
+    expect(dashboardSource).toContain("BarChart data={departmentLines");
+    expect(dashboardSource).toContain("dataKey=\"budgetLimit\"");
   });
