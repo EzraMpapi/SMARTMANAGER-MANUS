@@ -201,6 +201,14 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("serializeDashboardSectionsToCsv");
   });
 
+  it("includes persistent TZS/USD currency toggle and formatting helpers", () => {
+    expect(dashboardSource).toContain('preferences.currency');
+    expect(dashboardSource).toContain('updatePreference("currency"');
+    const prefsContext = readFileSync(new URL("../client/src/contexts/DashboardPreferencesContext.tsx", import.meta.url), "utf8");
+    expect(prefsContext).toContain('currency: "TZS" | "USD"');
+    expect(prefsContext).toContain('formatMoney');
+  });
+
   it("returns an honest unavailable state for a requested table absent from the connected schema", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ code: "PGRST205", message: "Could not find the table audit_log" }, 404));
     vi.stubGlobal("fetch", fetchMock);

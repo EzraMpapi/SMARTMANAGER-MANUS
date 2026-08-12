@@ -98,6 +98,6 @@
 - [x] Verify automated tests and production build, then publish the final AI-enhanced checkpoint.
 - [x] Save and publish a new checkpoint/version after the AI prompt suggestion bar and anomaly-detection changes.
 
-- [ ] Implement persistent TZS/USD currency preference and transparent display conversion helper in dashboard context.
-- [ ] Add currency toggle button to the executive command strip and format KPIs and chart tooltips accordingly.
-- [ ] Verify automated tests and production build, then publish the final currency-enhanced checkpoint.
+- [x] Implement persistent TZS/USD currency preference and transparent display conversion helper in dashboard context.
+- [x] Add currency toggle button to the executive command strip and format KPIs and chart tooltips accordingly.
+- [x] Verify automated tests and production build, then publish the final currency-enhanced checkpoint.
