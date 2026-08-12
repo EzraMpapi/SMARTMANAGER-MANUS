@@ -1,4 +1,30 @@
 import { describe, it, expect, vi } from "vitest";
+
+vi.mock("./auditLogs", () => ({
+  recordAuditLog: vi.fn(async (user, input) => ({
+    id: 101,
+    actorOpenId: user.openId,
+    actorName: user.name,
+    companyId: input.companyId,
+    action: input.action,
+    module: input.module,
+    details: input.details,
+    createdAt: new Date(),
+  })),
+  listAuditLogs: vi.fn(async (companyId) => ([
+    {
+      id: 101,
+      actorOpenId: "sup_audit_admin",
+      actorName: "Compliance Admin",
+      companyId,
+      action: "UPDATE_BUDGET_LIMIT",
+      module: "Finance",
+      details: "Changed Operations budget limit to 25000",
+      createdAt: new Date(),
+    }
+  ])),
+}));
+
 import { appRouter } from "./routers";
 
 describe("Audit Logs tRPC Router and Persistence", () => {

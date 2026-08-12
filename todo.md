@@ -192,3 +192,8 @@
 - [x] Document Supabase point-in-time recovery and automated backup policy in `BACKUP_POLICY.md`.
 - [x] Implement company-scoped compliance audit log table and tRPC/server persistence helpers for sensitive administrative actions.
 - [x] Add automated integration test coverage for audit logs, run test suite and production build, and publish final checkpoint.
+
+- [ ] Implement admin audit viewer in Management UI / Settings / Compliance panel.
+- [ ] Implement backup-retention notifications and scheduled audit check.
+- [ ] Enforce admin-only role gating for sensitive departmental budget threshold adjustments.
+- [ ] Add regression test coverage, verify test suite and production build, and publish final published checkpoint.
