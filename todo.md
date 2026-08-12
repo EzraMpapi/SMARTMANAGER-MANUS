@@ -93,3 +93,7 @@
 - [x] Implement server-side AI model discovery and multi-model chat/analysis procedures using `invokeLLM` and `listLLMModels`.
 - [x] Connect Collaboration Hub calendar events, team channels, messaging, and workspaces to live database persistence and state handlers.
 - [x] Add automated tests for the new AI procedures and collaboration actions, verify the build, and publish the final upgrade.
+
+- [x] Implement AI prompt suggestion bar in the dashboard assistant and automated cash-flow/stock-level anomaly detection in the server router.
+- [x] Verify automated tests and production build, then publish the final AI-enhanced checkpoint.
+- [ ] Save and publish a new checkpoint/version after the AI prompt suggestion bar and anomaly-detection changes.

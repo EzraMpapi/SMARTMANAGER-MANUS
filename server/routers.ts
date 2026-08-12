@@ -42,6 +42,69 @@ export const appRouter = router({
           model: res.model || input.model || "default",
         };
       }),
+    analyzeAnomalies: protectedProcedure
+      .input(z.object({
+        model: z.string().optional(),
+        currency: z.string().default("TZS"),
+        totals: z.object({
+          revenue: z.number(),
+          expenses: z.number(),
+          outstanding: z.number(),
+          inventoryValue: z.number(),
+          lowStockCount: z.number().int(),
+          inventoryCount: z.number().int(),
+        }),
+        inventory: z.array(z.object({
+          sku: z.string(), name: z.string(), qty: z.number(), reorder: z.number(), unitCost: z.number(), category: z.string(),
+        })).max(200),
+        monthly: z.array(z.object({ month: z.string(), revenue: z.number(), expenses: z.number(), profit: z.number() })).max(24),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const fallback = () => {
+          const findings: Array<{ severity: "high" | "medium" | "low"; area: "cash_flow" | "inventory"; title: string; detail: string; recommendation: string }> = [];
+          if (input.totals.outstanding > input.totals.revenue * 0.35 && input.totals.revenue > 0) {
+            findings.push({ severity: "high", area: "cash_flow", title: "Receivables concentration", detail: `${input.currency} ${Math.round(input.totals.outstanding).toLocaleString()} remains outstanding, above 35% of collected revenue.`, recommendation: "Review overdue invoices and prioritize collection follow-ups this week." });
+          }
+          if (input.totals.lowStockCount > 0) {
+            findings.push({ severity: "medium", area: "inventory", title: "Replenishment pressure", detail: `${input.totals.lowStockCount} of ${input.totals.inventoryCount} tracked items are at or below reorder level.`, recommendation: "Review replenishment proposals and confirm supplier lead times before the next cycle." });
+          }
+          if (input.totals.expenses > input.totals.revenue && input.totals.revenue > 0) {
+            findings.push({ severity: "high", area: "cash_flow", title: "Expense-to-revenue inversion", detail: `Recorded expenses exceed collected revenue in the supplied period.`, recommendation: "Investigate the largest expense categories and protect near-term cash commitments." });
+          }
+          return findings;
+        };
+        try {
+          const res = await invokeLLM({
+            model: input.model,
+            maxTokens: 1800,
+            messages: [
+              { role: "system", content: "You are a cautious ERP risk analyst. Analyze only the supplied live tenant metrics. Never invent transactions, causes, or figures. Return at most five actionable findings. If evidence is insufficient, return an empty array." },
+              { role: "user", content: JSON.stringify(input) },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "erp_anomaly_findings",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    findings: { type: "array", maxItems: 5, items: { type: "object", properties: { severity: { type: "string", enum: ["high", "medium", "low"] }, area: { type: "string", enum: ["cash_flow", "inventory"] }, title: { type: "string" }, detail: { type: "string" }, recommendation: { type: "string" } }, required: ["severity", "area", "title", "detail", "recommendation"], additionalProperties: false } },
+                  },
+                  required: ["findings"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+          const content = res.choices[0]?.message?.content;
+          const parsed = typeof content === "string" ? JSON.parse(content) : content;
+          return { findings: Array.isArray(parsed?.findings) ? parsed.findings : fallback(), model: res.model || input.model || "default", source: "ai" as const };
+        } catch (_error) {
+          return { findings: fallback(), model: input.model || "deterministic-fallback", source: "rule-based-fallback" as const };
+        }
+      }),
   }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

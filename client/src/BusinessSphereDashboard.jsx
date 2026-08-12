@@ -33385,6 +33385,53 @@ function ChatInterface({ persona, data }) {
   const speechSupported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   const tools = AI_TOOLS_ALL.filter((t) => persona.tools.includes(t.name));
+  const [anomalies, setAnomalies] = useState([]);
+  const [anomalyMeta, setAnomalyMeta] = useState(null);
+  const anomalyMutation = trpc.ai.analyzeAnomalies.useMutation({
+    onSuccess: (result) => {
+      setAnomalies(result.findings || []);
+      setAnomalyMeta(result);
+      notify(result.findings?.length ? `${result.findings.length} business signal${result.findings.length === 1 ? "" : "s"} found.` : "No material cash-flow or stock anomalies found.");
+    },
+    onError: () => notify("The anomaly check could not be completed. Try again shortly.", "error"),
+  });
+
+  function runAnomalyCheck() {
+    const invoiceRows = data.invoices?.rows || [];
+    const expenseRows = data.expenses?.rows || [];
+    const inventoryRows = data.inventory?.rows || [];
+    const monthlyMap = {};
+    invoiceRows.forEach((invoice) => {
+      const month = (invoice.date || invoice.issueDate || "").slice(0, 7);
+      if (!month) return;
+      const total = lineTotal(invoice.items || []).total;
+      monthlyMap[month] ||= { month, revenue: 0, expenses: 0, profit: 0 };
+      monthlyMap[month].revenue += invoice.amountPaid || (invoice.status === "Paid" ? total : 0);
+    });
+    expenseRows.forEach((expense) => {
+      const month = (expense.date || expense.expenseDate || "").slice(0, 7);
+      if (!month) return;
+      monthlyMap[month] ||= { month, revenue: 0, expenses: 0, profit: 0 };
+      monthlyMap[month].expenses += Number(expense.amount) || 0;
+    });
+    const monthly = Object.values(monthlyMap).sort((a, b) => a.month.localeCompare(b.month)).slice(-12).map((row) => ({ ...row, profit: row.revenue - row.expenses }));
+    const revenue = invoiceRows.reduce((sum, invoice) => sum + (invoice.amountPaid || (invoice.status === "Paid" ? lineTotal(invoice.items || []).total : 0)), 0);
+    const outstanding = invoiceRows.reduce((sum, invoice) => sum + Math.max(0, lineTotal(invoice.items || []).total - (invoice.amountPaid || 0)), 0);
+    const expensesTotal = expenseRows.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+    anomalyMutation.mutate({
+      currency: data.company.currency || "TZS",
+      totals: {
+        revenue,
+        expenses: expensesTotal,
+        outstanding,
+        inventoryValue: inventoryRows.reduce((sum, item) => sum + (item.qty || 0) * (item.unitCost || 0), 0),
+        lowStockCount: inventoryRows.filter((item) => item.qty <= item.reorder && item.reorder > 0).length,
+        inventoryCount: inventoryRows.length,
+      },
+      inventory: inventoryRows.slice(0, 200).map((item) => ({ sku: item.sku || "", name: item.name || "", qty: Number(item.qty) || 0, reorder: Number(item.reorder) || 0, unitCost: Number(item.unitCost) || 0, category: item.category || "Uncategorized" })),
+      monthly,
+    });
+  }
 
   async function executeTool(name, toolInput) {
     try {
@@ -33634,7 +33681,42 @@ function ChatInterface({ persona, data }) {
 
   return (
     <div className="flex-1 bg-white rounded-xl border border-slate-200/80 shadow-sm flex flex-col overflow-hidden min-h-[420px]">
+      <div className="border-b border-slate-100 bg-slate-50/70 px-3 py-2.5">
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-slate-400">Try:</span>
+          {persona.suggestions.slice(0, 3).map((suggestion) => (
+            <button key={suggestion} onClick={() => send(suggestion)} disabled={busy} className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:border-[#16A34A]/40 hover:text-[#111827] disabled:opacity-50">
+              {suggestion}
+            </button>
+          ))}
+          <button onClick={runAnomalyCheck} disabled={busy || anomalyMutation.isPending} className="shrink-0 rounded-full border border-[#C9A96E]/40 bg-[#C9A96E]/10 px-3 py-1.5 text-[11px] font-bold text-[#8a670a] transition-colors hover:bg-[#C9A96E]/20 disabled:opacity-50">
+            {anomalyMutation.isPending ? "Analyzing signals…" : "Check cash & stock risks"}
+          </button>
+        </div>
+      </div>
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+        {anomalies.length > 0 && (
+          <div className="rounded-xl border border-[#C9A96E]/30 bg-[#C9A96E]/5 p-3.5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[12.5px] font-bold text-[#111827]">Business signals</p>
+              <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{anomalyMeta?.source === "ai" ? "AI grounded" : "Rule-based fallback"}</span>
+            </div>
+            <div className="space-y-2">
+              {anomalies.map((finding, index) => (
+                <div key={`${finding.title}-${index}`} className="rounded-lg border border-white/80 bg-white/80 p-2.5">
+                  <div className="flex items-start gap-2">
+                    <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${finding.severity === "high" ? "bg-[#EF4444]" : finding.severity === "medium" ? "bg-[#F59E0B]" : "bg-[#16A34A]"}`} />
+                    <div>
+                      <p className="text-[12px] font-bold text-[#111827]">{finding.title}</p>
+                      <p className="mt-0.5 text-[11.5px] leading-relaxed text-slate-600">{finding.detail}</p>
+                      <p className="mt-1 text-[11px] font-medium text-[#16A34A]">Next: {finding.recommendation}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {messages.length === 0 && !busy && (
           <div className="h-full flex flex-col items-center justify-center text-center px-4">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-3.5" style={{ backgroundColor: `${persona.color}14` }}>
