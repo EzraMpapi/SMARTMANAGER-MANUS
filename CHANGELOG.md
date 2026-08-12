@@ -89,3 +89,8 @@ The Daily Briefing now gathers the existing shared-table `loading`, `error`, and
 ## Remaining deployment steps
 
 The deployed production landing page is reachable at `https://bserp-dashbo-xgm6fauw.manus.space` and its public launch routes are available. Before public OAuth use, configure the production redirect URL in Supabase Auth and enable/configure the Google, Microsoft/Azure, and Apple providers if those social-login paths are required. Confirm that the connected project contains the ERP tables and RLS policies expected by the intended modules.
+
+
+## Supabase reconnect-success notification
+
+The shared `runCompanyTableQuery` retry path now records when a request recovers after a transient network failure and emits the existing visual toast bus event: **“Connection restored — live data is up to date.”** The toast uses the dashboard’s existing success styling and auto-dismiss behavior, so it informs the user without blocking module navigation or changing the preserved dashboard architecture. A three-second cooldown prevents a burst of simultaneous table retries from producing a notification storm. Focused integration coverage confirms the retry succeeds, reports `recoveredAfterRetry`, and publishes the expected success toast event.

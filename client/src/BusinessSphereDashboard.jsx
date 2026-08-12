@@ -326,6 +326,15 @@ function waitForSupabaseRetry(ms) {
   });
 }
 
+let lastSupabaseReconnectToastAt = 0;
+
+function emitSupabaseReconnectToast() {
+  const now = Date.now();
+  if (now - lastSupabaseReconnectToastAt < 3000) return;
+  lastSupabaseReconnectToastAt = now;
+  notify("Connection restored — live data is up to date.", "success");
+}
+
 export async function runCompanyTableQuery(table, { select = "*", order } = {}) {
   const queryVariants = [];
   const addVariant = (variantSelect, variantOrder) => {
@@ -340,17 +349,20 @@ export async function runCompanyTableQuery(table, { select = "*", order } = {}) 
   if (select !== "*" || order) addVariant("*", undefined);
 
   let lastError = null;
+  let recoveredAfterRetry = false;
   for (const variant of queryVariants) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         let query = sb(table).select(variant.select);
         if (variant.order) query = query.order(variant.order.col, { ascending: variant.order.ascending });
         const data = await query.run();
-        return { rows: Array.isArray(data) ? data : (data == null ? [] : [data]), usedFallback: variant.signature !== queryVariants[0].signature, unavailable: false };
+        if (recoveredAfterRetry) emitSupabaseReconnectToast();
+        return { rows: Array.isArray(data) ? data : (data == null ? [] : [data]), usedFallback: variant.signature !== queryVariants[0].signature, unavailable: false, recoveredAfterRetry };
       } catch (error) {
         lastError = error;
         if (isMissingTableError(error)) return { rows: [], usedFallback: false, unavailable: true, error: null };
         if (isTransientSupabaseError(error) && attempt === 0) {
+          recoveredAfterRetry = true;
           await waitForSupabaseRetry(180);
           continue;
         }
@@ -1036,7 +1048,7 @@ function mapPosTransactionRow(r) {
    component at the app root subscribes and renders the stack.
    ============================================================================= */
 
-const toastBus = {
+export const toastBus = {
   listeners: new Set(),
   push(toast) { this.listeners.forEach((fn) => fn(toast)); },
 };

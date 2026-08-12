@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveDailyBriefingFetchState, runCompanyTableQuery } from "../client/src/BusinessSphereDashboard.jsx";
+import { resolveDailyBriefingFetchState, runCompanyTableQuery, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -121,16 +121,25 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(String(fetchMock.mock.calls[1][0])).not.toContain("next_billing_date");
   });
 
-  it("retries a transient network failure once before returning live rows", async () => {
+  it("retries a transient network failure once and emits a reconnect-success toast", async () => {
     const fetchMock = vi.fn()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValueOnce(jsonResponse([{ id: "lead-1" }]));
+    const receivedToasts: Array<{ message?: string; type?: string }> = [];
+    const listener = (toast: { message?: string; type?: string }) => receivedToasts.push(toast);
+    toastBus.listeners.add(listener);
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await runCompanyTableQuery("crm_leads");
+    try {
+      const result = await runCompanyTableQuery("crm_leads");
+      expect(result.rows).toEqual([{ id: "lead-1" }]);
+      expect(result.recoveredAfterRetry).toBe(true);
+    } finally {
+      toastBus.listeners.delete(listener);
+    }
 
-    expect(result.rows).toEqual([{ id: "lead-1" }]);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(receivedToasts).toContainEqual({ id: expect.any(Number), message: "Connection restored — live data is up to date.", type: "success" });
   });
 
   it("returns an honest unavailable state for a requested table absent from the connected schema", async () => {
