@@ -176,5 +176,5 @@
 
 - [x] Add dedicated unit test coverage for ascending and descending sort direction toggling across chart modes.
 
-- [ ] Implement click-to-filter interaction on departmental budget comparison chart bars in `BudgetsView` to filter transaction ledger / expenses by department.
-- [ ] Add reset filter control, regression test coverage, verify build and test suite, and publish checkpoint.
+- [x] Implement click-to-filter interaction on departmental budget comparison chart bars in `BudgetsView` to filter transaction ledger / expenses by department.
+- [x] Add reset filter control, regression test coverage, verify build and test suite, and publish checkpoint.
