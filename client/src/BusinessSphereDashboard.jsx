@@ -451,12 +451,16 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
 function mapLeadRow(r) {
   return {
     id: r.id, dbId: r.id,
-    name: r.contact_name, company: r.company_name, stage: r.stage,
-    value: Number(r.value_amount) || 0, currency: r.currency || "TZS000",
-    owner: r.owner_id || "Unassigned", email: r.email || "", phone: r.phone || "",
+    name: r.contact_name || r.name || r.lead_name || "",
+    company: r.company_name || r.company || "",
+    stage: r.stage || "New",
+    value: Number(r.value_amount || r.value || r.amount) || 0,
+    currency: r.currency || "TZS000",
+    owner: r.owner_id || r.owner || "Unassigned",
+    email: r.email || "", phone: r.phone || "",
     industry: r.industry || "General", score: r.score ?? 50,
     lastActivity: r.last_activity_at ? new Date(r.last_activity_at).toLocaleDateString() : "—",
-    expectedCloseDate: r.expected_close_date || null,
+    expectedCloseDate: r.expected_close_date || r.expectedDate || null,
     createdAt: r.created_at || null,
   };
 }
@@ -532,8 +536,13 @@ function mapProcurementContractRow(r) {
 function mapExpenseRow(r) {
   return {
     id: r.id, dbId: r.id,
-    vendor: r.vendor, category: r.category, date: r.expense_date, dueDate: r.due_date || r.expense_date,
-    amount: Number(r.amount) || 0, status: r.status, method: r.method || "",
+    vendor: r.vendor || r.payee || r.supplier || "Vendor",
+    category: r.category || "General",
+    date: r.expense_date || r.date || r.created_at?.slice(0, 10) || "",
+    dueDate: r.due_date || r.expense_date || r.date || "",
+    amount: Number(r.amount || r.cost || r.value) || 0,
+    status: r.status || "Paid",
+    method: r.method || "Bank Transfer",
   };
 }
 
