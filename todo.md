@@ -138,3 +138,7 @@
 - [x] Audit all tRPC and Supabase persistence endpoints for robust error handling and server-confirmed state.
 - [x] Run endpoint health checks and mock-verified persistence test suites.
 - [x] Run complete test suite and production build, then save final audited checkpoint.
+
+- [x] Audit date/time usage (`TODAY`, record stamps, filters) across `BusinessSphereDashboard.jsx`.
+- [x] Implement robust real-time dynamic date extraction (`new Date()`) for new records, reports, and current command strip indicators.
+- [x] Add regression test coverage for date handling and verify build/tests.
