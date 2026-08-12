@@ -135,6 +135,6 @@
 - [x] Make desktop sidebar responsive on lg+ viewports and ensure main content area respects sidebar gutter.
 - [x] Run test suite and save final responsive checkpoint.
 
-- [ ] Audit all tRPC and Supabase persistence endpoints for robust error handling and server-confirmed state.
-- [ ] Run endpoint health checks and mock-verified persistence test suites.
-- [ ] Run complete test suite and production build, then save final audited checkpoint.
+- [x] Audit all tRPC and Supabase persistence endpoints for robust error handling and server-confirmed state.
+- [x] Run endpoint health checks and mock-verified persistence test suites.
+- [x] Run complete test suite and production build, then save final audited checkpoint.
