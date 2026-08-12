@@ -77,3 +77,7 @@
 - [x] Add pause/resume toggles and a "Send now" trigger to the report schedule dialog and API router.
 - [x] Add automated coverage for pause/resume state changes and immediate manual test-dispatch.
 - [x] Save and publish a final checkpoint with the updated schedule controls.
+
+- [x] Align the landing page, authentication views, and dashboard shell with the Smart Manager visual style and Kiswahili/Tanzania-first positioning.
+- [x] Add noble design tokens (deep slate/charcoal background, brushed gold/emerald accents, Poppins/Inter typography) to index.css and dashboard styling.
+- [x] Verify accessibility, responsiveness, and automated tests for the redesigned experience, then publish the final checkpoint.

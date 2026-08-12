@@ -140,3 +140,10 @@ The scheduled callback remains mounted at `/api/scheduled/dashboardReport`, auth
 - Added protected tRPC mutations `reportSchedules.toggleActive` and `reportSchedules.sendNow` with schedule ownership verification.
 - Added focused service and router tests covering pause state updates and immediate manual report dispatch.
 - Validation: 34 Vitest tests pass, production build passes, and schedule actions integrate smoothly into the existing ERP dashboard layout.
+
+## Smart Manager Redesign — 2026-08-12
+
+- Redesigned the public landing page (`Home.tsx`) to adopt the Smart Manager noble visual language: deep charcoal/slate background (`#0B1120`), midnight navy cards (`#131C31`), brushed gold (`#C9A96E`) and emerald green (`#16A34A`) accents, Poppins headings, and Inter body typography.
+- Integrated Tanzania-first positioning (`Imetengenezwa Tanzania` with national flag references and Kiswahili-friendly microcopy).
+- Preserved all live Supabase data layers, tRPC procedures, dashboard module routing, export filters, and recurring Resend report scheduling.
+- Validation: 34 Vitest tests pass cleanly, production build passes, and CSS warning resolved by placing Google Font imports at the head of `index.css`.
