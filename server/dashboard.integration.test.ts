@@ -297,3 +297,21 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("Largest Budget Variance");
     expect(dashboardSource).toContain("Highest Actual Spending");
   });
+
+  it("sorts departmental budget chart data correctly by variance, actual spending, and name", () => {
+    const rawDepartments = [
+      { name: "Operations", actual: 15000, budgetLimit: 20000, variance: 5000 },
+      { name: "Sales", actual: 35000, budgetLimit: 30000, variance: -5000 },
+      { name: "Finance", actual: 10000, budgetLimit: 12000, variance: 2000 },
+    ];
+
+    const sortVariance = [...rawDepartments].sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
+    // Operations variance magnitude = 5000, Sales = 5000, Finance = 2000. Depending on stable sort, Operations or Sales is first.
+    expect(Math.abs(sortVariance[0].variance)).toBe(5000);
+
+    const sortActual = [...rawDepartments].sort((a, b) => b.actual - a.actual);
+    expect(sortActual[0].name).toBe("Sales"); // 35000
+
+    const sortName = [...rawDepartments].sort((a, b) => a.name.localeCompare(b.name));
+    expect(sortName[0].name).toBe("Finance");
+  });

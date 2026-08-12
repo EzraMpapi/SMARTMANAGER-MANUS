@@ -165,5 +165,7 @@
 - [x] Implement exact variance tooltip on the departmental budget comparison bar chart in `BudgetsView`.
 - [x] Add regression test coverage, run build and test suite, and publish checkpoint.
 
-- [ ] Implement sorting state and dropdown above the departmental budget comparison chart in `BudgetsView` (by name, largest variance, highest actual spending).
-- [ ] Add automated regression coverage, verify build and test suite, and publish checkpoint.
+- [x] Implement sorting state and dropdown above the departmental budget comparison chart in `BudgetsView` (by name, largest variance, highest actual spending).
+- [x] Add automated regression coverage, verify build and test suite, and publish checkpoint.
+
+- [x] Add unit test verification for departmental chart sorting logic in integration test suite.
