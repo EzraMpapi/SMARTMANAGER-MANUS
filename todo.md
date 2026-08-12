@@ -169,3 +169,7 @@
 - [x] Add automated regression coverage, verify build and test suite, and publish checkpoint.
 
 - [x] Add unit test verification for departmental chart sorting logic in integration test suite.
+
+- [ ] Implement ascending/descending sort direction toggle state and UI control next to the chart sorting dropdown in `BudgetsView`.
+- [ ] Update chart sorting logic to respect the direction toggle and add automated unit test coverage.
+- [ ] Run test suite and production build, then publish checkpoint.

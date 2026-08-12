@@ -294,8 +294,11 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("dataKey=\"budgetLimit\"");
     expect(dashboardSource).toContain("Variance:");
     expect(dashboardSource).toContain("chartSortBy");
+    expect(dashboardSource).toContain("chartSortDir");
     expect(dashboardSource).toContain("Largest Budget Variance");
     expect(dashboardSource).toContain("Highest Actual Spending");
+    expect(dashboardSource).toContain("Asc");
+    expect(dashboardSource).toContain("Desc");
   });
 
   it("sorts departmental budget chart data correctly by variance, actual spending, and name", () => {

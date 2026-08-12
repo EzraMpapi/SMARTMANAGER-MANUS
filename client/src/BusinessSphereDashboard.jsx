@@ -13750,6 +13750,7 @@ function BudgetsView({ expenses }) {
   const [editingDept, setEditingDept] = useState(null);
   const [draftDeptLimit, setDraftDeptLimit] = useState("");
   const [chartSortBy, setChartSortBy] = useState("variance"); // "variance" | "actual" | "name"
+  const [chartSortDir, setChartSortDir] = useState("desc"); // "asc" | "desc"
 
   const monthStart = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}-01`;
 
@@ -13951,18 +13952,27 @@ function BudgetsView({ expenses }) {
               <option value="actual">Highest Actual Spending</option>
               <option value="name">Department Name</option>
             </select>
+            <button
+              onClick={() => setChartSortDir((prev) => (prev === "asc" ? "desc" : "asc"))}
+              className="text-[12px] bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-slate-700 font-medium hover:bg-slate-100 transition-colors flex items-center gap-1"
+              title={chartSortDir === "asc" ? "Ascending order (Click to change)" : "Descending order (Click to change)"}
+            >
+              {chartSortDir === "asc" ? "↑ Asc" : "↓ Desc"}
+            </button>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={(() => {
             const mapped = departmentLines.map(d => ({ name: d.department, actual: Math.round(d.actual), budgetLimit: d.limit, variance: Math.round(d.limit - d.actual), over: d.actual > d.limit && d.limit > 0 }));
+            let sorted = [];
             if (chartSortBy === "variance") {
-              return mapped.sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
+              sorted = mapped.sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
             } else if (chartSortBy === "actual") {
-              return mapped.sort((a, b) => b.actual - a.actual);
+              sorted = mapped.sort((a, b) => b.actual - a.actual);
             } else {
-              return mapped.sort((a, b) => a.name.localeCompare(b.name));
+              sorted = mapped.sort((a, b) => a.name.localeCompare(b.name));
             }
+            return chartSortDir === "asc" ? sorted.reverse() : sorted;
           })()} margin={{ left: -10, right: 4, top: 0, bottom: 20 }}>
             <CartesianGrid vertical={false} stroke="#F3F4F6"/>
             <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
