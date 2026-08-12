@@ -202,3 +202,7 @@
 - [x] Build admin role-management interface in Management UI settings.
 - [x] Add module and date range filters to the compliance audit log viewer.
 - [x] Run full test suite, verify production build, document provider limitations, and publish checkpoint.
+
+- [x] Implement admin user-role directory tRPC procedure and management UI table.
+- [x] Implement scheduled weekly compliance PDF export handler and webhook dispatcher for high-severity audit events.
+- [x] Run full test suite, verify production build, document feature contract, and publish final published checkpoint.
