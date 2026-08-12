@@ -13941,11 +13941,26 @@ function BudgetsView({ expenses }) {
         <h3 className="text-[14px] font-semibold text-[#111827] mb-1">Departmental Budgets vs. Actual Spending (Comparative Bars)</h3>
         <p className="text-[12px] text-slate-400 mb-3">Comparing adjusted departmental budget limits side-by-side with actual monthly spending</p>
         <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={departmentLines.map(d => ({ name: d.department, actual: Math.round(d.actual), budgetLimit: d.limit, over: d.actual > d.limit && d.limit > 0 }))} margin={{ left: -10, right: 4, top: 0, bottom: 20 }}>
+          <BarChart data={departmentLines.map(d => ({ name: d.department, actual: Math.round(d.actual), budgetLimit: d.limit, variance: Math.round(d.limit - d.actual), over: d.actual > d.limit && d.limit > 0 }))} margin={{ left: -10, right: 4, top: 0, bottom: 20 }}>
             <CartesianGrid vertical={false} stroke="#F3F4F6"/>
             <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
             <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
-            <Tooltip formatter={(v, n) => ["TZS " + money(v) + "k", n === "actual" ? "Actual Spend" : "Budget Limit"]}/>
+            <Tooltip content={({ active, payload, label }) => {
+              if (!active || !payload || !payload.length) return null;
+              const data = payload[0].payload;
+              const variance = data.budgetLimit - data.actual;
+              const isOver = variance < 0;
+              return (
+                <div className="bg-slate-900 text-white text-[11.5px] rounded-lg p-3 shadow-lg space-y-1">
+                  <p className="font-semibold text-[#C9A96E]">{label} Department</p>
+                  <p className="text-slate-300">Budget Limit: <span className="font-mono font-medium text-white">TZS {money(data.budgetLimit)}k</span></p>
+                  <p className="text-slate-300">Actual Spend: <span className="font-mono font-medium text-white">TZS {money(data.actual)}k</span></p>
+                  <p className={`font-medium ${isOver ? "text-red-400" : "text-emerald-400"}`}>
+                    Variance: {isOver ? `Over by TZS ${money(Math.abs(variance))}k` : `Under by TZS ${money(variance)}k`}
+                  </p>
+                </div>
+              );
+            }}/>
             <Bar dataKey="budgetLimit" name="budgetLimit" fill="#C9A96E" radius={[4, 4, 0, 0]} barSize={16}/>
             <Bar dataKey="actual" name="actual" radius={[4, 4, 0, 0]} barSize={16}>
               {departmentLines.map((d, i) => <Cell key={i} fill={d.actual > d.limit && d.limit > 0 ? "#EF4444" : "#16A34A"}/>)}
