@@ -13751,6 +13751,7 @@ function BudgetsView({ expenses }) {
   const [draftDeptLimit, setDraftDeptLimit] = useState("");
   const [chartSortBy, setChartSortBy] = useState("variance"); // "variance" | "actual" | "name"
   const [chartSortDir, setChartSortDir] = useState("desc"); // "asc" | "desc"
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState(null);
 
   const monthStart = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}-01`;
 
@@ -13943,9 +13944,17 @@ function BudgetsView({ expenses }) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
           <div>
             <h3 className="text-[14px] font-semibold text-[#111827] mb-0.5">Departmental Budgets vs. Actual Spending (Comparative Bars)</h3>
-            <p className="text-[12px] text-slate-400">Comparing adjusted departmental budget limits side-by-side with actual monthly spending</p>
+            <p className="text-[12px] text-slate-400">Comparing adjusted departmental budget limits side-by-side with actual monthly spending. Click any department bar to filter ledger expenses.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedDeptFilter && (
+              <button
+                onClick={() => setSelectedDeptFilter(null)}
+                className="text-[11.5px] font-medium bg-amber-50 text-amber-800 border border-amber-200 rounded-md px-2.5 py-1 hover:bg-amber-100 transition-colors flex items-center gap-1"
+              >
+                Filtered: {selectedDeptFilter} ✕
+              </button>
+            )}
             <span className="text-[11.5px] text-slate-500 font-medium">Sort by:</span>
             <select value={chartSortBy} onChange={(e) => setChartSortBy(e.target.value)} className="text-[12px] bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-[#C9A96E]">
               <option value="variance">Largest Budget Variance</option>
@@ -13962,18 +13971,27 @@ function BudgetsView({ expenses }) {
           </div>
         </div>
         <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={(() => {
-            const mapped = departmentLines.map(d => ({ name: d.department, actual: Math.round(d.actual), budgetLimit: d.limit, variance: Math.round(d.limit - d.actual), over: d.actual > d.limit && d.limit > 0 }));
-            let sorted = [];
-            if (chartSortBy === "variance") {
-              sorted = mapped.sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
-            } else if (chartSortBy === "actual") {
-              sorted = mapped.sort((a, b) => b.actual - a.actual);
-            } else {
-              sorted = mapped.sort((a, b) => a.name.localeCompare(b.name));
-            }
-            return chartSortDir === "asc" ? sorted.reverse() : sorted;
-          })()} margin={{ left: -10, right: 4, top: 0, bottom: 20 }}>
+          <BarChart
+            data={(() => {
+              const mapped = departmentLines.map(d => ({ name: d.department, actual: Math.round(d.actual), budgetLimit: d.limit, variance: Math.round(d.limit - d.actual), over: d.actual > d.limit && d.limit > 0 }));
+              let sorted = [];
+              if (chartSortBy === "variance") {
+                sorted = mapped.sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
+              } else if (chartSortBy === "actual") {
+                sorted = mapped.sort((a, b) => b.actual - a.actual);
+              } else {
+                sorted = mapped.sort((a, b) => a.name.localeCompare(b.name));
+              }
+              return chartSortDir === "asc" ? sorted.reverse() : sorted;
+            })()}
+            margin={{ left: -10, right: 4, top: 0, bottom: 20 }}
+            onClick={(state) => {
+              if (state && state.activeLabel) {
+                setSelectedDeptFilter(state.activeLabel);
+              }
+            }}
+            style={{ cursor: "pointer" }}
+          >
             <CartesianGrid vertical={false} stroke="#F3F4F6"/>
             <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
             <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
@@ -13984,7 +14002,7 @@ function BudgetsView({ expenses }) {
               const isOver = variance < 0;
               return (
                 <div className="bg-slate-900 text-white text-[11.5px] rounded-lg p-3 shadow-lg space-y-1">
-                  <p className="font-semibold text-[#C9A96E]">{label} Department</p>
+                  <p className="font-semibold text-[#C9A96E]">{label} Department (Click bar to filter)</p>
                   <p className="text-slate-300">Budget Limit: <span className="font-mono font-medium text-white">TZS {money(data.budgetLimit)}k</span></p>
                   <p className="text-slate-300">Actual Spend: <span className="font-mono font-medium text-white">TZS {money(data.actual)}k</span></p>
                   <p className={`font-medium ${isOver ? "text-red-400" : "text-emerald-400"}`}>
@@ -13999,12 +14017,43 @@ function BudgetsView({ expenses }) {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-        <div className="flex gap-4 mt-2 text-[11.5px]">
-          <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#C9A96E]"/><span className="text-slate-500">Adjusted Budget Limit</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#16A34A]"/><span className="text-slate-500">Actual Spend (Normal)</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#EF4444]"/><span className="text-slate-500">Actual Spend (Exceeded)</span></div>
+        <div className="flex items-center justify-between mt-2 text-[11.5px]">
+          <div className="flex gap-4">
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#C9A96E]"/><span className="text-slate-500">Adjusted Budget Limit</span></div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#16A34A]"/><span className="text-slate-500">Actual Spend (Normal)</span></div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#EF4444]"/><span className="text-slate-500">Actual Spend (Exceeded)</span></div>
+          </div>
+          {selectedDeptFilter && (
+            <span className="text-amber-700 font-medium">Filtering ledger by {selectedDeptFilter}</span>
+          )}
         </div>
       </div>
+
+      {/* Filtered Expenses Ledger for Selected Department */}
+      {selectedDeptFilter && (
+        <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-[13px] font-semibold text-[#111827]">Filtered Expenses: {selectedDeptFilter} Department</h4>
+            <button onClick={() => setSelectedDeptFilter(null)} className="text-[11.5px] text-slate-500 hover:text-slate-800 font-medium">Show All Departments</button>
+          </div>
+          <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+            {expenses.filter(e => (e.department || "Operations") === selectedDeptFilter).length === 0 ? (
+              <p className="text-[12px] text-slate-400 py-4 text-center">No expenses recorded for {selectedDeptFilter} this period.</p>
+            ) : (
+              expenses.filter(e => (e.department || "Operations") === selectedDeptFilter).map((e) => (
+                <div key={e.id} className="py-2.5 flex items-center justify-between text-[12px]">
+                  <div>
+                    <span className="font-medium text-[#111827]">{e.vendor}</span>
+                    <span className="text-slate-400 ml-2">({e.category})</span>
+                    <p className="text-[11px] text-slate-400">{e.date} · {e.description || "No description"}</p>
+                  </div>
+                  <span className="font-mono font-semibold text-slate-700">TZS {money(e.amount)}k</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm divide-y divide-slate-50">
         {budgets.loading && <p className="text-[12.5px] text-slate-400 text-center py-8">Loading...</p>}

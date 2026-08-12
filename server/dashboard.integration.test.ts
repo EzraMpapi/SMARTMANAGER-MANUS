@@ -299,6 +299,9 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("Highest Actual Spending");
     expect(dashboardSource).toContain("Asc");
     expect(dashboardSource).toContain("Desc");
+    expect(dashboardSource).toContain("selectedDeptFilter");
+    expect(dashboardSource).toContain("Filtered Expenses:");
+    expect(dashboardSource).toContain("Show All Departments");
   });
 
   it("sorts departmental budget chart data correctly by variance, actual spending, and name", () => {
