@@ -302,6 +302,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("selectedDeptFilter");
     expect(dashboardSource).toContain("Filtered Expenses:");
     expect(dashboardSource).toContain("Show All Departments");
+    expect(dashboardSource).toContain("Transactions Recorded");
+    expect(dashboardSource).toContain("Total Spending Sum");
   });
 
   it("sorts departmental budget chart data correctly by variance, actual spending, and name", () => {

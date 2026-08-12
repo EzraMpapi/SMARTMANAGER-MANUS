@@ -14030,30 +14030,49 @@ function BudgetsView({ expenses }) {
       </div>
 
       {/* Filtered Expenses Ledger for Selected Department */}
-      {selectedDeptFilter && (
-        <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-4 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-[13px] font-semibold text-[#111827]">Filtered Expenses: {selectedDeptFilter} Department</h4>
-            <button onClick={() => setSelectedDeptFilter(null)} className="text-[11.5px] text-slate-500 hover:text-slate-800 font-medium">Show All Departments</button>
-          </div>
-          <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
-            {expenses.filter(e => (e.department || "Operations") === selectedDeptFilter).length === 0 ? (
-              <p className="text-[12px] text-slate-400 py-4 text-center">No expenses recorded for {selectedDeptFilter} this period.</p>
-            ) : (
-              expenses.filter(e => (e.department || "Operations") === selectedDeptFilter).map((e) => (
-                <div key={e.id} className="py-2.5 flex items-center justify-between text-[12px]">
-                  <div>
-                    <span className="font-medium text-[#111827]">{e.vendor}</span>
-                    <span className="text-slate-400 ml-2">({e.category})</span>
-                    <p className="text-[11px] text-slate-400">{e.date} · {e.description || "No description"}</p>
+      {selectedDeptFilter && (() => {
+        const filteredDeptExpenses = expenses.filter(e => (e.department || "Operations") === selectedDeptFilter);
+        const deptTxCount = filteredDeptExpenses.length;
+        const deptTotalSum = filteredDeptExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+        return (
+          <div className="bg-white rounded-xl border border-amber-200 shadow-sm p-4 mb-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-[13px] font-semibold text-[#111827]">Filtered Expenses: {selectedDeptFilter} Department</h4>
+                <p className="text-[11.5px] text-slate-400">Ledger breakdown for selected departmental cost center</p>
+              </div>
+              <button onClick={() => setSelectedDeptFilter(null)} className="text-[11.5px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md font-medium transition-colors">Show All Departments</button>
+            </div>
+            {/* Department Transaction Summary Card */}
+            <div className="grid grid-cols-2 gap-3 bg-amber-50/60 border border-amber-100 rounded-lg p-3">
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-amber-800 font-medium mb-0.5">Transactions Recorded</p>
+                <p className="text-[16px] font-bold font-mono text-[#111827]">{deptTxCount} {deptTxCount === 1 ? "entry" : "entries"}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-amber-800 font-medium mb-0.5">Total Spending Sum</p>
+                <p className="text-[16px] font-bold font-mono text-[#111827]">TZS {money(Math.round(deptTotalSum))}k</p>
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+              {deptTxCount === 0 ? (
+                <p className="text-[12px] text-slate-400 py-4 text-center">No expenses recorded for {selectedDeptFilter} this period.</p>
+              ) : (
+                filteredDeptExpenses.map((e) => (
+                  <div key={e.id} className="py-2.5 flex items-center justify-between text-[12px]">
+                    <div>
+                      <span className="font-medium text-[#111827]">{e.vendor}</span>
+                      <span className="text-slate-400 ml-2">({e.category})</span>
+                      <p className="text-[11px] text-slate-400">{e.date} · {e.description || "No description"}</p>
+                    </div>
+                    <span className="font-mono font-semibold text-slate-700">TZS {money(e.amount)}k</span>
                   </div>
-                  <span className="font-mono font-semibold text-slate-700">TZS {money(e.amount)}k</span>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm divide-y divide-slate-50">
         {budgets.loading && <p className="text-[12.5px] text-slate-400 text-center py-8">Loading...</p>}
