@@ -181,3 +181,9 @@
 
 - [x] Implement department summary card above filtered ledger in `BudgetsView` showing transaction count and total spending sum.
 - [x] Add regression test coverage, verify test suite and production build, and publish checkpoint.
+
+- [x] Audit frontend-to-backend architecture, persistence helpers (`runCompanyTableMutation`, `runCompanyTableQuery`), authentication flow, and environment variables.
+- [x] Verify Supabase table availability, tenant ownership scoping (`company_id`), constraints, and error-handling fallbacks.
+- [x] Conduct end-to-end persistence audit across major ERP entities (Customers/CRM, Products/Inventory, Invoices, Expenses, Loans).
+- [x] Add focused integration tests and regression specs covering transaction resilience, error boundaries, and account data isolation.
+- [x] Execute full Vitest test suite, production build, runtime verification, and publish final production-hardened checkpoint.
