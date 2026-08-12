@@ -237,14 +237,17 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("serializeDashboardSectionsToCsv");
   });
 
-  it("includes persistent TZS/USD currency toggle and formatting helpers", () => {
+  it("includes persistent TZS/USD currency toggle, timezone selection, custom FX rate override, and formatting helpers", () => {
     expect(dashboardSource).toContain('preferences.currency');
     expect(dashboardSource).toContain('updatePreference("currency"');
     expect(dashboardSource).toContain('function Dashboard(');
     expect(dashboardSource).toContain('useDashboardPreferences()');
     const prefsContext = readFileSync(new URL("../client/src/contexts/DashboardPreferencesContext.tsx", import.meta.url), "utf8");
     expect(prefsContext).toContain('currency: "TZS" | "USD"');
+    expect(prefsContext).toContain('timezone: string');
+    expect(prefsContext).toContain('fxRateOverride: number');
     expect(prefsContext).toContain('formatMoney');
+    expect(prefsContext).toContain('formatLocalDate');
   });
 
   it("returns an honest unavailable state for a requested table absent from the connected schema", async () => {

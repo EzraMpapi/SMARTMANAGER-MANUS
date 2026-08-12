@@ -7,6 +7,8 @@ interface DashboardPreferences {
   showPendingApprovals: boolean;
   accentColor: "gold" | "emerald";
   currency: "TZS" | "USD";
+  timezone: string;
+  fxRateOverride: number;
 }
 
 interface DashboardPreferencesContextType {
@@ -14,6 +16,7 @@ interface DashboardPreferencesContextType {
   updatePreference: <K extends keyof DashboardPreferences>(key: K, value: DashboardPreferences[K]) => void;
   resetPreferences: () => void;
   formatMoney: (amountInTzs: number, overrideCurrency?: "TZS" | "USD") => string;
+  formatLocalDate: (dateStringOrTimestamp: string | number | Date) => string;
 }
 
 const defaultPreferences: DashboardPreferences = {
@@ -23,9 +26,9 @@ const defaultPreferences: DashboardPreferences = {
   showPendingApprovals: true,
   accentColor: "gold",
   currency: "TZS",
+  timezone: "Africa/Dar_es_Salaam",
+  fxRateOverride: 2600,
 };
-
-const TZS_TO_USD_RATE = 2600;
 
 const DashboardPreferencesContext = createContext<DashboardPreferencesContextType | undefined>(undefined);
 
@@ -57,15 +60,33 @@ export function DashboardPreferencesProvider({ children }: { children: React.Rea
   const formatMoney = (amountInTzs: number, overrideCurrency?: "TZS" | "USD") => {
     const cur = overrideCurrency || preferences.currency || "TZS";
     const val = Number(amountInTzs) || 0;
+    const rate = Number(preferences.fxRateOverride) > 0 ? Number(preferences.fxRateOverride) : 2600;
     if (cur === "USD") {
-      const usdVal = val / TZS_TO_USD_RATE;
+      const usdVal = val / rate;
       return `US$ ${Math.round(usdVal).toLocaleString()}`;
     }
     return `TZS ${Math.round(val).toLocaleString()}`;
   };
 
+  const formatLocalDate = (dateStringOrTimestamp: string | number | Date) => {
+    try {
+      const d = new Date(dateStringOrTimestamp);
+      if (isNaN(d.getTime())) return String(dateStringOrTimestamp);
+      return d.toLocaleString("en-GB", {
+        timeZone: preferences.timezone || "Africa/Dar_es_Salaam",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (_e) {
+      return String(dateStringOrTimestamp);
+    }
+  };
+
   return (
-    <DashboardPreferencesContext.Provider value={{ preferences, updatePreference, resetPreferences, formatMoney }}>
+    <DashboardPreferencesContext.Provider value={{ preferences, updatePreference, resetPreferences, formatMoney, formatLocalDate }}>
       {children}
     </DashboardPreferencesContext.Provider>
   );

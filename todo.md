@@ -142,3 +142,7 @@
 - [x] Audit date/time usage (`TODAY`, record stamps, filters) across `BusinessSphereDashboard.jsx`.
 - [x] Implement robust real-time dynamic date extraction (`new Date()`) for new records, reports, and current command strip indicators.
 - [x] Add regression test coverage for date handling and verify build/tests.
+
+- [x] Add timezone selector and customizable FX rate override to `DashboardPreferencesContext.tsx` and `DashboardPreferencesDrawer.tsx`.
+- [x] Wire timezone-aware date formatting and FX conversion into dashboard modules and financial summaries.
+- [x] Add automated test coverage for timezone and FX preference handling, run build and tests, and publish checkpoint.

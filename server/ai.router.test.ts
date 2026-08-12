@@ -33,6 +33,6 @@ describe("AI router and grounded dashboard signals", () => {
     const drawerSource = readFileSync(new URL("../client/src/components/DashboardPreferencesDrawer.tsx", import.meta.url), "utf8");
     expect(drawerSource).toContain("trpc.ai.configurePreferences.useMutation");
     expect(drawerSource).toContain("AI Assistant");
-    expect(drawerSource).toContain("Apply AI Recommendations");
+    expect(drawerSource).toContain("Apply AI Recommendation");
   });
 });
