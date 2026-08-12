@@ -197,3 +197,8 @@
 - [x] Implement backup-retention notifications and scheduled audit check.
 - [x] Enforce admin-only role gating for sensitive departmental budget threshold adjustments.
 - [x] Add regression test coverage, verify test suite and production build, and publish final published checkpoint.
+
+- [x] Implement weekly backup-status verification workflow and scheduled Heartbeat route.
+- [x] Build admin role-management interface in Management UI settings.
+- [x] Add module and date range filters to the compliance audit log viewer.
+- [x] Run full test suite, verify production build, document provider limitations, and publish checkpoint.

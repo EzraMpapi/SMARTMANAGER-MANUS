@@ -6,6 +6,11 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createReportSchedule, deleteReportSchedule, listReportSchedules, sendReportScheduleNow, updateReportSchedule } from "./reportSchedules";
 import { listAuditLogs, recordAuditLog } from "./auditLogs";
+import { verifyDatabaseBackupStatus } from "./backupVerification";
+import { TRPCError } from "@trpc/server";
+import { users } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
+import { getDb } from "./db";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -261,8 +266,29 @@ export const appRouter = router({
   }),
 
   auditLogs: router({
-    list: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().optional() })).query(({ input }) => listAuditLogs(input.companyId, input.limit)),
+    list: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ input }) => {
+      const logs = await listAuditLogs(input.companyId, input.limit || 100);
+      return logs.filter(l => {
+        if (input.module && l.module !== input.module) return false;
+        if (input.startDate && new Date(l.createdAt) < new Date(input.startDate)) return false;
+        if (input.endDate && new Date(l.createdAt) > new Date(input.endDate)) return false;
+        return true;
+      });
+    }),
     record: protectedProcedure.input(z.object({ companyId: z.string().min(1), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(({ ctx, input }) => recordAuditLog(ctx.user, input)),
+  }),
+
+  admin: router({
+    verifyBackup: protectedProcedure.query(() => verifyDatabaseBackupStatus()),
+    updateUserRole: protectedProcedure.input(z.object({ openId: z.string(), role: z.enum(["user", "admin"]) })).mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can update user roles." });
+      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable." });
+      await db.update(users).set({ role: input.role }).where(eq(users.openId, input.openId));
+      return { success: true, openId: input.openId, newRole: input.role };
+    }),
   }),
 });
 
