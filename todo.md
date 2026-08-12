@@ -188,7 +188,7 @@
 - [x] Add focused integration tests and regression specs covering transaction resilience, error boundaries, and account data isolation.
 - [x] Execute full Vitest test suite, production build, runtime verification, and publish final production-hardened checkpoint.
 
-- [ ] Configure and request production environment secrets (`RESEND_API_KEY`, Supabase OAuth credentials) via `webdev_request_secrets`.
-- [ ] Document Supabase point-in-time recovery and automated backup policy in `BACKUP_POLICY.md`.
-- [ ] Implement company-scoped compliance audit log table and tRPC/server persistence helpers for sensitive administrative actions.
-- [ ] Add automated integration test coverage for audit logs, run test suite and production build, and publish final checkpoint.
+- [x] Configure and request production environment secrets (`RESEND_API_KEY`, Supabase OAuth credentials) via `webdev_request_secrets`.
+- [x] Document Supabase point-in-time recovery and automated backup policy in `BACKUP_POLICY.md`.
+- [x] Implement company-scoped compliance audit log table and tRPC/server persistence helpers for sensitive administrative actions.
+- [x] Add automated integration test coverage for audit logs, run test suite and production build, and publish final checkpoint.
