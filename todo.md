@@ -206,3 +206,8 @@
 - [x] Implement admin user-role directory tRPC procedure and management UI table.
 - [x] Implement scheduled weekly compliance PDF export handler and webhook dispatcher for high-severity audit events.
 - [x] Run full test suite, verify production build, document feature contract, and publish final published checkpoint.
+
+- [x] Implement CSV export for filtered compliance audit logs.
+- [x] Implement secure webhook configuration panel and dispatcher for audit events.
+- [x] Implement schedule controls for automated compliance digests in the management experience.
+- [x] Run full test suite, verify production build, document feature contract, and publish final checkpoint.

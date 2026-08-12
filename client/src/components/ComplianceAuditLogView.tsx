@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ShieldAlert, RefreshCw, Database, Filter, Calendar } from "lucide-react";
 import { trpc } from "../lib/trpc";
+import { toast } from "sonner";
 
 interface ComplianceAuditLogViewProps {
   companyId?: string;
@@ -23,6 +24,54 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
   );
 
   const { data: backupStatus, refetch: refetchBackup, isLoading: backupLoading } = trpc.admin.verifyBackup.useQuery();
+  const utils = trpc.useUtils();
+  const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookEnabled, setWebhookEnabled] = useState(false);
+  const [webhookSecret, setWebhookSecret] = useState("");
+
+  const { data: webhookCfg } = trpc.admin.getWebhook.useQuery();
+  React.useEffect(() => {
+    if (webhookCfg) {
+      setWebhookUrl(webhookCfg.url);
+      setWebhookEnabled(webhookCfg.enabled);
+    }
+  }, [webhookCfg]);
+
+  const updateWebhookMutation = trpc.admin.updateWebhook.useMutation({
+    onSuccess: () => {
+      toast.success("Webhook configuration updated successfully");
+      setShowWebhookModal(false);
+      utils.admin.getWebhook.invalidate();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update webhook configuration");
+    },
+  });
+
+  const handleExportCsv = () => {
+    if (!logs || logs.length === 0) {
+      toast.error("No logs available to export");
+      return;
+    }
+    const headers = ["Timestamp", "Module", "Action", "Actor", "Details"];
+    const rows = logs.map(l => [
+      `"${new Date(l.createdAt).toISOString()}"`,
+      `"${l.module}"`,
+      `"${l.action}"`,
+      `"${l.actorName || l.actorOpenId}"`,
+      `"${(l.details || "").replace(/"/g, '""')}"`,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `compliance_audit_logs_${companyId}_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Compliance audit log CSV exported successfully");
+  };
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -62,13 +111,84 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
             <p className="text-[13px] text-[#94A3B8]">Immutable cryptographic & server-persisted log of administrative and departmental actions.</p>
           </div>
         </div>
-        <button
-          onClick={() => refetch()}
-          className="inline-flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-[13px] font-semibold text-[#C9A96E] hover:bg-white/10 transition-colors"
-        >
-          <RefreshCw size={14} /> Refresh Logs
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/30 px-4 py-2.5 text-[13px] font-semibold text-emerald-300 hover:bg-emerald-600/30 transition-colors"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => setShowWebhookModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-[13px] font-semibold text-[#C9A96E] hover:bg-white/10 transition-colors"
+          >
+            Webhook Config
+          </button>
+          <button
+            onClick={() => refetch()}
+            className="inline-flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-[13px] font-semibold text-[#C9A96E] hover:bg-white/10 transition-colors"
+          >
+            <RefreshCw size={14} /> Refresh Logs
+          </button>
+        </div>
       </div>
+
+      {showWebhookModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#131C31] p-6 text-white shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <h4 className="text-[16px] font-bold text-[#C9A96E]">Audit Event Webhook Configuration</h4>
+              <button onClick={() => setShowWebhookModal(false)} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <div className="space-y-4 text-[13px]">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Webhook Endpoint URL</label>
+                <input
+                  type="url"
+                  placeholder="https://api.yourcompany.com/webhooks/audit"
+                  className="w-full rounded-xl border border-white/15 bg-[#0B1120] px-3.5 py-2.5 text-white focus:outline-none focus:border-[#C9A96E]"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Signing Secret (Optional)</label>
+                <input
+                  type="password"
+                  placeholder="whsec_..."
+                  className="w-full rounded-xl border border-white/15 bg-[#0B1120] px-3.5 py-2.5 text-white focus:outline-none focus:border-[#C9A96E]"
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <input
+                  type="checkbox"
+                  id="wbEnabled"
+                  className="h-4 w-4 rounded border-slate-700 bg-[#0B1120] text-[#C9A96E] focus:ring-0"
+                  checked={webhookEnabled}
+                  onChange={(e) => setWebhookEnabled(e.target.checked)}
+                />
+                <label htmlFor="wbEnabled" className="text-white font-semibold">Enable automated webhook dispatch for compliance events</label>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+              <button
+                onClick={() => setShowWebhookModal(false)}
+                className="rounded-xl px-4 py-2.5 bg-white/5 text-slate-300 hover:bg-white/10 font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => updateWebhookMutation.mutate({ url: webhookUrl, enabled: webhookEnabled, secret: webhookSecret })}
+                className="rounded-xl px-5 py-2.5 bg-[#C9A96E] text-[#0B1120] font-bold hover:bg-[#D4B87F] transition-colors"
+              >
+                Save Webhook Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter Controls */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-xl border border-white/10 bg-[#0B1120] p-4">
