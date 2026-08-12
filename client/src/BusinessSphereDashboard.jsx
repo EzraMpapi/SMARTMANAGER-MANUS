@@ -27,6 +27,7 @@ import {
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import { trpc } from "./lib/trpc";
+import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -4817,6 +4818,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [exportEndDate, setExportEndDate] = useState("");
   const [exportModules, setExportModules] = useState({ finance: true, sales: true, crm: true, inventory: true, operations: true });
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
 
 
   const financials = useMemo(() => {
@@ -5172,6 +5174,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   return (
     <div className="space-y-5">
       {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
+      <DashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
 
       {/* ══════════════════ COMMAND STRIP ══════════════════ */}
       <div className="rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 55%,#16A34A 130%)"}}>
@@ -5249,6 +5252,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               </button>
               <button onClick={()=>typeof window.__openDailyBrief==="function"&&window.__openDailyBrief()} className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]">
                 <BarChart3 size={13}/> Daily Brief
+              </button>
+              <button onClick={() => setPreferencesDrawerOpen(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]">
+                <Sliders size={13}/> Preferences
               </button>
             </div>
           </div>
