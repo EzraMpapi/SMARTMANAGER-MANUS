@@ -60,3 +60,8 @@
 - [x] Verify the inserted rows through live Supabase reads and representative ERP chart data paths.
 - [x] Document the sample-data population and publish the update.
 - [x] Adapt the inventory and CRM contact mappers to the deployed tenant schema aliases so live sample rows render with quantities and labels.
+
+- [x] Inspect existing dashboard chart data, export helpers, and action-menu patterns for a minimal integration point.
+- [x] Implement CSV and PDF downloads for the dashboard chart data with accessible controls and stable filenames.
+- [x] Add focused automated coverage for CSV serialization, PDF export preparation, and the dashboard export controls.
+- [x] Visually verify the export controls in the dashboard, update delivery documentation, and publish the enhancement.

@@ -109,3 +109,12 @@ At the user's request, the connected **Kilimanjaro Trading Co.** tenant (`302220
 The live verification query returned **6 CRM leads** with a combined pipeline value of **TZS 125,700,000**, **5 CRM contacts**, and **8 inventory items** totaling **1,000 units**. Two inventory items are intentionally at or below their reorder level so the low-stock indicator has a visible live state. The sample items cover safety equipment, storage equipment, construction materials, electronics, furniture, and workshop equipment across Dar es Salaam, Arusha, and Mwanza.
 
 The deployed schema uses generic aliases such as `item_sku`, `item_name`, and `quantity`, while the preserved dashboard mapper historically expected `sku`, `name`, and `qty_on_hand`. The minimal compatibility patch now accepts both forms, preserves richer-schema support, and maps CRM contact aliases (`contact_name`, `company_name`, `role`) into the existing dashboard row shape. Focused integration coverage and the complete 15-test suite passed; the production build also completed successfully.
+
+
+## Dashboard chart-data export
+
+The executive dashboard now exposes an **Export Charts** action in the command strip. Users can download the current dashboard chart data as either a CSV file or a formatted PDF report without leaving the dashboard. Both formats include the available Executive KPIs, six-month revenue-versus-expenses trend, accounts-receivable aging, CRM pipeline by stage, inventory value by category, work orders by status, and top customers by billed value. Empty sections are omitted rather than filled with fabricated values.
+
+CSV downloads use RFC-style quoted fields with escaped quotes and stable filenames in the form `{company}-dashboard-{YYYY-MM-DD}.csv`. PDF downloads use the same stable base name with a `.pdf` extension and are generated in-browser with `jspdf`, keeping the feature usable with live data and without a new server endpoint. The menu is keyboard-reachable, exposes `aria-haspopup`, `aria-expanded`, and menu-item roles, and reports successful downloads through the existing toast system.
+
+Validation completed: all 18 automated tests passed across the three Vitest files; the production bundle completed successfully; and a live preview demo produced both `beirahisi-hardware-dashboard-2026-07-02.csv` and `beirahisi-hardware-dashboard-2026-07-02.pdf` in the browser download directory. The CSV was 850 bytes and the PDF was 16,232 bytes. The preserved dashboard remains a single JSX source file; the only new dependency is `jspdf`.

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mapContactRow, mapInventoryRow, resolveDailyBriefingFetchState, runCompanyTableQuery, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, createDashboardPdfDocument, mapContactRow, mapInventoryRow, resolveDailyBriefingFetchState, runCompanyTableQuery, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -152,6 +152,38 @@ describe("BusinessSphere launch and live-data integration", () => {
 
     expect(contact).toMatchObject({ name: "Asha Mtemi", title: "Procurement Lead", company: "Sample Retail Group" });
     expect(item).toMatchObject({ sku: "SAMPLE-001", name: "Warehouse shelving unit", qty: 62, reorder: 25, unitCost: 78, warehouse: "Dar es Salaam" });
+  });
+
+  it("assembles chart sections and serializes them as escaped CSV", () => {
+    const sections = buildDashboardChartSections({
+      kpis: [{ metric: "Pipeline", value: "TZS 125,700k", detail: "6 open deals" }],
+      pipelineByStage: [{ stage: "Proposal", deal_count: 2 }],
+    });
+    const csv = serializeDashboardSectionsToCsv(sections);
+
+    expect(sections.map((section) => section.title)).toEqual(["Executive KPIs", "CRM Pipeline by Stage"]);
+    expect(csv).toContain("BusinessSphere ERP");
+    expect(csv).toContain('"metric","value","detail"');
+    expect(csv).toContain('"Pipeline","TZS 125,700k","6 open deals"');
+    expect(csv.endsWith("\r\n")).toBe(true);
+  });
+
+  it("creates a non-empty PDF document for the chart export report", () => {
+    const pdf = createDashboardPdfDocument({
+      companyName: "Kilimanjaro Trading Co.",
+      periodLabel: "This month",
+      sections: [{ title: "Pipeline", rows: [{ stage: "Proposal", deal_count: 2 }] }],
+    });
+
+    expect(pdf.output("arraybuffer").byteLength).toBeGreaterThan(500);
+  });
+
+  it("exposes dashboard CSV and PDF export controls in the command strip", () => {
+    expect(dashboardSource).toContain('aria-label="Export dashboard chart data"');
+    expect(dashboardSource).toContain('onClick={() => exportDashboard("csv")}');
+    expect(dashboardSource).toContain('onClick={() => exportDashboard("pdf")}');
+    expect(dashboardSource).toContain("createDashboardPdfDocument");
+    expect(dashboardSource).toContain("serializeDashboardSectionsToCsv");
   });
 
   it("returns an honest unavailable state for a requested table absent from the connected schema", async () => {

@@ -25,6 +25,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
 import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -4600,6 +4601,134 @@ function toggleSort(sort, setSort, field) {
 
 /* ------------------------------- DASHBOARD -------------------------------- */
 
+function exportCellValue(value) {
+  if (value == null) return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+export function serializeDashboardSectionsToCsv(sections = []) {
+  const escapeCsv = (value) => `"${exportCellValue(value).replace(/"/g, '""')}"`;
+  const lines = [escapeCsv("BusinessSphere ERP — dashboard chart data")];
+  sections.forEach((section) => {
+    lines.push("");
+    lines.push(escapeCsv(section.title || "Chart data"));
+    const rows = Array.isArray(section.rows) ? section.rows : [];
+    if (rows.length === 0) return;
+    const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
+    lines.push(headers.map(escapeCsv).join(","));
+    rows.forEach((row) => lines.push(headers.map((header) => escapeCsv(row?.[header])).join(",")));
+  });
+  return `${lines.join("\r\n")}\r\n`;
+}
+
+export function buildDashboardChartSections({
+  kpis = [], revenueExpenseTrend = [], arAging = [], pipelineByStage = [], stockByCategory = [], workOrdersByStatus = [], topCustomers = [],
+} = {}) {
+  return [
+    { title: "Executive KPIs", rows: kpis },
+    { title: "Revenue vs Expenses Trend", rows: revenueExpenseTrend },
+    { title: "Accounts Receivable Aging", rows: arAging },
+    { title: "CRM Pipeline by Stage", rows: pipelineByStage },
+    { title: "Inventory Value by Category", rows: stockByCategory },
+    { title: "Work Orders by Status", rows: workOrdersByStatus },
+    { title: "Top Customers by Billed Value", rows: topCustomers },
+  ].filter((section) => Array.isArray(section.rows) && section.rows.length > 0);
+}
+
+export function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", sections = [] } = {}) {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const margin = 36;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const contentWidth = pageWidth - margin * 2;
+  let y = 42;
+  const addPageIfNeeded = (height = 20) => {
+    if (y + height > pageHeight - margin) {
+      doc.addPage();
+      y = 42;
+    }
+  };
+  const compact = (value, max = 30) => {
+    const text = exportCellValue(value).replace(/\s+/g, " ");
+    return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+  };
+
+  doc.setFillColor(13, 34, 20);
+  doc.rect(0, 0, pageWidth, 74, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("BusinessSphere ERP", margin, 34);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("Dashboard chart data export", margin, 52);
+  doc.text(`${compact(companyName, 42)} · ${compact(periodLabel, 28)}`, pageWidth - margin, 52, { align: "right" });
+  y = 96;
+
+  sections.forEach((section) => {
+    const rows = Array.isArray(section.rows) ? section.rows : [];
+    if (rows.length === 0) return;
+    const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
+    if (headers.length === 0) return;
+    addPageIfNeeded(42);
+    doc.setFillColor(220, 252, 231);
+    doc.roundedRect(margin, y - 13, contentWidth, 24, 5, 5, "F");
+    doc.setTextColor(17, 24, 39);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(compact(section.title, 80), margin + 8, y + 2);
+    y += 20;
+
+    const columnWidth = contentWidth / headers.length;
+    doc.setFillColor(241, 245, 249);
+    doc.rect(margin, y - 11, contentWidth, 18, "F");
+    doc.setFontSize(7.5);
+    headers.forEach((header, index) => {
+      doc.setTextColor(71, 85, 105);
+      doc.text(compact(header, Math.max(12, Math.floor(columnWidth / 4))), margin + index * columnWidth + 5, y);
+    });
+    y += 15;
+
+    rows.forEach((row, rowIndex) => {
+      addPageIfNeeded(17);
+      if (rowIndex % 2 === 0) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(margin, y - 10, contentWidth, 16, "F");
+      }
+      headers.forEach((header, index) => {
+        doc.setTextColor(30, 41, 59);
+        doc.setFont("helvetica", "normal");
+        doc.text(compact(row?.[header], Math.max(12, Math.floor(columnWidth / 4))), margin + index * columnWidth + 5, y);
+      });
+      y += 16;
+    });
+    y += 14;
+  });
+
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(7.5);
+  doc.text(`Generated ${TODAY.toISOString().slice(0, 10)} · Live dashboard data`, margin, pageHeight - 18);
+  return doc;
+}
+
+function downloadDashboardCsv(sections, filename) {
+  if (typeof document === "undefined") return;
+  const blob = new Blob([serializeDashboardSectionsToCsv(sections)], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function safeExportFilePart(value) {
+  return String(value || "businesssphere").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "businesssphere";
+}
+
 function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, onQuickAction, onNavigate }) {
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
@@ -4616,6 +4745,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return "2000-01-01";
   }, [period]);
   const PERIOD_LABELS = { day: "Today", week: "Last 7 days", month: "This month", year: "This year" };
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportBusy, setExportBusy] = useState(null);
+
 
   const financials = useMemo(() => {
     const invRows = invoices.rows.filter((inv) => !periodStart || (inv.date || "") >= periodStart);
@@ -4670,6 +4802,61 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     const statuses = ["Planned", "In Progress", "Completed", "Cancelled"];
     return statuses.map((status) => ({ status, value: workOrders.rows.filter((w) => w.status === status).length }));
   }, [workOrders.rows]);
+
+  const revenueExpenseTrend = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(TODAY);
+      d.setMonth(d.getMonth() - 5 + i);
+      return d.toISOString().slice(0, 7);
+    });
+    return months.map((month) => {
+      const revenue = invoices.rows.filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+      const expensesValue = expenses.rows.filter((expense) => expense.date?.startsWith(month)).reduce((sum, expense) => sum + (expense.amount || 0), 0);
+      return { month: new Date(`${month}-01`).toLocaleDateString("en", { month: "short" }), revenue_tzs_k: Math.round(revenue / 1000), expenses_tzs_k: Math.round(expensesValue / 1000), profit_tzs_k: Math.round((revenue - expensesValue) / 1000) };
+    });
+  }, [invoices.rows, expenses.rows]);
+
+  const arAging = useMemo(() => {
+    const unpaid = invoices.rows.filter((invoice) => invoice.status !== "Paid");
+    const todayMs = TODAY.getTime();
+    const buckets = [
+      { bucket: "Current", items: unpaid.filter((invoice) => !invoice.dueDate || new Date(invoice.dueDate) >= TODAY) },
+      { bucket: "1–30 days", items: unpaid.filter((invoice) => invoice.dueDate && (todayMs - new Date(invoice.dueDate).getTime()) > 0 && (todayMs - new Date(invoice.dueDate).getTime()) <= 30 * 86400000) },
+      { bucket: "31–60 days", items: unpaid.filter((invoice) => invoice.dueDate && (todayMs - new Date(invoice.dueDate).getTime()) > 30 * 86400000 && (todayMs - new Date(invoice.dueDate).getTime()) <= 60 * 86400000) },
+      { bucket: "60+ days", items: unpaid.filter((invoice) => invoice.dueDate && (todayMs - new Date(invoice.dueDate).getTime()) > 60 * 86400000) },
+    ];
+    return buckets.map(({ bucket, items }) => ({ bucket, invoice_count: items.length, amount_tzs_k: Math.round(items.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0) / 1000) }));
+  }, [invoices.rows]);
+
+  const dashboardExportSections = useMemo(() => buildDashboardChartSections({
+    kpis: financeKpis.map((kpi) => ({ metric: kpi.label, value: kpi.value, detail: kpi.delta })),
+    revenueExpenseTrend,
+    arAging,
+    pipelineByStage: pipelineByStage.map(({ stage, value }) => ({ stage, deal_count: value })),
+    stockByCategory: stockByCategory.map(({ category, value }) => ({ category, stock_value_tzs_k: value })),
+    workOrdersByStatus: workOrdersByStatus.map(({ status, value }) => ({ status, order_count: value })),
+    topCustomers: topCustomers.map(({ customer, value }) => ({ customer, billed_value_tzs_k: value })),
+  }), [financeKpis, revenueExpenseTrend, arAging, pipelineByStage, stockByCategory, workOrdersByStatus, topCustomers]);
+
+  function exportDashboard(format) {
+    if (exportBusy) return;
+    setExportBusy(format);
+    try {
+      const base = `${safeExportFilePart(company.name)}-dashboard-${TODAY.toISOString().slice(0, 10)}`;
+      if (format === "csv") {
+        downloadDashboardCsv(dashboardExportSections, `${base}.csv`);
+        notify("Dashboard chart data downloaded as CSV.");
+      } else {
+        createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], sections: dashboardExportSections }).save(`${base}.pdf`);
+        notify("Dashboard chart data downloaded as PDF.");
+      }
+    } catch (_e) {
+      notify("Dashboard export failed — please try again.", "error");
+    } finally {
+      setExportBusy(null);
+      setExportMenuOpen(false);
+    }
+  }
 
   const pendingLeave = useMemo(() => leaveRequests.rows.filter((l) => l.status === "Pending"), [leaveRequests.rows]);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
@@ -4886,6 +5073,28 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               <p className="text-[rgba(255,255,255,.5)] text-[12px] mt-1">{company.name} · {currentUser.role}</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              <div className="relative">
+                <button
+                  onClick={() => setExportMenuOpen((open) => !open)}
+                  aria-haspopup="menu"
+                  aria-expanded={exportMenuOpen}
+                  className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]"
+                >
+                  <Download size={13} /> Export Charts <ChevronDown size={13} className={`transition-transform ${exportMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+                {exportMenuOpen && (
+                  <div role="menu" aria-label="Export dashboard chart data" className="absolute right-0 top-full mt-2 z-20 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                    <button role="menuitem" onClick={() => exportDashboard("csv")} disabled={Boolean(exportBusy)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                      <FileSpreadsheet size={15} className="text-[#16A34A]" />
+                      <span><span className="block">Download CSV</span><span className="block text-[10px] font-normal text-slate-400">All chart sections and KPIs</span></span>
+                    </button>
+                    <button role="menuitem" onClick={() => exportDashboard("pdf")} disabled={Boolean(exportBusy)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                      <FileText size={15} className="text-[#2563EB]" />
+                      <span><span className="block">Download PDF</span><span className="block text-[10px] font-normal text-slate-400">Formatted chart-data report</span></span>
+                    </button>
+                  </div>
+                )}
+              </div>
               <button onClick={()=>onNavigate("ai")} className="flex items-center gap-1.5 text-[12px] font-bold text-[#111827] bg-[#16A34A] px-3.5 py-2 rounded-xl hover:bg-[#15803D]">
                 <Sparkles size={13}/> Ask AI
               </button>
