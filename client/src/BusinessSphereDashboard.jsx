@@ -546,6 +546,34 @@ function mapWarehouseRow(r) {
   return { id: r.id, dbId: r.id, name: r.name, city: r.city || "" };
 }
 
+export function mapPosShiftRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
+  const countedCash = data.counted_cash ?? data.countedCash;
+  return {
+    id: r.id,
+    dbId: r.id,
+    cashier: data.cashier || r.name || "Cashier",
+    openingFloat: Number(data.opening_float ?? data.openingFloat ?? r.amount) || 0,
+    countedCash: countedCash === null || countedCash === undefined ? null : Number(countedCash),
+    status: r.status || data.status || "Open",
+    openedAt: data.opened_at || data.openedAt || r.created_at,
+    closedAt: data.closed_at || data.closedAt || null,
+    rawData: data,
+  };
+}
+
+export function mapPosCashMovementRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
+  return {
+    id: r.id,
+    dbId: r.id,
+    shiftId: data.shift_id || data.shiftId || null,
+    kind: data.kind || r.status || "Pay In",
+    amount: Number(r.amount) || 0,
+    reason: data.reason || r.notes || "",
+  };
+}
+
 function mapTransferRow(r) {
   return {
     id: r.id, dbId: r.id,
@@ -35201,8 +35229,8 @@ const POS_TABS = [
 function PosShiftPanel({ transactions, currentUser }) {
   const [now, setNow] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
-  const shifts = useCompanyTable("pos_shifts", [], { order: { col: "opened_at", ascending: false }, mapRow: (r) => ({ id: r.id, dbId: r.id, cashier: r.cashier, openingFloat: Number(r.opening_float) || 0, countedCash: r.counted_cash === null || r.counted_cash === undefined ? null : Number(r.counted_cash), status: r.status, openedAt: r.opened_at, closedAt: r.closed_at }) });
-  const moves = useCompanyTable("pos_cash_movements", [], { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ id: r.id, dbId: r.id, shiftId: r.shift_id, kind: r.kind, amount: Number(r.amount) || 0, reason: r.reason || "" }) });
+  const shifts = useCompanyTable("pos_shifts", [], { order: { col: "created_at", ascending: false }, mapRow: mapPosShiftRow });
+  const moves = useCompanyTable("pos_cash_movements", [], { order: { col: "created_at", ascending: false }, mapRow: mapPosCashMovementRow });
   const [floatDraft, setFloatDraft] = useState("");
   const [countDraft, setCountDraft] = useState("");
   const [move, setMove] = useState({ kind: "Pay In", amount: "", reason: "" });
@@ -35232,8 +35260,14 @@ function PosShiftPanel({ transactions, currentUser }) {
     const row = { id: `SH-${Date.now()}`, cashier: currentUser?.name || "Cashier", openingFloat: f, countedCash: null, status: "Open", openedAt: new Date().toISOString(), closedAt: null };
     if (IS_CONFIGURED) {
       try {
-        const header = await sb("pos_shifts").insert({ cashier: row.cashier, opening_float: f, status: "Open", opened_at: row.openedAt }).single().run();
-        shifts.setRows((prev) => [{ ...row, id: header.id, dbId: header.id }, ...prev]);
+        const header = await sb("pos_shifts").insert({
+          name: row.cashier,
+          status: "Open",
+          amount: f,
+          notes: "POS shift opened",
+          data: { cashier: row.cashier, opening_float: f, counted_cash: null, opened_at: row.openedAt, closed_at: null },
+        }).single().run();
+        shifts.setRows((prev) => [mapPosShiftRow(header), ...prev]);
       } catch (error) { notify(persistenceFailureMessage("Opening the shift", error), "error"); return; }
     } else {
       shifts.setRows((prev) => [row, ...prev]);
@@ -35249,8 +35283,14 @@ function PosShiftPanel({ transactions, currentUser }) {
     if (IS_CONFIGURED) {
       if (!open.dbId) { notify("The active shift is not confirmed on the server. Please retry opening it.", "error"); return; }
       try {
-        const header = await sb("pos_cash_movements").insert({ shift_id: open.dbId, kind: row.kind, amount: amt, reason: row.reason || null }).single().run();
-        moves.setRows((prev) => [{ ...row, id: header.id, dbId: header.id, shiftId: header.shift_id || row.shiftId }, ...prev]);
+        const header = await sb("pos_cash_movements").insert({
+          name: `${row.kind} · ${open.cashier}`,
+          status: row.kind,
+          amount: amt,
+          notes: row.reason || null,
+          data: { shift_id: open.dbId, kind: row.kind, reason: row.reason || "" },
+        }).single().run();
+        moves.setRows((prev) => [mapPosCashMovementRow(header), ...prev]);
       } catch (error) { notify(persistenceFailureMessage("Recording the cash movement", error), "error"); return; }
     } else {
       moves.setRows((prev) => [row, ...prev]);
@@ -35295,7 +35335,13 @@ function PosShiftPanel({ transactions, currentUser }) {
     if (IS_CONFIGURED) {
       if (!open.dbId) { notify("The active shift is not confirmed on the server. Please retry opening it.", "error"); return; }
       try {
-        await sb("pos_shifts").eq("id", open.dbId).update({ status: "Closed", counted_cash: counted, closed_at: closedAt }).single().run();
+        await sb("pos_shifts").eq("id", open.dbId).update({
+          name: open.cashier,
+          status: "Closed",
+          amount: open.openingFloat,
+          notes: "POS shift closed",
+          data: { ...(open.rawData || {}), cashier: open.cashier, opening_float: open.openingFloat, counted_cash: counted, opened_at: open.openedAt, closed_at: closedAt },
+        }).single().run();
       } catch (error) { notify(persistenceFailureMessage("Closing the shift", error), "error"); return; }
     }
     // Auto-print Z-Report on close

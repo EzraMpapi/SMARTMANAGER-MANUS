@@ -306,3 +306,7 @@
 - [x] Remove false success behavior: ensure failed Supabase inserts never update local state as successfully saved, keeping form data available for retry and logging safe diagnostics.
 
 - [x] Require confirmed Supabase responses before updating UI state for CREATE, UPDATE, and DELETE operations.
+
+- [ ] Verify a real authenticated pos_shifts create through the app, browser refresh, renewed session, and direct tenant-scoped Supabase read.
+
+- [x] Fix the pos_shifts cashier-column schema mismatch so POS writes match the live Supabase table contract and persist successfully.

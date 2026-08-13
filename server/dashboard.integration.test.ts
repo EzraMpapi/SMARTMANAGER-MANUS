@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -228,10 +228,24 @@ describe("BusinessSphere launch and live-data integration", () => {
     const posSource = dashboardSource.slice(dashboardSource.indexOf("function PosShiftPanel"), dashboardSource.indexOf("function Pos(", dashboardSource.indexOf("function PosShiftPanel")));
     expect(posSource).toContain("persistenceFailureMessage(\"Opening the shift\", error)");
     expect(posSource).toContain("persistenceFailureMessage(\"Closing the shift\", error)");
-    expect(posSource).toContain('insert({ cashier: row.cashier, opening_float: f, status: "Open", opened_at: row.openedAt }).single().run()');
-    expect(posSource).toContain('update({ status: "Closed", counted_cash: counted, closed_at: closedAt }).single().run()');
+    expect(posSource).toContain('name: row.cashier');
+    expect(posSource).toContain('data: { cashier: row.cashier, opening_float: f, counted_cash: null, opened_at: row.openedAt, closed_at: null }');
+    expect(posSource).toContain('data: { ...(open.rawData || {}), cashier: open.cashier, opening_float: open.openingFloat, counted_cash: counted, opened_at: open.openedAt, closed_at: closedAt }');
     expect(posSource).not.toContain("Opened locally, but the server update failed.");
     expect(posSource).not.toContain("Closed locally, but the server update failed.");
+  });
+
+  it("maps the deployed generic POS tables without requiring unavailable cashier columns", () => {
+    const shift = mapPosShiftRow({
+      id: "shift-1", name: "Asha", status: "Open", amount: "75000", created_at: "2026-08-13T09:00:00.000Z",
+      data: { cashier: "Asha", opening_float: 75000, opened_at: "2026-08-13T09:00:00.000Z", counted_cash: null },
+    });
+    const movement = mapPosCashMovementRow({
+      id: "move-1", status: "Pay In", amount: "10000", notes: "Petty cash", data: { shift_id: "shift-1", kind: "Pay In", reason: "Petty cash" },
+    });
+    expect(shift).toMatchObject({ cashier: "Asha", openingFloat: 75000, countedCash: null, status: "Open" });
+    expect(movement).toMatchObject({ shiftId: "shift-1", kind: "Pay In", amount: 10000, reason: "Petty cash" });
+    expect(dashboardSource).not.toContain('insert({ cashier: row.cashier, opening_float: f, status: "Open", opened_at: row.openedAt })');
   });
 
   it("assembles chart sections and serializes them as escaped CSV", () => {
