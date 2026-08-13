@@ -281,4 +281,6 @@
 
 - [x] Create a user profile dropdown menu in the top header containing options for account settings, billing, and logout.
 
-- [ ] Fix login connection error and redirect signup directly to login upon successful account creation without email-confirmation block.
+- [x] Fix login connection error and redirect signup directly to login upon successful account creation without email-confirmation block.
+
+- [ ] Add a "Remember Me" checkbox and a "Forgot Password" link to the login page to improve user convenience.
