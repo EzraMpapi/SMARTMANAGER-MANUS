@@ -271,4 +271,6 @@
 
 - [x] Fix undefined handleSubmit reference in SignupPage / company-setup flow and add regression coverage.
 
-- [ ] Apply uploaded Smart Manager UI/UX references (login screen, company setup, brand logo with Tanzania accent, design system colors/typography/icons) across the project.
+- [x] Apply uploaded Smart Manager UI/UX references (login screen, company setup, brand logo with Tanzania accent, design system colors/typography/icons) across the project.
+
+- [ ] Implement real-time form validation and clear error messages for company registration steps.
