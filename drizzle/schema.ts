@@ -87,3 +87,53 @@ export const webhookDeliveries = mysqlTable("webhook_deliveries", {
 }));
 
 export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
+
+export const webhookConfigurations = mysqlTable("webhook_configurations", {
+  id: int("id").autoincrement().primaryKey(),
+  configKey: varchar("configKey", { length: 80 }).notNull().unique(),
+  url: text("url").notNull(),
+  enabled: boolean("enabled").default(false).notNull(),
+  encryptedSecret: text("encryptedSecret"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  configKeyIdx: index("webhook_configuration_key_idx").on(table.configKey),
+}));
+
+export type WebhookConfiguration = typeof webhookConfigurations.$inferSelect;
+
+export const schemaDriftMonitors = mysqlTable("schema_drift_monitors", {
+  id: int("id").autoincrement().primaryKey(),
+  monitorKey: varchar("monitorKey", { length: 80 }).notNull().unique(),
+  cronExpression: varchar("cronExpression", { length: 64 }).notNull(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  lastCheckedAt: timestamp("lastCheckedAt"),
+  lastStatus: varchar("lastStatus", { length: 16 }),
+  lastSummary: text("lastSummary"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  monitorKeyIdx: index("schema_drift_monitor_key_idx").on(table.monitorKey),
+  taskUidIdx: index("schema_drift_monitor_task_uid_idx").on(table.scheduleCronTaskUid),
+}));
+
+export type SchemaDriftMonitor = typeof schemaDriftMonitors.$inferSelect;
+
+export const schemaDriftRuns = mysqlTable("schema_drift_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  monitorId: int("monitorId").notNull(),
+  status: mysqlEnum("status", ["healthy", "drift", "error"]).notNull(),
+  referencedTableCount: int("referencedTableCount").notNull().default(0),
+  deployedTableCount: int("deployedTableCount").notNull().default(0),
+  missingTables: json("missingTables").notNull(),
+  tenantTableIssues: json("tenantTableIssues").notNull(),
+  notificationDelivered: boolean("notificationDelivered").default(false).notNull(),
+  error: text("error"),
+  checkedAt: timestamp("checkedAt").defaultNow().notNull(),
+}, (table) => ({
+  monitorCheckedAtIdx: index("schema_drift_runs_monitor_checked_at_idx").on(table.monitorId, table.checkedAt),
+  statusCheckedAtIdx: index("schema_drift_runs_status_checked_at_idx").on(table.status, table.checkedAt),
+}));
+
+export type SchemaDriftRun = typeof schemaDriftRuns.$inferSelect;

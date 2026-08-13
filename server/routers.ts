@@ -12,6 +12,7 @@ import { TRPCError } from "@trpc/server";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { getDb } from "./db";
+import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -267,8 +268,11 @@ export const appRouter = router({
   }),
 
   auditLogs: router({
-    list: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ input }) => {
-      const logs = await listAuditLogs(input.companyId, input.limit || 100);
+    list: protectedProcedure.input(z.object({ companyId: z.string().min(1).optional(), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ ctx, input }) => {
+      const companyId = ctx.user.companyId;
+      if (!companyId) throw new TRPCError({ code: "FORBIDDEN", message: "An authenticated tenant profile is required to view audit logs." });
+      if (input.companyId && input.companyId !== companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Audit logs can only be viewed for your active company." });
+      const logs = await listAuditLogs(companyId, input.limit || 100);
       return logs.filter(l => {
         if (input.module && l.module !== input.module) return false;
         if (input.startDate && new Date(l.createdAt) < new Date(input.startDate)) return false;
@@ -276,11 +280,32 @@ export const appRouter = router({
         return true;
       });
     }),
-    record: protectedProcedure.input(z.object({ companyId: z.string().min(1), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(({ ctx, input }) => recordAuditLog(ctx.user, input)),
+    record: protectedProcedure.input(z.object({ companyId: z.string().min(1).optional(), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(({ ctx, input }) => {
+      const companyId = ctx.user.companyId;
+      if (!companyId) throw new TRPCError({ code: "FORBIDDEN", message: "An authenticated tenant profile is required to record audit activity." });
+      if (input.companyId && input.companyId !== companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Audit activity must use your active company." });
+      return recordAuditLog(ctx.user, { ...input, companyId });
+    }),
   }),
 
   admin: router({
     verifyBackup: protectedProcedure.query(() => verifyDatabaseBackupStatus()),
+    getSchemaDriftMonitor: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return getSchemaDriftMonitor();
+    }),
+    activateSchemaDriftMonitor: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return activateSchemaDriftMonitor();
+    }),
+    runSchemaDriftMonitorNow: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return runSchemaDriftCheck();
+    }),
+    listSchemaDriftRuns: protectedProcedure.input(z.object({ limit: z.number().int().positive().max(100).optional() })).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return listSchemaDriftRuns(input.limit);
+    }),
     listUsers: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can view user directories." });

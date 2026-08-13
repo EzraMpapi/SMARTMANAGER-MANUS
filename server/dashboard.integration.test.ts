@@ -32,11 +32,45 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("keeps reload-session and provider-specific OAuth routes in the dashboard", () => {
     expect(dashboardSource).toContain('window.localStorage.getItem("bs_access_token")');
-    expect(dashboardSource).toContain("authGetUser(token)");
+    expect(dashboardSource).toContain('window.localStorage.getItem("bs_refresh_token")');
+    expect(dashboardSource).toContain("resolveAuthenticatedDashboardSession(activeToken)");
     expect(dashboardSource).toContain('authSignInWithOAuth("google")');
     expect(dashboardSource).toContain('authSignInWithOAuth("azure")');
     expect(dashboardSource).toContain('authSignInWithOAuth("apple")');
     expect(dashboardSource).toContain("/auth/v1/authorize?provider=${provider}");
+  });
+
+  it("preserves exact Supabase password-auth errors and normalizes the raw token response before dashboard entry", () => {
+    expect(dashboardSource).toContain("function readAuthResponse(response, fallbackMessage)");
+    expect(dashboardSource).toContain("code: ${code}, HTTP ${response.status}");
+    expect(dashboardSource).not.toContain('setError("Something went wrong — check your connection.")');
+    expect(dashboardSource).toContain("persistAuthTokens(result)");
+    expect(dashboardSource).toContain("resolveAuthenticatedDashboardSession(result.access_token, result.user)");
+    expect(dashboardSource).not.toContain("onAuthenticated(result.session || null)");
+  });
+
+  it("never allows a failed direct Supabase write to appear silently saved in the dashboard", () => {
+    expect(dashboardSource).toContain('if (method !== "GET") {');
+    expect(dashboardSource).toContain('notify(`Server save failed for ${table}: ${message}. Your change was not saved.`, "error")');
+    expect(dashboardSource).toContain('...(method === "GET" ? {} : { Prefer: "return=representation" })');
+  });
+
+  it("handles confirmation-pending signup safely and derives profile/company access from the authenticated user ID", () => {
+    expect(dashboardSource).toContain('data: { full_name: fullName }');
+    expect(dashboardSource).toContain("Account created — check your email to confirm it, then sign in.");
+    expect(dashboardSource).toContain('sb("profiles").select("*,companies(*)").eq("id", user.id).run()');
+    expect(dashboardSource).toContain("authRefreshSession(refreshToken)");
+  });
+
+  it("defers company provisioning until the confirmed user session is available without persisting secrets or tenant IDs", () => {
+    expect(dashboardSource).toContain('const PENDING_SIGNUP_KEY = "bs_pending_signup"');
+    expect(dashboardSource).toContain("function persistPendingSignup(pending)");
+    expect(dashboardSource).toContain("Never retain a password or a tenant/company ID in browser storage");
+    expect(dashboardSource).toContain("async function resumeConfirmedSignup(accessToken, user)");
+    expect(dashboardSource).toContain("const resumedSignup = await resumeConfirmedSignup(result.access_token, result.user)");
+    expect(dashboardSource).toContain("const resumedSignup = await resumeConfirmedSignup(activeToken, resolved.user)");
+    expect(dashboardSource).toContain('callRpc("create_company_and_owner"');
+    expect(dashboardSource).toContain('callRpc("join_company_with_code"');
   });
 
   it("uses the connected generic company-module schema for live module settings", () => {

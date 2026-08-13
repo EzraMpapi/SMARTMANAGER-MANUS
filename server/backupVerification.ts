@@ -1,23 +1,27 @@
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { sql } from "drizzle-orm";
+import { ENV } from "./_core/env";
 
 export async function verifyDatabaseBackupStatus() {
-  const db = await getDb();
-  if (!db) {
-    return { status: "degraded", message: "Database connection unavailable for backup status verification.", timestamp: new Date() };
+  if (!ENV.supabaseUrl || !ENV.supabaseSecretKey) {
+    return { status: "degraded", message: "Supabase server credentials are unavailable for database health verification.", timestamp: new Date() };
   }
   try {
-    const [result] = await db.execute(sql`SELECT NOW() as current_time`);
+    const response = await fetch(`${ENV.supabaseUrl.replace(/\/$/, "")}/rest/v1/`, {
+      headers: { apikey: ENV.supabaseSecretKey, authorization: `Bearer ${ENV.supabaseSecretKey}` },
+    });
+    if (!response.ok) {
+      return { status: "degraded", message: `Supabase database API returned HTTP ${response.status}.`, timestamp: new Date() };
+    }
     return {
       status: "healthy",
       provider: "Supabase Managed PostgreSQL",
-      pitrEnabled: true,
-      dailySnapshotAvailable: true,
+      pitrEnabled: null,
+      dailySnapshotAvailable: null,
+      message: "Supabase database API is reachable. Confirm backup retention and PITR policy in the Supabase dashboard.",
       lastVerifiedAt: new Date(),
-      dbTime: result,
     };
   } catch (error) {
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Backup verification query failed." });
+    return { status: "degraded", message: "Supabase database API could not be reached for health verification.", timestamp: new Date() };
   }
 }

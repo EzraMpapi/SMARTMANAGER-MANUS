@@ -80,20 +80,68 @@ function authHeaders() {
   };
 }
 
+function readAuthResponse(response, fallbackMessage) {
+  return response.text().then((raw) => {
+    let data = {};
+    try { data = raw ? JSON.parse(raw) : {}; } catch (_error) { data = {}; }
+    if (response.ok) return data;
+    const message = data.message || data.error_description || data.msg || fallbackMessage;
+    const code = data.code || data.error_code || "unknown_auth_error";
+    const error = new Error(`${message} (code: ${code}, HTTP ${response.status})`);
+    error.code = code;
+    error.status = response.status;
+    throw error;
+  });
+}
+
+function persistAuthTokens(authResult) {
+  if (typeof window === "undefined") return;
+  if (authResult?.access_token) window.localStorage.setItem("bs_access_token", authResult.access_token);
+  if (authResult?.refresh_token) window.localStorage.setItem("bs_refresh_token", authResult.refresh_token);
+}
+
+function clearAuthTokens() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("bs_access_token");
+  window.localStorage.removeItem("bs_refresh_token");
+}
+
+const PENDING_SIGNUP_KEY = "bs_pending_signup";
+
+function persistPendingSignup(pending) {
+  if (typeof window === "undefined") return;
+  // Never retain a password or a tenant/company ID in browser storage. The
+  // authenticated database session remains the sole source of tenant scope.
+  window.localStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify(pending));
+}
+
+function readPendingSignup() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PENDING_SIGNUP_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function clearPendingSignup() {
+  if (typeof window !== "undefined") window.localStorage.removeItem(PENDING_SIGNUP_KEY);
+}
+
 // Real Supabase Auth REST calls — the actual GoTrue endpoints every
 // supabase-js client calls under the hood, hit directly with fetch() the
 // same way sb() hits PostgREST directly. Only meaningful when IS_CONFIGURED
 // (a real Supabase project is connected); LoginPage/SignupPage below
 // branch on that constant and simulate the flow locally in demo mode
 // rather than pretending to authenticate against a backend that is not there.
-async function authSignUp(email, password) {
+async function authSignUp(email, password, fullName) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, data: { full_name: fullName } }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || data.msg || "Sign up failed.");
+  const data = await readAuthResponse(res, "Sign up failed.");
   return data; // { access_token, refresh_token, user } once email confirmation is satisfied, or { user } if a project requires confirmation first
 }
 
@@ -103,9 +151,17 @@ async function authSignIn(email, password) {
     headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
     body: JSON.stringify({ email, password }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || data.msg || "Incorrect email or password.");
+  const data = await readAuthResponse(res, "Incorrect email or password.");
   return data; // { access_token, refresh_token, user }
+}
+
+async function authRefreshSession(refreshToken) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  return readAuthResponse(res, "Your saved session could not be refreshed.");
 }
 
 async function authSignOut(accessToken) {
@@ -124,8 +180,78 @@ async function authGetUser(accessToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) throw new Error("Session expired");
-  return res.json();
+  return readAuthResponse(res, "Session expired.");
+}
+
+async function resolveAuthenticatedDashboardSession(accessToken, knownUser) {
+  const user = knownUser || await authGetUser(accessToken);
+  const profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
+  const profile = profileRows?.[0];
+  if (!profile) return { user, session: null };
+  return {
+    user,
+    session: {
+      userId: user.id,
+      email: user.email,
+      accessToken,
+      fullName: profile.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email,
+      role: profile.role,
+      customerRef: profile.customer_ref,
+      company: {
+        ...profile.companies,
+        taxRate: profile.companies?.tax_rate,
+        timezone: profile.companies?.timezone,
+        businessScale: profile.companies?.business_scale,
+        receiptWidth: profile.companies?.receipt_width,
+        receiptFooter: profile.companies?.receipt_footer,
+        receiptShowLogo: profile.companies?.receipt_show_logo,
+      },
+    },
+  };
+}
+
+async function resumeConfirmedSignup(accessToken, user) {
+  const pending = readPendingSignup();
+  if (!pending || pending.email?.toLowerCase() !== user.email?.toLowerCase()) return null;
+
+  // If the profile already exists, the protected setup RPC previously
+  // completed. Clearing the pending record prevents duplicate provisioning.
+  const existing = await resolveAuthenticatedDashboardSession(accessToken, user);
+  if (existing.session) {
+    clearPendingSignup();
+    return existing.session;
+  }
+
+  const rpcResult = pending.mode === "create"
+    ? await callRpc("create_company_and_owner", {
+        p_name: pending.company.name,
+        p_industry: pending.company.category,
+        p_country: pending.company.country,
+        p_currency: pending.company.currency,
+        p_full_name: pending.account.fullName,
+      }, accessToken)
+    : await callRpc("join_company_with_code", {
+        p_join_code: pending.joinCode,
+        p_full_name: pending.account.fullName,
+        p_role: pending.joinRole,
+        p_customer_ref: pending.isPortalRole ? pending.customerRef : null,
+      }, accessToken);
+
+  if (pending.mode === "create" && rpcResult?.id) {
+    try {
+      await sb("companies").eq("id", rpcResult.id).update({ website: pending.company.website || null, tax_id: pending.company.taxId || null, business_scale: pending.businessScale }).run();
+      await sb("company_modules").insert(pending.selectedModuleIds.map((moduleKey) => ({ company_id: rpcResult.id, module_key: moduleKey, enabled: true }))).run();
+      await sb("branches").insert({ company_id: rpcResult.id, name: pending.firstBranch || "Head Office", is_headquarters: true }).run();
+    } catch (_error) { /* Optional company details can be edited later. */ }
+  }
+  if (pending.account.phone) {
+    try { await sb("profiles").eq("id", user.id).update({ phone: pending.account.phone }).run(); } catch (_error) { /* optional detail */ }
+  }
+
+  const resolved = await resolveAuthenticatedDashboardSession(accessToken, user);
+  if (!resolved.session) throw new Error("Your account was confirmed, but its company profile is not available yet. Please sign in again shortly.");
+  clearPendingSignup();
+  return resolved.session;
 }
 
 // Real OAuth sign-in — redirects the browser to Supabase's actual
@@ -204,7 +330,7 @@ function sb(table) {
         method,
         headers: {
           ...authHeaders(),
-          Prefer: method === "GET" ? undefined : "return=representation",
+          ...(method === "GET" ? {} : { Prefer: "return=representation" }),
         },
         body,
       });
@@ -215,6 +341,9 @@ function sb(table) {
         error.status = res.status;
         error.code = raw?.code;
         error.details = raw?.details;
+        if (method !== "GET") {
+          notify(`Server save failed for ${table}: ${message}. Your change was not saved.`, "error");
+        }
         throw error;
       }
       const data = raw;
@@ -37240,9 +37369,12 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
     try {
       if (!IS_CONFIGURED) { onAuthenticated(null); return; }
       const result = await authSignIn(identifier.trim(), password);
-      if (result.error) { setError(result.error.message || "Login failed."); return; }
-      onAuthenticated(result.session || null);
-    } catch (_e) { setError("Something went wrong — check your connection."); }
+      persistAuthTokens(result);
+      const resumedSignup = await resumeConfirmedSignup(result.access_token, result.user);
+      const resolved = resumedSignup ? { session: resumedSignup } : await resolveAuthenticatedDashboardSession(result.access_token, result.user);
+      if (!resolved.session) throw new Error("Your account is authenticated, but no active company profile is available. Ask an administrator to finish your company setup.");
+      onAuthenticated(resolved.session);
+    } catch (err) { setError(err?.message || "Sign-in failed. Please try again."); }
     finally { setBusy(false); }
   }
 
@@ -37444,45 +37576,29 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
     setBusy(true);
     try {
-      const signUpResult = await authSignUp(account.email.trim(), account.password);
-      // A project with email confirmation enabled returns a user but no
-      // session yet; a project with confirmation disabled (the simpler
-      // setup for an internal business tool) returns both immediately.
-      let accessToken = signUpResult.access_token;
-      if (!accessToken) {
-        throw new Error("Account created — check your email to confirm it, then sign in.");
+      const pending = {
+        email: account.email.trim(),
+        mode,
+        account: { fullName: account.fullName.trim(), phone: account.phone.trim() },
+        company: { name: company.name.trim(), category: company.category, country: company.country, currency: company.currency, website: company.website, taxId: company.taxId },
+        selectedModuleIds: Array.from(selectedModules),
+        businessScale,
+        firstBranch: firstBranch.trim(),
+        joinCode: joinCode.trim(),
+        joinRole,
+        customerRef: customerRef.trim(),
+        isPortalRole,
+      };
+      const signUpResult = await authSignUp(account.email.trim(), account.password, account.fullName.trim());
+      if (!signUpResult.access_token) {
+        persistPendingSignup(pending);
+        throw new Error("Account created — check your email to confirm it, then sign in. Your company setup will resume securely after confirmation.");
       }
-      if (typeof window !== "undefined") window.localStorage.setItem("bs_access_token", accessToken);
-
-      const rpcResult = mode === "create"
-        ? await callRpc("create_company_and_owner", {
-            p_name: company.name.trim(), p_industry: company.category, p_country: company.country, p_currency: company.currency, p_full_name: account.fullName.trim(),
-          }, accessToken)
-        : await callRpc("join_company_with_code", {
-            p_join_code: joinCode.trim(), p_full_name: account.fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
-          }, accessToken);
-
-      // Real fields the create_company_and_owner RPC does not take directly
-      // (phone, website, tax ID, and which modules to enable) are saved as
-      // a real follow-up update — kept genuinely optional and non-blocking:
-      // if this second call fails, the account and company both still
-      // exist correctly, just without these details filled in yet.
-      if (mode === "create" && rpcResult?.id) {
-        try {
-          await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale }).run();
-          await sb("company_modules").insert(ONBOARDING_MODULES.map((m) => ({ company_id: rpcResult.id, module_key: m.id, enabled: selectedModules.has(m.id) }))).run();
-          await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
-        } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
-      }
-      if (account.phone.trim()) {
-        try { await sb("profiles").eq("id", signUpResult.user.id).update({ phone: account.phone.trim() }).run(); } catch (_e) { /* non-blocking */ }
-      }
-
-      onAuthenticated({
-        userId: signUpResult.user.id, email: signUpResult.user.email, accessToken,
-        fullName: account.fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
-        customerRef: isPortalRole ? customerRef.trim() : null, company: rpcResult,
-      });
+      persistAuthTokens(signUpResult);
+      persistPendingSignup(pending);
+      const resolved = await resumeConfirmedSignup(signUpResult.access_token, signUpResult.user);
+      if (!resolved) throw new Error("Account created, but the company setup could not be resumed. Please sign in again shortly.");
+      onAuthenticated(resolved);
     } catch (err) {
       setError(err.message || "Couldn't complete sign up. Please try again.");
     } finally {
@@ -45433,21 +45549,35 @@ function SmartManager() {
     if (!token) { setAuthChecking(false); return; }
     (async () => {
       try {
-        const user = await authGetUser(token);
-        const profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
-        const profile = profileRows?.[0];
-        if (!profile) {
+        let activeToken = token;
+        let resolved;
+        try {
+          resolved = await resolveAuthenticatedDashboardSession(activeToken);
+        } catch (initialError) {
+          const refreshToken = typeof window !== "undefined" ? window.localStorage.getItem("bs_refresh_token") : null;
+          if (!refreshToken) throw initialError;
+          const refreshed = await authRefreshSession(refreshToken);
+          persistAuthTokens(refreshed);
+          activeToken = refreshed.access_token;
+          resolved = await resolveAuthenticatedDashboardSession(activeToken, refreshed.user);
+        }
+        const resumedSignup = await resumeConfirmedSignup(activeToken, resolved.user);
+        if (resumedSignup) {
+          setSession(resumedSignup);
+          return;
+        }
+        if (!resolved.session) {
           // A real, valid session with no company yet — genuinely
           // different from an invalid or expired one. Route to finish
           // setup instead of discarding a session that authenticated
           // correctly.
-          setOauthPendingUser({ id: user.id, email: user.email, accessToken: token, fullName: user.user_metadata?.full_name || user.user_metadata?.name || "" });
+          setOauthPendingUser({ id: resolved.user.id, email: resolved.user.email, accessToken: activeToken, fullName: resolved.user.user_metadata?.full_name || resolved.user.user_metadata?.name || "" });
           setAuthChecking(false);
           return;
         }
-        setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo } });
+        setSession(resolved.session);
       } catch (_e) {
-        if (typeof window !== "undefined") window.localStorage.removeItem("bs_access_token");
+        clearAuthTokens();
       } finally {
         setAuthChecking(false);
       }
@@ -45455,7 +45585,7 @@ function SmartManager() {
   }, []);
 
   function handleSignOut() {
-    if (typeof window !== "undefined") window.localStorage.removeItem("bs_access_token");
+    clearAuthTokens();
     if (session?.accessToken) authSignOut(session.accessToken);
     DEMO_OVERRIDE = false;
     setSession(IS_CONFIGURED ? null : { demo: true });

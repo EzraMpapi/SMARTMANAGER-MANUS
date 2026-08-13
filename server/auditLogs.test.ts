@@ -32,7 +32,7 @@ describe("Audit Logs tRPC Router and Persistence", () => {
     const caller = appRouter.createCaller({
       req: {} as any,
       res: {} as any,
-      user: { id: 1, openId: "sup_audit_admin", name: "Compliance Admin", email: "admin@example.com", role: "admin", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() } as any,
+      user: { id: 1, openId: "sup_audit_admin", name: "Compliance Admin", email: "admin@example.com", role: "admin", companyId: "company-test-1", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() } as any,
     });
 
     const recorded = await caller.auditLogs.record({
@@ -52,5 +52,16 @@ describe("Audit Logs tRPC Router and Persistence", () => {
     const logs = await caller.auditLogs.list({ companyId: "company-test-1" });
     expect(Array.isArray(logs)).toBe(true);
     expect(logs.some(l => l.action === "UPDATE_BUDGET_LIMIT")).toBe(true);
+  });
+
+  it("rejects a client-supplied company scope that differs from the authenticated tenant", async () => {
+    const caller = appRouter.createCaller({
+      req: {} as any,
+      res: {} as any,
+      user: { id: 2, openId: "sup_tenant_user", name: "Tenant User", email: "tenant@example.com", role: "user", companyId: "company-a", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() } as any,
+    });
+
+    await expect(caller.auditLogs.list({ companyId: "company-b" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.auditLogs.record({ companyId: "company-b", action: "VIEW_AUDIT", module: "Compliance" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });
