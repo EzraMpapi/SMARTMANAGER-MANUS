@@ -275,4 +275,6 @@
 
 - [x] Implement real-time form validation and clear error messages for company registration steps.
 
-- [ ] Create a smooth success animation and a welcome modal that appears immediately after the user completes the registration steps.
+- [x] Create a smooth success animation and a welcome modal that appears immediately after the user completes the registration steps.
+
+- [ ] Implement the main dashboard layout with a sidebar navigation and top header matching the uploaded system design.
