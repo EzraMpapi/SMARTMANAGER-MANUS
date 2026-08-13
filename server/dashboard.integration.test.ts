@@ -84,6 +84,17 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(signupSource).not.toContain('throw new Error("Account created — check your email to confirm it');
   });
 
+  it("provides a safe resend-confirmation action and clear post-verification onboarding status", () => {
+    expect(dashboardSource).toContain("async function authResendSignupConfirmation(email)");
+    expect(dashboardSource).toContain('`${SUPABASE_URL}/auth/v1/resend`');
+    expect(dashboardSource).toContain('JSON.stringify({ type: "signup", email })');
+    const signupSource = dashboardSource.slice(dashboardSource.indexOf("function SignupPage"), dashboardSource.indexOf("function OAuthCompanySetup"));
+    expect(signupSource).toContain("async function handleResendConfirmation()");
+    expect(signupSource).toContain("Your onboarding is ready to resume");
+    expect(signupSource).toContain("Resend confirmation email");
+    expect(signupSource).toContain("I have confirmed — sign in");
+  });
+
   it("binds every account-creation action to the defined final signup handler", () => {
     const signupSource = dashboardSource.slice(dashboardSource.indexOf("function SignupPage"), dashboardSource.indexOf("function OAuthCompanySetup"));
     expect(signupSource).toContain("async function handleFinalSubmit(e)");

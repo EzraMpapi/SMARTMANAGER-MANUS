@@ -145,6 +145,15 @@ async function authSignUp(email, password, fullName) {
   return data; // { access_token, refresh_token, user } once email confirmation is satisfied, or { user } if a project requires confirmation first
 }
 
+async function authResendSignupConfirmation(email) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/resend`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify({ type: "signup", email }),
+  });
+  return readAuthResponse(res, "We could not resend the confirmation email. Please wait a moment and try again.");
+}
+
 async function authSignIn(email, password) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: "POST",
@@ -37533,6 +37542,8 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [confirmationPending, setConfirmationPending] = useState(null);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendStatus, setResendStatus] = useState(null);
 
   const [account, setAccount] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [company, setCompany] = useState({
@@ -37560,6 +37571,20 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const step1Valid = account.fullName.trim() && account.email.trim() && account.password.length >= 6 && account.password === account.confirmPassword;
   const isPortalRole = joinRole === "External Client" || joinRole === "Supplier";
   const step2Valid = mode === "create" ? company.name.trim().length > 1 : joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
+
+  async function handleResendConfirmation() {
+    if (!confirmationPending || resendBusy) return;
+    setResendBusy(true);
+    setResendStatus(null);
+    try {
+      await authResendSignupConfirmation(confirmationPending);
+      setResendStatus({ type: "success", message: "A new confirmation email has been sent. Check your inbox and spam folder." });
+    } catch (err) {
+      setResendStatus({ type: "error", message: err.message || "We could not resend the confirmation email. Please try again shortly." });
+    } finally {
+      setResendBusy(false);
+    }
+  }
 
   async function handleFinalSubmit(e) {
     e.preventDefault();
@@ -37672,7 +37697,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           {/* Mode switcher */}
           <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 mb-6">
             {["create","join"].map((m) => (
-              <button key={m} onClick={() => { setMode(m); setStep(1); setError(null); setConfirmationPending(null); }}
+              <button key={m} onClick={() => { setMode(m); setStep(1); setError(null); setConfirmationPending(null); setResendStatus(null); }}
                 className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-all ${mode === m ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>
                 {m === "create" ? "🏢 Create company" : "🔑 Join with code"}
               </button>
@@ -37699,11 +37724,17 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
             {error && <div className="mb-5 flex items-start gap-2 px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-[12.5px] text-red-700"><AlertCircle size={13} className="shrink-0 mt-0.5"/><span>{error}</span></div>}
 
             {confirmationPending && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center" role="status" aria-live="polite">
                 <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full bg-emerald-100 text-[#16A34A]"><Mail size={19} /></div>
-                <h2 className="text-[18px] font-bold text-[#111827]">Confirm your email</h2>
-                <p className="mt-2 text-[13px] leading-relaxed text-slate-600">We created your account for <strong>{confirmationPending}</strong>. Open the verification email, then sign in to automatically finish your company setup.</p>
-                <button type="button" onClick={onSwitchToLogin} className="mt-5 w-full rounded-xl bg-[#16A34A] px-4 py-3 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#15803D]">I have confirmed — sign in</button>
+                <h2 className="text-[18px] font-bold text-[#111827]">Your onboarding is ready to resume</h2>
+                <p className="mt-2 text-[13px] leading-relaxed text-slate-600">We created your account for <strong>{confirmationPending}</strong>. Complete these final steps to securely finish company setup.</p>
+                <ol className="mt-4 space-y-2 text-left text-[12.5px] text-slate-600">
+                  <li className="flex gap-2"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-[11px] font-bold text-[#16A34A]">1</span><span>Open the verification email and confirm your address.</span></li>
+                  <li className="flex gap-2"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-[11px] font-bold text-[#16A34A]">2</span><span>Sign in with the same email. Your saved company details will resume automatically.</span></li>
+                </ol>
+                {resendStatus && <p className={`mt-4 rounded-lg px-3 py-2 text-[12px] ${resendStatus.type === "success" ? "bg-emerald-100 text-emerald-800" : "bg-red-50 text-red-700"}`}>{resendStatus.message}</p>}
+                <button type="button" onClick={handleResendConfirmation} disabled={resendBusy} className="mt-5 w-full rounded-xl border border-[#16A34A]/40 bg-white px-4 py-3 text-[13px] font-semibold text-[#15803D] transition-colors hover:bg-[#16A34A]/5 disabled:cursor-not-allowed disabled:opacity-60">{resendBusy ? "Sending confirmation…" : "Resend confirmation email"}</button>
+                <button type="button" onClick={onSwitchToLogin} className="mt-3 w-full rounded-xl bg-[#16A34A] px-4 py-3 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#15803D]">I have confirmed — sign in</button>
               </div>
             )}
 

@@ -275,3 +275,9 @@
 - [x] Locate and repair the undefined `handleSubmit` reference in the account-creation UI, add regression coverage, and verify the signup route.
 
 - [x] Repair post-signup tenant/company setup continuation so confirmed and immediately authenticated accounts reach the ERP without duplicate provisioning.
+
+- [x] Add an accessible resend-confirmation-email action with explicit Supabase error handling and rate-limit feedback.
+- [x] Add a post-verification onboarding-status experience that confirms the next sign-in will resume company setup.
+- [x] Add regression coverage, verify the enhanced onboarding flow, and publish the confirmation experience update.
+
+- [x] Restart the managed development server after the renewed interruption and confirm the application responds.
