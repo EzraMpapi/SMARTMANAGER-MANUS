@@ -75,6 +75,13 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('callRpc("join_company_with_code"');
   });
 
+  it("binds every account-creation action to the defined final signup handler", () => {
+    const signupSource = dashboardSource.slice(dashboardSource.indexOf("function SignupPage"), dashboardSource.indexOf("function OAuthCompanySetup"));
+    expect(signupSource).toContain("async function handleFinalSubmit(e)");
+    expect(signupSource).toContain('onClick={handleFinalSubmit}');
+    expect(signupSource).not.toContain("onClick={handleSubmit}");
+  });
+
   it("uses the connected generic company-module schema for live module settings", () => {
     expect(dashboardSource).toContain('sb("company_modules").select("*").eq("company_id", company.id).run()');
     expect(dashboardSource).toContain("r.data?.module_key ?? r.module_key ?? r.name");

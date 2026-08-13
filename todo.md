@@ -269,3 +269,7 @@
 - [x] Repair confirmed server routing, durable persistence, and authorization defects with minimal architecture-preserving changes.
 - [x] Add focused regression tests for every repaired backend or database path and execute safe live read verification where available.
 - [x] Run the full test suite and production build, document the resolved backend issues and external database limits, and publish the stabilized release.
+
+- [x] Restart the managed development server after the reported interruption and confirm its health endpoint responds.
+
+- [x] Locate and repair the undefined `handleSubmit` reference in the account-creation UI, add regression coverage, and verify the signup route.
