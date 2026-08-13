@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const verifierSource = readFileSync(new URL("./verifySupabaseSchema.mjs", import.meta.url), "utf8");
+const baselineMigration = readFileSync(new URL("../supabase/migrations/20260812_001_complete_erp_schema_baseline.sql", import.meta.url), "utf8");
 
 describe("Supabase production schema contract guard", () => {
   it("derives the required table contract from the single preserved ERP dashboard", () => {
@@ -31,5 +32,15 @@ describe("Supabase production schema contract guard", () => {
   it("requires all tenant-scoped dashboard tables to expose stable ownership and audit columns", () => {
     expect(verifierSource).toContain('["id", "company_id", "created_at", "updated_at"]');
     expect(verifierSource).toContain("globalTables");
+  });
+
+  it("keeps the audited timestamp repair additive, idempotent, and free of destructive table operations", () => {
+    expect(baselineMigration).toContain("ADD COLUMN IF NOT EXISTS updated_at timestamptz");
+    expect(baselineMigration).toContain("UPDATE public.audit_log");
+    expect(baselineMigration).toContain("WHERE updated_at IS NULL");
+    expect(baselineMigration).toContain("DROP TRIGGER IF EXISTS businesssphere_audit_log_updated_at");
+    expect(baselineMigration).not.toContain("DROP TABLE");
+    expect(baselineMigration).not.toContain("TRUNCATE");
+    expect(baselineMigration).not.toContain("DELETE FROM");
   });
 });
