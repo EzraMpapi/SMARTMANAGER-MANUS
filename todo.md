@@ -289,4 +289,6 @@
 
 - [x] Add a 'Back to Login' button in the forgot password modal to allow users to easily return.
 
-- [ ] Troubleshoot and eliminate local fallback persistence, making Supabase the sole source of truth for all database writes and surfacing real Supabase write errors.
+- [x] Troubleshoot and eliminate local fallback persistence, making Supabase the sole source of truth for all database writes and surfacing real Supabase write errors.
+
+- [ ] Create an activity log section in the dashboard to display recent successful user actions and database writes.
