@@ -266,3 +266,5 @@
 - [ ] Extract additional Finance and CRM workspace boundaries into lazy-loaded modules.
 - [ ] Run live RLS, TypeScript, production build, and regression verification, then clean up QA identities.
 - [ ] Save checkpoint and publish the final optimized release.
+
+- [ ] Remove email-confirmation pause in signup flow and present congratulations message with direct login action.
