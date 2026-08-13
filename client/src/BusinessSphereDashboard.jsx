@@ -295,6 +295,49 @@ async function callRpc(name, params, accessToken) {
 
 // Minimal chainable query builder over PostgREST, mirroring the shape of the
 // official supabase-js client closely enough that swapping later is trivial.
+const DIRECT_SCHEMA_TABLES = new Set(["companies", "profiles", "audit_log"]);
+const GENERIC_TENANT_COLUMNS = new Set(["id", "company_id", "name", "status", "amount", "notes", "data", "created_at", "updated_at"]);
+
+function usesGenericTenantData(table) {
+  return !DIRECT_SCHEMA_TABLES.has(table);
+}
+
+export function normalizeGenericTenantPayload(table, payload, { insert = false } = {}) {
+  if (!usesGenericTenantData(table) || payload == null) return payload;
+  const normalizeRow = (row) => {
+    if (!row || typeof row !== "object" || Array.isArray(row)) return row;
+    const next = {};
+    const data = { ...(row.data && typeof row.data === "object" && !Array.isArray(row.data) ? row.data : {}) };
+    for (const [key, value] of Object.entries(row)) {
+      if (key === "id" || key === "company_id") continue;
+      if (GENERIC_TENANT_COLUMNS.has(key)) next[key] = value;
+      else data[key] = value;
+    }
+    // Company identity is always derived by the database default and RLS,
+    // never trusted from a browser mutation payload.
+    if (insert) delete next.id;
+    if (Object.keys(data).length) next.data = data;
+    return next;
+  };
+  return Array.isArray(payload) ? payload.map(normalizeRow) : normalizeRow(payload);
+}
+
+export function hydrateGenericTenantRow(table, row) {
+  if (!row || typeof row !== "object" || Array.isArray(row)) return row;
+  const hydrated = usesGenericTenantData(table) && row.data && typeof row.data === "object" && !Array.isArray(row.data)
+    ? { ...row.data, ...row }
+    : { ...row };
+  for (const [key, value] of Object.entries(hydrated)) {
+    if (Array.isArray(value)) hydrated[key] = value.map((entry) => hydrateGenericTenantRow(key, entry));
+  }
+  return hydrated;
+}
+
+function genericTenantColumn(table, column) {
+  if (!usesGenericTenantData(table) || GENERIC_TENANT_COLUMNS.has(column)) return column;
+  return /^[_a-z][_a-z0-9]*$/i.test(column) ? `data->>${column}` : column;
+}
+
 function sb(table) {
   let path = `${SUPABASE_URL}/rest/v1/${table}`;
   const params = new URLSearchParams();
@@ -308,21 +351,21 @@ function sb(table) {
       return builder;
     },
     eq(col, val) {
-      params.append(col, `eq.${val}`);
+      params.append(genericTenantColumn(table, col), `eq.${val}`);
       return builder;
     },
     order(col, { ascending = true } = {}) {
-      params.set("order", `${col}.${ascending ? "asc" : "desc"}`);
+      params.set("order", `${genericTenantColumn(table, col)}.${ascending ? "asc" : "desc"}`);
       return builder;
     },
     insert(row) {
       method = "POST";
-      body = JSON.stringify(row);
+      body = JSON.stringify(normalizeGenericTenantPayload(table, row, { insert: true }));
       return builder;
     },
     update(patch) {
       method = "PATCH";
-      body = JSON.stringify(patch);
+      body = JSON.stringify(normalizeGenericTenantPayload(table, patch));
       return builder;
     },
     delete() {
@@ -478,6 +521,40 @@ function emitSupabaseReconnectToast() {
   notify("Connection restored — live data is up to date.", "success");
 }
 
+const GENERIC_NESTED_RELATIONS = {
+  sales_invoice_items: { parent: "sales_invoices", foreignKey: "invoice_id" },
+  sales_payments: { parent: "sales_invoices", foreignKey: "invoice_id" },
+  sales_quotation_items: { parent: "sales_quotations", foreignKey: "quotation_id" },
+  sales_order_items: { parent: "sales_orders", foreignKey: "order_id" },
+  purchase_order_items: { parent: "procurement_purchase_orders", foreignKey: "purchase_order_id" },
+  pos_transaction_items: { parent: "pos_transactions", foreignKey: "transaction_id" },
+  pos_returns: { parent: "pos_transactions", foreignKey: "transaction_id" },
+  pos_return_items: { parent: "pos_returns", foreignKey: "return_id" },
+};
+
+async function attachGenericNestedRows(table, rows, select) {
+  if (!Array.isArray(rows) || !rows.length || !select || select === "*") return rows;
+  const requestedRelations = Object.keys(GENERIC_NESTED_RELATIONS).filter((relation) =>
+    GENERIC_NESTED_RELATIONS[relation].parent === table && select.includes(`${relation}(`),
+  );
+  if (!requestedRelations.length) return rows;
+
+  const relationRows = await Promise.all(requestedRelations.map(async (relation) => {
+    const childRows = await sb(relation).select("*").run();
+    return [relation, (Array.isArray(childRows) ? childRows : []).map((row) => hydrateGenericTenantRow(relation, row))];
+  }));
+  const byRelation = new Map(relationRows);
+
+  return rows.map((row) => {
+    const hydrated = hydrateGenericTenantRow(table, row);
+    for (const relation of requestedRelations) {
+      const { foreignKey } = GENERIC_NESTED_RELATIONS[relation];
+      hydrated[relation] = (byRelation.get(relation) || []).filter((child) => child?.[foreignKey] === hydrated.id);
+    }
+    return hydrated;
+  });
+}
+
 export async function runCompanyTableQuery(table, { select = "*", order } = {}) {
   const queryVariants = [];
   const addVariant = (variantSelect, variantOrder) => {
@@ -500,7 +577,12 @@ export async function runCompanyTableQuery(table, { select = "*", order } = {}) 
         if (variant.order) query = query.order(variant.order.col, { ascending: variant.order.ascending });
         const data = await query.run();
         if (recoveredAfterRetry) emitSupabaseReconnectToast();
-        return { rows: Array.isArray(data) ? data : (data == null ? [] : [data]), usedFallback: variant.signature !== queryVariants[0].signature, unavailable: false, recoveredAfterRetry };
+        const rows = Array.isArray(data) ? data : (data == null ? [] : [data]);
+        const hydratedRows = rows.map((row) => hydrateGenericTenantRow(table, row));
+        const rowsWithRelations = variant.signature !== queryVariants[0].signature
+          ? await attachGenericNestedRows(table, hydratedRows, select)
+          : hydratedRows;
+        return { rows: rowsWithRelations, usedFallback: variant.signature !== queryVariants[0].signature, unavailable: false, recoveredAfterRetry };
       } catch (error) {
         lastError = error;
         if (isMissingTableError(error)) return { rows: [], usedFallback: false, unavailable: true, error: null };
@@ -29595,15 +29677,18 @@ const emailBus = { listeners: new Set(), push(payload){ this.listeners.forEach(f
 function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   const co = company || window.__smartManagerCompany || {};
 
+  const crmRows = Array.isArray(crm?.rows) ? crm.rows : (Array.isArray(crm) ? crm : []);
+  const employeeRows = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
+
   const contacts = useMemo(()=>{
-    const fromCrm = (crm?.rows||[]).filter(l=>l.email).map(l=>({
+    const fromCrm = crmRows.filter(l=>l.email).map(l=>({
       id:"lead-"+l.id, name:l.company||l.contact||"", email:l.email||"", type:"customer",
     }));
-    const fromEmp = (employees||[]).filter(e=>e.email).map(e=>({
+    const fromEmp = employeeRows.filter(e=>e.email).map(e=>({
       id:"emp-"+e.id, name:e.name, email:e.email||"", type:"employee", role:e.role,
     }));
     return [...fromCrm, ...fromEmp];
-  },[crm?.rows, employees]);
+  },[crmRows, employeeRows]);
 
   const [folder, setFolder]   = useState("compose");  // compose | sent | drafts | starred
   const [to, setTo]           = useState("");

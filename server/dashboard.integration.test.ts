@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, normalizeGenericTenantPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -55,6 +55,36 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('if (method !== "GET") {');
     expect(dashboardSource).toContain('notify(`Server save failed for ${table}: ${message}. Your change was not saved.`, "error")');
     expect(dashboardSource).toContain('...(method === "GET" ? {} : { Prefer: "return=representation" })');
+  });
+
+  it("normalizes generic tenant writes into database-derived scope and restores module fields on reads", () => {
+    const normalized = normalizeGenericTenantPayload("inventory_items", {
+      id: "browser-provided-id",
+      company_id: "browser-provided-company",
+      name: "Warehouse shelving",
+      qty_on_hand: 62,
+      unit_cost: 78,
+      sku: "INV-001",
+    }, { insert: true });
+
+    expect(normalized).toEqual({
+      name: "Warehouse shelving",
+      data: { qty_on_hand: 62, unit_cost: 78, sku: "INV-001" },
+    });
+
+    expect(hydrateGenericTenantRow("inventory_items", {
+      id: "server-generated-id",
+      company_id: "database-derived-company",
+      name: "Warehouse shelving",
+      data: { qty_on_hand: 62, unit_cost: 78, sku: "INV-001" },
+    })).toMatchObject({
+      id: "server-generated-id",
+      company_id: "database-derived-company",
+      name: "Warehouse shelving",
+      qty_on_hand: 62,
+      unit_cost: 78,
+      sku: "INV-001",
+    });
   });
 
   it("handles confirmation-pending signup safely and derives profile/company access from the authenticated user ID", () => {
@@ -145,6 +175,14 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(employees.filter((employee) => employee.status === "Active")).toHaveLength(1);
   });
 
+  it("normalizes EmailCenter contact sources before filtering collaboration data", () => {
+    const emailCenterSource = dashboardSource.slice(dashboardSource.indexOf("function EmailCenter"), dashboardSource.indexOf("function CalendarCenter"));
+    expect(emailCenterSource).toContain("const crmRows = Array.isArray(crm?.rows)");
+    expect(emailCenterSource).toContain("const employeeRows = Array.isArray(employees?.rows)");
+    expect(emailCenterSource).toContain("crmRows.filter(l=>l.email)");
+    expect(emailCenterSource).toContain("employeeRows.filter(e=>e.email)");
+  });
+
   it("imports the project quick-action icon before rendering dashboard shortcuts", () => {
     expect(dashboardSource).toContain("FolderKanban");
     expect(dashboardSource).toContain("icon:FolderKanban");
@@ -166,6 +204,24 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(String(fetchMock.mock.calls[1][0])).toContain("select=*");
     expect(String(fetchMock.mock.calls[1][0])).not.toContain("profiles");
+  });
+
+  it("rehydrates generic invoice line items after the PostgREST nested-relationship fallback", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ code: "PGRST200", message: "Could not find a relationship between sales_invoices and sales_invoice_items" }, 400))
+      .mockResolvedValueOnce(jsonResponse([{ id: "invoice-1", data: { doc_number: "INV-QA" } }]))
+      .mockResolvedValueOnce(jsonResponse([{ id: "line-1", data: { invoice_id: "invoice-1", item_name: "QA item", qty: 2, rate: 100 } }]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCompanyTableQuery("sales_invoices", { select: "*,sales_invoice_items(*)" });
+
+    expect(result.usedFallback).toBe(true);
+    expect(result.rows[0]).toMatchObject({
+      id: "invoice-1",
+      doc_number: "INV-QA",
+      sales_invoice_items: [{ item_name: "QA item", qty: 2, rate: 100 }],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it("drops an unsupported order column after the parent-table fallback fails", async () => {
