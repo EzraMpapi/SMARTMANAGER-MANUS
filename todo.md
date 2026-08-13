@@ -285,4 +285,6 @@
 
 - [x] Add a "Remember Me" checkbox and a "Forgot Password" link to the login page to improve user convenience.
 
-- [ ] Implement real-time email format validation and error handling for the new forgot password submission form.
+- [x] Implement real-time email format validation and error handling for the new forgot password submission form.
+
+- [ ] Add a 'Back to Login' button in the forgot password modal to allow users to easily return.
