@@ -301,4 +301,6 @@
 
 - [x] Verify and repair dynamic company/tenant resolution (auth.uid() -> profile/membership -> current_company_id() -> RLS) without hardcoding or trustingfrontend company IDs.
 
-- [ ] Fix RLS root cause: ensure current_company_id() correctly resolves authenticated user company ownership without disabling RLS or weakening tenant isolation.
+- [x] Fix RLS root cause: ensure current_company_id() correctly resolves authenticated user company ownership without disabling RLS or weakening tenant isolation.
+
+- [ ] Remove false success behavior: ensure failed Supabase inserts never update local state as successfully saved, keeping form data available for retry and logging safe diagnostics.
