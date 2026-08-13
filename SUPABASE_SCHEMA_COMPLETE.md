@@ -7,14 +7,14 @@
 
 ## Audit outcome
 
-The dashboard requires **110 distinct Supabase business tables**. The connected project exposes **152 table endpoints** and every one of the 110 referenced tables is present. Consequently, there are **no missing dashboard tables to create**. The only verified contract variance is that `public.audit_log` lacks `updated_at`; the additive and idempotent repair is recorded in [`supabase/migrations/20260812_001_complete_erp_schema_baseline.sql`](./supabase/migrations/20260812_001_complete_erp_schema_baseline.sql).
+The dashboard requires **110 distinct Supabase business tables**. The connected project exposes **152 table endpoints** and every one of the 110 referenced tables is present. Consequently, there are **no missing dashboard tables to create**. The only verified contract variance was that `public.audit_log` lacked `updated_at`; the additive and idempotent repair in [`supabase/migrations/20260812_001_complete_erp_schema_baseline.sql`](./supabase/migrations/20260812_001_complete_erp_schema_baseline.sql) has been successfully applied and verified.
 
 | Audit dimension | Result | Evidence and action |
 |---|---:|---|
 | Dashboard table references | 110 | Extracted directly from the preserved ERP dashboard source. |
 | Deployed PostgREST table endpoints | 152 | Enumerated from the protected OpenAPI document. |
 | Missing referenced tables | 0 | Every dashboard reference has a deployed table endpoint. |
-| Tenant ownership/timestamp contract exceptions | 1 | `audit_log` lacks only `updated_at`; the repair migration backfills it safely. |
+| Tenant ownership/timestamp contract exceptions | 0 | The applied repair added and backfilled `audit_log.updated_at`; the live verifier reports no remaining exceptions. |
 | Destructive database operations | 0 | The migration contains no `DROP TABLE`, no truncate, and no data deletion. |
 
 ## Functional table coverage
@@ -33,11 +33,11 @@ The dashboard requires **110 distinct Supabase business tables**. The connected 
 
 All dashboard business reads and writes use company-scoped filters and payloads. The live verifier treats `id`, `company_id`, `created_at`, and `updated_at` as the required contract for tenant-scoped data tables, with `companies`, `profiles`, and `workspaces` handled as global identity or workspace entities. Row Level Security is the database enforcement layer: Supabase recommends enabling RLS on exposed tables and enforcing access through policies rather than relying on client filtering alone.[2]
 
-The inventory deliberately does not recreate or replace deployed RLS policies. Replacing an existing policy based on incomplete metadata could reduce access protection or interrupt valid workflow permissions. Instead, the additive migration preserves the existing `audit_log` ownership model while repairing the single timestamp gap. The continuous verifier reports any future table absence or required-column variance as a failing release check.
+The inventory deliberately does not recreate or replace deployed RLS policies. Replacing an existing policy based on incomplete metadata could reduce access protection or interrupt valid workflow permissions. Instead, the additive migration preserved the existing `audit_log` ownership model while repairing the single timestamp gap. A production catalog query verified that every public table carrying `company_id` has RLS enabled and at least one associated policy; its zero-row exception check found no gaps. The continuous verifier reports any future table absence or required-column variance as a failing release check.
 
 ## Applying and verifying the additive migration
 
-Apply the migration through the connected Supabase SQL execution path only after the protected administration connection is available. It is idempotent, preserves all existing audit rows, and is safe to re-run. Do **not** run the platform’s Drizzle migration command for this file, because Drizzle targets the separate MySQL/TiDB platform database rather than the Supabase ERP database.
+The migration was applied through the authenticated Supabase SQL Editor on 13 August 2026. It is idempotent, preserves all existing audit rows, and is safe to re-run if required. Do **not** run the platform’s Drizzle migration command for this file, because Drizzle targets the separate MySQL/TiDB platform database rather than the Supabase ERP database.
 
 ```bash
 pnpm verify:supabase-schema

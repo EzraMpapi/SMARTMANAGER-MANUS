@@ -248,6 +248,6 @@
 - [x] Add regression tests, run full verification, and publish the completed release.
 
 - [x] Extract the complete required ERP table contract and compare it with the connected Supabase schema.
-- [ ] Create only verified missing Supabase ERP tables, indexes, relationships, and RLS policies through idempotent migrations.
-- [ ] Verify tenant-scoped live access paths and publish a Supabase schema inventory report.
-- [ ] Add focused schema regression coverage, run build checks, and publish the completed database release.
+- [x] Create only verified missing Supabase ERP tables, indexes, relationships, and RLS policies through idempotent migrations.
+- [x] Verify tenant-scoped live access paths and publish a Supabase schema inventory report.
+- [x] Add focused schema regression coverage, run build checks, and publish the completed database release.
