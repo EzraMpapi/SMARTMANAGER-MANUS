@@ -313,3 +313,7 @@
 - [x] Verify real authenticated `auth.uid()`, company resolution, `pos_shifts` persistence, and CRUD across at least five tenant modules.
 - [x] Verify reload/login persistence and cross-tenant read/write denial with controlled tenants, then remove all QA records.
 - [x] Add regression coverage and publish the verified shared RLS context repair with an implementation report.
+
+- [x] Exercise the repaired incomplete-company onboarding and post-login persistence flow with controlled authenticated sessions, then remove all QA records.
+- [x] Diagnose and resolve the local Vite production-build termination without changing RLS or the tenant authorization design.
+- [x] Run verification, document outcomes, and publish the follow-up checkpoint.

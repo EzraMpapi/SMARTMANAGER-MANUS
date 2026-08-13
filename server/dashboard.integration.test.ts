@@ -17,6 +17,7 @@ const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url)
 const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const preferencesDrawerSource = readFileSync(new URL("../client/src/components/DashboardPreferencesDrawer.tsx", import.meta.url), "utf8");
+const viteConfigSource = readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
@@ -31,6 +32,11 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("import.meta.env.VITE_SUPABASE_URL");
     expect(dashboardSource).toContain("import.meta.env.VITE_SUPABASE_ANON_KEY");
     expect(dashboardSource).not.toContain("bqrpiookucsdjvcvjrul.supabase.co");
+  });
+
+  it("keeps JSX source-location instrumentation out of production builds", () => {
+    expect(viteConfigSource).toContain('...(command === "serve" ? [jsxLocPlugin()] : [])');
+    expect(viteConfigSource).toContain("export default defineConfig(({ command }) => ({");
   });
 
   it("keeps reload-session and provider-specific OAuth routes in the dashboard", () => {
