@@ -299,4 +299,6 @@
 
 - [x] Verify and repair Supabase authentication context (getUser and getSession) to ensure auth.uid() is correctly populated during database requests.
 
-- [ ] Verify and repair dynamic company/tenant resolution (auth.uid() -> profile/membership -> current_company_id() -> RLS) without hardcoding or trusting frontend company IDs.
+- [x] Verify and repair dynamic company/tenant resolution (auth.uid() -> profile/membership -> current_company_id() -> RLS) without hardcoding or trustingfrontend company IDs.
+
+- [ ] Fix RLS root cause: ensure current_company_id() correctly resolves authenticated user company ownership without disabling RLS or weakening tenant isolation.
