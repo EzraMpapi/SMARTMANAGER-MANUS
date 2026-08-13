@@ -262,12 +262,12 @@
 - [x] Add concise in-app guidance explaining deferred loading without introducing telemetry or sensitive-data collection.
 - [x] Add regression coverage, verify bundle output and runtime behavior, then publish the release.
 
-- [ ] Provision bounded controlled identities and obtain disposable JWTs for live RLS claim checks.
-- [ ] Extract additional Finance and CRM workspace boundaries into lazy-loaded modules.
-- [ ] Run live RLS, TypeScript, production build, and regression verification, then clean up QA identities.
-- [ ] Save checkpoint and publish the final optimized release.
+- [x] Provision bounded controlled identities and obtain disposable JWTs for live RLS claim checks.
+- [x] Extract additional Finance and CRM workspace boundaries into lazy-loaded modules.
+- [x] Run live RLS, TypeScript, production build, and regression verification, then clean up QA identities.
+- [x] Save checkpoint and publish the final optimized release.
 
-- [ ] Remove email-confirmation pause in signup flow and present congratulations message with direct login action.
+- [x] Remove email-confirmation pause in signup flow and present congratulations message with direct login action.
 
 - [x] Fix undefined handleSubmit reference in SignupPage / company-setup flow and add regression coverage.
 
@@ -299,7 +299,7 @@
 
 - [x] Verify and repair Supabase authentication context (getUser and getSession) to ensure auth.uid() is correctly populated during database requests.
 
-- [x] Verify and repair dynamic company/tenant resolution (auth.uid() -> profile/membership -> current_company_id() -> RLS) without hardcoding or trustingfrontend company IDs.
+- [x] Verify and repair dynamic company/tenant resolution (auth.uid() -> profile/membership -> current_company_id() -> RLS) without hardcoding or trusting frontend company IDs.
 
 - [x] Fix RLS root cause: ensure current_company_id() correctly resolves authenticated user company ownership without disabling RLS or weakening tenant isolation.
 
