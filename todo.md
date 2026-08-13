@@ -283,4 +283,6 @@
 
 - [x] Fix login connection error and redirect signup directly to login upon successful account creation without email-confirmation block.
 
-- [ ] Add a "Remember Me" checkbox and a "Forgot Password" link to the login page to improve user convenience.
+- [x] Add a "Remember Me" checkbox and a "Forgot Password" link to the login page to improve user convenience.
+
+- [ ] Implement real-time email format validation and error handling for the new forgot password submission form.
