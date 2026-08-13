@@ -13,6 +13,8 @@ describe("daily schema-drift monitor contract", () => {
     expect(monitorSource).toContain('path: "/api/scheduled/schemaDriftMonitor"');
     expect(monitorSource).toContain("createHeartbeatJob");
     expect(monitorSource).toContain("updateHeartbeatJob");
+    expect(monitorSource).toContain("An authenticated session is required to activate schema-drift monitoring.");
+    expect(monitorSource).not.toContain('}, "");');
   });
 
   it("records every healthy, drift, or error result and alerts only on unhealthy outcomes", () => {

@@ -288,7 +288,7 @@ export const appRouter = router({
     }),
     activateSchemaDriftMonitor: protectedProcedure.mutation(async ({ ctx }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      return activateSchemaDriftMonitor();
+      return activateSchemaDriftMonitor(getSessionToken(ctx.req));
     }),
     runSchemaDriftMonitorNow: protectedProcedure.mutation(async ({ ctx }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });

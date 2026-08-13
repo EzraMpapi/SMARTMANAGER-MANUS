@@ -112,7 +112,8 @@ export async function ensureSchemaDriftMonitor() {
   return created[0];
 }
 
-export async function activateSchemaDriftMonitor() {
+export async function activateSchemaDriftMonitor(sessionToken: string) {
+  if (!sessionToken) throw new Error("An authenticated session is required to activate schema-drift monitoring.");
   const db = await requireDb();
   const monitor = await ensureSchemaDriftMonitor();
   if (monitor.scheduleCronTaskUid) {
@@ -122,7 +123,7 @@ export async function activateSchemaDriftMonitor() {
       payload: { monitorKey: MONITOR_KEY },
       description: "Daily BusinessSphere Supabase schema-drift verification",
       enable: true,
-    }, "");
+    }, sessionToken);
     await db.update(schemaDriftMonitors).set({ isActive: true }).where(eq(schemaDriftMonitors.id, monitor.id));
     return { ...monitor, isActive: true };
   }
@@ -133,7 +134,7 @@ export async function activateSchemaDriftMonitor() {
     path: "/api/scheduled/schemaDriftMonitor",
     payload: { monitorKey: MONITOR_KEY },
     description: "Daily BusinessSphere Supabase schema-drift verification",
-  }, "");
+  }, sessionToken);
   await db.update(schemaDriftMonitors)
     .set({ scheduleCronTaskUid: heartbeat.taskUid, isActive: true })
     .where(eq(schemaDriftMonitors.id, monitor.id));

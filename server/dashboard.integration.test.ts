@@ -20,7 +20,9 @@ const salesDetailSource = readFileSync(new URL("../client/src/components/SalesDe
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
-    expect(appSource).toContain('path={"/app"} component={BusinessSphereDashboard}');
+    expect(appSource).toContain('const BusinessSphereDashboard = lazy(() => import("./BusinessSphereDashboard"));');
+    expect(appSource).toContain("<DashboardRouteFallback />");
+    expect(appSource).toContain('aria-live="polite"');
     expect(homeSource.match(/href="\/app"/g)?.length).toBeGreaterThanOrEqual(3);
     expect(homeSource.includes("Launch App") || homeSource.includes("launchApp")).toBe(true);
   });

@@ -253,10 +253,10 @@
 - [x] Add focused schema regression coverage, run build checks, and publish the completed database release.
 
 - [x] Assess and document the alert schedule, delivery path, and administrator ownership model for schema-drift monitoring.
-- [ ] Implement an idempotent scheduled schema-drift verifier with administrator notifications and durable execution history.
-- [ ] Add claim-aware RLS regression tests that exercise tenant and role boundaries with safely gated real Supabase JWTs.
-- [ ] Convert the `/app` ERP entry route to a resilient lazy-loaded module with an accessible loading boundary.
-- [ ] Run focused and full verification, document operations, and publish the hardening release.
+- [x] Implement an idempotent scheduled schema-drift verifier with administrator notifications and durable execution history.
+- [x] Add claim-aware RLS regression tests that exercise tenant and role boundaries with safely gated real Supabase JWTs.
+- [x] Convert the `/app` ERP entry route to a resilient lazy-loaded module with an accessible loading boundary.
+- [x] Run focused and full verification, document operations, and publish the hardening release.
 
 - [x] Identify and defer a safe Sales detail workspace boundary without changing live data or RLS behavior.
 - [x] Add concise in-app guidance explaining deferred loading without introducing telemetry or sensitive-data collection.
