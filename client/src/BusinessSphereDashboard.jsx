@@ -45979,6 +45979,9 @@ function SmartManager() {
   const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
 
   const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id));
+  const activeModule = active === "settings"
+    ? { label: "Settings", group: "Workspace administration" }
+    : (visibleModules.find((m) => m.id === active) || { label: "Workspace", group: "Business operations" });
 
   // If switching roles removes access to whatever module is currently on
   // screen (e.g. testing "Employee" while viewing Finance), fall back to
@@ -46179,7 +46182,7 @@ function SmartManager() {
           green gradient, white-variant text, white/10 borders) was
           removed entirely rather than layered under the new palette. */}
       <aside
-        className={`fixed z-50 h-full w-[240px] shrink-0 flex flex-col bg-white transition-transform duration-200 ease-out overflow-hidden ${darkMode ? "dark-shell" : ""} ${
+        className={`fixed z-50 h-full w-[240px] xl:w-[272px] xl:relative xl:z-20 xl:translate-x-0 xl:border-r xl:border-slate-200/80 xl:shadow-none shrink-0 flex flex-col bg-white transition-transform duration-200 ease-out overflow-hidden ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
@@ -46213,6 +46216,7 @@ function SmartManager() {
         </div>
 
         <nav className="relative flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
+          <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Workspace</p>
           {visibleModules.map((m) => {
             const Icon = m.icon;
             const isActive = active === m.id;
@@ -46266,9 +46270,9 @@ function SmartManager() {
 
       {/* Main — always full width; the sidebar is an overlay, not a docked
           column, so there is no reserved gutter to subtract. */}
-      <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full">
+      <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full xl:overflow-hidden">
         {/* Topbar */}
-        <header className={`h-16 shrink-0 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 ${darkMode ? "dark-shell" : ""}`}>
+        <header className={`h-16 xl:h-[72px] shrink-0 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 xl:px-8 2xl:px-10 ${darkMode ? "dark-shell" : ""}`}>
           <div className="flex items-center gap-3">
             <button
               className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors"
@@ -46283,6 +46287,11 @@ function SmartManager() {
               <ChevronDown size={13} className="text-slate-400 hidden sm:block" />
               <span className="hidden md:inline-flex items-center text-[10.5px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full ml-1">
                 {currentUser.role}
+              </span>
+              <span className="hidden xl:flex items-center gap-2 border-l border-slate-200 pl-4 ml-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{activeModule.group}</span>
+                <span className="w-1 h-1 rounded-full bg-[#22C55E]" />
+                <span className="text-[12px] font-semibold text-slate-700">{activeModule.label}</span>
               </span>
             </div>
           </div>
@@ -46377,7 +46386,22 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="module-fade flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6">
+        <main key={active} className="module-fade flex-1 overflow-y-auto p-4 sm:p-6 xl:px-8 xl:py-7 2xl:px-12 2xl:py-8 pb-24 sm:pb-6 xl:pb-8">
+          <div className="desktop-workspace-frame">
+            <section className="hidden xl:flex items-end justify-between gap-8 pb-6 2xl:pb-7">
+              <div className="min-w-0">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{company.name} / {activeModule.group}</p>
+                <h1 className="text-[26px] 2xl:text-[30px] font-semibold tracking-[-0.03em] text-slate-900">{activeModule.label}</h1>
+                <p className="mt-1 text-[13px] text-slate-500">A focused operational view for your team’s next decisions.</p>
+              </div>
+              <div className="shrink-0 flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-[#16A34A]"><Activity size={16} /></span>
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-700">Live workspace</p>
+                  <p className="text-[10.5px] text-slate-400">{online ? "Ready for secure updates" : "Offline — changes will retry"}</p>
+                </div>
+              </div>
+            </section>
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
@@ -46464,6 +46488,7 @@ function SmartManager() {
           {!["dashboard", "crm", "sales", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
           )}
+          </div>
         </main>
       </div>
     </div>
@@ -46776,6 +46801,9 @@ function GlobalStyles() {
         button { transition: transform .1s ease, opacity .15s ease; }
         button:active:not(:disabled) { transform: scale(.97); }
         .skeleton-shimmer { background: linear-gradient(90deg, #F1F5F9 25%, #E8EDF3 50%, #F1F5F9 75%); background-size: 800px 100%; animation: shimmer 1.4s linear infinite; }
+        @media (min-width: 1280px) {
+          .desktop-workspace-frame { width: min(100%, 1760px); margin-inline: auto; }
+        }
         @media (prefers-reduced-motion: reduce) {
           .module-fade, .card-in, .skeleton-shimmer { animation: none; }
           button:active:not(:disabled) { transform: none; }

@@ -183,6 +183,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(emailCenterSource).toContain("employeeRows.filter(e=>e.email)");
   });
 
+  it("keeps a docked, contextual desktop workspace shell while retaining the responsive overlay menu", () => {
+    expect(dashboardSource).toContain("xl:w-[272px] xl:relative xl:z-20 xl:translate-x-0");
+    expect(dashboardSource).toContain("desktop-workspace-frame");
+    expect(dashboardSource).toContain("xl:px-8 xl:py-7 2xl:px-12 2xl:py-8");
+    expect(dashboardSource).toContain("hidden xl:flex items-end justify-between gap-8");
+    expect(dashboardSource).toContain("A focused operational view for your team’s next decisions.");
+    expect(dashboardSource).toContain("sm:hidden fixed bottom-0 inset-x-0 z-30");
+    expect(dashboardSource).toContain("h-16 xl:h-[72px]");
+  });
+
   it("imports the project quick-action icon before rendering dashboard shortcuts", () => {
     expect(dashboardSource).toContain("FolderKanban");
     expect(dashboardSource).toContain("icon:FolderKanban");
