@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, normalizeGenericTenantPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, moveDashboardKpi, normalizeGenericTenantPayload, orderDashboardKpis, resolveDailyBriefingFetchState, resolveRoleKpiPreset, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -16,6 +16,7 @@ afterEach(() => {
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
 const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const preferencesDrawerSource = readFileSync(new URL("../client/src/components/DashboardPreferencesDrawer.tsx", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
@@ -85,6 +86,25 @@ describe("BusinessSphere launch and live-data integration", () => {
       unit_cost: 78,
       sku: "INV-001",
     });
+  });
+
+  it("applies role-aligned KPI priorities while persisting a user-arranged override safely", () => {
+    const kpis = ["ar_billed", "collected", "overdue_ar", "gross_pnl", "inventory", "low_stock", "pipeline", "mrr"].map((id) => ({ id }));
+    expect(resolveRoleKpiPreset("CFO", "auto")).toBe("finance");
+    expect(resolveRoleKpiPreset("Warehouse Manager", "auto")).toBe("operations");
+    expect(resolveRoleKpiPreset("CEO", "oversight")).toBe("oversight");
+    expect(orderDashboardKpis(kpis, [], "finance").slice(0, 3).map((item) => item.id)).toEqual(["gross_pnl", "collected", "overdue_ar"]);
+    expect(orderDashboardKpis(kpis, ["mrr", "pipeline"], "finance").slice(0, 2).map((item) => item.id)).toEqual(["mrr", "pipeline"]);
+    expect(moveDashboardKpi(["mrr", "pipeline", "gross_pnl"], "gross_pnl", -1)).toEqual(["mrr", "gross_pnl", "pipeline"]);
+  });
+
+  it("exposes persistent density and role-lens controls with a desktop-only draggable KPI fallback", () => {
+    expect(dashboardSource).toContain('updatePreference("compactDensity", !preferences.compactDensity)');
+    expect(preferencesDrawerSource).toContain('updatePreference("rolePreset", option.id as typeof preferences.rolePreset)');
+    expect(dashboardSource).toContain('const [canReorderKpis, setCanReorderKpis] = useState(false)');
+    expect(dashboardSource).toContain('window.matchMedia("(min-width: 1280px)")');
+    expect(dashboardSource).toContain('draggable={canReorderKpis}');
+    expect(dashboardSource).toContain('Reset KPI order');
   });
 
   it("handles confirmation-pending signup safely and derives profile/company access from the authenticated user ID", () => {

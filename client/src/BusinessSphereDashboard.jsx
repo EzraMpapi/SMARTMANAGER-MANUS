@@ -5057,6 +5057,39 @@ function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClos
   );
 }
 
+export const DASHBOARD_KPI_DEFAULT_ORDER = ["ar_billed", "collected", "overdue_ar", "gross_pnl", "inventory", "low_stock", "pipeline", "mrr"];
+
+export function resolveRoleKpiPreset(role, selectedPreset = "auto") {
+  if (selectedPreset && selectedPreset !== "auto") return selectedPreset;
+  if (["CFO", "Finance Manager"].includes(role)) return "finance";
+  if (["Procurement Officer", "Warehouse Manager"].includes(role)) return "operations";
+  if (["Auditor", "Super Administrator"].includes(role)) return "oversight";
+  return "leadership";
+}
+
+export function orderDashboardKpis(kpis, savedOrder = [], preset = "leadership") {
+  const presetOrders = {
+    leadership: ["ar_billed", "collected", "gross_pnl", "mrr", "pipeline", "inventory", "overdue_ar", "low_stock"],
+    finance: ["gross_pnl", "collected", "overdue_ar", "ar_billed", "mrr", "pipeline", "inventory", "low_stock"],
+    operations: ["inventory", "low_stock", "pipeline", "ar_billed", "collected", "gross_pnl", "overdue_ar", "mrr"],
+    oversight: ["overdue_ar", "gross_pnl", "ar_billed", "collected", "pipeline", "low_stock", "inventory", "mrr"],
+  };
+  const available = new Map(kpis.map((kpi) => [kpi.id, kpi]));
+  const requested = Array.isArray(savedOrder) && savedOrder.length ? savedOrder : (presetOrders[preset] || DASHBOARD_KPI_DEFAULT_ORDER);
+  const ordered = requested.map((id) => available.get(id)).filter(Boolean);
+  return [...ordered, ...kpis.filter((kpi) => !ordered.some((item) => item.id === kpi.id))];
+}
+
+export function moveDashboardKpi(savedOrder = [], kpiId, delta, fallbackOrder = DASHBOARD_KPI_DEFAULT_ORDER) {
+  const current = (Array.isArray(savedOrder) && savedOrder.length ? savedOrder : fallbackOrder).filter(Boolean);
+  const index = current.indexOf(kpiId);
+  const nextIndex = index + delta;
+  if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+  const next = [...current];
+  [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+  return next;
+}
+
 function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, onQuickAction, onNavigate }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
@@ -5082,6 +5115,30 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [exportModules, setExportModules] = useState({ finance: true, sales: true, crm: true, inventory: true, operations: true });
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
+  const [draggedKpiId, setDraggedKpiId] = useState(null);
+  const [canReorderKpis, setCanReorderKpis] = useState(false);
+  const resolvedKpiPreset = resolveRoleKpiPreset(currentUser.role, preferences.rolePreset);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1280px)");
+    const sync = () => setCanReorderKpis(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  function setKpiOrder(nextOrder) {
+    updatePreference("kpiOrder", Array.from(new Set(nextOrder)));
+  }
+
+  function moveKpi(kpiId, delta) {
+    const fallback = orderDashboardKpis(
+      DASHBOARD_KPI_DEFAULT_ORDER.map((id) => ({ id })),
+      [],
+      resolvedKpiPreset,
+    ).map((item) => item.id);
+    setKpiOrder(moveDashboardKpi(preferences.kpiOrder, kpiId, delta, fallback));
+  }
 
 
   const financials = useMemo(() => {
@@ -5435,7 +5492,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   }
 
   return (
-    <div className="space-y-5">
+    <div className={preferences.compactDensity ? "space-y-3" : "space-y-5"}>
       {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
       <DashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
 
@@ -5445,7 +5502,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           <div className="absolute w-64 h-64 rounded-full opacity-10" style={{background:"radial-gradient(circle,#4ADE80,transparent)",right:"-4rem",top:"-4rem"}}/>
           <div className="absolute w-32 h-32 rounded-full opacity-10" style={{background:"radial-gradient(circle,#86EFAC,transparent)",left:"30%",bottom:"-2rem"}}/>
         </div>
-        <div className="relative px-5 sm:px-7 py-5">
+        <div className={preferences.compactDensity ? "relative px-4 sm:px-6 py-4" : "relative px-5 sm:px-7 py-5"}>
           {/* Top bar */}
           <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
             <div>
@@ -5523,6 +5580,17 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               >
                 <DollarSign size={13}/> {preferences.currency}
               </button>
+              <button
+                onClick={() => updatePreference("compactDensity", !preferences.compactDensity)}
+                className="hidden md:flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]"
+                aria-pressed={preferences.compactDensity}
+                title={preferences.compactDensity ? "Switch to comfortable dashboard density" : "Switch to compact dashboard density"}
+              >
+                <Grid3x3 size={13}/> {preferences.compactDensity ? "Compact" : "Comfortable"}
+              </button>
+              <span className="hidden xl:flex items-center gap-1.5 rounded-xl border border-[rgba(255,255,255,.15)] bg-[rgba(0,0,0,.12)] px-3 py-2 text-[11px] font-semibold text-[rgba(255,255,255,.7)]">
+                <Target size={13} className="text-[#4ADE80]" /> {resolvedKpiPreset[0].toUpperCase() + resolvedKpiPreset.slice(1)} lens
+              </span>
               <button onClick={() => setPreferencesDrawerOpen(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]">
                 <Sliders size={13}/> Preferences
               </button>
@@ -5546,26 +5614,46 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             const activeSubs    = subscriptions.rows.filter(s=>s.status==="Active");
             const MRR = activeSubs.reduce((s,sub)=>{const mo={Monthly:1,Quarterly:3,Annual:12}[sub.cycle]||1;return s+(sub.amount/mo);},0);
 
-            return (
-              <div className="grid grid-cols-4 lg:grid-cols-8 gap-px bg-[rgba(255,255,255,.06)] rounded-xl overflow-hidden">
-                {[
-                  {l:"AR Billed",   v:formatMoney(totalBilled),  col:"#4ADE80",  sub:invRows.length+" invoices"},
-                  {l:"Collected",   v:formatMoney(totalCollected),col:"#60A5FA",  sub:Math.round(totalBilled>0?totalCollected/totalBilled*100:0)+"% rate"},
-                  {l:"Overdue AR",  v:formatMoney(overdueAmt),   col:overdueAmt>0?"#F87171":"#4ADE80", sub:overdueInvs.length+" invoices"},
-                  {l:"Gross P&L",   v:(grossProfit>=0?"+":"")+formatMoney(Math.abs(grossProfit)),col:grossProfit>=0?"#4ADE80":"#F87171",sub:"Collected − Exp"},
-                  {l:"Inventory",   v:formatMoney(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)),col:"#C4B5FD",sub:inventory.rows.length+" SKUs"},
-                  {l:"Low Stock",   v:String(lowStock),col:lowStock>0?"#F87171":"#4ADE80",sub:inventory.rows.filter(it=>it.qty<=0).length+" out"},
-                  {l:"Pipeline",    v:formatMoney(crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).reduce((s,l)=>s+(l.value||0),0)),col:"#F9A8D4",sub:openLeads+" open deals"},
-                  {l:"MRR",         v:formatMoney(MRR),col:"#34D399",sub:activeSubs.length+" active subs"},
-                ].map(({l,v,col,sub})=>(
-                  <div key={l} className="bg-[rgba(0,0,0,.25)] px-3 py-3 text-center">
-                    <p className="text-[9.5px] font-bold uppercase tracking-wide text-[rgba(255,255,255,.45)] mb-1">{l}</p>
-                    <p className="text-[14px] font-black leading-tight" style={{color:col}}>{v}</p>
-                    <p className="text-[9.5px] text-[rgba(255,255,255,.35)] mt-0.5">{sub}</p>
-                  </div>
-                ))}
-              </div>
-            );
+            const kpis = [
+              {id:"ar_billed", l:"AR Billed", v:formatMoney(totalBilled), col:"#4ADE80", sub:invRows.length+" invoices"},
+              {id:"collected", l:"Collected", v:formatMoney(totalCollected), col:"#60A5FA", sub:Math.round(totalBilled>0?totalCollected/totalBilled*100:0)+"% rate"},
+              {id:"overdue_ar", l:"Overdue AR", v:formatMoney(overdueAmt), col:overdueAmt>0?"#F87171":"#4ADE80", sub:overdueInvs.length+" invoices"},
+              {id:"gross_pnl", l:"Gross P&L", v:(grossProfit>=0?"+":"")+formatMoney(Math.abs(grossProfit)), col:grossProfit>=0?"#4ADE80":"#F87171", sub:"Collected − Exp"},
+              {id:"inventory", l:"Inventory", v:formatMoney(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)), col:"#C4B5FD", sub:inventory.rows.length+" SKUs"},
+              {id:"low_stock", l:"Low Stock", v:String(lowStock), col:lowStock>0?"#F87171":"#4ADE80", sub:inventory.rows.filter(it=>it.qty<=0).length+" out"},
+              {id:"pipeline", l:"Pipeline", v:formatMoney(crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).reduce((s,l)=>s+(l.value||0),0)), col:"#F9A8D4", sub:openLeads+" open deals"},
+              {id:"mrr", l:"MRR", v:formatMoney(MRR), col:"#34D399", sub:activeSubs.length+" active subs"},
+            ];
+            const orderedKpis = orderDashboardKpis(kpis, preferences.kpiOrder, resolvedKpiPreset);
+            return preferences.showKpiBanner ? (
+              <>
+                <div className="mb-2 hidden xl:flex items-center justify-between gap-3">
+                  <p className="text-[10.5px] font-semibold text-[rgba(255,255,255,.55)]">Drag KPI cards to set your own executive order. Your order is stored on this device.</p>
+                  <button type="button" onClick={() => updatePreference("kpiOrder", [])} className="rounded-lg px-2 py-1 text-[10.5px] font-semibold text-[#86EFAC] hover:bg-white/10" aria-label="Reset KPI arrangement to the role-aligned order">Reset KPI order</button>
+                </div>
+                <div className="grid grid-cols-4 lg:grid-cols-8 gap-px bg-[rgba(255,255,255,.06)] rounded-xl overflow-hidden">
+                  {orderedKpis.map(({id,l,v,col,sub}, index)=> (
+                    <div
+                      key={id}
+                      draggable={canReorderKpis}
+                      onDragStart={() => canReorderKpis && setDraggedKpiId(id)}
+                      onDragEnd={() => setDraggedKpiId(null)}
+                      onDragOver={(event) => { if (canReorderKpis) event.preventDefault(); }}
+                      onDrop={() => { if (!canReorderKpis || !draggedKpiId || draggedKpiId === id) return; const next = orderedKpis.map((item) => item.id); const from = next.indexOf(draggedKpiId); const to = next.indexOf(id); next.splice(from, 1); next.splice(to, 0, draggedKpiId); setKpiOrder(next); setDraggedKpiId(null); }}
+                      className={`${preferences.compactDensity ? "px-2.5 py-2.5" : "px-3 py-3"} group relative bg-[rgba(0,0,0,.25)] text-center transition-opacity ${draggedKpiId === id ? "opacity-45" : ""} ${canReorderKpis ? "cursor-grab active:cursor-grabbing" : ""}`}
+                    >
+                      <div className="absolute right-1.5 top-1.5 hidden xl:flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button type="button" onClick={() => moveKpi(id, -1)} disabled={index === 0} className="rounded p-0.5 text-white/45 hover:bg-white/10 hover:text-white disabled:opacity-20" aria-label={`Move ${l} KPI earlier`}><ChevronLeft size={12} /></button>
+                        <button type="button" onClick={() => moveKpi(id, 1)} disabled={index === orderedKpis.length - 1} className="rounded p-0.5 text-white/45 hover:bg-white/10 hover:text-white disabled:opacity-20" aria-label={`Move ${l} KPI later`}><ChevronRight size={12} /></button>
+                      </div>
+                      <p className="text-[9.5px] font-bold uppercase tracking-wide text-[rgba(255,255,255,.45)] mb-1">{l}</p>
+                      <p className="text-[14px] font-black leading-tight" style={{color:col}}>{v}</p>
+                      <p className="text-[9.5px] text-[rgba(255,255,255,.35)] mt-0.5">{sub}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : null;
           })()}
         </div>
       </div>

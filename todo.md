@@ -295,3 +295,12 @@
 - [x] Refine desktop-wide layout structure, spacing, hierarchy, surfaces, and wide-screen controls without changing ERP behavior.
 - [x] Add regression coverage and verify desktop, tablet, mobile, type checks, tests, and production build.
 - [x] Publish the completed professional large-screen responsive refinement.
+
+- [x] Restart the managed development server after the reported interruption and confirm the preview responds.
+
+- [x] Audit current preference persistence, role metadata, and dashboard KPI composition for personalization extension points.
+- [x] Add a persistent compact/comfortable dashboard density toggle with accessible controls.
+- [x] Add role-based desktop workspace presets that tailor KPI emphasis without changing access permissions or underlying data.
+- [x] Add a persistent desktop draggable KPI arrangement with keyboard-safe reset controls and mobile-safe fallback ordering.
+- [x] Add regression coverage, verify responsive behavior and interaction persistence, then run tests, type checks, and production build.
+- [x] Publish the completed dashboard personalization features.
