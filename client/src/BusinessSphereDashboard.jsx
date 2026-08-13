@@ -71,11 +71,46 @@ let DEMO_OVERRIDE = false;
 // different companies. The client never supplies its own company filter;
 // the database is the single source of truth for which rows a session can see.
 
-function authHeaders() {
-  const token = (typeof window !== "undefined" && window.localStorage?.getItem("bs_access_token")) || SUPABASE_ANON_KEY;
+let authRefreshInFlight = null;
+
+function getStoredAccessToken() {
+  return typeof window !== "undefined" ? window.localStorage?.getItem("bs_access_token") : null;
+}
+
+function accessTokenNeedsRefresh(accessToken) {
+  if (!accessToken) return false;
+  try {
+    const payload = JSON.parse(atob(accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof payload.exp === "number" && payload.exp * 1000 <= Date.now() + 60_000;
+  } catch (_error) {
+    return false;
+  }
+}
+
+async function authHeaders() {
+  let token = getStoredAccessToken();
+  const refreshToken = typeof window !== "undefined" ? window.localStorage?.getItem("bs_refresh_token") : null;
+
+  if (accessTokenNeedsRefresh(token) && refreshToken) {
+    if (!authRefreshInFlight) {
+      authRefreshInFlight = authRefreshSession(refreshToken)
+        .then((refreshed) => {
+          persistAuthTokens(refreshed);
+          return refreshed.access_token;
+        })
+        .finally(() => { authRefreshInFlight = null; });
+    }
+    try {
+      token = await authRefreshInFlight;
+    } catch (_error) {
+      // An anon-key fallback would make auth.uid() NULL and mislabel an
+      // authentication failure as an RLS denial.
+    }
+  }
+
   return {
     apikey: SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${token}`,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     "Content-Type": "application/json",
   };
 }
@@ -192,11 +227,19 @@ async function authGetUser(accessToken) {
   return readAuthResponse(res, "Session expired.");
 }
 
+// A bare profile is deliberately not an ERP session. Auth creates profiles
+// before tenant provisioning, while only authorized onboarding RPCs may
+// attach an identity to a company.
+export function hasResolvedCompany(profile) {
+  const company = Array.isArray(profile?.companies) ? profile.companies[0] : profile?.companies;
+  return Boolean(profile?.company_id && company?.id && company.id === profile.company_id);
+}
+
 async function resolveAuthenticatedDashboardSession(accessToken, knownUser) {
   const user = knownUser || await authGetUser(accessToken);
   const profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
   const profile = profileRows?.[0];
-  if (!profile) return { user, session: null };
+  if (!profile || !hasResolvedCompany(profile)) return { user, session: null };
   return {
     user,
     session: {
@@ -378,10 +421,17 @@ function sb(table) {
     },
     async run() {
       const url = `${path}?${params.toString()}`;
+      const requestHeaders = await authHeaders();
+      if (method !== "GET" && IS_CONFIGURED && typeof window !== "undefined" && !requestHeaders.Authorization) {
+        const error = new Error("Your authenticated session is unavailable. Please sign in again before saving changes.");
+        error.status = 401;
+        notify(`Server save failed for ${table}: ${error.message}`, "error");
+        throw error;
+      }
       const res = await fetch(url, {
         method,
         headers: {
-          ...authHeaders(),
+          ...requestHeaders,
           ...(method === "GET" ? {} : { Prefer: "return=representation" }),
         },
         body,
@@ -37535,7 +37585,7 @@ function AuthTextField({ label, icon: Icon, type = "text", value, onChange, plac
   );
 }
 
-function LoginPage({ onAuthenticated, onSwitchToSignup }) {
+function LoginPage({ onAuthenticated, onSetupRequired, onSwitchToSignup }) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -37554,7 +37604,15 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
       persistAuthTokens(result);
       const resumedSignup = await resumeConfirmedSignup(result.access_token, result.user);
       const resolved = resumedSignup ? { session: resumedSignup } : await resolveAuthenticatedDashboardSession(result.access_token, result.user);
-      if (!resolved.session) throw new Error("Your account is authenticated, but no active company profile is available. Ask an administrator to finish your company setup.");
+      if (!resolved.session) {
+        onSetupRequired({
+          id: result.user.id,
+          email: result.user.email,
+          accessToken: result.access_token,
+          fullName: result.user.user_metadata?.full_name || result.user.user_metadata?.name || "",
+        });
+        return;
+      }
       onAuthenticated(resolved.session);
     } catch (err) { setError(err?.message || "Sign-in failed. Please try again."); }
     finally { setBusy(false); }
@@ -46181,14 +46239,14 @@ function SmartManager() {
       <OAuthCompanySetup
         oauthUser={oauthPendingUser}
         onAuthenticated={(s) => { setOauthPendingUser(null); setSession(s || { demo: true }); }}
-        onCancel={() => { if (typeof window !== "undefined") window.localStorage.removeItem("bs_access_token"); setOauthPendingUser(null); }}
+        onCancel={() => { clearAuthTokens(); setOauthPendingUser(null); setAuthView("login"); }}
       />
     );
   }
 
   if (!session) {
     return authView === "login"
-      ? <LoginPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToSignup={() => setAuthView("signup")} />
+      ? <LoginPage onAuthenticated={(s) => setSession(s || { demo: true })} onSetupRequired={setOauthPendingUser} onSwitchToSignup={() => setAuthView("signup")} />
       : <SignupPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToLogin={() => setAuthView("login")} />;
   }
 

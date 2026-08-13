@@ -304,3 +304,12 @@
 - [x] Add a persistent desktop draggable KPI arrangement with keyboard-safe reset controls and mobile-safe fallback ordering.
 - [x] Add regression coverage, verify responsive behavior and interaction persistence, then run tests, type checks, and production build.
 - [x] Publish the completed dashboard personalization features.
+
+- [x] Restart the managed development server after the newly reported interruption and confirm the preview responds.
+
+- [x] Trace the complete frontend Auth token, Supabase request-header, profile/company membership, and RLS function path for the global save failures.
+- [x] Inspect live authenticated context, current_company_id(), profiles, memberships, triggers, and tenant policies without weakening RLS.
+- [x] Repair the smallest shared Auth-to-company resolution defect; do not trust client-supplied tenant IDs or introduce permissive policies.
+- [x] Verify real authenticated `auth.uid()`, company resolution, `pos_shifts` persistence, and CRUD across at least five tenant modules.
+- [x] Verify reload/login persistence and cross-tenant read/write denial with controlled tenants, then remove all QA records.
+- [x] Add regression coverage and publish the verified shared RLS context repair with an implementation report.

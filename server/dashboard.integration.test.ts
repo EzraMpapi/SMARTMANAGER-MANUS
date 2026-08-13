@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, moveDashboardKpi, normalizeGenericTenantPayload, orderDashboardKpis, resolveDailyBriefingFetchState, resolveRoleKpiPreset, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, hasResolvedCompany, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, moveDashboardKpi, normalizeGenericTenantPayload, orderDashboardKpis, resolveDailyBriefingFetchState, resolveRoleKpiPreset, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -112,6 +112,24 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("Account created. Confirm your email to securely finish company setup.");
     expect(dashboardSource).toContain('sb("profiles").select("*,companies(*)").eq("id", user.id).run()');
     expect(dashboardSource).toContain("authRefreshSession(refreshToken)");
+  });
+
+  it("does not admit an authenticated profile without a database-resolved company to the ERP shell", () => {
+    expect(hasResolvedCompany({ company_id: null, companies: null })).toBe(false);
+    expect(hasResolvedCompany({ company_id: "tenant-a", companies: { id: "tenant-b" } })).toBe(false);
+    expect(hasResolvedCompany({ company_id: "tenant-a", companies: { id: "tenant-a" } })).toBe(true);
+    expect(dashboardSource).toContain("if (!profile || !hasResolvedCompany(profile)) return { user, session: null };");
+    expect(dashboardSource).toContain("onSetupRequired({");
+    expect(dashboardSource).toContain("onSetupRequired={setOauthPendingUser}");
+  });
+
+  it("uses a stored authenticated token or an in-flight refresh for PostgREST rather than presenting the anon key as a user session", () => {
+    expect(dashboardSource).toContain("let authRefreshInFlight = null;");
+    expect(dashboardSource).toContain("async function authHeaders()");
+    expect(dashboardSource).toContain("authRefreshSession(refreshToken)");
+    expect(dashboardSource).toContain("...(token ? { Authorization: `Bearer ${token}` } : {})");
+    expect(dashboardSource).toContain("const requestHeaders = await authHeaders();");
+    expect(dashboardSource).toContain("Your authenticated session is unavailable. Please sign in again before saving changes.");
   });
 
   it("defers company provisioning until the confirmed user session is available without persisting secrets or tenant IDs", () => {
