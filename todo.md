@@ -287,4 +287,6 @@
 
 - [x] Implement real-time email format validation and error handling for the new forgot password submission form.
 
-- [ ] Add a 'Back to Login' button in the forgot password modal to allow users to easily return.
+- [x] Add a 'Back to Login' button in the forgot password modal to allow users to easily return.
+
+- [ ] Troubleshoot and eliminate local fallback persistence, making Supabase the sole source of truth for all database writes and surfacing real Supabase write errors.
