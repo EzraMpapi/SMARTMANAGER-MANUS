@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface DashboardPreferences {
   compactDensity: boolean;
-  rolePreset: "auto" | "leadership" | "finance" | "operations" | "oversight";
-  kpiOrder: string[];
   showKpiBanner: boolean;
   showActivityTimeline: boolean;
   showPendingApprovals: boolean;
@@ -32,8 +30,6 @@ const defaultDepartmentBudgets: Record<string, number> = {
 
 const defaultPreferences: DashboardPreferences = {
   compactDensity: false,
-  rolePreset: "auto",
-  kpiOrder: [],
   showKpiBanner: true,
   showActivityTimeline: true,
   showPendingApprovals: true,

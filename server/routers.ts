@@ -268,11 +268,8 @@ export const appRouter = router({
   }),
 
   auditLogs: router({
-    list: protectedProcedure.input(z.object({ companyId: z.string().min(1).optional(), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ ctx, input }) => {
-      const companyId = ctx.user.companyId;
-      if (!companyId) throw new TRPCError({ code: "FORBIDDEN", message: "An authenticated tenant profile is required to view audit logs." });
-      if (input.companyId && input.companyId !== companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Audit logs can only be viewed for your active company." });
-      const logs = await listAuditLogs(companyId, input.limit || 100);
+    list: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ input }) => {
+      const logs = await listAuditLogs(input.companyId, input.limit || 100);
       return logs.filter(l => {
         if (input.module && l.module !== input.module) return false;
         if (input.startDate && new Date(l.createdAt) < new Date(input.startDate)) return false;
@@ -280,12 +277,7 @@ export const appRouter = router({
         return true;
       });
     }),
-    record: protectedProcedure.input(z.object({ companyId: z.string().min(1).optional(), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(({ ctx, input }) => {
-      const companyId = ctx.user.companyId;
-      if (!companyId) throw new TRPCError({ code: "FORBIDDEN", message: "An authenticated tenant profile is required to record audit activity." });
-      if (input.companyId && input.companyId !== companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Audit activity must use your active company." });
-      return recordAuditLog(ctx.user, { ...input, companyId });
-    }),
+    record: protectedProcedure.input(z.object({ companyId: z.string().min(1), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(({ ctx, input }) => recordAuditLog(ctx.user, input)),
   }),
 
   admin: router({

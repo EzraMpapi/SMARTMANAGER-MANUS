@@ -29,13 +29,6 @@
       "when": 1786594092618,
       "tag": "0003_dazzling_vindicator",
       "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1786618049064,
-      "tag": "0004_neat_paladin",
-      "breakpoints": true
     }
   ]
 }

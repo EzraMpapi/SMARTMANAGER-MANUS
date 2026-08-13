@@ -88,20 +88,6 @@ export const webhookDeliveries = mysqlTable("webhook_deliveries", {
 
 export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
 
-export const webhookConfigurations = mysqlTable("webhook_configurations", {
-  id: int("id").autoincrement().primaryKey(),
-  configKey: varchar("configKey", { length: 80 }).notNull().unique(),
-  url: text("url").notNull(),
-  enabled: boolean("enabled").default(false).notNull(),
-  encryptedSecret: text("encryptedSecret"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => ({
-  configKeyIdx: index("webhook_configuration_key_idx").on(table.configKey),
-}));
-
-export type WebhookConfiguration = typeof webhookConfigurations.$inferSelect;
-
 export const schemaDriftMonitors = mysqlTable("schema_drift_monitors", {
   id: int("id").autoincrement().primaryKey(),
   monitorKey: varchar("monitorKey", { length: 80 }).notNull().unique(),

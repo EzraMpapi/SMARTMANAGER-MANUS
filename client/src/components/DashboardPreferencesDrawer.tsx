@@ -21,8 +21,6 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
       setAiResult({
         preferences: {
           compactDensity: data.preferences.density === "compact",
-          rolePreset: preferences.rolePreset,
-          kpiOrder: preferences.kpiOrder,
           showKpiBanner: data.preferences.showMetricsStrip,
           showActivityTimeline: data.preferences.showActivityFeed,
           showPendingApprovals: data.preferences.showQuickActions,
@@ -188,43 +186,17 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
 
               <div className="space-y-3">
                 <label className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">View Density</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[{ id: false, label: "Comfortable", note: "Balanced spacing for executive review" }, { id: true, label: "Compact", note: "More KPI and data density" }].map((option) => (
-                    <button
-                      key={String(option.id)}
-                      type="button"
-                      onClick={() => updatePreference("compactDensity", option.id)}
-                      aria-pressed={preferences.compactDensity === option.id}
-                      className={`rounded-xl border p-3.5 text-left transition-all ${preferences.compactDensity === option.id ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]" : "border-white/10 bg-[#0B1120] text-[#94A3B8] hover:border-white/25 hover:text-white"}`}
-                    >
-                      <span className="block text-[13px] font-bold">{option.label}</span>
-                      <span className="mt-1 block text-[11px] leading-relaxed opacity-75">{option.note}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">Desktop Role Lens</label>
-                <p className="text-[12px] leading-relaxed text-[#94A3B8]">Prioritize KPI ordering for the role’s decision context. This changes emphasis only; it never changes your access or underlying data.</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: "auto", label: "Role-aligned" },
-                    { id: "leadership", label: "Leadership" },
-                    { id: "finance", label: "Finance" },
-                    { id: "operations", label: "Operations" },
-                    { id: "oversight", label: "Oversight" },
-                  ].map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => updatePreference("rolePreset", option.id as typeof preferences.rolePreset)}
-                      aria-pressed={preferences.rolePreset === option.id}
-                      className={`rounded-lg border px-3 py-2.5 text-left text-[12px] font-semibold transition-all ${preferences.rolePreset === option.id ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]" : "border-white/10 bg-[#0B1120] text-[#94A3B8] hover:border-white/25 hover:text-white"}`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                <div
+                  onClick={() => updatePreference("compactDensity", !preferences.compactDensity)}
+                  className="flex cursor-pointer items-center justify-between rounded-xl border border-white/10 bg-[#0B1120] p-4 transition-colors hover:border-[#C9A96E]/40"
+                >
+                  <div>
+                    <p className="text-[14px] font-semibold text-white">Compact Table Density</p>
+                    <p className="text-[12px] text-[#94A3B8]">Reduce row padding in ERP data tables for higher data visibility</p>
+                  </div>
+                  <div className={`grid h-6 w-6 place-items-center rounded-md border ${preferences.compactDensity ? "bg-[#C9A96E] border-[#C9A96E] text-[#0B1120]" : "border-white/20 bg-transparent"}`}>
+                    {preferences.compactDensity && <Check size={14} />}
+                  </div>
                 </div>
               </div>
 

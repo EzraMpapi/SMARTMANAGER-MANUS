@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase,
   Factory, Truck, Megaphone, Store, FileText, Brain, Settings,
@@ -24,75 +24,14 @@ import {
   PieChart as RPieChart, Pie, Legend,
   RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
+import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
 import { trpc } from "./lib/trpc";
+import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
+import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 
-// Optional panels and export libraries do not block the core operational
-// workspace. Load them only when the user opens or requests the capability.
-const deferredModuleReady = new Set();
-const DEFERRED_MODULE_READY_EVENT = "businesssphere:deferred-module-ready";
-export function getDeferredModuleReadiness() { return [...deferredModuleReady]; }
-export function markDeferredModuleReady(name) {
-  deferredModuleReady.add(name);
-  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function" && typeof CustomEvent !== "undefined") window.dispatchEvent(new CustomEvent(DEFERRED_MODULE_READY_EVENT, { detail: name }));
-}
-const lazyDeferred = (name, loader) => lazy(() => loader().then((module) => { markDeferredModuleReady(name); return module; }));
-const LazyDashboardPreferencesDrawer = lazyDeferred("Preferences", () => import("./components/DashboardPreferencesDrawer").then((module) => ({ default: module.DashboardPreferencesDrawer })));
-const LazyWorkspacePresenceBadge = lazyDeferred("Presence", () => import("./components/WorkspacePresenceBadge").then((module) => ({ default: module.WorkspacePresenceBadge })));
-const LazyFinancialDashboard = lazyDeferred("Finance", () => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.FinancialDashboard })));
-const LazyCrmSalesDashboard = lazyDeferred("Sales", () => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.CrmSalesDashboard })));
-const LazyInventoryProcurementExecutiveView = lazyDeferred("Inventory", () => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.InventoryProcurementExecutiveView })));
-const LazyHrOperationalDashboard = lazyDeferred("HR", () => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.HrOperationalDashboard })));
-const LazyProcurementWorkspace = lazyDeferred("Procurement", () => import("./components/ProcurementWorkspace").then((module) => ({ default: module.ProcurementWorkspace })));
-let xlsxModulePromise;
-const loadXlsx = () => (xlsxModulePromise ||= import("xlsx"));
-const loadJsPdf = () => import("jspdf").then((module) => module.jsPDF);
-
-const ONBOARDING_CHECKLIST_STORAGE_PREFIX = "bs_onboarding_completed_";
-const ONBOARDING_GUIDANCE_DISMISSAL_STORAGE_PREFIX = "bs_onboarding_guidance_dismissed_";
-export function persistOnboardingChecklistCompletion(userId, mode) {
-  if (!userId || typeof window === "undefined") return false;
-  try {
-    window.localStorage.setItem(`${ONBOARDING_CHECKLIST_STORAGE_PREFIX}${userId}`, JSON.stringify({ completedAt: new Date().toISOString(), method: mode }));
-    return true;
-  } catch (_error) {
-    return false;
-  }
-}
-
-export function getOnboardingGuidanceDismissed(userId) {
-  if (!userId || typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(`${ONBOARDING_GUIDANCE_DISMISSAL_STORAGE_PREFIX}${userId}`) === "true";
-  } catch (_error) {
-    return false;
-  }
-}
-
-export function setOnboardingGuidanceDismissed(userId, dismissed) {
-  if (!userId || typeof window === "undefined") return false;
-  try {
-    window.localStorage.setItem(`${ONBOARDING_GUIDANCE_DISMISSAL_STORAGE_PREFIX}${userId}`, dismissed ? "true" : "false");
-    return true;
-  } catch (_error) {
-    return false;
-  }
-}
-
-function DeferredModuleReadinessPanel() {
-  const [readyModules, setReadyModules] = useState(() => getDeferredModuleReadiness());
-  useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-    const handleReady = () => setReadyModules(getDeferredModuleReadiness());
-    window.addEventListener(DEFERRED_MODULE_READY_EVENT, handleReady);
-    return () => window.removeEventListener(DEFERRED_MODULE_READY_EVENT, handleReady);
-  }, []);
-  const modules = ["Finance", "Sales", "Inventory", "HR", "Procurement", "Preferences", "Presence"];
-  return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6" aria-label="Deferred module performance">
-    <div className="flex items-start justify-between gap-3"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Deferred module readiness</h2><p className="text-[12.5px] text-slate-500 mt-1">Browser-local status only. Modules load when you open their workspace; no usage data is sent anywhere.</p></div><span className="text-[11px] font-semibold text-[#16A34A] shrink-0">{readyModules.length}/{modules.length} ready</span></div>
-    <div className="flex flex-wrap gap-2 mt-4">{modules.map((name) => { const ready = readyModules.includes(name); return <span key={name} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${ready ? "bg-[#16A34A]/10 text-[#15803D]" : "bg-slate-100 text-slate-500"}`}><span className={`h-1.5 w-1.5 rounded-full ${ready ? "bg-[#16A34A]" : "bg-slate-300"}`} />{name}</span>; })}</div>
-  </section>;
-}
+const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -134,97 +73,13 @@ let DEMO_OVERRIDE = false;
 // different companies. The client never supplies its own company filter;
 // the database is the single source of truth for which rows a session can see.
 
-let authRefreshInFlight = null;
-
-function getStoredAccessToken() {
-  return typeof window !== "undefined" ? window.localStorage?.getItem("bs_access_token") : null;
-}
-
-function accessTokenNeedsRefresh(accessToken) {
-  if (!accessToken) return false;
-  try {
-    const payload = JSON.parse(atob(accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return typeof payload.exp === "number" && payload.exp * 1000 <= Date.now() + 60_000;
-  } catch (_error) {
-    return false;
-  }
-}
-
-async function authHeaders() {
-  let token = getStoredAccessToken();
-  const refreshToken = typeof window !== "undefined" ? window.localStorage?.getItem("bs_refresh_token") : null;
-
-  if (accessTokenNeedsRefresh(token) && refreshToken) {
-    if (!authRefreshInFlight) {
-      authRefreshInFlight = authRefreshSession(refreshToken)
-        .then((refreshed) => {
-          persistAuthTokens(refreshed);
-          return refreshed.access_token;
-        })
-        .finally(() => { authRefreshInFlight = null; });
-    }
-    try {
-      token = await authRefreshInFlight;
-    } catch (_error) {
-      // An anon-key fallback would make auth.uid() NULL and mislabel an
-      // authentication failure as an RLS denial.
-    }
-  }
-
+function authHeaders() {
+  const token = (typeof window !== "undefined" && window.localStorage?.getItem("bs_access_token")) || SUPABASE_ANON_KEY;
   return {
     apikey: SUPABASE_ANON_KEY,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   };
-}
-
-function readAuthResponse(response, fallbackMessage) {
-  return response.text().then((raw) => {
-    let data = {};
-    try { data = raw ? JSON.parse(raw) : {}; } catch (_error) { data = {}; }
-    if (response.ok) return data;
-    const message = data.message || data.error_description || data.msg || fallbackMessage;
-    const code = data.code || data.error_code || "unknown_auth_error";
-    const error = new Error(`${message} (code: ${code}, HTTP ${response.status})`);
-    error.code = code;
-    error.status = response.status;
-    throw error;
-  });
-}
-
-function persistAuthTokens(authResult) {
-  if (typeof window === "undefined") return;
-  if (authResult?.access_token) window.localStorage.setItem("bs_access_token", authResult.access_token);
-  if (authResult?.refresh_token) window.localStorage.setItem("bs_refresh_token", authResult.refresh_token);
-}
-
-function clearAuthTokens() {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem("bs_access_token");
-  window.localStorage.removeItem("bs_refresh_token");
-}
-
-const PENDING_SIGNUP_KEY = "bs_pending_signup";
-
-function persistPendingSignup(pending) {
-  if (typeof window === "undefined") return;
-  // Never retain a password or a tenant/company ID in browser storage. The
-  // authenticated database session remains the sole source of tenant scope.
-  window.localStorage.setItem(PENDING_SIGNUP_KEY, JSON.stringify(pending));
-}
-
-function readPendingSignup() {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(PENDING_SIGNUP_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (_error) {
-    return null;
-  }
-}
-
-function clearPendingSignup() {
-  if (typeof window !== "undefined") window.localStorage.removeItem(PENDING_SIGNUP_KEY);
 }
 
 // Real Supabase Auth REST calls — the actual GoTrue endpoints every
@@ -233,23 +88,15 @@ function clearPendingSignup() {
 // (a real Supabase project is connected); LoginPage/SignupPage below
 // branch on that constant and simulate the flow locally in demo mode
 // rather than pretending to authenticate against a backend that is not there.
-async function authSignUp(email, password, fullName) {
+async function authSignUp(email, password) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify({ email, password, data: { full_name: fullName } }),
+    body: JSON.stringify({ email, password }),
   });
-  const data = await readAuthResponse(res, "Sign up failed.");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || "Sign up failed.");
   return data; // { access_token, refresh_token, user } once email confirmation is satisfied, or { user } if a project requires confirmation first
-}
-
-async function authResendSignupConfirmation(email) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/resend`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify({ type: "signup", email }),
-  });
-  return readAuthResponse(res, "We could not resend the confirmation email. Please wait a moment and try again.");
 }
 
 async function authSignIn(email, password) {
@@ -258,17 +105,9 @@ async function authSignIn(email, password) {
     headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
     body: JSON.stringify({ email, password }),
   });
-  const data = await readAuthResponse(res, "Incorrect email or password.");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || "Incorrect email or password.");
   return data; // { access_token, refresh_token, user }
-}
-
-async function authRefreshSession(refreshToken) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-  return readAuthResponse(res, "Your saved session could not be refreshed.");
 }
 
 async function authSignOut(accessToken) {
@@ -287,86 +126,8 @@ async function authGetUser(accessToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
   });
-  return readAuthResponse(res, "Session expired.");
-}
-
-// A bare profile is deliberately not an ERP session. Auth creates profiles
-// before tenant provisioning, while only authorized onboarding RPCs may
-// attach an identity to a company.
-export function hasResolvedCompany(profile) {
-  const company = Array.isArray(profile?.companies) ? profile.companies[0] : profile?.companies;
-  return Boolean(profile?.company_id && company?.id && company.id === profile.company_id);
-}
-
-async function resolveAuthenticatedDashboardSession(accessToken, knownUser) {
-  const user = knownUser || await authGetUser(accessToken);
-  const profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
-  const profile = profileRows?.[0];
-  if (!profile || !hasResolvedCompany(profile)) return { user, session: null };
-  return {
-    user,
-    session: {
-      userId: user.id,
-      email: user.email,
-      accessToken,
-      fullName: profile.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email,
-      role: profile.role,
-      customerRef: profile.customer_ref,
-      company: {
-        ...profile.companies,
-        taxRate: profile.companies?.tax_rate,
-        timezone: profile.companies?.timezone,
-        businessScale: profile.companies?.business_scale,
-        receiptWidth: profile.companies?.receipt_width,
-        receiptFooter: profile.companies?.receipt_footer,
-        receiptShowLogo: profile.companies?.receipt_show_logo,
-      },
-    },
-  };
-}
-
-async function resumeConfirmedSignup(accessToken, user) {
-  const pending = readPendingSignup();
-  if (!pending || pending.email?.toLowerCase() !== user.email?.toLowerCase()) return null;
-
-  // If the profile already exists, the protected setup RPC previously
-  // completed. Clearing the pending record prevents duplicate provisioning.
-  const existing = await resolveAuthenticatedDashboardSession(accessToken, user);
-  if (existing.session) {
-    clearPendingSignup();
-    return existing.session;
-  }
-
-  const rpcResult = pending.mode === "create"
-    ? await callRpc("create_company_and_owner", {
-        p_name: pending.company.name,
-        p_industry: pending.company.category,
-        p_country: pending.company.country,
-        p_currency: pending.company.currency,
-        p_full_name: pending.account.fullName,
-      }, accessToken)
-    : await callRpc("join_company_with_code", {
-        p_join_code: pending.joinCode,
-        p_full_name: pending.account.fullName,
-        p_role: pending.joinRole,
-        p_customer_ref: pending.isPortalRole ? pending.customerRef : null,
-      }, accessToken);
-
-  if (pending.mode === "create" && rpcResult?.id) {
-    try {
-      await sb("companies").eq("id", rpcResult.id).update({ website: pending.company.website || null, tax_id: pending.company.taxId || null, business_scale: pending.businessScale }).run();
-      await sb("company_modules").insert(pending.selectedModuleIds.map((moduleKey) => ({ company_id: rpcResult.id, module_key: moduleKey, enabled: true }))).run();
-      await sb("branches").insert({ company_id: rpcResult.id, name: pending.firstBranch || "Head Office", is_headquarters: true }).run();
-    } catch (_error) { /* Optional company details can be edited later. */ }
-  }
-  if (pending.account.phone) {
-    try { await sb("profiles").eq("id", user.id).update({ phone: pending.account.phone }).run(); } catch (_error) { /* optional detail */ }
-  }
-
-  const resolved = await resolveAuthenticatedDashboardSession(accessToken, user);
-  if (!resolved.session) throw new Error("Your account was confirmed, but its company profile is not available yet. Please sign in again shortly.");
-  clearPendingSignup();
-  return resolved.session;
+  if (!res.ok) throw new Error("Session expired");
+  return res.json();
 }
 
 // Real OAuth sign-in — redirects the browser to Supabase's actual
@@ -401,49 +162,6 @@ async function callRpc(name, params, accessToken) {
 
 // Minimal chainable query builder over PostgREST, mirroring the shape of the
 // official supabase-js client closely enough that swapping later is trivial.
-const DIRECT_SCHEMA_TABLES = new Set(["companies", "profiles", "audit_log"]);
-const GENERIC_TENANT_COLUMNS = new Set(["id", "company_id", "name", "status", "amount", "notes", "data", "created_at", "updated_at"]);
-
-function usesGenericTenantData(table) {
-  return !DIRECT_SCHEMA_TABLES.has(table);
-}
-
-export function normalizeGenericTenantPayload(table, payload, { insert = false } = {}) {
-  if (!usesGenericTenantData(table) || payload == null) return payload;
-  const normalizeRow = (row) => {
-    if (!row || typeof row !== "object" || Array.isArray(row)) return row;
-    const next = {};
-    const data = { ...(row.data && typeof row.data === "object" && !Array.isArray(row.data) ? row.data : {}) };
-    for (const [key, value] of Object.entries(row)) {
-      if (key === "id" || key === "company_id") continue;
-      if (GENERIC_TENANT_COLUMNS.has(key)) next[key] = value;
-      else data[key] = value;
-    }
-    // Company identity is always derived by the database default and RLS,
-    // never trusted from a browser mutation payload.
-    if (insert) delete next.id;
-    if (Object.keys(data).length) next.data = data;
-    return next;
-  };
-  return Array.isArray(payload) ? payload.map(normalizeRow) : normalizeRow(payload);
-}
-
-export function hydrateGenericTenantRow(table, row) {
-  if (!row || typeof row !== "object" || Array.isArray(row)) return row;
-  const hydrated = usesGenericTenantData(table) && row.data && typeof row.data === "object" && !Array.isArray(row.data)
-    ? { ...row.data, ...row }
-    : { ...row };
-  for (const [key, value] of Object.entries(hydrated)) {
-    if (Array.isArray(value)) hydrated[key] = value.map((entry) => hydrateGenericTenantRow(key, entry));
-  }
-  return hydrated;
-}
-
-function genericTenantColumn(table, column) {
-  if (!usesGenericTenantData(table) || GENERIC_TENANT_COLUMNS.has(column)) return column;
-  return /^[_a-z][_a-z0-9]*$/i.test(column) ? `data->>${column}` : column;
-}
-
 function sb(table) {
   let path = `${SUPABASE_URL}/rest/v1/${table}`;
   const params = new URLSearchParams();
@@ -457,21 +175,21 @@ function sb(table) {
       return builder;
     },
     eq(col, val) {
-      params.append(genericTenantColumn(table, col), `eq.${val}`);
+      params.append(col, `eq.${val}`);
       return builder;
     },
     order(col, { ascending = true } = {}) {
-      params.set("order", `${genericTenantColumn(table, col)}.${ascending ? "asc" : "desc"}`);
+      params.set("order", `${col}.${ascending ? "asc" : "desc"}`);
       return builder;
     },
     insert(row) {
       method = "POST";
-      body = JSON.stringify(normalizeGenericTenantPayload(table, row, { insert: true }));
+      body = JSON.stringify(row);
       return builder;
     },
     update(patch) {
       method = "PATCH";
-      body = JSON.stringify(normalizeGenericTenantPayload(table, patch));
+      body = JSON.stringify(patch);
       return builder;
     },
     delete() {
@@ -484,18 +202,11 @@ function sb(table) {
     },
     async run() {
       const url = `${path}?${params.toString()}`;
-      const requestHeaders = await authHeaders();
-      if (method !== "GET" && IS_CONFIGURED && typeof window !== "undefined" && !requestHeaders.Authorization) {
-        const error = new Error("Your authenticated session is unavailable. Please sign in again before saving changes.");
-        error.status = 401;
-        notify(`Server save failed for ${table}: ${error.message}`, "error");
-        throw error;
-      }
       const res = await fetch(url, {
         method,
         headers: {
-          ...requestHeaders,
-          ...(method === "GET" ? {} : { Prefer: "return=representation" }),
+          ...authHeaders(),
+          Prefer: method === "GET" ? undefined : "return=representation",
         },
         body,
       });
@@ -506,9 +217,6 @@ function sb(table) {
         error.status = res.status;
         error.code = raw?.code;
         error.details = raw?.details;
-        if (method !== "GET") {
-          notify(`Server save failed for ${table}: ${message}. Your change was not saved.`, "error");
-        }
         throw error;
       }
       const data = raw;
@@ -634,40 +342,6 @@ function emitSupabaseReconnectToast() {
   notify("Connection restored — live data is up to date.", "success");
 }
 
-const GENERIC_NESTED_RELATIONS = {
-  sales_invoice_items: { parent: "sales_invoices", foreignKey: "invoice_id" },
-  sales_payments: { parent: "sales_invoices", foreignKey: "invoice_id" },
-  sales_quotation_items: { parent: "sales_quotations", foreignKey: "quotation_id" },
-  sales_order_items: { parent: "sales_orders", foreignKey: "order_id" },
-  purchase_order_items: { parent: "procurement_purchase_orders", foreignKey: "purchase_order_id" },
-  pos_transaction_items: { parent: "pos_transactions", foreignKey: "transaction_id" },
-  pos_returns: { parent: "pos_transactions", foreignKey: "transaction_id" },
-  pos_return_items: { parent: "pos_returns", foreignKey: "return_id" },
-};
-
-async function attachGenericNestedRows(table, rows, select) {
-  if (!Array.isArray(rows) || !rows.length || !select || select === "*") return rows;
-  const requestedRelations = Object.keys(GENERIC_NESTED_RELATIONS).filter((relation) =>
-    GENERIC_NESTED_RELATIONS[relation].parent === table && select.includes(`${relation}(`),
-  );
-  if (!requestedRelations.length) return rows;
-
-  const relationRows = await Promise.all(requestedRelations.map(async (relation) => {
-    const childRows = await sb(relation).select("*").run();
-    return [relation, (Array.isArray(childRows) ? childRows : []).map((row) => hydrateGenericTenantRow(relation, row))];
-  }));
-  const byRelation = new Map(relationRows);
-
-  return rows.map((row) => {
-    const hydrated = hydrateGenericTenantRow(table, row);
-    for (const relation of requestedRelations) {
-      const { foreignKey } = GENERIC_NESTED_RELATIONS[relation];
-      hydrated[relation] = (byRelation.get(relation) || []).filter((child) => child?.[foreignKey] === hydrated.id);
-    }
-    return hydrated;
-  });
-}
-
 export async function runCompanyTableQuery(table, { select = "*", order } = {}) {
   const queryVariants = [];
   const addVariant = (variantSelect, variantOrder) => {
@@ -690,12 +364,7 @@ export async function runCompanyTableQuery(table, { select = "*", order } = {}) 
         if (variant.order) query = query.order(variant.order.col, { ascending: variant.order.ascending });
         const data = await query.run();
         if (recoveredAfterRetry) emitSupabaseReconnectToast();
-        const rows = Array.isArray(data) ? data : (data == null ? [] : [data]);
-        const hydratedRows = rows.map((row) => hydrateGenericTenantRow(table, row));
-        const rowsWithRelations = variant.signature !== queryVariants[0].signature
-          ? await attachGenericNestedRows(table, hydratedRows, select)
-          : hydratedRows;
-        return { rows: rowsWithRelations, usedFallback: variant.signature !== queryVariants[0].signature, unavailable: false, recoveredAfterRetry };
+        return { rows: Array.isArray(data) ? data : (data == null ? [] : [data]), usedFallback: variant.signature !== queryVariants[0].signature, unavailable: false, recoveredAfterRetry };
       } catch (error) {
         lastError = error;
         if (isMissingTableError(error)) return { rows: [], usedFallback: false, unavailable: true, error: null };
@@ -5025,8 +4694,7 @@ export function buildDashboardExportFilterSummary({ startDate = "", endDate = ""
   return `${activeModules.length === 5 ? "All modules" : activeModules.join(", ") || "Executive KPIs only"} · ${dates}`;
 }
 
-export async function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", filterSummary = "All modules · All available dates", sections = [] } = {}) {
-  const jsPDF = await loadJsPdf();
+export function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", filterSummary = "All modules · All available dates", sections = [] } = {}) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 36;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -5171,39 +4839,6 @@ function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClos
   );
 }
 
-export const DASHBOARD_KPI_DEFAULT_ORDER = ["ar_billed", "collected", "overdue_ar", "gross_pnl", "inventory", "low_stock", "pipeline", "mrr"];
-
-export function resolveRoleKpiPreset(role, selectedPreset = "auto") {
-  if (selectedPreset && selectedPreset !== "auto") return selectedPreset;
-  if (["CFO", "Finance Manager"].includes(role)) return "finance";
-  if (["Procurement Officer", "Warehouse Manager"].includes(role)) return "operations";
-  if (["Auditor", "Super Administrator"].includes(role)) return "oversight";
-  return "leadership";
-}
-
-export function orderDashboardKpis(kpis, savedOrder = [], preset = "leadership") {
-  const presetOrders = {
-    leadership: ["ar_billed", "collected", "gross_pnl", "mrr", "pipeline", "inventory", "overdue_ar", "low_stock"],
-    finance: ["gross_pnl", "collected", "overdue_ar", "ar_billed", "mrr", "pipeline", "inventory", "low_stock"],
-    operations: ["inventory", "low_stock", "pipeline", "ar_billed", "collected", "gross_pnl", "overdue_ar", "mrr"],
-    oversight: ["overdue_ar", "gross_pnl", "ar_billed", "collected", "pipeline", "low_stock", "inventory", "mrr"],
-  };
-  const available = new Map(kpis.map((kpi) => [kpi.id, kpi]));
-  const requested = Array.isArray(savedOrder) && savedOrder.length ? savedOrder : (presetOrders[preset] || DASHBOARD_KPI_DEFAULT_ORDER);
-  const ordered = requested.map((id) => available.get(id)).filter(Boolean);
-  return [...ordered, ...kpis.filter((kpi) => !ordered.some((item) => item.id === kpi.id))];
-}
-
-export function moveDashboardKpi(savedOrder = [], kpiId, delta, fallbackOrder = DASHBOARD_KPI_DEFAULT_ORDER) {
-  const current = (Array.isArray(savedOrder) && savedOrder.length ? savedOrder : fallbackOrder).filter(Boolean);
-  const index = current.indexOf(kpiId);
-  const nextIndex = index + delta;
-  if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
-  const next = [...current];
-  [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-  return next;
-}
-
 function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, onQuickAction, onNavigate }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
@@ -5229,30 +4864,6 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [exportModules, setExportModules] = useState({ finance: true, sales: true, crm: true, inventory: true, operations: true });
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
-  const [draggedKpiId, setDraggedKpiId] = useState(null);
-  const [canReorderKpis, setCanReorderKpis] = useState(false);
-  const resolvedKpiPreset = resolveRoleKpiPreset(currentUser.role, preferences.rolePreset);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 1280px)");
-    const sync = () => setCanReorderKpis(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, []);
-
-  function setKpiOrder(nextOrder) {
-    updatePreference("kpiOrder", Array.from(new Set(nextOrder)));
-  }
-
-  function moveKpi(kpiId, delta) {
-    const fallback = orderDashboardKpis(
-      DASHBOARD_KPI_DEFAULT_ORDER.map((id) => ({ id })),
-      [],
-      resolvedKpiPreset,
-    ).map((item) => item.id);
-    setKpiOrder(moveDashboardKpi(preferences.kpiOrder, kpiId, delta, fallback));
-  }
 
 
   const financials = useMemo(() => {
@@ -5393,7 +5004,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   const exportFilterSummary = useMemo(() => buildDashboardExportFilterSummary({ startDate: exportStartDate, endDate: exportEndDate, enabledModules: exportModules }), [exportStartDate, exportEndDate, exportModules]);
 
-  async function exportDashboard(format) {
+  function exportDashboard(format) {
     if (exportBusy) return;
     setExportBusy(format);
     try {
@@ -5403,8 +5014,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         downloadDashboardCsv(filteredExportSections, `${base}.csv`);
         notify("Filtered dashboard chart data downloaded as CSV.");
       } else {
-        const pdf = await createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], filterSummary: exportFilterSummary, sections: filteredExportSections });
-        pdf.save(`${base}.pdf`);
+        createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], filterSummary: exportFilterSummary, sections: filteredExportSections }).save(`${base}.pdf`);
         notify("Filtered dashboard chart data downloaded as PDF.");
       }
     } catch (_e) {
@@ -5525,9 +5135,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("cash flow, receivables, and payables, live from Finance")}
-        <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Finance workspace" />}>
-          <LazyFinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} money={money} lineTotal={lineTotal} taxRate={TAX_RATE} />
-        </Suspense>
+        <FinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -5537,9 +5145,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("headcount, payroll, and leave, live from HR")}
-        <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading HR workspace" />}>
-          <LazyHrOperationalDashboard employees={employees} leaveRequests={leaveRequests} money={money} onNavigate={onNavigate} />
-        </Suspense>
+        <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -5549,9 +5155,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("pipeline, forecast, and revenue by customer, live from CRM and Sales")}
-        <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading CRM workspace" />}>
-          <LazyCrmSalesDashboard invoices={invoices} crm={crm} money={money} lineTotal={lineTotal} stageProbability={STAGE_PROBABILITY} />
-        </Suspense>
+        <SalesDashboard invoices={invoices} crm={crm} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -5561,9 +5165,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("stock levels and low-inventory alerts, live from Inventory and Manufacturing")}
-        <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Inventory and Procurement workspace" />}>
-          <LazyInventoryProcurementExecutiveView inventory={inventory} workOrders={workOrders} money={money} stockStatus={stockStatus} onNavigate={onNavigate} />
-        </Suspense>
+        <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -5615,13 +5217,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   }
 
   return (
-    <div className={preferences.compactDensity ? "space-y-3" : "space-y-5"}>
+    <div className="space-y-5">
       {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
-      {preferencesDrawerOpen && (
-        <Suspense fallback={null}>
-          <LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
-        </Suspense>
-      )}
+      <DashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
 
       {/* ══════════════════ COMMAND STRIP ══════════════════ */}
       <div className="rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 55%,#16A34A 130%)"}}>
@@ -5629,7 +5227,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           <div className="absolute w-64 h-64 rounded-full opacity-10" style={{background:"radial-gradient(circle,#4ADE80,transparent)",right:"-4rem",top:"-4rem"}}/>
           <div className="absolute w-32 h-32 rounded-full opacity-10" style={{background:"radial-gradient(circle,#86EFAC,transparent)",left:"30%",bottom:"-2rem"}}/>
         </div>
-        <div className={preferences.compactDensity ? "relative px-4 sm:px-6 py-4" : "relative px-5 sm:px-7 py-5"}>
+        <div className="relative px-5 sm:px-7 py-5">
           {/* Top bar */}
           <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
             <div>
@@ -5707,17 +5305,6 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               >
                 <DollarSign size={13}/> {preferences.currency}
               </button>
-              <button
-                onClick={() => updatePreference("compactDensity", !preferences.compactDensity)}
-                className="hidden md:flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]"
-                aria-pressed={preferences.compactDensity}
-                title={preferences.compactDensity ? "Switch to comfortable dashboard density" : "Switch to compact dashboard density"}
-              >
-                <Grid3x3 size={13}/> {preferences.compactDensity ? "Compact" : "Comfortable"}
-              </button>
-              <span className="hidden xl:flex items-center gap-1.5 rounded-xl border border-[rgba(255,255,255,.15)] bg-[rgba(0,0,0,.12)] px-3 py-2 text-[11px] font-semibold text-[rgba(255,255,255,.7)]">
-                <Target size={13} className="text-[#4ADE80]" /> {resolvedKpiPreset[0].toUpperCase() + resolvedKpiPreset.slice(1)} lens
-              </span>
               <button onClick={() => setPreferencesDrawerOpen(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]">
                 <Sliders size={13}/> Preferences
               </button>
@@ -5741,46 +5328,26 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             const activeSubs    = subscriptions.rows.filter(s=>s.status==="Active");
             const MRR = activeSubs.reduce((s,sub)=>{const mo={Monthly:1,Quarterly:3,Annual:12}[sub.cycle]||1;return s+(sub.amount/mo);},0);
 
-            const kpis = [
-              {id:"ar_billed", l:"AR Billed", v:formatMoney(totalBilled), col:"#4ADE80", sub:invRows.length+" invoices"},
-              {id:"collected", l:"Collected", v:formatMoney(totalCollected), col:"#60A5FA", sub:Math.round(totalBilled>0?totalCollected/totalBilled*100:0)+"% rate"},
-              {id:"overdue_ar", l:"Overdue AR", v:formatMoney(overdueAmt), col:overdueAmt>0?"#F87171":"#4ADE80", sub:overdueInvs.length+" invoices"},
-              {id:"gross_pnl", l:"Gross P&L", v:(grossProfit>=0?"+":"")+formatMoney(Math.abs(grossProfit)), col:grossProfit>=0?"#4ADE80":"#F87171", sub:"Collected − Exp"},
-              {id:"inventory", l:"Inventory", v:formatMoney(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)), col:"#C4B5FD", sub:inventory.rows.length+" SKUs"},
-              {id:"low_stock", l:"Low Stock", v:String(lowStock), col:lowStock>0?"#F87171":"#4ADE80", sub:inventory.rows.filter(it=>it.qty<=0).length+" out"},
-              {id:"pipeline", l:"Pipeline", v:formatMoney(crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).reduce((s,l)=>s+(l.value||0),0)), col:"#F9A8D4", sub:openLeads+" open deals"},
-              {id:"mrr", l:"MRR", v:formatMoney(MRR), col:"#34D399", sub:activeSubs.length+" active subs"},
-            ];
-            const orderedKpis = orderDashboardKpis(kpis, preferences.kpiOrder, resolvedKpiPreset);
-            return preferences.showKpiBanner ? (
-              <>
-                <div className="mb-2 hidden xl:flex items-center justify-between gap-3">
-                  <p className="text-[10.5px] font-semibold text-[rgba(255,255,255,.55)]">Drag KPI cards to set your own executive order. Your order is stored on this device.</p>
-                  <button type="button" onClick={() => updatePreference("kpiOrder", [])} className="rounded-lg px-2 py-1 text-[10.5px] font-semibold text-[#86EFAC] hover:bg-white/10" aria-label="Reset KPI arrangement to the role-aligned order">Reset KPI order</button>
-                </div>
-                <div className="grid grid-cols-4 lg:grid-cols-8 gap-px bg-[rgba(255,255,255,.06)] rounded-xl overflow-hidden">
-                  {orderedKpis.map(({id,l,v,col,sub}, index)=> (
-                    <div
-                      key={id}
-                      draggable={canReorderKpis}
-                      onDragStart={() => canReorderKpis && setDraggedKpiId(id)}
-                      onDragEnd={() => setDraggedKpiId(null)}
-                      onDragOver={(event) => { if (canReorderKpis) event.preventDefault(); }}
-                      onDrop={() => { if (!canReorderKpis || !draggedKpiId || draggedKpiId === id) return; const next = orderedKpis.map((item) => item.id); const from = next.indexOf(draggedKpiId); const to = next.indexOf(id); next.splice(from, 1); next.splice(to, 0, draggedKpiId); setKpiOrder(next); setDraggedKpiId(null); }}
-                      className={`${preferences.compactDensity ? "px-2.5 py-2.5" : "px-3 py-3"} group relative bg-[rgba(0,0,0,.25)] text-center transition-opacity ${draggedKpiId === id ? "opacity-45" : ""} ${canReorderKpis ? "cursor-grab active:cursor-grabbing" : ""}`}
-                    >
-                      <div className="absolute right-1.5 top-1.5 hidden xl:flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button type="button" onClick={() => moveKpi(id, -1)} disabled={index === 0} className="rounded p-0.5 text-white/45 hover:bg-white/10 hover:text-white disabled:opacity-20" aria-label={`Move ${l} KPI earlier`}><ChevronLeft size={12} /></button>
-                        <button type="button" onClick={() => moveKpi(id, 1)} disabled={index === orderedKpis.length - 1} className="rounded p-0.5 text-white/45 hover:bg-white/10 hover:text-white disabled:opacity-20" aria-label={`Move ${l} KPI later`}><ChevronRight size={12} /></button>
-                      </div>
-                      <p className="text-[9.5px] font-bold uppercase tracking-wide text-[rgba(255,255,255,.45)] mb-1">{l}</p>
-                      <p className="text-[14px] font-black leading-tight" style={{color:col}}>{v}</p>
-                      <p className="text-[9.5px] text-[rgba(255,255,255,.35)] mt-0.5">{sub}</p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : null;
+            return (
+              <div className="grid grid-cols-4 lg:grid-cols-8 gap-px bg-[rgba(255,255,255,.06)] rounded-xl overflow-hidden">
+                {[
+                  {l:"AR Billed",   v:formatMoney(totalBilled),  col:"#4ADE80",  sub:invRows.length+" invoices"},
+                  {l:"Collected",   v:formatMoney(totalCollected),col:"#60A5FA",  sub:Math.round(totalBilled>0?totalCollected/totalBilled*100:0)+"% rate"},
+                  {l:"Overdue AR",  v:formatMoney(overdueAmt),   col:overdueAmt>0?"#F87171":"#4ADE80", sub:overdueInvs.length+" invoices"},
+                  {l:"Gross P&L",   v:(grossProfit>=0?"+":"")+formatMoney(Math.abs(grossProfit)),col:grossProfit>=0?"#4ADE80":"#F87171",sub:"Collected − Exp"},
+                  {l:"Inventory",   v:formatMoney(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)),col:"#C4B5FD",sub:inventory.rows.length+" SKUs"},
+                  {l:"Low Stock",   v:String(lowStock),col:lowStock>0?"#F87171":"#4ADE80",sub:inventory.rows.filter(it=>it.qty<=0).length+" out"},
+                  {l:"Pipeline",    v:formatMoney(crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).reduce((s,l)=>s+(l.value||0),0)),col:"#F9A8D4",sub:openLeads+" open deals"},
+                  {l:"MRR",         v:formatMoney(MRR),col:"#34D399",sub:activeSubs.length+" active subs"},
+                ].map(({l,v,col,sub})=>(
+                  <div key={l} className="bg-[rgba(0,0,0,.25)] px-3 py-3 text-center">
+                    <p className="text-[9.5px] font-bold uppercase tracking-wide text-[rgba(255,255,255,.45)] mb-1">{l}</p>
+                    <p className="text-[14px] font-black leading-tight" style={{color:col}}>{v}</p>
+                    <p className="text-[9.5px] text-[rgba(255,255,255,.35)] mt-0.5">{sub}</p>
+                  </div>
+                ))}
+              </div>
+            );
           })()}
         </div>
       </div>
@@ -7058,9 +6625,8 @@ function DataImportPanel({ type, onClose, onImport }) {
     setError(null);
     setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = async (evt) => {
+    reader.onload = (evt) => {
       try {
-        const XLSX = await loadXlsx();
         const workbook = XLSX.read(evt.target.result, { type: "binary" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const raw = XLSX.utils.sheet_to_json(sheet, { defval: "" });
@@ -9282,7 +8848,12 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
       </div>
 
       {tab === "subscriptions" ? (
-        <Subscriptions subscriptions={subscriptions} invoices={invoices} />
+        <>
+          <Suspense fallback={<div className="h-24 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Sales details" />}>
+            <LazySalesDetailWorkspace subscriptions={subscriptions} />
+          </Suspense>
+          <Subscriptions subscriptions={subscriptions} invoices={invoices} />
+        </>
       ) : (
         <>
           {/* ── Quick analytics strip — visible on every Sales sub-tab ─── */}
@@ -12253,10 +11824,6 @@ function Procurement({ inventory, suppliersHook, expensesHook, currentUser, canM
   const contracts = useCompanyTable("procurement_contracts", procurementContractsSeed, {
     order: { col: "start_date", ascending: false }, mapRow: mapProcurementContractRow,
   });
-
-  return <Suspense fallback={<div className="h-72 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Procurement workspace" />}>
-    <LazyProcurementWorkspace inventory={inventory} suppliersHook={suppliersHook} expensesHook={expensesHook} currentUser={currentUser} canManage={canManage} orders={orders} contracts={contracts} money={money} poTotal={poTotal} KpiCardComponent={KpiCard} PurchaseOrdersComponent={PurchaseOrders} ApprovalsComponent={Approvals} ProcurementContractsComponent={ProcurementContracts} VendorPaymentsComponent={VendorPayments} SupplierPortalComponent={SupplierPortal} />
-  </Suspense>;
 
   const pendingApproval = orders.rows.filter((o) => o.status === "Pending Approval");
   const readyToPay = orders.rows.filter((o) => o.status === "Received");
@@ -21173,10 +20740,8 @@ function exportCSV(filename, headers, rows) {
   notify(`Exported ${filename}`);
 }
 
-// Real .xlsx via SheetJS — an actual spreadsheet file, loaded only when a
-// spreadsheet import or export is requested.
-async function exportExcel(filename, sheetName, headers, rows) {
-  const XLSX = await loadXlsx();
+// Real .xlsx via SheetJS — an actual spreadsheet file, not a renamed CSV.
+function exportExcel(filename, sheetName, headers, rows) {
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.slice(0, 31)); // Excel's own 31-char sheet name limit
@@ -21342,14 +20907,7 @@ function buildTableHtml(title, headers, rows) {
 // is available in this environment (see the two export functions above).
 function ExportMenu({ title, filename, sheetName, headers, rows }) {
   const [open, setOpen] = useState(false);
-  async function run(fn) {
-    try {
-      await fn();
-      setOpen(false);
-    } catch (_error) {
-      notify("Export failed — please try again.", "error");
-    }
-  }
+  function run(fn) { fn(); setOpen(false); }
   const html = buildTableHtml(title, headers, rows);
 
   return (
@@ -22550,7 +22108,7 @@ function ScheduledReports({ invoices, inventory, expensesHook, company, schedule
 
     const html = buildTableHtml(title, headers, rows2);
     if (schedule.format === "CSV") exportCSV(`${filename}.csv`, headers, rows2);
-    else if (schedule.format === "Excel") await exportExcel(`${filename}.xlsx`, sheetName, headers, rows2);
+    else if (schedule.format === "Excel") exportExcel(`${filename}.xlsx`, sheetName, headers, rows2);
     else if (schedule.format === "Word") exportWord(`${filename}.doc`, title, html);
     else printAsPDF(title, html);
 
@@ -23161,9 +22719,8 @@ function BankStatementImport({ invoices, expenses }) {
     if (!file) return;
     setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = async (evt) => {
+    reader.onload = (evt) => {
       try {
-        const XLSX = await loadXlsx();
         const workbook = XLSX.read(evt.target.result, { type: "binary" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -27177,10 +26734,10 @@ function Analytics({ company, invoices, expenses, crm, inventory, employees, lea
       </div>
 
       {tab === "executive" && <ExecutiveDashboard company={company} invoices={invoices} expenses={expenses} crm={crm} inventory={inventory} employees={employees} onNavigate={onNavigate} />}
-      {tab === "financial" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Finance analytics" />}><LazyFinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} money={money} lineTotal={lineTotal} taxRate={TAX_RATE} /></Suspense>}
-      {tab === "hr" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading HR analytics" />}><LazyHrOperationalDashboard employees={employees} leaveRequests={leaveRequests} money={money} onNavigate={onNavigate} /></Suspense>}
-      {tab === "sales" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading CRM analytics" />}><LazyCrmSalesDashboard invoices={invoices} crm={crm} money={money} lineTotal={lineTotal} stageProbability={STAGE_PROBABILITY} /></Suspense>}
-      {tab === "operations" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Inventory and Procurement analytics" />}><LazyInventoryProcurementExecutiveView inventory={inventory} workOrders={workOrders} money={money} stockStatus={stockStatus} onNavigate={onNavigate} /></Suspense>}
+      {tab === "financial" && <FinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />}
+      {tab === "hr" && <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />}
+      {tab === "sales" && <SalesDashboard invoices={invoices} crm={crm} onNavigate={onNavigate} />}
+      {tab === "operations" && <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />}
       {tab === "kpis" && <CustomKPIs data={{ invoices, expenses, crm, inventory, employees }} />}
       {tab === "heatmaps" && <HeatMaps invoices={invoices} inventory={inventory} />}
       {tab === "market" && <MarketTrends company={company} />}
@@ -29907,18 +29464,15 @@ const emailBus = { listeners: new Set(), push(payload){ this.listeners.forEach(f
 function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   const co = company || window.__smartManagerCompany || {};
 
-  const crmRows = Array.isArray(crm?.rows) ? crm.rows : (Array.isArray(crm) ? crm : []);
-  const employeeRows = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
-
   const contacts = useMemo(()=>{
-    const fromCrm = crmRows.filter(l=>l.email).map(l=>({
+    const fromCrm = (crm?.rows||[]).filter(l=>l.email).map(l=>({
       id:"lead-"+l.id, name:l.company||l.contact||"", email:l.email||"", type:"customer",
     }));
-    const fromEmp = employeeRows.filter(e=>e.email).map(e=>({
+    const fromEmp = (employees||[]).filter(e=>e.email).map(e=>({
       id:"emp-"+e.id, name:e.name, email:e.email||"", type:"employee", role:e.role,
     }));
     return [...fromCrm, ...fromEmp];
-  },[crmRows, employeeRows]);
+  },[crm?.rows, employees]);
 
   const [folder, setFolder]   = useState("compose");  // compose | sent | drafts | starred
   const [to, setTo]           = useState("");
@@ -32184,7 +31738,6 @@ function BusinessCardDesigner({ company }) {
 function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast }) {
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
-  const [onboardingGuidanceDismissed, setOnboardingGuidanceDismissedState] = useState(() => getOnboardingGuidanceDismissed(currentUser?.id));
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 
@@ -32217,20 +31770,6 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Settings</h1>
         <p className="text-[13px] text-slate-500 mt-1">Company profile, module entitlements, and connection status</p>
       </div>
-
-      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-[14.5px] font-semibold text-[#111827]">Completed onboarding guidance</h2>
-            <p className="text-[12.5px] text-slate-500 mt-1">Hide or restore completed setup guidance for this browser. This preference never changes company access or permissions.</p>
-          </div>
-          <button type="button" onClick={() => { const next = !onboardingGuidanceDismissed; setOnboardingGuidanceDismissedState(next); setOnboardingGuidanceDismissed(currentUser?.id, next); notify(next ? "Completed onboarding guidance hidden." : "Completed onboarding guidance restored."); }} className="btn-secondary shrink-0 text-[12px] font-medium px-3.5 py-2 rounded-lg">
-            {onboardingGuidanceDismissed ? "Show guidance" : "Hide guidance"}
-          </button>
-        </div>
-      </section>
-
-      <DeferredModuleReadinessPanel />
 
       {/* Role — demo switcher */}
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
@@ -33682,11 +33221,10 @@ function MarketplaceSection({ enabledModules, onToggleModule, canManage }) {
 function DataExportManager({ exportData, company }) {
   const [busy, setBusy] = useState(false);
 
-  async function exportAll() {
+  function exportAll() {
     if (busy) return;
     setBusy(true);
     try {
-      const XLSX = await loadXlsx();
       const wb = XLSX.utils.book_new();
       const addSheet = (name, headers, rows) => {
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...rows]), name.slice(0, 31));
@@ -37693,7 +37231,7 @@ function AuthTextField({ label, icon: Icon, type = "text", value, onChange, plac
   );
 }
 
-function LoginPage({ onAuthenticated, onSetupRequired, onSwitchToSignup }) {
+function LoginPage({ onAuthenticated, onSwitchToSignup }) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -37709,21 +37247,9 @@ function LoginPage({ onAuthenticated, onSetupRequired, onSwitchToSignup }) {
     try {
       if (!IS_CONFIGURED) { onAuthenticated(null); return; }
       const result = await authSignIn(identifier.trim(), password);
-      persistAuthTokens(result);
-      const resumedSignup = await resumeConfirmedSignup(result.access_token, result.user);
-      const resolved = resumedSignup ? { session: resumedSignup } : await resolveAuthenticatedDashboardSession(result.access_token, result.user);
-      if (!resolved.session) {
-        onSetupRequired({
-          id: result.user.id,
-          email: result.user.email,
-          accessToken: result.access_token,
-          fullName: result.user.user_metadata?.full_name || result.user.user_metadata?.name || "",
-          setupRequired: true,
-        });
-        return;
-      }
-      onAuthenticated(resolved.session);
-    } catch (err) { setError(err?.message || "Sign-in failed. Please try again."); }
+      if (result.error) { setError(result.error.message || "Login failed."); return; }
+      onAuthenticated(result.session || null);
+    } catch (_e) { setError("Something went wrong — check your connection."); }
     finally { setBusy(false); }
   }
 
@@ -37881,9 +37407,6 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [confirmationPending, setConfirmationPending] = useState(null);
-  const [resendBusy, setResendBusy] = useState(false);
-  const [resendStatus, setResendStatus] = useState(null);
 
   const [account, setAccount] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [company, setCompany] = useState({
@@ -37912,20 +37435,6 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const isPortalRole = joinRole === "External Client" || joinRole === "Supplier";
   const step2Valid = mode === "create" ? company.name.trim().length > 1 : joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
 
-  async function handleResendConfirmation() {
-    if (!confirmationPending || resendBusy) return;
-    setResendBusy(true);
-    setResendStatus(null);
-    try {
-      await authResendSignupConfirmation(confirmationPending);
-      setResendStatus({ type: "success", message: "A new confirmation email has been sent. Check your inbox and spam folder." });
-    } catch (err) {
-      setResendStatus({ type: "error", message: err.message || "We could not resend the confirmation email. Please try again shortly." });
-    } finally {
-      setResendBusy(false);
-    }
-  }
-
   async function handleFinalSubmit(e) {
     e.preventDefault();
     setError(null);
@@ -37942,31 +37451,45 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
     setBusy(true);
     try {
-      const pending = {
-        email: account.email.trim(),
-        mode,
-        account: { fullName: account.fullName.trim(), phone: account.phone.trim() },
-        company: { name: company.name.trim(), category: company.category, country: company.country, currency: company.currency, website: company.website, taxId: company.taxId },
-        selectedModuleIds: Array.from(selectedModules),
-        businessScale,
-        firstBranch: firstBranch.trim(),
-        joinCode: joinCode.trim(),
-        joinRole,
-        customerRef: customerRef.trim(),
-        isPortalRole,
-      };
-      const signUpResult = await authSignUp(account.email.trim(), account.password, account.fullName.trim());
-      if (!signUpResult.access_token) {
-        persistPendingSignup(pending);
-        setConfirmationPending(pending.email);
-        notify("Account created. Confirm your email to securely finish company setup.", "success");
-        return;
+      const signUpResult = await authSignUp(account.email.trim(), account.password);
+      // A project with email confirmation enabled returns a user but no
+      // session yet; a project with confirmation disabled (the simpler
+      // setup for an internal business tool) returns both immediately.
+      let accessToken = signUpResult.access_token;
+      if (!accessToken) {
+        throw new Error("Account created — check your email to confirm it, then sign in.");
       }
-      persistAuthTokens(signUpResult);
-      persistPendingSignup(pending);
-      const resolved = await resumeConfirmedSignup(signUpResult.access_token, signUpResult.user);
-      if (!resolved) throw new Error("Account created, but the company setup could not be resumed. Please sign in again shortly.");
-      onAuthenticated(resolved);
+      if (typeof window !== "undefined") window.localStorage.setItem("bs_access_token", accessToken);
+
+      const rpcResult = mode === "create"
+        ? await callRpc("create_company_and_owner", {
+            p_name: company.name.trim(), p_industry: company.category, p_country: company.country, p_currency: company.currency, p_full_name: account.fullName.trim(),
+          }, accessToken)
+        : await callRpc("join_company_with_code", {
+            p_join_code: joinCode.trim(), p_full_name: account.fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
+          }, accessToken);
+
+      // Real fields the create_company_and_owner RPC does not take directly
+      // (phone, website, tax ID, and which modules to enable) are saved as
+      // a real follow-up update — kept genuinely optional and non-blocking:
+      // if this second call fails, the account and company both still
+      // exist correctly, just without these details filled in yet.
+      if (mode === "create" && rpcResult?.id) {
+        try {
+          await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale }).run();
+          await sb("company_modules").insert(ONBOARDING_MODULES.map((m) => ({ company_id: rpcResult.id, module_key: m.id, enabled: selectedModules.has(m.id) }))).run();
+          await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
+        } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
+      }
+      if (account.phone.trim()) {
+        try { await sb("profiles").eq("id", signUpResult.user.id).update({ phone: account.phone.trim() }).run(); } catch (_e) { /* non-blocking */ }
+      }
+
+      onAuthenticated({
+        userId: signUpResult.user.id, email: signUpResult.user.email, accessToken,
+        fullName: account.fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
+        customerRef: isPortalRole ? customerRef.trim() : null, company: rpcResult,
+      });
     } catch (err) {
       setError(err.message || "Couldn't complete sign up. Please try again.");
     } finally {
@@ -38037,7 +37560,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           {/* Mode switcher */}
           <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 mb-6">
             {["create","join"].map((m) => (
-              <button key={m} onClick={() => { setMode(m); setStep(1); setError(null); setConfirmationPending(null); setResendStatus(null); }}
+              <button key={m} onClick={() => { setMode(m); setStep(1); setError(null); }}
                 className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-all ${mode === m ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>
                 {m === "create" ? "🏢 Create company" : "🔑 Join with code"}
               </button>
@@ -38063,23 +37586,8 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200/60 p-6 sm:p-8">
             {error && <div className="mb-5 flex items-start gap-2 px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-[12.5px] text-red-700"><AlertCircle size={13} className="shrink-0 mt-0.5"/><span>{error}</span></div>}
 
-            {confirmationPending && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center" role="status" aria-live="polite">
-                <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full bg-emerald-100 text-[#16A34A]"><Mail size={19} /></div>
-                <h2 className="text-[18px] font-bold text-[#111827]">Your onboarding is ready to resume</h2>
-                <p className="mt-2 text-[13px] leading-relaxed text-slate-600">We created your account for <strong>{confirmationPending}</strong>. Complete these final steps to securely finish company setup.</p>
-                <ol className="mt-4 space-y-2 text-left text-[12.5px] text-slate-600">
-                  <li className="flex gap-2"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-[11px] font-bold text-[#16A34A]">1</span><span>Open the verification email and confirm your address.</span></li>
-                  <li className="flex gap-2"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-[11px] font-bold text-[#16A34A]">2</span><span>Sign in with the same email. Your saved company details will resume automatically.</span></li>
-                </ol>
-                {resendStatus && <p className={`mt-4 rounded-lg px-3 py-2 text-[12px] ${resendStatus.type === "success" ? "bg-emerald-100 text-emerald-800" : "bg-red-50 text-red-700"}`}>{resendStatus.message}</p>}
-                <button type="button" onClick={handleResendConfirmation} disabled={resendBusy} className="mt-5 w-full rounded-xl border border-[#16A34A]/40 bg-white px-4 py-3 text-[13px] font-semibold text-[#15803D] transition-colors hover:bg-[#16A34A]/5 disabled:cursor-not-allowed disabled:opacity-60">{resendBusy ? "Sending confirmation…" : "Resend confirmation email"}</button>
-                <button type="button" onClick={onSwitchToLogin} className="mt-3 w-full rounded-xl bg-[#16A34A] px-4 py-3 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#15803D]">I have confirmed — sign in</button>
-              </div>
-            )}
-
             {/* JOIN mode */}
-            {!confirmationPending && mode === "join" && (
+            {mode === "join" && (
               <div className="space-y-4">
                 <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Join your company</h2><p className="text-[13px] text-slate-500 mt-0.5">Enter the code your admin shared with you</p></div>
                 <AuthTextField label="Full name" icon={User} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" />
@@ -38093,7 +37601,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                   </select>
                 </div>
                 {isPortalRole && <AuthTextField label="Customer or supplier reference" icon={Building2} value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} placeholder="As it appears in the system" />}
-                <button type="button" onClick={handleFinalSubmit} disabled={busy || !account.fullName.trim() || !account.email.trim() || !account.password || !joinCode.trim()}
+                <button onClick={handleSubmit} disabled={busy || !account.fullName.trim() || !account.email.trim() || !account.password || !joinCode.trim()}
                   className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
                   style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
                   {busy ? "Joining…" : "Join company"}
@@ -38102,7 +37610,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
             )}
 
             {/* CREATE mode — Step 1: Account */}
-            {!confirmationPending && mode === "create" && step === 1 && (
+            {mode === "create" && step === 1 && (
               <div className="space-y-4">
                 <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Create your account</h2><p className="text-[13px] text-slate-500 mt-0.5">Step 1 of 2 — personal details</p></div>
                 <AuthTextField label="Full name" icon={User} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" />
@@ -38130,7 +37638,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
             )}
 
             {/* CREATE mode — Step 2: Company */}
-            {!confirmationPending && mode === "create" && step === 2 && (
+            {mode === "create" && step === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <button onClick={() => setStep(1)} className="text-slate-400 hover:text-slate-600"><ChevronLeft size={18}/></button>
@@ -38158,7 +37666,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                   </select>
                 </div>
                 <AuthTextField label="First branch name" icon={Building2} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="Head Office" />
-                <button type="button" onClick={handleFinalSubmit} disabled={busy || !company.name.trim()}
+                <button onClick={handleSubmit} disabled={busy || !company.name.trim()}
                   className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
                   style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
                   {busy ? "Creating your account…" : "Launch Smart Manager 🚀"}
@@ -38184,20 +37692,6 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 // RPCs email signup uses. No password is collected here — there is not
 // one to set; this account will only ever sign in through the same OAuth
 // provider again.
-function CompanySetupChecklist({ mode, fullName, companyName, joinCode }) {
-  const steps = [
-    { label: "Verified account", detail: "Your signed-in identity is confirmed.", complete: true },
-    { label: "Choose your path", detail: mode === "create" ? "Create a new organization." : "Join with a trusted company code.", complete: Boolean(mode) },
-    { label: mode === "create" ? "Name your organization" : "Enter the company code", detail: mode === "create" ? "Use the legal or trading name your team recognizes." : "Only use a code supplied by a company administrator.", complete: mode === "create" ? companyName.trim().length > 1 : joinCode.trim().length >= 6 },
-    { label: "Complete secure setup", detail: "Tenant access starts only after the protected setup action succeeds.", complete: false },
-  ];
-
-  return <section className="rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3" aria-label="Company setup checklist">
-    <div className="flex items-center justify-between gap-3 mb-2"><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Setup checklist</p><span className="text-[11px] font-medium text-[#16A34A]">{steps.filter((step) => step.complete).length}/4 ready</span></div>
-    <ol className="space-y-2">{steps.map((step, index) => <li key={step.label} className="flex gap-2.5"><span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${step.complete ? "bg-[#16A34A] text-white" : "border border-slate-300 bg-white text-slate-400"}`}>{step.complete ? <CheckCircle2 size={11} /> : <span className="text-[9px] font-semibold">{index + 1}</span>}</span><span><span className="block text-[12px] font-medium text-slate-700">{step.label}</span><span className="block text-[11px] leading-snug text-slate-500">{step.detail}</span></span></li>)}</ol>
-  </section>;
-}
-
 function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [mode, setMode] = useState("create");
   const [busy, setBusy] = useState(false);
@@ -38210,7 +37704,6 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [joinCode, setJoinCode] = useState("");
   const [joinRole, setJoinRole] = useState("Employee");
   const [customerRef, setCustomerRef] = useState("");
-  const isCompanyRecovery = Boolean(oauthUser.setupRequired);
 
   function setCompanyField(key, val) { setCompany((c) => ({ ...c, [key]: val })); }
   function toggleModule(id) {
@@ -38245,10 +37738,6 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
       }
 
-      // This is a UI-only completion record, not a source of tenant identity.
-      // Every subsequent session still resolves company scope from the database.
-      persistOnboardingChecklistCompletion(oauthUser.id, mode);
-
       onAuthenticated({
         userId: oauthUser.id, email: oauthUser.email, accessToken: oauthUser.accessToken,
         fullName: fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
@@ -38272,12 +37761,9 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-slate-200/60 p-6 sm:p-8 space-y-5">
           <div>
-            <h2 className="text-[18px] font-semibold text-[#111827] mb-1">{isCompanyRecovery ? "Finish company setup" : `One more step, ${fullName.split(" ")[0] || "there"}`}</h2>
-            <p className="text-[13px] text-slate-500">{isCompanyRecovery ? `Your verified account (${oauthUser.email}) is not linked to a company yet. Create one or enter a trusted company join code to continue.` : `Signed in as ${oauthUser.email} — now set up your organization.`}</p>
-            {isCompanyRecovery && <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[12px] leading-relaxed text-emerald-900"><ShieldCheck size={14} className="inline mr-1.5 -mt-0.5" />Your organization is assigned only by the secure setup action below. No company access is granted until you complete it.</div>}
+            <h2 className="text-[18px] font-semibold text-[#111827] mb-1">One more step, {fullName.split(" ")[0] || "there"}</h2>
+            <p className="text-[13px] text-slate-500">Signed in as {oauthUser.email} — now set up your organization.</p>
           </div>
-
-          <CompanySetupChecklist mode={mode} fullName={fullName} companyName={company.name} joinCode={joinCode} />
 
           <FormField label="Your name" required><input className={inputClass} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" /></FormField>
 
@@ -45954,35 +45440,21 @@ function SmartManager() {
     if (!token) { setAuthChecking(false); return; }
     (async () => {
       try {
-        let activeToken = token;
-        let resolved;
-        try {
-          resolved = await resolveAuthenticatedDashboardSession(activeToken);
-        } catch (initialError) {
-          const refreshToken = typeof window !== "undefined" ? window.localStorage.getItem("bs_refresh_token") : null;
-          if (!refreshToken) throw initialError;
-          const refreshed = await authRefreshSession(refreshToken);
-          persistAuthTokens(refreshed);
-          activeToken = refreshed.access_token;
-          resolved = await resolveAuthenticatedDashboardSession(activeToken, refreshed.user);
-        }
-        const resumedSignup = await resumeConfirmedSignup(activeToken, resolved.user);
-        if (resumedSignup) {
-          setSession(resumedSignup);
-          return;
-        }
-        if (!resolved.session) {
+        const user = await authGetUser(token);
+        const profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
+        const profile = profileRows?.[0];
+        if (!profile) {
           // A real, valid session with no company yet — genuinely
           // different from an invalid or expired one. Route to finish
           // setup instead of discarding a session that authenticated
           // correctly.
-          setOauthPendingUser({ id: resolved.user.id, email: resolved.user.email, accessToken: activeToken, fullName: resolved.user.user_metadata?.full_name || resolved.user.user_metadata?.name || "", setupRequired: true });
+          setOauthPendingUser({ id: user.id, email: user.email, accessToken: token, fullName: user.user_metadata?.full_name || user.user_metadata?.name || "" });
           setAuthChecking(false);
           return;
         }
-        setSession(resolved.session);
+        setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo } });
       } catch (_e) {
-        clearAuthTokens();
+        if (typeof window !== "undefined") window.localStorage.removeItem("bs_access_token");
       } finally {
         setAuthChecking(false);
       }
@@ -45990,7 +45462,7 @@ function SmartManager() {
   }, []);
 
   function handleSignOut() {
-    clearAuthTokens();
+    if (typeof window !== "undefined") window.localStorage.removeItem("bs_access_token");
     if (session?.accessToken) authSignOut(session.accessToken);
     DEMO_OVERRIDE = false;
     setSession(IS_CONFIGURED ? null : { demo: true });
@@ -46256,9 +45728,6 @@ function SmartManager() {
   const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
 
   const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id));
-  const activeModule = active === "settings"
-    ? { label: "Settings", group: "Workspace administration" }
-    : (visibleModules.find((m) => m.id === active) || { label: "Workspace", group: "Business operations" });
 
   // If switching roles removes access to whatever module is currently on
   // screen (e.g. testing "Employee" while viewing Finance), fall back to
@@ -46370,14 +45839,14 @@ function SmartManager() {
       <OAuthCompanySetup
         oauthUser={oauthPendingUser}
         onAuthenticated={(s) => { setOauthPendingUser(null); setSession(s || { demo: true }); }}
-        onCancel={() => { clearAuthTokens(); setOauthPendingUser(null); setAuthView("login"); }}
+        onCancel={() => { if (typeof window !== "undefined") window.localStorage.removeItem("bs_access_token"); setOauthPendingUser(null); }}
       />
     );
   }
 
   if (!session) {
     return authView === "login"
-      ? <LoginPage onAuthenticated={(s) => setSession(s || { demo: true })} onSetupRequired={setOauthPendingUser} onSwitchToSignup={() => setAuthView("signup")} />
+      ? <LoginPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToSignup={() => setAuthView("signup")} />
       : <SignupPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToLogin={() => setAuthView("login")} />;
   }
 
@@ -46459,7 +45928,7 @@ function SmartManager() {
           green gradient, white-variant text, white/10 borders) was
           removed entirely rather than layered under the new palette. */}
       <aside
-        className={`fixed z-50 h-full w-[240px] xl:w-[272px] xl:relative xl:z-20 xl:translate-x-0 xl:border-r xl:border-slate-200/80 xl:shadow-none shrink-0 flex flex-col bg-white transition-transform duration-200 ease-out overflow-hidden ${darkMode ? "dark-shell" : ""} ${
+        className={`fixed z-50 h-full w-[240px] shrink-0 flex flex-col bg-white transition-transform duration-200 ease-out overflow-hidden ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
@@ -46493,7 +45962,6 @@ function SmartManager() {
         </div>
 
         <nav className="relative flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
-          <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Workspace</p>
           {visibleModules.map((m) => {
             const Icon = m.icon;
             const isActive = active === m.id;
@@ -46547,9 +46015,9 @@ function SmartManager() {
 
       {/* Main — always full width; the sidebar is an overlay, not a docked
           column, so there is no reserved gutter to subtract. */}
-      <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full xl:overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full">
         {/* Topbar */}
-        <header className={`h-16 xl:h-[72px] shrink-0 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 xl:px-8 2xl:px-10 ${darkMode ? "dark-shell" : ""}`}>
+        <header className={`h-16 shrink-0 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 ${darkMode ? "dark-shell" : ""}`}>
           <div className="flex items-center gap-3">
             <button
               className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors"
@@ -46564,11 +46032,6 @@ function SmartManager() {
               <ChevronDown size={13} className="text-slate-400 hidden sm:block" />
               <span className="hidden md:inline-flex items-center text-[10.5px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full ml-1">
                 {currentUser.role}
-              </span>
-              <span className="hidden xl:flex items-center gap-2 border-l border-slate-200 pl-4 ml-2">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{activeModule.group}</span>
-                <span className="w-1 h-1 rounded-full bg-[#22C55E]" />
-                <span className="text-[12px] font-semibold text-slate-700">{activeModule.label}</span>
               </span>
             </div>
           </div>
@@ -46605,9 +46068,7 @@ function SmartManager() {
                 {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
               </button>
             )}
-            <Suspense fallback={null}>
-              <LazyWorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} />
-            </Suspense>
+            <WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} />
             {/* ── Dark mode toggle ── */}
             <button
               onClick={()=>setDarkMode(d=>!d)}
@@ -46665,22 +46126,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="module-fade flex-1 overflow-y-auto p-4 sm:p-6 xl:px-8 xl:py-7 2xl:px-12 2xl:py-8 pb-24 sm:pb-6 xl:pb-8">
-          <div className="desktop-workspace-frame">
-            <section className="hidden xl:flex items-end justify-between gap-8 pb-6 2xl:pb-7">
-              <div className="min-w-0">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{company.name} / {activeModule.group}</p>
-                <h1 className="text-[26px] 2xl:text-[30px] font-semibold tracking-[-0.03em] text-slate-900">{activeModule.label}</h1>
-                <p className="mt-1 text-[13px] text-slate-500">A focused operational view for your team’s next decisions.</p>
-              </div>
-              <div className="shrink-0 flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-[#16A34A]"><Activity size={16} /></span>
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-700">Live workspace</p>
-                  <p className="text-[10.5px] text-slate-400">{online ? "Ready for secure updates" : "Offline — changes will retry"}</p>
-                </div>
-              </div>
-            </section>
+        <main key={active} className="module-fade flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6">
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
@@ -46767,7 +46213,6 @@ function SmartManager() {
           {!["dashboard", "crm", "sales", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
           )}
-          </div>
         </main>
       </div>
     </div>
@@ -47080,9 +46525,6 @@ function GlobalStyles() {
         button { transition: transform .1s ease, opacity .15s ease; }
         button:active:not(:disabled) { transform: scale(.97); }
         .skeleton-shimmer { background: linear-gradient(90deg, #F1F5F9 25%, #E8EDF3 50%, #F1F5F9 75%); background-size: 800px 100%; animation: shimmer 1.4s linear infinite; }
-        @media (min-width: 1280px) {
-          .desktop-workspace-frame { width: min(100%, 1760px); margin-inline: auto; }
-        }
         @media (prefers-reduced-motion: reduce) {
           .module-fade, .card-in, .skeleton-shimmer { animation: none; }
           button:active:not(:disabled) { transform: none; }
