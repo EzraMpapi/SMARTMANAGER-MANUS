@@ -95,6 +95,28 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(signupSource).toContain("I have confirmed — sign in");
   });
 
+  it("classifies unconfirmed-email, invalid-credential, and rate-limit responses with actionable recovery guidance", () => {
+    expect(dashboardSource).toContain("function isAuthRateLimitedError(error)");
+    expect(dashboardSource).toContain("function isEmailNotConfirmedError(error)");
+    expect(dashboardSource).toContain("function authRecoveryMessage(error, fallbackMessage)");
+    expect(dashboardSource).toContain('code === "invalid_credentials"');
+    expect(dashboardSource).toContain('code.includes("rate_limit")');
+    expect(dashboardSource).toContain("if (isEmailNotConfirmedError(err)) setConfirmationEmail(identifier.trim())");
+    const loginSource = dashboardSource.slice(dashboardSource.indexOf("function LoginPage"), dashboardSource.indexOf("function GoogleGlyph"));
+    expect(loginSource).toContain("async function handleResendConfirmation()");
+    expect(loginSource).toContain("Resend confirmation email");
+    expect(loginSource).toContain("Requesting confirmation…");
+  });
+
+  it("does not misrepresent a repeated Supabase signup as a new account or overwrite pending onboarding data", () => {
+    const signupSource = dashboardSource.slice(dashboardSource.indexOf("function SignupPage"), dashboardSource.indexOf("function OAuthCompanySetup"));
+    expect(dashboardSource).toContain("function isRepeatedSignupResponse(authResult)");
+    expect(dashboardSource).toContain("authResult.user.identities.length === 0");
+    expect(signupSource).toContain("if (isRepeatedSignupResponse(signUpResult))");
+    expect(signupSource).toContain("Sign in with its existing password instead of creating a second account.");
+    expect(signupSource.indexOf("if (isRepeatedSignupResponse(signUpResult))")).toBeLessThan(signupSource.indexOf("persistPendingSignup(pending)"));
+  });
+
   it("binds every account-creation action to the defined final signup handler", () => {
     const signupSource = dashboardSource.slice(dashboardSource.indexOf("function SignupPage"), dashboardSource.indexOf("function OAuthCompanySetup"));
     expect(signupSource).toContain("async function handleFinalSubmit(e)");

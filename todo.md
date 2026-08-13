@@ -280,4 +280,8 @@
 - [x] Add a post-verification onboarding-status experience that confirms the next sign-in will resume company setup.
 - [x] Add regression coverage, verify the enhanced onboarding flow, and publish the confirmation experience update.
 
+- [x] Inspect the live Supabase Auth delivery and error logs for the reported missing confirmation email and failed-login behavior.
+- [x] Repair confirmed client-side Auth response classification so email-delivery, confirmation-pending, invalid-credential, and rate-limit cases receive accurate recovery guidance.
+- [x] Verify safe live Auth responses, add regression coverage, and publish the authentication reliability update.
+
 - [x] Restart the managed development server after the renewed interruption and confirm the application responds.

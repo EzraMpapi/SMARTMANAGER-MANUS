@@ -94,6 +94,38 @@ function readAuthResponse(response, fallbackMessage) {
   });
 }
 
+function isAuthRateLimitedError(error) {
+  const code = String(error?.code || "").toLowerCase();
+  const message = String(error?.message || "").toLowerCase();
+  return error?.status === 429 || code.includes("rate_limit") || code.includes("too_many_requests") || message.includes("rate limit") || message.includes("too many requests");
+}
+
+function isEmailNotConfirmedError(error) {
+  return String(error?.code || "").toLowerCase() === "email_not_confirmed";
+}
+
+function authRecoveryMessage(error, fallbackMessage) {
+  const code = String(error?.code || "").toLowerCase();
+  if (isEmailNotConfirmedError(error)) {
+    return "Your email address is not confirmed yet. Request a fresh confirmation email below, then sign in with the same password.";
+  }
+  if (code === "invalid_credentials") {
+    return "Incorrect email or password. Check both entries and try again.";
+  }
+  if (isAuthRateLimitedError(error)) {
+    return "Too many authentication or email requests were made. Please wait a few minutes before trying again.";
+  }
+  return error?.message || fallbackMessage;
+}
+
+// With confirm-email enabled, GoTrue intentionally returns an HTTP 200 for a
+// repeated signup, but marks the returned user with no identities. Treating
+// that response as a new account falsely promises a confirmation email that
+// Supabase will not send and overwrites the browser's pending onboarding data.
+function isRepeatedSignupResponse(authResult) {
+  return !authResult?.access_token && Array.isArray(authResult?.user?.identities) && authResult.user.identities.length === 0;
+}
+
 function persistAuthTokens(authResult) {
   if (typeof window === "undefined") return;
   if (authResult?.access_token) window.localStorage.setItem("bs_access_token", authResult.access_token);
@@ -37368,13 +37400,16 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmationEmail, setConfirmationEmail] = useState(null);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendStatus, setResendStatus] = useState(null);
   const [tiltX, setTiltX] = useState(0);
   const [tiltY, setTiltY] = useState(0);
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!identifier.trim() || !password) return;
-    setBusy(true); setError(null);
+    setBusy(true); setError(null); setConfirmationEmail(null); setResendStatus(null);
     try {
       if (!IS_CONFIGURED) { onAuthenticated(null); return; }
       const result = await authSignIn(identifier.trim(), password);
@@ -37383,8 +37418,25 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
       const resolved = resumedSignup ? { session: resumedSignup } : await resolveAuthenticatedDashboardSession(result.access_token, result.user);
       if (!resolved.session) throw new Error("Your account is authenticated, but no active company profile is available. Ask an administrator to finish your company setup.");
       onAuthenticated(resolved.session);
-    } catch (err) { setError(err?.message || "Sign-in failed. Please try again."); }
+    } catch (err) {
+      setError(authRecoveryMessage(err, "Sign-in failed. Please try again."));
+      if (isEmailNotConfirmedError(err)) setConfirmationEmail(identifier.trim());
+    }
     finally { setBusy(false); }
+  }
+
+  async function handleResendConfirmation() {
+    if (!confirmationEmail || resendBusy) return;
+    setResendBusy(true);
+    setResendStatus(null);
+    try {
+      await authResendSignupConfirmation(confirmationEmail);
+      setResendStatus({ type: "success", message: "A fresh confirmation email was requested. Check your inbox and spam folder before signing in again." });
+    } catch (err) {
+      setResendStatus({ type: "error", message: authRecoveryMessage(err, "We could not request another confirmation email. Please try again shortly.") });
+    } finally {
+      setResendBusy(false);
+    }
   }
 
   function handleMouseMove(e) {
@@ -37453,6 +37505,12 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
               </div>
 
               {error && <div className="mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-100 text-[12.5px] text-red-700"><AlertCircle size={13} className="shrink-0" />{error}</div>}
+
+              {confirmationEmail && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-[12.5px] text-amber-900" role="status" aria-live="polite">
+                <p className="leading-relaxed"><strong>{confirmationEmail}</strong> still needs email verification. Use the resend action only if you cannot find the original message.</p>
+                {resendStatus && <p className={`mt-3 rounded-lg px-3 py-2 text-[12px] ${resendStatus.type === "success" ? "bg-emerald-100 text-emerald-800" : "bg-red-50 text-red-700"}`}>{resendStatus.message}</p>}
+                <button type="button" onClick={handleResendConfirmation} disabled={resendBusy} className="mt-3 w-full rounded-lg border border-amber-300 bg-white px-3 py-2.5 text-[12.5px] font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60">{resendBusy ? "Requesting confirmation…" : "Resend confirmation email"}</button>
+              </div>}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -37578,9 +37636,9 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     setResendStatus(null);
     try {
       await authResendSignupConfirmation(confirmationPending);
-      setResendStatus({ type: "success", message: "A new confirmation email has been sent. Check your inbox and spam folder." });
+      setResendStatus({ type: "success", message: "A fresh confirmation email was requested. Check your inbox and spam folder before signing in again." });
     } catch (err) {
-      setResendStatus({ type: "error", message: err.message || "We could not resend the confirmation email. Please try again shortly." });
+      setResendStatus({ type: "error", message: authRecoveryMessage(err, "We could not request another confirmation email. Please try again shortly.") });
     } finally {
       setResendBusy(false);
     }
@@ -37616,6 +37674,9 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         isPortalRole,
       };
       const signUpResult = await authSignUp(account.email.trim(), account.password, account.fullName.trim());
+      if (isRepeatedSignupResponse(signUpResult)) {
+        throw new Error("An account already exists for this email. Sign in with its existing password instead of creating a second account. If the address is still unconfirmed, the sign-in screen will let you request a new confirmation email.");
+      }
       if (!signUpResult.access_token) {
         persistPendingSignup(pending);
         setConfirmationPending(pending.email);
@@ -37628,7 +37689,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       if (!resolved) throw new Error("Account created, but the company setup could not be resumed. Please sign in again shortly.");
       onAuthenticated(resolved);
     } catch (err) {
-      setError(err.message || "Couldn't complete sign up. Please try again.");
+      setError(authRecoveryMessage(err, "Couldn't complete sign up. Please try again."));
     } finally {
       setBusy(false);
     }
