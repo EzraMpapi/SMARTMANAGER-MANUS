@@ -31,3 +31,9 @@ The preferences drawer, workspace presence badge, PDF export library, and XLSX i
 The Finance executive dashboard and CRM/Sales executive dashboard are now supplied by the lazy-loaded `FinanceCrmExecutiveViews.jsx` module from both the home role lens and Analytics tabs. Their live rows and existing financial helpers remain explicit inputs; no database calls, tenant resolution, RLS rule, or authorization decision moved into the new module. The new chunk is 17.29 kB before gzip, while the main dashboard entry decreased further to 4,412.78 kB before gzip.
 
 Authenticated users with no company association now also see an accessible, state-aware four-step company setup checklist. It distinguishes verified identity, creation versus trusted join-code path, required organization input, and the final protected setup action. Controlled live verification reconfirmed tenant onboarding, `current_company_id()` resolution, persistence, cross-tenant denial, and cleanup of all QA users and companies.
+
+## Inventory, Procurement, and checklist-completion follow-up
+
+The Inventory and Procurement operational executive surface now shares the same deferred executive-view module as Finance and CRM. It is lazy-rendered from both role-lens and Analytics entry points, receives existing live inventory and work-order rows as props, and keeps navigation callbacks in the parent. The initial dashboard entry is now 4,401.27 kB before gzip; all executive view panels together are deferred into a 30.92 kB chunk.
+
+After a protected `create_company_and_owner` or `join_company_with_code` RPC succeeds, the dashboard now writes a user-local, UI-only onboarding completion marker. It records no company identifier and is never used for authorization; every login still derives tenant scope from `auth.uid()` and the database profile. This marker is intentionally not written when the protected setup call fails.

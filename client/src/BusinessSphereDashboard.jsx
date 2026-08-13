@@ -33,9 +33,21 @@ const LazyDashboardPreferencesDrawer = lazy(() => import("./components/Dashboard
 const LazyWorkspacePresenceBadge = lazy(() => import("./components/WorkspacePresenceBadge").then((module) => ({ default: module.WorkspacePresenceBadge })));
 const LazyFinancialDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.FinancialDashboard })));
 const LazyCrmSalesDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.CrmSalesDashboard })));
+const LazyInventoryProcurementExecutiveView = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.InventoryProcurementExecutiveView })));
 let xlsxModulePromise;
 const loadXlsx = () => (xlsxModulePromise ||= import("xlsx"));
 const loadJsPdf = () => import("jspdf").then((module) => module.jsPDF);
+
+const ONBOARDING_CHECKLIST_STORAGE_PREFIX = "bs_onboarding_completed_";
+export function persistOnboardingChecklistCompletion(userId, mode) {
+  if (!userId || typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(`${ONBOARDING_CHECKLIST_STORAGE_PREFIX}${userId}`, JSON.stringify({ completedAt: new Date().toISOString(), method: mode }));
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -5502,7 +5514,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("stock levels and low-inventory alerts, live from Inventory and Manufacturing")}
-        <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />
+        <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Inventory and Procurement workspace" />}>
+          <LazyInventoryProcurementExecutiveView inventory={inventory} workOrders={workOrders} money={money} stockStatus={stockStatus} onNavigate={onNavigate} />
+        </Suspense>
         {sidePanels}
       </div>
     );
@@ -27115,7 +27129,7 @@ function Analytics({ company, invoices, expenses, crm, inventory, employees, lea
       {tab === "financial" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Finance analytics" />}><LazyFinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} money={money} lineTotal={lineTotal} taxRate={TAX_RATE} /></Suspense>}
       {tab === "hr" && <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />}
       {tab === "sales" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading CRM analytics" />}><LazyCrmSalesDashboard invoices={invoices} crm={crm} money={money} lineTotal={lineTotal} stageProbability={STAGE_PROBABILITY} /></Suspense>}
-      {tab === "operations" && <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />}
+      {tab === "operations" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Inventory and Procurement analytics" />}><LazyInventoryProcurementExecutiveView inventory={inventory} workOrders={workOrders} money={money} stockStatus={stockStatus} onNavigate={onNavigate} /></Suspense>}
       {tab === "kpis" && <CustomKPIs data={{ invoices, expenses, crm, inventory, employees }} />}
       {tab === "heatmaps" && <HeatMaps invoices={invoices} inventory={inventory} />}
       {tab === "market" && <MarketTrends company={company} />}
@@ -38164,6 +38178,10 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
           await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
         } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
       }
+
+      // This is a UI-only completion record, not a source of tenant identity.
+      // Every subsequent session still resolves company scope from the database.
+      persistOnboardingChecklistCompletion(oauthUser.id, mode);
 
       onAuthenticated({
         userId: oauthUser.id, email: oauthUser.email, accessToken: oauthUser.accessToken,

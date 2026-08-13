@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, hasResolvedCompany, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, moveDashboardKpi, normalizeGenericTenantPayload, orderDashboardKpis, resolveDailyBriefingFetchState, resolveRoleKpiPreset, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, hasResolvedCompany, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, moveDashboardKpi, normalizeGenericTenantPayload, orderDashboardKpis, persistOnboardingChecklistCompletion, resolveDailyBriefingFetchState, resolveRoleKpiPreset, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -417,6 +417,14 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('aria-label="Company setup checklist"');
     expect(financeCrmViewsSource).toContain("export function FinancialDashboard");
     expect(financeCrmViewsSource).toContain("export function CrmSalesDashboard");
+  });
+
+  it("records onboarding checklist completion after setup only as a UI marker", () => {
+    const setItem = vi.fn();
+    vi.stubGlobal("window", { localStorage: { setItem } });
+    expect(persistOnboardingChecklistCompletion("user-1", "create")).toBe(true);
+    expect(setItem).toHaveBeenCalledWith("bs_onboarding_completed_user-1", expect.stringContaining('"method":"create"'));
+    vi.unstubAllGlobals();
   });
 
   it("exposes filtered CSV/PDF and recurring email-report controls in the command strip", () => {
