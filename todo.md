@@ -295,4 +295,6 @@
 
 - [x] Fix shared persistence root cause: remove local-success fallback across all modules and enforce confirmed Supabase database persistence.
 
-- [ ] Trace one complete pos_shifts write, capturing safe diagnostic fields and preserving original Supabase errors without logging credentials.
+- [x] Trace one complete pos_shifts write, capturing safe diagnostic fields and preserving original Supabase errors without logging credentials.
+
+- [ ] Verify and repair Supabase authentication context (getUser and getSession) to ensure auth.uid() is correctly populated during database requests.
