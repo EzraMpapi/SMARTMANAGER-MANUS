@@ -34,15 +34,36 @@ const LazyWorkspacePresenceBadge = lazy(() => import("./components/WorkspacePres
 const LazyFinancialDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.FinancialDashboard })));
 const LazyCrmSalesDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.CrmSalesDashboard })));
 const LazyInventoryProcurementExecutiveView = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.InventoryProcurementExecutiveView })));
+const LazyHrOperationalDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.HrOperationalDashboard })));
 let xlsxModulePromise;
 const loadXlsx = () => (xlsxModulePromise ||= import("xlsx"));
 const loadJsPdf = () => import("jspdf").then((module) => module.jsPDF);
 
 const ONBOARDING_CHECKLIST_STORAGE_PREFIX = "bs_onboarding_completed_";
+const ONBOARDING_GUIDANCE_DISMISSAL_STORAGE_PREFIX = "bs_onboarding_guidance_dismissed_";
 export function persistOnboardingChecklistCompletion(userId, mode) {
   if (!userId || typeof window === "undefined") return false;
   try {
     window.localStorage.setItem(`${ONBOARDING_CHECKLIST_STORAGE_PREFIX}${userId}`, JSON.stringify({ completedAt: new Date().toISOString(), method: mode }));
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+export function getOnboardingGuidanceDismissed(userId) {
+  if (!userId || typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(`${ONBOARDING_GUIDANCE_DISMISSAL_STORAGE_PREFIX}${userId}`) === "true";
+  } catch (_error) {
+    return false;
+  }
+}
+
+export function setOnboardingGuidanceDismissed(userId, dismissed) {
+  if (!userId || typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(`${ONBOARDING_GUIDANCE_DISMISSAL_STORAGE_PREFIX}${userId}`, dismissed ? "true" : "false");
     return true;
   } catch (_error) {
     return false;
@@ -5492,7 +5513,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("headcount, payroll, and leave, live from HR")}
-        <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />
+        <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading HR workspace" />}>
+          <LazyHrOperationalDashboard employees={employees} leaveRequests={leaveRequests} money={money} onNavigate={onNavigate} />
+        </Suspense>
         {sidePanels}
       </div>
     );
@@ -27127,7 +27150,7 @@ function Analytics({ company, invoices, expenses, crm, inventory, employees, lea
 
       {tab === "executive" && <ExecutiveDashboard company={company} invoices={invoices} expenses={expenses} crm={crm} inventory={inventory} employees={employees} onNavigate={onNavigate} />}
       {tab === "financial" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Finance analytics" />}><LazyFinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} money={money} lineTotal={lineTotal} taxRate={TAX_RATE} /></Suspense>}
-      {tab === "hr" && <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />}
+      {tab === "hr" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading HR analytics" />}><LazyHrOperationalDashboard employees={employees} leaveRequests={leaveRequests} money={money} onNavigate={onNavigate} /></Suspense>}
       {tab === "sales" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading CRM analytics" />}><LazyCrmSalesDashboard invoices={invoices} crm={crm} money={money} lineTotal={lineTotal} stageProbability={STAGE_PROBABILITY} /></Suspense>}
       {tab === "operations" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Inventory and Procurement analytics" />}><LazyInventoryProcurementExecutiveView inventory={inventory} workOrders={workOrders} money={money} stockStatus={stockStatus} onNavigate={onNavigate} /></Suspense>}
       {tab === "kpis" && <CustomKPIs data={{ invoices, expenses, crm, inventory, employees }} />}
@@ -32133,6 +32156,7 @@ function BusinessCardDesigner({ company }) {
 function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast }) {
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
+  const [onboardingGuidanceDismissed, setOnboardingGuidanceDismissedState] = useState(() => getOnboardingGuidanceDismissed(currentUser?.id));
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 
@@ -32165,6 +32189,18 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Settings</h1>
         <p className="text-[13px] text-slate-500 mt-1">Company profile, module entitlements, and connection status</p>
       </div>
+
+      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-[14.5px] font-semibold text-[#111827]">Completed onboarding guidance</h2>
+            <p className="text-[12.5px] text-slate-500 mt-1">Hide or restore completed setup guidance for this browser. This preference never changes company access or permissions.</p>
+          </div>
+          <button type="button" onClick={() => { const next = !onboardingGuidanceDismissed; setOnboardingGuidanceDismissedState(next); setOnboardingGuidanceDismissed(currentUser?.id, next); notify(next ? "Completed onboarding guidance hidden." : "Completed onboarding guidance restored."); }} className="btn-secondary shrink-0 text-[12px] font-medium px-3.5 py-2 rounded-lg">
+            {onboardingGuidanceDismissed ? "Show guidance" : "Hide guidance"}
+          </button>
+        </div>
+      </section>
 
       {/* Role — demo switcher */}
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">

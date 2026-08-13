@@ -9,6 +9,10 @@ import {
   Line,
   Pie,
   PieChart,
+  PolarAngleAxis,
+  PolarGrid,
+  Radar,
+  RadarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -119,5 +123,33 @@ export function InventoryProcurementExecutiveView({ inventory, workOrders, money
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4"><h3 className="text-[14px] font-semibold text-[#111827] mb-3">Stock Value Trend (6 months)</h3><ResponsiveContainer width="100%" height={140}><ComposedChart data={trend} margin={{ left: -10, right: 4, top: 0, bottom: 0 }}><CartesianGrid vertical={false} stroke="#F3F4F6" /><XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip formatter={(value, name) => [name === "value" ? `TZS ${money(value)}k` : `${value} orders`, name === "value" ? "Stock Value" : "Active Orders"]} /><Area type="monotone" dataKey="value" stroke="#2563EB" fill="#2563EB18" strokeWidth={2.5} /><Line type="monotone" dataKey="orders" stroke="#7C3AED" strokeWidth={2} dot={{ r: 3, fill: "#7C3AED" }} strokeDasharray="4 2" /></ComposedChart></ResponsiveContainer></div>
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4"><h3 className="text-[14px] font-semibold text-[#111827] mb-3">Work Orders by Status</h3>{workOrderStatus.length === 0 ? <p className="text-slate-400 text-center py-8">No work orders yet</p> : <><ResponsiveContainer width="100%" height={100}><BarChart data={workOrderStatus} margin={{ left: -10, right: 4, top: 0, bottom: 0 }}><XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip /><Bar dataKey="value" radius={[4, 4, 0, 0]}>{workOrderStatus.map((entry, index) => <Cell key={index} fill={entry.fill} />)}</Bar></BarChart></ResponsiveContainer><div className="flex gap-3 flex-wrap mt-2">{workOrderStatus.map((entry) => <div key={entry.name} className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ background: entry.fill }} /><span className="text-[11.5px] text-slate-600">{entry.name}: <strong>{entry.value}</strong></span></div>)}</div></>}</div>
     </div>
+  </div>;
+}
+
+export function HrOperationalDashboard({ employees, leaveRequests, money, onNavigate }) {
+  const navigate = onNavigate || (() => {});
+  const active = employees.rows.filter((employee) => employee.status === "Active").length;
+  const onLeave = employees.rows.filter((employee) => employee.status === "On Leave").length;
+  const inactive = employees.rows.filter((employee) => employee.status === "Inactive").length;
+  const payroll = employees.rows.filter((employee) => employee.status !== "Inactive").reduce((sum, employee) => sum + employee.salary, 0);
+  const pendingLeave = leaveRequests.rows.filter((request) => request.status === "Pending").length;
+  const byDepartment = useMemo(() => { const totals = {}; employees.rows.forEach((employee) => { const department = employee.department || "General"; totals[department] = (totals[department] || 0) + 1; }); return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value })); }, [employees.rows]);
+  const workforceProfile = [
+    { subject: "Active", value: active > 0 ? Math.round(active / (employees.rows.length || 1) * 100) : 0 },
+    { subject: "Retention", value: employees.rows.length > 0 ? Math.round((1 - inactive / (employees.rows.length || 1)) * 100) : 90 },
+    { subject: "Leave Mgmt", value: pendingLeave === 0 ? 100 : Math.round((1 - pendingLeave / 10) * 80) },
+    { subject: "Payroll", value: payroll > 0 ? Math.min(100, Math.round(payroll / employees.rows.length / 20)) : 0 },
+    { subject: "Diversity", value: (() => { const female = employees.rows.filter((employee) => employee.gender === "F").length; return employees.rows.length > 0 ? Math.round(female / employees.rows.length * 200) : 50; })() },
+    { subject: "Engagement", value: 75 },
+  ];
+  return <div className="space-y-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{[
+      ["Active Staff", active, "#16A34A"], ["On Leave", onLeave, "#F59E0B"], ["Monthly Payroll", `TZS ${money(payroll)}k`, "#2563EB"], ["Pending Leave", `${pendingLeave} request${pendingLeave !== 1 ? "s" : ""}`, pendingLeave > 0 ? "#EF4444" : "#16A34A"],
+    ].map(([label, value, color]) => <button type="button" key={label} onClick={() => navigate("hr")} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center hover:shadow-sm"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{label}</p><p className="text-[20px] font-bold" style={{ color }}>{value}</p></button>)}</div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4"><h3 className="text-[14px] font-semibold text-[#111827] mb-3">Headcount by Department</h3>{byDepartment.length === 0 ? <p className="text-slate-400 text-center py-8">No department data</p> : <ResponsiveContainer width="100%" height={180}><BarChart data={byDepartment} layout="vertical" margin={{ left: 5, right: 20, top: 0, bottom: 0 }}><XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} /><YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={80} /><Tooltip formatter={(value) => [`${value} staff`, "Department"]} /><Bar dataKey="value" fill="#16A34A" radius={[0, 6, 6, 0]} /></BarChart></ResponsiveContainer>}</div>
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4"><h3 className="text-[14px] font-semibold text-[#111827] mb-3">Workforce Health Profile</h3><ResponsiveContainer width="100%" height={180}><RadarChart data={workforceProfile} margin={{ top: 0, right: 10, bottom: 0, left: 10 }}><PolarGrid stroke="#E5E7EB" /><PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: "#6B7280" }} /><Radar name="Score" dataKey="value" stroke="#16A34A" fill="#16A34A" fillOpacity={0.2} strokeWidth={2} /><Tooltip formatter={(value) => [`${value}/100`, "Score"]} /></RadarChart></ResponsiveContainer></div>
+    </div>
+    {leaveRequests.rows.length > 0 && <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden"><div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p className="text-[13.5px] font-semibold text-[#111827]">Recent Leave Requests</p><button type="button" onClick={() => navigate("hr")} className="text-[12px] text-[#16A34A] font-medium">View all →</button></div><table className="w-full text-[12.5px]"><thead><tr className="border-b border-slate-50 bg-slate-50/50">{["Employee", "Type", "Dates", "Status"].map((heading) => <th key={heading} className="px-4 py-2.5 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{heading}</th>)}</tr></thead><tbody>{leaveRequests.rows.slice(0, 4).map((request) => { const color = { Approved: ["#DCFCE7", "#15803D"], Pending: ["#FEF3C7", "#B45309"], Rejected: ["#FEE2E2", "#991B1B"] }[request.status] || ["#F3F4F6", "#6B7280"]; return <tr key={request.id} className="border-b border-slate-50 last:border-0"><td className="px-4 py-2.5 font-medium text-[#111827]">{request.employeeName || request.employee}</td><td className="px-4 py-2.5 text-slate-500">{request.leaveType || "Annual"}</td><td className="px-4 py-2.5 text-slate-400 font-mono text-[11.5px]">{request.startDate} → {request.endDate}</td><td className="px-4 py-2.5"><span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full" style={{ background: color[0], color: color[1] }}>{request.status}</span></td></tr>; })}</tbody></table></div>}
   </div>;
 }

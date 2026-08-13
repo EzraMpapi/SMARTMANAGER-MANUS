@@ -37,3 +37,9 @@ Authenticated users with no company association now also see an accessible, stat
 The Inventory and Procurement operational executive surface now shares the same deferred executive-view module as Finance and CRM. It is lazy-rendered from both role-lens and Analytics entry points, receives existing live inventory and work-order rows as props, and keeps navigation callbacks in the parent. The initial dashboard entry is now 4,401.27 kB before gzip; all executive view panels together are deferred into a 30.92 kB chunk.
 
 After a protected `create_company_and_owner` or `join_company_with_code` RPC succeeds, the dashboard now writes a user-local, UI-only onboarding completion marker. It records no company identifier and is never used for authorization; every login still derives tenant scope from `auth.uid()` and the database profile. This marker is intentionally not written when the protected setup call fails.
+
+## HR, Sales, and completed-guidance preference follow-up
+
+The HR operational executive panel now joins the already deferred Sales dashboard in the shared lazy executive-view module. Both home role lenses and Analytics use their lazy boundaries; the dashboard entry is now 4,394.56 kB before gzip, and deferred executive views total 41.04 kB. Data reads, write paths, and tenant decisions remain in existing parent components.
+
+Settings now includes a per-user, browser-local control to hide or restore completed onboarding guidance. The preference is deliberately UI-only, stores no tenant ID, and never influences company lookup, role access, or RLS. Controlled verification again confirmed authenticated onboarding, persistence, cross-tenant denial, and removal of all QA records.

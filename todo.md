@@ -329,3 +329,7 @@
 - [x] Identify and extract safe lazy-loaded Inventory and Procurement executive dashboard boundaries without changing live data or RLS behavior.
 - [x] Persist completed onboarding-checklist state only after protected company creation or trusted join-code setup succeeds.
 - [x] Add regression coverage, verify bundle output and secure tenant onboarding persistence, then publish the release.
+
+- [x] Identify and extract safe lazy-loaded HR and Sales operational panel boundaries without changing live data or RLS behavior.
+- [x] Add a persistent Settings preference that lets a user dismiss completed onboarding guidance without affecting authorization.
+- [x] Add regression coverage, verify bundle output and preference persistence, then publish the release.

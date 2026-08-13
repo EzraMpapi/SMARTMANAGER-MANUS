@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, hasResolvedCompany, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, moveDashboardKpi, normalizeGenericTenantPayload, orderDashboardKpis, persistOnboardingChecklistCompletion, resolveDailyBriefingFetchState, resolveRoleKpiPreset, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, getOnboardingGuidanceDismissed, hasResolvedCompany, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, moveDashboardKpi, normalizeGenericTenantPayload, orderDashboardKpis, persistOnboardingChecklistCompletion, resolveDailyBriefingFetchState, resolveRoleKpiPreset, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, setOnboardingGuidanceDismissed, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -419,11 +419,27 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(financeCrmViewsSource).toContain("export function CrmSalesDashboard");
   });
 
+  it("defers HR operational views while retaining the existing deferred Sales dashboard", () => {
+    expect(dashboardSource).toContain("LazyHrOperationalDashboard");
+    expect(dashboardSource).toContain("<LazyCrmSalesDashboard");
+    expect(financeCrmViewsSource).toContain("export function HrOperationalDashboard");
+  });
+
   it("records onboarding checklist completion after setup only as a UI marker", () => {
     const setItem = vi.fn();
     vi.stubGlobal("window", { localStorage: { setItem } });
     expect(persistOnboardingChecklistCompletion("user-1", "create")).toBe(true);
     expect(setItem).toHaveBeenCalledWith("bs_onboarding_completed_user-1", expect.stringContaining('"method":"create"'));
+    vi.unstubAllGlobals();
+  });
+
+  it("persists completed onboarding-guidance dismissal as a user-local non-authoritative preference", () => {
+    const getItem = vi.fn(() => "true");
+    const setItem = vi.fn();
+    vi.stubGlobal("window", { localStorage: { getItem, setItem } });
+    expect(getOnboardingGuidanceDismissed("user-1")).toBe(true);
+    expect(setOnboardingGuidanceDismissed("user-1", false)).toBe(true);
+    expect(setItem).toHaveBeenCalledWith("bs_onboarding_guidance_dismissed_user-1", "false");
     vi.unstubAllGlobals();
   });
 
