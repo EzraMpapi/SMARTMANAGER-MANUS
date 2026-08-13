@@ -273,3 +273,5 @@
 - [x] Restart the managed development server after the reported interruption and confirm its health endpoint responds.
 
 - [x] Locate and repair the undefined `handleSubmit` reference in the account-creation UI, add regression coverage, and verify the signup route.
+
+- [x] Repair post-signup tenant/company setup continuation so confirmed and immediately authenticated accounts reach the ERP without duplicate provisioning.

@@ -59,7 +59,7 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("handles confirmation-pending signup safely and derives profile/company access from the authenticated user ID", () => {
     expect(dashboardSource).toContain('data: { full_name: fullName }');
-    expect(dashboardSource).toContain("Account created — check your email to confirm it, then sign in.");
+    expect(dashboardSource).toContain("Account created. Confirm your email to securely finish company setup.");
     expect(dashboardSource).toContain('sb("profiles").select("*,companies(*)").eq("id", user.id).run()');
     expect(dashboardSource).toContain("authRefreshSession(refreshToken)");
   });
@@ -73,6 +73,15 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("const resumedSignup = await resumeConfirmedSignup(activeToken, resolved.user)");
     expect(dashboardSource).toContain('callRpc("create_company_and_owner"');
     expect(dashboardSource).toContain('callRpc("join_company_with_code"');
+  });
+
+  it("keeps confirmation-pending onboarding actionable instead of presenting it as a signup failure", () => {
+    const signupSource = dashboardSource.slice(dashboardSource.indexOf("function SignupPage"), dashboardSource.indexOf("function OAuthCompanySetup"));
+    expect(signupSource).toContain("const [confirmationPending, setConfirmationPending] = useState(null)");
+    expect(signupSource).toContain("setConfirmationPending(pending.email)");
+    expect(signupSource).toContain("Confirm your email");
+    expect(signupSource).toContain("I have confirmed — sign in");
+    expect(signupSource).not.toContain('throw new Error("Account created — check your email to confirm it');
   });
 
   it("binds every account-creation action to the defined final signup handler", () => {

@@ -37532,6 +37532,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmationPending, setConfirmationPending] = useState(null);
 
   const [account, setAccount] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [company, setCompany] = useState({
@@ -37592,7 +37593,9 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       const signUpResult = await authSignUp(account.email.trim(), account.password, account.fullName.trim());
       if (!signUpResult.access_token) {
         persistPendingSignup(pending);
-        throw new Error("Account created — check your email to confirm it, then sign in. Your company setup will resume securely after confirmation.");
+        setConfirmationPending(pending.email);
+        notify("Account created. Confirm your email to securely finish company setup.", "success");
+        return;
       }
       persistAuthTokens(signUpResult);
       persistPendingSignup(pending);
@@ -37669,7 +37672,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           {/* Mode switcher */}
           <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 mb-6">
             {["create","join"].map((m) => (
-              <button key={m} onClick={() => { setMode(m); setStep(1); setError(null); }}
+              <button key={m} onClick={() => { setMode(m); setStep(1); setError(null); setConfirmationPending(null); }}
                 className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-all ${mode === m ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>
                 {m === "create" ? "🏢 Create company" : "🔑 Join with code"}
               </button>
@@ -37695,8 +37698,17 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200/60 p-6 sm:p-8">
             {error && <div className="mb-5 flex items-start gap-2 px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-[12.5px] text-red-700"><AlertCircle size={13} className="shrink-0 mt-0.5"/><span>{error}</span></div>}
 
+            {confirmationPending && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+                <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full bg-emerald-100 text-[#16A34A]"><Mail size={19} /></div>
+                <h2 className="text-[18px] font-bold text-[#111827]">Confirm your email</h2>
+                <p className="mt-2 text-[13px] leading-relaxed text-slate-600">We created your account for <strong>{confirmationPending}</strong>. Open the verification email, then sign in to automatically finish your company setup.</p>
+                <button type="button" onClick={onSwitchToLogin} className="mt-5 w-full rounded-xl bg-[#16A34A] px-4 py-3 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[#15803D]">I have confirmed — sign in</button>
+              </div>
+            )}
+
             {/* JOIN mode */}
-            {mode === "join" && (
+            {!confirmationPending && mode === "join" && (
               <div className="space-y-4">
                 <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Join your company</h2><p className="text-[13px] text-slate-500 mt-0.5">Enter the code your admin shared with you</p></div>
                 <AuthTextField label="Full name" icon={User} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" />
@@ -37719,7 +37731,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
             )}
 
             {/* CREATE mode — Step 1: Account */}
-            {mode === "create" && step === 1 && (
+            {!confirmationPending && mode === "create" && step === 1 && (
               <div className="space-y-4">
                 <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Create your account</h2><p className="text-[13px] text-slate-500 mt-0.5">Step 1 of 2 — personal details</p></div>
                 <AuthTextField label="Full name" icon={User} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" />
@@ -37747,7 +37759,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
             )}
 
             {/* CREATE mode — Step 2: Company */}
-            {mode === "create" && step === 2 && (
+            {!confirmationPending && mode === "create" && step === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <button onClick={() => setStep(1)} className="text-slate-400 hover:text-slate-600"><ChevronLeft size={18}/></button>
