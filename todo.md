@@ -268,3 +268,5 @@
 - [ ] Save checkpoint and publish the final optimized release.
 
 - [ ] Remove email-confirmation pause in signup flow and present congratulations message with direct login action.
+
+- [x] Fix undefined handleSubmit reference in SignupPage / company-setup flow and add regression coverage.
