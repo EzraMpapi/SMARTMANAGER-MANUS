@@ -31,6 +31,8 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 // workspace. Load them only when the user opens or requests the capability.
 const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer").then((module) => ({ default: module.DashboardPreferencesDrawer })));
 const LazyWorkspacePresenceBadge = lazy(() => import("./components/WorkspacePresenceBadge").then((module) => ({ default: module.WorkspacePresenceBadge })));
+const LazyFinancialDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.FinancialDashboard })));
+const LazyCrmSalesDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.CrmSalesDashboard })));
 let xlsxModulePromise;
 const loadXlsx = () => (xlsxModulePromise ||= import("xlsx"));
 const loadJsPdf = () => import("jspdf").then((module) => module.jsPDF);
@@ -5466,7 +5468,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("cash flow, receivables, and payables, live from Finance")}
-        <FinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
+        <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Finance workspace" />}>
+          <LazyFinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} money={money} lineTotal={lineTotal} taxRate={TAX_RATE} />
+        </Suspense>
         {sidePanels}
       </div>
     );
@@ -5486,7 +5490,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("pipeline, forecast, and revenue by customer, live from CRM and Sales")}
-        <SalesDashboard invoices={invoices} crm={crm} onNavigate={onNavigate} />
+        <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading CRM workspace" />}>
+          <LazyCrmSalesDashboard invoices={invoices} crm={crm} money={money} lineTotal={lineTotal} stageProbability={STAGE_PROBABILITY} />
+        </Suspense>
         {sidePanels}
       </div>
     );
@@ -27106,9 +27112,9 @@ function Analytics({ company, invoices, expenses, crm, inventory, employees, lea
       </div>
 
       {tab === "executive" && <ExecutiveDashboard company={company} invoices={invoices} expenses={expenses} crm={crm} inventory={inventory} employees={employees} onNavigate={onNavigate} />}
-      {tab === "financial" && <FinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />}
+      {tab === "financial" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Finance analytics" />}><LazyFinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} money={money} lineTotal={lineTotal} taxRate={TAX_RATE} /></Suspense>}
       {tab === "hr" && <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />}
-      {tab === "sales" && <SalesDashboard invoices={invoices} crm={crm} onNavigate={onNavigate} />}
+      {tab === "sales" && <Suspense fallback={<div className="h-56 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading CRM analytics" />}><LazyCrmSalesDashboard invoices={invoices} crm={crm} money={money} lineTotal={lineTotal} stageProbability={STAGE_PROBABILITY} /></Suspense>}
       {tab === "operations" && <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />}
       {tab === "kpis" && <CustomKPIs data={{ invoices, expenses, crm, inventory, employees }} />}
       {tab === "heatmaps" && <HeatMaps invoices={invoices} inventory={inventory} />}
@@ -38098,6 +38104,20 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 // RPCs email signup uses. No password is collected here — there is not
 // one to set; this account will only ever sign in through the same OAuth
 // provider again.
+function CompanySetupChecklist({ mode, fullName, companyName, joinCode }) {
+  const steps = [
+    { label: "Verified account", detail: "Your signed-in identity is confirmed.", complete: true },
+    { label: "Choose your path", detail: mode === "create" ? "Create a new organization." : "Join with a trusted company code.", complete: Boolean(mode) },
+    { label: mode === "create" ? "Name your organization" : "Enter the company code", detail: mode === "create" ? "Use the legal or trading name your team recognizes." : "Only use a code supplied by a company administrator.", complete: mode === "create" ? companyName.trim().length > 1 : joinCode.trim().length >= 6 },
+    { label: "Complete secure setup", detail: "Tenant access starts only after the protected setup action succeeds.", complete: false },
+  ];
+
+  return <section className="rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-3" aria-label="Company setup checklist">
+    <div className="flex items-center justify-between gap-3 mb-2"><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Setup checklist</p><span className="text-[11px] font-medium text-[#16A34A]">{steps.filter((step) => step.complete).length}/4 ready</span></div>
+    <ol className="space-y-2">{steps.map((step, index) => <li key={step.label} className="flex gap-2.5"><span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${step.complete ? "bg-[#16A34A] text-white" : "border border-slate-300 bg-white text-slate-400"}`}>{step.complete ? <CheckCircle2 size={11} /> : <span className="text-[9px] font-semibold">{index + 1}</span>}</span><span><span className="block text-[12px] font-medium text-slate-700">{step.label}</span><span className="block text-[11px] leading-snug text-slate-500">{step.detail}</span></span></li>)}</ol>
+  </section>;
+}
+
 function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [mode, setMode] = useState("create");
   const [busy, setBusy] = useState(false);
@@ -38172,6 +38192,8 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
             <p className="text-[13px] text-slate-500">{isCompanyRecovery ? `Your verified account (${oauthUser.email}) is not linked to a company yet. Create one or enter a trusted company join code to continue.` : `Signed in as ${oauthUser.email} — now set up your organization.`}</p>
             {isCompanyRecovery && <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[12px] leading-relaxed text-emerald-900"><ShieldCheck size={14} className="inline mr-1.5 -mt-0.5" />Your organization is assigned only by the secure setup action below. No company access is granted until you complete it.</div>}
           </div>
+
+          <CompanySetupChecklist mode={mode} fullName={fullName} companyName={company.name} joinCode={joinCode} />
 
           <FormField label="Your name" required><input className={inputClass} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" /></FormField>
 

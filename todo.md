@@ -321,3 +321,7 @@
 - [x] Audit and improve the existing-user no-company recovery experience without bypassing protected onboarding RPCs or RLS.
 - [x] Analyze the production bundle and introduce safe module-level lazy loading for heavy non-core dashboard capabilities.
 - [x] Add regression coverage, verify live authentication recovery and bundle output, then publish the optimized release.
+
+- [x] Identify and extract safe lazy-loaded boundaries for the heaviest Finance and CRM dashboard view code without changing data or RLS behavior.
+- [x] Add an accessible onboarding checklist that guides authenticated unprovisioned users through secure company creation or joining.
+- [x] Add regression coverage, verify bundle output and controlled tenant onboarding, then publish the enhanced release.

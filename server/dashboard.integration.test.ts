@@ -17,6 +17,7 @@ const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url)
 const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const preferencesDrawerSource = readFileSync(new URL("../client/src/components/DashboardPreferencesDrawer.tsx", import.meta.url), "utf8");
+const financeCrmViewsSource = readFileSync(new URL("../client/src/components/FinanceCrmExecutiveViews.jsx", import.meta.url), "utf8");
 const viteConfigSource = readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
@@ -406,6 +407,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('const loadXlsx = () => (xlsxModulePromise ||= import("xlsx"));');
     expect(dashboardSource).toContain('const loadJsPdf = () => import("jspdf")');
     expect(dashboardSource).toContain("export async function createDashboardPdfDocument");
+  });
+
+  it("defers Finance and CRM executive views and exposes a secure onboarding checklist", () => {
+    expect(dashboardSource).toContain('lazy(() => import("./components/FinanceCrmExecutiveViews")');
+    expect(dashboardSource).toContain("<LazyFinancialDashboard");
+    expect(dashboardSource).toContain("<LazyCrmSalesDashboard");
+    expect(dashboardSource).toContain("CompanySetupChecklist");
+    expect(dashboardSource).toContain('aria-label="Company setup checklist"');
+    expect(financeCrmViewsSource).toContain("export function FinancialDashboard");
+    expect(financeCrmViewsSource).toContain("export function CrmSalesDashboard");
   });
 
   it("exposes filtered CSV/PDF and recurring email-report controls in the command strip", () => {

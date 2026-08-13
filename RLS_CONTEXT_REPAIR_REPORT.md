@@ -25,3 +25,9 @@ The `/app` render check advances to the normal sign-in screen without a current 
 Authenticated users with a valid profile but no database-resolved company now receive explicit company-setup recovery guidance. The message explains that the account is verified, that it must create a company or use a trusted join code, and that tenant access is assigned only by the protected setup RPC.
 
 The preferences drawer, workspace presence badge, PDF export library, and XLSX import/export library now load on demand. The production dashboard entry chunk decreased from 5,279.45 kB to 4,423.33 kB before gzip, while PDF and spreadsheet code are emitted as separate chunks only requested by their related user actions. The core dashboard is still a single large module, so Vite's advisory chunk-size warning remains; deeper component extraction would be a separate, higher-risk refactor.
+
+## Finance, CRM, and onboarding follow-up
+
+The Finance executive dashboard and CRM/Sales executive dashboard are now supplied by the lazy-loaded `FinanceCrmExecutiveViews.jsx` module from both the home role lens and Analytics tabs. Their live rows and existing financial helpers remain explicit inputs; no database calls, tenant resolution, RLS rule, or authorization decision moved into the new module. The new chunk is 17.29 kB before gzip, while the main dashboard entry decreased further to 4,412.78 kB before gzip.
+
+Authenticated users with no company association now also see an accessible, state-aware four-step company setup checklist. It distinguishes verified identity, creation versus trusted join-code path, required organization input, and the final protected setup action. Controlled live verification reconfirmed tenant onboarding, `current_company_id()` resolution, persistence, cross-tenant denial, and cleanup of all QA users and companies.
