@@ -293,4 +293,6 @@
 
 - [x] Create an activity log section in the dashboard to display recent successful user actions and database writes.
 
-- [ ] Fix shared persistence root cause: remove local-success fallback across all modules and enforce confirmed Supabase database persistence.
+- [x] Fix shared persistence root cause: remove local-success fallback across all modules and enforce confirmed Supabase database persistence.
+
+- [ ] Trace one complete pos_shifts write, capturing safe diagnostic fields and preserving original Supabase errors without logging credentials.
