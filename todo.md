@@ -279,4 +279,6 @@
 
 - [x] Implement the main dashboard layout with a sidebar navigation and top header matching the uploaded system design.
 
-- [ ] Create a user profile dropdown menu in the top header containing options for account settings, billing, and logout.
+- [x] Create a user profile dropdown menu in the top header containing options for account settings, billing, and logout.
+
+- [ ] Fix login connection error and redirect signup directly to login upon successful account creation without email-confirmation block.
