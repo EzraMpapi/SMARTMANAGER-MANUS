@@ -22,6 +22,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 ## 2. Core ERP Tables & Schema Definitions
 All business entities include primary keys (`id`), tenant ownership scoping (`company_id`), and timestamps (`created_at`, `updated_at`).
 
+### Production schema inventory and verification
+The full production inventory is maintained in [SUPABASE_SCHEMA_COMPLETE.md](./SUPABASE_SCHEMA_COMPLETE.md). The dashboard currently references 110 table endpoints, all of which are present in the connected project. The reusable `pnpm verify:supabase-schema` command derives the table list from `BusinessSphereDashboard.jsx`, retrieves the protected PostgREST OpenAPI description, and fails when a referenced table or required tenant audit field is absent.
+
 ### Example Table: `company_expenses`
 ```sql
 CREATE TABLE IF NOT EXISTS public.company_expenses (
@@ -75,5 +78,14 @@ async function runCompanyTableMutation(tableName, payload, companyId) {
 
 ---
 
-## 4. Parameterized Query Builders & SQL Injection Prevention
+## 4. Tenant isolation, RLS, and safe migrations
+Tenant isolation must be enforced by Supabase Row Level Security policies using the authoritative company membership/tenant-resolution function rather than through the browser alone. Supabase’s guidance is to enable RLS for exposed application tables and make policies the enforcement point for row access.[1]
+
+When schema work is required, use an idempotent Supabase migration with `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, and guarded policy creation. Do not use the platform Drizzle workflow for ERP entities: it targets the separate MySQL/TiDB platform database. The current additive migration is [`supabase/migrations/20260812_001_complete_erp_schema_baseline.sql`](./supabase/migrations/20260812_001_complete_erp_schema_baseline.sql); it only repairs `audit_log.updated_at` and preserves all current records.
+
+## 5. Parameterized Query Builders & SQL Injection Prevention
 All data reads and writes use Supabase's built-in query builder, which automatically uses parameterized queries to protect against SQL injection without raw string concatenation.
+
+## References
+
+[1]: https://supabase.com/docs/guides/database/postgres/row-level-security "Supabase Row Level Security guide"
