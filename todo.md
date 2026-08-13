@@ -333,3 +333,7 @@
 - [x] Identify and extract safe lazy-loaded HR and Sales operational panel boundaries without changing live data or RLS behavior.
 - [x] Add a persistent Settings preference that lets a user dismiss completed onboarding guidance without affecting authorization.
 - [x] Add regression coverage, verify bundle output and preference persistence, then publish the release.
+
+- [x] Identify and defer a safe Procurement detail workspace boundary without changing live data or RLS behavior.
+- [x] Add a compact dashboard performance panel that reports deferred-module readiness without collecting or exposing sensitive data.
+- [x] Add regression coverage, verify bundle output and runtime behavior, then publish the release.

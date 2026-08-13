@@ -43,3 +43,9 @@ After a protected `create_company_and_owner` or `join_company_with_code` RPC suc
 The HR operational executive panel now joins the already deferred Sales dashboard in the shared lazy executive-view module. Both home role lenses and Analytics use their lazy boundaries; the dashboard entry is now 4,394.56 kB before gzip, and deferred executive views total 41.04 kB. Data reads, write paths, and tenant decisions remain in existing parent components.
 
 Settings now includes a per-user, browser-local control to hide or restore completed onboarding guidance. The preference is deliberately UI-only, stores no tenant ID, and never influences company lookup, role access, or RLS. Controlled verification again confirmed authenticated onboarding, persistence, cross-tenant denial, and removal of all QA records.
+
+## Procurement workspace and deferred-module readiness follow-up
+
+The Procurement detail workspace now loads from a separate 4.80 kB lazy chunk while retaining the existing parent-owned Supabase hooks, mutation functions, authorization inputs, and child panels. The main dashboard bundle remains 4,394.46 kB before gzip. This split changes only when the workspace code is downloaded, not which records can be read or written.
+
+Settings now provides a compact deferred-module readiness panel. It lists local module readiness for Finance, Sales, Inventory, HR, Procurement, Preferences, and Presence after each workspace is opened. The registry is in-memory and browser-local; it sends no telemetry or tenant data. Controlled verification again confirmed onboarding, persistence, cross-tenant denial, and QA cleanup.

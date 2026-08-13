@@ -29,12 +29,21 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 
 // Optional panels and export libraries do not block the core operational
 // workspace. Load them only when the user opens or requests the capability.
-const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer").then((module) => ({ default: module.DashboardPreferencesDrawer })));
-const LazyWorkspacePresenceBadge = lazy(() => import("./components/WorkspacePresenceBadge").then((module) => ({ default: module.WorkspacePresenceBadge })));
-const LazyFinancialDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.FinancialDashboard })));
-const LazyCrmSalesDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.CrmSalesDashboard })));
-const LazyInventoryProcurementExecutiveView = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.InventoryProcurementExecutiveView })));
-const LazyHrOperationalDashboard = lazy(() => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.HrOperationalDashboard })));
+const deferredModuleReady = new Set();
+const DEFERRED_MODULE_READY_EVENT = "businesssphere:deferred-module-ready";
+export function getDeferredModuleReadiness() { return [...deferredModuleReady]; }
+export function markDeferredModuleReady(name) {
+  deferredModuleReady.add(name);
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function" && typeof CustomEvent !== "undefined") window.dispatchEvent(new CustomEvent(DEFERRED_MODULE_READY_EVENT, { detail: name }));
+}
+const lazyDeferred = (name, loader) => lazy(() => loader().then((module) => { markDeferredModuleReady(name); return module; }));
+const LazyDashboardPreferencesDrawer = lazyDeferred("Preferences", () => import("./components/DashboardPreferencesDrawer").then((module) => ({ default: module.DashboardPreferencesDrawer })));
+const LazyWorkspacePresenceBadge = lazyDeferred("Presence", () => import("./components/WorkspacePresenceBadge").then((module) => ({ default: module.WorkspacePresenceBadge })));
+const LazyFinancialDashboard = lazyDeferred("Finance", () => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.FinancialDashboard })));
+const LazyCrmSalesDashboard = lazyDeferred("Sales", () => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.CrmSalesDashboard })));
+const LazyInventoryProcurementExecutiveView = lazyDeferred("Inventory", () => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.InventoryProcurementExecutiveView })));
+const LazyHrOperationalDashboard = lazyDeferred("HR", () => import("./components/FinanceCrmExecutiveViews").then((module) => ({ default: module.HrOperationalDashboard })));
+const LazyProcurementWorkspace = lazyDeferred("Procurement", () => import("./components/ProcurementWorkspace").then((module) => ({ default: module.ProcurementWorkspace })));
 let xlsxModulePromise;
 const loadXlsx = () => (xlsxModulePromise ||= import("xlsx"));
 const loadJsPdf = () => import("jspdf").then((module) => module.jsPDF);
@@ -68,6 +77,21 @@ export function setOnboardingGuidanceDismissed(userId, dismissed) {
   } catch (_error) {
     return false;
   }
+}
+
+function DeferredModuleReadinessPanel() {
+  const [readyModules, setReadyModules] = useState(() => getDeferredModuleReadiness());
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleReady = () => setReadyModules(getDeferredModuleReadiness());
+    window.addEventListener(DEFERRED_MODULE_READY_EVENT, handleReady);
+    return () => window.removeEventListener(DEFERRED_MODULE_READY_EVENT, handleReady);
+  }, []);
+  const modules = ["Finance", "Sales", "Inventory", "HR", "Procurement", "Preferences", "Presence"];
+  return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6" aria-label="Deferred module performance">
+    <div className="flex items-start justify-between gap-3"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Deferred module readiness</h2><p className="text-[12.5px] text-slate-500 mt-1">Browser-local status only. Modules load when you open their workspace; no usage data is sent anywhere.</p></div><span className="text-[11px] font-semibold text-[#16A34A] shrink-0">{readyModules.length}/{modules.length} ready</span></div>
+    <div className="flex flex-wrap gap-2 mt-4">{modules.map((name) => { const ready = readyModules.includes(name); return <span key={name} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${ready ? "bg-[#16A34A]/10 text-[#15803D]" : "bg-slate-100 text-slate-500"}`}><span className={`h-1.5 w-1.5 rounded-full ${ready ? "bg-[#16A34A]" : "bg-slate-300"}`} />{name}</span>; })}</div>
+  </section>;
 }
 
 /* =============================================================================
@@ -12229,6 +12253,10 @@ function Procurement({ inventory, suppliersHook, expensesHook, currentUser, canM
   const contracts = useCompanyTable("procurement_contracts", procurementContractsSeed, {
     order: { col: "start_date", ascending: false }, mapRow: mapProcurementContractRow,
   });
+
+  return <Suspense fallback={<div className="h-72 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading Procurement workspace" />}>
+    <LazyProcurementWorkspace inventory={inventory} suppliersHook={suppliersHook} expensesHook={expensesHook} currentUser={currentUser} canManage={canManage} orders={orders} contracts={contracts} money={money} poTotal={poTotal} KpiCardComponent={KpiCard} PurchaseOrdersComponent={PurchaseOrders} ApprovalsComponent={Approvals} ProcurementContractsComponent={ProcurementContracts} VendorPaymentsComponent={VendorPayments} SupplierPortalComponent={SupplierPortal} />
+  </Suspense>;
 
   const pendingApproval = orders.rows.filter((o) => o.status === "Pending Approval");
   const readyToPay = orders.rows.filter((o) => o.status === "Received");
@@ -32201,6 +32229,8 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
           </button>
         </div>
       </section>
+
+      <DeferredModuleReadinessPanel />
 
       {/* Role — demo switcher */}
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">

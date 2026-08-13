@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, getOnboardingGuidanceDismissed, hasResolvedCompany, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, moveDashboardKpi, normalizeGenericTenantPayload, orderDashboardKpis, persistOnboardingChecklistCompletion, resolveDailyBriefingFetchState, resolveRoleKpiPreset, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, setOnboardingGuidanceDismissed, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, getDeferredModuleReadiness, getOnboardingGuidanceDismissed, hasResolvedCompany, hydrateGenericTenantRow, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, markDeferredModuleReady, moveDashboardKpi, normalizeGenericTenantPayload, orderDashboardKpis, persistOnboardingChecklistCompletion, resolveDailyBriefingFetchState, resolveRoleKpiPreset, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, setOnboardingGuidanceDismissed, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -18,6 +18,7 @@ const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.m
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const preferencesDrawerSource = readFileSync(new URL("../client/src/components/DashboardPreferencesDrawer.tsx", import.meta.url), "utf8");
 const financeCrmViewsSource = readFileSync(new URL("../client/src/components/FinanceCrmExecutiveViews.jsx", import.meta.url), "utf8");
+const procurementWorkspaceSource = readFileSync(new URL("../client/src/components/ProcurementWorkspace.jsx", import.meta.url), "utf8");
 const viteConfigSource = readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
@@ -402,15 +403,15 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("defers optional panels and heavyweight export libraries behind explicit lazy boundaries", () => {
-    expect(dashboardSource).toContain('lazy(() => import("./components/DashboardPreferencesDrawer")');
-    expect(dashboardSource).toContain('lazy(() => import("./components/WorkspacePresenceBadge")');
+    expect(dashboardSource).toContain('lazyDeferred("Preferences"');
+    expect(dashboardSource).toContain('lazyDeferred("Presence"');
     expect(dashboardSource).toContain('const loadXlsx = () => (xlsxModulePromise ||= import("xlsx"));');
     expect(dashboardSource).toContain('const loadJsPdf = () => import("jspdf")');
     expect(dashboardSource).toContain("export async function createDashboardPdfDocument");
   });
 
   it("defers Finance and CRM executive views and exposes a secure onboarding checklist", () => {
-    expect(dashboardSource).toContain('lazy(() => import("./components/FinanceCrmExecutiveViews")');
+    expect(dashboardSource).toContain('lazyDeferred("Finance"');
     expect(dashboardSource).toContain("<LazyFinancialDashboard");
     expect(dashboardSource).toContain("<LazyCrmSalesDashboard");
     expect(dashboardSource).toContain("CompanySetupChecklist");
@@ -423,6 +424,13 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("LazyHrOperationalDashboard");
     expect(dashboardSource).toContain("<LazyCrmSalesDashboard");
     expect(financeCrmViewsSource).toContain("export function HrOperationalDashboard");
+  });
+
+  it("defers Procurement detail work and exposes a privacy-safe module readiness panel", () => {
+    expect(dashboardSource).toContain("LazyProcurementWorkspace");
+    expect(dashboardSource).toContain("DeferredModuleReadinessPanel");
+    expect(dashboardSource).toContain("no usage data is sent anywhere");
+    expect(procurementWorkspaceSource).toContain("export function ProcurementWorkspace");
   });
 
   it("records onboarding checklist completion after setup only as a UI marker", () => {
@@ -440,6 +448,13 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(getOnboardingGuidanceDismissed("user-1")).toBe(true);
     expect(setOnboardingGuidanceDismissed("user-1", false)).toBe(true);
     expect(setItem).toHaveBeenCalledWith("bs_onboarding_guidance_dismissed_user-1", "false");
+    vi.unstubAllGlobals();
+  });
+
+  it("records deferred-module readiness only in the browser-local registry", () => {
+    vi.stubGlobal("window", {});
+    markDeferredModuleReady("Procurement");
+    expect(getDeferredModuleReadiness()).toContain("Procurement");
     vi.unstubAllGlobals();
   });
 
