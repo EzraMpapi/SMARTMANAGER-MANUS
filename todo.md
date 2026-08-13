@@ -270,3 +270,5 @@
 - [ ] Remove email-confirmation pause in signup flow and present congratulations message with direct login action.
 
 - [x] Fix undefined handleSubmit reference in SignupPage / company-setup flow and add regression coverage.
+
+- [ ] Apply uploaded Smart Manager UI/UX references (login screen, company setup, brand logo with Tanzania accent, design system colors/typography/icons) across the project.
