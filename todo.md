@@ -291,4 +291,6 @@
 
 - [x] Troubleshoot and eliminate local fallback persistence, making Supabase the sole source of truth for all database writes and surfacing real Supabase write errors.
 
-- [ ] Create an activity log section in the dashboard to display recent successful user actions and database writes.
+- [x] Create an activity log section in the dashboard to display recent successful user actions and database writes.
+
+- [ ] Fix shared persistence root cause: remove local-success fallback across all modules and enforce confirmed Supabase database persistence.
