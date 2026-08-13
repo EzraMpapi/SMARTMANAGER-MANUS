@@ -261,3 +261,8 @@
 - [x] Identify and defer a safe Sales detail workspace boundary without changing live data or RLS behavior.
 - [x] Add concise in-app guidance explaining deferred loading without introducing telemetry or sensitive-data collection.
 - [x] Add regression coverage, verify bundle output and runtime behavior, then publish the release.
+
+- [ ] Provision bounded controlled identities and obtain disposable JWTs for live RLS claim checks.
+- [ ] Extract additional Finance and CRM workspace boundaries into lazy-loaded modules.
+- [ ] Run live RLS, TypeScript, production build, and regression verification, then clean up QA identities.
+- [ ] Save checkpoint and publish the final optimized release.
