@@ -277,4 +277,6 @@
 
 - [x] Create a smooth success animation and a welcome modal that appears immediately after the user completes the registration steps.
 
-- [ ] Implement the main dashboard layout with a sidebar navigation and top header matching the uploaded system design.
+- [x] Implement the main dashboard layout with a sidebar navigation and top header matching the uploaded system design.
+
+- [ ] Create a user profile dropdown menu in the top header containing options for account settings, billing, and logout.
