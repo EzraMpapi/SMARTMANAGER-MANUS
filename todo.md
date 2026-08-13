@@ -303,4 +303,6 @@
 
 - [x] Fix RLS root cause: ensure current_company_id() correctly resolves authenticated user company ownership without disabling RLS or weakening tenant isolation.
 
-- [ ] Remove false success behavior: ensure failed Supabase inserts never update local state as successfully saved, keeping form data available for retry and logging safe diagnostics.
+- [x] Remove false success behavior: ensure failed Supabase inserts never update local state as successfully saved, keeping form data available for retry and logging safe diagnostics.
+
+- [x] Require confirmed Supabase responses before updating UI state for CREATE, UPDATE, and DELETE operations.

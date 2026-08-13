@@ -82,6 +82,22 @@ function authHeaders() {
   };
 }
 
+function buildConfirmedMutationError({ table, method, status, code, details }) {
+  const operation = method === "POST" ? "CREATE" : method === "PATCH" ? "UPDATE" : "DELETE";
+  const error = new Error(`Supabase ${operation} on ${table} did not return a confirmed database row.`);
+  error.status = status;
+  error.code = code || "PERSISTENCE_CONFIRMATION_MISSING";
+  error.details = details || null;
+  error.table = table;
+  error.operation = operation;
+  return error;
+}
+
+function persistenceFailureMessage(action, error) {
+  const detail = String(error?.message || "").trim();
+  return detail ? `${action} failed: ${detail}` : `${action} failed. Your form is still available to retry.`;
+}
+
 // Real Supabase Auth REST calls — the actual GoTrue endpoints every
 // supabase-js client calls under the hood, hit directly with fetch() the
 // same way sb() hits PostgREST directly. Only meaningful when IS_CONFIGURED
@@ -217,7 +233,15 @@ function sb(table) {
         error.status = res.status;
         error.code = raw?.code;
         error.details = raw?.details;
+        error.table = table;
+        error.operation = method === "POST" ? "CREATE" : method === "PATCH" ? "UPDATE" : method === "DELETE" ? "DELETE" : "READ";
         throw error;
+      }
+      // PostgREST returns an empty representation when no row was affected.
+      // Permanent records are confirmed only after the database returns an
+      // affected row, preventing RLS-filtered mutations from looking saved.
+      if (method !== "GET" && (raw == null || (Array.isArray(raw) && raw.length === 0))) {
+        throw buildConfirmedMutationError({ table, method, status: res.status, details: raw });
       }
       const data = raw;
       return single ? (Array.isArray(data) ? data[0] : data) : data;
@@ -383,6 +407,9 @@ export async function runCompanyTableQuery(table, { select = "*", order } = {}) 
 }
 
 export async function runCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
+  if (!["insert", "update", "delete"].includes(operation)) {
+    return { data: null, error: new Error(`Unsupported company-table mutation: ${operation}`) };
+  }
   let lastError = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -391,9 +418,9 @@ export async function runCompanyTableMutation(table, operation, payload, { match
       if (operation === "insert") {
         res = await query.insert(payload).single().run();
       } else if (operation === "update") {
-        res = await query.eq(matchCol, matchVal).update(payload).run();
+        res = await query.eq(matchCol, matchVal).update(payload).single().run();
       } else if (operation === "delete") {
-        res = await query.eq(matchCol, matchVal).delete().run();
+        res = await query.eq(matchCol, matchVal).delete().single().run();
       }
       return { data: res, error: null };
     } catch (error) {
@@ -35203,27 +35230,33 @@ function PosShiftPanel({ transactions, currentUser }) {
     if (isNaN(f) || f < 0) { notify("Enter the counted opening float.", "error"); return; }
     if (open) { notify("A shift is already open — close it first. One drawer, one shift.", "error"); return; }
     const row = { id: `SH-${Date.now()}`, cashier: currentUser?.name || "Cashier", openingFloat: f, countedCash: null, status: "Open", openedAt: new Date().toISOString(), closedAt: null };
-    shifts.setRows((prev) => [row, ...prev]);
-    setFloatDraft("");
-    notify(`Shift opened by ${row.cashier} — float TZS ${money(f)}k.`);
     if (IS_CONFIGURED) {
       try {
         const header = await sb("pos_shifts").insert({ cashier: row.cashier, opening_float: f, status: "Open", opened_at: row.openedAt }).single().run();
-        if (header?.id) shifts.setRows((prev) => prev.map((s) => (s.id === row.id ? { ...s, dbId: header.id } : s)));
-      } catch (_e) { notify("Opened locally, but the server update failed.", "error"); }
+        shifts.setRows((prev) => [{ ...row, id: header.id, dbId: header.id }, ...prev]);
+      } catch (error) { notify(persistenceFailureMessage("Opening the shift", error), "error"); return; }
+    } else {
+      shifts.setRows((prev) => [row, ...prev]);
     }
+    setFloatDraft("");
+    notify(`Shift opened by ${row.cashier} — float TZS ${money(f)}k.`);
   }
 
   async function addMove() {
     const amt = Number(move.amount);
     if (!open || isNaN(amt) || amt <= 0) { notify("Enter an amount above zero.", "error"); return; }
     const row = { id: `CM-${Date.now()}`, shiftId: open.dbId || open.id, kind: move.kind, amount: amt, reason: move.reason.trim() };
-    moves.setRows((prev) => [row, ...prev]);
+    if (IS_CONFIGURED) {
+      if (!open.dbId) { notify("The active shift is not confirmed on the server. Please retry opening it.", "error"); return; }
+      try {
+        const header = await sb("pos_cash_movements").insert({ shift_id: open.dbId, kind: row.kind, amount: amt, reason: row.reason || null }).single().run();
+        moves.setRows((prev) => [{ ...row, id: header.id, dbId: header.id, shiftId: header.shift_id || row.shiftId }, ...prev]);
+      } catch (error) { notify(persistenceFailureMessage("Recording the cash movement", error), "error"); return; }
+    } else {
+      moves.setRows((prev) => [row, ...prev]);
+    }
     setMove({ kind: move.kind, amount: "", reason: "" });
     notify(`${row.kind} of TZS ${money(amt)}k recorded — expected cash updated.`);
-    if (IS_CONFIGURED && open.dbId) {
-      try { await sb("pos_cash_movements").insert({ shift_id: open.dbId, kind: row.kind, amount: amt, reason: row.reason || null }).run(); } catch (_e) { notify("Recorded locally, but the server update failed.", "error"); }
-    }
   }
 
   function printZReport(shiftData, salesData, movesData, co) {
@@ -35259,15 +35292,18 @@ function PosShiftPanel({ transactions, currentUser }) {
     if (!open || variance === null) { notify("Count the drawer first — a shift closed without a count proves nothing.", "error"); return; }
     const closedAt = new Date().toISOString();
     const verdict = variance === 0 ? "balanced exactly" : variance < 0 ? `SHORT by TZS ${money(Math.abs(variance))}k` : `OVER by TZS ${money(variance)}k`;
+    if (IS_CONFIGURED) {
+      if (!open.dbId) { notify("The active shift is not confirmed on the server. Please retry opening it.", "error"); return; }
+      try {
+        await sb("pos_shifts").eq("id", open.dbId).update({ status: "Closed", counted_cash: counted, closed_at: closedAt }).single().run();
+      } catch (error) { notify(persistenceFailureMessage("Closing the shift", error), "error"); return; }
+    }
     // Auto-print Z-Report on close
     printZReport({open, expected, variance, counted, payIns, payOuts}, sales, mine, window.__smartManagerCompany||{});
     shifts.setRows((prev) => prev.map((s) => (s.id === open.id ? { ...s, status: "Closed", countedCash: counted, closedAt } : s)));
     notify(`Shift closed — drawer ${verdict}. Z-Report printed.`, variance === 0 ? "success" : "error");
     logAudit("POS shift closed", "Point of Sale", `${open.cashier}: expected ${money(Math.round(expected))}k, counted ${money(counted)}k — ${verdict}`, currentUser?.name || "Cashier");
     setCountDraft("");
-    if (IS_CONFIGURED && open.dbId) {
-      try { await sb("pos_shifts").eq("id", open.dbId).update({ status: "Closed", counted_cash: counted, closed_at: closedAt }).run(); } catch (_e) { notify("Closed locally, but the server update failed.", "error"); }
-    }
   }
 
   const Row = ({ label, value, strong }) => (

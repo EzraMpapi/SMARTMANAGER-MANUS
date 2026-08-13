@@ -200,6 +200,40 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("requires confirmed Supabase rows for CREATE, UPDATE, and DELETE mutations", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse([], 201));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const insert = await runCompanyTableMutation("pos_shifts", "insert", { cashier: "Asha", opening_float: 50000 });
+    expect(insert.data).toBeNull();
+    expect(insert.error).toMatchObject({ code: "PERSISTENCE_CONFIRMATION_MISSING", table: "pos_shifts", operation: "CREATE" });
+
+    fetchMock.mockResolvedValueOnce(jsonResponse([], 200)).mockResolvedValueOnce(jsonResponse([], 200));
+    const update = await runCompanyTableMutation("pos_shifts", "update", { status: "Closed" }, { matchVal: "shift-1" });
+    const remove = await runCompanyTableMutation("pos_shifts", "delete", null, { matchVal: "shift-1" });
+    expect(update.error).toMatchObject({ code: "PERSISTENCE_CONFIRMATION_MISSING", operation: "UPDATE" });
+    expect(remove.error).toMatchObject({ code: "PERSISTENCE_CONFIRMATION_MISSING", operation: "DELETE" });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps confirmed-response enforcement and original server diagnostics in the shared builder", () => {
+    expect(dashboardSource).toContain("PERSISTENCE_CONFIRMATION_MISSING");
+    expect(dashboardSource).toContain("error.table = table");
+    expect(dashboardSource).toContain("error.operation =");
+    expect(dashboardSource).toContain('update(payload).single().run()');
+    expect(dashboardSource).toContain('delete().single().run()');
+  });
+
+  it("does not create or close a POS shift in UI state until Supabase confirms the row", () => {
+    const posSource = dashboardSource.slice(dashboardSource.indexOf("function PosShiftPanel"), dashboardSource.indexOf("function Pos(", dashboardSource.indexOf("function PosShiftPanel")));
+    expect(posSource).toContain("persistenceFailureMessage(\"Opening the shift\", error)");
+    expect(posSource).toContain("persistenceFailureMessage(\"Closing the shift\", error)");
+    expect(posSource).toContain('insert({ cashier: row.cashier, opening_float: f, status: "Open", opened_at: row.openedAt }).single().run()');
+    expect(posSource).toContain('update({ status: "Closed", counted_cash: counted, closed_at: closedAt }).single().run()');
+    expect(posSource).not.toContain("Opened locally, but the server update failed.");
+    expect(posSource).not.toContain("Closed locally, but the server update failed.");
+  });
+
   it("assembles chart sections and serializes them as escaped CSV", () => {
     const sections = buildDashboardChartSections({
       kpis: [{ metric: "Pipeline", value: "TZS 125,700k", detail: "6 open deals" }],
