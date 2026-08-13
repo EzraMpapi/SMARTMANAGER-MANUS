@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, { lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef } from "react";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase,
   Factory, Truck, Megaphone, Store, FileText, Brain, Settings,
@@ -24,12 +24,16 @@ import {
   PieChart as RPieChart, Pie, Legend,
   RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
-import * as XLSX from "xlsx";
-import { jsPDF } from "jspdf";
 import { trpc } from "./lib/trpc";
-import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
-import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
+
+// Optional panels and export libraries do not block the core operational
+// workspace. Load them only when the user opens or requests the capability.
+const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer").then((module) => ({ default: module.DashboardPreferencesDrawer })));
+const LazyWorkspacePresenceBadge = lazy(() => import("./components/WorkspacePresenceBadge").then((module) => ({ default: module.WorkspacePresenceBadge })));
+let xlsxModulePromise;
+const loadXlsx = () => (xlsxModulePromise ||= import("xlsx"));
+const loadJsPdf = () => import("jspdf").then((module) => module.jsPDF);
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -4962,7 +4966,8 @@ export function buildDashboardExportFilterSummary({ startDate = "", endDate = ""
   return `${activeModules.length === 5 ? "All modules" : activeModules.join(", ") || "Executive KPIs only"} · ${dates}`;
 }
 
-export function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", filterSummary = "All modules · All available dates", sections = [] } = {}) {
+export async function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", filterSummary = "All modules · All available dates", sections = [] } = {}) {
+  const jsPDF = await loadJsPdf();
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 36;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -5329,7 +5334,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   const exportFilterSummary = useMemo(() => buildDashboardExportFilterSummary({ startDate: exportStartDate, endDate: exportEndDate, enabledModules: exportModules }), [exportStartDate, exportEndDate, exportModules]);
 
-  function exportDashboard(format) {
+  async function exportDashboard(format) {
     if (exportBusy) return;
     setExportBusy(format);
     try {
@@ -5339,7 +5344,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         downloadDashboardCsv(filteredExportSections, `${base}.csv`);
         notify("Filtered dashboard chart data downloaded as CSV.");
       } else {
-        createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], filterSummary: exportFilterSummary, sections: filteredExportSections }).save(`${base}.pdf`);
+        const pdf = await createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], filterSummary: exportFilterSummary, sections: filteredExportSections });
+        pdf.save(`${base}.pdf`);
         notify("Filtered dashboard chart data downloaded as PDF.");
       }
     } catch (_e) {
@@ -5544,7 +5550,11 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   return (
     <div className={preferences.compactDensity ? "space-y-3" : "space-y-5"}>
       {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
-      <DashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
+      {preferencesDrawerOpen && (
+        <Suspense fallback={null}>
+          <LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
+        </Suspense>
+      )}
 
       {/* ══════════════════ COMMAND STRIP ══════════════════ */}
       <div className="rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 55%,#16A34A 130%)"}}>
@@ -6981,8 +6991,9 @@ function DataImportPanel({ type, onClose, onImport }) {
     setError(null);
     setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
+        const XLSX = await loadXlsx();
         const workbook = XLSX.read(evt.target.result, { type: "binary" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const raw = XLSX.utils.sheet_to_json(sheet, { defval: "" });
@@ -21091,8 +21102,10 @@ function exportCSV(filename, headers, rows) {
   notify(`Exported ${filename}`);
 }
 
-// Real .xlsx via SheetJS — an actual spreadsheet file, not a renamed CSV.
-function exportExcel(filename, sheetName, headers, rows) {
+// Real .xlsx via SheetJS — an actual spreadsheet file, loaded only when a
+// spreadsheet import or export is requested.
+async function exportExcel(filename, sheetName, headers, rows) {
+  const XLSX = await loadXlsx();
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.slice(0, 31)); // Excel's own 31-char sheet name limit
@@ -21258,7 +21271,14 @@ function buildTableHtml(title, headers, rows) {
 // is available in this environment (see the two export functions above).
 function ExportMenu({ title, filename, sheetName, headers, rows }) {
   const [open, setOpen] = useState(false);
-  function run(fn) { fn(); setOpen(false); }
+  async function run(fn) {
+    try {
+      await fn();
+      setOpen(false);
+    } catch (_error) {
+      notify("Export failed — please try again.", "error");
+    }
+  }
   const html = buildTableHtml(title, headers, rows);
 
   return (
@@ -22459,7 +22479,7 @@ function ScheduledReports({ invoices, inventory, expensesHook, company, schedule
 
     const html = buildTableHtml(title, headers, rows2);
     if (schedule.format === "CSV") exportCSV(`${filename}.csv`, headers, rows2);
-    else if (schedule.format === "Excel") exportExcel(`${filename}.xlsx`, sheetName, headers, rows2);
+    else if (schedule.format === "Excel") await exportExcel(`${filename}.xlsx`, sheetName, headers, rows2);
     else if (schedule.format === "Word") exportWord(`${filename}.doc`, title, html);
     else printAsPDF(title, html);
 
@@ -23070,8 +23090,9 @@ function BankStatementImport({ invoices, expenses }) {
     if (!file) return;
     setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
+        const XLSX = await loadXlsx();
         const workbook = XLSX.read(evt.target.result, { type: "binary" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -33575,10 +33596,11 @@ function MarketplaceSection({ enabledModules, onToggleModule, canManage }) {
 function DataExportManager({ exportData, company }) {
   const [busy, setBusy] = useState(false);
 
-  function exportAll() {
+  async function exportAll() {
     if (busy) return;
     setBusy(true);
     try {
+      const XLSX = await loadXlsx();
       const wb = XLSX.utils.book_new();
       const addSheet = (name, headers, rows) => {
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...rows]), name.slice(0, 31));
@@ -37610,6 +37632,7 @@ function LoginPage({ onAuthenticated, onSetupRequired, onSwitchToSignup }) {
           email: result.user.email,
           accessToken: result.access_token,
           fullName: result.user.user_metadata?.full_name || result.user.user_metadata?.name || "",
+          setupRequired: true,
         });
         return;
       }
@@ -38087,6 +38110,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [joinCode, setJoinCode] = useState("");
   const [joinRole, setJoinRole] = useState("Employee");
   const [customerRef, setCustomerRef] = useState("");
+  const isCompanyRecovery = Boolean(oauthUser.setupRequired);
 
   function setCompanyField(key, val) { setCompany((c) => ({ ...c, [key]: val })); }
   function toggleModule(id) {
@@ -38144,8 +38168,9 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         </div>
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-slate-200/60 p-6 sm:p-8 space-y-5">
           <div>
-            <h2 className="text-[18px] font-semibold text-[#111827] mb-1">One more step, {fullName.split(" ")[0] || "there"}</h2>
-            <p className="text-[13px] text-slate-500">Signed in as {oauthUser.email} — now set up your organization.</p>
+            <h2 className="text-[18px] font-semibold text-[#111827] mb-1">{isCompanyRecovery ? "Finish company setup" : `One more step, ${fullName.split(" ")[0] || "there"}`}</h2>
+            <p className="text-[13px] text-slate-500">{isCompanyRecovery ? `Your verified account (${oauthUser.email}) is not linked to a company yet. Create one or enter a trusted company join code to continue.` : `Signed in as ${oauthUser.email} — now set up your organization.`}</p>
+            {isCompanyRecovery && <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-[12px] leading-relaxed text-emerald-900"><ShieldCheck size={14} className="inline mr-1.5 -mt-0.5" />Your organization is assigned only by the secure setup action below. No company access is granted until you complete it.</div>}
           </div>
 
           <FormField label="Your name" required><input className={inputClass} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" /></FormField>
@@ -45845,7 +45870,7 @@ function SmartManager() {
           // different from an invalid or expired one. Route to finish
           // setup instead of discarding a session that authenticated
           // correctly.
-          setOauthPendingUser({ id: resolved.user.id, email: resolved.user.email, accessToken: activeToken, fullName: resolved.user.user_metadata?.full_name || resolved.user.user_metadata?.name || "" });
+          setOauthPendingUser({ id: resolved.user.id, email: resolved.user.email, accessToken: activeToken, fullName: resolved.user.user_metadata?.full_name || resolved.user.user_metadata?.name || "", setupRequired: true });
           setAuthChecking(false);
           return;
         }
@@ -46474,7 +46499,9 @@ function SmartManager() {
                 {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
               </button>
             )}
-            <WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} />
+            <Suspense fallback={null}>
+              <LazyWorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} />
+            </Suspense>
             {/* ── Dark mode toggle ── */}
             <button
               onClick={()=>setDarkMode(d=>!d)}

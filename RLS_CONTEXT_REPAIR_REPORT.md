@@ -19,3 +19,9 @@ Focused dashboard regression tests passed: **39 passed**. A non-watch TypeScript
 The live verifier completed CREATE, READ, UPDATE, and DELETE for `pos_shifts`, `inventory_items`, `crm_contacts`, `finance_expenses`, `sales_invoices`, and `hr_employees`. It then verified `pos_shifts` persistence after a fresh password login, cross-tenant read denial, cross-tenant update denial, and tenant-scoped audit persistence. The controlled users and two QA companies were removed by the cleanup script after the checks.
 
 The `/app` render check advances to the normal sign-in screen without a current client-side error. The terminated build was caused by development-only JSX location instrumentation being applied to the oversized dashboard source during production transformation. `vite.config.ts` now enables that plugin only for the Vite serve command. The full production build now completes successfully; its remaining dashboard chunk-size warning is advisory and does not prevent deployment.
+
+## Onboarding and bundle follow-up
+
+Authenticated users with a valid profile but no database-resolved company now receive explicit company-setup recovery guidance. The message explains that the account is verified, that it must create a company or use a trusted join code, and that tenant access is assigned only by the protected setup RPC.
+
+The preferences drawer, workspace presence badge, PDF export library, and XLSX import/export library now load on demand. The production dashboard entry chunk decreased from 5,279.45 kB to 4,423.33 kB before gzip, while PDF and spreadsheet code are emitted as separate chunks only requested by their related user actions. The core dashboard is still a single large module, so Vite's advisory chunk-size warning remains; deeper component extraction would be a separate, higher-risk refactor.

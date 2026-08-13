@@ -127,6 +127,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("if (!profile || !hasResolvedCompany(profile)) return { user, session: null };");
     expect(dashboardSource).toContain("onSetupRequired({");
     expect(dashboardSource).toContain("onSetupRequired={setOauthPendingUser}");
+    expect(dashboardSource).toContain("setupRequired: true");
+    expect(dashboardSource).toContain("Finish company setup");
   });
 
   it("uses a stored authenticated token or an in-flight refresh for PostgREST rather than presenting the anon key as a user session", () => {
@@ -388,14 +390,22 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(buildDashboardExportFilterSummary({ startDate: "2026-08-01", endDate: "2026-08-12", enabledModules: { finance: true, sales: true, crm: false, inventory: true, operations: true } })).toContain("2026-08-01 → 2026-08-12");
   });
 
-  it("creates a non-empty PDF document for the chart export report", () => {
-    const pdf = createDashboardPdfDocument({
+  it("creates a non-empty PDF document for the chart export report", async () => {
+    const pdf = await createDashboardPdfDocument({
       companyName: "Kilimanjaro Trading Co.",
       periodLabel: "This month",
       sections: [{ title: "Pipeline", rows: [{ stage: "Proposal", deal_count: 2 }] }],
     });
 
     expect(pdf.output("arraybuffer").byteLength).toBeGreaterThan(500);
+  });
+
+  it("defers optional panels and heavyweight export libraries behind explicit lazy boundaries", () => {
+    expect(dashboardSource).toContain('lazy(() => import("./components/DashboardPreferencesDrawer")');
+    expect(dashboardSource).toContain('lazy(() => import("./components/WorkspacePresenceBadge")');
+    expect(dashboardSource).toContain('const loadXlsx = () => (xlsxModulePromise ||= import("xlsx"));');
+    expect(dashboardSource).toContain('const loadJsPdf = () => import("jspdf")');
+    expect(dashboardSource).toContain("export async function createDashboardPdfDocument");
   });
 
   it("exposes filtered CSV/PDF and recurring email-report controls in the command strip", () => {

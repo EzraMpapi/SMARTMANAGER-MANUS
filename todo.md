@@ -317,3 +317,7 @@
 - [x] Exercise the repaired incomplete-company onboarding and post-login persistence flow with controlled authenticated sessions, then remove all QA records.
 - [x] Diagnose and resolve the local Vite production-build termination without changing RLS or the tenant authorization design.
 - [x] Run verification, document outcomes, and publish the follow-up checkpoint.
+
+- [x] Audit and improve the existing-user no-company recovery experience without bypassing protected onboarding RPCs or RLS.
+- [x] Analyze the production bundle and introduce safe module-level lazy loading for heavy non-core dashboard capabilities.
+- [x] Add regression coverage, verify live authentication recovery and bundle output, then publish the optimized release.
