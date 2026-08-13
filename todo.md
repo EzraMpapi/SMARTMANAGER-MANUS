@@ -281,3 +281,11 @@
 - [x] Add regression coverage, verify the enhanced onboarding flow, and publish the confirmation experience update.
 
 - [x] Restart the managed development server after the renewed interruption and confirm the application responds.
+
+- [x] Inventory every Supabase table, relationship, function, trigger, policy, RPC, storage dependency, and application query referenced by the restored ERP codebase.
+- [x] Compare the code-derived inventory with the connected Supabase application schema and write a complete reconstruction plan.
+- [x] Resolve the approved rebuild boundary: recreate all 153 dependent public ERP tables while preserving system-managed and separately identified non-ERP resources.
+- [x] Obtain a final pre-execution confirmation for the irreversible deletion of application-schema objects and application data.
+- [ ] Rebuild the Supabase application schema, tenant-safe functions, triggers, indexes, constraints, and RLS policies from the verified project contract.
+- [ ] Verify live tenant-safe CRUD persistence, reload/login durability, error handling, build, type checks, and regression tests.
+- [ ] Publish the completed database reconstruction report and stable project checkpoint.
