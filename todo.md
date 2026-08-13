@@ -253,17 +253,17 @@
 - [x] Add focused schema regression coverage, run build checks, and publish the completed database release.
 
 - [x] Assess and document the alert schedule, delivery path, and administrator ownership model for schema-drift monitoring.
-- [ ] Implement an idempotent scheduled schema-drift verifier with administrator notifications and durable execution history.
-- [ ] Add claim-aware RLS regression tests that exercise tenant and role boundaries with safely gated real Supabase JWTs.
-- [ ] Convert the `/app` ERP entry route to a resilient lazy-loaded module with an accessible loading boundary.
-- [ ] Run focused and full verification, document operations, and publish the hardening release.
+- [x] Implement an idempotent scheduled schema-drift verifier with administrator notifications and durable execution history.
+- [x] Defer live JWT claim-boundary regression execution at user direction; the securely gated tests remain available but are not run with real identities.
+- [x] Convert the `/app` ERP entry route to a resilient lazy-loaded module with an accessible loading boundary.
+- [x] Run focused and full verification, document operations, and publish the hardening release.
 
 - [x] Audit Supabase frontend initialization, Vite environment usage, email/password calls, auth-state handling, and generic error conversion without changing the UI.
 - [x] Repair only the confirmed email/password authentication and signup defects, preserving Google OAuth, Supabase Auth, RLS, and database-derived tenant identity.
 - [x] Add regression coverage for explicit Supabase Auth error handling, session persistence, profile-to-company lookup by authenticated user ID, and confirmation-pending signup behavior.
 - [x] Preserve confirmation-pending signup details locally so a verified email-password login can safely resume company setup without creating a duplicate account.
-- [ ] Validate session-to-profile company resolution and read-only tenant isolation with approved test identities; execute CRM write tests only after explicit authorization.
-- [ ] Run build and full regression checks, document the verified authentication outcome, and publish the safe repair.
+- [x] Defer live approved-identity validation at user direction; no Ezra/Mary data or JWT checks were performed after the stop instruction.
+- [x] Run build and full regression checks, document the verified authentication outcome, and publish the safe repair.
 
 - [x] Inspect active server logs, database reachability, tRPC routes, and Supabase persistence paths to identify remaining real backend failures.
 - [x] Repair confirmed server routing, durable persistence, and authorization defects with minimal architecture-preserving changes.
