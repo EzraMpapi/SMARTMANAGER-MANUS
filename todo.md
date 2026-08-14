@@ -389,3 +389,12 @@
 - [x] Trace and repair the exact workspace-creation failure point while preserving the atomic company/profile ownership RPC, RLS, and international workspace defaults.
 - [x] Trace and repair the Google OAuth callback and session-restoration path so an authenticated user reaches a verified dashboard or explicit onboarding state rather than returning to login.
 - [x] Add focused regression coverage, production configuration guidance, browser validation, full tests, and production-build validation before publishing the authentication-flow repair.
+- [ ] Audit existing Supabase Auth, Resend/server email delivery, templates, callbacks, invitations, notifications, invoices, and deployment secrets against the supplied transactional-email requirements.
+- [ ] Determine the supplied credential’s provider compatibility and configure only the necessary server-side secret without exposing it to client code, repository files, or logs.
+- [ ] Repair or extend the existing transactional-email paths for supported application flows without creating duplicate email systems or bypassing Supabase Auth.
+- [ ] Add focused delivery/error-handling tests, production configuration guidance, full tests, build validation, and an honest delivery-status report before publishing.
+- [ ] Reuse the existing server-side Resend provider for supported application transactional emails and leave Supabase Auth SMTP configuration ready for the user’s later provider credentials.
+- [ ] Remove browser-side SMTP credential persistence and false sent-state behavior from the manual Email Center, replacing it with a verified tenant-scoped server delivery path.
+- [x] Remove email-confirmation gating from password account creation so successful signup proceeds to a clear congratulatory login state without relying on Resend or another transactional email provider.
+- [x] Preserve OAuth, password recovery, reset-password, tenant onboarding, error handling, and authenticated session safety while changing the direct-signup flow.
+- [x] Add regression tests, browser validation, full-suite and production-build checks, then publish the no-confirmation account-creation update.

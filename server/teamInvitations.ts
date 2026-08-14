@@ -6,6 +6,7 @@ import { teamInvitations, type TeamInvitation } from "../drizzle/schema";
 import { getDb } from "./db";
 import { ENV } from "./_core/env";
 import { resolveVerifiedProfile } from "./aiApprovals";
+import { sendTransactionalEmail } from "./transactionalEmail";
 
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const INVITATION_MANAGER_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator", "HR Manager"]);
@@ -68,20 +69,9 @@ function serializeInvitation(row: TeamInvitation) {
 }
 
 async function sendInvitationEmail({ to, fullName, role, companyName, inviteUrl }: { to: string; fullName: string; role: string; companyName: string; inviteUrl: string }) {
-  if (!ENV.resendApiKey || !ENV.resendFromEmail) throw new Error("Email delivery is not configured.");
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { accept: "application/json", "content-type": "application/json", authorization: `Bearer ${ENV.resendApiKey}` },
-    body: JSON.stringify({
-      from: ENV.resendFromEmail,
-      to: [to],
-      subject: `You’re invited to ${companyName} on Smart Manager`,
-      html: `<p>Hello ${escapeHtml(fullName)},</p><p>You have been invited to join <strong>${escapeHtml(companyName)}</strong> as a <strong>${escapeHtml(role)}</strong> in Smart Manager.</p><p><a href="${escapeHtml(inviteUrl)}">Accept your invitation</a></p><p>This secure invitation expires in seven days. Sign in or create an account with <strong>${escapeHtml(to)}</strong> to continue.</p>`,
-    }),
-  });
-  const body = await response.json().catch(() => ({})) as { id?: string; message?: string };
-  if (!response.ok) throw new Error(body.message || `Email delivery failed (${response.status}).`);
-  return body.id || null;
+  const text = `Hello ${fullName},\n\nYou have been invited to join ${companyName} as ${role} in Smart Manager. Accept your invitation: ${inviteUrl}\n\nThis secure invitation expires in seven days. Sign in or create an account with ${to} to continue.`;
+  const delivered = await sendTransactionalEmail({ to: [to], subject: `You’re invited to ${companyName} on Smart Manager`, text, html: `<p>Hello ${escapeHtml(fullName)},</p><p>You have been invited to join <strong>${escapeHtml(companyName)}</strong> as a <strong>${escapeHtml(role)}</strong> in Smart Manager.</p><p><a href="${escapeHtml(inviteUrl)}">Accept your invitation</a></p><p>This secure invitation expires in seven days. Sign in or create an account with <strong>${escapeHtml(to)}</strong> to continue.</p>`, category: "invitation" });
+  return delivered.deliveryId;
 }
 
 function escapeHtml(value: string) {

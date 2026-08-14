@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import { ENV } from "./_core/env";
 import { getReportScheduleByTaskUid, markReportSent, type ReportDateRange, type ReportFormat, type ReportModules } from "./reportSchedules";
+import { sendTransactionalEmail, workspaceEmailHtml } from "./transactionalEmail";
 
 const STAGES = ["New", "Contacted", "Qualified", "Proposal", "Negotiation", "Won", "Lost"];
 const STATUS_BUCKETS = ["Planned", "In Progress", "Completed", "Cancelled"];
@@ -185,20 +186,7 @@ export async function buildScheduledReportData({ companyId, modules, dateRange }
 }
 
 async function sendViaResend({ to, subject, filename, content, contentType }: { to: string; subject: string; filename: string; content: Buffer; contentType: string }) {
-  if (!ENV.resendApiKey || !ENV.resendFromEmail) throw new Error("Resend email credentials are not configured.");
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { accept: "application/json", "content-type": "application/json", authorization: `Bearer ${ENV.resendApiKey}` },
-    body: JSON.stringify({
-      from: ENV.resendFromEmail,
-      to: [to],
-      subject,
-      html: "<p>Your scheduled BusinessSphere ERP dashboard report is attached.</p><p>This report was generated from live tenant data using the filters saved with your schedule.</p>",
-      attachments: [{ filename, content: content.toString("base64") }],
-    }),
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(`Resend delivery failed (${response.status}): ${body?.message || "unknown error"}`);
+  await sendTransactionalEmail({ to: [to], subject, text: "Your scheduled Smart Manager dashboard report is attached. It was generated from live tenant data using the filters saved with your schedule.", html: workspaceEmailHtml({ title: "Your scheduled dashboard report", preheader: "A Smart Manager report is attached", body: "Your scheduled Smart Manager dashboard report is attached. It was generated from live tenant data using the filters saved with your schedule." }), attachments: [{ filename, content, contentType }], category: "report" });
 }
 
 export async function runScheduledDashboardReport(taskUid: string) {

@@ -20,6 +20,7 @@ const salesDetailSource = readFileSync(new URL("../client/src/components/SalesDe
 const invitationServiceSource = readFileSync(new URL("./teamInvitations.ts", import.meta.url), "utf8");
 const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
 const workspaceAuthMigrationSource = readFileSync(new URL("../supabase_workspace_auth_profile_upsert.sql", import.meta.url), "utf8");
+const passwordAccountProvisioningSource = readFileSync(new URL("./passwordAccountProvisioning.ts", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
@@ -46,6 +47,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(invitationServiceSource).toContain("hashInvitationToken(token)");
     expect(invitationServiceSource).toContain("Sign in with the email address that received this invitation");
     expect(invitationServiceSource).not.toContain("input.companyId");
+  });
+
+  it("does not retain browser SMTP credentials or label a manual email as sent before the server confirms provider acceptance", () => {
+    expect(dashboardSource).toContain("trpc.transactionalEmail.send.useMutation()");
+    expect(dashboardSource).toContain("await sendWorkspaceEmailMutation.mutateAsync");
+    expect(dashboardSource).toContain("Email accepted by the delivery provider");
+    expect(dashboardSource).not.toContain('localStorage.getItem("smtp_cfg")');
+    expect(dashboardSource).not.toContain('localStorage.setItem("smtp_cfg"');
+    expect(dashboardSource).not.toContain("Email opened in your mail client");
+    expect(dashboardSource).toContain("Payment reminder is ready in Collaboration → Email for secure delivery.");
   });
 
   it("uses managed browser-safe Supabase variables instead of a hardcoded project", () => {
@@ -85,15 +96,20 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).not.toContain('setError("Something went wrong — check your connection.")');
   });
 
-  it("keeps recovery, reset, and verification inside the configured Supabase auth boundary", () => {
-    expect(dashboardSource).toContain('emailRedirectTo: authRedirectUrl("signup")');
+  it("keeps recovery and reset inside the configured Supabase auth boundary while password signup uses the server-side confirmed-account procedure", () => {
+    expect(dashboardSource).toContain("trpc.accountRegistration.createConfirmedPasswordAccount.useMutation()");
+    expect(dashboardSource).toContain("directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password })");
+    expect(dashboardSource).not.toContain('`${SUPABASE_URL}/auth/v1/signup`');
+    expect(dashboardSource).not.toContain("onVerificationRequired?.(account.email.trim())");
     expect(dashboardSource).toContain('async function authRequestPasswordRecovery(email)');
     expect(dashboardSource).toContain('`${SUPABASE_URL}/auth/v1/recover`');
-    expect(dashboardSource).toContain('async function authResendVerification(email)');
-    expect(dashboardSource).toContain('`${SUPABASE_URL}/auth/v1/resend`');
     expect(dashboardSource).toContain('async function authUpdatePassword(accessToken, password)');
     expect(dashboardSource).toContain('authScreenFromSearch(window.location.search) === "reset"');
     expect(dashboardSource).toContain("clearStoredAuthSession();");
+    expect(passwordAccountProvisioningSource).toContain("/auth/v1/admin/users");
+    expect(passwordAccountProvisioningSource).toContain("email_confirm: true");
+    expect(passwordAccountProvisioningSource).toContain("REGISTRATION_MAX_ATTEMPTS = 5");
+    expect(passwordAccountProvisioningSource).not.toContain("resend");
   });
 
   it("keeps enterprise onboarding progressive and writes selected module intent through the shared company-module contract", () => {
@@ -101,7 +117,9 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('mode === "create" && step === 3');
     expect(dashboardSource).toContain("<PasswordStrengthMeter password={account.password} />");
     expect(dashboardSource).toContain("companyDefaultsForCountry(val)");
-    expect(dashboardSource).toContain("Workspace confirmed");
+    expect(dashboardSource).toContain("Account created");
+    expect(dashboardSource).toContain("Congratulations — you’re ready.");
+    expect(dashboardSource).toContain("Continue to sign in");
     expect(dashboardSource).toContain("Step 1 of 3 — personal details");
     expect(dashboardSource).toContain("const joinAccountValid");
     expect(dashboardSource).toContain("disabled={busy || !step2Valid}");

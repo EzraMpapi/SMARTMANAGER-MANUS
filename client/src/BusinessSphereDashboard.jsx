@@ -143,22 +143,6 @@ function persistenceFailureMessage(action, error) {
   return detail ? `${action} failed: ${detail}` : `${action} failed. Your form is still available to retry.`;
 }
 
-// Real Supabase Auth REST calls — the actual GoTrue endpoints every
-// supabase-js client calls under the hood, hit directly with fetch() the
-// same way sb() hits PostgREST directly. These calls require IS_CONFIGURED.
-// A configured deployment never falls back to demo authentication; an absent
-// configuration is presented as a truthful setup error rather than a session.
-async function authSignUp(email, password) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify({ email, password, options: { emailRedirectTo: authRedirectUrl("signup") } }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || data.msg || "Sign up failed.");
-  return data; // { access_token, refresh_token, user } once email confirmation is satisfied, or { user } if a project requires confirmation first
-}
-
 function authRedirectUrl(screen) {
   if (typeof window === "undefined") return "";
   const url = new URL(window.location.href);
@@ -13435,10 +13419,10 @@ function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, compa
                         onClick={()=>{
                           const co=window.__smartManagerCompany||{};
                           const bal=lineTotal(inv.items).total-(inv.amountPaid||0);
-                          const subj=encodeURIComponent(`Payment Reminder — Invoice ${inv.id}`);
-                          const body=encodeURIComponent(`Dear ${inv.customer},\n\nThis is a reminder that invoice ${inv.id} for TZS ${money(Math.round(lineTotal(inv.items).total))} (balance: TZS ${money(Math.round(bal))}) is overdue.\n\nPlease arrange payment at your earliest convenience.\n\nKind regards,\n${co.name||"BusinessSphere"}`);
-                          if(inv.customerEmail) window.location.href=`mailto:${inv.customerEmail}?subject=${subj}&body=${body}`;
-                          else { emailBus.push({subject:decodeURIComponent(subj),body:decodeURIComponent(body)}); notify("Open Collaboration → Email to send reminder"); }
+                          const subject=`Payment Reminder — Invoice ${inv.id}`;
+                          const body=`Dear ${inv.customer},\n\nThis is a reminder that invoice ${inv.id} for TZS ${money(Math.round(lineTotal(inv.items).total))} (balance: TZS ${money(Math.round(bal))}) is overdue.\n\nPlease arrange payment at your earliest convenience.\n\nKind regards,\n${co.name||"BusinessSphere"}`;
+                          emailBus.push({ to: inv.customerEmail || "", subject, body });
+                          notify(inv.customerEmail ? "Payment reminder is ready in Collaboration → Email for secure delivery." : "Add the customer email in Collaboration → Email before sending this reminder.");
                         }}
                         className="text-[11px] font-medium text-[#2563EB] border border-[#2563EB]/30 rounded-lg px-2 py-1 hover:bg-[#2563EB]/5 flex items-center gap-1"
                       ><Mail size={11}/> Email</button>
@@ -29820,10 +29804,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   const [starred, setStarred] = useState([]);
   const [selectedEmail, setSel]= useState(null);
   const [busy, setBusy]       = useState(false);
-  const [smtpCfg, setSmtp]    = useState(()=>{
-    try { return JSON.parse(localStorage.getItem("smtp_cfg")||"{}"); } catch{return {};}
-  });
-  const [showSmtp, setShowSmtp] = useState(false);
+  const sendWorkspaceEmailMutation = trpc.transactionalEmail.send.useMutation();
 
   // Listen for external compose trigger
   useEffect(()=>{
@@ -29874,45 +29855,20 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   async function sendEmail() {
     if (!to.trim()||!subject.trim()) { notify("To and Subject are required","error"); return; }
     setBusy(true);
-    const sent = {
-      id:"EML-"+Date.now(), to, cc, bcc, subject, body,
-      sentAt:new Date().toISOString(), from:co.email||currentUser.name,
-      starred:false,
-    };
-
-    if (smtpCfg.host && smtpCfg.user) {
-      // Real SMTP via user-provided config (show placeholder for now)
-      notify("⚠ Server-side SMTP requires a backend proxy — opening email client instead");
-      openMailto();
-    } else {
-      openMailto();
+    try {
+      const delivery = await sendWorkspaceEmailMutation.mutateAsync({ to, cc: cc || undefined, bcc: bcc || undefined, subject, body });
+      const sent = { id: delivery.deliveryId, to, cc, bcc, subject, body, sentAt: delivery.acceptedAt, from:co.email||currentUser.name, starred:false, providerAccepted:true };
+      setSent(s=>[sent,...s]);
+      setDrafts(ds=>ds.filter(d=>d.to!==to||d.subject!==subject));
+      logAudit("Email accepted by provider","Communications",currentUser.name,`To: ${to} · ${subject}`);
+      clearCompose();
+      setFolder("sent");
+      notify(`Email accepted by the delivery provider for ${delivery.recipientCount} recipient${delivery.recipientCount === 1 ? "" : "s"}.`);
+    } catch (sendError) {
+      notify(sendError?.message || "The email provider could not accept this message. No email was sent.", "error");
+    } finally {
+      setBusy(false);
     }
-
-    setSent(s=>[sent,...s]);
-    setDrafts(ds=>ds.filter(d=>d.to!==to||d.subject!==subject));
-    if (IS_CONFIGURED) {
-      try {
-        await sb("emails").insert({
-          to_address:to, cc_address:cc||null, bcc_address:bcc||null,
-          subject, body, direction:"out",
-          sent_at:sent.sentAt, sender:co.email||currentUser.name,
-        }).run();
-      } catch(_){}
-    }
-    logAudit("Email sent","Communications",currentUser.name,`To: ${to} · ${subject}`);
-    clearCompose();
-    setFolder("sent");
-    notify(`Email opened in your mail client — click Send there to deliver to ${to}`);
-    setBusy(false);
-  }
-
-  function openMailto() {
-    const params = new URLSearchParams();
-    if (cc)  params.set("cc",cc);
-    if (bcc) params.set("bcc",bcc);
-    params.set("subject",subject);
-    params.set("body",body);
-    window.location.href = `mailto:${encodeURIComponent(to)}?${params.toString()}`;
   }
 
   function clearCompose() { setTo(""); setCc(""); setBcc(""); setSubject(""); setBody(""); setTmplId("custom"); }
@@ -29969,27 +29925,9 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
           })}
         </div>
 
-        <div className="px-3 py-2 border-t border-slate-100 mt-auto">
-          <button onClick={()=>setShowSmtp(!showSmtp)}
-            className="w-full text-[11px] text-slate-500 font-medium flex items-center gap-1.5 py-1.5 hover:text-slate-700">
-            <Settings size={12}/> SMTP Settings
-          </button>
+        <div className="px-3 py-3 border-t border-slate-100 mt-auto">
+          <p className="flex items-center gap-1.5 text-[10px] leading-4 text-slate-400"><ShieldCheck size={12} className="text-emerald-600"/> Messages are sent only after the server confirms provider acceptance.</p>
         </div>
-
-        {showSmtp && (
-          <div className="px-3 pb-3 space-y-1.5">
-            {[["host","SMTP Host","smtp.gmail.com"],["port","Port","587"],["user","Username",""],["pass","Password",""]].map(([k,l,ph])=>(
-              <div key={k}>
-                <label className="text-[9.5px] font-bold text-slate-500 uppercase">{l}</label>
-                <input type={k==="pass"?"password":"text"}
-                  className="w-full text-[11px] border border-slate-200 rounded px-2 py-1 mt-0.5 outline-none"
-                  placeholder={ph} value={smtpCfg[k]||""}
-                  onChange={e=>{const n={...smtpCfg,[k]:e.target.value};setSmtp(n);localStorage.setItem("smtp_cfg",JSON.stringify(n));}}/>
-              </div>
-            ))}
-            <p className="text-[9.5px] text-slate-400">SMTP sending requires a backend proxy for CORS. Credentials saved locally.</p>
-          </div>
-        )}
       </div>
 
       {/* ── MAIN PANEL ── */}
@@ -30083,9 +30021,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
                 Discard
               </button>
               <div className="flex-1"/>
-              <p className="text-[11px] text-slate-400">
-                {smtpCfg.host?"SMTP configured":"Opens your email client"}
-              </p>
+              <p className="text-[11px] text-slate-400">Server-verified delivery</p>
             </div>
           </div>
         )}
@@ -38022,7 +37958,7 @@ function WorkspaceBrandingControls({ logo, primaryColor, accentColor, onLogoChan
 // path lets a signup browse or search other companies — see the schema
 // comment on companies.join_code for why that is a deliberate privacy
 // boundary, not an oversight.
-function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }) {
+function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [mode, setMode] = useState("create"); // "create" | "join"
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -38034,6 +37970,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
     name: "", category: COMPANY_CATEGORIES[0], country: SIGNUP_COUNTRIES[0], currency: SIGNUP_CURRENCIES[0],
     timezone: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).timezone, website: "", taxId: "", logo: null, brandColor: "#0B5D3B", brandAccentColor: "#16A34A",
   });
+  const directPasswordSignupMutation = trpc.accountRegistration.createConfirmedPasswordAccount.useMutation();
   const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
   const [selectedModules, setSelectedModules] = useState(() => new Set(ONBOARDING_MODULES.map((m) => m.id)));
   const [businessScale, setBusinessScale] = useState("large");
@@ -38075,17 +38012,12 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
     }
 
     setBusy(true);
+    let accountCreated = false;
     try {
       authDebug("Workspace signup started", { mode });
-      const signUpResult = await authSignUp(account.email.trim(), account.password);
-      // A project with email confirmation enabled returns a user but no
-      // session yet; a project with confirmation disabled (the simpler
-      // setup for an internal business tool) returns both immediately.
-      let accessToken = signUpResult.access_token;
-      if (!accessToken) {
-        onVerificationRequired?.(account.email.trim());
-        return;
-      }
+      const signUpResult = await directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password });
+      accountCreated = true;
+      const accessToken = signUpResult.access_token;
       persistAuthSession(signUpResult);
 
       const rpcResult = mode === "create"
@@ -38127,17 +38059,12 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
         try { await sb("profiles").eq("id", signUpResult.user.id).update({ phone: account.phone.trim() }).run(); } catch (_e) { /* non-blocking */ }
       }
 
-      const confirmedSession = {
-        userId: signUpResult.user.id, email: signUpResult.user.email, accessToken,
-        fullName: account.fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
-        customerRef: isPortalRole ? customerRef.trim() : null,
-        company: { id: rpcResult.id, name: rpcResult.name || company.name.trim(), country: company.country, currency: company.currency, timezone: company.timezone, businessScale, logo: company.logo || null, brandColor: company.brandColor, brandAccentColor: company.brandAccentColor },
-        workspaceCreated: mode === "create", workspaceWarning,
-      };
       authDebug("Workspace setup confirmed", { mode, companyId: rpcResult.id });
-      onAuthenticated(confirmedSession);
+      clearStoredAuthSession();
+      setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning });
     } catch (err) {
-      setError(err.message || "Couldn't complete sign up. Please try again.");
+      clearStoredAuthSession();
+      setError(accountCreated ? "Your account was created, but workspace setup could not complete. Please sign in to continue setup." : (err.message || "Couldn't complete sign up. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -38153,7 +38080,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
   const gradientBg = "linear-gradient(160deg, #052614 0%, #0F4D26 35%, #16A34A 70%, #22C55E 100%)";
 
   if (completedWorkspace) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}><div className="w-full max-w-md rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Workspace confirmed</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{completedWorkspace.mode === "create" ? `${completedWorkspace.name} is ready.` : "You’re connected."}</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your secure workspace and selected modules have been prepared. Taking you to your dashboard now.</p>{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<div className="mt-7 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-2/3 rounded-full bg-emerald-600" style={{ animation: "loadingBar 1s ease-in-out infinite" }}/></div></div></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}><div className="w-full max-w-md rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Congratulations — you’re ready.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your Smart Manager account and {completedWorkspace.mode === "create" ? `${completedWorkspace.name} workspace` : "workspace access"} are ready. Sign in with {completedWorkspace.email} to continue.</p>{completedWorkspace.workspaceWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{completedWorkspace.workspaceWarning}</p>}{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div>;
   }
 
   return (
@@ -46597,7 +46524,7 @@ function SmartManager() {
     if (authView === "verify") return <VerificationView email={authContextEmail} onBack={() => navigateAuthView("login")} onResend={authResendVerification} toMessage={toAuthUserMessage} />;
     return authView === "login"
       ? <LoginPage onAuthenticated={(s) => invitationTokenRef.current ? window.location.reload() : setSession(s || { demo: true })} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
-      : <SignupPage onAuthenticated={(s) => { if (invitationTokenRef.current) { window.location.reload(); return; } setSession(s || { demo: true }); if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }} onSwitchToLogin={() => navigateAuthView("login")} onVerificationRequired={(email) => navigateAuthView("verify", email)} />;
+      : <SignupPage onAuthenticated={(s) => { if (invitationTokenRef.current) { window.location.reload(); return; } setSession(s || { demo: true }); if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }} onSwitchToLogin={() => navigateAuthView("login")} />;
   }
 
   // A customer never sees the internal ERP shell at all — not a hidden

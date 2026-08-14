@@ -17,6 +17,8 @@ import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
 import { decideActionApproval, requestActionApproval } from "./aiApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
+import { sendWorkspaceEmail } from "./transactionalEmail";
+import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -34,6 +36,11 @@ function enforceAssistantRateLimit(identity: string) {
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+  accountRegistration: router({
+    createConfirmedPasswordAccount: publicProcedure
+      .input(z.object({ email: z.string().email().max(320), password: z.string().min(1).max(256) }))
+      .mutation(async ({ ctx, input }) => provisionConfirmedPasswordAccount(input, ctx.req.ip || ctx.req.socket.remoteAddress || "unknown")),
+  }),
   ai: router({
     listModels: protectedProcedure.query(async () => {
       try {
@@ -338,6 +345,10 @@ export const appRouter = router({
     resend: publicProcedure.input(z.object({ invitationId: z.string().min(8).max(72) })).mutation(({ ctx, input }) => resendTeamInvitation(ctx.req, input.invitationId)),
     revoke: publicProcedure.input(z.object({ invitationId: z.string().min(8).max(72) })).mutation(({ ctx, input }) => revokeTeamInvitation(ctx.req, input.invitationId)),
     accept: publicProcedure.input(z.object({ token: z.string().min(32).max(128) })).mutation(({ ctx, input }) => acceptTeamInvitation(ctx.req, input.token)),
+  }),
+
+  transactionalEmail: router({
+    send: publicProcedure.input(z.object({ to: z.string().min(3).max(6_000), cc: z.string().max(6_000).optional(), bcc: z.string().max(6_000).optional(), subject: z.string().min(1).max(160), body: z.string().min(1).max(12_000) })).mutation(({ ctx, input }) => sendWorkspaceEmail(ctx.req, input)),
   }),
 
   reportSchedules: router({
