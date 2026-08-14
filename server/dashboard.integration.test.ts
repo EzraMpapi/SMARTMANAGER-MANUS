@@ -21,6 +21,9 @@ const invitationServiceSource = readFileSync(new URL("./teamInvitations.ts", imp
 const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
 const workspaceAuthMigrationSource = readFileSync(new URL("../supabase_workspace_auth_profile_upsert.sql", import.meta.url), "utf8");
 const passwordAccountProvisioningSource = readFileSync(new URL("./passwordAccountProvisioning.ts", import.meta.url), "utf8");
+const brandLogoSource = readFileSync(new URL("../client/src/components/BrandLogo.tsx", import.meta.url), "utf8");
+const enterpriseAuthSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
+const indexHtmlSource = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
@@ -36,6 +39,23 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(appSource).toContain("function isPublicAuthRequest()");
     expect(appSource).toContain('params.get("auth") !== "signup"');
     expect(appSource).toContain("isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />");
+  });
+
+  it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo_0bf4409d.png"');
+    expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
+    expect(brandLogoSource).toContain('width={1254} height={1254}');
+    expect(brandLogoSource).toContain('variant?: "full" | "compact"');
+    expect(homeSource).toContain('import { BrandLogo } from "../components/BrandLogo"');
+    expect(homeSource).toContain('<BrandLogo variant="compact" priority');
+    expect(enterpriseAuthSource).toContain('import { BrandLogo } from "./BrandLogo"');
+    expect(enterpriseAuthSource).toContain('<BrandLogo variant="compact" priority');
+    expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
+    expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
+    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
+    expect(appSource).toContain('<BrandLogo variant="compact" priority');
+    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-official-logo_0bf4409d.png"');
+    expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
   });
 
   it("replaces local team seeds with server-backed invitations whose company and authorization come from the verified profile", () => {

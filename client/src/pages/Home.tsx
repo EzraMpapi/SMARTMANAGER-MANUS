@@ -20,6 +20,7 @@ import {
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { AnimatedGoldMesh } from "../components/AnimatedGoldMesh";
+import { BrandLogo } from "../components/BrandLogo";
 
 const capabilities = [
   { title: "CRM & Sales", description: "Connect customer records, quotations, invoices, and commercial activity in one operating flow.", icon: UsersRound, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
@@ -38,16 +39,7 @@ export default function Home() {
     <div className="min-h-screen overflow-x-hidden bg-[#0B1120] text-[#F8FAFC]">
       {/* Navigation */}
       <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
-        <Link href="/" className="flex items-center gap-3" aria-label="Smart Manager home">
-          <div className="relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[#16A34A] to-[#15803D] text-sm font-black tracking-tight text-white shadow-lg overflow-hidden">
-            <span className="relative z-10">S</span>
-            <div className="absolute inset-0 bg-black/10" />
-          </div>
-          <div>
-            <span className="block text-[16px] font-bold tracking-tight text-white font-heading">{t("brandTitle")}</span>
-            <span className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C9A96E]">{t("brandSubtitle")}</span>
-          </div>
-        </Link>
+        <Link href="/" className="flex items-center" aria-label="Smart Manager home"><BrandLogo variant="compact" priority className="h-12 w-12 shadow-lg sm:h-14 sm:w-14" /></Link>
         <div className="flex items-center gap-4">
           <nav className="hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
             <a href="#capabilities" className="transition-colors hover:text-[#C9A96E]">{t("capabilities")}</a>
@@ -203,10 +195,7 @@ export default function Home() {
 
       <footer className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10">
         <div className="flex flex-col items-center justify-between gap-6 border-t border-white/5 pt-12 md:flex-row">
-          <div className="flex items-center gap-3">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#16A34A] text-[12px] font-black text-white">S</div>
-            <p className="text-[14px] font-bold text-white font-heading">Smart Manager</p>
-          </div>
+          <BrandLogo variant="compact" className="h-11 w-11" />
           <div className="flex items-center gap-2 text-[12px] font-medium text-[#64748B]">
             <img src="https://upload.wikimedia.org/wikipedia/commons/3/38/Flag_of_Tanzania.svg" alt="Tanzania" className="h-3 w-auto rounded-sm" />
             <span>Imetengenezwa Tanzania</span>

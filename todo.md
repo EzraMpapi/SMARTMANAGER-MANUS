@@ -398,3 +398,7 @@
 - [x] Remove email-confirmation gating from password account creation so successful signup proceeds to a clear congratulatory login state without relying on Resend or another transactional email provider.
 - [x] Preserve OAuth, password recovery, reset-password, tenant onboarding, error handling, and authenticated session safety while changing the direct-signup flow.
 - [x] Add regression tests, browser validation, full-suite and production-build checks, then publish the no-confirmation account-creation update.
+- [x] Inspect current branding, authentication, shell, metadata, responsive navigation, and state-component integration points for the supplied Smart Manager logo.
+- [x] Upload the exact supplied logo as the authoritative managed static brand asset and create a reusable accessible responsive BrandLogo component.
+- [x] Integrate the centralized logo into existing authentication, onboarding, application-shell, responsive navigation, loading/error, and browser-branding surfaces without changing business behavior.
+- [x] Add focused branding regression coverage, verify desktop/mobile visuals, run tests and production build, then publish the branding integration.

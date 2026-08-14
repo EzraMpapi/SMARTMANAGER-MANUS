@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { Component, ReactNode } from "react";
+import { BrandLogo } from "./BrandLogo";
 
 interface Props {
   children: ReactNode;
@@ -26,6 +27,7 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex items-center justify-center min-h-screen p-8 bg-background">
           <div className="flex flex-col items-center w-full max-w-2xl p-8">
+            <BrandLogo variant="compact" priority className="mb-5 h-14 w-14" />
             <AlertTriangle
               size={48}
               className="text-destructive mb-6 flex-shrink-0"

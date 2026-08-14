@@ -4,6 +4,7 @@ import { lazy, Suspense } from "react";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { BrandLogo } from "./components/BrandLogo";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { DashboardPreferencesProvider } from "./contexts/DashboardPreferencesContext";
@@ -21,7 +22,7 @@ const BusinessSphereDashboard = lazy(
 function DashboardRouteFallback() {
   return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6" role="status" aria-live="polite">
     <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900/80 p-6 text-center shadow-2xl">
-      <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent" />
+      <BrandLogo variant="compact" priority className="mx-auto h-11 w-11 animate-pulse ring-1 ring-emerald-300/30" />
       <h1 className="mt-4 text-base font-semibold">Preparing Smart Manager</h1>
       <p className="mt-1 text-sm text-slate-400">Loading your secure business workspace.</p>
     </div>

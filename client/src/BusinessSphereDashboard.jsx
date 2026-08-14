@@ -33,6 +33,7 @@ import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDra
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPasswordView, VerificationView } from "./components/EnterpriseAuthViews";
+import { BrandLogo } from "./components/BrandLogo";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 
@@ -37655,22 +37656,10 @@ const SCALE_MODULE_PRESETS = {
   large: ONBOARDING_MODULES.map((m) => m.id),
 };
 
-// The brand mark, extracted once so Login, Signup, and the sidebar (see
-// the shell below) all render the identical logo rather than three
-// separately-drifting copies of the same clip-path hexagon.
-function BrandMark({ size = 80, textSize = 32 }) {
-  return (
-    <div
-      className="flex items-center justify-center shrink-0"
-      style={{
-        width: size, height: size,
-        background: "linear-gradient(135deg, #22C55E, #15803D)",
-        clipPath: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
-      }}
-    >
-      <span className="text-white font-bold" style={{ fontFamily: "'Poppins'", fontSize: textSize }}>S</span>
-    </div>
-  );
+// This adapter preserves the dashboard's existing API while routing every
+// shared product mark to the one official supplied Smart Manager asset.
+function BrandMark({ size = 80 }) {
+  return <BrandLogo variant="compact" priority className="shrink-0" style={{ width: size, height: size }} />;
 }
 
 function AuthTextField({ label, icon: Icon, type = "text", value, onChange, placeholder, rightSlot }) {
@@ -38081,11 +38070,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <svg width="40" height="46" viewBox="0 0 120 140">
-              <defs><linearGradient id="slg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#4ADE80"/><stop offset="100%" stopColor="#16A34A"/></linearGradient></defs>
-              <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="url(#slg)"/>
-              <text x="60" y="76" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="52" fontWeight="900" fontFamily="Poppins,sans-serif">S</text>
-            </svg>
+            <BrandLogo variant="compact" priority className="h-12 w-12 ring-1 ring-white/15 shadow-lg" />
             <div>
               <p className="text-white font-bold text-[18px] leading-tight" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
               <p className="text-white/50 text-[11px] tracking-wide uppercase">Enterprise Edition</p>
@@ -38111,11 +38096,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
           {/* Mobile brand */}
           <div className="flex lg:hidden flex-col items-center mb-7">
-            <svg width="44" height="51" viewBox="0 0 120 140" className="mb-2">
-              <defs><linearGradient id="mslg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#4ADE80"/><stop offset="100%" stopColor="#16A34A"/></linearGradient></defs>
-              <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="url(#mslg)"/>
-              <text x="60" y="76" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="52" fontWeight="900" fontFamily="Poppins,sans-serif">S</text>
-            </svg>
+            <BrandLogo variant="compact" priority className="mb-2 h-12 w-12 shadow-sm" />
             <p className="font-bold text-[#111827] text-[18px]" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
           </div>
 
@@ -46604,22 +46585,9 @@ function SmartManager() {
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
       >
-        <div className="relative px-5 py-5 border-b border-[#F3F4F6] flex items-center justify-between">
+          <div className="relative px-5 py-5 border-b border-[#F3F4F6] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            {/* Hexagonal "S" mark via clip-path — a safe, dependency-free
-                way to recreate the Smart Manager logo's silhouette at
-                sidebar-icon size, where the full logo's circuit-node and
-                bar-chart detailing would be illegible anyway. */}
-            <div
-              className="w-8 h-8 flex items-center justify-center shrink-0"
-              style={{
-                background: "linear-gradient(135deg, #22C55E, #16A34A)",
-                clipPath: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
-                boxShadow: "0 4px 14px rgba(22,163,74,.35)",
-              }}
-            >
-              <span className="text-white text-[15px] font-bold" style={{ fontFamily: "'Poppins'" }}>S</span>
-            </div>
+            <BrandLogo variant="compact" priority className="h-9 w-9 ring-1 ring-emerald-100" />
             <div className="flex flex-col leading-tight">
               <span className="text-[14.5px] font-semibold tracking-tight brand-wordmark" style={{ fontFamily: "'Poppins'" }}>
                 Smart Manager
@@ -46697,6 +46665,7 @@ function SmartManager() {
             >
               <MenuIcon />
             </button>
+            <BrandLogo variant="compact" priority className="h-8 w-8 sm:hidden" />
             <div className="flex items-center gap-2 text-[13px] text-slate-500">
               <Building2 size={14} className="hidden sm:block" />
               <span className="font-medium text-[#111827] truncate max-w-[140px] sm:max-w-none">{company.name}</span>
