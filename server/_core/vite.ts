@@ -8,8 +8,14 @@ import viteConfig from "../../vite.config";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
+    ...(viteConfig.server ?? {}),
     middlewareMode: true,
-    hmr: { server },
+    // The managed preview is served through an HTTPS proxy. Without an
+    // explicit browser-facing transport Vite emits localhost:5173 into the
+    // client, which cannot be reached from a browser outside the sandbox.
+    // Keep the socket on the existing Express HTTP server and let the browser
+    // retain its public preview hostname while using WSS on port 443.
+    hmr: { server, protocol: "wss" as const, clientPort: 443 },
     allowedHosts: true as const,
   };
 

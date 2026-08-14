@@ -357,3 +357,5 @@
 - [x] Implement review and authorization controls that prevent AI-suggested business actions from executing until an authorized user explicitly approves them.
 - [x] Persist tenant-scoped approval decisions and audit metadata without exposing or trusting browser-supplied authorization claims.
 - [x] Add automated authorization-boundary tests, production validation, and publish the AI approval workflow.
+
+- [x] Diagnose and fix the Vite WebSocket/HMR connection failure in the managed development preview without changing production routing.
