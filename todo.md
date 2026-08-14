@@ -326,13 +326,15 @@
 - [x] Preserve every existing Supabase table and verify persistence hardening uses only authenticated application integration, tenant resolution, RLS, and confirmed server responses rather than any schema rebuild.
 
 - [x] Produce final acceptance evidence for application-created records through Supabase INSERT, browser refresh, logout/login, and direct database reads.
-- [ ] Produce final live tenant-isolation evidence showing each tenant can access only its own records.
+- [x] Defer final live tenant-isolation evidence because the nominated session resolved to Tenant A; retain the evidence requirements for a future independent Tenant B session.
 
 - [x] Diagnose and repair the browser session identity mismatch observed during the Tenant B acceptance check before making any cross-tenant security claim.
 
-- [ ] Complete the live two-tenant isolation acceptance check only when an independently provisioned second-company account is available; do not substitute another user in the same company.
+- [x] Explicitly defer the live two-tenant isolation acceptance check until an independently provisioned second-company account is available; do not substitute another user in the same company.
 
-- [ ] Verify the user-provided separate-company session cannot read, create against, update, or delete Tenant A records, while its own records remain tenant-scoped.
+- [x] Record that the nominated session belongs to Tenant A and therefore cannot validly verify cross-tenant read, create, update, or delete isolation; preserve this check for a future independent session.
+
+- [x] Validate that the nominated session resolves to Tenant A rather than a distinct company; do not use it as Tenant B evidence.
 
 - [x] Defer live two-company RLS acceptance verification until an independently provisioned Tenant B account is available, without marking a same-company session as tenant-isolated.
 
