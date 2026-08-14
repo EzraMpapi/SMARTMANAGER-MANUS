@@ -16,6 +16,7 @@ import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns,
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
 import { decideActionApproval, requestActionApproval } from "./aiApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
+import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -329,6 +330,14 @@ export const appRouter = router({
       }).nullable().optional(),
       removeLogo: z.boolean().optional(),
     })).mutation(({ ctx, input }) => saveWorkspaceBranding(ctx.req, input)),
+  }),
+
+  teamInvitations: router({
+    list: publicProcedure.query(({ ctx }) => listTeamInvitations(ctx.req)),
+    create: publicProcedure.input(z.object({ fullName: z.string().min(2).max(120), email: z.string().email().max(320), role: z.string().min(2).max(80) })).mutation(({ ctx, input }) => createTeamInvitation(ctx.req, input)),
+    resend: publicProcedure.input(z.object({ invitationId: z.string().min(8).max(72) })).mutation(({ ctx, input }) => resendTeamInvitation(ctx.req, input.invitationId)),
+    revoke: publicProcedure.input(z.object({ invitationId: z.string().min(8).max(72) })).mutation(({ ctx, input }) => revokeTeamInvitation(ctx.req, input.invitationId)),
+    accept: publicProcedure.input(z.object({ token: z.string().min(32).max(128) })).mutation(({ ctx, input }) => acceptTeamInvitation(ctx.req, input.token)),
   }),
 
   reportSchedules: router({

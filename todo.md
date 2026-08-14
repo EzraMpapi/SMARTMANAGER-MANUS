@@ -380,3 +380,8 @@
 - [x] Replace the remaining six-character signup placeholder so every account-creation path accurately communicates the enterprise password policy.
 - [x] Add tenant-safe self-service organization branding to workspace setup, including validated custom-logo upload, saved brand colors, accessible previews, tests, and release validation.
 - [x] Correct the workspace-branding control’s missing upload icon reference discovered during live onboarding validation.
+- [x] Assess existing team membership, invitation, email delivery, onboarding, and dashboard-code boundaries for a secure invitation service and smaller auth-route payload.
+- [x] Implement tenant-scoped server-backed team invitations with role authorization, expiry, revocation, delivery, and acceptance controls.
+- [x] Add optional invitation management to workspace onboarding and ongoing workspace administration.
+- [x] Reduce the initial public authentication-route payload with a safe smaller lazy-loaded dashboard boundary while preserving existing features and routes.
+- [x] Add security, invitation-delivery, code-splitting, browser, full-test, and production-build validation before publishing the enhancement.

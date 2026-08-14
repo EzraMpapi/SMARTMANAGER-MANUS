@@ -32927,16 +32927,13 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
 }
 
 function TeamManagement({ currentUser, canManage }) {
-  const TEAM_SEED = [
-    { id:"USR-001", name:"EzyMP",          email:"admin@businesssphere.co.tz",      role:"Super Administrator", status:"Active",  lastSeen:"Just now",   avatar:"E" },
-    { id:"USR-002", name:"Grace Mwangi",   email:"grace@businesssphere.co.tz",      role:"Finance Manager",    status:"Active",  lastSeen:"2 hours ago",avatar:"G" },
-    { id:"USR-003", name:"John Ochieng",   email:"john@businesssphere.co.tz",       role:"HR Manager",         status:"Active",  lastSeen:"1 day ago",  avatar:"J" },
-    { id:"USR-004", name:"Amina Hassan",   email:"amina@businesssphere.co.tz",      role:"Sales Representative",status:"Active", lastSeen:"3 days ago", avatar:"A" },
-    { id:"USR-005", name:"Peter Kamau",    email:"peter@businesssphere.co.tz",      role:"Warehouse Staff",    status:"Inactive",lastSeen:"2 weeks ago",avatar:"P" },
-  ];
-  const [members, setMembers] = useState(TEAM_SEED);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name:"", email:"", role:"Sales Representative" });
+  const utils = trpc.useUtils();
+  const invitationQuery = trpc.teamInvitations.list.useQuery(undefined, { enabled: IS_CONFIGURED && canManage });
+  const createInvitation = trpc.teamInvitations.create.useMutation();
+  const resendInvitation = trpc.teamInvitations.resend.useMutation();
+  const revokeInvitation = trpc.teamInvitations.revoke.useMutation();
 
   const ROLE_OPTIONS = ["Super Administrator","Finance Manager","HR Manager","Sales Manager","Sales Representative","Warehouse Staff","Accountant","Viewer"];
 
@@ -32951,63 +32948,83 @@ function TeamManagement({ currentUser, canManage }) {
     "Viewer":              "#94A3B8",
   };
 
-  function sendInvite() {
-    if (!inviteForm.name || !inviteForm.email) return;
-    const row = { ...inviteForm, id:docId("USR"), status:"Invited", lastSeen:"Never", avatar:inviteForm.name.charAt(0).toUpperCase() };
-    setMembers(p => [...p, row]);
-    setInviteForm({ name:"", email:"", role:"Sales Representative" });
-    setShowInvite(false);
-    notify("Invitation sent to "+inviteForm.email);
+  async function sendInvite() {
+    if (!inviteForm.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteForm.email.trim())) { notify("Enter a teammate name and valid email address.", "error"); return; }
+    try {
+      const result = await createInvitation.mutateAsync({ fullName: inviteForm.name.trim(), email: inviteForm.email.trim(), role: inviteForm.role });
+      setInviteForm({ name:"", email:"", role:"Sales Representative" });
+      setShowInvite(false);
+      await utils.teamInvitations.list.invalidate();
+      notify(result.delivered ? `Invitation sent to ${result.invitation.email}.` : `Invitation created, but email delivery needs attention: ${result.deliveryError}`, result.delivered ? "success" : "error");
+    } catch (error) { notify(error?.message || "The invitation could not be created.", "error"); }
   }
+
+  async function resendInvite(invitationId) {
+    try {
+      const result = await resendInvitation.mutateAsync({ invitationId });
+      await utils.teamInvitations.list.invalidate();
+      notify(result.delivered ? "Invitation email resent." : `Invitation updated, but email delivery needs attention: ${result.deliveryError}`, result.delivered ? "success" : "error");
+    } catch (error) { notify(error?.message || "The invitation could not be resent.", "error"); }
+  }
+
+  async function revokeInvite(invitationId) {
+    try { await revokeInvitation.mutateAsync({ invitationId }); await utils.teamInvitations.list.invalidate(); notify("Invitation revoked."); }
+    catch (error) { notify(error?.message || "The invitation could not be revoked.", "error"); }
+  }
+
+  const invitations = invitationQuery.data || [];
+  const pending = invitations.filter((invitation) => invitation.status === "pending" || invitation.status === "delivery_failed");
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex gap-2 text-[12px] font-medium text-slate-500">
-          <span className="bg-green-50 text-green-700 px-2.5 py-0.5 rounded-full font-semibold">{members.filter(m=>m.status==="Active").length} Active</span>
-          <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">{members.filter(m=>m.status==="Invited").length} Pending</span>
-          <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">{members.filter(m=>m.status==="Inactive").length} Inactive</span>
+          <span className="bg-green-50 text-green-700 px-2.5 py-0.5 rounded-full font-semibold">1 signed-in member</span>
+          <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">{pending.length} pending</span>
         </div>
         {canManage && <button onClick={()=>setShowInvite(v=>!v)} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2 rounded-xl bg-[#16A34A]"><UserPlus size={13}/>Invite Member</button>}
       </div>
 
+      <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-3"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#0B5D3B] text-[13px] font-bold text-white">{(currentUser?.name || "W").slice(0,1).toUpperCase()}</div><div><p className="text-[12.5px] font-semibold text-slate-800">{currentUser?.name || "Workspace user"}</p><p className="text-[11px] text-slate-500">{currentUser?.role || "Workspace member"}</p></div></div>
+
       {showInvite && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
           <p className="text-[13.5px] font-semibold text-[#111827]">Invite Team Member</p>
+          <p className="text-[11.5px] leading-5 text-slate-500">A seven-day secure link is sent to the teammate’s email. It can only be accepted while signed in with that same address.</p>
           <div className="grid grid-cols-3 gap-3">
             <FormField label="Full Name *"><input className={inputClass} value={inviteForm.name} onChange={e=>setInviteForm({...inviteForm,name:e.target.value})} placeholder="Full name"/></FormField>
             <FormField label="Email *"><input className={inputClass} value={inviteForm.email} onChange={e=>setInviteForm({...inviteForm,email:e.target.value})} placeholder="email@company.co.tz"/></FormField>
-            <FormField label="Role"><select className={inputClass} value={inviteForm.role} onChange={e=>setInviteForm({...inviteForm,role:e.target.value})}>{ROLE_OPTIONS.map(r=><option key={r}>{r}</option>)}</select></FormField>
+            <FormField label="Role"><select className={inputClass} value={inviteForm.role} onChange={e=>setInviteForm({...inviteForm,role:e.target.value})}>{ROLE_OPTIONS.filter(r=>r!=="Super Administrator").map(r=><option key={r}>{r}</option>)}</select></FormField>
           </div>
           <div className="flex gap-2">
-            <button onClick={sendInvite} className="text-[12.5px] font-semibold text-white px-5 py-2.5 rounded-xl bg-[#16A34A]">Send Invite</button>
+            <button onClick={sendInvite} disabled={createInvitation.isPending} className="text-[12.5px] font-semibold text-white px-5 py-2.5 rounded-xl bg-[#16A34A] disabled:opacity-50">{createInvitation.isPending ? "Sending…" : "Send Invite"}</button>
             <button onClick={()=>setShowInvite(false)} className="text-[12.5px] text-slate-500 px-4 py-2.5">Cancel</button>
           </div>
         </div>
       )}
 
       <div className="divide-y divide-slate-100">
-        {members.map(m => {
-          const roleCol = ROLE_COLOR[m.role] || "#6B7280";
-          const statusStyle = m.status==="Active" ? ["#DCFCE7","#15803D"] : m.status==="Invited" ? ["#EFF6FF","#1D4ED8"] : ["#F3F4F6","#6B7280"];
+        {invitationQuery.isLoading && <p className="py-5 text-center text-[12px] text-slate-400">Loading current invitations…</p>}
+        {invitationQuery.isError && <p role="alert" className="py-4 text-[12px] text-red-600">Team invitations could not be loaded. Refresh and try again.</p>}
+        {!invitationQuery.isLoading && !invitationQuery.isError && invitations.length === 0 && <p className="py-5 text-center text-[12px] text-slate-400">No pending server-backed invitations.</p>}
+        {invitations.map(invitation => {
+          const roleCol = ROLE_COLOR[invitation.role] || "#6B7280";
+          const statusStyle = invitation.status === "pending" ? ["#EFF6FF", "#1D4ED8"] : invitation.status === "accepted" ? ["#DCFCE7", "#15803D"] : invitation.status === "delivery_failed" ? ["#FEF2F2", "#B91C1C"] : ["#F3F4F6", "#6B7280"];
           return (
-            <div key={m.id} className="flex items-center gap-3 py-3.5">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-bold text-white shrink-0" style={{background:roleCol}}>{m.avatar}</div>
+            <div key={invitation.id} className="flex items-center gap-3 py-3.5">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-bold text-white shrink-0" style={{background:roleCol}}>{invitation.fullName.charAt(0).toUpperCase()}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-[13.5px] font-semibold text-[#111827]">{m.name}</p>
-                  {m.id === "USR-001" && <span className="text-[9.5px] font-bold bg-[#7C3AED] text-white px-1.5 py-0.5 rounded-full">YOU</span>}
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{background:statusStyle[0],color:statusStyle[1]}}>{m.status}</span>
+                  <p className="text-[13.5px] font-semibold text-[#111827]">{invitation.fullName}</p>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize" style={{background:statusStyle[0],color:statusStyle[1]}}>{invitation.status.replace("_", " ")}</span>
                 </div>
-                <p className="text-[11.5px] text-slate-400 mt-0.5">{m.email} · Last seen: {m.lastSeen}</p>
+                <p className="text-[11.5px] text-slate-400 mt-0.5">{invitation.email} · Expires {new Date(invitation.expiresAt).toLocaleDateString()}</p>
+                {invitation.deliveryError && <p className="mt-1 text-[10.5px] text-red-600">Delivery: {invitation.deliveryError}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg text-white" style={{background:roleCol}}>{m.role}</span>
-                {canManage && m.id !== "USR-001" && (
-                  <button onClick={()=>{setMembers(p=>p.map(u=>u.id===m.id?{...u,status:u.status==="Active"?"Inactive":"Active"}:u));notify(m.name+" "+( m.status==="Active"?"deactivated":"activated"));}} className="text-[11px] text-slate-400 hover:text-slate-600 px-2 py-1 rounded-lg border border-slate-200 hover:border-slate-300">
-                    {m.status==="Active"?"Deactivate":"Activate"}
-                  </button>
-                )}
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg text-white" style={{background:roleCol}}>{invitation.role}</span>
+                {canManage && ["pending", "delivery_failed", "expired"].includes(invitation.status) && <button onClick={()=>resendInvite(invitation.id)} disabled={resendInvitation.isPending} className="text-[11px] text-slate-500 hover:text-slate-700 px-2 py-1 rounded-lg border border-slate-200 hover:border-slate-300 disabled:opacity-50">Resend</button>}
+                {canManage && ["pending", "delivery_failed", "expired"].includes(invitation.status) && <button onClick={()=>revokeInvite(invitation.id)} disabled={revokeInvitation.isPending} className="text-[11px] text-red-500 hover:text-red-700 px-2 py-1 rounded-lg border border-red-100 hover:border-red-200 disabled:opacity-50">Revoke</button>}
               </div>
             </div>
           );
@@ -46041,6 +46058,8 @@ function SmartManager() {
   const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
   const [authContextEmail, setAuthContextEmail] = useState("");
   const [recoveryAccessToken, setRecoveryAccessToken] = useState(null);
+  const invitationTokenRef = useRef(typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "");
+  const acceptInvitationMutation = trpc.teamInvitations.accept.useMutation();
   const [session, setSession] = useState(() => (IS_CONFIGURED ? null : { demo: true }));
   // Always starts true now, in both modes — previously demo mode skipped
   // this state entirely, which meant the branded loading screen below
@@ -46105,6 +46124,15 @@ function SmartManager() {
         }
         let profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
         let profile = profileRows?.[0];
+        if (invitationTokenRef.current && (!profile || !profile.company_id)) {
+          await acceptInvitationMutation.mutateAsync({ token: invitationTokenRef.current });
+          invitationTokenRef.current = "";
+          const inviteUrl = new URL(window.location.href);
+          inviteUrl.searchParams.delete("invite");
+          window.history.replaceState(null, "", `${inviteUrl.pathname}${inviteUrl.search}`);
+          profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
+          profile = profileRows?.[0];
+        }
         // A pre-existing authenticated profile with no company can only be
         // auto-provisioned when this is the first tenant in the deployment.
         // Otherwise the user must use the explicit create/join organization
@@ -46533,8 +46561,8 @@ function SmartManager() {
     if (authView === "reset") return <ResetPasswordView recoveryToken={recoveryAccessToken} onBack={() => navigateAuthView("login")} onUpdate={async (token, password) => { await authUpdatePassword(token, password); clearStoredAuthSession(); }} toMessage={toAuthUserMessage} />;
     if (authView === "verify") return <VerificationView email={authContextEmail} onBack={() => navigateAuthView("login")} onResend={authResendVerification} toMessage={toAuthUserMessage} />;
     return authView === "login"
-      ? <LoginPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
-      : <SignupPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToLogin={() => navigateAuthView("login")} onVerificationRequired={(email) => navigateAuthView("verify", email)} />;
+      ? <LoginPage onAuthenticated={(s) => invitationTokenRef.current ? window.location.reload() : setSession(s || { demo: true })} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
+      : <SignupPage onAuthenticated={(s) => invitationTokenRef.current ? window.location.reload() : setSession(s || { demo: true })} onSwitchToLogin={() => navigateAuthView("login")} onVerificationRequired={(email) => navigateAuthView("verify", email)} />;
   }
 
   // A customer never sees the internal ERP shell at all — not a hidden

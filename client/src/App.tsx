@@ -9,6 +9,10 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { DashboardPreferencesProvider } from "./contexts/DashboardPreferencesContext";
 import Home from "./pages/Home";
 
+const PublicAuthGateway = lazy(
+  // @ts-expect-error The lightweight public auth gateway intentionally remains JavaScript.
+  () => import("./components/PublicAuthGateway"),
+);
 const BusinessSphereDashboard = lazy(
   // @ts-expect-error The preserved single-file dashboard intentionally remains JavaScript.
   () => import("./BusinessSphereDashboard"),
@@ -24,12 +28,18 @@ function DashboardRouteFallback() {
   </main>;
 }
 
+function isPublicAuthRequest() {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.get("auth") !== "signup" && !window.localStorage.getItem("bs_access_token");
+}
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
-      <Route path={"/app"}>{() => <Suspense fallback={<DashboardRouteFallback />}><BusinessSphereDashboard /></Suspense>}</Route>
+      <Route path={"/app"}>{() => <Suspense fallback={<DashboardRouteFallback />}>{isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />}</Suspense>}</Route>
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

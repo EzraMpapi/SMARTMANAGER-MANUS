@@ -17,6 +17,7 @@ const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url)
 const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const salesDetailSource = readFileSync(new URL("../client/src/components/SalesDetailWorkspace.jsx", import.meta.url), "utf8");
+const invitationServiceSource = readFileSync(new URL("./teamInvitations.ts", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
@@ -25,6 +26,24 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(appSource).toContain('aria-live="polite"');
     expect(homeSource.match(/href="\/app"/g)?.length).toBeGreaterThanOrEqual(3);
     expect(homeSource.includes("Launch App") || homeSource.includes("launchApp")).toBe(true);
+  });
+
+  it("loads public auth through a smaller route bundle and retains the ERP shell for active sessions or signup", () => {
+    expect(appSource).toContain("const PublicAuthGateway = lazy");
+    expect(appSource).toContain("function isPublicAuthRequest()");
+    expect(appSource).toContain('params.get("auth") !== "signup"');
+    expect(appSource).toContain("isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />");
+  });
+
+  it("replaces local team seeds with server-backed invitations whose company and authorization come from the verified profile", () => {
+    expect(dashboardSource).toContain("trpc.teamInvitations.list.useQuery");
+    expect(dashboardSource).toContain("trpc.teamInvitations.create.useMutation");
+    expect(dashboardSource).not.toContain("const TEAM_SEED");
+    expect(invitationServiceSource).toContain("const { profile } = await resolveVerifiedProfile(req)");
+    expect(invitationServiceSource).toContain("companyId: profile.company_id");
+    expect(invitationServiceSource).toContain("hashInvitationToken(token)");
+    expect(invitationServiceSource).toContain("Sign in with the email address that received this invitation");
+    expect(invitationServiceSource).not.toContain("input.companyId");
   });
 
   it("uses managed browser-safe Supabase variables instead of a hardcoded project", () => {

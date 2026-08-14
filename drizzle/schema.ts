@@ -50,6 +50,33 @@ export const dashboardReportSchedules = mysqlTable("dashboard_report_schedules",
 export type DashboardReportSchedule = typeof dashboardReportSchedules.$inferSelect;
 export type InsertDashboardReportSchedule = typeof dashboardReportSchedules.$inferInsert;
 
+export const teamInvitations = mysqlTable("team_invitations", {
+  id: int("id").autoincrement().primaryKey(),
+  invitationId: varchar("invitationId", { length: 72 }).notNull().unique(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  fullName: varchar("fullName", { length: 120 }).notNull(),
+  role: varchar("role", { length: 80 }).notNull(),
+  tokenHash: varchar("tokenHash", { length: 128 }).notNull().unique(),
+  status: mysqlEnum("status", ["pending", "accepted", "revoked", "expired", "delivery_failed"]).notNull().default("pending"),
+  invitedByProfileId: varchar("invitedByProfileId", { length: 64 }).notNull(),
+  invitedByRole: varchar("invitedByRole", { length: 80 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  acceptedByProfileId: varchar("acceptedByProfileId", { length: 64 }),
+  deliveryMessageId: varchar("deliveryMessageId", { length: 120 }),
+  deliveryError: varchar("deliveryError", { length: 500 }),
+  emailSentAt: timestamp("emailSentAt"),
+  revokedAt: timestamp("revokedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  companyStatusIdx: index("team_invitation_company_status_idx").on(table.companyId, table.status),
+  emailIdx: index("team_invitation_email_idx").on(table.email),
+  expiresAtIdx: index("team_invitation_expires_at_idx").on(table.expiresAt),
+}));
+
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
+
 export const auditLogs = mysqlTable("audit_logs", {
   id: int("id").autoincrement().primaryKey(),
   actorOpenId: varchar("actorOpenId", { length: 64 }).notNull(),
