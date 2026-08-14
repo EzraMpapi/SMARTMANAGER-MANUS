@@ -15,6 +15,7 @@ import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
 import { decideActionApproval, requestActionApproval } from "./aiApprovals";
+import { saveWorkspaceBranding } from "./workspaceBranding";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -316,6 +317,18 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+  }),
+
+  workspaceBranding: router({
+    save: protectedProcedure.input(z.object({
+      primaryColor: z.string().min(7).max(7),
+      accentColor: z.string().min(7).max(7),
+      logo: z.object({
+        mimeType: z.enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]),
+        base64: z.string().min(4).max(2_800_000),
+      }).nullable().optional(),
+      removeLogo: z.boolean().optional(),
+    })).mutation(({ ctx, input }) => saveWorkspaceBranding(ctx.req, input)),
   }),
 
   reportSchedules: router({

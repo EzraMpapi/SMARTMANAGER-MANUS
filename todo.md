@@ -378,3 +378,5 @@
 - [x] Add focused tests, browser validation, production build validation, and publish the completed redesign.
 - [x] Correct the enterprise signup step-count copy and require the same strong credential validation on the join-company registration path.
 - [x] Replace the remaining six-character signup placeholder so every account-creation path accurately communicates the enterprise password policy.
+- [x] Add tenant-safe self-service organization branding to workspace setup, including validated custom-logo upload, saved brand colors, accessible previews, tests, and release validation.
+- [x] Correct the workspace-branding control’s missing upload icon reference discovered during live onboarding validation.

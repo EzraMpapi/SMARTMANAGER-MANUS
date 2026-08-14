@@ -79,6 +79,19 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).not.toContain('placeholder="Min. 6 characters"');
   });
 
+  it("offers optional organization branding in workspace setup and persists it through the protected save mutation", () => {
+    expect(dashboardSource).toContain("function WorkspaceBrandingControls");
+    expect(dashboardSource).toContain("Optional workspace branding");
+    expect(dashboardSource).toContain("<UploadCloud size={18}");
+    expect(dashboardSource).toContain('accept="image/png,image/jpeg,image/webp,image/svg+xml"');
+    expect(dashboardSource).toContain("file.size > 2 * 1024 * 1024");
+    expect(dashboardSource).toContain("brandAccentColor");
+    expect(dashboardSource).toContain("trpc.workspaceBranding.save.useMutation()");
+    expect(dashboardSource).toContain("workspaceBrandingMutation.mutateAsync({ primaryColor: company.brandColor");
+    expect(dashboardSource).toContain("brand_primary_color: branding.primaryColor");
+    expect(dashboardSource).toContain("brand_accent_color: branding.accentColor");
+  });
+
   it("routes an authenticated profile without a company assignment into company setup before tenant writes", () => {
     expect(dashboardSource).toContain("!profile || !profile.company_id || !profile.companies?.id");
     expect(dashboardSource).toContain("setOauthPendingUser({ id: user.id");

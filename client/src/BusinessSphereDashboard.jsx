@@ -32061,6 +32061,7 @@ function BusinessCardDesigner({ company }) {
 function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast }) {
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
+  const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 
@@ -32069,11 +32070,6 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
   }
 
   async function saveProfile() {
-    setCompany(draft);
-    window.__smartManagerCompany = draft;
-    // Update localStorage so cover + logo survive page refresh
-    try { localStorage.setItem("bs_company_profile", JSON.stringify(draft)); } catch(_e){}
-    notify("Company profile saved ✓");
     if (IS_CONFIGURED) {
       try {
         await sb("companies").eq("id", draft.id).update({
@@ -32081,10 +32077,22 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
           tax_rate: draft.taxRate, timezone: draft.timezone, business_scale: draft.businessScale,
           receipt_width: draft.receiptWidth, receipt_footer: draft.receiptFooter, receipt_show_logo: draft.receiptShowLogo,
         }).run();
+        const branding = await workspaceBrandingMutation.mutateAsync({
+          primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A",
+          logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
+        });
+        draft.logo = branding.logo;
+        draft.brandColor = branding.primaryColor;
+        draft.brandAccentColor = branding.accentColor;
       } catch (e) {
-        notify("Profile saved locally, but the server update failed.", "error");
+        notify("Profile changes were not saved to the server. Please try again.", "error");
+        return;
       }
     }
+    setCompany(draft);
+    window.__smartManagerCompany = draft;
+    try { localStorage.setItem("bs_company_profile", JSON.stringify(draft)); } catch(_e){}
+    notify("Company profile saved ✓");
   }
 
   return (
@@ -32451,6 +32459,9 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                               </span>
                             </div>
                           </div>
+                          <label className="mt-3 block text-[11px] font-semibold text-slate-600">Secondary accent color
+                            <span className="mt-1.5 flex w-full max-w-[180px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"><input type="color" value={draft.brandAccentColor||"#16A34A"} onChange={e=>setField("brandAccentColor",e.target.value.toUpperCase())} className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0" aria-label="Choose secondary accent color"/><span className="font-mono text-[11px] text-slate-500">{draft.brandAccentColor||"#16A34A"}</span></span>
+                          </label>
                         </div>
 
                         {/* Receipt settings */}
@@ -37927,6 +37938,58 @@ function MicrosoftGlyph({ size = 18 }) {
   );
 }
 
+const WORKSPACE_BRAND_SWATCHES = ["#0B5D3B", "#16A34A", "#2563EB", "#7C3AED", "#D97706", "#DC2626", "#0F766E", "#0F172A"];
+
+function workspaceLogoPayload(dataUrl) {
+  if (!dataUrl || !dataUrl.startsWith("data:")) return undefined;
+  const match = /^data:(image\/(?:png|jpeg|webp)|image\/svg\+xml);base64,([A-Za-z0-9+/]+={0,2})$/.exec(dataUrl);
+  if (!match) throw new Error("Choose a PNG, JPEG, WebP, or SVG logo under 2 MB.");
+  return { mimeType: match[1], base64: match[2] };
+}
+
+function WorkspaceBrandingControls({ logo, primaryColor, accentColor, onLogoChange, onPrimaryColorChange, onAccentColorChange }) {
+  const fileRef = useRef(null);
+  const [fileError, setFileError] = useState(null);
+
+  function selectLogo(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!/^(image\/png|image\/jpeg|image\/webp|image\/svg\+xml)$/.test(file.type) || file.size > 2 * 1024 * 1024) {
+      setFileError("Choose a PNG, JPEG, WebP, or SVG logo under 2 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => { setFileError(null); onLogoChange(String(reader.result || "")); };
+    reader.onerror = () => setFileError("The logo could not be read. Please choose another file.");
+    reader.readAsDataURL(file);
+  }
+
+  return <fieldset className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+    <legend className="px-1 text-[12px] font-bold uppercase tracking-[.12em] text-emerald-800">Optional workspace branding</legend>
+    <p className="mt-1 text-[11.5px] leading-5 text-slate-600">Add a logo and select colors now. You can change them later in Settings.</p>
+    <div className="mt-4 flex items-center gap-3">
+      <button type="button" onClick={() => fileRef.current?.click()} className="group relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-emerald-200 bg-white text-emerald-700 transition hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2" aria-label={logo ? "Change organization logo" : "Upload organization logo"}>
+        {logo ? <img src={logo} alt="Organization logo preview" className="h-full w-full object-contain p-2" /> : <UploadCloud size={18} aria-hidden="true" />}
+        {logo && <span className="absolute inset-0 grid place-items-center bg-slate-950/45 text-[9px] font-bold text-white opacity-0 transition group-hover:opacity-100">Change</span>}
+      </button>
+      <div className="min-w-0"><p className="text-[12px] font-semibold text-slate-800">Organization logo</p><p className="mt-0.5 text-[10.5px] leading-4 text-slate-500">PNG, JPG, WebP, or SVG · 2 MB maximum</p>{logo && <button type="button" onClick={() => onLogoChange(null)} className="mt-1 text-[10.5px] font-semibold text-red-600 hover:underline">Remove logo</button>}</div>
+      <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={selectLogo} className="sr-only" />
+    </div>
+    {fileError && <p role="alert" className="mt-3 text-[11px] font-medium text-red-700">{fileError}</p>}
+    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <label className="block text-[11px] font-semibold text-slate-700">Primary color
+        <span className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"><input type="color" value={primaryColor} onChange={(event) => onPrimaryColorChange(event.target.value.toUpperCase())} className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0" aria-label="Choose primary brand color" /><span className="font-mono text-[11px] text-slate-600">{primaryColor}</span></span>
+      </label>
+      <label className="block text-[11px] font-semibold text-slate-700">Accent color
+        <span className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"><input type="color" value={accentColor} onChange={(event) => onAccentColorChange(event.target.value.toUpperCase())} className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0" aria-label="Choose accent brand color" /><span className="font-mono text-[11px] text-slate-600">{accentColor}</span></span>
+      </label>
+    </div>
+    <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Brand color presets">{WORKSPACE_BRAND_SWATCHES.map((color) => <button key={color} type="button" onClick={() => onPrimaryColorChange(color)} className={`h-6 w-6 rounded-full border-2 transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 ${primaryColor === color ? "border-slate-900" : "border-white"}`} style={{ backgroundColor: color }} aria-label={`Use ${color} as primary color`} />)}</div>
+    <div className="mt-4 flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2.5 text-white"><span className="grid h-7 w-7 place-items-center overflow-hidden rounded-lg text-[11px] font-black" style={{ backgroundColor: primaryColor }}>{logo ? <img src={logo} alt="" className="h-full w-full object-contain p-1" /> : "W"}</span><span className="text-[11.5px] font-semibold">Workspace preview</span><span className="ml-auto h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} aria-label={`Accent color ${accentColor}`} /></div>
+  </fieldset>;
+}
+
 // Two real paths, matching how every real multi-tenant business system
 // (Slack, Notion, QuickBooks Online) actually onboards a new customer:
 // found a new company (becomes its first Owner) or join one a teammate
@@ -37944,8 +38007,9 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
   const [account, setAccount] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [company, setCompany] = useState({
     name: "", category: COMPANY_CATEGORIES[0], country: SIGNUP_COUNTRIES[0], currency: SIGNUP_CURRENCIES[0],
-    timezone: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).timezone, website: "", taxId: "",
+    timezone: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).timezone, website: "", taxId: "", logo: null, brandColor: "#0B5D3B", brandAccentColor: "#16A34A",
   });
+  const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
   const [selectedModules, setSelectedModules] = useState(() => new Set(ONBOARDING_MODULES.map((m) => m.id)));
   const [businessScale, setBusinessScale] = useState("large");
   const [firstBranch, setFirstBranch] = useState("");
@@ -38018,6 +38082,15 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
           await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
         } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
       }
+      let brandingWarning = null;
+      if (mode === "create" && rpcResult?.id) {
+        try {
+          const branding = await workspaceBrandingMutation.mutateAsync({ primaryColor: company.brandColor, accentColor: company.brandAccentColor, logo: workspaceLogoPayload(company.logo) });
+          Object.assign(rpcResult, { logo: branding.logo, brand_primary_color: branding.primaryColor, brand_accent_color: branding.accentColor });
+        } catch (brandingError) {
+          brandingWarning = brandingError?.message || "Workspace branding could not be saved. You can retry from Settings.";
+        }
+      }
       if (account.phone.trim()) {
         try { await sb("profiles").eq("id", signUpResult.user.id).update({ phone: account.phone.trim() }).run(); } catch (_e) { /* non-blocking */ }
       }
@@ -38027,7 +38100,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
         fullName: account.fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
         customerRef: isPortalRole ? customerRef.trim() : null, company: rpcResult,
       };
-      setCompletedWorkspace({ name: mode === "create" ? company.name.trim() : "your company", mode });
+      setCompletedWorkspace({ name: mode === "create" ? company.name.trim() : "your company", mode, brandingWarning });
       window.setTimeout(() => onAuthenticated(confirmedSession), 950);
     } catch (err) {
       setError(err.message || "Couldn't complete sign up. Please try again.");
@@ -38046,7 +38119,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
   const gradientBg = "linear-gradient(160deg, #052614 0%, #0F4D26 35%, #16A34A 70%, #22C55E 100%)";
 
   if (completedWorkspace) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}><div className="w-full max-w-md rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Workspace confirmed</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{completedWorkspace.mode === "create" ? `${completedWorkspace.name} is ready.` : "You’re connected."}</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your secure workspace and selected modules have been prepared. Taking you to your dashboard now.</p><div className="mt-7 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-2/3 rounded-full bg-emerald-600" style={{ animation: "loadingBar 1s ease-in-out infinite" }}/></div></div></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}><div className="w-full max-w-md rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Workspace confirmed</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{completedWorkspace.mode === "create" ? `${completedWorkspace.name} is ready.` : "You’re connected."}</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your secure workspace and selected modules have been prepared. Taking you to your dashboard now.</p>{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<div className="mt-7 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-2/3 rounded-full bg-emerald-600" style={{ animation: "loadingBar 1s ease-in-out infinite" }}/></div></div></div>;
   }
 
   return (
@@ -38219,6 +38292,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
                   <input className={inputClass} value={company.timezone} onChange={(e) => setCompanyField("timezone", e.target.value)} placeholder="Africa/Dar_es_Salaam" />
                 </div>
                 <AuthTextField label="First branch name" icon={Building2} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="Head Office" />
+                <WorkspaceBrandingControls logo={company.logo} primaryColor={company.brandColor} accentColor={company.brandAccentColor} onLogoChange={(value) => setCompanyField("logo", value)} onPrimaryColorChange={(value) => setCompanyField("brandColor", value)} onAccentColorChange={(value) => setCompanyField("brandAccentColor", value)} />
                 <button onClick={() => { if (step2Valid) setStep(3); }} disabled={!step2Valid}
                   className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
                   style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
@@ -46054,7 +46128,7 @@ function SmartManager() {
           setAuthChecking(false);
           return;
         }
-        setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo } });
+        setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
       } catch (_e) {
         clearStoredAuthSession();
       } finally {
@@ -46115,7 +46189,7 @@ function SmartManager() {
           receiptWidth: "80mm", receiptFooter: "Thank you for your business!", receiptShowLogo: true,
           logo: null, coverPhoto: null, phone: "", email: "", website: "", address: "", city: "",
           postalCode: "", tin: "", regNumber: "", tagline: "",
-          brandColor: "#16A34A", businessType: "Private Limited Company", foundedYear: "",
+          brandColor: "#0B5D3B", brandAccentColor: "#16A34A", businessType: "Private Limited Company", foundedYear: "",
           description: "", facebook: "", instagram: "", twitter: "", linkedin: "", tiktok: "",
           whatsappBusiness: "", bankName: "", bankAccountName: "", bankAccountNo: "",
           bankBranch: "", bankSwift: "",
@@ -46155,7 +46229,8 @@ function SmartManager() {
     regNumber: "",       // business registration number
     tagline: "",         // shown below company name on receipts
     // Extended branding & identity
-    brandColor: "#16A34A",  // primary brand colour for PDFs and exports
+    brandColor: "#0B5D3B",  // primary brand colour for PDFs and exports
+    brandAccentColor: "#16A34A",
     businessType: "Private Limited Company",
     foundedYear: "",
     description: "",     // company bio for proposals and reports
@@ -46201,6 +46276,7 @@ function SmartManager() {
         businessScale: session.company.businessScale || "large",
         createdAt: session.company.created_at || null,
         receiptWidth: session.company.receiptWidth || "80mm", receiptFooter: session.company.receiptFooter || "", receiptShowLogo: session.company.receiptShowLogo !== false,
+        logo: session.company.logo || null, brandColor: session.company.brandColor || "#0B5D3B", brandAccentColor: session.company.brandAccentColor || "#16A34A",
       });
       setCurrentUser({ name: session.fullName, role: session.role, customerRef: session.customerRef || null });
     }
