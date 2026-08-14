@@ -1,6 +1,5 @@
 import { TRPCError } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
-import { ENV } from "./_core/env";
 import { resolveVerifiedProfile } from "./aiApprovals";
 
 type Attachment = { filename: string; content: Buffer | string; contentType?: string };
@@ -40,29 +39,8 @@ export function workspaceEmailHtml({ title, preheader, body }: { title: string; 
   return `<!doctype html><html><body style="margin:0;background:#f4f7f6;font-family:Inter,Arial,sans-serif;color:#172033"><span style="display:none!important;opacity:0;color:transparent;height:0;width:0">${safePreheader}</span><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:28px 12px;background:#f4f7f6"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden"><tr><td style="background:#0b2d22;padding:22px 28px;color:#ffffff"><strong style="font-size:18px">Smart Manager</strong><span style="display:block;margin-top:4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#a7f3d0">Enterprise ERP</span></td></tr><tr><td style="padding:30px 28px"><h1 style="margin:0 0 14px;font-size:23px;line-height:1.25;color:#111827">${safeTitle}</h1><p style="margin:0;font-size:15px;line-height:1.7;color:#475569">${safeBody}</p></td></tr><tr><td style="padding:18px 28px;border-top:1px solid #e5e7eb;font-size:11px;line-height:1.5;color:#94a3b8">This message was sent by an authorised Smart Manager workspace user. Do not share sensitive credentials by email.</td></tr></table></td></tr></table></body></html>`;
 }
 
-export async function sendTransactionalEmail(input: SendInput) {
-  if (!ENV.resendApiKey || !ENV.resendFromEmail) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Workspace email delivery is not configured." });
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { accept: "application/json", "content-type": "application/json", authorization: `Bearer ${ENV.resendApiKey}` },
-    body: JSON.stringify({
-      from: ENV.resendFromEmail,
-      to: input.to,
-      ...(input.cc?.length ? { cc: input.cc } : {}),
-      ...(input.bcc?.length ? { bcc: input.bcc } : {}),
-      subject: input.subject,
-      html: input.html,
-      text: input.text,
-      tags: [{ name: "category", value: input.category }],
-      ...(input.attachments?.length ? { attachments: input.attachments.map((attachment) => ({ filename: attachment.filename, content: Buffer.isBuffer(attachment.content) ? attachment.content.toString("base64") : attachment.content, content_type: attachment.contentType })) } : {}),
-    }),
-  });
-  const body = await response.json().catch(() => ({})) as { id?: string; message?: string };
-  if (!response.ok || !body.id) {
-    console.warn("[TransactionalEmail] Provider rejected delivery", { status: response.status, category: input.category });
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The email provider could not accept this message. No email was sent; please try again." });
-  }
-  return { deliveryId: body.id, acceptedAt: new Date().toISOString() };
+export async function sendTransactionalEmail(_input: SendInput): Promise<{ deliveryId: string; acceptedAt: string }> {
+  throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Workspace email delivery is disabled. No email was sent." });
 }
 
 export async function sendWorkspaceEmail(req: CreateExpressContextOptions["req"], input: { to: string; cc?: string; bcc?: string; subject: string; body: string }) {

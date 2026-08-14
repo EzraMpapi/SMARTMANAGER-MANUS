@@ -49,12 +49,13 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(invitationServiceSource).not.toContain("input.companyId");
   });
 
-  it("does not retain browser SMTP credentials or label a manual email as sent before the server confirms provider acceptance", () => {
-    expect(dashboardSource).toContain("trpc.transactionalEmail.send.useMutation()");
-    expect(dashboardSource).toContain("await sendWorkspaceEmailMutation.mutateAsync");
-    expect(dashboardSource).toContain("Email accepted by the delivery provider");
+  it("does not retain browser SMTP credentials or offer a false manual-email send state while delivery is disabled", () => {
+    expect(dashboardSource).toContain("const emailDeliveryDisabled = true");
+    expect(dashboardSource).toContain("Email delivery is disabled");
+    expect(dashboardSource).toContain("Email delivery disabled");
     expect(dashboardSource).not.toContain('localStorage.getItem("smtp_cfg")');
     expect(dashboardSource).not.toContain('localStorage.setItem("smtp_cfg"');
+    expect(dashboardSource).not.toContain("Email accepted by the delivery provider");
     expect(dashboardSource).not.toContain("Email opened in your mail client");
     expect(dashboardSource).toContain("Payment reminder is ready in Collaboration → Email for secure delivery.");
   });

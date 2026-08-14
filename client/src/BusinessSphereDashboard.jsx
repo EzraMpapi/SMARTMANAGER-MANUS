@@ -29804,7 +29804,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   const [starred, setStarred] = useState([]);
   const [selectedEmail, setSel]= useState(null);
   const [busy, setBusy]       = useState(false);
-  const sendWorkspaceEmailMutation = trpc.transactionalEmail.send.useMutation();
+  const emailDeliveryDisabled = true;
 
   // Listen for external compose trigger
   useEffect(()=>{
@@ -29853,22 +29853,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   }
 
   async function sendEmail() {
-    if (!to.trim()||!subject.trim()) { notify("To and Subject are required","error"); return; }
-    setBusy(true);
-    try {
-      const delivery = await sendWorkspaceEmailMutation.mutateAsync({ to, cc: cc || undefined, bcc: bcc || undefined, subject, body });
-      const sent = { id: delivery.deliveryId, to, cc, bcc, subject, body, sentAt: delivery.acceptedAt, from:co.email||currentUser.name, starred:false, providerAccepted:true };
-      setSent(s=>[sent,...s]);
-      setDrafts(ds=>ds.filter(d=>d.to!==to||d.subject!==subject));
-      logAudit("Email accepted by provider","Communications",currentUser.name,`To: ${to} · ${subject}`);
-      clearCompose();
-      setFolder("sent");
-      notify(`Email accepted by the delivery provider for ${delivery.recipientCount} recipient${delivery.recipientCount === 1 ? "" : "s"}.`);
-    } catch (sendError) {
-      notify(sendError?.message || "The email provider could not accept this message. No email was sent.", "error");
-    } finally {
-      setBusy(false);
-    }
+    notify("Email delivery is disabled. Save this message as a draft and configure an approved provider before sending.", "error");
   }
 
   function clearCompose() { setTo(""); setCc(""); setBcc(""); setSubject(""); setBody(""); setTmplId("custom"); }
@@ -29926,7 +29911,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
         </div>
 
         <div className="px-3 py-3 border-t border-slate-100 mt-auto">
-          <p className="flex items-center gap-1.5 text-[10px] leading-4 text-slate-400"><ShieldCheck size={12} className="text-emerald-600"/> Messages are sent only after the server confirms provider acceptance.</p>
+          <p className="flex items-center gap-1.5 text-[10px] leading-4 text-slate-400"><ShieldCheck size={12} className="text-amber-600"/> Delivery is disabled. Drafts remain available locally until an approved provider is configured.</p>
         </div>
       </div>
 
@@ -30008,9 +29993,9 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
 
             {/* Actions */}
             <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center gap-2.5">
-              <button onClick={sendEmail} disabled={busy||!to.trim()||!subject.trim()}
-                className="flex items-center gap-1.5 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl bg-[#2563EB] disabled:opacity-40">
-                <Send size={14}/> {busy?"Sending…":"Send Email"}
+              <button onClick={sendEmail} disabled={emailDeliveryDisabled || busy||!to.trim()||!subject.trim()} title="Email delivery is disabled"
+                className="flex items-center gap-1.5 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl bg-[#2563EB] disabled:cursor-not-allowed disabled:opacity-40">
+                <Send size={14}/> Email delivery disabled
               </button>
               <button onClick={saveDraft}
                 className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 border border-slate-200 px-3.5 py-2.5 rounded-xl hover:bg-white">
@@ -30021,7 +30006,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
                 Discard
               </button>
               <div className="flex-1"/>
-              <p className="text-[11px] text-slate-400">Server-verified delivery</p>
+              <p className="text-[11px] text-amber-700">No delivery provider configured</p>
             </div>
           </div>
         )}
