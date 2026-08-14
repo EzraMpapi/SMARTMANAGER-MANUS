@@ -42,6 +42,14 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("/auth/v1/authorize?provider=${provider}");
   });
 
+  it("persists and refreshes Supabase tokens before tenant-scoped requests resume", () => {
+    expect(dashboardSource).toContain('const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token"');
+    expect(dashboardSource).toContain("function persistAuthSession(authResult)");
+    expect(dashboardSource).toContain("async function authRefreshSession(refreshToken)");
+    expect(dashboardSource).toContain("const refreshed = await authRefreshSession(storedRefreshToken)");
+    expect(dashboardSource).toContain("clearStoredAuthSession()");
+  });
+
   it("routes an authenticated profile without a company assignment into company setup before tenant writes", () => {
     expect(dashboardSource).toContain("!profile || !profile.company_id || !profile.companies?.id");
     expect(dashboardSource).toContain("setOauthPendingUser({ id: user.id");

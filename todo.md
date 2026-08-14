@@ -325,8 +325,10 @@
 
 - [x] Preserve every existing Supabase table and verify persistence hardening uses only authenticated application integration, tenant resolution, RLS, and confirmed server responses rather than any schema rebuild.
 
-- [ ] Produce final acceptance evidence for application-created records through Supabase INSERT, browser refresh, logout/login, and direct database reads.
+- [x] Produce final acceptance evidence for application-created records through Supabase INSERT, browser refresh, logout/login, and direct database reads.
 - [ ] Produce final live tenant-isolation evidence showing each tenant can access only its own records.
-- [ ] Produce final server-failure evidence showing no false saved state, no fake persistence, meaningful errors, and retry-safe form handling.
 
-- [ ] Diagnose and fix the reproduced live CRM lead form submission that left no confirmed Supabase row, without recreating database tables.
+- [ ] Diagnose and repair the browser session identity mismatch observed during the Tenant B acceptance check before making any cross-tenant security claim.
+- [x] Produce final server-failure evidence showing no false saved state, no fake persistence, meaningful errors, and retry-safe form handling.
+
+- [x] Diagnose and fix the reproduced live CRM lead form submission that left no confirmed Supabase row, without recreating database tables.

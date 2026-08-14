@@ -50,6 +50,20 @@ const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWork
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const IS_CONFIGURED     = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
+const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
+
+function persistAuthSession(authResult) {
+  if (typeof window === "undefined" || !authResult?.access_token) return;
+  window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, authResult.access_token);
+  if (authResult.refresh_token) window.localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, authResult.refresh_token);
+}
+
+function clearStoredAuthSession() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+}
 
 // A real, deliberate architectural choice, not an oversight: IS_CONFIGURED
 // is a single global flag, evaluated once, read by every one of this
@@ -74,7 +88,7 @@ let DEMO_OVERRIDE = false;
 // the database is the single source of truth for which rows a session can see.
 
 function authHeaders() {
-  const token = (typeof window !== "undefined" && window.localStorage?.getItem("bs_access_token")) || SUPABASE_ANON_KEY;
+  const token = (typeof window !== "undefined" && window.localStorage?.getItem(ACCESS_TOKEN_STORAGE_KEY)) || SUPABASE_ANON_KEY;
   return {
     apikey: SUPABASE_ANON_KEY,
     Authorization: `Bearer ${token}`,
@@ -148,6 +162,17 @@ async function authSignIn(email, password) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error_description || data.msg || "Incorrect email or password.");
   return data; // { access_token, refresh_token, user }
+}
+
+async function authRefreshSession(refreshToken) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data?.access_token) throw new Error(data.error_description || data.msg || "Session expired");
+  return data;
 }
 
 async function authSignOut(accessToken) {
@@ -37502,7 +37527,9 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
       if (!IS_CONFIGURED) { onAuthenticated(null); return; }
       const result = await authSignIn(identifier.trim(), password);
       if (result.error) { setError(result.error.message || "Login failed."); return; }
-      onAuthenticated(result.session || null);
+      if (!result.access_token) { setError("Login did not return an authenticated session."); return; }
+      persistAuthSession(result);
+      window.location.reload();
     } catch (_e) { setError("Something went wrong — check your connection."); }
     finally { setBusy(false); }
   }
@@ -37713,7 +37740,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       if (!accessToken) {
         throw new Error("Account created — check your email to confirm it, then sign in.");
       }
-      if (typeof window !== "undefined") window.localStorage.setItem("bs_access_token", accessToken);
+      persistAuthSession(signUpResult);
 
       const rpcResult = mode === "create"
         ? await callRpc("create_company_and_owner", {
@@ -45681,20 +45708,32 @@ function SmartManager() {
     // not in localStorage yet — this is the one moment that token exists
     // only in the URL, so it has to be captured before anything else runs.
     let tokenFromOAuth = null;
+    let refreshTokenFromOAuth = null;
     if (typeof window !== "undefined" && window.location.hash.includes("access_token=")) {
       const params = new URLSearchParams(window.location.hash.slice(1));
       tokenFromOAuth = params.get("access_token");
+      refreshTokenFromOAuth = params.get("refresh_token");
       if (tokenFromOAuth) {
-        window.localStorage.setItem("bs_access_token", tokenFromOAuth);
+        persistAuthSession({ access_token: tokenFromOAuth, refresh_token: refreshTokenFromOAuth });
         window.history.replaceState(null, "", window.location.pathname); // real cleanup — an access token has no business sitting in the visible URL
       }
     }
 
-    const token = tokenFromOAuth || (typeof window !== "undefined" ? window.localStorage.getItem("bs_access_token") : null);
+    let token = tokenFromOAuth || (typeof window !== "undefined" ? window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) : null);
+    const storedRefreshToken = refreshTokenFromOAuth || (typeof window !== "undefined" ? window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) : null);
     if (!token) { setAuthChecking(false); return; }
     (async () => {
       try {
-        const user = await authGetUser(token);
+        let user;
+        try {
+          user = await authGetUser(token);
+        } catch (_expiredAccessToken) {
+          if (!storedRefreshToken) throw _expiredAccessToken;
+          const refreshed = await authRefreshSession(storedRefreshToken);
+          persistAuthSession(refreshed);
+          token = refreshed.access_token;
+          user = await authGetUser(token);
+        }
         let profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
         let profile = profileRows?.[0];
         // A pre-existing authenticated profile with no company can only be
@@ -45722,7 +45761,7 @@ function SmartManager() {
         }
         setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo } });
       } catch (_e) {
-        if (typeof window !== "undefined") window.localStorage.removeItem("bs_access_token");
+        clearStoredAuthSession();
       } finally {
         setAuthChecking(false);
       }
@@ -45730,7 +45769,7 @@ function SmartManager() {
   }, []);
 
   function handleSignOut() {
-    if (typeof window !== "undefined") window.localStorage.removeItem("bs_access_token");
+    clearStoredAuthSession();
     if (session?.accessToken) authSignOut(session.accessToken);
     DEMO_OVERRIDE = false;
     setSession(IS_CONFIGURED ? null : { demo: true });
@@ -46103,7 +46142,7 @@ function SmartManager() {
       <OAuthCompanySetup
         oauthUser={oauthPendingUser}
         onAuthenticated={(s) => { setOauthPendingUser(null); setSession(s || { demo: true }); }}
-        onCancel={() => { if (typeof window !== "undefined") window.localStorage.removeItem("bs_access_token"); setOauthPendingUser(null); }}
+        onCancel={() => { clearStoredAuthSession(); setOauthPendingUser(null); }}
       />
     );
   }
@@ -46549,7 +46588,7 @@ class ErrorBoundary extends React.Component {
 
   handleSignOutAndReload = () => {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem("bs_access_token");
+      clearStoredAuthSession();
       window.location.reload();
     }
   };
