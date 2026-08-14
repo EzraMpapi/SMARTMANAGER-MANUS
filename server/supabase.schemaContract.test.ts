@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const verifierSource = readFileSync(new URL("./verifySupabaseSchema.mjs", import.meta.url), "utf8");
 const baselineMigration = readFileSync(new URL("../supabase/migrations/20260812_001_complete_erp_schema_baseline.sql", import.meta.url), "utf8");
+const tenantBootstrapMigration = readFileSync(new URL("../supabase/migrations/20260814_002_guarded_first_tenant_bootstrap.sql", import.meta.url), "utf8");
 
 describe("Supabase production schema contract guard", () => {
   it("derives the required table contract from the single preserved ERP dashboard", () => {
@@ -44,5 +45,16 @@ describe("Supabase production schema contract guard", () => {
     expect(baselineMigration).not.toContain("DROP TABLE");
     expect(baselineMigration).not.toContain("TRUNCATE");
     expect(baselineMigration).not.toContain("DELETE FROM");
+  });
+
+  it("provisions a first tenant only from auth context and preserves explicit setup once an organization exists", () => {
+    expect(tenantBootstrapMigration).toContain("CREATE OR REPLACE FUNCTION public.ensure_current_company()");
+    expect(tenantBootstrapMigration).toContain("v_user_id uuid := auth.uid()");
+    expect(tenantBootstrapMigration).toContain("pg_advisory_xact_lock");
+    expect(tenantBootstrapMigration).toContain("IF EXISTS (SELECT 1 FROM public.companies)");
+    expect(tenantBootstrapMigration).toContain("RAISE EXCEPTION 'company setup required'");
+    expect(tenantBootstrapMigration).toContain("GRANT EXECUTE ON FUNCTION public.ensure_current_company() TO authenticated");
+    expect(tenantBootstrapMigration).not.toContain("WITH CHECK (true)");
+    expect(tenantBootstrapMigration).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
   });
 });

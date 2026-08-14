@@ -48,6 +48,12 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("before loading any company-scoped modules");
   });
 
+  it("attempts guarded first-tenant bootstrap before falling back to explicit company setup", () => {
+    expect(dashboardSource).toContain('await callRpc("ensure_current_company", {}, token)');
+    expect(dashboardSource).toContain("if (profile && !profile.company_id)");
+    expect(dashboardSource).toContain("The normal explicit company setup / join flow below");
+  });
+
   it("defers Sales subscription detail content and explains the on-demand loading benefit", () => {
     expect(dashboardSource).toContain('lazy(() => import("./components/SalesDetailWorkspace")');
     expect(dashboardSource).toContain("<LazySalesDetailWorkspace");

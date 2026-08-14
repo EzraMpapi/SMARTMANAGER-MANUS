@@ -45623,8 +45623,22 @@ function SmartManager() {
     (async () => {
       try {
         const user = await authGetUser(token);
-        const profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
-        const profile = profileRows?.[0];
+        let profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
+        let profile = profileRows?.[0];
+        // A pre-existing authenticated profile with no company can only be
+        // auto-provisioned when this is the first tenant in the deployment.
+        // Otherwise the user must use the explicit create/join organization
+        // flow, preserving tenant boundaries and ownership intent.
+        if (profile && !profile.company_id) {
+          try {
+            await callRpc("ensure_current_company", {}, token);
+            profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
+            profile = profileRows?.[0];
+          } catch (_bootstrapError) {
+            // The normal explicit company setup / join flow below provides a
+            // safe resolution whenever an existing tenant prevents bootstrap.
+          }
+        }
         if (!profile || !profile.company_id || !profile.companies?.id) {
           // A real, valid session without a tenant assignment must finish
           // company setup before loading any company-scoped modules. This

@@ -307,12 +307,14 @@
 
 - [x] Require confirmed Supabase responses before updating UI state for CREATE, UPDATE, and DELETE operations.
 
-- [ ] Verify a real authenticated pos_shifts create through the app, browser refresh, renewed session, and direct tenant-scoped Supabase read.
+- [x] Verify a real authenticated pos_shifts create through the app, browser refresh, renewed session, and direct tenant-scoped Supabase read.
 
 - [x] Fix the pos_shifts cashier-column schema mismatch so POS writes match the live Supabase table contract and persist successfully.
 
-- [ ] Verify confirmed Supabase CRUD persistence across Customers, Suppliers, Products, Inventory, Sales, Expenses, Employees, Invoices, and Payments using shared tenant-safe infrastructure.
+- [x] Verify confirmed Supabase CRUD persistence across Customers, Suppliers, Products, Inventory, Sales, Expenses, Employees, Invoices, and Payments using shared tenant-safe infrastructure.
 
 - [x] Reconcile every frontend module and table contract shown in the dashboard navigation with the live Supabase schema, adding only verified missing tenant-safe backend objects.
 
-- [ ] Route authenticated users with an existing profile but no company assignment into the required company-setup flow before any tenant-scoped mutation.
+- [x] Route authenticated users with an existing profile but no company assignment into the required company-setup flow before any tenant-scoped mutation.
+
+- [x] Remove the remaining manual tenant-bootstrap dead end for authenticated profiles that have no company assignment, without weakening RLS or hardcoding a company.

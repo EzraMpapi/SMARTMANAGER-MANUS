@@ -1,0 +1,75 @@
+-- Safely provisions the first tenant only when the authenticated profile is
+-- unassigned and no organization exists yet. Existing organizations always
+-- require the explicit company setup / join flow.
+CREATE OR REPLACE FUNCTION public.ensure_current_company()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_company_id uuid;
+  v_full_name text;
+  v_email text;
+  v_company_name text;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT company_id, full_name, email
+  INTO v_company_id, v_full_name, v_email
+  FROM public.profiles
+  WHERE id = v_user_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'profile setup required' USING ERRCODE = 'P0001';
+  END IF;
+
+  IF v_company_id IS NOT NULL THEN
+    RETURN jsonb_build_object('id', v_company_id, 'created', false);
+  END IF;
+
+  -- Serialize the initial-tenant path. A concurrent login cannot create a
+  -- second company; it will instead be routed to explicit setup/join flow.
+  PERFORM pg_advisory_xact_lock(hashtext('businesssphere_first_tenant'));
+
+  SELECT company_id
+  INTO v_company_id
+  FROM public.profiles
+  WHERE id = v_user_id
+  FOR UPDATE;
+
+  IF v_company_id IS NOT NULL THEN
+    RETURN jsonb_build_object('id', v_company_id, 'created', false);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.companies) THEN
+    RAISE EXCEPTION 'company setup required' USING ERRCODE = 'P0001';
+  END IF;
+
+  v_company_name := COALESCE(
+    NULLIF(trim(v_full_name), ''),
+    NULLIF(split_part(COALESCE(v_email, ''), '@', 1), ''),
+    'My'
+  ) || ' Workspace';
+
+  INSERT INTO public.companies (name, category, country, currency)
+  VALUES (v_company_name, 'Other', 'Tanzania', 'TZS')
+  RETURNING id INTO v_company_id;
+
+  PERFORM set_config('app.businesssphere_tenant_assignment', 'on', true);
+  UPDATE public.profiles
+  SET company_id = v_company_id,
+      role = 'owner',
+      updated_at = now()
+  WHERE id = v_user_id;
+
+  RETURN jsonb_build_object('id', v_company_id, 'created', true);
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.ensure_current_company() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.ensure_current_company() TO authenticated;

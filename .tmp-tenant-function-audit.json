@@ -1,0 +1,1 @@
+{"project_id":"rlhngsrihahhyxnjxrxm","query":"SELECT p.proname, pg_get_functiondef(p.oid) AS definition FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname IN ('current_company_id','create_company_and_owner','ensure_current_company') ORDER BY p.proname LIMIT 10;"}
