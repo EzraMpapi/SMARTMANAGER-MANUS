@@ -328,7 +328,9 @@
 - [x] Produce final acceptance evidence for application-created records through Supabase INSERT, browser refresh, logout/login, and direct database reads.
 - [ ] Produce final live tenant-isolation evidence showing each tenant can access only its own records.
 
-- [ ] Diagnose and repair the browser session identity mismatch observed during the Tenant B acceptance check before making any cross-tenant security claim.
+- [x] Diagnose and repair the browser session identity mismatch observed during the Tenant B acceptance check before making any cross-tenant security claim.
+
+- [ ] Complete the live two-tenant isolation acceptance check only when an independently provisioned second-company account is available; do not substitute another user in the same company.
 - [x] Produce final server-failure evidence showing no false saved state, no fake persistence, meaningful errors, and retry-safe form handling.
 
 - [x] Diagnose and fix the reproduced live CRM lead form submission that left no confirmed Supabase row, without recreating database tables.
