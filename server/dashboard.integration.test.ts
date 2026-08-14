@@ -50,6 +50,13 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("clearStoredAuthSession()");
   });
 
+  it("keeps password-login failures truthful instead of collapsing them into a generic connection message", () => {
+    expect(dashboardSource).toContain("toAuthUserMessage(loginError)");
+    expect(dashboardSource).toContain("validatePasswordLogin(identifier, password)");
+    expect(dashboardSource).toContain("continue with that same provider");
+    expect(dashboardSource).not.toContain('setError("Something went wrong — check your connection.")');
+  });
+
   it("routes an authenticated profile without a company assignment into company setup before tenant writes", () => {
     expect(dashboardSource).toContain("!profile || !profile.company_id || !profile.companies?.id");
     expect(dashboardSource).toContain("setOauthPendingUser({ id: user.id");

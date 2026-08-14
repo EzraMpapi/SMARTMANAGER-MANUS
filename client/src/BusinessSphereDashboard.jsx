@@ -27,6 +27,7 @@ import {
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import { trpc } from "./lib/trpc";
+import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "./lib/authErrors";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -52,6 +53,10 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const IS_CONFIGURED     = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
 const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
+
+function authDebug(event, detail = {}) {
+  if (import.meta.env.DEV) console.info(`[AUTH] ${event}`, detail);
+}
 
 function persistAuthSession(authResult) {
   if (typeof window === "undefined" || !authResult?.access_token) return;
@@ -138,10 +143,9 @@ function persistenceFailureMessage(action, error) {
 
 // Real Supabase Auth REST calls — the actual GoTrue endpoints every
 // supabase-js client calls under the hood, hit directly with fetch() the
-// same way sb() hits PostgREST directly. Only meaningful when IS_CONFIGURED
-// (a real Supabase project is connected); LoginPage/SignupPage below
-// branch on that constant and simulate the flow locally in demo mode
-// rather than pretending to authenticate against a backend that is not there.
+// same way sb() hits PostgREST directly. These calls require IS_CONFIGURED.
+// A configured deployment never falls back to demo authentication; an absent
+// configuration is presented as a truthful setup error rather than a session.
 async function authSignUp(email, password) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
     method: "POST",
@@ -154,13 +158,36 @@ async function authSignUp(email, password) {
 }
 
 async function authSignIn(email, password) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify({ email, password }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || data.msg || "Incorrect email or password.");
+  if (!IS_CONFIGURED) {
+    const error = new Error("Authentication is not configured.");
+    error.code = "AUTH_CONFIGURATION_MISSING";
+    throw error;
+  }
+  authDebug("Login started");
+  let res;
+  try {
+    res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (cause) {
+    const error = new Error("Unable to reach the authentication server.");
+    error.code = "NETWORK_ERROR";
+    error.cause = cause;
+    throw error;
+  }
+  const body = await res.text();
+  let data = null;
+  try { data = body ? JSON.parse(body) : null; } catch { /* handled below as a safe invalid response */ }
+  authDebug("Authentication response received", { status: res.status, code: data?.error_code || data?.code || null });
+  if (!res.ok) throw createAuthRequestError(res.status, data, "Sign-in failed.");
+  if (!data?.access_token || !data?.refresh_token || !data?.user?.id) {
+    const error = new Error("Login did not return a complete authenticated session.");
+    error.code = "AUTH_RESPONSE_INVALID";
+    throw error;
+  }
+  authDebug("Session created");
   return data; // { access_token, refresh_token, user }
 }
 
@@ -37646,16 +37673,20 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!identifier.trim() || !password) return;
+    const validationError = validatePasswordLogin(identifier, password);
+    if (validationError) { setError(validationError); return; }
     setBusy(true); setError(null);
     try {
-      if (!IS_CONFIGURED) { onAuthenticated(null); return; }
+      if (!IS_CONFIGURED) {
+        const configError = new Error("Authentication is not configured.");
+        configError.code = "AUTH_CONFIGURATION_MISSING";
+        throw configError;
+      }
       const result = await authSignIn(identifier.trim(), password);
-      if (result.error) { setError(result.error.message || "Login failed."); return; }
-      if (!result.access_token) { setError("Login did not return an authenticated session."); return; }
       persistAuthSession(result);
+      authDebug("Authentication completed");
       window.location.reload();
-    } catch (_e) { setError("Something went wrong — check your connection."); }
+    } catch (loginError) { setError(toAuthUserMessage(loginError)); }
     finally { setBusy(false); }
   }
 
@@ -37757,16 +37788,17 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
                     <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("azure")} className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"><MicrosoftGlyph size={14} />Microsoft</button>
                     <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("apple")} className="rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50">Apple</button>
                   </div>
+                  <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">If you first joined with Google, Microsoft, or Apple, continue with that same provider.</p>
                 </div>
               )}
 
               <p className="text-center text-[12.5px] text-slate-500 mt-5">
                 Don't have an account? <button type="button" onClick={onSwitchToSignup} className="font-semibold text-[#16A34A] hover:underline">Create one</button>
               </p>
-              <button type="button" onClick={() => { DEMO_OVERRIDE = true; onAuthenticated({ demo: true }); }}
+              {!IS_CONFIGURED && <button type="button" onClick={() => { DEMO_OVERRIDE = true; onAuthenticated({ demo: true }); }}
                 className="w-full mt-3 flex items-center justify-center gap-2 text-[12.5px] font-medium text-slate-500 hover:text-[#16A34A] border border-slate-200 rounded-xl py-2.5 transition-colors">
                 <Sparkles size={13} className="text-[#16A34A]" /> Preview demo — no account needed
-              </button>
+              </button>}
               {!IS_CONFIGURED && <p className="text-center text-[11px] text-slate-400 mt-3">Demo mode — any credentials continue to the sample company.</p>}
             </div>
           </div>

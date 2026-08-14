@@ -359,3 +359,11 @@
 - [x] Add automated authorization-boundary tests, production validation, and publish the AI approval workflow.
 
 - [x] Diagnose and fix the Vite WebSocket/HMR connection failure in the managed development preview without changing production routing.
+
+- [x] Complete the pasted authentication requirements review and map the actual email/password, session, profile, tenant, and redirect flow.
+- [x] Trace the real Supabase password-login request and identify the exact source of the generic connection error without logging secrets or passwords.
+- [x] Repair only the shared authentication, session, profile/company bootstrap, or error-mapping defect confirmed by evidence.
+- [x] Verify session bootstrap into the tenant-scoped dashboard plus truthful user-facing invalid-credential, validation, configuration, rate-limit, server, and network failure states.
+- [x] Add focused regression tests, production validation, and publish the authentication repair.
+
+- [x] Add non-enumerating login guidance for accounts created with a federated identity, directing users to the matching provider button.
