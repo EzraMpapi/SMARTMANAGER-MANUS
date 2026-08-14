@@ -292,6 +292,18 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('delete().single().run()');
   });
 
+  it("reconciles temporary UI rows from confirmed Supabase data and never claims offline writes are saved", () => {
+    expect(dashboardSource).toContain("export const companyMutationBus");
+    expect(dashboardSource).toContain("emitCompanyMutation({ table, confirmed: false, error })");
+    expect(dashboardSource).toContain("emitCompanyMutation({ table, confirmed: true, data })");
+    expect(dashboardSource).toContain("confirmedRowsRef.current = confirmedRows");
+    expect(dashboardSource).toContain("setRows(confirmedRowsRef.current)");
+    expect(dashboardSource).toContain("PERSISTENCE_OFFLINE");
+    expect(dashboardSource).toContain("The server did not confirm this change. It was not saved; live data has been restored.");
+    expect(dashboardSource).toContain('!online ? "Offline — writes paused"');
+    expect(dashboardSource).not.toContain('!online ? "Offline — saving locally"');
+  });
+
   it("does not create or close a POS shift in UI state until Supabase confirms the row", () => {
     const posSource = dashboardSource.slice(dashboardSource.indexOf("function PosShiftPanel"), dashboardSource.indexOf("function Pos(", dashboardSource.indexOf("function PosShiftPanel")));
     expect(posSource).toContain("persistenceFailureMessage(\"Opening the shift\", error)");

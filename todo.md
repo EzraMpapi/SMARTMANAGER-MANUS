@@ -320,3 +320,5 @@
 - [x] Remove the remaining manual tenant-bootstrap dead end for authenticated profiles that have no company assignment, without weakening RLS or hardcoding a company.
 
 - [x] Verify refresh-backed CREATE, READ, UPDATE, and DELETE persistence for Customers, Suppliers, Products, Inventory, Sales, Expenses, Employees, Invoices, and Payments, including post-delete confirmation from Supabase.
+
+- [ ] Audit every local cache, queue, fallback, and mutation path; remove accidental local-success behavior or implement an explicit Supabase-confirmed offline synchronization queue where offline support is intentional.

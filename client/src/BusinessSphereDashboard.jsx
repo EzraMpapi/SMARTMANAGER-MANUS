@@ -93,6 +93,30 @@ function buildConfirmedMutationError({ table, method, status, code, details }) {
   return error;
 }
 
+function buildOfflineMutationError({ table, method }) {
+  const error = new Error(`Supabase ${method === "POST" ? "CREATE" : method === "PATCH" ? "UPDATE" : "DELETE"} on ${table} was not sent because this browser is offline.`);
+  error.status = 0;
+  error.code = "PERSISTENCE_OFFLINE";
+  error.table = table;
+  error.operation = method === "POST" ? "CREATE" : method === "PATCH" ? "UPDATE" : "DELETE";
+  return error;
+}
+
+// Module handlers may stage a UI row while their request is in flight. This
+// bus immediately reconciles each useCompanyTable cache from its last confirmed
+// Supabase result, both on success and on failure. It is deliberately not an
+// offline outbox: this product has no durable queue or conflict resolver, so
+// business writes are paused while offline instead of being represented as saved.
+export const companyMutationBus = {
+  listeners: new Set(),
+  emit(event) { this.listeners.forEach((listener) => listener(event)); },
+};
+
+function emitCompanyMutation(event) {
+  if (typeof window === "undefined") return;
+  companyMutationBus.emit(event);
+}
+
 function persistenceFailureMessage(action, error) {
   const detail = String(error?.message || "").trim();
   return detail ? `${action} failed: ${detail}` : `${action} failed. Your form is still available to retry.`;
@@ -288,6 +312,11 @@ function sb(table) {
     async run() {
       const url = `${path}?${params.toString()}`;
       let requestPayload = payload;
+      if (method !== "GET" && typeof navigator !== "undefined" && navigator.onLine === false) {
+        const error = buildOfflineMutationError({ table, method });
+        emitCompanyMutation({ table, confirmed: false, error });
+        throw error;
+      }
       if (GENERIC_COMPANY_TABLES.has(table) && method === "POST") {
         requestPayload = Array.isArray(payload)
           ? payload.map((record) => normalizeGenericCompanyPayload(table, record))
@@ -306,6 +335,7 @@ function sb(table) {
           error.details = lookupRaw?.details;
           error.table = table;
           error.operation = "UPDATE";
+          emitCompanyMutation({ table, confirmed: false, error });
           throw error;
         }
         requestPayload = normalizeGenericCompanyPayload(table, payload, Array.isArray(lookupRaw) ? lookupRaw[0] : lookupRaw);
@@ -327,17 +357,21 @@ function sb(table) {
         error.details = raw?.details;
         error.table = table;
         error.operation = method === "POST" ? "CREATE" : method === "PATCH" ? "UPDATE" : method === "DELETE" ? "DELETE" : "READ";
+        if (method !== "GET") emitCompanyMutation({ table, confirmed: false, error });
         throw error;
       }
       // PostgREST returns an empty representation when no row was affected.
       // Permanent records are confirmed only after the database returns an
       // affected row, preventing RLS-filtered mutations from looking saved.
       if (method !== "GET" && (raw == null || (Array.isArray(raw) && raw.length === 0))) {
-        throw buildConfirmedMutationError({ table, method, status: res.status, details: raw });
+        const error = buildConfirmedMutationError({ table, method, status: res.status, details: raw });
+        emitCompanyMutation({ table, confirmed: false, error });
+        throw error;
       }
       const data = method === "GET" && Array.isArray(raw)
         ? raw.map((row) => inflateGenericCompanyRow(table, row))
         : inflateGenericCompanyRow(table, raw);
+      if (method !== "GET") emitCompanyMutation({ table, confirmed: true, data });
       return single ? (Array.isArray(data) ? data[0] : data) : data;
     },
     // allow `await sb(table).select().eq(...)` directly, like supabase-js
@@ -539,6 +573,7 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   const isLive = IS_CONFIGURED && !DEMO_OVERRIDE;
   const [rowsState, setRowsState] = useState(isLive ? [] : seed);
   const rowsRef = useRef(isLive ? [] : seed);
+  const confirmedRowsRef = useRef(isLive ? [] : seed);
   const [loading, setLoading] = useState(isLive);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -569,7 +604,9 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
     try {
       const result = await runCompanyTableQuery(table, { select: selectRef.current, order: orderRef.current });
       const mapper = mapRowRef.current;
-      setRows(mapper ? result.rows.map(mapper) : result.rows);
+      const confirmedRows = mapper ? result.rows.map(mapper) : result.rows;
+      confirmedRowsRef.current = confirmedRows;
+      setRows(confirmedRows);
       setUnavailable(result.unavailable);
     } catch (e) {
       // Preserve the last successful rows during refresh failures. Only a
@@ -582,6 +619,19 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   }, [isLive, table]);
 
   useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {
+    if (!isLive) return undefined;
+    const reconcile = (event) => {
+      if (event?.table !== table) return;
+      // Drop any in-flight optimistic rows first. A reload then supplies the
+      // database-confirmed representation, including any successful mutation.
+      setRows(confirmedRowsRef.current);
+      const timer = window.setTimeout(() => { reload(); }, 0);
+      return () => window.clearTimeout(timer);
+    };
+    companyMutationBus.listeners.add(reconcile);
+    return () => companyMutationBus.listeners.delete(reconcile);
+  }, [isLive, reload, setRows, table]);
 
   return { rows: rowsState, setRows, loading, refreshing, error, unavailable, reload };
 }
@@ -1255,10 +1305,20 @@ function mapPosTransactionRow(r) {
 export const toastBus = {
   listeners: new Set(),
   push(toast) { this.listeners.forEach((fn) => fn(toast)); },
+  clear() { this.listeners.forEach((fn) => fn({ type: "clear" })); },
 };
 
 let toastSeq = 0;
 function notify(message, type = "success") {
+  // Legacy handlers can still describe their temporary UI state as "local".
+  // Normalize that message at the shared boundary so no failed request is
+  // presented as saved; the affected table cache is reconciled separately.
+  const isRejectedLocalSave = type === "error" && /locally|local-only|server sync failed/i.test(String(message));
+  if (isRejectedLocalSave) {
+    toastBus.clear();
+    toastBus.push({ id: ++toastSeq, message: "The server did not confirm this change. It was not saved; live data has been restored.", type: "error" });
+    return;
+  }
   toastBus.push({ id: ++toastSeq, message, type });
 }
 
@@ -2560,6 +2620,7 @@ function Toasts() {
 
   useEffect(() => {
     const onToast = (t) => {
+      if (t.type === "clear") { setToasts([]); return; }
       setToasts((prev) => [...prev.slice(-4), { ...t, born: Date.now() }]);
       setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== t.id)), TOAST_DURATION);
     };
@@ -45986,17 +46047,13 @@ function SmartManager() {
   // items that do nothing.
   const [textSize, setTextSize] = useState("default"); // default | large | xl
   const [highContrast, setHighContrast] = useState(false);
-  // Real network awareness — the browser's own online/offline events, not
-  // a poll. The architecture is already offline-tolerant by design: every
-  // write is optimistic (screen first, server after, failure caught), so
-  // work continues offline; what was missing was the app admitting it,
-  // instead of showing "Live" with no connection. Full outbox retry and a
-  // service-worker app shell (PWA) are the real next steps, named in the
-  // handover, not implied by this pill.
+  // This deployment has no durable outbox or conflict-resolution model.
+  // Device preferences remain local, but permanent business writes are paused
+  // offline rather than being represented as saved and silently discarded.
   const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   useEffect(() => {
-    const up = () => { setOnline(true); notify("Back online — new changes will save to the server again."); };
-    const down = () => { setOnline(false); notify("Offline — keep working; changes stay on this device until you reconnect.", "error"); };
+    const up = () => { setOnline(true); notify("Back online — live Supabase writes are available again."); };
+    const down = () => { setOnline(false); notify("Offline — server writes are paused until you reconnect.", "error"); };
     window.addEventListener("online", up); window.addEventListener("offline", down);
     return () => { window.removeEventListener("online", up); window.removeEventListener("offline", down); };
   }, []);
@@ -46087,6 +46144,15 @@ function SmartManager() {
       />
 
       <Toasts />
+      {!online && IS_CONFIGURED && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-slate-950/45 p-4" role="alert" aria-live="assertive">
+          <div className="max-w-sm rounded-2xl border border-amber-200 bg-white p-5 text-center shadow-2xl">
+            <WifiOff className="mx-auto mb-3 text-amber-600" size={24} />
+            <p className="text-sm font-semibold text-slate-900">Server writes are paused</p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">This ERP does not store business changes locally while offline. Reconnect to save a confirmed change to Supabase.</p>
+          </div>
+        </div>
+      )}
       <ConfirmDialog />
       <SendReceiptPanel />
       <PostCreateDispatch company={company} crm={crm} />
@@ -46242,7 +46308,7 @@ function SmartManager() {
               title={IS_CONFIGURED ? "Connected to Supabase" : "Running on built-in demo data — connect Supabase to persist changes"}
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
-              {!online ? "Offline — saving locally" : IS_CONFIGURED ? "Live" : "Demo Mode"}
+              {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
             </span>
             <button
               onClick={() => setPaletteOpen(true)}
