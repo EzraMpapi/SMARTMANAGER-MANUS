@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { EnterpriseLoginView, ForgotPasswordView, ResetPasswordView, VerificationView } from "./EnterpriseAuthViews";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "../lib/authErrors";
-import { authScreenFromSearch } from "../lib/authOnboarding";
+import { authScreenFromSearch, oauthCallbackFromHash } from "../lib/authOnboarding";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
@@ -50,6 +50,7 @@ export default function PublicAuthGateway() {
   const [view, setView] = useState(() => authScreenFromSearch(window.location.search));
   const [email, setEmail] = useState("");
   const [recoveryToken, setRecoveryToken] = useState(null);
+  const [oauthError, setOauthError] = useState(null);
   const invitationPending = useMemo(() => new URLSearchParams(window.location.search).has("invite"), []);
 
   function navigate(next, contextEmail = "") {
@@ -62,13 +63,24 @@ export default function PublicAuthGateway() {
   }
 
   useEffect(() => {
-    if (!window.location.hash.includes("access_token=")) return;
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    const token = hash.get("access_token");
-    if (token && authScreenFromSearch(window.location.search) === "reset") {
-      setRecoveryToken(token);
-      window.history.replaceState(null, "", `${window.location.pathname}?auth=reset`);
+    if (!window.location.hash) return;
+    const callback = oauthCallbackFromHash(window.location.hash);
+    if (callback.errorCode) {
+      window.history.replaceState(null, "", withoutAuthView());
+      setOauthError("Google authentication did not complete. Please try again or use another approved sign-in method.");
+      return;
     }
+    if (!callback.accessToken) return;
+    if (authScreenFromSearch(window.location.search) === "reset") {
+      setRecoveryToken(callback.accessToken);
+      window.history.replaceState(null, "", `${window.location.pathname}?auth=reset`);
+      return;
+    }
+    // OAuth callbacks land before the lightweight public route can see the
+    // session in browser storage. Persist and immediately re-enter /app so
+    // the existing tenant-aware bootstrap resolves profile → workspace.
+    persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken });
+    window.location.replace(withoutAuthView());
   }, []);
 
   async function signIn(workEmail, password) {
@@ -105,5 +117,5 @@ export default function PublicAuthGateway() {
   if (view === "forgot") return <ForgotPasswordView onBack={() => navigate("login")} onRequest={requestRecovery} toMessage={toAuthUserMessage} />;
   if (view === "reset") return <ResetPasswordView recoveryToken={recoveryToken} onBack={() => navigate("login")} onUpdate={updatePassword} toMessage={toAuthUserMessage} />;
   if (view === "verify") return <VerificationView email={email} onBack={() => navigate("login")} onResend={resendVerification} toMessage={toAuthUserMessage} />;
-  return <EnterpriseLoginView configured={configured} onSignIn={signIn} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} toMessage={toAuthUserMessage} invitationPending={invitationPending} />;
+  return <EnterpriseLoginView configured={configured} onSignIn={signIn} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} toMessage={toAuthUserMessage} invitationPending={invitationPending} initialError={oauthError} />;
 }

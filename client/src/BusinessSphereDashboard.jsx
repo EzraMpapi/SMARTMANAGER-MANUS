@@ -152,7 +152,7 @@ async function authSignUp(email, password) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, options: { emailRedirectTo: authRedirectUrl("signup") } }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error_description || data.msg || "Sign up failed.");
@@ -270,7 +270,11 @@ async function authRefreshSession(refreshToken) {
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
   const data = await res.json();
-  if (!res.ok || !data?.access_token) throw new Error(data.error_description || data.msg || "Session expired");
+  if (!res.ok || !data?.access_token) {
+    const error = new Error(data.error_description || data.msg || "Session expired");
+    error.status = res.status;
+    throw error;
+  }
   return data;
 }
 
@@ -290,7 +294,11 @@ async function authGetUser(accessToken) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) throw new Error("Session expired");
+  if (!res.ok) {
+    const error = new Error("Session expired");
+    error.status = res.status;
+    throw error;
+  }
   return res.json();
 }
 
@@ -38068,6 +38076,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
 
     setBusy(true);
     try {
+      authDebug("Workspace signup started", { mode });
       const signUpResult = await authSignUp(account.email.trim(), account.password);
       // A project with email confirmation enabled returns a user but no
       // session yet; a project with confirmation disabled (the simpler
@@ -38087,17 +38096,23 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
             p_join_code: joinCode.trim(), p_full_name: account.fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
           }, accessToken);
 
+      if (!rpcResult?.id) throw new Error("Workspace creation did not return a confirmed company record.");
+
       // Real fields the create_company_and_owner RPC does not take directly
       // (phone, website, tax ID, and which modules to enable) are saved as
       // a real follow-up update — kept genuinely optional and non-blocking:
       // if this second call fails, the account and company both still
       // exist correctly, just without these details filled in yet.
+      let workspaceWarning = null;
       if (mode === "create" && rpcResult?.id) {
         try {
           await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale, timezone: company.timezone }).run();
           await sb("company_modules").insert(ONBOARDING_MODULES.map((m) => ({ company_id: rpcResult.id, name: m.id, status: selectedModules.has(m.id) ? "active" : "disabled", data: { module_key: m.id, enabled: selectedModules.has(m.id) } }))).run();
           await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
-        } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
+        } catch (setupError) {
+          authDebug("Optional workspace details failed", { message: setupError?.message || "unknown" });
+          workspaceWarning = "Your workspace was created, but some optional setup details could not be saved. You can retry them in Settings.";
+        }
       }
       let brandingWarning = null;
       if (mode === "create" && rpcResult?.id) {
@@ -38115,10 +38130,12 @@ function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }
       const confirmedSession = {
         userId: signUpResult.user.id, email: signUpResult.user.email, accessToken,
         fullName: account.fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
-        customerRef: isPortalRole ? customerRef.trim() : null, company: rpcResult,
+        customerRef: isPortalRole ? customerRef.trim() : null,
+        company: { id: rpcResult.id, name: rpcResult.name || company.name.trim(), country: company.country, currency: company.currency, timezone: company.timezone, businessScale, logo: company.logo || null, brandColor: company.brandColor, brandAccentColor: company.brandAccentColor },
+        workspaceCreated: mode === "create", workspaceWarning,
       };
-      setCompletedWorkspace({ name: mode === "create" ? company.name.trim() : "your company", mode, brandingWarning });
-      window.setTimeout(() => onAuthenticated(confirmedSession), 950);
+      authDebug("Workspace setup confirmed", { mode, companyId: rpcResult.id });
+      onAuthenticated(confirmedSession);
     } catch (err) {
       setError(err.message || "Couldn't complete sign up. Please try again.");
     } finally {
@@ -38356,7 +38373,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [fullName, setFullName] = useState(oauthUser.fullName || "");
-  const [company, setCompany] = useState({ name: "", category: COMPANY_CATEGORIES[0], country: SIGNUP_COUNTRIES[0], currency: SIGNUP_CURRENCIES[0], website: "", taxId: "" });
+  const [company, setCompany] = useState(() => ({ name: "", category: COMPANY_CATEGORIES[0], country: SIGNUP_COUNTRIES[0], currency: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).currency, timezone: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).timezone, website: "", taxId: "" }));
   const [selectedModules, setSelectedModules] = useState(() => new Set(ONBOARDING_MODULES.map((m) => m.id)));
   const [businessScale, setBusinessScale] = useState("large");
   const [firstBranch, setFirstBranch] = useState("");
@@ -38364,7 +38381,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [joinRole, setJoinRole] = useState("Employee");
   const [customerRef, setCustomerRef] = useState("");
 
-  function setCompanyField(key, val) { setCompany((c) => ({ ...c, [key]: val })); }
+  function setCompanyField(key, val) { setCompany((c) => key === "country" ? { ...c, country: val, ...companyDefaultsForCountry(val) } : { ...c, [key]: val }); }
   function toggleModule(id) {
     setSelectedModules((prev) => {
       const next = new Set(prev);
@@ -38389,6 +38406,8 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
             p_join_code: joinCode.trim(), p_full_name: fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
           }, oauthUser.accessToken);
 
+      if (!rpcResult?.id) throw new Error("Workspace setup did not return a confirmed company record.");
+
       if (mode === "create" && rpcResult?.id) {
         try {
           await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale, timezone: company.timezone }).run();
@@ -38400,7 +38419,9 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
       onAuthenticated({
         userId: oauthUser.id, email: oauthUser.email, accessToken: oauthUser.accessToken,
         fullName: fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
-        customerRef: isPortalRole ? customerRef.trim() : null, company: rpcResult,
+        customerRef: isPortalRole ? customerRef.trim() : null,
+        company: { id: rpcResult.id, name: rpcResult.name || company.name.trim(), country: company.country, currency: company.currency, timezone: company.timezone, businessScale },
+        workspaceCreated: mode === "create",
       });
     } catch (err) {
       setError(err.message || "Couldn't complete setup. Please try again.");
@@ -46078,6 +46099,8 @@ function SmartManager() {
   // fix — any token that resolved to a real user but no profile was
   // simply deleted rather than routed to finish setup.
   const [oauthPendingUser, setOauthPendingUser] = useState(null);
+  const [workspaceResolutionError, setWorkspaceResolutionError] = useState(null);
+  const [authRetryKey, setAuthRetryKey] = useState(0);
 
   useEffect(() => {
     if (!IS_CONFIGURED) {
@@ -46111,6 +46134,7 @@ function SmartManager() {
     const storedRefreshToken = refreshTokenFromOAuth || (typeof window !== "undefined" ? window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) : null);
     if (!token) { setAuthChecking(false); return; }
     (async () => {
+      let authenticatedUser = null;
       try {
         let user;
         try {
@@ -46122,6 +46146,7 @@ function SmartManager() {
           token = refreshed.access_token;
           user = await authGetUser(token);
         }
+        authenticatedUser = user;
         let profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
         let profile = profileRows?.[0];
         if (invitationTokenRef.current && (!profile || !profile.company_id)) {
@@ -46156,14 +46181,20 @@ function SmartManager() {
           setAuthChecking(false);
           return;
         }
+        setWorkspaceResolutionError(null);
         setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
-      } catch (_e) {
-        clearStoredAuthSession();
+      } catch (bootstrapError) {
+        if (bootstrapError?.status === 401 || bootstrapError?.status === 403) {
+          clearStoredAuthSession();
+        } else {
+          authDebug("Workspace resolution failed", { message: bootstrapError?.message || "unknown", authenticated: Boolean(authenticatedUser) });
+          setWorkspaceResolutionError({ email: authenticatedUser?.email || null });
+        }
       } finally {
         setAuthChecking(false);
       }
     })();
-  }, []);
+  }, [authRetryKey]);
 
   function navigateAuthView(view, email = "") {
     if (email) setAuthContextEmail(email);
@@ -46550,10 +46581,14 @@ function SmartManager() {
     return (
       <OAuthCompanySetup
         oauthUser={oauthPendingUser}
-        onAuthenticated={(s) => { setOauthPendingUser(null); setSession(s || { demo: true }); }}
+        onAuthenticated={(s) => { setOauthPendingUser(null); setSession(s || { demo: true }); if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }}
         onCancel={() => { clearStoredAuthSession(); setOauthPendingUser(null); }}
       />
     );
+  }
+
+  if (workspaceResolutionError) {
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6"><div className="w-full max-w-md rounded-[24px] border border-amber-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-amber-700"><RefreshCw size={28}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-amber-700">Workspace connection needs attention</p><h1 className="mt-2 text-[24px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your sign-in is still secure.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">We couldn’t load the workspace details for {workspaceResolutionError.email || "this account"} yet. This is not a sign-out. Try again to continue securely.</p><button type="button" onClick={() => { setWorkspaceResolutionError(null); setAuthChecking(true); setAuthRetryKey((key) => key + 1); }} className="mt-6 w-full rounded-xl bg-[#0B5D3B] py-3 text-[13px] font-semibold text-white transition hover:bg-[#084B30]">Retry workspace loading</button><button type="button" onClick={handleSignOut} className="mt-3 text-[12px] font-semibold text-slate-500 hover:text-slate-800">Sign out instead</button></div></div>;
   }
 
   if (!session) {
@@ -46562,7 +46597,7 @@ function SmartManager() {
     if (authView === "verify") return <VerificationView email={authContextEmail} onBack={() => navigateAuthView("login")} onResend={authResendVerification} toMessage={toAuthUserMessage} />;
     return authView === "login"
       ? <LoginPage onAuthenticated={(s) => invitationTokenRef.current ? window.location.reload() : setSession(s || { demo: true })} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
-      : <SignupPage onAuthenticated={(s) => invitationTokenRef.current ? window.location.reload() : setSession(s || { demo: true })} onSwitchToLogin={() => navigateAuthView("login")} onVerificationRequired={(email) => navigateAuthView("verify", email)} />;
+      : <SignupPage onAuthenticated={(s) => { if (invitationTokenRef.current) { window.location.reload(); return; } setSession(s || { demo: true }); if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }} onSwitchToLogin={() => navigateAuthView("login")} onVerificationRequired={(email) => navigateAuthView("verify", email)} />;
   }
 
   // A customer never sees the internal ERP shell at all — not a hidden

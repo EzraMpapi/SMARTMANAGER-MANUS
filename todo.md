@@ -385,3 +385,7 @@
 - [x] Add optional invitation management to workspace onboarding and ongoing workspace administration.
 - [x] Reduce the initial public authentication-route payload with a safe smaller lazy-loaded dashboard boundary while preserving existing features and routes.
 - [x] Add security, invitation-delivery, code-splitting, browser, full-test, and production-build validation before publishing the enhancement.
+- [x] Audit the current email/password workspace-creation and Google OAuth/session flow against the pasted root-cause requirements, including Supabase callbacks, profile assignment, tenant routing, and error handling.
+- [x] Trace and repair the exact workspace-creation failure point while preserving the atomic company/profile ownership RPC, RLS, and international workspace defaults.
+- [x] Trace and repair the Google OAuth callback and session-restoration path so an authenticated user reaches a verified dashboard or explicit onboarding state rather than returning to login.
+- [x] Add focused regression coverage, production configuration guidance, browser validation, full tests, and production-build validation before publishing the authentication-flow repair.

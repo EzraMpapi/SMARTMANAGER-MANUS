@@ -18,6 +18,8 @@ const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.m
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const salesDetailSource = readFileSync(new URL("../client/src/components/SalesDetailWorkspace.jsx", import.meta.url), "utf8");
 const invitationServiceSource = readFileSync(new URL("./teamInvitations.ts", import.meta.url), "utf8");
+const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
+const workspaceAuthMigrationSource = readFileSync(new URL("../supabase_workspace_auth_profile_upsert.sql", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
@@ -61,6 +63,13 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("/auth/v1/authorize?provider=${provider}");
   });
 
+  it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
+    expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
+    expect(publicAuthSource).toContain("persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken })");
+    expect(publicAuthSource).toContain("window.location.replace(withoutAuthView())");
+    expect(publicAuthSource).toContain("Google authentication did not complete");
+  });
+
   it("persists and refreshes Supabase tokens before tenant-scoped requests resume", () => {
     expect(dashboardSource).toContain('const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token"');
     expect(dashboardSource).toContain("function persistAuthSession(authResult)");
@@ -77,6 +86,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("keeps recovery, reset, and verification inside the configured Supabase auth boundary", () => {
+    expect(dashboardSource).toContain('emailRedirectTo: authRedirectUrl("signup")');
     expect(dashboardSource).toContain('async function authRequestPasswordRecovery(email)');
     expect(dashboardSource).toContain('`${SUPABASE_URL}/auth/v1/recover`');
     expect(dashboardSource).toContain('async function authResendVerification(email)');
@@ -115,6 +125,20 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("!profile || !profile.company_id || !profile.companies?.id");
     expect(dashboardSource).toContain("setOauthPendingUser({ id: user.id");
     expect(dashboardSource).toContain("before loading any company-scoped modules");
+  });
+
+  it("requires a confirmed workspace response and atomically assigns an authenticated profile in the deployed workspace RPC contract", () => {
+    expect(dashboardSource).toContain("Workspace creation did not return a confirmed company record.");
+    expect(dashboardSource).not.toContain("window.setTimeout(() => onAuthenticated(confirmedSession), 950)");
+    expect(dashboardSource).toContain("const [workspaceResolutionError, setWorkspaceResolutionError]");
+    expect(dashboardSource).toContain("Workspace resolution failed");
+    expect(dashboardSource).toContain("Retry workspace loading");
+    expect(dashboardSource).toContain("if (bootstrapError?.status === 401 || bootstrapError?.status === 403)");
+    expect(workspaceAuthMigrationSource).toContain("INSERT INTO public.profiles");
+    expect(workspaceAuthMigrationSource).toContain("ON CONFLICT (id) DO UPDATE");
+    expect(workspaceAuthMigrationSource).toContain("v_user_id uuid := auth.uid()");
+    expect(workspaceAuthMigrationSource).toContain("user already belongs to a different company");
+    expect(workspaceAuthMigrationSource).not.toContain("USING (true)");
   });
 
   it("attempts guarded first-tenant bootstrap before falling back to explicit company setup", () => {

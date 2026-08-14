@@ -48,3 +48,21 @@ export function authScreenFromSearch(search: string): AuthScreen {
   const flow = new URLSearchParams(search).get("auth");
   return flow === "signup" || flow === "forgot" || flow === "reset" || flow === "verify" ? flow : "login";
 }
+
+export type OAuthCallbackPayload = {
+  accessToken: string | null;
+  refreshToken: string | null;
+  errorCode: string | null;
+  errorDescription: string | null;
+};
+
+/** Parses an implicit-flow callback without storing or logging its credentials. */
+export function oauthCallbackFromHash(hash: string): OAuthCallbackPayload {
+  const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+  return {
+    accessToken: params.get("access_token"),
+    refreshToken: params.get("refresh_token"),
+    errorCode: params.get("error"),
+    errorDescription: params.get("error_description"),
+  };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "../client/src/lib/authOnboarding";
+import { authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, oauthCallbackFromHash, passwordStrength } from "../client/src/lib/authOnboarding";
 
 describe("enterprise authentication onboarding helpers", () => {
   it("requires a balanced, non-trivial password for new password credentials", () => {
@@ -17,5 +17,10 @@ describe("enterprise authentication onboarding helpers", () => {
   it("accepts only public authentication screens from query state", () => {
     expect(authScreenFromSearch("?auth=reset")).toBe("reset");
     expect(authScreenFromSearch("?auth=dashboard")).toBe("login");
+  });
+
+  it("parses an OAuth callback without conflating it with a recovery session", () => {
+    expect(oauthCallbackFromHash("#access_token=access&refresh_token=refresh")).toEqual({ accessToken: "access", refreshToken: "refresh", errorCode: null, errorDescription: null });
+    expect(oauthCallbackFromHash("#error=access_denied&error_description=cancelled")).toEqual({ accessToken: null, refreshToken: null, errorCode: "access_denied", errorDescription: "cancelled" });
   });
 });
