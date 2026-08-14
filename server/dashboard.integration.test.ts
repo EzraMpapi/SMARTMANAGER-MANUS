@@ -315,6 +315,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(posSource).not.toContain("Closed locally, but the server update failed.");
   });
 
+  it("keeps CRM lead form data pending until a confirmed Supabase row is returned", () => {
+    const crmSource = dashboardSource.slice(dashboardSource.indexOf("function CRM"), dashboardSource.indexOf("function LeadFormPanel"));
+    const leadFormSource = dashboardSource.slice(dashboardSource.indexOf("function LeadFormPanel"), dashboardSource.indexOf("/* ------------------------------- OPPORTUNITIES"));
+    expect(crmSource).toContain('const header = await sb("crm_leads").insert({');
+    expect(crmSource).toContain('setLeads((prev) => [mapLeadRow(header), ...prev])');
+    expect(crmSource).toContain('notify(persistenceFailureMessage("Creating the lead", e), "error")');
+    expect(crmSource).not.toContain('notify("Lead created locally, but saving to the server failed.", "error")');
+    expect(leadFormSource).toContain("await onSubmit(form)");
+  });
+
   it("maps the deployed generic POS tables without requiring unavailable cashier columns", () => {
     const shift = mapPosShiftRow({
       id: "shift-1", name: "Asha", status: "Open", amount: "75000", created_at: "2026-08-13T09:00:00.000Z",

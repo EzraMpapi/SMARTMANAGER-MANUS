@@ -6343,13 +6343,17 @@ function CRM({ crm, invoices, expenses, suppliers }) {
       email: String(r.email || "").trim(), phone: String(r.phone || "").trim(),
       industry: "General", score: 50, lastActivity: "—", expectedCloseDate: null,
     }));
-    setLeads((prev) => [...drafts, ...prev]);
     if (IS_CONFIGURED) {
       try {
-        await sb("crm_leads").insert(drafts.map((d) => ({
+        const confirmed = await sb("crm_leads").insert(drafts.map((d) => ({
           contact_name: d.name, company_name: d.company, stage: "New", value_amount: 0, email: d.email, phone: d.phone, industry: "General",
         }))).run();
-      } catch (e) { throw new Error("Some rows saved locally but failed to reach the server."); }
+        const confirmedRows = Array.isArray(confirmed) ? confirmed.map(mapLeadRow) : [];
+        if (confirmedRows.length !== drafts.length) throw new Error("Supabase did not confirm every imported lead.");
+        setLeads((prev) => [...confirmedRows, ...prev]);
+      } catch (e) { throw new Error(persistenceFailureMessage("Importing leads", e)); }
+    } else {
+      setLeads((prev) => [...drafts, ...prev]);
     }
   }
 
@@ -6377,16 +6381,16 @@ function CRM({ crm, invoices, expenses, suppliers }) {
     const idx = STAGES.indexOf(current.stage);
     const next = STAGES[Math.min(Math.max(idx + dir, 0), STAGES.length - 1)];
 
-    // Optimistic update — the board feels instant either way.
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, stage: next } : l)));
-
-    // Persist when a real project is connected; demo mode stops here.
     if (IS_CONFIGURED) {
       try {
-        await sb("crm_leads").eq("id", current.dbId ?? id).update({ stage: next }).run();
+        const confirmed = await sb("crm_leads").eq("id", current.dbId ?? id).update({ stage: next }).single().run();
+        const mapped = mapLeadRow(confirmed);
+        setLeads((prev) => prev.map((lead) => (lead.id === id ? mapped : lead)));
       } catch (e) {
-        notify("Couldn't save the stage change to the server.", "error");
+        notify(persistenceFailureMessage("Changing the lead stage", e), "error");
       }
+    } else {
+      setLeads((prev) => prev.map((lead) => (lead.id === id ? { ...lead, stage: next } : lead)));
     }
   }
 
@@ -6407,10 +6411,6 @@ function CRM({ crm, invoices, expenses, suppliers }) {
       expectedCloseDate: form.expectedCloseDate || null,
     };
 
-    setLeads((prev) => [draft, ...prev]);
-    notify(`Lead created: ${draft.company}`);
-    setShowForm(false);
-
     if (IS_CONFIGURED) {
       try {
         const header = await sb("crm_leads").insert({
@@ -6423,25 +6423,36 @@ function CRM({ crm, invoices, expenses, suppliers }) {
           industry: form.industry,
           expected_close_date: form.expectedCloseDate || null,
         }).single().run();
-        if (header?.id) {
-          setLeads((prev) => prev.map((l) => (l.id === draft.id ? { ...l, dbId: header.id } : l)));
-        }
+        if (!header?.id) throw buildConfirmedMutationError({ table: "crm_leads", method: "POST", status: 200 });
+        setLeads((prev) => [mapLeadRow(header), ...prev]);
+        setShowForm(false);
+        notify(`Lead created: ${draft.company}`);
+        return true;
       } catch (e) {
-        notify("Lead created locally, but saving to the server failed.", "error");
+        notify(persistenceFailureMessage("Creating the lead", e), "error");
+        return false;
       }
+    } else {
+      setLeads((prev) => [draft, ...prev]);
+      setShowForm(false);
+      notify(`Lead created: ${draft.company}`);
+      return true;
     }
   }
 
   async function deleteLead(id) {
     const current = leads.find((l) => l.id === id);
-    setLeads((prev) => prev.filter((l) => l.id !== id));
-    setSelected(null);
     if (IS_CONFIGURED && current?.dbId) {
       try {
         await sb("crm_leads").eq("id", current.dbId).delete().run();
+        setLeads((prev) => prev.filter((lead) => lead.id !== id));
+        setSelected(null);
       } catch (e) {
-        notify("Couldn't delete the lead on the server.", "error");
+        notify(persistenceFailureMessage("Deleting the lead", e), "error");
       }
+    } else {
+      setLeads((prev) => prev.filter((lead) => lead.id !== id));
+      setSelected(null);
     }
   }
 
@@ -7057,11 +7068,11 @@ function LeadFormPanel({ onClose, onSubmit }) {
     setForm((f) => ({ ...f, [key]: val }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setTouched(true);
     if (!valid) return;
-    onSubmit(form);
+    await onSubmit(form);
   }
 
   return (
