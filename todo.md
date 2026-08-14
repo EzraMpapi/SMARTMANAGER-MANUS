@@ -335,6 +335,8 @@
 - [ ] Verify the user-provided separate-company session cannot read, create against, update, or delete Tenant A records, while its own records remain tenant-scoped.
 
 - [x] Defer live two-company RLS acceptance verification until an independently provisioned Tenant B account is available, without marking a same-company session as tenant-isolated.
+
+- [x] Verify the authenticated Supabase API rejects a forged client-supplied company_id on a tenant-owned insert, without creating any record.
 - [x] Produce final server-failure evidence showing no false saved state, no fake persistence, meaningful errors, and retry-safe form handling.
 
 - [x] Diagnose and fix the reproduced live CRM lead form submission that left no confirmed Supabase row, without recreating database tables.
