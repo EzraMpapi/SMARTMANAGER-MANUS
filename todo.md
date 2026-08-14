@@ -402,3 +402,7 @@
 - [x] Upload the exact supplied logo as the authoritative managed static brand asset and create a reusable accessible responsive BrandLogo component.
 - [x] Integrate the centralized logo into existing authentication, onboarding, application-shell, responsive navigation, loading/error, and browser-branding surfaces without changing business behavior.
 - [x] Add focused branding regression coverage, verify desktop/mobile visuals, run tests and production build, then publish the branding integration.
+- [ ] Restart development preview and locate dashboard transition loading boundaries.
+- [ ] Implement a smooth accessible pulsing Smart Manager logo loading animation using BrandLogo.
+- [ ] Wire the pulsing loader to all dashboard page transitions and lazy-loaded route boundaries.
+- [ ] Verify transition loading behavior, run test suite and production build, then publish the update.
