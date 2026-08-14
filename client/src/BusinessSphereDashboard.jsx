@@ -14489,37 +14489,27 @@ function DocumentScannerView({ expensesHook }) {
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
   const fileRef = useRef(null);
+  const assistantMutation = trpc.ai.assist.useMutation();
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     setBusy(true); setResult(null); setError(null); setSaved(false);
     try {
-      const b64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result.split(",")[1]);
-        r.onerror = () => rej(new Error("read failed"));
-        r.readAsDataURL(file);
+      if (!file.type.startsWith("text/")) {
+        throw new Error("Image and PDF OCR are not available with the configured built-in text AI service. Upload a text export or enter the expense details manually.");
+      }
+      const documentText = (await file.text()).slice(0, 12_000);
+      const data = await assistantMutation.mutateAsync({
+        task: "document",
+        message: `Classify and extract the following business document. In the outer content field, return JSON only with exactly this shape: {"docType": one of ${JSON.stringify(SCAN_DOC_TYPES)}, "issuer": string or null, "date": "YYYY-MM-DD" or null, "totalAmount": number or null, "vatAmount": number or null, "currency": string or null, "referenceNumber": string or null, "tin": string or null, "category": the best fit from ${JSON.stringify(EXPENSE_CATEGORIES_LIST)} or null, "paymentMethod": one of ["Cash","Mobile Money","Bank Transfer","Card"] or null, "summary": string}. Use null when evidence is absent and never invent values.\n\n${documentText}`,
+        company: { name: "Smart Manager", currency: "TZS" },
+        context: { documentName: file.name, documentType: file.type },
       });
-      const mediaType = file.type || "image/jpeg";
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: [
-            { type: "image", source: { type: "base64", media_type: mediaType, data: b64 } },
-            { type: "text", text: `Classify this business document and extract its data. Respond ONLY with JSON, no markdown fences, exactly this shape: {"docType": one of ${JSON.stringify(SCAN_DOC_TYPES)}, "issuer": string or null, "date": "YYYY-MM-DD" or null, "totalAmount": number or null, "vatAmount": number or null (only if VAT is itemized on the document), "currency": string or null, "referenceNumber": string or null, "tin": string or null, "category": the best fit from ${JSON.stringify(EXPENSE_CATEGORIES_LIST)} or null if genuinely unclear, "paymentMethod": one of ["Cash","Mobile Money","Bank Transfer","Card"] or null if not shown, "summary": one short sentence}. If a field is not visible, use null — never invent values.` },
-          ] }],
-        }),
-      });
-      const data = await response.json();
-      const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
-      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+      const parsed = JSON.parse(data.content.replace(/```json|```/g, "").trim());
       setResult(parsed);
-    } catch (_e) {
-      setError("Couldn't read that image — try a clearer, well-lit photo of the full document.");
+    } catch (scanError) {
+      setError(scanError?.message || "Couldn't extract details from that document. Try a text export or enter values manually.");
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -21200,6 +21190,7 @@ function AIInsights({ company, reportName, summary }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const assistantMutation = trpc.ai.assist.useMutation();
 
   async function generate() {
     setOpen(true);
@@ -21207,21 +21198,16 @@ function AIInsights({ company, reportName, summary }) {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 500,
-          system: `You analyze business reports for ${company.name}, a ${company.industry} business. Given the ${reportName} data below, write 3-5 short, specific observations a business owner would find useful — trends, risks, or opportunities. Plain text, no markdown, no preamble.`,
-          messages: [{ role: "user", content: JSON.stringify(summary) }],
-        }),
+      const data = await assistantMutation.mutateAsync({
+        task: "chat",
+        message: `Analyze the ${reportName} summary and provide 3-5 concise, evidence-based observations about trends, risks, or opportunities.`,
+        company: { name: company.name, industry: company.industry, country: company.country, currency: company.currency || "TZS" },
+        persona: { name: "Reporting Analyst", scope: ["reports", "analytics"] },
+        context: { reportName, reportSummary: summary },
       });
-      if (!response.ok) throw new Error(`API returned ${response.status}`);
-      const data = await response.json();
-      setText((data.content?.find((c) => c.type === "text")?.text || "").trim());
+      setText(data.content.trim());
     } catch (e) {
-      setError("Couldn't reach the AI service. Try again in a moment.");
+      setError(e?.message || "Couldn't reach the AI service. Try again in a moment.");
     } finally {
       setBusy(false);
     }
@@ -23481,6 +23467,7 @@ function FilePanel({ file, company, onClose, onDelete, onAddVersion }) {
   const [summary, setSummary] = useState("");
   const [summaryBusy, setSummaryBusy] = useState(false);
   const [summaryError, setSummaryError] = useState(null);
+  const assistantMutation = trpc.ai.assist.useMutation();
 
   // Real signatures for this specific document — reuses the exact same
   // table and pad already built for Integrations' E-Signature tool
@@ -23494,21 +23481,15 @@ function FilePanel({ file, company, onClose, onDelete, onAddVersion }) {
     setSummaryBusy(true);
     setSummaryError(null);
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 400,
-          system: `You summarize business documents for ${company.name}. Write 2-4 short sentences covering what this document is and the key facts in it (parties, dates, amounts, terms) — whatever's actually present in the text. Plain text, no markdown.`,
-          messages: [{ role: "user", content: file.content }],
-        }),
+      const data = await assistantMutation.mutateAsync({
+        task: "document",
+        message: `Summarize this business document in 2-4 short sentences. Cover only facts present in the document, including parties, dates, amounts, and terms where available.\n\n${file.content}`,
+        company: { name: company.name, industry: company.industry, country: company.country, currency: company.currency || "TZS" },
+        context: { documentName: file.name, documentType: file.type },
       });
-      if (!response.ok) throw new Error(`API returned ${response.status}`);
-      const data = await response.json();
-      setSummary((data.content?.find((c) => c.type === "text")?.text || "").trim());
+      setSummary(data.content.trim());
     } catch (e) {
-      setSummaryError("Couldn't reach the AI service. Try again in a moment.");
+      setSummaryError(e?.message || "Couldn't reach the AI service. Try again in a moment.");
     } finally {
       setSummaryBusy(false);
     }
@@ -25537,19 +25518,16 @@ function CallFormPanel({ onClose, onSubmit }) {
 
 /* ------------------------------------ SUPPORT AI ------------------------------------ */
 
-// Reuses the exact same keyless in-artifact API call pattern as the main
-// AI Business Assistant (see AIAssistant/callModel) — a real request to
-// Claude, not a canned response. Scoped deliberately narrow: draft a reply
-// to a specific ticket, not an autonomous customer-facing bot, since a
-// production customer-facing bot needs the same server-side proxy this
-// build's AI Assistant already documents as a prerequisite (never ship the
-// API key client-side to the public).
+// Uses the same authenticated, server-side Smart Manager AI boundary as
+// the main AI module. It drafts a reply only; a person still reviews and
+// sends it through the normal support workflow.
 function SupportAI({ company, tickets }) {
   const [ticketId, setTicketId] = useState(tickets[0]?.id || "");
   const [draftReply, setDraftReply] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const ticket = tickets.find((t) => t.id === ticketId);
+  const assistantMutation = trpc.ai.assist.useMutation();
 
   async function generateReply() {
     if (!ticket) return;
@@ -25558,22 +25536,16 @@ function SupportAI({ company, tickets }) {
     setDraftReply("");
     try {
       const conversation = ticket.messages.map((m) => `${m.from}: ${m.text}`).join("\n");
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 400,
-          system: `You are a customer support agent for ${company.name}, a ${company.industry} business in ${company.country}. Draft a professional, concise, friendly reply to the customer's most recent message in this ticket. Plain text only, no markdown, no preamble like "Here's a draft" — just the reply itself.`,
-          messages: [{ role: "user", content: `Ticket: ${ticket.subject}\nCategory: ${ticket.category}\nPriority: ${ticket.priority}\n\nConversation so far:\n${conversation}\n\nDraft the next reply from the agent.` }],
-        }),
+      const data = await assistantMutation.mutateAsync({
+        task: "chat",
+        message: `Draft a professional, concise, friendly reply to the customer's most recent message. Plain text only, no preamble.\n\nTicket: ${ticket.subject}\nCategory: ${ticket.category}\nPriority: ${ticket.priority}\n\nConversation so far:\n${conversation}`,
+        company: { name: company.name, industry: company.industry, country: company.country, currency: company.currency || "TZS" },
+        persona: { name: "Customer Support Drafting Assistant", scope: ["support"] },
+        context: { ticketSubject: ticket.subject, category: ticket.category, priority: ticket.priority },
       });
-      if (!response.ok) throw new Error(`API returned ${response.status}`);
-      const data = await response.json();
-      const text = data.content?.find((c) => c.type === "text")?.text || "";
-      setDraftReply(text.trim());
+      setDraftReply(data.content.trim());
     } catch (e) {
-      setError("Couldn't reach the AI service. Try again in a moment.");
+      setError(e?.message || "Couldn't reach the AI service. Try again in a moment.");
     } finally {
       setBusy(false);
     }
@@ -25584,7 +25556,7 @@ function SupportAI({ company, tickets }) {
       <div className="flex items-start gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-3">
         <Brain size={15} className="text-slate-400 shrink-0 mt-0.5" />
         <p className="text-[12px] text-slate-500 leading-relaxed">
-          Drafts a suggested reply for a ticket using a real Claude API call — review before sending, this does not reply automatically. A fully autonomous customer-facing bot needs a server-side proxy for the API key, the same prerequisite documented for the main AI Assistant.
+          Drafts a suggested reply using the authenticated AI service. Review before sending; this does not reply automatically.
         </p>
       </div>
 
@@ -33862,7 +33834,7 @@ function actionLabel(name, input) {
   return name;
 }
 
-function AIAssistant({ company, invoices, inventory, crm, expenses, employees, leaveRequests, suppliers, quotations, scheduledWorkflows }) {
+function AIAssistant({ company, invoices, inventory, crm, expenses, employees, leaveRequests, suppliers, quotations, scheduledWorkflows, onNavigate }) {
   const [personaId, setPersonaId] = useState(null);
   const persona = AI_PERSONAS.find((p) => p.id === personaId);
   const data = { company, invoices, inventory, crm, expenses, employees, leaveRequests, suppliers, quotations, scheduledWorkflows };
@@ -33922,7 +33894,7 @@ function AIAssistant({ company, invoices, inventory, crm, expenses, employees, l
 
       {persona.mode === "docgen" && <DocumentGenerator company={company} />}
       {persona.mode === "meeting" && <AIMeetingAssistant company={company} />}
-      {persona.mode !== "docgen" && persona.mode !== "meeting" && <ChatInterface persona={persona} data={data} />}
+      {persona.mode !== "docgen" && persona.mode !== "meeting" && <ChatInterface persona={persona} data={data} onNavigate={onNavigate} />}
     </div>
   );
 }
@@ -33933,15 +33905,18 @@ function AIAssistant({ company, invoices, inventory, crm, expenses, employees, l
 // per-call by `persona`: which data it sees, which tools it may use, how
 // it introduces itself. Nothing here is persona-specific logic — that all
 // lives in the AI_PERSONAS config above.
-function ChatInterface({ persona, data }) {
+function ChatInterface({ persona, data, onNavigate }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
+  const [memoryState, setMemoryState] = useState(IS_CONFIGURED ? "loading" : "session");
   const recognitionRef = useRef(null);
   const speechSupported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   const tools = AI_TOOLS_ALL.filter((t) => persona.tools.includes(t.name));
+  const assistantMutation = trpc.ai.assist.useMutation();
   const [anomalies, setAnomalies] = useState([]);
   const [anomalyMeta, setAnomalyMeta] = useState(null);
   const anomalyMutation = trpc.ai.analyzeAnomalies.useMutation({
@@ -33988,6 +33963,89 @@ function ChatInterface({ persona, data }) {
       inventory: inventoryRows.slice(0, 200).map((item) => ({ sku: item.sku || "", name: item.name || "", qty: Number(item.qty) || 0, reorder: Number(item.reorder) || 0, unitCost: Number(item.unitCost) || 0, category: item.category || "Uncategorized" })),
       monthly,
     });
+  }
+
+  function assistantBlocks(result) {
+    const blocks = [{ type: "text", text: result.content }];
+    if (Array.isArray(result.suggestions) && result.suggestions.length) blocks.push({ type: "suggestions", items: result.suggestions });
+    if (Array.isArray(result.actions) && result.actions.length) blocks.push({ type: "navigate_actions", items: result.actions });
+    return blocks;
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    async function restoreConversation() {
+      if (!IS_CONFIGURED) return;
+      setMemoryState("loading");
+      try {
+        const conversations = await sb("support_chat_conversations")
+          .eq("assistant_kind", "smart_manager")
+          .eq("persona_id", persona.id)
+          .order("updated_at", { ascending: false })
+          .run();
+        const conversation = conversations?.[0];
+        if (!conversation) {
+          if (!cancelled) setMemoryState("ready");
+          return;
+        }
+        const records = await sb("support_chat_messages")
+          .eq("assistant_kind", "smart_manager")
+          .eq("conversation_id", conversation.id)
+          .order("created_at")
+          .run();
+        if (!cancelled) {
+          setConversationId(conversation.id);
+          setMessages((records || []).map((record) => ({
+            role: record.role === "assistant" ? "assistant" : "user",
+            content: record.role === "assistant"
+              ? assistantBlocks({ content: record.content || record.notes || "", suggestions: record.suggestions || [], actions: record.actions || [] })
+              : (record.content || record.notes || ""),
+          })).filter((record) => record.content && (!Array.isArray(record.content) || record.content[0]?.text)));
+          setMemoryState("ready");
+        }
+      } catch (_error) {
+        if (!cancelled) setMemoryState("unavailable");
+      }
+    }
+    restoreConversation();
+    return () => { cancelled = true; };
+  }, [persona.id]);
+
+  async function persistTurn(question, response) {
+    if (!IS_CONFIGURED) return;
+    let activeConversationId = conversationId;
+    try {
+      if (!activeConversationId) {
+        const conversation = await sb("support_chat_conversations").insert({
+          name: `${persona.name} conversation`,
+          status: "Active",
+          notes: "Smart Manager AI conversation memory",
+          assistant_kind: "smart_manager",
+          persona_id: persona.id,
+        }).single().run();
+        activeConversationId = conversation?.id;
+        if (!activeConversationId) throw new Error("Conversation was not confirmed by the server.");
+        setConversationId(activeConversationId);
+      }
+      await sb("support_chat_messages").insert([
+        {
+          name: `${persona.name} user request`, status: "User", notes: question.slice(0, 500),
+          assistant_kind: "smart_manager", conversation_id: activeConversationId, persona_id: persona.id, role: "user", content: question,
+        },
+        {
+          name: `${persona.name} response`, status: "Assistant", notes: response.content.slice(0, 500),
+          assistant_kind: "smart_manager", conversation_id: activeConversationId, persona_id: persona.id, role: "assistant", content: response.content,
+          suggestions: response.suggestions || [], actions: response.actions || [], model: response.model || "gpt-5-mini", token_usage: response.usage || {},
+        },
+      ]).run();
+      await sb("support_chat_conversations").eq("id", activeConversationId).update({
+        notes: response.content.slice(0, 500),
+        last_message_at: new Date().toISOString(),
+      }).run();
+      setMemoryState("ready");
+    } catch (_error) {
+      setMemoryState("unavailable");
+    }
   }
 
   async function executeTool(name, toolInput) {
@@ -34148,23 +34206,27 @@ function ChatInterface({ persona, data }) {
   }
 
   async function callModel(convo) {
-    const snapshot = buildBusinessSnapshot(data, persona.scope);
-    const roleFraming = persona.id === "consultant" || persona.id === "voice-commands"
-      ? `You are the Smart Manager AI Business Assistant for ${data.company.name}`
-      : `You are acting as an AI ${persona.name} for ${data.company.name}, a specialist focused on ${persona.tagline.toLowerCase()}`;
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        system: `${roleFraming}, a ${data.company.industry} business in ${data.company.country}. You have the live business snapshot below (all monetary values are in thousands of ${data.company.currency}). Answer using ONLY this data — cite specific document IDs, customers, and figures. ${tools.length > 0 ? "You can also take actions with the provided tools when the owner clearly asks you to; only act on explicit requests, use exact IDs/SKUs/names from the snapshot, and after acting, confirm what changed in one or two sentences." : "You have no tools in this role — answer and advise only, do not claim to have taken any action."} If a request is ambiguous, ask rather than guessing. Be concise and practical. Plain text, no markdown headers.\n\nLIVE BUSINESS SNAPSHOT (scope: ${persona.scope.join(", ") || "none"}):\n${JSON.stringify(snapshot)}`,
-        tools: tools.length > 0 ? tools : undefined,
-        messages: convo,
-      }),
+    const currentQuestion = [...convo].reverse().find((message) => message.role === "user" && typeof message.content === "string")?.content || "";
+    const history = convo.slice(0, -1).flatMap((message) => {
+      const content = typeof message.content === "string"
+        ? message.content
+        : (message.content || []).filter((block) => block.type === "text").map((block) => block.text).join("\n");
+      return content ? [{ role: message.role, content }] : [];
+    }).slice(-12);
+    const result = await assistantMutation.mutateAsync({
+      task: "chat",
+      message: currentQuestion,
+      history,
+      company: {
+        name: data.company.name,
+        industry: data.company.industry,
+        country: data.company.country,
+        currency: data.company.currency || "TZS",
+      },
+      persona: { name: persona.name, tagline: persona.tagline, scope: persona.scope },
+      context: buildBusinessSnapshot(data, persona.scope),
     });
-    if (!response.ok) throw new Error(`API returned ${response.status}`);
-    return response.json();
+    return { content: assistantBlocks(result), result };
   }
 
   async function send(text) {
@@ -34177,24 +34239,12 @@ function ChatInterface({ persona, data }) {
     setBusy(true);
 
     try {
-      for (let round = 0; round < 4; round++) {
-        const responseData = await callModel(convo);
-        convo = [...convo, { role: "assistant", content: responseData.content }];
-        setMessages(convo);
-
-        const toolUses = (responseData.content || []).filter((b) => b.type === "tool_use");
-        if (toolUses.length === 0) break;
-
-        const results = [];
-        for (const tu of toolUses) {
-          const result = await executeTool(tu.name, tu.input);
-          results.push({ type: "tool_result", tool_use_id: tu.id, content: result });
-        }
-        convo = [...convo, { role: "user", content: results }];
-        setMessages(convo);
-      }
+      const responseData = await callModel(convo);
+      convo = [...convo, { role: "assistant", content: responseData.content }];
+      setMessages(convo);
+      await persistTurn(question, responseData.result);
     } catch (e) {
-      notify("The AI assistant couldn't be reached. Please try again.", "error");
+      notify(e?.message || "The AI assistant couldn't be reached. Please try again.", "error");
       setMessages(messages);
       setInput(question);
     } finally {
@@ -34362,6 +34412,28 @@ function ChatInterface({ persona, data }) {
                 </div>
               );
             }
+            if (block.type === "suggestions" && Array.isArray(block.items) && block.items.length) {
+              return (
+                <div key={`${i}-${j}`} className="flex flex-wrap gap-2 pl-1">
+                  {block.items.map((suggestion) => (
+                    <button key={suggestion} onClick={() => send(suggestion)} disabled={busy} className="rounded-full border border-[#16A34A]/20 bg-[#16A34A]/5 px-3 py-1.5 text-[11px] font-medium text-[#166534] transition-colors hover:bg-[#16A34A]/10 disabled:opacity-50">
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              );
+            }
+            if (block.type === "navigate_actions" && Array.isArray(block.items) && block.items.length) {
+              return (
+                <div key={`${i}-${j}`} className="flex flex-wrap gap-2 pl-1">
+                  {block.items.map((action) => (
+                    <button key={`${action.target}-${action.label}`} onClick={() => onNavigate?.(action.target)} className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9A96E]/40 bg-[#C9A96E]/10 px-3 py-1.5 text-[11px] font-semibold text-[#8a670a] transition-colors hover:bg-[#C9A96E]/20">
+                      <ArrowRight size={12} /> {action.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            }
             if (block.type === "tool_use") {
               return (
                 <div key={`${i}-${j}`} className="flex justify-start">
@@ -34417,7 +34489,7 @@ function ChatInterface({ persona, data }) {
           </button>
         </div>
         <p className="text-[10.5px] text-slate-400 mt-2 ml-0.5">
-          Powered by Claude · reads and acts on this session's data{IS_CONFIGURED ? "" : " (demo dataset)"}
+          Powered by Smart Manager AI · reads the selected session context{memoryState === "loading" ? " · restoring context…" : memoryState === "ready" ? " · conversation memory saved" : memoryState === "unavailable" ? " · memory is unavailable for this session" : ""}{IS_CONFIGURED ? "" : " (demo dataset)"}
         </p>
       </div>
     </div>
@@ -34436,6 +34508,7 @@ function DocumentGenerator({ company }) {
   const [emailSubject, setEmailSubject] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const assistantMutation = trpc.ai.assist.useMutation();
   const isEmail = docType === "Email";
 
   async function generate() {
@@ -34445,21 +34518,13 @@ function DocumentGenerator({ company }) {
     setResult("");
     setEmailSubject("");
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 900,
-          system: isEmail
-            ? `You draft professional business emails for ${company.name}, a ${company.industry} business in ${company.country}. Reply with exactly two parts: a line starting with "Subject: " followed by the subject, then a blank line, then the email body. No other preamble, no markdown formatting.`
-            : `You draft professional business documents for ${company.name}, a ${company.industry} business in ${company.country}. Write only the finished document — no preamble, no "Here's a draft", no markdown formatting. Plain, professional text ready to send as-is.`,
-          messages: [{ role: "user", content: "Document type: " + docType + (recipient.trim() ? "\nRecipient: " + recipient.trim() : "") + "\n\nBrief: " + brief }],
-        }),
+      const responseData = await assistantMutation.mutateAsync({
+        task: "document",
+        message: `Document type: ${docType}${recipient.trim() ? `\nRecipient: ${recipient.trim()}` : ""}\n\nBrief: ${brief}`,
+        company: { name: company.name, industry: company.industry, country: company.country, currency: company.currency || "TZS" },
+        context: { documentType: docType, recipient: recipient.trim(), emailFormatRequired: isEmail },
       });
-      if (!response.ok) throw new Error(`API returned ${response.status}`);
-      const responseData = await response.json();
-      const text = (responseData.content?.find((c) => c.type === "text")?.text || "").trim();
+      const text = responseData.content.trim();
       if (isEmail) {
         const match = text.match(/^Subject:\s*(.+?)\n+([\s\S]*)$/i);
         if (match) { setEmailSubject(match[1].trim()); setResult(match[2].trim()); }
@@ -34468,7 +34533,7 @@ function DocumentGenerator({ company }) {
         setResult(text);
       }
     } catch (e) {
-      setError("Couldn't reach the AI service. Try again in a moment.");
+      setError(e?.message || "Couldn't reach the AI service. Try again in a moment.");
     } finally {
       setBusy(false);
     }
@@ -34560,6 +34625,7 @@ function AIMeetingAssistant({ company }) {
   const [followUpsCreated, setFollowUpsCreated] = useState(false);
   const recognitionRef = useRef(null);
   const calendarEvents = useCompanyTable("calendar_events", [], { mapRow: mapCalendarEventRow });
+  const assistantMutation = trpc.ai.assist.useMutation();
 
   const speechSupported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
@@ -34604,24 +34670,18 @@ function AIMeetingAssistant({ company }) {
     setResult(null);
     setFollowUpsCreated(false);
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: `You produce structured meeting minutes for ${company.name}. Respond with ONLY valid JSON, no markdown fences, no preamble, in exactly this shape: {"summary": "2-3 sentence overview", "decisions": ["decision 1", "decision 2"], "actionItems": [{"task": "what needs doing", "owner": "who, if mentioned, else empty string", "dueDate": "YYYY-MM-DD if a date or relative time is mentioned (compute it from today, ${TODAY.toISOString().slice(0, 10)}), else empty string"}]}. Only include what is actually in the transcript — an empty array is correct if nothing qualifies, never invent items to fill the shape.`,
-          messages: [{ role: "user", content: `Meeting transcript or notes:\n\n${transcript}` }],
-        }),
+      const data = await assistantMutation.mutateAsync({
+        task: "meeting",
+        message: `Meeting transcript or notes:\n\n${transcript}`,
+        company: { name: company.name, industry: company.industry, country: company.country, currency: company.currency || "TZS" },
+        context: { today: new Date().toISOString().slice(0, 10), transcriptLength: transcript.length },
       });
-      if (!response.ok) throw new Error(`API returned ${response.status}`);
-      const data = await response.json();
-      const text = (data.content?.find((c) => c.type === "text")?.text || "").trim();
+      const text = data.content.trim();
       const cleaned = text.replace(/^```json\s*|\s*```$/g, "");
       const parsed = JSON.parse(cleaned);
       setResult({ summary: parsed.summary || "", decisions: parsed.decisions || [], actionItems: (parsed.actionItems || []).map((a, i) => ({ ...a, id: i, include: true })) });
     } catch (e) {
-      setError("Couldn't generate minutes — the AI service didn't return a response we could read. Try again in a moment.");
+      setError(e?.message || "Couldn't generate minutes — the AI service didn't return a response we could read. Try again in a moment.");
     } finally {
       setBusy(false);
     }
@@ -36964,6 +37024,7 @@ function CustomerAIChat({ customerName, myInvoices, myOrders }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const assistantMutation = trpc.ai.assist.useMutation();
 
   async function send() {
     if (!input.trim() || busy) return;
@@ -36977,21 +37038,17 @@ function CustomerAIChat({ customerName, myInvoices, myOrders }) {
         invoices: myInvoices.map((i) => ({ id: i.id, status: i.status, due_date: i.dueDate, total_tzs_k: Math.round(lineTotal(i.items).total), balance_tzs_k: Math.round(lineTotal(i.items).total - (i.amountPaid || 0)) })),
         orders: myOrders.map((o) => ({ id: o.id, status: o.status, order_date: o.date })),
       };
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 500,
-          system: `You are a customer support assistant for ${customerName}. You can only discuss ${customerName}'s own invoices and orders, provided below as JSON — never invent information not present here, and never discuss any other customer or internal business figures, because you have no access to them. If asked about something outside this data, say you do not have that information and suggest opening a support ticket.\n\nYour data:\n${JSON.stringify(snapshot, null, 2)}`,
-          messages: [...messages, userMsg],
-        }),
+      const data = await assistantMutation.mutateAsync({
+        task: "chat",
+        message: `${userMsg.content}\n\nAnswer only from the customer-specific invoices and orders supplied in the context. Do not discuss other customers, internal costs, or any data not present.`,
+        history: messages.slice(-10).map((message) => ({ role: message.role, content: message.content })).filter((message) => message.content),
+        company: { name: "Smart Manager Customer Portal", currency: "TZS" },
+        persona: { name: "Customer Support Assistant", scope: ["support"] },
+        context: { customerScopedData: snapshot },
       });
-      const data = await response.json();
-      const text = data.content?.find((c) => c.type === "text")?.text || "Sorry, I couldn't process that.";
-      setMessages((prev) => [...prev, { role: "assistant", content: text }]);
-    } catch (_e) {
-      setMessages((prev) => [...prev, { role: "assistant", content: "I couldn't reach the AI service — please try again in a moment." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: data.content || "Sorry, I couldn't process that." }]);
+    } catch (error) {
+      setMessages((prev) => [...prev, { role: "assistant", content: error?.message || "I couldn't reach the AI service — please try again in a moment." }]);
     } finally {
       setBusy(false);
     }
@@ -46483,7 +46540,7 @@ function SmartManager() {
           {active === "hr" && <HR employeesHook={employees} leaveRequestsHook={leaveRequests} expensesHook={expenses} intent={intent} clearIntent={clearIntent} currentUser={currentUser} canManage={canManage} />}
           {active === "manufacturing" && <Manufacturing inventory={inventory} workOrdersHook={workOrders} expensesHook={expenses} />}
           {active === "ai" && (
-            <AIAssistant company={company} invoices={invoices} inventory={inventory} crm={crm} expenses={expenses} employees={employees} leaveRequests={leaveRequests} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} />
+            <AIAssistant company={company} invoices={invoices} inventory={inventory} crm={crm} expenses={expenses} employees={employees} leaveRequests={leaveRequests} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} onNavigate={go} />
           )}
           {active === "microfinance" && <MicrofinanceModule currentUser={currentUser} />}
           {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} />}

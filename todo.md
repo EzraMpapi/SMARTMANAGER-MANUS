@@ -342,3 +342,12 @@
 - [x] Produce final server-failure evidence showing no false saved state, no fake persistence, meaningful errors, and retry-safe form handling.
 
 - [x] Diagnose and fix the reproduced live CRM lead form submission that left no confirmed Supabase row, without recreating database tables.
+
+- [x] Audit the existing AI Assistant module, related server APIs, dashboard integration points, and provider configuration.
+- [x] Supersede the externally funded provider configuration with the project’s built-in server-side AI service; no assistant credential is exposed to the browser.
+- [x] Implement server-side context-aware AI responses with bounded conversation memory, structured suggestions, provider-managed retries, rate-limit-aware errors, and safe usage telemetry.
+- [x] Integrate the enhanced assistant into the existing dashboard with clear loading, actionable suggestions, safe navigation actions, and truthful error states.
+- [x] Add focused automated tests and production validation for the AI Assistant module, then publish the enhancement.
+
+- [x] Replace the external DeepSeek assistant provider with the built-in server-side AI service so live assistant generation does not depend on the external account balance.
+- [x] Verify a real, non-sensitive built-in AI Assistant response and retain tenant-safe context, conversation memory, and provider-error behavior.

@@ -11,6 +11,16 @@ describe("AI router and grounded dashboard signals", () => {
     expect(routersSource).toContain("chat: protectedProcedure");
   });
 
+  it("routes contextual assistant requests through the authenticated built-in AI service with bounded memory and rate protection", () => {
+    expect(routersSource).toContain("assist: protectedProcedure");
+    expect(routersSource).toContain("enforceAssistantRateLimit");
+    expect(routersSource).toContain("runSmartAssistant");
+    expect(dashboardSource).toContain("trpc.ai.assist.useMutation");
+    expect(dashboardSource).toContain("support_chat_conversations");
+    expect(dashboardSource).toContain("support_chat_messages");
+    expect(dashboardSource).not.toContain("api.anthropic.com");
+  });
+
   it("uses a strict structured schema for cash-flow and inventory anomaly findings", () => {
     expect(routersSource).toContain("analyzeAnomalies: protectedProcedure");
     expect(routersSource).toContain("erp_anomaly_findings");

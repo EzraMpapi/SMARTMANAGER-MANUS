@@ -13,6 +13,20 @@ import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
+import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
+
+const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
+
+function enforceAssistantRateLimit(identity: string) {
+  const now = Date.now();
+  const prior = assistantRateWindows.get(identity);
+  const window = !prior || now - prior.startedAt >= 60_000 ? { startedAt: now, requestCount: 0 } : prior;
+  window.requestCount += 1;
+  assistantRateWindows.set(identity, window);
+  if (window.requestCount > 12) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "The AI Assistant is receiving too many requests. Please wait a minute and try again." });
+  }
+}
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -49,6 +63,43 @@ export const appRouter = router({
           content: res.choices[0]?.message?.content || "No response generated.",
           model: res.model || input.model || "default",
         };
+      }),
+    assist: protectedProcedure
+      .input(z.object({
+        task: z.enum(["chat", "document", "meeting"]).default("chat"),
+        message: z.string().min(1).max(8_000),
+        history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1).max(3_000) })).max(12).default([]),
+        company: z.object({
+          name: z.string().min(1).max(160),
+          industry: z.string().max(160).optional(),
+          country: z.string().max(100).optional(),
+          currency: z.string().max(12).optional(),
+        }),
+        persona: z.object({
+          name: z.string().min(1).max(160),
+          tagline: z.string().max(360).optional(),
+          scope: z.array(z.string().max(80)).max(20).optional(),
+        }).optional(),
+        context: z.record(z.string(), z.unknown()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        enforceAssistantRateLimit(ctx.user.openId);
+        try {
+          return await runSmartAssistant(input);
+        } catch (error) {
+          if (error instanceof AssistantProviderError) {
+            if (error.status === 429) {
+              throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "The AI provider is busy. Please try again shortly." });
+            }
+            if (error.status === 400) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: "The assistant request could not be processed. Please shorten or rephrase it." });
+            }
+            if (error.status === 401 || error.status === 403 || error.status === 503) {
+              throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The AI Assistant service is temporarily unavailable. Please contact an administrator." });
+            }
+          }
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The AI Assistant could not be reached. Please try again shortly." });
+        }
       }),
     analyzeAnomalies: protectedProcedure
       .input(z.object({
