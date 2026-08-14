@@ -8,10 +8,10 @@ const baselineMigration = readFileSync(new URL("../supabase/migrations/20260812_
 describe("Supabase production schema contract guard", () => {
   it("derives the required table contract from the single preserved ERP dashboard", () => {
     const referencedTables = [...new Set(
-      [...dashboardSource.matchAll(/sb\("([^\"]+)"/g)].map((match) => match[1]),
+      [...dashboardSource.matchAll(/(?:sb|useCompanyTable|runCompanyTableQuery|runCompanyTableMutation)\("([^\"]+)"/g)].map((match) => match[1]),
     )];
 
-    expect(referencedTables).toHaveLength(110);
+    expect(referencedTables).toHaveLength(150);
     expect(referencedTables).toContain("finance_expenses");
     expect(referencedTables).toContain("inventory_items");
     expect(referencedTables).toContain("crm_leads");
@@ -23,6 +23,8 @@ describe("Supabase production schema contract guard", () => {
     expect(verifierSource).toContain("SUPABASE_SECRET_KEY");
     expect(verifierSource).toContain("/rest/v1/");
     expect(verifierSource).toContain("BusinessSphereDashboard.jsx");
+    expect(verifierSource).toContain("useCompanyTable");
+    expect(verifierSource).toContain("runCompanyTableMutation");
     expect(verifierSource).toContain("missingTables");
     expect(verifierSource).toContain("tenantTableIssues");
     expect(verifierSource).toContain("attempt <= 3");

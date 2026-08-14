@@ -312,3 +312,5 @@
 - [x] Fix the pos_shifts cashier-column schema mismatch so POS writes match the live Supabase table contract and persist successfully.
 
 - [ ] Verify confirmed Supabase CRUD persistence across Customers, Suppliers, Products, Inventory, Sales, Expenses, Employees, Invoices, and Payments using shared tenant-safe infrastructure.
+
+- [x] Reconcile every frontend module and table contract shown in the dashboard navigation with the live Supabase schema, adding only verified missing tenant-safe backend objects.

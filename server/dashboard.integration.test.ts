@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -215,6 +215,21 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("genericFilterColumn(table, col)");
     expect(dashboardSource).toContain("data->>${column}");
     expect(dashboardSource).toContain("requestPayload = normalizeGenericCompanyPayload(table, payload");
+  });
+
+  it("covers every reconciled generic module family without accepting client tenant identifiers", () => {
+    [
+      "ecommerce_orders", "hc_patients", "manufacturing_boms", "procurement_purchase_orders",
+      "sch_students", "support_chat_messages", "vicoba_members", "whatsapp_messages",
+    ].forEach((table) => expect(GENERIC_COMPANY_TABLES.has(table)).toBe(true));
+
+    const order = normalizeGenericCompanyPayload("ecommerce_orders", {
+      company_id: "untrusted-company", order_number: "ORD-1001", customer_name: "Moshi Store", total: 340000, order_status: "Paid",
+    });
+    expect(order).toMatchObject({ name: "ecommerce orders record", status: "Active", data: { order_number: "ORD-1001", customer_name: "Moshi Store", total: 340000 } });
+    expect(order.amount).toBeUndefined();
+    expect(order).not.toHaveProperty("company_id");
+    expect(dashboardSource).toContain("inflateGenericCompanyRow");
   });
 
   it("normalizes and validates loan insert payloads before server persistence", () => {

@@ -8,7 +8,7 @@ const dashboardSource = readFileSync(
 );
 
 const referencedTables = [...new Set(
-  [...dashboardSource.matchAll(/sb\("([^\"]+)"/g)].map((match) => match[1]),
+  [...dashboardSource.matchAll(/(?:sb|useCompanyTable|runCompanyTableQuery|runCompanyTableMutation)\("([^\"]+)"/g)].map((match) => match[1]),
 )].sort();
 
 const supabaseUrl = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "").replace(/\/$/, "");
@@ -82,7 +82,7 @@ const tenantTableIssues = referencedTables
 
 const report = {
   verifiedAt: new Date().toISOString(),
-  source: "BusinessSphereDashboard.jsx sb() table contract",
+  source: "BusinessSphereDashboard.jsx complete persistence-table contract",
   referencedTableCount: referencedTables.length,
   deployedTableCount: deployedTables.length,
   missingTables,

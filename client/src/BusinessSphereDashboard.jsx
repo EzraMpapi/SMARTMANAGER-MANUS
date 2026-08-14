@@ -176,21 +176,34 @@ async function callRpc(name, params, accessToken) {
   return data;
 }
 
-// Several deployed tenant tables use a common name/status/amount/notes/data
-// envelope. Normalize at this shared boundary so module forms do not send
-// unavailable direct columns to PostgREST.
-export const GENERIC_COMPANY_TABLES = new Set([
-  "crm_leads", "inventory_items", "inventory_suppliers", "hr_employees",
-  "sales_invoices", "sales_payments", "pos_transactions", "pos_shifts",
-  "pos_cash_movements",
-]);
+// These deployed tenant tables use the common name/status/amount/notes/data
+// envelope. Normalize at this shared boundary so every module persists only
+// server-supported columns and keeps its feature-specific fields in data.
+export const GENERIC_COMPANY_TABLES = new Set(`
+approval_signatures bank_accounts bank_fixed_deposits bank_loans bank_standing_orders bank_transactions
+branches business_loans collab_messages community_contributions community_groups company_modules
+crm_contacts crm_interactions crm_leads customer_feedback departments digital_signatures documents
+ecommerce_orders ecommerce_products emails expense_budgets flt_maintenance flt_trips flt_vehicles
+hc_appointments hc_doctors hc_invoices hc_lab_orders hc_patients hc_prescriptions hc_radiology hc_reports hc_visits hc_vitals
+hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_invite_codes hr_leave_requests hr_payroll_runs hr_performance_reviews
+htl_bookings htl_rooms integration_connections inventory_batches inventory_items inventory_stock_movements inventory_suppliers inventory_transfers inventory_warehouses
+journal_entries kb_articles loan_repayments manufacturing_bom_components manufacturing_boms manufacturing_qc_inspections manufacturing_work_orders
+marketing_campaigns mfi_clients mfi_loans mfi_savings network_profiles network_rfqs notebook_notes notification_log
+other_debtors other_income period_closes phm_dispense phm_drugs phm_stock phm_suppliers
+pos_cash_movements pos_return_items pos_returns pos_shifts pos_transaction_items pos_transactions
+procurement_purchase_orders project_milestones project_tasks purchase_order_items resource_bookings
+rst_menu rst_orders rst_reservations rst_tables sales_invoice_items sales_invoices sales_order_return_items sales_order_returns sales_payments sales_quotations sales_subscriptions
+sch_books sch_classes sch_exams sch_fees sch_students sch_teachers sch_transport scm_shipments scm_vehicles
+signatures sms_group_members sms_groups sms_templates stock_audit_items stock_audits support_call_log support_chat_conversations support_chat_messages support_ticket_messages
+vicoba_loans vicoba_meetings vicoba_members whatsapp_messages
+`.trim().split(/\s+/));
 
-const GENERIC_DATA_FILTER_COLUMNS = new Set([
-  "sku", "item_sku", "contact_name", "full_name", "doc_number", "invoice_id", "shift_id",
+const GENERIC_STANDARD_COLUMNS = new Set([
+  "id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at",
 ]);
 
 function genericFilterColumn(table, column) {
-  return GENERIC_COMPANY_TABLES.has(table) && GENERIC_DATA_FILTER_COLUMNS.has(column)
+  return GENERIC_COMPANY_TABLES.has(table) && !GENERIC_STANDARD_COLUMNS.has(column)
     ? `data->>${column}`
     : column;
 }
@@ -223,6 +236,13 @@ export function normalizeGenericCompanyPayload(table, record, existing = null) {
     notes: firstDefined(record.notes, record.reason, record.description, data.notes, data.reason, data.description, existing?.notes, null),
     data,
   };
+}
+
+function inflateGenericCompanyRow(table, row) {
+  if (!GENERIC_COMPANY_TABLES.has(table) || !row || typeof row !== "object" || Array.isArray(row)) return row;
+  if (!row.data || typeof row.data !== "object") return row;
+  const data = row.data;
+  return { ...data, ...row, data };
 }
 
 // Minimal chainable query builder over PostgREST, mirroring the shape of the
@@ -315,7 +335,9 @@ function sb(table) {
       if (method !== "GET" && (raw == null || (Array.isArray(raw) && raw.length === 0))) {
         throw buildConfirmedMutationError({ table, method, status: res.status, details: raw });
       }
-      const data = raw;
+      const data = method === "GET" && Array.isArray(raw)
+        ? raw.map((row) => inflateGenericCompanyRow(table, row))
+        : inflateGenericCompanyRow(table, raw);
       return single ? (Array.isArray(data) ? data[0] : data) : data;
     },
     // allow `await sb(table).select().eq(...)` directly, like supabase-js
