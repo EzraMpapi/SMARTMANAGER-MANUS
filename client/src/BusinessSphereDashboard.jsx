@@ -28,9 +28,11 @@ import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import { trpc } from "./lib/trpc";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "./lib/authErrors";
+import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
+import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPasswordView, VerificationView } from "./components/EnterpriseAuthViews";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 
@@ -155,6 +157,76 @@ async function authSignUp(email, password) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error_description || data.msg || "Sign up failed.");
   return data; // { access_token, refresh_token, user } once email confirmation is satisfied, or { user } if a project requires confirmation first
+}
+
+function authRedirectUrl(screen) {
+  if (typeof window === "undefined") return "";
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.searchParams.set("auth", screen);
+  return url.toString();
+}
+
+async function authRequestPasswordRecovery(email) {
+  if (!IS_CONFIGURED) {
+    const error = new Error("Authentication is not configured.");
+    error.code = "AUTH_CONFIGURATION_MISSING";
+    throw error;
+  }
+  let res;
+  try {
+    res = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ email, redirect_to: authRedirectUrl("reset") }),
+    });
+  } catch (cause) {
+    const error = new Error("Unable to reach the authentication server.");
+    error.code = "NETWORK_ERROR";
+    error.cause = cause;
+    throw error;
+  }
+  const body = await res.text();
+  let data = null;
+  try { data = body ? JSON.parse(body) : null; } catch { /* a safe generic request error is built below */ }
+  if (!res.ok) throw createAuthRequestError(res.status, data, "Password recovery could not be started.");
+  return data;
+}
+
+async function authResendVerification(email) {
+  if (!IS_CONFIGURED) {
+    const error = new Error("Authentication is not configured.");
+    error.code = "AUTH_CONFIGURATION_MISSING";
+    throw error;
+  }
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/resend`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify({ type: "signup", email, options: { emailRedirectTo: authRedirectUrl("verify") } }),
+  });
+  const body = await res.text();
+  let data = null;
+  try { data = body ? JSON.parse(body) : null; } catch { /* a safe generic request error is built below */ }
+  if (!res.ok) throw createAuthRequestError(res.status, data, "Verification email could not be resent.");
+  return data;
+}
+
+async function authUpdatePassword(accessToken, password) {
+  if (!accessToken) {
+    const error = new Error("This password reset link is no longer valid.");
+    error.code = "RECOVERY_SESSION_MISSING";
+    throw error;
+  }
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ password }),
+  });
+  const body = await res.text();
+  let data = null;
+  try { data = body ? JSON.parse(body) : null; } catch { /* a safe generic request error is built below */ }
+  if (!res.ok) throw createAuthRequestError(res.status, data, "Password update could not be completed.");
+  return data;
 }
 
 async function authSignIn(email, password) {
@@ -37662,7 +37734,7 @@ function AuthTextField({ label, icon: Icon, type = "text", value, onChange, plac
   );
 }
 
-function LoginPage({ onAuthenticated, onSwitchToSignup }) {
+function LoginPage({ onAuthenticated, onSwitchToSignup, onForgotPassword }) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -37695,6 +37767,25 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
     setTiltX(-((e.clientY - r.top - r.height / 2) / (r.height / 2)) * 7);
     setTiltY(((e.clientX - r.left - r.width / 2) / (r.width / 2)) * 7);
   }
+
+  return <EnterpriseLoginView
+    configured={IS_CONFIGURED}
+    onSignup={onSwitchToSignup}
+    onForgot={onForgotPassword}
+    onOAuth={authSignInWithOAuth}
+    toMessage={toAuthUserMessage}
+    onSignIn={async (email, submittedPassword) => {
+      if (!IS_CONFIGURED) {
+        const configError = new Error("Authentication is not configured.");
+        configError.code = "AUTH_CONFIGURATION_MISSING";
+        throw configError;
+      }
+      const result = await authSignIn(email, submittedPassword);
+      persistAuthSession(result);
+      authDebug("Authentication completed");
+      window.location.reload();
+    }}
+  />;
 
   return (
     <div className="min-h-screen w-full flex" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
@@ -37773,6 +37864,9 @@ function LoginPage({ onAuthenticated, onSwitchToSignup }) {
                     </button>
                   </div>
                 </div>
+                <div className="flex items-center justify-end">
+                  <button type="button" onClick={onForgotPassword} className="text-[12px] font-semibold text-[#0B5D3B] transition hover:text-[#084B30] hover:underline">Forgot password?</button>
+                </div>
                 <button type="submit" disabled={busy || !identifier.trim() || !password}
                   className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white transition-all disabled:opacity-50"
                   style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.35)" }}>
@@ -37840,16 +37934,17 @@ function MicrosoftGlyph({ size = 18 }) {
 // path lets a signup browse or search other companies — see the schema
 // comment on companies.join_code for why that is a deliberate privacy
 // boundary, not an oversight.
-function SignupPage({ onAuthenticated, onSwitchToLogin }) {
+function SignupPage({ onAuthenticated, onSwitchToLogin, onVerificationRequired }) {
   const [mode, setMode] = useState("create"); // "create" | "join"
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [completedWorkspace, setCompletedWorkspace] = useState(null);
 
   const [account, setAccount] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [company, setCompany] = useState({
     name: "", category: COMPANY_CATEGORIES[0], country: SIGNUP_COUNTRIES[0], currency: SIGNUP_CURRENCIES[0],
-    website: "", taxId: "",
+    timezone: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).timezone, website: "", taxId: "",
   });
   const [selectedModules, setSelectedModules] = useState(() => new Set(ONBOARDING_MODULES.map((m) => m.id)));
   const [businessScale, setBusinessScale] = useState("large");
@@ -37860,7 +37955,9 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [showPassword, setShowPassword] = useState(false);
 
   function setAccountField(key, val) { setAccount((a) => ({ ...a, [key]: val })); }
-  function setCompanyField(key, val) { setCompany((c) => ({ ...c, [key]: val })); }
+  function setCompanyField(key, val) {
+    setCompany((c) => key === "country" ? { ...c, country: val, ...companyDefaultsForCountry(val) } : { ...c, [key]: val });
+  }
   function toggleModule(id) {
     setSelectedModules((prev) => {
       const next = new Set(prev);
@@ -37869,9 +37966,10 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     });
   }
 
-  const step1Valid = account.fullName.trim() && account.email.trim() && account.password.length >= 6 && account.password === account.confirmPassword;
+  const step1Valid = account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword;
   const isPortalRole = joinRole === "External Client" || joinRole === "Supplier";
-  const step2Valid = mode === "create" ? company.name.trim().length > 1 : joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
+  const joinAccountValid = account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword;
+  const step2Valid = mode === "create" ? company.name.trim().length > 1 : joinAccountValid && joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
 
   async function handleFinalSubmit(e) {
     e.preventDefault();
@@ -37895,7 +37993,8 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       // setup for an internal business tool) returns both immediately.
       let accessToken = signUpResult.access_token;
       if (!accessToken) {
-        throw new Error("Account created — check your email to confirm it, then sign in.");
+        onVerificationRequired?.(account.email.trim());
+        return;
       }
       persistAuthSession(signUpResult);
 
@@ -37914,8 +38013,8 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       // exist correctly, just without these details filled in yet.
       if (mode === "create" && rpcResult?.id) {
         try {
-          await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale }).run();
-          await sb("company_modules").insert(ONBOARDING_MODULES.map((m) => ({ company_id: rpcResult.id, module_key: m.id, enabled: selectedModules.has(m.id) }))).run();
+          await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale, timezone: company.timezone }).run();
+          await sb("company_modules").insert(ONBOARDING_MODULES.map((m) => ({ company_id: rpcResult.id, name: m.id, status: selectedModules.has(m.id) ? "active" : "disabled", data: { module_key: m.id, enabled: selectedModules.has(m.id) } }))).run();
           await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
         } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
       }
@@ -37923,11 +38022,13 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         try { await sb("profiles").eq("id", signUpResult.user.id).update({ phone: account.phone.trim() }).run(); } catch (_e) { /* non-blocking */ }
       }
 
-      onAuthenticated({
+      const confirmedSession = {
         userId: signUpResult.user.id, email: signUpResult.user.email, accessToken,
         fullName: account.fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
         customerRef: isPortalRole ? customerRef.trim() : null, company: rpcResult,
-      });
+      };
+      setCompletedWorkspace({ name: mode === "create" ? company.name.trim() : "your company", mode });
+      window.setTimeout(() => onAuthenticated(confirmedSession), 950);
     } catch (err) {
       setError(err.message || "Couldn't complete sign up. Please try again.");
     } finally {
@@ -37935,14 +38036,18 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     }
   }
 
-  const totalSteps = mode === "create" ? 2 : 1;
+  const totalSteps = mode === "create" ? 3 : 1;
 
   // Step labels per mode
   const stepLabels = mode === "create"
-    ? ["Account", "Company"]
+    ? ["Account", "Workspace", "Modules"]
     : ["Join"];
 
   const gradientBg = "linear-gradient(160deg, #052614 0%, #0F4D26 35%, #16A34A 70%, #22C55E 100%)";
+
+  if (completedWorkspace) {
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}><div className="w-full max-w-md rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Workspace confirmed</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{completedWorkspace.mode === "create" ? `${completedWorkspace.name} is ready.` : "You’re connected."}</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your secure workspace and selected modules have been prepared. Taking you to your dashboard now.</p><div className="mt-7 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full w-2/3 rounded-full bg-emerald-600" style={{ animation: "loadingBar 1s ease-in-out infinite" }}/></div></div></div>;
+  }
 
   return (
     <div className="min-h-screen w-full flex" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
@@ -38030,7 +38135,12 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Join your company</h2><p className="text-[13px] text-slate-500 mt-0.5">Enter the code your admin shared with you</p></div>
                 <AuthTextField label="Full name" icon={User} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" />
                 <AuthTextField label="Email address" icon={Mail} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" />
-                <AuthTextField label="Password" icon={Lock} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="Min. 6 characters" />
+                <AuthTextField label="Password" icon={Lock} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="8+ characters with upper, lower, number, and symbol" />
+                <AuthTextField label="Confirm password" icon={Lock} type="password" value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" />
+                <PasswordStrengthMeter password={account.password} />
+                {account.password && account.confirmPassword && account.password !== account.confirmPassword && (
+                  <p className="text-[11.5px] text-red-500 flex items-center gap-1"><AlertCircle size={11}/> Passwords do not match</p>
+                )}
                 <AuthTextField label="Join code" icon={Lock} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="e.g. a3f9b2" />
                 <div>
                   <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Your role</label>
@@ -38039,7 +38149,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                   </select>
                 </div>
                 {isPortalRole && <AuthTextField label="Customer or supplier reference" icon={Building2} value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} placeholder="As it appears in the system" />}
-                <button onClick={handleFinalSubmit} disabled={busy || !account.fullName.trim() || !account.email.trim() || !account.password || !joinCode.trim()}
+                <button onClick={handleFinalSubmit} disabled={busy || !step2Valid}
                   className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
                   style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
                   {busy ? "Joining…" : "Join company"}
@@ -38050,13 +38160,13 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
             {/* CREATE mode — Step 1: Account */}
             {mode === "create" && step === 1 && (
               <div className="space-y-4">
-                <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Create your account</h2><p className="text-[13px] text-slate-500 mt-0.5">Step 1 of 2 — personal details</p></div>
+                <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Create your account</h2><p className="text-[13px] text-slate-500 mt-0.5">Step 1 of 3 — personal details</p></div>
                 <AuthTextField label="Full name" icon={User} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" />
                 <AuthTextField label="Email address" icon={Mail} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" />
                 <div>
                   <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Password</label>
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="Min. 6 characters"
+                    <input type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="8+ characters with upper, lower, number, and symbol"
                       className="w-full border border-slate-200 rounded-xl px-4 py-3 pr-11 text-[13.5px] text-[#111827] placeholder-slate-300 outline-none focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 transition-all" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                       {showPassword ? <EyeOff size={14}/> : <Eye size={14}/>}
@@ -38064,6 +38174,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                   </div>
                 </div>
                 <AuthTextField label="Confirm password" icon={Lock} type="password" value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" />
+                <PasswordStrengthMeter password={account.password} />
                 {account.password && account.confirmPassword && account.password !== account.confirmPassword && (
                   <p className="text-[11.5px] text-red-500 flex items-center gap-1"><AlertCircle size={11}/> Passwords do not match</p>
                 )}
@@ -38080,7 +38191,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <button onClick={() => setStep(1)} className="text-slate-400 hover:text-slate-600"><ChevronLeft size={18}/></button>
-                  <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Your company</h2><p className="text-[13px] text-slate-500">Step 2 of 2 — business details</p></div>
+                  <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Set up your workspace</h2><p className="text-[13px] text-slate-500">Step 2 of 3 — the essentials only</p></div>
                 </div>
                 <AuthTextField label="Company name *" icon={Building2} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder="e.g. Kilimanjaro Traders Ltd" />
                 <div className="grid grid-cols-2 gap-3">
@@ -38103,11 +38214,30 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                     {COMPANY_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                   </select>
                 </div>
+                <div>
+                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Time zone</label>
+                  <input className={inputClass} value={company.timezone} onChange={(e) => setCompanyField("timezone", e.target.value)} placeholder="Africa/Dar_es_Salaam" />
+                </div>
                 <AuthTextField label="First branch name" icon={Building2} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="Head Office" />
+                <button onClick={() => { if (step2Valid) setStep(3); }} disabled={!step2Valid}
+                  className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
+                  style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
+                  Continue to modules →
+                </button>
+              </div>
+            )}
+
+            {mode === "create" && step === 3 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-2"><button onClick={() => setStep(2)} className="text-slate-400 hover:text-slate-600" aria-label="Back to workspace details"><ChevronLeft size={18}/></button><div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Choose your starting modules</h2><p className="text-[13px] text-slate-500">Step 3 of 3 — you can add more later.</p></div></div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" onClick={() => toggleModule(module.id)} className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition ${activeModule ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14}/></span><span><span className="block text-[12px] font-semibold text-slate-800">{module.label}</span><span className="mt-0.5 block text-[10px] text-slate-500">{activeModule ? "Enabled" : "Not enabled"}</span></span></button>; })}
+                </div>
+                <p className="text-[11.5px] leading-5 text-slate-500">Module choices are saved to your workspace and can be changed by authorised administrators later.</p>
                 <button onClick={handleFinalSubmit} disabled={busy || !company.name.trim()}
                   className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
                   style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
-                  {busy ? "Creating your account…" : "Launch Smart Manager 🚀"}
+                  {busy ? "Creating your workspace…" : "Finish setup"}
                 </button>
               </div>
             )}
@@ -38170,8 +38300,8 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
 
       if (mode === "create" && rpcResult?.id) {
         try {
-          await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale }).run();
-          await sb("company_modules").insert(ONBOARDING_MODULES.map((m) => ({ company_id: rpcResult.id, module_key: m.id, enabled: selectedModules.has(m.id) }))).run();
+          await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale, timezone: company.timezone }).run();
+          await sb("company_modules").insert(ONBOARDING_MODULES.map((m) => ({ company_id: rpcResult.id, name: m.id, status: selectedModules.has(m.id) ? "active" : "disabled", data: { module_key: m.id, enabled: selectedModules.has(m.id) } }))).run();
           await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
         } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
       }
@@ -45834,7 +45964,9 @@ function SmartManager() {
   // matching every other demo-mode behavior already documented in this
   // build. Live mode genuinely gates the app behind Login/Signup and
   // tries to resume a stored session on load before falling back to them.
-  const [authView, setAuthView] = useState("login");
+  const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
+  const [authContextEmail, setAuthContextEmail] = useState("");
+  const [recoveryAccessToken, setRecoveryAccessToken] = useState(null);
   const [session, setSession] = useState(() => (IS_CONFIGURED ? null : { demo: true }));
   // Always starts true now, in both modes — previously demo mode skipped
   // this state entirely, which meant the branded loading screen below
@@ -45871,6 +46003,12 @@ function SmartManager() {
       tokenFromOAuth = params.get("access_token");
       refreshTokenFromOAuth = params.get("refresh_token");
       if (tokenFromOAuth) {
+        if (authScreenFromSearch(window.location.search) === "reset") {
+          setRecoveryAccessToken(tokenFromOAuth);
+          window.history.replaceState(null, "", `${window.location.pathname}?auth=reset`);
+          setAuthChecking(false);
+          return;
+        }
         persistAuthSession({ access_token: tokenFromOAuth, refresh_token: refreshTokenFromOAuth });
         window.history.replaceState(null, "", window.location.pathname); // real cleanup — an access token has no business sitting in the visible URL
       }
@@ -45925,12 +46063,22 @@ function SmartManager() {
     })();
   }, []);
 
+  function navigateAuthView(view, email = "") {
+    if (email) setAuthContextEmail(email);
+    setAuthView(view);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.hash = "";
+    if (view === "login") url.searchParams.delete("auth"); else url.searchParams.set("auth", view);
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+  }
+
   function handleSignOut() {
     clearStoredAuthSession();
     if (session?.accessToken) authSignOut(session.accessToken);
     DEMO_OVERRIDE = false;
     setSession(IS_CONFIGURED ? null : { demo: true });
-    setAuthView("login");
+    navigateAuthView("login");
   }
 
   const [active, setActive] = useState("dashboard");
@@ -46305,9 +46453,12 @@ function SmartManager() {
   }
 
   if (!session) {
+    if (authView === "forgot") return <ForgotPasswordView onBack={() => navigateAuthView("login")} onRequest={authRequestPasswordRecovery} toMessage={toAuthUserMessage} />;
+    if (authView === "reset") return <ResetPasswordView recoveryToken={recoveryAccessToken} onBack={() => navigateAuthView("login")} onUpdate={async (token, password) => { await authUpdatePassword(token, password); clearStoredAuthSession(); }} toMessage={toAuthUserMessage} />;
+    if (authView === "verify") return <VerificationView email={authContextEmail} onBack={() => navigateAuthView("login")} onResend={authResendVerification} toMessage={toAuthUserMessage} />;
     return authView === "login"
-      ? <LoginPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToSignup={() => setAuthView("signup")} />
-      : <SignupPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToLogin={() => setAuthView("login")} />;
+      ? <LoginPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
+      : <SignupPage onAuthenticated={(s) => setSession(s || { demo: true })} onSwitchToLogin={() => navigateAuthView("login")} onVerificationRequired={(email) => navigateAuthView("verify", email)} />;
   }
 
   // A customer never sees the internal ERP shell at all — not a hidden

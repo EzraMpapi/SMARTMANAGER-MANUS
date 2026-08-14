@@ -57,6 +57,28 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).not.toContain('setError("Something went wrong — check your connection.")');
   });
 
+  it("keeps recovery, reset, and verification inside the configured Supabase auth boundary", () => {
+    expect(dashboardSource).toContain('async function authRequestPasswordRecovery(email)');
+    expect(dashboardSource).toContain('`${SUPABASE_URL}/auth/v1/recover`');
+    expect(dashboardSource).toContain('async function authResendVerification(email)');
+    expect(dashboardSource).toContain('`${SUPABASE_URL}/auth/v1/resend`');
+    expect(dashboardSource).toContain('async function authUpdatePassword(accessToken, password)');
+    expect(dashboardSource).toContain('authScreenFromSearch(window.location.search) === "reset"');
+    expect(dashboardSource).toContain("clearStoredAuthSession();");
+  });
+
+  it("keeps enterprise onboarding progressive and writes selected module intent through the shared company-module contract", () => {
+    expect(dashboardSource).toContain('? ["Account", "Workspace", "Modules"]');
+    expect(dashboardSource).toContain('mode === "create" && step === 3');
+    expect(dashboardSource).toContain("<PasswordStrengthMeter password={account.password} />");
+    expect(dashboardSource).toContain("companyDefaultsForCountry(val)");
+    expect(dashboardSource).toContain("Workspace confirmed");
+    expect(dashboardSource).toContain("Step 1 of 3 — personal details");
+    expect(dashboardSource).toContain("const joinAccountValid");
+    expect(dashboardSource).toContain("disabled={busy || !step2Valid}");
+    expect(dashboardSource).not.toContain('placeholder="Min. 6 characters"');
+  });
+
   it("routes an authenticated profile without a company assignment into company setup before tenant writes", () => {
     expect(dashboardSource).toContain("!profile || !profile.company_id || !profile.companies?.id");
     expect(dashboardSource).toContain("setOauthPendingUser({ id: user.id");
@@ -82,6 +104,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('eq("name", id)');
     expect(dashboardSource).toContain('status: !turningOff ? "active" : "disabled"');
     expect(dashboardSource).toContain("data: { module_key: id, enabled: !turningOff }");
+    expect(dashboardSource.match(/company_id: rpcResult\.id, name: m\.id, status: selectedModules\.has\(m\.id\) \? "active" : "disabled", data: \{ module_key: m\.id, enabled: selectedModules\.has\(m\.id\) \}/g)?.length).toBe(2);
+    expect(dashboardSource).not.toContain("company_id: rpcResult.id, module_key: m.id, enabled: selectedModules.has(m.id)");
   });
 
   it("maps the approved tenant baseline response to active generic module entitlements", () => {

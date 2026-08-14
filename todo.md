@@ -367,3 +367,14 @@
 - [x] Add focused regression tests, production validation, and publish the authentication repair.
 
 - [x] Add non-enumerating login guidance for accounts created with a federated identity, directing users to the matching provider button.
+
+- [x] Restart and verify the stopped development server responds through the managed preview.
+
+- [x] Complete the pasted enterprise auth and onboarding requirements review against the current secure Supabase implementation.
+- [x] Define an original enterprise design system and interaction model for login, recovery, registration, company setup, and onboarding.
+- [x] Implement premium accessible login, password recovery, password reset, verification, and session UX without weakening authentication or exposing account state.
+- [x] Implement progressive account, company, workspace, user-profile, module-selection, and optional team-invitation onboarding with resumable progress.
+- [x] Preserve verified tenant resolution, RLS, existing routes, and confirmed server persistence while improving responsive auth and onboarding UI.
+- [x] Add focused tests, browser validation, production build validation, and publish the completed redesign.
+- [x] Correct the enterprise signup step-count copy and require the same strong credential validation on the join-company registration path.
+- [x] Replace the remaining six-character signup placeholder so every account-creation path accurately communicates the enterprise password policy.
