@@ -42,6 +42,12 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("/auth/v1/authorize?provider=${provider}");
   });
 
+  it("routes an authenticated profile without a company assignment into company setup before tenant writes", () => {
+    expect(dashboardSource).toContain("!profile || !profile.company_id || !profile.companies?.id");
+    expect(dashboardSource).toContain("setOauthPendingUser({ id: user.id");
+    expect(dashboardSource).toContain("before loading any company-scoped modules");
+  });
+
   it("defers Sales subscription detail content and explains the on-demand loading benefit", () => {
     expect(dashboardSource).toContain('lazy(() => import("./components/SalesDetailWorkspace")');
     expect(dashboardSource).toContain("<LazySalesDetailWorkspace");

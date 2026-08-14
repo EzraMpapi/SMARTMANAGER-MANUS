@@ -45625,11 +45625,11 @@ function SmartManager() {
         const user = await authGetUser(token);
         const profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
         const profile = profileRows?.[0];
-        if (!profile) {
-          // A real, valid session with no company yet — genuinely
-          // different from an invalid or expired one. Route to finish
-          // setup instead of discarding a session that authenticated
-          // correctly.
+        if (!profile || !profile.company_id || !profile.companies?.id) {
+          // A real, valid session without a tenant assignment must finish
+          // company setup before loading any company-scoped modules. This
+          // covers both a new OAuth user and an existing profile left
+          // unassigned by an interrupted setup flow.
           setOauthPendingUser({ id: user.id, email: user.email, accessToken: token, fullName: user.user_metadata?.full_name || user.user_metadata?.name || "" });
           setAuthChecking(false);
           return;
