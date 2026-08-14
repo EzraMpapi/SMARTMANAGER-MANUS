@@ -14,6 +14,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
+import { decideActionApproval, requestActionApproval } from "./aiApprovals";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -100,6 +101,35 @@ export const appRouter = router({
           }
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The AI Assistant could not be reached. Please try again shortly." });
         }
+      }),
+    requestActionApproval: protectedProcedure
+      .input(z.object({
+        operation: z.enum(["create_lead", "adjust_stock", "mark_invoice_paid", "record_expense", "approve_leave", "create_invoice", "create_quotation", "create_workflow"]),
+        input: z.record(z.string(), z.unknown()),
+        rationale: z.string().min(1).max(1_000),
+        requesterMessage: z.string().min(1).max(8_000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await requestActionApproval(ctx.req, input);
+        void recordAuditLog(ctx.user, {
+          companyId: result.requester.company_id,
+          action: "AI action submitted for approval",
+          module: result.rule.module,
+          details: `${result.rule.label}; requested by verified ${result.requester.role} role.`,
+        }).catch(() => undefined);
+        return result;
+      }),
+    decideActionApproval: protectedProcedure
+      .input(z.object({ approvalId: z.string().uuid(), decision: z.enum(["approve", "reject"]), note: z.string().max(500).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await decideActionApproval(ctx.req, input);
+        void recordAuditLog(ctx.user, {
+          companyId: result.approver.company_id,
+          action: `AI action ${input.decision === "approve" ? "approved" : "rejected"}`,
+          module: result.rule.module,
+          details: `${result.rule.label}; decided by verified ${result.approver.role} role.`,
+        }).catch(() => undefined);
+        return result;
       }),
     analyzeAnomalies: protectedProcedure
       .input(z.object({

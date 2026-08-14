@@ -33834,7 +33834,7 @@ function actionLabel(name, input) {
   return name;
 }
 
-function AIAssistant({ company, invoices, inventory, crm, expenses, employees, leaveRequests, suppliers, quotations, scheduledWorkflows, onNavigate }) {
+function AIAssistant({ company, invoices, inventory, crm, expenses, employees, leaveRequests, suppliers, quotations, scheduledWorkflows, onNavigate, currentUser }) {
   const [personaId, setPersonaId] = useState(null);
   const persona = AI_PERSONAS.find((p) => p.id === personaId);
   const data = { company, invoices, inventory, crm, expenses, employees, leaveRequests, suppliers, quotations, scheduledWorkflows };
@@ -33894,7 +33894,7 @@ function AIAssistant({ company, invoices, inventory, crm, expenses, employees, l
 
       {persona.mode === "docgen" && <DocumentGenerator company={company} />}
       {persona.mode === "meeting" && <AIMeetingAssistant company={company} />}
-      {persona.mode !== "docgen" && persona.mode !== "meeting" && <ChatInterface persona={persona} data={data} onNavigate={onNavigate} />}
+      {persona.mode !== "docgen" && persona.mode !== "meeting" && <ChatInterface persona={persona} data={data} onNavigate={onNavigate} currentUser={currentUser} />}
     </div>
   );
 }
@@ -33905,18 +33905,21 @@ function AIAssistant({ company, invoices, inventory, crm, expenses, employees, l
 // per-call by `persona`: which data it sees, which tools it may use, how
 // it introduces itself. Nothing here is persona-specific logic — that all
 // lives in the AI_PERSONAS config above.
-function ChatInterface({ persona, data, onNavigate }) {
+function ChatInterface({ persona, data, onNavigate, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [memoryState, setMemoryState] = useState(IS_CONFIGURED ? "loading" : "session");
+  const [approvalStates, setApprovalStates] = useState({});
   const recognitionRef = useRef(null);
   const speechSupported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   const tools = AI_TOOLS_ALL.filter((t) => persona.tools.includes(t.name));
   const assistantMutation = trpc.ai.assist.useMutation();
+  const requestApprovalMutation = trpc.ai.requestActionApproval.useMutation();
+  const decideApprovalMutation = trpc.ai.decideActionApproval.useMutation();
   const [anomalies, setAnomalies] = useState([]);
   const [anomalyMeta, setAnomalyMeta] = useState(null);
   const anomalyMutation = trpc.ai.analyzeAnomalies.useMutation({
@@ -33965,11 +33968,41 @@ function ChatInterface({ persona, data, onNavigate }) {
     });
   }
 
-  function assistantBlocks(result) {
+  function proposalKey(proposal) {
+    return `${proposal.operation}:${proposal.label}:${JSON.stringify(proposal.input)}`;
+  }
+
+  function assistantBlocks(result, requesterMessage = "") {
     const blocks = [{ type: "text", text: result.content }];
     if (Array.isArray(result.suggestions) && result.suggestions.length) blocks.push({ type: "suggestions", items: result.suggestions });
     if (Array.isArray(result.actions) && result.actions.length) blocks.push({ type: "navigate_actions", items: result.actions });
+    if (Array.isArray(result.proposals) && result.proposals.length) blocks.push({ type: "approval_proposals", items: result.proposals, requesterMessage });
     return blocks;
+  }
+
+  async function submitProposal(proposal, requesterMessage) {
+    const key = proposalKey(proposal);
+    try {
+      const result = await requestApprovalMutation.mutateAsync({ operation: proposal.operation, input: proposal.input, rationale: proposal.rationale, requesterMessage: requesterMessage || `AI proposal from ${persona.name}` });
+      setApprovalStates((states) => ({ ...states, [key]: { id: result.approval?.id, status: "Pending Review", requiredRoles: result.rule.roles } }));
+      notify(`Submitted for ${result.rule.roles.join(" / ")} review. No business record was changed.`);
+    } catch (error) {
+      notify(error?.message || "This proposal could not be submitted for review.", "error");
+    }
+  }
+
+  async function decideProposal(proposal, decision) {
+    const key = proposalKey(proposal);
+    const approval = approvalStates[key];
+    if (!approval?.id) return;
+    const note = window.prompt(decision === "approve" ? "Optional approval note" : "Optional rejection reason") || "";
+    try {
+      const result = await decideApprovalMutation.mutateAsync({ approvalId: approval.id, decision, note });
+      setApprovalStates((states) => ({ ...states, [key]: { ...states[key], status: decision === "approve" ? "Approved" : "Rejected", decidedBy: result.approver?.role } }));
+      notify(decision === "approve" ? "Authorization recorded. Open the linked module to review and execute the business action manually." : "Recommendation rejected. No business record was changed.");
+    } catch (error) {
+      notify(error?.message || "This approval decision was not accepted.", "error");
+    }
   }
 
   useEffect(() => {
@@ -33998,7 +34031,7 @@ function ChatInterface({ persona, data, onNavigate }) {
           setMessages((records || []).map((record) => ({
             role: record.role === "assistant" ? "assistant" : "user",
             content: record.role === "assistant"
-              ? assistantBlocks({ content: record.content || record.notes || "", suggestions: record.suggestions || [], actions: record.actions || [] })
+              ? assistantBlocks({ content: record.content || record.notes || "", suggestions: record.suggestions || [], actions: record.actions || [], proposals: record.proposals || [] })
               : (record.content || record.notes || ""),
           })).filter((record) => record.content && (!Array.isArray(record.content) || record.content[0]?.text)));
           setMemoryState("ready");
@@ -34035,7 +34068,7 @@ function ChatInterface({ persona, data, onNavigate }) {
         {
           name: `${persona.name} response`, status: "Assistant", notes: response.content.slice(0, 500),
           assistant_kind: "smart_manager", conversation_id: activeConversationId, persona_id: persona.id, role: "assistant", content: response.content,
-          suggestions: response.suggestions || [], actions: response.actions || [], model: response.model || "gpt-5-mini", token_usage: response.usage || {},
+          suggestions: response.suggestions || [], actions: response.actions || [], proposals: response.proposals || [], model: response.model || "gpt-5-mini", token_usage: response.usage || {},
         },
       ]).run();
       await sb("support_chat_conversations").eq("id", activeConversationId).update({
@@ -34049,6 +34082,13 @@ function ChatInterface({ persona, data, onNavigate }) {
   }
 
   async function executeTool(name, toolInput) {
+    // The current assistant contract emits review-required proposals, not
+    // tool calls. Keep this legacy executor explicitly disabled so a future
+    // UI regression cannot bypass server-verified approval and mutate data.
+    const directExecutionDisabled = true;
+    if (directExecutionDisabled) {
+      return `Blocked: ${name} requires a submitted and authorized AI approval. No business record was changed.`;
+    }
     try {
       if (name === "create_lead") {
         const draft = {
@@ -34226,7 +34266,7 @@ function ChatInterface({ persona, data, onNavigate }) {
       persona: { name: persona.name, tagline: persona.tagline, scope: persona.scope },
       context: buildBusinessSnapshot(data, persona.scope),
     });
-    return { content: assistantBlocks(result), result };
+    return { content: assistantBlocks(result, currentQuestion), result };
   }
 
   async function send(text) {
@@ -34431,6 +34471,34 @@ function ChatInterface({ persona, data, onNavigate }) {
                       <ArrowRight size={12} /> {action.label}
                     </button>
                   ))}
+                </div>
+              );
+            }
+            if (block.type === "approval_proposals" && Array.isArray(block.items) && block.items.length) {
+              return (
+                <div key={`${i}-${j}`} className="w-full space-y-2 pl-1">
+                  {block.items.map((proposal) => {
+                    const state = approvalStates[proposalKey(proposal)];
+                    const pending = state?.status === "Pending Review";
+                    const approved = state?.status === "Approved";
+                    const rejected = state?.status === "Rejected";
+                    return (
+                      <div key={proposalKey(proposal)} className="max-w-[92%] rounded-xl border border-[#C9A96E]/35 bg-[#C9A96E]/[0.07] p-3.5 shadow-sm">
+                        <div className="flex items-start gap-2.5">
+                          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#9A761C]" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[12.5px] font-semibold text-[#3d3215]">Review required: {proposal.label}</p>
+                            <p className="mt-1 text-[11.5px] leading-relaxed text-slate-600">{proposal.rationale}</p>
+                            <p className="mt-1.5 text-[10.5px] text-slate-500">The assistant cannot execute this action. A verified authorized role must review it first; no record has changed.</p>
+                            {!state && <button onClick={() => submitProposal(proposal, block.requesterMessage)} disabled={requestApprovalMutation.isPending} className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-[#9A761C] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"><Send size={12} /> Submit for review</button>}
+                            {pending && <div className="mt-2.5 flex flex-wrap items-center gap-2"><span className="rounded-full bg-[#F59E0B]/15 px-2 py-1 text-[10.5px] font-semibold text-[#9A6700]">Pending review</span><span className="text-[10.5px] text-slate-500">Your signed-in role: {currentUser?.role || "Workspace user"}</span><button onClick={() => decideProposal(proposal, "approve")} disabled={decideApprovalMutation.isPending} className="rounded-lg bg-[#16A34A] px-2.5 py-1.5 text-[10.5px] font-semibold text-white disabled:opacity-50">Authorize</button><button onClick={() => decideProposal(proposal, "reject")} disabled={decideApprovalMutation.isPending} className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[10.5px] font-semibold text-slate-600 disabled:opacity-50">Reject</button></div>}
+                            {approved && <div className="mt-2.5 flex flex-wrap items-center gap-2"><span className="rounded-full bg-[#16A34A]/15 px-2 py-1 text-[10.5px] font-semibold text-[#166534]">Authorized by verified {state.decidedBy || "approver"}</span><button onClick={() => onNavigate?.({ create_lead: "crm", adjust_stock: "inventory", mark_invoice_paid: "finance", record_expense: "finance", approve_leave: "hr", create_invoice: "sales", create_quotation: "sales", create_workflow: "workflows" }[proposal.operation] || "dashboard")} className="inline-flex items-center gap-1 rounded-lg border border-[#16A34A]/30 bg-white px-2.5 py-1.5 text-[10.5px] font-semibold text-[#166534]"><ArrowRight size={11} /> Open reviewed module</button></div>}
+                            {rejected && <span className="mt-2.5 inline-flex rounded-full bg-[#EF4444]/10 px-2 py-1 text-[10.5px] font-semibold text-[#B91C1C]">Rejected — no record changed</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             }
@@ -46540,7 +46608,7 @@ function SmartManager() {
           {active === "hr" && <HR employeesHook={employees} leaveRequestsHook={leaveRequests} expensesHook={expenses} intent={intent} clearIntent={clearIntent} currentUser={currentUser} canManage={canManage} />}
           {active === "manufacturing" && <Manufacturing inventory={inventory} workOrdersHook={workOrders} expensesHook={expenses} />}
           {active === "ai" && (
-            <AIAssistant company={company} invoices={invoices} inventory={inventory} crm={crm} expenses={expenses} employees={employees} leaveRequests={leaveRequests} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} onNavigate={go} />
+            <AIAssistant company={company} invoices={invoices} inventory={inventory} crm={crm} expenses={expenses} employees={employees} leaveRequests={leaveRequests} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} onNavigate={go} currentUser={currentUser} />
           )}
           {active === "microfinance" && <MicrofinanceModule currentUser={currentUser} />}
           {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} />}

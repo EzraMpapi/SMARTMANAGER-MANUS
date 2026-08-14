@@ -30,6 +30,7 @@ describe("runSmartAssistant", () => {
       content: "Review SKU-1 with the inventory team.",
       suggestions: ["Open inventory"],
       actions: [{ type: "navigate", label: "Review inventory", target: "inventory" }],
+      proposals: [{ operation: "adjust_stock", label: "Restock SKU-1", rationale: "Stock is below reorder level.", input: "{\"sku\":\"SKU-1\",\"delta\":8}" }],
     })));
 
     const result = await runSmartAssistant(input);
@@ -38,6 +39,7 @@ describe("runSmartAssistant", () => {
       content: "Review SKU-1 with the inventory team.",
       suggestions: ["Open inventory"],
       actions: [{ type: "navigate", label: "Review inventory", target: "inventory" }],
+      proposals: [{ operation: "adjust_stock", label: "Restock SKU-1", rationale: "Stock is below reorder level.", input: { sku: "SKU-1", delta: 8 } }],
       usage: { totalTokens: 43 },
       source: "builtin",
     });

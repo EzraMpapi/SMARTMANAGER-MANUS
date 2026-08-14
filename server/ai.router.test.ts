@@ -21,6 +21,14 @@ describe("AI router and grounded dashboard signals", () => {
     expect(dashboardSource).not.toContain("api.anthropic.com");
   });
 
+  it("requires server-verified role approval before an AI business-action proposal can be authorized", () => {
+    expect(routersSource).toContain("requestActionApproval: protectedProcedure");
+    expect(routersSource).toContain("decideActionApproval: protectedProcedure");
+    expect(dashboardSource).toContain("Review required:");
+    expect(dashboardSource).toContain("Submit for review");
+    expect(dashboardSource).toContain("No business record was changed");
+  });
+
   it("uses a strict structured schema for cash-flow and inventory anomaly findings", () => {
     expect(routersSource).toContain("analyzeAnomalies: protectedProcedure");
     expect(routersSource).toContain("erp_anomaly_findings");

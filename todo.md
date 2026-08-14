@@ -351,3 +351,9 @@
 
 - [x] Replace the external DeepSeek assistant provider with the built-in server-side AI service so live assistant generation does not depend on the external account balance.
 - [x] Verify a real, non-sensitive built-in AI Assistant response and retain tenant-safe context, conversation memory, and provider-error behavior.
+
+- [x] Audit current AI recommendation rendering, action execution handlers, user-role state, and audit-log boundaries.
+- [x] Define role-specific approval authority and an explicit recommendation lifecycle from draft through approval, rejection, expiry, and manual post-authorization execution.
+- [x] Implement review and authorization controls that prevent AI-suggested business actions from executing until an authorized user explicitly approves them.
+- [x] Persist tenant-scoped approval decisions and audit metadata without exposing or trusting browser-supplied authorization claims.
+- [x] Add automated authorization-boundary tests, production validation, and publish the AI approval workflow.
