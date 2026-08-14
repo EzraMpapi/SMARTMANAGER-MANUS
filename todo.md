@@ -310,3 +310,5 @@
 - [ ] Verify a real authenticated pos_shifts create through the app, browser refresh, renewed session, and direct tenant-scoped Supabase read.
 
 - [x] Fix the pos_shifts cashier-column schema mismatch so POS writes match the live Supabase table contract and persist successfully.
+
+- [ ] Verify confirmed Supabase CRUD persistence across Customers, Suppliers, Products, Inventory, Sales, Expenses, Employees, Invoices, and Payments using shared tenant-safe infrastructure.

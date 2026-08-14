@@ -176,13 +176,62 @@ async function callRpc(name, params, accessToken) {
   return data;
 }
 
+// Several deployed tenant tables use a common name/status/amount/notes/data
+// envelope. Normalize at this shared boundary so module forms do not send
+// unavailable direct columns to PostgREST.
+export const GENERIC_COMPANY_TABLES = new Set([
+  "crm_leads", "inventory_items", "inventory_suppliers", "hr_employees",
+  "sales_invoices", "sales_payments", "pos_transactions", "pos_shifts",
+  "pos_cash_movements",
+]);
+
+const GENERIC_DATA_FILTER_COLUMNS = new Set([
+  "sku", "item_sku", "contact_name", "full_name", "doc_number", "invoice_id", "shift_id",
+]);
+
+function genericFilterColumn(table, column) {
+  return GENERIC_COMPANY_TABLES.has(table) && GENERIC_DATA_FILTER_COLUMNS.has(column)
+    ? `data->>${column}`
+    : column;
+}
+
+function firstDefined(...values) {
+  return values.find((value) => value !== undefined && value !== null && value !== "");
+}
+
+function genericRecordName(table, record, data, fallback) {
+  return firstDefined(
+    record.name, record.full_name, record.contact_name, record.item_name,
+    record.customer, record.cashier, record.doc_number, record.sku,
+    data.name, data.full_name, data.contact_name, data.item_name,
+    data.customer, data.cashier, data.doc_number, data.sku,
+    fallback?.name, `${table.replace(/_/g, " ")} record`,
+  );
+}
+
+export function normalizeGenericCompanyPayload(table, record, existing = null) {
+  if (!GENERIC_COMPANY_TABLES.has(table) || !record || typeof record !== "object" || Array.isArray(record)) return record;
+  const existingData = existing?.data && typeof existing.data === "object" ? existing.data : {};
+  const suppliedData = record.data && typeof record.data === "object" ? record.data : {};
+  const businessFields = { ...record };
+  ["id", "company_id", "name", "status", "amount", "notes", "data", "created_at", "updated_at"].forEach((key) => delete businessFields[key]);
+  const data = { ...existingData, ...businessFields, ...suppliedData };
+  return {
+    name: genericRecordName(table, record, data, existing),
+    status: firstDefined(record.status, record.stage, record.kind, data.status, data.stage, data.kind, existing?.status, "Active"),
+    amount: firstDefined(record.amount, record.value_amount, record.value, record.unit_cost, record.salary, data.amount, data.value_amount, data.value, data.unit_cost, data.salary, existing?.amount, null),
+    notes: firstDefined(record.notes, record.reason, record.description, data.notes, data.reason, data.description, existing?.notes, null),
+    data,
+  };
+}
+
 // Minimal chainable query builder over PostgREST, mirroring the shape of the
 // official supabase-js client closely enough that swapping later is trivial.
 function sb(table) {
   let path = `${SUPABASE_URL}/rest/v1/${table}`;
   const params = new URLSearchParams();
   let method = "GET";
-  let body = null;
+  let payload = null;
   let single = false;
 
   const builder = {
@@ -191,7 +240,7 @@ function sb(table) {
       return builder;
     },
     eq(col, val) {
-      params.append(col, `eq.${val}`);
+      params.append(genericFilterColumn(table, col), `eq.${val}`);
       return builder;
     },
     order(col, { ascending = true } = {}) {
@@ -200,12 +249,12 @@ function sb(table) {
     },
     insert(row) {
       method = "POST";
-      body = JSON.stringify(row);
+      payload = row;
       return builder;
     },
     update(patch) {
       method = "PATCH";
-      body = JSON.stringify(patch);
+      payload = patch;
       return builder;
     },
     delete() {
@@ -218,13 +267,36 @@ function sb(table) {
     },
     async run() {
       const url = `${path}?${params.toString()}`;
+      let requestPayload = payload;
+      if (GENERIC_COMPANY_TABLES.has(table) && method === "POST") {
+        requestPayload = Array.isArray(payload)
+          ? payload.map((record) => normalizeGenericCompanyPayload(table, record))
+          : normalizeGenericCompanyPayload(table, payload);
+      }
+      if (GENERIC_COMPANY_TABLES.has(table) && method === "PATCH") {
+        const lookupParams = new URLSearchParams(params);
+        lookupParams.set("select", "*");
+        lookupParams.delete("order");
+        const lookup = await fetch(`${path}?${lookupParams.toString()}`, { headers: authHeaders() });
+        const lookupRaw = await lookup.json().catch(() => null);
+        if (!lookup.ok) {
+          const error = new Error(lookupRaw?.message || lookupRaw?.error_description || lookupRaw?.hint || lookupRaw?.details || `Supabase lookup ${table} failed: ${lookup.status}`);
+          error.status = lookup.status;
+          error.code = lookupRaw?.code;
+          error.details = lookupRaw?.details;
+          error.table = table;
+          error.operation = "UPDATE";
+          throw error;
+        }
+        requestPayload = normalizeGenericCompanyPayload(table, payload, Array.isArray(lookupRaw) ? lookupRaw[0] : lookupRaw);
+      }
       const res = await fetch(url, {
         method,
         headers: {
           ...authHeaders(),
           Prefer: method === "GET" ? undefined : "return=representation",
         },
-        body,
+        body: requestPayload == null ? null : JSON.stringify(requestPayload),
       });
       const raw = await res.json().catch(() => null);
       if (!res.ok) {
@@ -508,18 +580,19 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
    ============================================================================= */
 
 export function mapLeadRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
   return {
     id: r.id, dbId: r.id,
-    name: r.contact_name || r.name || r.lead_name || "",
-    company: r.company_name || r.company || "",
-    stage: r.stage || "New",
-    value: Number(r.value_amount || r.value || r.amount) || 0,
-    currency: r.currency || "TZS000",
-    owner: r.owner_id || r.owner || "Unassigned",
-    email: r.email || "", phone: r.phone || "",
-    industry: r.industry || "General", score: r.score ?? 50,
-    lastActivity: r.last_activity_at ? new Date(r.last_activity_at).toLocaleDateString() : "—",
-    expectedCloseDate: r.expected_close_date || r.expectedDate || null,
+    name: r.contact_name || data.contact_name || r.name || data.name || r.lead_name || "",
+    company: r.company_name || data.company_name || r.company || data.company || "",
+    stage: r.stage || data.stage || r.status || "New",
+    value: Number(r.value_amount || data.value_amount || r.value || data.value || r.amount) || 0,
+    currency: r.currency || data.currency || "TZS",
+    owner: r.owner_id || data.owner_id || r.owner || data.owner || "Unassigned",
+    email: r.email || data.email || "", phone: r.phone || data.phone || "",
+    industry: r.industry || data.industry || "General", score: r.score ?? data.score ?? 50,
+    lastActivity: r.last_activity_at || data.last_activity_at ? new Date(r.last_activity_at || data.last_activity_at).toLocaleDateString() : "—",
+    expectedCloseDate: r.expected_close_date || data.expected_close_date || r.expectedDate || null,
     createdAt: r.created_at || null,
   };
 }
@@ -532,13 +605,14 @@ export function mapContactRow(r) {
 }
 
 export function mapInventoryRow(r) {
-  const sku = r.sku || r.item_sku || r.data?.sku;
+  const data = r.data && typeof r.data === "object" ? r.data : {};
+  const sku = r.sku || r.item_sku || data.sku;
   return {
     sku, dbId: r.id,
-    name: r.name || r.item_name || "", category: r.category || "General", warehouse: r.warehouse_id || r.location,
-    qty: Number(r.qty_on_hand ?? r.quantity) || 0, reorder: Number(r.reorder_level) || 0,
-    unitCost: Number(r.unit_cost) || 0, unit: r.unit || r.data?.unit || "unit",
-    barcode: r.barcode || r.data?.barcode || generateBarcode(sku), expiryDate: r.expiry_date || r.data?.expiry_date || null,
+    name: r.name || r.item_name || data.item_name || "", category: r.category || data.category || "General", warehouse: r.warehouse_id || r.location || data.warehouse_id || data.location,
+    qty: Number(r.qty_on_hand ?? r.quantity ?? data.qty_on_hand ?? data.quantity) || 0, reorder: Number(r.reorder_level ?? data.reorder_level) || 0,
+    unitCost: Number(r.unit_cost ?? data.unit_cost ?? r.amount) || 0, unit: r.unit || data.unit || "unit",
+    barcode: r.barcode || data.barcode || generateBarcode(sku), expiryDate: r.expiry_date || data.expiry_date || null,
   };
 }
 
@@ -593,10 +667,11 @@ function mapBatchRow(r) {
 }
 
 function mapSupplierRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
   return {
     id: r.id, dbId: r.id,
-    name: r.name, contactPerson: r.contact_person || "", email: r.email || "", phone: r.phone || "",
-    category: r.category || "", leadTimeDays: Number(r.lead_time_days) || 0, status: r.status,
+    name: r.name || data.name, contactPerson: r.contact_person || data.contact_person || "", email: r.email || data.email || "", phone: r.phone || data.phone || "",
+    category: r.category || data.category || "", leadTimeDays: Number(r.lead_time_days ?? data.lead_time_days) || 0, status: r.status || data.status,
   };
 }
 
@@ -679,16 +754,18 @@ function mapOrderRow(r) {
 }
 
 function mapPaymentRow(r) {
-  return { id: r.id, amount: Number(r.amount) || 0, method: r.method, date: r.payment_date, reference: r.reference || null };
+  const data = r.data && typeof r.data === "object" ? r.data : {};
+  return { id: r.id, amount: Number(r.amount) || 0, method: r.method || data.method, date: r.payment_date || data.payment_date || r.created_at, reference: r.reference || data.reference || null };
 }
 
 function mapInvoiceRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
   return {
-    id: r.doc_number, dbId: r.id,
-    customer: r.customer, date: r.issue_date, dueDate: r.due_date,
-    orderRef: r.order_id ? "linked" : "—", status: r.status,
-    amountPaid: Number(r.amount_paid) || 0,
-    items: mapDocItems(r.sales_invoice_items),
+    id: r.doc_number || data.doc_number || r.id, dbId: r.id,
+    customer: r.customer || data.customer || r.name, date: r.issue_date || data.issue_date || r.created_at, dueDate: r.due_date || data.due_date,
+    orderRef: r.order_id || data.order_id ? "linked" : "—", status: r.status || data.status,
+    amountPaid: Number(r.amount_paid ?? data.amount_paid) || 0,
+    items: mapDocItems(r.sales_invoice_items || data.items),
     payments: (r.sales_payments || []).map(mapPaymentRow).sort((a, b) => (a.date < b.date ? 1 : -1)),
   };
 }
@@ -702,12 +779,13 @@ function mapSubscriptionRow(r) {
 }
 
 function mapEmployeeRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
   return {
     id: r.id, dbId: r.id,
-    name: r.full_name, role: r.role, department: r.department || "General",
-    email: r.email || "", phone: r.phone || "", status: r.status,
-    salary: Number(r.salary) || 0, hireDate: r.hire_date,
-    contractType: r.contract_type || "Permanent", contractEndDate: r.contract_end_date,
+    name: r.full_name || data.full_name || r.name, role: r.role || data.role, department: r.department || data.department || "General",
+    email: r.email || data.email || "", phone: r.phone || data.phone || "", status: r.status || data.status,
+    salary: Number(r.salary ?? data.salary ?? r.amount) || 0, hireDate: r.hire_date || data.hire_date || r.created_at,
+    contractType: r.contract_type || data.contract_type || "Permanent", contractEndDate: r.contract_end_date || data.contract_end_date,
   };
 }
 

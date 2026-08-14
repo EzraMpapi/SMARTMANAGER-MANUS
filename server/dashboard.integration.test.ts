@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -176,6 +176,47 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(expense).toMatchObject({ vendor: "Tanesco Power", category: "Utilities", amount: 125000, status: "Paid", department: "Operations", costCenter: "CC-OPS-99" });
   });
 
+  it("normalizes generic CRM, inventory, supplier, HR, invoice, payment, and POS payloads through one tenant-safe contract", () => {
+    const product = normalizeGenericCompanyPayload("inventory_items", {
+      company_id: "untrusted-client-company", sku: "PRD-001", name: "Solar inverter", qty_on_hand: 8, reorder_level: 2, unit_cost: 380000, unit: "each",
+    });
+    const lead = normalizeGenericCompanyPayload("crm_leads", {
+      contact_name: "Amina", company_name: "Tanga Trade", stage: "Qualified", value_amount: 920000, email: "amina@example.test",
+    });
+    const employee = normalizeGenericCompanyPayload("hr_employees", {
+      full_name: "Juma Mtei", role: "Storekeeper", salary: 700000, department: "Operations", status: "Active",
+    });
+    const invoice = normalizeGenericCompanyPayload("sales_invoices", {
+      doc_number: "INV-QA-1", customer: "Moshi Retail", amount: 350000, due_date: "2026-09-01", status: "Draft",
+    });
+    const payment = normalizeGenericCompanyPayload("sales_payments", {
+      invoice_id: "invoice-1", amount: 350000, method: "Cash", payment_date: "2026-08-14", reference: "RCPT-QA-1",
+    });
+    const supplier = normalizeGenericCompanyPayload("inventory_suppliers", {
+      name: "Arusha Supplies", contact_person: "Neema", lead_time_days: 5, status: "Active",
+    });
+    const transaction = normalizeGenericCompanyPayload("pos_transactions", {
+      cashier: "Asha", amount: 125000, status: "Completed", transaction_ref: "POS-QA-1",
+    });
+
+    expect(product).toMatchObject({ name: "Solar inverter", amount: 380000, data: { sku: "PRD-001", qty_on_hand: 8, unit: "each" } });
+    expect(product).not.toHaveProperty("company_id");
+    expect(lead).toMatchObject({ name: "Amina", status: "Qualified", amount: 920000, data: { company_name: "Tanga Trade", email: "amina@example.test" } });
+    expect(employee).toMatchObject({ name: "Juma Mtei", amount: 700000, data: { role: "Storekeeper", department: "Operations" } });
+    expect(invoice).toMatchObject({ name: "Moshi Retail", status: "Draft", amount: 350000, data: { doc_number: "INV-QA-1", due_date: "2026-09-01" } });
+    expect(payment).toMatchObject({ status: "Active", amount: 350000, data: { invoice_id: "invoice-1", method: "Cash", reference: "RCPT-QA-1" } });
+    expect(supplier).toMatchObject({ name: "Arusha Supplies", data: { contact_person: "Neema", lead_time_days: 5 } });
+    expect(transaction).toMatchObject({ name: "Asha", status: "Completed", amount: 125000, data: { cashier: "Asha", transaction_ref: "POS-QA-1" } });
+  });
+
+  it("keeps generic module writes and lookup filters inside the shared persistence boundary", () => {
+    expect(dashboardSource).toContain("GENERIC_COMPANY_TABLES");
+    expect(dashboardSource).toContain("normalizeGenericCompanyPayload");
+    expect(dashboardSource).toContain("genericFilterColumn(table, col)");
+    expect(dashboardSource).toContain("data->>${column}");
+    expect(dashboardSource).toContain("requestPayload = normalizeGenericCompanyPayload(table, payload");
+  });
+
   it("normalizes and validates loan insert payloads before server persistence", () => {
     const loanPayload = {
       lender: "NMB Bank",
@@ -213,7 +254,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     const remove = await runCompanyTableMutation("pos_shifts", "delete", null, { matchVal: "shift-1" });
     expect(update.error).toMatchObject({ code: "PERSISTENCE_CONFIRMATION_MISSING", operation: "UPDATE" });
     expect(remove.error).toMatchObject({ code: "PERSISTENCE_CONFIRMATION_MISSING", operation: "DELETE" });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it("keeps confirmed-response enforcement and original server diagnostics in the shared builder", () => {
