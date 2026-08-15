@@ -34,6 +34,7 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPasswordView, VerificationView } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
+import { WorkspaceMembershipManager } from "./components/WorkspaceMembershipManager";
 import { AuthModuleShowcase } from "./components/AuthModuleShowcase";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
@@ -32008,7 +32009,7 @@ function BusinessCardDesigner({ company }) {
 }
 
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, workspaceAccessToken, workspaceEmail, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast }) {
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
   const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
@@ -32143,6 +32144,10 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
       </section>
 
       <AuditLogViewer timezone={company.timezone} />
+
+      {IS_CONFIGURED && (currentUser.role === "Organization Owner" || currentUser.role === "Administrator" || currentUser.role === "Super Administrator") && (
+        <WorkspaceMembershipManager accessToken={workspaceAccessToken} currentUserEmail={workspaceEmail} />
+      )}
 
       {!canManage && (
         <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
@@ -46975,6 +46980,8 @@ function SmartManager() {
                 currentUser={currentUser}
                 setCurrentUser={setCurrentUser}
                 canManage={canManage}
+                workspaceAccessToken={session?.accessToken}
+                workspaceEmail={session?.email}
                 darkMode={darkMode}
                 toggleDarkMode={toggleDarkMode}
                 textSize={textSize}

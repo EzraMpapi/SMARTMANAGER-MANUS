@@ -481,3 +481,8 @@
 - [x] Evaluate Supabase PKCE callback support and retain the compatible implicit callback strategy because production hosting removes OAuth query parameters before client exchange.
 - [x] Diagnose and repair the remaining live Google callback path that returns to the sign-in page after provider verification without persisting a Smart Manager session.
 - [x] Repair the authenticated no-workspace route so a verified Google account receives a tenant-safe workspace setup or assignment path instead of a generic retry-to-login message.
+- [x] Audit current company membership procedures, owner/admin role checks, administrative UI entry points, and pending OAuth user onboarding behavior.
+- [x] Add server-authorized administrator procedures for listing, assigning roles to, and removing workspace members without allowing self-escalation or cross-tenant management.
+- [x] Add an administrator workspace membership management screen with accessible loading, error, confirmation, and empty states.
+- [x] Add a self-service create-or-join workspace experience for authenticated accounts that have no company membership, preserving atomic tenant bootstrap and RLS.
+- [ ] Add authorization and onboarding regression coverage, validate live flows, run the full suite and production build, and publish the enhancement.
