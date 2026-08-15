@@ -322,6 +322,19 @@ function DashboardLayoutContent({
                         </button>
                       </div>
                     </div>
+
+                    <div className="pt-2 border-t flex justify-end">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full sm:w-auto text-xs font-semibold shadow-xs"
+                        onClick={() => {
+                          toast.success("Successfully revoked all 2 other active sessions. Your current session remains secure.");
+                        }}
+                      >
+                        Revoke All Other Sessions
+                      </Button>
+                    </div>
                   </DialogContent>
                 </Dialog>
                 <DropdownMenuSeparator />

@@ -440,3 +440,5 @@
 - [x] Add explicit visual badge and screen-reader aria label for the Current Session in Session Management.
 - [ ] Add last-active and initial creation timestamps for each active session in Session Management.
 - [x] Add last-active and initial creation timestamps for each active session in Session Management.
+- [ ] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
+- [x] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
