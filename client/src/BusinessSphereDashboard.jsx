@@ -46222,6 +46222,10 @@ function SmartManager() {
   // this initial state is only ever seen in demo mode, or for the brief
   // instant before that hydration effect runs in live mode.
   const [currentUser, setCurrentUser] = useState({ name: "EzyMP", role: "Super Administrator", customerRef: null });
+  const [tenantSelectorOpen, setTenantSelectorOpen] = useState(false);
+  const [availableTenants, setAvailableTenants] = useState([]);
+  const [switchingTenantId, setSwitchingTenantId] = useState(null);
+  const notifiedGeoAnomalyIds = useRef(new Set());
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const canManage = currentRole.writeAccess === "full";
 
@@ -46239,6 +46243,47 @@ function SmartManager() {
       setCurrentUser({ name: session.fullName, role: session.role, customerRef: session.customerRef || null });
     }
   }, [session]);
+
+  useEffect(() => {
+    if (!session?.accessToken || session?.demo) {
+      setAvailableTenants([]);
+      return;
+    }
+    callRpc("list_my_companies", {}, session.accessToken)
+      .then((workspaces) => setAvailableTenants(Array.isArray(workspaces) ? workspaces : []))
+      .catch(() => setAvailableTenants([]));
+  }, [session?.accessToken, session?.company?.id, session?.demo]);
+
+  async function switchTenant(workspace) {
+    if (!workspace?.id || workspace.id === company.id || !session?.accessToken) {
+      setTenantSelectorOpen(false);
+      return;
+    }
+    setSwitchingTenantId(workspace.id);
+    try {
+      await callRpc("switch_current_company", { p_company_id: workspace.id }, session.accessToken);
+      notify(`Switched to ${workspace.name}. Refreshing your tenant-scoped workspace…`, "info");
+      window.setTimeout(() => window.location.assign("/app"), 250);
+    } catch (switchError) {
+      notify(`Workspace switch was not authorized: ${switchError?.message || "Please try again."}`, "error");
+      setSwitchingTenantId(null);
+    }
+  }
+
+  // Audit rows are tenant-scoped by Supabase RLS. Display each recent
+  // geographic anomaly once per browser session, without exposing full IP data.
+  useEffect(() => {
+    if (!IS_CONFIGURED || !company.id) return;
+    sb("audit_log").select("id,action,module,details,created_at").eq("module", "Security").order("created_at", { ascending: false }).run()
+      .then((rows) => {
+        (rows || []).filter((row) => String(row.action || "").toUpperCase() === "GEO_ANOMALY").slice(0, 3).forEach((row) => {
+          if (notifiedGeoAnomalyIds.current.has(row.id)) return;
+          notifiedGeoAnomalyIds.current.add(row.id);
+          notify(`Security alert: unusual sign-in location detected. ${row.details || "Review active sessions to confirm this login."}`, "error");
+        });
+      })
+      .catch(() => { /* Audit data is non-blocking; session access remains available. */ });
+  }, [company.id]);
 
   // Activates the real, per-company tax rate everywhere lineTotal() and
   // every POS/invoice calculation already reads it from (see the TAX_RATE
@@ -46672,10 +46717,32 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <BrandLogo variant="compact" priority className="h-8 w-8 sm:hidden" />
-            <div className="flex items-center gap-2 text-[13px] text-slate-500">
+            <div className="relative flex items-center gap-2 text-[13px] text-slate-500">
               <Building2 size={14} className="hidden sm:block" />
-              <span className="font-medium text-[#111827] truncate max-w-[140px] sm:max-w-none">{company.name}</span>
-              <ChevronDown size={13} className="text-slate-400 hidden sm:block" />
+              <button
+                type="button"
+                onClick={() => setTenantSelectorOpen((open) => !open)}
+                aria-haspopup="menu"
+                aria-expanded={tenantSelectorOpen}
+                className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-left transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                title="Workspace selector"
+              >
+                <span className="font-medium text-[#111827] truncate max-w-[140px] sm:max-w-none">{company.name}</span>
+                <ChevronDown size={13} className="text-slate-400 hidden sm:block" />
+              </button>
+              {tenantSelectorOpen && (
+                <div role="menu" className="absolute left-0 top-9 z-50 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                  <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-[.14em] text-slate-400">Your verified workspaces</p>
+                  {(availableTenants.length ? availableTenants : [{ id: company.id, name: company.name, role: currentUser.role }]).map((workspace) => {
+                    const isCurrentWorkspace = workspace.id === company.id;
+                    const isSwitching = switchingTenantId === workspace.id;
+                    return <button key={workspace.id} type="button" role="menuitem" disabled={isCurrentWorkspace || isSwitching} onClick={() => switchTenant(workspace)} className={`mt-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[12px] font-semibold transition ${isCurrentWorkspace ? "bg-emerald-50 text-emerald-800" : "text-slate-700 hover:bg-slate-100 disabled:opacity-60"}`}>
+                      <span className="truncate">{workspace.name}</span><span className="ml-3 shrink-0 text-[10px] uppercase tracking-wide">{isSwitching ? "Switching…" : isCurrentWorkspace ? "Current" : workspace.role}</span>
+                    </button>;
+                  })}
+                  <p className="px-2 pt-3 text-[11px] leading-4 text-slate-500">Workspace changes are authorized by verified membership on the server before tenant-scoped data reloads.</p>
+                </div>
+              )}
               <span className="hidden md:inline-flex items-center text-[10.5px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full ml-1">
                 {currentUser.role}
               </span>

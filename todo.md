@@ -467,3 +467,9 @@
 - [x] Implement scheduled weekly tenant activity compliance digests with delivery-disabled handling.
 - [x] Implement geographic anomaly detection alerts for unusual sign-in locations.
 - [x] Intensively trace and fix credential, Google, Apple, Azure sign-in loops and signup completion failures.
+- [x] Add automated browser navigation coverage for credential and social sign-in redirection.
+- [x] Add a tenant-switch dropdown for multi-workspace accounts in the user header.
+- [x] Add geographic anomaly detection notification toasts for unusual sign-in locations.
+- [x] Add automated browser navigation coverage for credential and social sign-in redirection.
+- [x] Add a tenant-switch dropdown for multi-workspace accounts in the user header.
+- [x] Add geographic anomaly detection notification toasts for unusual sign-in locations.
