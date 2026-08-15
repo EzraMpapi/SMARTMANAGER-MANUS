@@ -434,3 +434,4 @@
 - [x] Ensure subtle, professional module showcase animations use actual ERP modules and respect `prefers-reduced-motion`.
 - [x] Validate all authentication and 4-step workspace onboarding flows, test suite, and production build.
 - [x] Add secure Remember Me option to login view with controlled session storage and explicit logout cleanup.
+- [x] Add Session Management section to user profile for viewing and revoking active logins.
