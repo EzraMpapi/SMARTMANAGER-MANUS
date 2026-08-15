@@ -115,6 +115,8 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [isRevokingAll, setIsRevokingAll] = useState(false);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -290,9 +292,19 @@ function DashboardLayoutContent({
                           </div>
                         </div>
                         <button
-                          onClick={() => toast.success("Secondary mobile session revoked successfully.")}
-                          className="text-[11px] font-semibold text-destructive hover:underline px-2 py-1 rounded-md hover:bg-destructive/10 transition-colors"
+                          disabled={revokingId === "mobile"}
+                          onClick={() => {
+                            setRevokingId("mobile");
+                            toast.loading("Revoking mobile companion session...", { id: "revoking-mobile" });
+                            setTimeout(() => {
+                              setRevokingId(null);
+                              toast.dismiss("revoking-mobile");
+                              toast.success("Mobile companion session successfully revoked.");
+                            }, 800);
+                          }}
+                          className="text-[11px] font-semibold text-destructive hover:underline px-2 py-1 rounded-md hover:bg-destructive/10 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
                         >
+                          {revokingId === "mobile" && <div className="h-3 w-3 animate-spin rounded-full border-2 border-destructive border-t-transparent" />}
                           Revoke
                         </button>
                       </div>
@@ -315,9 +327,19 @@ function DashboardLayoutContent({
                           </div>
                         </div>
                         <button
-                          onClick={() => toast.success("API integration token revoked.")}
-                          className="text-[11px] font-semibold text-destructive hover:underline px-2 py-1 rounded-md hover:bg-destructive/10 transition-colors"
+                          disabled={revokingId === "api"}
+                          onClick={() => {
+                            setRevokingId("api");
+                            toast.loading("Revoking API integration token...", { id: "revoking-api" });
+                            setTimeout(() => {
+                              setRevokingId(null);
+                              toast.dismiss("revoking-api");
+                              toast.success("API integration token successfully revoked.");
+                            }, 800);
+                          }}
+                          className="text-[11px] font-semibold text-destructive hover:underline px-2 py-1 rounded-md hover:bg-destructive/10 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
                         >
+                          {revokingId === "api" && <div className="h-3 w-3 animate-spin rounded-full border-2 border-destructive border-t-transparent" />}
                           Revoke
                         </button>
                       </div>
@@ -327,11 +349,19 @@ function DashboardLayoutContent({
                       <Button
                         variant="destructive"
                         size="sm"
-                        className="w-full sm:w-auto text-xs font-semibold shadow-xs"
+                        disabled={isRevokingAll}
+                        className="w-full sm:w-auto text-xs font-semibold shadow-xs inline-flex items-center gap-2"
                         onClick={() => {
-                          toast.success("Successfully revoked all 2 other active sessions. Your current session remains secure.");
+                          setIsRevokingAll(true);
+                          toast.loading("Revoking all other active sessions securely...", { id: "revoking-all" });
+                          setTimeout(() => {
+                            setIsRevokingAll(false);
+                            toast.dismiss("revoking-all");
+                            toast.success("Successfully revoked all other active sessions. Your current browser session remains secure.");
+                          }, 1000);
                         }}
                       >
+                        {isRevokingAll && <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-destructive-foreground border-t-transparent" />}
                         Revoke All Other Sessions
                       </Button>
                     </div>

@@ -442,3 +442,5 @@
 - [x] Add last-active and initial creation timestamps for each active session in Session Management.
 - [ ] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
 - [x] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
+- [ ] Add loading spinner and success toast notification for individual and bulk session revocation actions.
+- [x] Add loading spinner and success toast notification for individual and bulk session revocation actions.
