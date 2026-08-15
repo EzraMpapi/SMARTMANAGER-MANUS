@@ -458,3 +458,5 @@
 - [x] Integrate server-backed notifications for newly detected active logins or remote session revocations.
 - [x] Implement secure tenant activity export feature for compliance audits and security reviews.
 - [x] Diagnose and fix the post-login redirection and session persistence bug causing authenticated users to return to login.
+- [x] Add persistent session-expiration warning banner before token refresh.
+- [x] Add automated end-to-end integration test for login redirection and session survival.

@@ -154,8 +154,37 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
+  const [sessionExpiringSoon, setSessionExpiringSoon] = useState(false);
+  useEffect(() => {
+    const checkExpiry = () => {
+      try {
+        const token = window.localStorage.getItem("bs_access_token");
+        if (!token) return;
+        const parts = token.split(".");
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload?.exp) {
+            const timeLeft = payload.exp * 1000 - Date.now();
+            if (timeLeft > 0 && timeLeft < 10 * 60 * 1000) {
+              setSessionExpiringSoon(true);
+            }
+          }
+        }
+      } catch (_e) {}
+    };
+    checkExpiry();
+    const interval = setInterval(checkExpiry, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
+      {sessionExpiringSoon && (
+        <div role="status" aria-live="polite" className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-medium text-center flex items-center justify-center gap-2">
+          <span>⚠️ Your session will expire soon. Please save your work or refresh your credentials to continue.</span>
+          <button onClick={() => window.location.reload()} className="underline font-bold hover:opacity-80">Refresh now</button>
+        </div>
+      )}
       <div className="relative" ref={sidebarRef}>
         <Sidebar
           collapsible="icon"
