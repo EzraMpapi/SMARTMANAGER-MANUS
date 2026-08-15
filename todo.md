@@ -438,3 +438,5 @@
 - [x] Add "Current Device" badge with green status indicator to active session row in Session Management.
 - [x] Include privacy-conscious location and IP address details for each active session in Session Management.
 - [x] Add explicit visual badge and screen-reader aria label for the Current Session in Session Management.
+- [ ] Add last-active and initial creation timestamps for each active session in Session Management.
+- [x] Add last-active and initial creation timestamps for each active session in Session Management.
