@@ -429,3 +429,4 @@
 - [ ] Inspect Workspace Settings routing, data loading, and server-confirmed persistence.
 - [ ] Implement robust loading states and ensure transient API/network errors do not prematurely log out authenticated users.
 - [ ] Verify complete authentication matrix, persistence, multi-tenant security, and production build.
+- [x] Add smooth accessible transitions between the four workspace onboarding states.
