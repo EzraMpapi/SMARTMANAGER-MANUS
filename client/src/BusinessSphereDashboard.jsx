@@ -9276,18 +9276,18 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
         <table className="w-full text-[13px] min-w-[720px]">
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-              <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>
-              <SortableHeader label="Customer" field="customer" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
-              <SortableHeader label="Date" field="date" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
-              <th className="px-4 py-3 font-medium">{columnLabel[1]}</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium text-right">Total (TZS 000)</th>
-              <th className="px-4 py-3"></th>
+              {showSalesColumn("document") && <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>}
+              {showSalesColumn("customer") && <SortableHeader label="Customer" field="customer" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
+              {showSalesColumn("date") && <SortableHeader label="Date" field="date" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
+              {showSalesColumn("reference") && <th className="px-4 py-3 font-medium">{columnLabel[1]}</th>}
+              {showSalesColumn("status") && <th className="px-4 py-3 font-medium">Status</th>}
+              {showSalesColumn("total") && <th className="px-4 py-3 font-medium text-right">Total (TZS 000)</th>}
+              {showSalesColumn("actions") && <th className="px-4 py-3"></th>}
             </tr>
           </thead>
           <tbody>
             {loadingByTab[tab] ? (
-              <SkeletonRows cols={7} />
+              <SkeletonRows cols={visibleSalesColumns.length} />
             ) : (
               <>
                 {filtered.map((doc) => {
@@ -9299,15 +9299,15 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
                       onClick={() => setSelected({ ...doc, kind: tab })}
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>
-                      <td className="px-4 py-3 text-slate-700">{doc.customer}</td>
-                      <td className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>
-                      <td className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>
-                      <td className="px-4 py-3"><DocStatusPill status={doc.status} /></td>
-                      <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>
-                      <td className="px-4 py-3 text-right">
+                      {showSalesColumn("document") && <td className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>}
+                      {showSalesColumn("customer") && <td className="px-4 py-3 text-slate-700">{doc.customer}</td>}
+                      {showSalesColumn("date") && <td className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>}
+                      {showSalesColumn("reference") && <td className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>}
+                      {showSalesColumn("status") && <td className="px-4 py-3"><DocStatusPill status={doc.status} /></td>}
+                      {showSalesColumn("total") && <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>}
+                      {showSalesColumn("actions") && <td className="px-4 py-3 text-right">
                         <ChevronRight size={15} className="text-slate-300 inline" />
-                      </td>
+                      </td>}
                     </tr>
                   );
                 })}
@@ -13574,13 +13574,10 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
                     onClick={() => setSelected(e)}
                     className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                   >
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-[#111827]">{e.vendor}</p>
-                      <p className="text-[11px] text-slate-400 font-mono">{e.id}</p>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">{e.category}</td>
-                    <td className="px-4 py-3 text-slate-500 font-mono">{e.dueDate}</td>
-                    <td className="px-4 py-3">
+                    {visibleExpenseColumns.includes("vendor") && <td className="px-4 py-3"><p className="font-medium text-[#111827]">{e.vendor}</p><p className="text-[11px] text-slate-400 font-mono">{e.id}</p></td>}
+                    {visibleExpenseColumns.includes("category") && <td className="px-4 py-3 text-slate-500">{e.category}</td>}
+                    {visibleExpenseColumns.includes("dueDate") && <td className="px-4 py-3 text-slate-500 font-mono">{e.dueDate}</td>}
+                    {visibleExpenseColumns.includes("aging") && <td className="px-4 py-3">
                       {bucket ? (
                         <span
                           className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
@@ -13592,24 +13589,16 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
                       ) : (
                         <span className="text-[11px] text-slate-300">—</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
-                        style={{ backgroundColor: `${EXPENSE_STATUS_COLOR[e.status]}14`, color: EXPENSE_STATUS_COLOR[e.status] }}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: EXPENSE_STATUS_COLOR[e.status] }} />
-                        {e.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">{money(e.amount)}</td>
+                    </td>}
+                    {visibleExpenseColumns.includes("status") && <td className="px-4 py-3"><span className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5" style={{ backgroundColor: `${EXPENSE_STATUS_COLOR[e.status]}14`, color: EXPENSE_STATUS_COLOR[e.status] }}><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: EXPENSE_STATUS_COLOR[e.status] }} />{e.status}</span></td>}
+                    {visibleExpenseColumns.includes("amount") && <td className="px-4 py-3 text-right font-mono">{money(e.amount)}</td>}
                   </tr>
                 );
               })}
-              {loading && <SkeletonRows cols={6} />}
+              {loading && <SkeletonRows cols={visibleExpenseColumns.length} />}
               {!loading && expenses.length === 0 && (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={visibleExpenseColumns.length}>
                     <EmptyState
                       icon={Wallet}
                       title="No expenses yet"

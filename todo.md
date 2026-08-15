@@ -410,10 +410,10 @@
 - [x] Create reusable enterprise UI primitives (`EnterpriseModuleHeader`, `ScrollableModuleTabs`, `EnterpriseFilterBar`, `EnterpriseKPIGrid`).
 - [x] Reorganize Sales, Inventory, Finance, CRM, and HR module layouts for clean enterprise hierarchy and horizontal touch/mouse scrolling.
 - [x] Verify functionality preservation, test suite, production build, and publish the enterprise re-architecture.
-- [ ] Implement keyboard shortcut navigation (Arrow Left / Arrow Right) for primary module tabs in `ScrollableModuleTabs`.
-- [ ] Implement reusable column-visibility customization menu (`EnterpriseColumnCustomizer`).
-- [ ] Wire column customizer into enterprise table views across major modules.
-- [ ] Verify test suite, production build, and publish the verified update.
+- [x] Implement keyboard shortcut navigation (Arrow Left / Arrow Right) for primary module tabs in `ScrollableModuleTabs`.
+- [x] Implement reusable column-visibility customization menu (`EnterpriseColumnCustomizer`).
+- [x] Wire column customizer into enterprise table views across major modules.
+- [x] Verify test suite, production build, and publish the verified update.
 - [x] Define and package a scalable Smart Manager logo system that preserves the approved hexagonal S mark, Tanzania accent, circuit motif, growth-arrow concept, and enterprise green palette.
 - [x] Create full, horizontal, mobile, app-icon, favicon, transparent, and raster/vector export assets with responsive usage guidance.
 - [x] Add a responsive React BrandLogo component, brand tokens, and an accessible animated loading treatment using the official logo system.
@@ -421,6 +421,6 @@
 - [x] Produce Flutter, favicon, mobile splash-screen, and email/PDF implementation handoff assets and documentation.
 - [x] Run brand regression tests, production build, responsive visual checks, and publish the complete brand-system update.
 - [x] Preserve the uploaded Smart Manager image as the sole official master artwork; create only source-derived technical variants and never substitute or regenerate the logo.
-- [ ] Apply the reusable column-visibility menu to the CRM, Sales, Inventory, and Finance primary record tables with responsive empty/loading-state alignment.
-- [ ] Verify arrow-key, Home, and End tab navigation across the reusable enterprise module-tab control.
-- [ ] Add regression coverage, validate desktop/mobile table controls, run the full suite and production build, and publish the completed table-customization enhancement.
+- [x] Apply the reusable column-visibility menu to the CRM, Sales, Inventory, and Finance primary record tables with responsive empty/loading-state alignment.
+- [x] Verify arrow-key, Home, and End tab navigation across the reusable enterprise module-tab control.
+- [x] Add regression coverage, validate desktop/mobile table controls, run the full suite and production build, and publish the completed table-customization enhancement.
