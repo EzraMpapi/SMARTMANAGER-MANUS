@@ -23,5 +23,4 @@ describe("enterprise authentication onboarding helpers", () => {
     expect(oauthCallbackFromHash("#access_token=access&refresh_token=refresh")).toEqual({ accessToken: "access", refreshToken: "refresh", errorCode: null, errorDescription: null });
     expect(oauthCallbackFromHash("#error=access_denied&error_description=cancelled")).toEqual({ accessToken: null, refreshToken: null, errorCode: "access_denied", errorDescription: "cancelled" });
   });
-
 });

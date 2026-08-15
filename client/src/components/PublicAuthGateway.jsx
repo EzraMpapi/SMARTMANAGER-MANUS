@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { GoTrueClient } from "@supabase/auth-js";
 import { EnterpriseLoginView, ForgotPasswordView, ResetPasswordView, VerificationView } from "./EnterpriseAuthViews";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "../lib/authErrors";
 import { authScreenFromSearch, oauthCallbackFromHash } from "../lib/authOnboarding";
@@ -9,14 +8,6 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
 const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
 const configured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
-// Let the maintained Supabase browser client own PKCE verifier lifecycle.
-// Its storage survives the provider redirect and safely exchanges the one-time code.
-const browserSupabase = configured ? new GoTrueClient({
-  url: `${SUPABASE_URL}/auth/v1`,
-  headers: { apikey: SUPABASE_ANON_KEY },
-  flowType: "pkce",
-  detectSessionInUrl: false,
-}) : null;
 
 async function authRequest(path, init = {}) {
   if (!configured) {
@@ -44,10 +35,6 @@ function persistAuthSession(result) {
 function withoutAuthView() {
   const url = new URL(window.location.href);
   url.searchParams.delete("auth");
-  url.searchParams.delete("code");
-  url.searchParams.delete("state");
-  url.searchParams.delete("error");
-  url.searchParams.delete("error_description");
   url.hash = "";
   return `${url.pathname}${url.search}`;
 }
@@ -76,44 +63,24 @@ export default function PublicAuthGateway() {
   }
 
   useEffect(() => {
-    let disposed = false;
-
-    async function completeOAuthCallback() {
-      const code = new URLSearchParams(window.location.search).get("code");
-      if (code) {
-        try {
-          if (!browserSupabase) throw new Error("Authentication is not configured for this application.");
-          const { data, error } = await browserSupabase.exchangeCodeForSession(code);
-          if (error) throw error;
-          if (!data.session?.access_token) throw new Error("The authentication server did not return a complete session.");
-          persistAuthSession(data.session);
-          window.location.replace(withoutAuthView());
-        } catch (_error) {
-          window.history.replaceState(null, "", withoutAuthView());
-          if (!disposed) setOauthError("Google sign-in could not be completed. Please start the secure sign-in process again.");
-        }
-        return;
-      }
-      const implicitCallback = oauthCallbackFromHash(window.location.hash);
-      if (implicitCallback.errorCode) {
-        window.history.replaceState(null, "", withoutAuthView());
-        if (!disposed) setOauthError("Google authentication did not complete. Please try again or use another approved sign-in method.");
-        return;
-      }
-      if (!implicitCallback.accessToken) return;
-      if (authScreenFromSearch(window.location.search) === "reset") {
-        setRecoveryToken(implicitCallback.accessToken);
-        window.history.replaceState(null, "", `${window.location.pathname}?auth=reset`);
-        return;
-      }
-      // Retain support for existing Supabase implicit callbacks while the
-      // primary flow above exchanges modern authorization codes with PKCE.
-      persistAuthSession({ access_token: implicitCallback.accessToken, refresh_token: implicitCallback.refreshToken });
-      window.location.replace(withoutAuthView());
+    if (!window.location.hash) return;
+    const callback = oauthCallbackFromHash(window.location.hash);
+    if (callback.errorCode) {
+      window.history.replaceState(null, "", withoutAuthView());
+      setOauthError("Google authentication did not complete. Please try again or use another approved sign-in method.");
+      return;
     }
-
-    void completeOAuthCallback();
-    return () => { disposed = true; };
+    if (!callback.accessToken) return;
+    if (authScreenFromSearch(window.location.search) === "reset") {
+      setRecoveryToken(callback.accessToken);
+      window.history.replaceState(null, "", `${window.location.pathname}?auth=reset`);
+      return;
+    }
+    // OAuth callbacks land before the lightweight public route can see the
+    // session in browser storage. Persist and immediately re-enter /app so
+    // the existing tenant-aware bootstrap resolves profile → workspace.
+    persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken });
+    window.location.replace(withoutAuthView());
   }, []);
 
   async function signIn(workEmail, password) {
@@ -141,18 +108,10 @@ export default function PublicAuthGateway() {
     await authRequest("resend", { method: "POST", body: JSON.stringify({ type: "signup", email: workEmail }) });
   }
 
-  async function oauth(provider) {
+  function oauth(provider) {
     if (!configured) return;
-    try {
-      if (!browserSupabase) throw new Error("Authentication is not configured for this application.");
-      const redirectTo = new URL(window.location.href);
-      ["auth", "code", "state", "error", "error_description"].forEach((key) => redirectTo.searchParams.delete(key));
-      redirectTo.hash = "";
-      const { error } = await browserSupabase.signInWithOAuth({ provider, options: { redirectTo: redirectTo.toString() } });
-      if (error) throw error;
-    } catch (error) {
-      setOauthError(error?.message || "Google sign-in could not start. Please try again.");
-    }
+    const redirectTo = new URL(window.location.href); redirectTo.searchParams.delete("auth");
+    window.location.assign(`${SUPABASE_URL}/auth/v1/authorize?provider=${encodeURIComponent(provider)}&redirect_to=${encodeURIComponent(redirectTo.toString())}`);
   }
 
   if (view === "forgot") return <ForgotPasswordView onBack={() => navigate("login")} onRequest={requestRecovery} toMessage={toAuthUserMessage} />;

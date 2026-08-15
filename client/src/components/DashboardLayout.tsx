@@ -21,10 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Shield, Laptop, Smartphone, Monitor, Globe, CheckCircle2 } from "lucide-react";
-import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -115,8 +112,6 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
-  const [revokingId, setRevokingId] = useState<string | null>(null);
-  const [isRevokingAll, setIsRevokingAll] = useState(false);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -154,61 +149,8 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
-  const [sessionExpiringSoon, setSessionExpiringSoon] = useState(false);
-  useEffect(() => {
-    const checkExpiry = async () => {
-      try {
-        const token = window.localStorage.getItem("bs_access_token");
-        const refreshToken = window.localStorage.getItem("bs_refresh_token");
-        if (!token) return;
-        const parts = token.split(".");
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          if (payload?.exp) {
-            const timeLeft = payload.exp * 1000 - Date.now();
-            if (timeLeft > 0 && timeLeft < 5 * 60 * 1000 && refreshToken) {
-              // Attempt silent background token refresh
-              try {
-                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-                const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-                if (supabaseUrl && anonKey) {
-                  const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
-                    method: "POST",
-                    headers: { apikey: anonKey, "content-type": "application/json" },
-                    body: JSON.stringify({ refresh_token: refreshToken }),
-                  });
-                  if (res.ok) {
-                    const data = await res.json();
-                    if (data?.access_token) {
-                      window.localStorage.setItem("bs_access_token", data.access_token);
-                      if (data.refresh_token) window.localStorage.setItem("bs_refresh_token", data.refresh_token);
-                      setSessionExpiringSoon(false);
-                      return;
-                    }
-                  }
-                }
-              } catch (_refreshErr) {}
-            }
-            if (timeLeft > 0 && timeLeft < 10 * 60 * 1000) {
-              setSessionExpiringSoon(true);
-            }
-          }
-        }
-      } catch (_e) {}
-    };
-    checkExpiry();
-    const interval = setInterval(checkExpiry, 60_000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <>
-      {sessionExpiringSoon && (
-        <div role="status" aria-live="polite" className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-medium text-center flex items-center justify-center gap-2">
-          <span>⚠️ Your session will expire soon. Please save your work or refresh your credentials to continue.</span>
-          <button onClick={() => window.location.reload()} className="underline font-bold hover:opacity-80">Refresh now</button>
-        </div>
-      )}
       <div className="relative" ref={sidebarRef}>
         <Sidebar
           collapsible="icon"
@@ -276,151 +218,7 @@ function DashboardLayoutContent({
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
-                      <Shield className="mr-2 h-4 w-4 text-emerald-600" />
-                      <span>Session Management</span>
-                    </DropdownMenuItem>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-emerald-600" />
-                        Active Logins & Sessions
-                      </DialogTitle>
-                      <DialogDescription>
-                        Manage your active sessions across devices. You can securely revoke any unrecognized session.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-2">
-                      <div className="rounded-xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-3.5 flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-emerald-600 text-white mt-0.5">
-                            <Monitor className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-xs font-semibold text-foreground">Current Browser Session</p>
-                              <span 
-                                role="status"
-                                aria-label="Current active session badge"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 shadow-xs"
-                              >
-                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                ACTIVE CURRENT SESSION
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">Active now · Chrome 131.0 on macOS / Windows (Desktop Workstation)</p>
-                            <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono flex-wrap">
-                              <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                Location: Dar es Salaam, Tanzania (TZ)
-                              </span>
-                              <span>•</span>
-                              <span>IP: 197.250.xxx.xx</span>
-                              <span>•</span>
-                              <span className="text-foreground/80 font-medium">Started: Just now (Active)</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-border bg-card p-3.5 flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-secondary text-secondary-foreground mt-0.5">
-                            <Smartphone className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-foreground">Mobile Companion App</p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">Smart Manager Mobile App · Safari Mobile (iOS 18)</p>
-                            <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono flex-wrap">
-                              <span>Location: Arusha, Tanzania (TZ)</span>
-                              <span>•</span>
-                              <span>IP: 196.43.xxx.xx</span>
-                              <span>•</span>
-                              <span>Last active: 2 hours ago</span>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          disabled={revokingId === "mobile"}
-                          onClick={() => {
-                            setRevokingId("mobile");
-                            toast.loading("Revoking mobile companion session...", { id: "revoking-mobile" });
-                            setTimeout(() => {
-                              setRevokingId(null);
-                              toast.dismiss("revoking-mobile");
-                              toast.success("Mobile companion session successfully revoked.");
-                            }, 800);
-                          }}
-                          className="text-[11px] font-semibold text-destructive hover:underline px-2 py-1 rounded-md hover:bg-destructive/10 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                          {revokingId === "mobile" && <div className="h-3 w-3 animate-spin rounded-full border-2 border-destructive border-t-transparent" />}
-                          Revoke
-                        </button>
-                      </div>
-
-                      <div className="rounded-xl border border-border bg-card p-3.5 flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-secondary text-secondary-foreground mt-0.5">
-                            <Globe className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-foreground">Headless API / CLI Integration</p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">Headless API / CLI Integration · Node.js / cURL Client</p>
-                            <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono flex-wrap">
-                              <span>Location: Cloud Gateway (AWS Virginia, US)</span>
-                              <span>•</span>
-                              <span>IP: 52.213.xxx.xx</span>
-                              <span>•</span>
-                              <span>Created: Yesterday (08:30 UTC)</span>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          disabled={revokingId === "api"}
-                          onClick={() => {
-                            setRevokingId("api");
-                            toast.loading("Revoking API integration token...", { id: "revoking-api" });
-                            setTimeout(() => {
-                              setRevokingId(null);
-                              toast.dismiss("revoking-api");
-                              toast.success("API integration token successfully revoked.");
-                            }, 800);
-                          }}
-                          className="text-[11px] font-semibold text-destructive hover:underline px-2 py-1 rounded-md hover:bg-destructive/10 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                          {revokingId === "api" && <div className="h-3 w-3 animate-spin rounded-full border-2 border-destructive border-t-transparent" />}
-                          Revoke
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t flex justify-end">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        disabled={isRevokingAll}
-                        className="w-full sm:w-auto text-xs font-semibold shadow-xs inline-flex items-center gap-2"
-                        onClick={() => {
-                          setIsRevokingAll(true);
-                          toast.loading("Revoking all other active sessions securely...", { id: "revoking-all" });
-                          setTimeout(() => {
-                            setIsRevokingAll(false);
-                            toast.dismiss("revoking-all");
-                            toast.success("Successfully revoked all other active sessions. Your current browser session remains secure.");
-                          }, 1000);
-                        }}
-                      >
-                        {isRevokingAll && <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-destructive-foreground border-t-transparent" />}
-                        Revoke All Other Sessions
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                <DropdownMenuSeparator />
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"

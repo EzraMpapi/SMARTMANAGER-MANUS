@@ -39,7 +39,10 @@ export default function Home() {
     <div className="min-h-screen overflow-x-hidden bg-[#0B1120] text-[#F8FAFC]">
       {/* Navigation */}
       <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8 lg:px-10">
-        <Link href="/" className="flex items-center" aria-label="Smart Manager home"><BrandLogo variant="compact" priority className="h-12 w-12 shadow-lg sm:h-14 sm:w-14" /></Link>
+        <Link href="/" className="flex items-center" aria-label="Smart Manager home">
+          <span className="sm-brand-nav-mobile"><BrandLogo variant="mobile" priority className="h-12 w-12" /></span>
+          <span className="sm-brand-nav-desktop"><BrandLogo variant="horizontal" tone="light" priority /></span>
+        </Link>
         <div className="flex items-center gap-4">
           <nav className="hidden items-center gap-8 text-[13px] font-medium text-[#94A3B8] md:flex" aria-label="Main navigation">
             <a href="#capabilities" className="transition-colors hover:text-[#C9A96E]">{t("capabilities")}</a>

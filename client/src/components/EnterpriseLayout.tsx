@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Check, ChevronLeft, ChevronRight, Columns3, RotateCcw, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Filter, Calendar } from "lucide-react";
 
 export function EnterpriseModuleHeader({
   title,
@@ -38,7 +38,6 @@ export function ScrollableModuleTabs({
   onChangeTab: (id: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -61,18 +60,6 @@ export function ScrollableModuleTabs({
     el.scrollBy({ left: direction === "left" ? -240 : 240, behavior: "smooth" });
   };
 
-  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
-    if (!tabs.length) return;
-    const direction = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-    if (!direction) return;
-    event.preventDefault();
-    const nextIndex = (index + direction + tabs.length) % tabs.length;
-    const nextTab = tabs[nextIndex];
-    onChangeTab(nextTab.id);
-    tabRefs.current[nextIndex]?.focus();
-    tabRefs.current[nextIndex]?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  };
-
   return (
     <div className="relative flex items-center mb-6 group">
       {canScrollLeft && (
@@ -92,18 +79,13 @@ export function ScrollableModuleTabs({
         className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 px-1 w-full"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {tabs.map((tab, index) => {
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
-              ref={(element) => { tabRefs.current[index] = element; }}
               type="button"
-              role="tab"
-              aria-selected={isActive}
-              tabIndex={isActive ? 0 : -1}
-              onKeyDown={(event) => handleTabKeyDown(event, index)}
               onClick={() => onChangeTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium whitespace-nowrap transition-all shrink-0 ${
                 isActive
@@ -132,68 +114,6 @@ export function ScrollableModuleTabs({
         >
           <ChevronRight size={16} />
         </button>
-      )}
-    </div>
-  );
-}
-
-export type EnterpriseColumn = {
-  id: string;
-  label: string;
-};
-
-export function EnterpriseColumnCustomizer({
-  columns,
-  visibility,
-  onToggle,
-  onReset,
-}: {
-  columns: EnterpriseColumn[];
-  visibility: Record<string, boolean>;
-  onToggle: (id: string) => void;
-  onReset?: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const visibleCount = columns.filter((column) => visibility[column.id] !== false).length;
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
-      >
-        <Columns3 size={15} />
-        Columns
-        <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">{visibleCount}/{columns.length}</span>
-      </button>
-      {open && (
-        <div role="menu" className="absolute right-0 top-12 z-30 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">
-            <p className="text-[12px] font-bold text-slate-800 dark:text-slate-100">Visible columns</p>
-            {onReset && <button type="button" onClick={onReset} className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 hover:text-emerald-700"><RotateCcw size={12} /> Reset</button>}
-          </div>
-          <div className="space-y-1">
-            {columns.map((column) => {
-              const isVisible = visibility[column.id] !== false;
-              return (
-                <button
-                  key={column.id}
-                  type="button"
-                  role="menuitemcheckbox"
-                  aria-checked={isVisible}
-                  onClick={() => onToggle(column.id)}
-                  className="flex min-h-10 w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[12px] text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  <span>{column.label}</span>
-                  <span className={`grid h-5 w-5 place-items-center rounded-md border ${isVisible ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-300 text-transparent dark:border-slate-700"}`}><Check size={12} /></span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       )}
     </div>
   );

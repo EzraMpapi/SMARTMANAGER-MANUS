@@ -410,80 +410,14 @@
 - [x] Create reusable enterprise UI primitives (`EnterpriseModuleHeader`, `ScrollableModuleTabs`, `EnterpriseFilterBar`, `EnterpriseKPIGrid`).
 - [x] Reorganize Sales, Inventory, Finance, CRM, and HR module layouts for clean enterprise hierarchy and horizontal touch/mouse scrolling.
 - [x] Verify functionality preservation, test suite, production build, and publish the enterprise re-architecture.
-- [x] Implement keyboard shortcut navigation (Arrow Left / Arrow Right) for primary module tabs in `ScrollableModuleTabs`.
-- [x] Implement reusable column-visibility customization menu (`EnterpriseColumnCustomizer`).
-- [x] Wire column customizer into enterprise table views across major modules.
-- [x] Verify test suite, production build, and publish the verified update.
-- [x] Audit verified Smart Manager capabilities, brand assets, and UI surfaces for a truthful Swahili promotional-video brief.
-- [x] Write the 60–90 second Swahili storyboard, voice-over script, subtitles, and product-screen capture plan without unsupported marketing claims.
-- [x] Generate and review the premium Smart Manager promotional video using the official brand identity and actual supported ERP capabilities.
-- [x] Prepare a Smart Manager video-launch campaign strategy based on verified product positioning and Tanzania-first business audiences.
-- [x] Write a channel plan, launch timeline, campaign measurement framework, and ready-to-adapt social content for the video release.
-- [x] Create consent-safe segmented email outreach sequences with Swahili-first copy, clear CTAs, and no unsupported product claims.
-- [x] Audit actual Smart Manager modules and supported features for accurate bilingual user-manual coverage.
-- [x] Capture high-quality real screenshots of application navigation, authentication, onboarding, and available module surfaces.
-- [x] Write professionally structured English and Swahili user instructions, feature explanations, workflows, and troubleshooting guidance.
-- [x] Design, compile, verify, and deliver a professional bilingual PDF manual with real product screenshots.
-- [x] Draft a bilingual English and Kiswahili welcome email introducing new users to the Smart Manager manual and verified core system features.
-- [x] Audit post-login session handoff, route guards, and workspace resolution in `client/src/BusinessSphereDashboard.jsx` and `client/src/components/PublicAuthGateway.jsx`.
-- [x] Inspect Workspace Settings routing, data loading, and server-confirmed persistence.
-- [x] Implement robust loading states and ensure transient API/network errors do not prematurely log out authenticated users.
-- [x] Verify complete authentication matrix, persistence, multi-tenant security, and production build.
-- [x] Add smooth accessible transitions between the four workspace onboarding states.
-- [x] Audit responsive auth breakpoints (320px to 2560px), logo hierarchy, and SVG/brand asset preservation.
-- [x] Ensure subtle, professional module showcase animations use actual ERP modules and respect `prefers-reduced-motion`.
-- [x] Validate all authentication and 4-step workspace onboarding flows, test suite, and production build.
-- [x] Add secure Remember Me option to login view with controlled session storage and explicit logout cleanup.
-- [x] Add Session Management section to user profile for viewing and revoking active logins.
-- [x] Add "Current Device" badge with green status indicator to active session row in Session Management.
-- [x] Include privacy-conscious location and IP address details for each active session in Session Management.
-- [x] Add explicit visual badge and screen-reader aria label for the Current Session in Session Management.
-- [x] Add last-active and initial creation timestamps for each active session in Session Management.
-- [x] Add last-active and initial creation timestamps for each active session in Session Management.
-- [x] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
-- [x] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
-- [x] Add loading spinner and success toast notification for individual and bulk session revocation actions.
-- [x] Add loading spinner and success toast notification for individual and bulk session revocation actions.
-- [x] Display specific device icons and browser names for each active session in Session Management.
-- [x] Display specific device icons and browser names for each active session in Session Management.
-- [x] Display approximate geographical location (city and country) based on IP address for each active session in Session Management.
-- [x] Display approximate geographical location (city and country) based on IP address for each active session in Session Management.
-- [x] Audit and comply with premium responsive branding, enterprise module animation system, and accessibility guidelines from pasted directives.
-- [x] Redesign login, signup, and onboarding views to match the supplied Smart Manager reference layout and enterprise branding directives.
-- [x] Fix the mobile signup route dynamic-import failure revealed during responsive visual verification.
-- [x] Add automated browser coverage for login, signup, and workspace completion.
-- [x] Replace presentation-only session metadata with server-backed active-session records.
-- [x] Run the deferred independent Tenant B RLS isolation acceptance test.
-- [x] Implement WebAuthn biometric authentication (TouchID / Windows Hello / Passkey) for mobile login and quick app unlocking.
-- [x] Integrate server-backed notifications for newly detected active logins or remote session revocations.
-- [x] Implement secure tenant activity export feature for compliance audits and security reviews.
-- [x] Diagnose and fix the post-login redirection and session persistence bug causing authenticated users to return to login.
-- [x] Add persistent session-expiration warning banner before token refresh.
-- [x] Add automated end-to-end integration test for login redirection and session survival.
-- [x] Implement automatic silent token refresh in the background before session expiration.
-- [x] Implement tenant activity audit log viewer inside the security settings panel.
-- [x] Implement passkey registration options in the user profile security settings.
-- [x] Implement biometric credential management (view and revoke enrolled passkeys) in security settings.
-- [x] Implement scheduled weekly tenant activity compliance digests with delivery-disabled handling.
-- [x] Implement geographic anomaly detection alerts for unusual sign-in locations.
-- [x] Intensively trace and fix credential, Google, Apple, Azure sign-in loops and signup completion failures.
-- [x] Add automated browser navigation coverage for credential and social sign-in redirection.
-- [x] Add a tenant-switch dropdown for multi-workspace accounts in the user header.
-- [x] Add geographic anomaly detection notification toasts for unusual sign-in locations.
-- [x] Add automated browser navigation coverage for credential and social sign-in redirection.
-- [x] Add a tenant-switch dropdown for multi-workspace accounts in the user header.
-- [x] Add geographic anomaly detection notification toasts for unusual sign-in locations.
-- [x] Audit the complete post-authentication, workspace-resolution, protected-route, OAuth callback, and Workspace Settings architecture without altering the existing signup fix.
-- [x] Reproduce and trace the shared email/password and Google post-sign-in return-to-login failure, including session restoration and workspace membership resolution.
-- [x] Diagnose and repair the Workspace Settings navigation/data-loading failure with server-authorized tenant access preserved.
-- [x] Proactively inspect and repair related runtime, routing, API, database, state-management, and tenant-isolation defects revealed by the audit.
-- [x] Add or update focused regression tests, run the full suite and production build, then publish the verified post-authentication reliability release.
-- [x] Evaluate Supabase PKCE callback support and retain the compatible implicit callback strategy because production hosting removes OAuth query parameters before client exchange.
-- [x] Diagnose and repair the remaining live Google callback path that returns to the sign-in page after provider verification without persisting a Smart Manager session.
-- [x] Repair the authenticated no-workspace route so a verified Google account receives a tenant-safe workspace setup or assignment path instead of a generic retry-to-login message.
-- [x] Audit current company membership procedures, owner/admin role checks, administrative UI entry points, and pending OAuth user onboarding behavior.
-- [x] Add server-authorized administrator procedures for listing, assigning roles to, and removing workspace members without allowing self-escalation or cross-tenant management.
-- [x] Add an administrator workspace membership management screen with accessible loading, error, confirmation, and empty states.
-- [x] Add a self-service create-or-join workspace experience for authenticated accounts that have no company membership, preserving atomic tenant bootstrap and RLS.
-- [x] Add authorization and onboarding regression coverage, validate live flows, run the full suite and production build, and publish the enhancement.
-- [x] Diagnose and repair the live Workspace Settings runtime error so the new membership management panel is reachable by authorized owners and administrators.
+- [ ] Implement keyboard shortcut navigation (Arrow Left / Arrow Right) for primary module tabs in `ScrollableModuleTabs`.
+- [ ] Implement reusable column-visibility customization menu (`EnterpriseColumnCustomizer`).
+- [ ] Wire column customizer into enterprise table views across major modules.
+- [ ] Verify test suite, production build, and publish the verified update.
+- [x] Define and package a scalable Smart Manager logo system that preserves the approved hexagonal S mark, Tanzania accent, circuit motif, growth-arrow concept, and enterprise green palette.
+- [x] Create full, horizontal, mobile, app-icon, favicon, transparent, and raster/vector export assets with responsive usage guidance.
+- [x] Add a responsive React BrandLogo component, brand tokens, and an accessible animated loading treatment using the official logo system.
+- [x] Integrate the approved responsive logo variants across authentication, application navigation, loading, and browser branding surfaces without changing business logic.
+- [x] Produce Flutter, favicon, mobile splash-screen, and email/PDF implementation handoff assets and documentation.
+- [x] Run brand regression tests, production build, responsive visual checks, and publish the complete brand-system update.
+- [x] Preserve the uploaded Smart Manager image as the sole official master artwork; create only source-derived technical variants and never substitute or regenerate the logo.

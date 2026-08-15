@@ -22,12 +22,9 @@ const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAu
 const workspaceAuthMigrationSource = readFileSync(new URL("../supabase_workspace_auth_profile_upsert.sql", import.meta.url), "utf8");
 const passwordAccountProvisioningSource = readFileSync(new URL("./passwordAccountProvisioning.ts", import.meta.url), "utf8");
 const brandLogoSource = readFileSync(new URL("../client/src/components/BrandLogo.tsx", import.meta.url), "utf8");
+const brandLoaderSource = readFileSync(new URL("../client/src/components/BrandLoader.tsx", import.meta.url), "utf8");
 const enterpriseAuthSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
 const indexHtmlSource = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
-const authModuleSource = readFileSync(new URL("../client/src/components/AuthModuleShowcase.tsx", import.meta.url), "utf8");
-const enterpriseLayoutSource = readFileSync(new URL("../client/src/components/EnterpriseLayout.tsx", import.meta.url), "utf8");
-const indexCssSource = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
-const publicSignupSource = readFileSync(new URL("../client/src/components/PublicSignupGateway.jsx", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
@@ -40,49 +37,34 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("loads public auth through a smaller route bundle and retains the ERP shell for active sessions or signup", () => {
     expect(appSource).toContain("const PublicAuthGateway = lazy");
-    expect(appSource).toContain("const PublicSignupGateway = lazy");
     expect(appSource).toContain("function isPublicAuthRequest()");
-    expect(appSource).toContain("function isSignupRequest()");
-    expect(appSource).toContain('explicitPublicScreen = auth && ["login", "forgot", "reset", "verify"].includes(auth)');
-    expect(appSource).toContain("isSignupRequest() ? <PublicSignupGateway");
+    expect(appSource).toContain('params.get("auth") !== "signup"');
+    expect(appSource).toContain("isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />");
   });
 
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo_0bf4409d.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-master_88d60979.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_ICON_URL = "/manus-storage/smart-manager-mobile-icon_84bd91d9.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_FAVICON_URL = "/manus-storage/smart-manager-favicon_a6bf2186.ico"');
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
-    expect(brandLogoSource).toContain('width={1254} height={1254}');
-    expect(brandLogoSource).toContain('variant?: "full" | "compact"');
+    expect(brandLogoSource).toContain('variant?: "full" | "horizontal" | "compact" | "mobile" | "app-icon"');
+    expect(brandLogoSource).toContain('variant === "horizontal"');
+    expect(brandLogoSource).toContain('tone?: "light" | "dark"');
     expect(homeSource).toContain('import { BrandLogo } from "../components/BrandLogo"');
-    expect(homeSource).toContain('<BrandLogo variant="compact" priority');
+    expect(homeSource).toContain('className="sm-brand-nav-mobile"');
+    expect(homeSource).toContain('<BrandLogo variant="mobile" priority');
+    expect(homeSource).toContain('className="sm-brand-nav-desktop"');
+    expect(homeSource).toContain('<BrandLogo variant="horizontal" tone="light" priority');
     expect(enterpriseAuthSource).toContain('import { BrandLogo } from "./BrandLogo"');
-    expect(enterpriseAuthSource).toContain('<BrandLogo variant="full" priority');
-    expect(enterpriseAuthSource).toContain('AuthModuleShowcase');
+    expect(enterpriseAuthSource).toContain('<BrandLogo variant="compact" priority');
     expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
     expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
-    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-official-logo_0bf4409d.png"');
+    expect(brandLoaderSource).toContain('BrandLogo variant="app-icon"');
+    expect(brandLoaderSource).toContain('sm-brand-loader__circuit');
+    expect(indexHtmlSource).toContain('rel="icon" type="image/x-icon" href="/manus-storage/smart-manager-favicon_a6bf2186.ico"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
-  });
-
-  it("keeps the premium auth motion and enterprise table controls accessible and data-driven", () => {
-    expect(authModuleSource).toContain("const AUTH_MODULES = [");
-    expect(authModuleSource).toContain('aria-hidden="true"');
-    expect(indexCssSource).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(enterpriseAuthSource).toContain("<AuthModuleShowcase compact />");
-    expect(enterpriseAuthSource).toContain("useLanguage");
-    expect(enterpriseLayoutSource).toContain("handleTabKeyDown");
-    expect(enterpriseLayoutSource).toContain('role="tab"');
-    expect(enterpriseLayoutSource).toContain("EnterpriseColumnCustomizer");
-    expect(enterpriseLayoutSource).toContain('role="menuitemcheckbox"');
-    expect(dashboardSource).toContain("isSavingProfile");
-    expect(dashboardSource).toContain("Saving to workspace");
-    expect(appSource).toContain("PublicSignupGateway");
-    expect(appSource).toContain("isSignupRequest");
-    expect(publicSignupSource).toContain("create_company_and_owner");
-    expect(publicSignupSource).toContain("join_company_with_code");
-    expect(publicSignupSource).toContain("Congratulations — you’re ready.");
-    expect(publicSignupSource).toContain("clearSession();");
   });
 
   it("replaces local team seeds with server-backed invitations whose company and authorization come from the verified profile", () => {
@@ -124,11 +106,7 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
     expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
-    expect(publicAuthSource).toContain('flowType: "pkce"');
-    expect(publicAuthSource).toContain('new GoTrueClient');
-    expect(publicAuthSource).toContain("exchangeCodeForSession(code)");
-    expect(publicAuthSource).toContain("persistAuthSession(data.session)");
-    expect(publicAuthSource).toContain("persistAuthSession({ access_token: implicitCallback.accessToken, refresh_token: implicitCallback.refreshToken })");
+    expect(publicAuthSource).toContain("persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken })");
     expect(publicAuthSource).toContain("window.location.replace(withoutAuthView())");
     expect(publicAuthSource).toContain("Google authentication did not complete");
   });
@@ -203,7 +181,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("const [workspaceResolutionError, setWorkspaceResolutionError]");
     expect(dashboardSource).toContain("Workspace resolution failed");
     expect(dashboardSource).toContain("Retry workspace loading");
-    expect(dashboardSource).toContain("if (!authenticatedUser && (bootstrapError?.status === 401 || bootstrapError?.status === 403))");
+    expect(dashboardSource).toContain("if (bootstrapError?.status === 401 || bootstrapError?.status === 403)");
     expect(workspaceAuthMigrationSource).toContain("INSERT INTO public.profiles");
     expect(workspaceAuthMigrationSource).toContain("ON CONFLICT (id) DO UPDATE");
     expect(workspaceAuthMigrationSource).toContain("v_user_id uuid := auth.uid()");

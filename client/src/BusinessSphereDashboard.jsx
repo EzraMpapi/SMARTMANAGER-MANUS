@@ -34,8 +34,6 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPasswordView, VerificationView } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
-import { WorkspaceMembershipManager } from "./components/WorkspaceMembershipManager";
-import { AuthModuleShowcase } from "./components/AuthModuleShowcase";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 
@@ -2875,25 +2873,6 @@ const ROLES = [
     allowedModules: ["procurement"], primaryModules: ["procurement"], writeAccess: "none",
   },
 ];
-
-// Supabase tenant procedures persist compact membership roles, while the
-// dashboard uses human-readable role labels for presentation. Normalize at
-// this display boundary and deliberately fail closed for unfamiliar values;
-// the database remains the source of truth for authorization and RLS.
-const PERSISTED_WORKSPACE_ROLE_LABELS = {
-  owner: "Organization Owner",
-  admin: "Super Administrator",
-  manager: "Employee",
-  staff: "Employee",
-  viewer: "Auditor",
-  employee: "Employee",
-};
-
-function workspaceDisplayRole(role) {
-  const value = String(role || "").trim();
-  if (ROLES.some((candidate) => candidate.id === value)) return value;
-  return PERSISTED_WORKSPACE_ROLE_LABELS[value.toLowerCase()] || "Employee";
-}
 
 // Dynamic Home Screen — every role lands on a genuinely different
 // dashboard, not a cosmetic label change. Reuses the exact real Analytics
@@ -32009,82 +31988,41 @@ function BusinessCardDesigner({ company }) {
 }
 
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, workspaceAccessToken, workspaceEmail, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast }) {
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
   const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
-
-  useEffect(() => {
-    setDraft(company);
-  }, [company]);
 
   function setField(key, val) {
     setDraft((d) => ({ ...d, [key]: val }));
   }
 
   async function saveProfile() {
-    if (isSavingProfile) return;
-    setIsSavingProfile(true);
-    try {
-      if (IS_CONFIGURED) {
-        try {
-          if (!draft.id) throw new Error("Workspace details are still loading. Please wait a moment and try again.");
-          const branding = await workspaceBrandingMutation.mutateAsync({
-            primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A",
-            logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
-            workspace: {
-              name: draft.name, category: draft.industry || "", country: draft.country, currency: draft.currency,
-              taxRate: draft.taxRate, timezone: draft.timezone, businessScale: draft.businessScale,
-              receiptWidth: draft.receiptWidth, receiptFooter: draft.receiptFooter, receiptShowLogo: draft.receiptShowLogo,
-              phone: draft.phone || "", email: draft.email || "", website: draft.website || "", address: draft.address || "", city: draft.city || "",
-              tin: draft.tin || "", taxId: draft.taxId || "", vrn: draft.regNumber || "",
-            },
-          });
-          const confirmed = branding.company || {};
-          const nextCompany = {
-            ...draft,
-            name: confirmed.name ?? draft.name,
-            industry: confirmed.category ?? draft.industry,
-            country: confirmed.country ?? draft.country,
-            currency: confirmed.currency ?? draft.currency,
-            taxRate: confirmed.tax_rate ?? draft.taxRate,
-            timezone: confirmed.timezone ?? draft.timezone,
-            businessScale: confirmed.business_scale ?? draft.businessScale,
-            receiptWidth: confirmed.receipt_width ?? draft.receiptWidth,
-            receiptFooter: confirmed.receipt_footer ?? draft.receiptFooter,
-            receiptShowLogo: confirmed.receipt_show_logo ?? draft.receiptShowLogo,
-            phone: confirmed.phone ?? draft.phone,
-            email: confirmed.email ?? draft.email,
-            website: confirmed.website ?? draft.website,
-            address: confirmed.address ?? draft.address,
-            city: confirmed.city ?? draft.city,
-            tin: confirmed.tin ?? draft.tin,
-            taxId: confirmed.tax_id ?? draft.taxId,
-            regNumber: confirmed.vrn ?? draft.regNumber,
-            logo: branding.logo,
-            brandColor: branding.primaryColor,
-            brandAccentColor: branding.accentColor,
-          };
-          setDraft(nextCompany);
-          setCompany(nextCompany);
-          window.__smartManagerCompany = nextCompany;
-        } catch (e) {
-          notify(`Profile changes were not saved to the server: ${e?.message || "Please try again."}`, "error");
-          return;
-        }
+    if (IS_CONFIGURED) {
+      try {
+        await sb("companies").eq("id", draft.id).update({
+          name: draft.name, industry: draft.industry, country: draft.country, currency: draft.currency,
+          tax_rate: draft.taxRate, timezone: draft.timezone, business_scale: draft.businessScale,
+          receipt_width: draft.receiptWidth, receipt_footer: draft.receiptFooter, receipt_show_logo: draft.receiptShowLogo,
+        }).run();
+        const branding = await workspaceBrandingMutation.mutateAsync({
+          primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A",
+          logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
+        });
+        draft.logo = branding.logo;
+        draft.brandColor = branding.primaryColor;
+        draft.brandAccentColor = branding.accentColor;
+      } catch (e) {
+        notify("Profile changes were not saved to the server. Please try again.", "error");
+        return;
       }
-      if (!IS_CONFIGURED) {
-        setCompany(draft);
-        window.__smartManagerCompany = draft;
-        try { localStorage.setItem("bs_company_profile", JSON.stringify(draft)); } catch(_e){}
-      }
-      notify("Company profile saved ✓");
-    } finally {
-      setIsSavingProfile(false);
     }
+    setCompany(draft);
+    window.__smartManagerCompany = draft;
+    try { localStorage.setItem("bs_company_profile", JSON.stringify(draft)); } catch(_e){}
+    notify("Company profile saved ✓");
   }
 
   return (
@@ -32098,7 +32036,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1">Your role</h2>
         <p className="text-[12.5px] text-slate-500 mb-4">
-          {IS_CONFIGURED ? "Your current role is verified by the active workspace membership. Membership changes are managed through approved workspace administration controls." : "Demo only — there is no login yet, so this stands in for the role a real signed-in user would have. Switching it genuinely changes which modules appear in the sidebar and whether write actions are available."}
+          Demo only — there is no login yet, so this stands in for the role a real signed-in user would have. Switching it genuinely changes which modules appear in the sidebar and whether write actions are available.
         </p>
         {["Executive", "System", "Department Head", "Operations", "Front Line", "General Staff", "Oversight", "External Portal"].map((cat) => {
           const rolesInCat = ROLES.filter((r) => r.category === cat);
@@ -32110,10 +32048,9 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                 {rolesInCat.map((r) => (
                   <button
                     key={r.id}
-                    onClick={() => { if (!IS_CONFIGURED) { logAudit("Role switched", "Settings", currentUser.role, `${currentUser.role} → ${r.id}`); setCurrentUser((u) => ({ ...u, role: r.id })); } }}
-                    disabled={IS_CONFIGURED}
+                    onClick={() => { logAudit("Role switched", "Settings", currentUser.role, `${currentUser.role} → ${r.id}`); setCurrentUser((u) => ({ ...u, role: r.id })); }}
                     title={r.description}
-                    className={`text-[12.5px] font-medium rounded-lg py-2.5 px-2 border transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                    className={`text-[12.5px] font-medium rounded-lg py-2.5 px-2 border transition-colors ${
                       currentUser.role === r.id ? "border-[#16A34A] bg-[#16A34A]/8 text-[#111827]" : "border-slate-200 text-slate-500 hover:bg-slate-50"
                     }`}
                   >
@@ -32145,10 +32082,6 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
 
       <AuditLogViewer timezone={company.timezone} />
 
-      {IS_CONFIGURED && (currentUser.role === "Organization Owner" || currentUser.role === "Administrator" || currentUser.role === "Super Administrator") && (
-        <WorkspaceMembershipManager accessToken={workspaceAccessToken} currentUserEmail={workspaceEmail} />
-      )}
-
       {!canManage && (
         <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
           <EmptyState
@@ -32179,7 +32112,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-white text-[11.5px] font-semibold">
-                    <UploadCloud size={12}/> {draft.coverPhoto ? "Change Cover" : "Upload Cover Photo"}
+                    <Upload size={12}/> {draft.coverPhoto ? "Change Cover" : "Upload Cover Photo"}
                   </div>
                 </div>
               </div>
@@ -32214,7 +32147,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                    <UploadCloud size={14} className="text-white"/>
+                    <Upload size={14} className="text-white"/>
                   </div>
                 </div>
                 <input id="logo-upload" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden"
@@ -32365,7 +32298,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                                 <img src={draft.logo} alt="Logo" className="w-full h-full object-contain p-2"/>
                               ):(
                                 <div className="text-center p-2">
-                                  <UploadCloud size={22} className="text-slate-300 mx-auto mb-1"/>
+                                  <Upload size={22} className="text-slate-300 mx-auto mb-1"/>
                                   <p className="text-[9.5px] text-slate-400 leading-tight">Upload logo</p>
                                 </div>
                               )}
@@ -32408,7 +32341,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                             )}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all flex items-center justify-center">
                               <div className="opacity-0 group-hover:opacity-100 bg-black/50 text-white text-[11.5px] font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                                <UploadCloud size={12}/>{draft.coverPhoto?"Change Cover Photo":"Upload Cover Photo"}
+                                <Upload size={12}/>{draft.coverPhoto?"Change Cover Photo":"Upload Cover Photo"}
                               </div>
                             </div>
                           </div>
@@ -32648,10 +32581,9 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                     {/* Save button — always visible */}
                     <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
                       <button onClick={saveProfile}
-                        disabled={!dirty || isSavingProfile}
-                        className={`flex items-center gap-2 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl transition-all ${dirty && !isSavingProfile ? "bg-[#16A34A] hover:bg-[#15803D] shadow-sm" : "bg-slate-200 cursor-not-allowed"}`}>
-                        {isSavingProfile ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-                        {isSavingProfile ? "Saving to workspace…" : "Save Profile"}
+                        disabled={!dirty}
+                        className={`flex items-center gap-2 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl transition-all ${dirty?"bg-[#16A34A] hover:bg-[#15803D] shadow-sm":"bg-slate-200 cursor-not-allowed"}`}>
+                        <Save size={14}/> Save Profile
                       </button>
                       {dirty && (
                         <button onClick={()=>setDraft(company)} className="text-[12.5px] font-medium text-slate-500 hover:text-slate-700">
@@ -38137,10 +38069,13 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           </svg>
         </div>
         <div className="relative z-10">
-          <div className="mb-10">
-            <BrandLogo variant="full" priority className="w-[clamp(170px,20vw,270px)] h-auto drop-shadow-[0_12px_28px_rgba(0,0,0,.18)]" />
+          <div className="flex items-center gap-3 mb-16">
+            <BrandLogo variant="compact" priority className="h-12 w-12 ring-1 ring-white/15 shadow-lg" />
+            <div>
+              <p className="text-white font-bold text-[18px] leading-tight" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
+              <p className="text-white/50 text-[11px] tracking-wide uppercase">Enterprise Edition</p>
+            </div>
           </div>
-          <AuthModuleShowcase />
           <h2 className="text-[34px] font-bold text-white leading-tight mb-4" style={{ fontFamily: "Poppins,sans-serif" }}>Start managing your business the smart way</h2>
           <p className="text-white/65 text-[14px] leading-relaxed mb-8">Set up in minutes. Everything from sales to tax, payroll, and AI insights — ready on day one.</p>
           <div className="space-y-3">
@@ -38160,9 +38095,9 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         <div className="w-full max-w-md py-6">
 
           {/* Mobile brand */}
-          <div className="flex lg:hidden flex-col items-center mb-5">
-            <BrandLogo variant="full" priority className="w-[clamp(150px,56vw,220px)] h-auto" />
-            <AuthModuleShowcase compact />
+          <div className="flex lg:hidden flex-col items-center mb-7">
+            <BrandLogo variant="compact" priority className="mb-2 h-12 w-12 shadow-sm" />
+            <p className="font-bold text-[#111827] text-[18px]" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
           </div>
 
           {/* Mode switcher */}
@@ -46142,11 +46077,7 @@ function SmartManager() {
         setWorkspaceResolutionError(null);
         setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
       } catch (bootstrapError) {
-        // Only clear local credentials when Supabase itself could not verify
-        // them. A valid user can still encounter profile, membership, RLS, or
-        // transient workspace failures, which must remain retryable instead of
-        // being misrepresented as a sign-out.
-        if (!authenticatedUser && (bootstrapError?.status === 401 || bootstrapError?.status === 403)) {
+        if (bootstrapError?.status === 401 || bootstrapError?.status === 403) {
           clearStoredAuthSession();
         } else {
           authDebug("Workspace resolution failed", { message: bootstrapError?.message || "unknown", authenticated: Boolean(authenticatedUser) });
@@ -46285,70 +46216,23 @@ function SmartManager() {
   // this initial state is only ever seen in demo mode, or for the brief
   // instant before that hydration effect runs in live mode.
   const [currentUser, setCurrentUser] = useState({ name: "EzyMP", role: "Super Administrator", customerRef: null });
-  const [tenantSelectorOpen, setTenantSelectorOpen] = useState(false);
-  const [availableTenants, setAvailableTenants] = useState([]);
-  const [switchingTenantId, setSwitchingTenantId] = useState(null);
-  const notifiedGeoAnomalyIds = useRef(new Set());
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const canManage = currentRole.writeAccess === "full";
 
   useEffect(() => {
     if (session && !session.demo) {
       setCompany({
-        id: session.company.id, name: session.company.name, owner: session.fullName, industry: session.company.category || session.company.industry || "",
+        id: session.company.id, name: session.company.name, owner: session.fullName, industry: session.company.industry || "",
         country: session.company.country, currency: session.company.currency,
         taxRate: session.company.taxRate ?? 18, timezone: session.company.timezone || "Africa/Dar_es_Salaam",
         businessScale: session.company.businessScale || "large",
         createdAt: session.company.created_at || null,
         receiptWidth: session.company.receiptWidth || "80mm", receiptFooter: session.company.receiptFooter || "", receiptShowLogo: session.company.receiptShowLogo !== false,
         logo: session.company.logo || null, brandColor: session.company.brandColor || "#0B5D3B", brandAccentColor: session.company.brandAccentColor || "#16A34A",
-        phone: session.company.phone || "", email: session.company.email || "", website: session.company.website || "", address: session.company.address || "", city: session.company.city || "",
-        tin: session.company.tin || "", taxId: session.company.tax_id || "", regNumber: session.company.vrn || "",
       });
-      setCurrentUser({ name: session.fullName, role: workspaceDisplayRole(session.role), customerRef: session.customerRef || null });
+      setCurrentUser({ name: session.fullName, role: session.role, customerRef: session.customerRef || null });
     }
   }, [session]);
-
-  useEffect(() => {
-    if (!session?.accessToken || session?.demo) {
-      setAvailableTenants([]);
-      return;
-    }
-    callRpc("list_my_companies", {}, session.accessToken)
-      .then((workspaces) => setAvailableTenants(Array.isArray(workspaces) ? workspaces : []))
-      .catch(() => setAvailableTenants([]));
-  }, [session?.accessToken, session?.company?.id, session?.demo]);
-
-  async function switchTenant(workspace) {
-    if (!workspace?.id || workspace.id === company.id || !session?.accessToken) {
-      setTenantSelectorOpen(false);
-      return;
-    }
-    setSwitchingTenantId(workspace.id);
-    try {
-      await callRpc("switch_current_company", { p_company_id: workspace.id }, session.accessToken);
-      notify(`Switched to ${workspace.name}. Refreshing your tenant-scoped workspace…`, "info");
-      window.setTimeout(() => window.location.assign("/app"), 250);
-    } catch (switchError) {
-      notify(`Workspace switch was not authorized: ${switchError?.message || "Please try again."}`, "error");
-      setSwitchingTenantId(null);
-    }
-  }
-
-  // Audit rows are tenant-scoped by Supabase RLS. Display each recent
-  // geographic anomaly once per browser session, without exposing full IP data.
-  useEffect(() => {
-    if (!IS_CONFIGURED || !company.id) return;
-    sb("audit_log").select("id,action,module,details,created_at").eq("module", "Security").order("created_at", { ascending: false }).run()
-      .then((rows) => {
-        (rows || []).filter((row) => String(row.action || "").toUpperCase() === "GEO_ANOMALY").slice(0, 3).forEach((row) => {
-          if (notifiedGeoAnomalyIds.current.has(row.id)) return;
-          notifiedGeoAnomalyIds.current.add(row.id);
-          notify(`Security alert: unusual sign-in location detected. ${row.details || "Review active sessions to confirm this login."}`, "error");
-        });
-      })
-      .catch(() => { /* Audit data is non-blocking; session access remains available. */ });
-  }, [company.id]);
 
   // Activates the real, per-company tax rate everywhere lineTotal() and
   // every POS/invoice calculation already reads it from (see the TAX_RATE
@@ -46782,32 +46666,10 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <BrandLogo variant="compact" priority className="h-8 w-8 sm:hidden" />
-            <div className="relative flex items-center gap-2 text-[13px] text-slate-500">
+            <div className="flex items-center gap-2 text-[13px] text-slate-500">
               <Building2 size={14} className="hidden sm:block" />
-              <button
-                type="button"
-                onClick={() => setTenantSelectorOpen((open) => !open)}
-                aria-haspopup="menu"
-                aria-expanded={tenantSelectorOpen}
-                className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-left transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                title="Workspace selector"
-              >
-                <span className="font-medium text-[#111827] truncate max-w-[140px] sm:max-w-none">{company.name}</span>
-                <ChevronDown size={13} className="text-slate-400 hidden sm:block" />
-              </button>
-              {tenantSelectorOpen && (
-                <div role="menu" className="absolute left-0 top-9 z-50 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                  <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-[.14em] text-slate-400">Your verified workspaces</p>
-                  {(availableTenants.length ? availableTenants : [{ id: company.id, name: company.name, role: currentUser.role }]).map((workspace) => {
-                    const isCurrentWorkspace = workspace.id === company.id;
-                    const isSwitching = switchingTenantId === workspace.id;
-                    return <button key={workspace.id} type="button" role="menuitem" disabled={isCurrentWorkspace || isSwitching} onClick={() => switchTenant(workspace)} className={`mt-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[12px] font-semibold transition ${isCurrentWorkspace ? "bg-emerald-50 text-emerald-800" : "text-slate-700 hover:bg-slate-100 disabled:opacity-60"}`}>
-                      <span className="truncate">{workspace.name}</span><span className="ml-3 shrink-0 text-[10px] uppercase tracking-wide">{isSwitching ? "Switching…" : isCurrentWorkspace ? "Current" : workspace.role}</span>
-                    </button>;
-                  })}
-                  <p className="px-2 pt-3 text-[11px] leading-4 text-slate-500">Workspace changes are authorized by verified membership on the server before tenant-scoped data reloads.</p>
-                </div>
-              )}
+              <span className="font-medium text-[#111827] truncate max-w-[140px] sm:max-w-none">{company.name}</span>
+              <ChevronDown size={13} className="text-slate-400 hidden sm:block" />
               <span className="hidden md:inline-flex items-center text-[10.5px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full ml-1">
                 {currentUser.role}
               </span>
@@ -46971,26 +46833,22 @@ function SmartManager() {
             />
           )}
           {active === "settings" && (
-            <ErrorBoundary renderFallback={() => <section role="alert" className="mx-auto max-w-xl rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center"><h1 className="text-lg font-semibold text-amber-950">Workspace Settings needs attention</h1><p className="mt-2 text-sm leading-6 text-amber-800">The rest of your signed-in workspace is still available. Return to the dashboard and try Settings again; this did not sign you out.</p><button type="button" onClick={() => go("dashboard")} className="mt-5 rounded-lg bg-amber-800 px-4 py-2 text-sm font-semibold text-white">Return to dashboard</button></section>}>
-              <SettingsPage
-                company={company}
-                setCompany={setCompany}
-                enabledModules={enabledModules}
-                onToggleModule={toggleModule}
-                currentUser={currentUser}
-                setCurrentUser={setCurrentUser}
-                canManage={canManage}
-                workspaceAccessToken={session?.accessToken}
-                workspaceEmail={session?.email}
-                darkMode={darkMode}
-                toggleDarkMode={toggleDarkMode}
-                textSize={textSize}
-                onSetTextSize={setTextSize}
-                highContrast={highContrast}
-                onToggleHighContrast={() => setHighContrast((h) => !h)}
-                exportData={{ crm, invoices, expenses, inventory, employees, posTransactions, suppliers }}
-              />
-            </ErrorBoundary>
+            <SettingsPage
+              company={company}
+              setCompany={setCompany}
+              enabledModules={enabledModules}
+              onToggleModule={toggleModule}
+              currentUser={currentUser}
+              setCurrentUser={setCurrentUser}
+              canManage={canManage}
+              darkMode={darkMode}
+              toggleDarkMode={toggleDarkMode}
+              textSize={textSize}
+              onSetTextSize={setTextSize}
+              highContrast={highContrast}
+              onToggleHighContrast={() => setHighContrast((h) => !h)}
+              exportData={{ crm, invoices, expenses, inventory, employees, posTransactions, suppliers }}
+            />
           )}
           {!["dashboard", "crm", "sales", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
@@ -47065,10 +46923,6 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (!this.state.hasError) return this.props.children;
-
-    if (typeof this.props.renderFallback === "function") {
-      return this.props.renderFallback(this.state.error);
-    }
 
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#F8FAFC] p-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>

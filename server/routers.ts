@@ -9,12 +9,12 @@ import { listAuditLogs, recordAuditLog } from "./auditLogs";
 import { verifyDatabaseBackupStatus } from "./backupVerification";
 import { getWebhookConfig, updateWebhookConfig, testWebhookPing, getDeadLetterQueue, listWebhookDeliveryHistory, retryWebhookDelivery } from "./webhooks";
 import { TRPCError } from "@trpc/server";
-import { auditLogs, users } from "../drizzle/schema";
-import { and, desc, eq, or } from "drizzle-orm";
+import { users } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
-import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
+import { decideActionApproval, requestActionApproval } from "./aiApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { sendWorkspaceEmail } from "./transactionalEmail";
@@ -336,26 +336,6 @@ export const appRouter = router({
         base64: z.string().min(4).max(2_800_000),
       }).nullable().optional(),
       removeLogo: z.boolean().optional(),
-      workspace: z.object({
-        name: z.string().trim().min(2).max(160),
-        category: z.string().max(160).optional(),
-        country: z.string().max(120).optional(),
-        currency: z.string().max(16).optional(),
-        taxRate: z.number().min(0).max(100).optional(),
-        timezone: z.string().max(120).optional(),
-        businessScale: z.string().max(80).optional(),
-        receiptWidth: z.string().max(32).optional(),
-        receiptFooter: z.string().max(500).optional(),
-        receiptShowLogo: z.boolean().optional(),
-        phone: z.string().max(80).optional(),
-        email: z.string().max(320).optional(),
-        website: z.string().max(500).optional(),
-        address: z.string().max(500).optional(),
-        city: z.string().max(120).optional(),
-        tin: z.string().max(120).optional(),
-        taxId: z.string().max(120).optional(),
-        vrn: z.string().max(120).optional(),
-      }).optional(),
     })).mutation(({ ctx, input }) => saveWorkspaceBranding(ctx.req, input)),
   }),
 
@@ -439,54 +419,6 @@ export const appRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable." });
       return db.select({ id: users.id, openId: users.openId, name: users.name, email: users.email, role: users.role, lastSignedIn: users.lastSignedIn }).from(users);
-    }),
-    exportTenantActivity: protectedProcedure.input(z.object({ format: z.enum(["csv", "json"]).default("csv") })).mutation(async ({ ctx, input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable." });
-      const { profile } = await resolveVerifiedProfile(ctx.req);
-      const logs = await db.select().from(auditLogs).where(eq(auditLogs.companyId, profile.company_id)).orderBy(desc(auditLogs.createdAt)).limit(500);
-      if (input.format === "json") {
-        return { filename: `tenant-activity-${profile.company_id}-${Date.now()}.json`, data: JSON.stringify(logs, null, 2), mimeType: "application/json" };
-      }
-      const header = "ID,Timestamp,Action,Module,User,Details\n";
-      const rows = logs.map(l => `"${l.id}","${new Date(l.createdAt).toISOString()}","${l.action}","${l.module}","${l.actorName || l.actorOpenId || ""}","${String(l.details || "").replace(/"/g, '""')}"`).join("\n");
-      return { filename: `tenant-activity-${profile.company_id}-${Date.now()}.csv`, data: header + rows, mimeType: "text/csv" };
-    }),
-    securityNotifications: protectedProcedure.query(async ({ ctx }) => {
-      const db = await getDb();
-      if (!db) return [];
-      const { profile } = await resolveVerifiedProfile(ctx.req);
-      const notifs = await db.select().from(auditLogs).where(and(eq(auditLogs.companyId, profile.company_id), or(eq(auditLogs.action, "SESSION_REVOKED"), eq(auditLogs.action, "NEW_LOGIN"), eq(auditLogs.action, "SECURITY_ALERT"), eq(auditLogs.action, "GEO_ANOMALY")))).orderBy(desc(auditLogs.createdAt)).limit(15);
-      return notifs;
-    }),
-    listPasskeys: protectedProcedure.query(async ({ ctx }) => {
-      // Return enrolled passkeys stored for the user or session
-      return [
-        { id: "pk_mac_touchid", name: "MacBook Pro Touch ID", createdAt: new Date(Date.now() - 14 * 86400000).toISOString(), lastUsed: "Just now" },
-        { id: "pk_iphone_faceid", name: "iPhone 16 Pro Face ID", createdAt: new Date(Date.now() - 30 * 86400000).toISOString(), lastUsed: "2 days ago" },
-      ];
-    }),
-    revokePasskey: protectedProcedure.input(z.object({ passkeyId: z.string() })).mutation(async ({ ctx, input }) => {
-      const { profile } = await resolveVerifiedProfile(ctx.req);
-      void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "PASSKEY_REVOKED", module: "Security", details: `Passkey ${input.passkeyId} revoked by user.` }).catch(() => {});
-      return { success: true, revokedId: input.passkeyId };
-    }),
-    getWeeklyDigestConfig: protectedProcedure.query(({ ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      return { enabled: true, frequency: "weekly", dayOfWeek: "Monday", deliveryStatus: "disabled_no_resend", recipientCount: 3 };
-    }),
-    updateWeeklyDigestConfig: protectedProcedure.input(z.object({ enabled: z.boolean() })).mutation(({ ctx, input }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      return { success: true, enabled: input.enabled, deliveryStatus: "disabled_no_resend" };
-    }),
-    checkGeoAnomalies: protectedProcedure.query(async ({ ctx }) => {
-      const db = await getDb();
-      if (!db) return { anomalies: [] };
-      const { profile } = await resolveVerifiedProfile(ctx.req);
-      const recent = await db.select().from(auditLogs).where(and(eq(auditLogs.companyId, profile.company_id), eq(auditLogs.action, "NEW_LOGIN"))).orderBy(desc(auditLogs.createdAt)).limit(10);
-      // Flag logins from unusual test gateways or foreign regions
-      const anomalies = recent.filter(l => String(l.details || "").toLowerCase().includes("gateway") || String(l.details || "").toLowerCase().includes("foreign"));
-      return { anomalies, count: anomalies.length };
     }),
     updateUserRole: protectedProcedure.input(z.object({ openId: z.string(), role: z.enum(["user", "admin"]) })).mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {

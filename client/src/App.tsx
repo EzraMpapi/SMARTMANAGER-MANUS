@@ -18,10 +18,6 @@ const BusinessSphereDashboard = lazy(
   // @ts-expect-error The preserved single-file dashboard intentionally remains JavaScript.
   () => import("./BusinessSphereDashboard"),
 );
-const PublicSignupGateway = lazy(
-  // @ts-expect-error The lightweight public signup gateway intentionally remains JavaScript.
-  () => import("./components/PublicSignupGateway"),
-);
 
 function DashboardRouteFallback() {
   return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6" role="status" aria-live="polite">
@@ -33,18 +29,10 @@ function DashboardRouteFallback() {
   </main>;
 }
 
-function isSignupRequest() {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("auth") === "signup";
-}
 function isPublicAuthRequest() {
   if (typeof window === "undefined") return false;
-  const token = window.localStorage.getItem("bs_access_token");
-  const auth = new URLSearchParams(window.location.search).get("auth");
-  const explicitPublicScreen = auth && ["login", "forgot", "reset", "verify"].includes(auth);
-  // If a valid session token is stored, never trap the user in a public auth screen
-  if (token && explicitPublicScreen) return false;
-  return Boolean(explicitPublicScreen) || (!auth && !token);
+  const params = new URLSearchParams(window.location.search);
+  return params.get("auth") !== "signup" && !window.localStorage.getItem("bs_access_token");
 }
 
 function Router() {
@@ -52,7 +40,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
-      <Route path={"/app"}>{() => <Suspense fallback={<DashboardRouteFallback />}>{isSignupRequest() ? <PublicSignupGateway onBack={() => window.location.assign("/app")} /> : isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />}</Suspense>}</Route>
+      <Route path={"/app"}>{() => <Suspense fallback={<DashboardRouteFallback />}>{isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />}</Suspense>}</Route>
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

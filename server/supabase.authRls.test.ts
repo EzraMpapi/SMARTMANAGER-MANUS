@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const supabaseUrl = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "").replace(/\/$/, "");
@@ -51,12 +49,5 @@ describe.skipIf(!runLiveJwtChecks)("live Supabase JWT claim and tenant RLS bound
 describe("Supabase JWT RLS test gating", () => {
   it("keeps live claim checks disabled unless both dedicated test JWTs are supplied", () => {
     expect(runLiveJwtChecks).toBe(Boolean(supabaseUrl && publishableKey && tenantAToken && tenantBToken));
-  });
-
-  it("ships an authenticated-only grant for the RLS tenant resolver", () => {
-    const migration = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260815_004_grant_current_company_id_to_authenticated.sql"), "utf8");
-    expect(migration).toContain("REVOKE ALL ON FUNCTION public.current_company_id() FROM PUBLIC");
-    expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.current_company_id() TO authenticated");
-    expect(migration).not.toContain("TO anon");
   });
 });
