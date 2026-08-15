@@ -321,3 +321,49 @@
   .sm-brand-nav-mobile { display: none; }
   .sm-brand-nav-desktop { display: inline-flex; }
 }
+
+/* Reference-aligned mobile authentication lockup: the approved mark is given
+   clear vertical prominence, followed by a readable two-tone wordmark and
+   the supplied Kiswahili promise. */
+@media (max-width: 1023px) {
+  main > section > div.mb-8.flex.items-center.justify-between {
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 1.65rem;
+    padding-top: 0.35rem;
+  }
+
+  main > section > div.mb-8.flex.items-center.justify-between > span:first-child {
+    width: 7rem !important;
+    height: 7rem !important;
+    border-radius: 26% !important;
+    box-shadow: 0 18px 34px rgba(0, 138, 69, 0.2), 0 0 0 9px rgba(0, 166, 81, 0.06) !important;
+  }
+
+  main > section > div.mb-8.flex.items-center.justify-between > span:first-child img {
+    object-position: center 38%;
+    transform: scale(1.16);
+  }
+
+  main > section > div.mb-8.flex.items-center.justify-between > svg {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  main > section > div.mb-8.flex.items-center.justify-between::after {
+    content: "SMART \00a0 MANAGER\A Simamia Biashara Yako. Popote, Wakati Wote.";
+    display: block;
+    color: #101828;
+    font-family: var(--font-heading, Inter, sans-serif);
+    font-size: 1.6rem;
+    font-weight: 850;
+    line-height: 1.2;
+    letter-spacing: 0.015em;
+    text-align: center;
+    white-space: pre-line;
+  }
+
+}

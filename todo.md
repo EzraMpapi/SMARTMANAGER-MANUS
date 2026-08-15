@@ -429,3 +429,6 @@
 - [x] Restore a more visible, structured, motion-led Smart Manager brand presentation using the approved official logo artwork and accessible reduced-motion handling.
 - [x] Verify the AI Assistant’s server-backed request, response, approval, and error states in the live application path.
 - [x] Add regression coverage, run full validation and production build, then publish the combined repair.
+- [x] Recompose login, signup, and workspace onboarding brand placement around a centered official Smart Manager mark, readable two-tone wordmark, and Kiswahili slogan based on the supplied reference.
+- [x] Preserve accessible form hierarchy and responsive behavior while adding the Tanzania-first light authentication visual treatment.
+- [x] Validate desktop and mobile authentication composition, run regression checks and production build, then publish the reference-aligned branding update.
