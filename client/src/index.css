@@ -44,12 +44,6 @@
 }
 
 :root {
-  /* Smart Manager official identity — retained independently from tenant branding. */
-  --smart-manager-primary: #00A651;
-  --smart-manager-secondary: #008A45;
-  --smart-manager-dark: #101828;
-  --smart-manager-white: #FFFFFF;
-  --smart-manager-gradient: linear-gradient(135deg, #00A651 0%, #008A45 100%);
   --primary: var(--color-blue-700);
   --primary-foreground: var(--color-blue-50);
   --sidebar-primary: var(--color-blue-600);
@@ -66,8 +60,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.17 0.005 285.823);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: #00A651;
-  --primary-foreground: #FFFFFF;
+  --primary: #C9A96E;
+  --primary-foreground: oklch(0.141 0.005 285.823);
   --secondary: oklch(0.24 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.24 0.006 286.033);
@@ -78,11 +72,11 @@
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 10%);
-  --ring: #00A651;
+  --ring: #C9A96E;
   --sidebar: oklch(0.17 0.005 285.823);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: #008A45;
-  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-primary: #C9A96E;
+  --sidebar-primary-foreground: oklch(0.141 0.005 285.823);
   --sidebar-accent: oklch(0.24 0.006 286.033);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
@@ -181,189 +175,89 @@
   }
 }
 
-@layer components {
-  .sm-brand-loader {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.625rem;
-    color: var(--smart-manager-dark);
-  }
-
-  .sm-brand-loader--compact {
-    flex-direction: row;
-    gap: 0;
-  }
-
-  .sm-brand-loader--compact .sm-brand-loader__mark {
-    width: 2.125rem;
-    height: 2.125rem;
-  }
-
-  .sm-brand-loader--compact .sm-brand-loader__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-  }
-
-  .sm-brand-loader__mark {
+/* Tanzania-first public authentication treatment. The skyline is a lightweight
+   CSS illustration so it adds no network cost and leaves the official mark intact. */
+@media (max-width: 1023px) {
+  main > section:has(> div.mb-8.flex.items-center.justify-between) {
     position: relative;
-    display: grid;
-    width: 5.25rem;
-    height: 5.25rem;
-    place-items: center;
-    border-radius: 24%;
     isolation: isolate;
-    animation: sm-brand-turn 2.8s cubic-bezier(0.23, 1, 0.32, 1) infinite;
-    box-shadow: 0 16px 38px rgba(0, 166, 81, 0.3), 0 0 0 8px rgba(0, 166, 81, 0.07);
+    padding-top: 1.25rem;
   }
 
-  .sm-brand-loader__mark::before,
-  .sm-brand-loader__mark::after {
+  main > section:has(> div.mb-8.flex.items-center.justify-between)::before {
     position: absolute;
     z-index: -1;
-    border-radius: 38%;
+    top: 0;
+    right: -2rem;
+    left: -2rem;
+    height: 15.25rem;
+    opacity: 0.58;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.97) 0%, rgba(244,251,248,.78) 60%, rgba(255,255,255,0) 100%),
+      linear-gradient(90deg, transparent 0 8%, rgba(0,138,69,.17) 8% 10%, transparent 10% 16%, rgba(0,138,69,.10) 16% 20%, transparent 20% 31%, rgba(0,138,69,.15) 31% 35%, transparent 35% 48%, rgba(0,138,69,.10) 48% 53%, transparent 53% 100%),
+      linear-gradient(180deg, transparent 47%, rgba(0,138,69,.12) 47% 49%, transparent 49%);
     content: "";
     pointer-events: none;
   }
 
-  .sm-brand-loader__mark::before {
-    inset: -0.42rem;
-    border: 1px solid rgba(0, 166, 81, 0.32);
-    border-top-color: rgba(123, 242, 169, 0.94);
-    border-right-color: rgba(0, 138, 69, 0.7);
-    animation: sm-brand-orbit 2.7s linear infinite;
-  }
-
-  .sm-brand-loader__mark::after {
-    inset: -0.82rem;
-    border: 1px solid rgba(0, 166, 81, 0.14);
-    box-shadow: 0 0 20px rgba(0, 166, 81, 0.16);
-    animation: sm-brand-pulse 2.3s ease-out infinite;
-  }
-
-  .sm-brand-loader__circuit {
+  main > section:has(> div.mb-8.flex.items-center.justify-between)::after {
     position: absolute;
-    left: -0.45rem;
-    width: 0.7rem;
-    height: 2px;
-    border-radius: 99px;
-    background: linear-gradient(90deg, transparent, #7BF2A9, #00A651);
-    opacity: 0;
-    animation: sm-brand-circuit 2.4s ease-in-out infinite;
+    z-index: -1;
+    top: 8.25rem;
+    right: -2rem;
+    width: 8.5rem;
+    height: 9.5rem;
+    border-radius: 100% 0 0 0;
+    opacity: .2;
+    background: linear-gradient(138deg, #00A651 0 43%, #FCD116 43% 47%, #101828 47% 55%, #1F75FE 55% 61%, #008A45 61% 100%);
+    content: "";
+    pointer-events: none;
   }
 
-  .sm-brand-loader__circuit--one { top: 32%; animation-delay: 0ms; }
-  .sm-brand-loader__circuit--two { top: 50%; animation-delay: 240ms; }
-  .sm-brand-loader__circuit--three { top: 68%; animation-delay: 480ms; }
-
-  .sm-brand-loader__uplift {
-    position: absolute;
-    right: -0.35rem;
-    bottom: -0.22rem;
-    display: grid;
-    width: 1.25rem;
-    height: 1.25rem;
-    place-items: center;
-    border-radius: 999px;
-    background: var(--smart-manager-gradient);
-    color: white;
-    font-size: 0.82rem;
-    font-weight: 800;
-    box-shadow: 0 6px 14px rgba(0, 138, 69, 0.3);
-    animation: sm-brand-uplift 2.4s cubic-bezier(0.23, 1, 0.32, 1) infinite;
-  }
-
-  .sm-brand-loader__label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-  }
-}
-
-@keyframes sm-brand-turn {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  45% { transform: rotate(7deg) scale(1.045); }
-}
-
-@keyframes sm-brand-orbit { to { transform: rotate(360deg); } }
-@keyframes sm-brand-pulse {
-  0%, 100% { transform: scale(0.94); opacity: 0.2; }
-  52% { transform: scale(1.08); opacity: 0.72; }
-}
-
-@keyframes sm-brand-circuit {
-  0%, 18%, 100% { transform: translateX(0); opacity: 0; }
-  34%, 62% { transform: translateX(0.45rem); opacity: 1; }
-  78% { transform: translateX(0.75rem); opacity: 0; }
-}
-
-@keyframes sm-brand-uplift {
-  0%, 100% { transform: translate(0, 0); }
-  48% { transform: translate(0.1rem, -0.38rem); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sm-brand-loader__mark,
-  .sm-brand-loader__mark::before,
-  .sm-brand-loader__mark::after,
-  .sm-brand-loader__circuit,
-  .sm-brand-loader__uplift { animation: none; }
-}
-
-.sm-brand-nav-mobile { display: inline-flex; }
-.sm-brand-nav-desktop { display: none; }
-
-@media (min-width: 768px) {
-  .sm-brand-nav-mobile { display: none; }
-  .sm-brand-nav-desktop { display: inline-flex; }
-}
-
-/* Reference-aligned mobile authentication lockup: the approved mark is given
-   clear vertical prominence, followed by a readable two-tone wordmark and
-   the supplied Kiswahili promise. */
-@media (max-width: 1023px) {
   main > section > div.mb-8.flex.items-center.justify-between {
     position: relative;
     flex-direction: column;
     justify-content: center;
-    gap: 0.4rem;
-    margin-bottom: 1.65rem;
-    padding-top: 0.35rem;
+    gap: .42rem;
+    margin-bottom: 1.7rem;
+    padding-top: .45rem;
   }
 
   main > section > div.mb-8.flex.items-center.justify-between > span:first-child {
-    width: 7rem !important;
-    height: 7rem !important;
+    width: 6.75rem !important;
+    height: 6.75rem !important;
     border-radius: 26% !important;
-    box-shadow: 0 18px 34px rgba(0, 138, 69, 0.2), 0 0 0 9px rgba(0, 166, 81, 0.06) !important;
+    box-shadow: 0 18px 36px rgba(0,138,69,.2), 0 0 0 9px rgba(0,166,81,.06) !important;
   }
 
   main > section > div.mb-8.flex.items-center.justify-between > span:first-child img {
     object-position: center 38%;
-    transform: scale(1.16);
+    transform: scale(1.15);
   }
 
   main > section > div.mb-8.flex.items-center.justify-between > svg {
     position: absolute;
-    top: 0;
+    top: .15rem;
     right: 0;
   }
 
   main > section > div.mb-8.flex.items-center.justify-between::after {
-    content: "SMART \00a0 MANAGER\A Simamia Biashara Yako. Popote, Wakati Wote.";
     display: block;
     color: #101828;
-    font-family: var(--font-heading, Inter, sans-serif);
-    font-size: 1.6rem;
-    font-weight: 850;
-    line-height: 1.2;
-    letter-spacing: 0.015em;
+    content: "SMART MANAGER\A Simamia Biashara Yako. Popote, Wakati Wote.";
+    font-family: 'Poppins', system-ui, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: .012em;
     text-align: center;
     white-space: pre-line;
   }
+}
 
+@media (prefers-reduced-motion: reduce) {
+  main > section:has(> div.mb-8.flex.items-center.justify-between)::before,
+  main > section:has(> div.mb-8.flex.items-center.justify-between)::after {
+    animation: none;
+  }
 }

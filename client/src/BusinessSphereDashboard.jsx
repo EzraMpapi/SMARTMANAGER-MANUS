@@ -34,7 +34,6 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPasswordView, VerificationView } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
-import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 
@@ -6447,9 +6446,6 @@ function CRM({ crm, invoices, expenses, suppliers }) {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [sort, setSort] = useState({ field: null, direction: "asc" });
-  const [visibleLeadColumns, setVisibleLeadColumns] = useState(["lead", "industry", "stage", "owner", "value", "score", "actions"]);
-  const leadColumns = [{ id: "lead", label: "Lead" }, { id: "industry", label: "Industry" }, { id: "stage", label: "Stage" }, { id: "owner", label: "Owner" }, { id: "value", label: "Value" }, { id: "score", label: "Score" }, { id: "actions", label: "Actions" }];
-  const showLeadColumn = (id) => visibleLeadColumns.includes(id);
 
   // Real bulk import — each row becomes a genuine crm_leads insert, same
   // table and same shape the manual "New Lead" form writes to. Rows
@@ -6665,7 +6661,6 @@ function CRM({ crm, invoices, expenses, suppliers }) {
           >
             List
           </button>
-          <EnterpriseColumnCustomizer columns={leadColumns} visibleColumns={visibleLeadColumns} onVisibleColumnsChange={setVisibleLeadColumns} />
         </div>
       </div>
 
@@ -6730,13 +6725,13 @@ function CRM({ crm, invoices, expenses, suppliers }) {
           <table className="w-full text-[13px] min-w-[720px]">
             <thead>
               <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-                {showLeadColumn("lead") && <SortableHeader label="Lead" field="company" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
-                {showLeadColumn("industry") && <SortableHeader label="Industry" field="industry" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
-                {showLeadColumn("stage") && <SortableHeader label="Stage" field="stage" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
-                {showLeadColumn("owner") && <SortableHeader label="Owner" field="owner" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
-                {showLeadColumn("value") && <SortableHeader label="Value (TZS 000)" field="value" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} align="right" />}
-                {showLeadColumn("score") && <SortableHeader label="Score" field="score" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} align="right" />}
-                {showLeadColumn("actions") && <th className="px-4 py-3"></th>}
+                <SortableHeader label="Lead" field="company" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
+                <SortableHeader label="Industry" field="industry" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
+                <SortableHeader label="Stage" field="stage" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
+                <SortableHeader label="Owner" field="owner" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
+                <SortableHeader label="Value (TZS 000)" field="value" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} align="right" />
+                <SortableHeader label="Score" field="score" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} align="right" />
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -6746,18 +6741,18 @@ function CRM({ crm, invoices, expenses, suppliers }) {
                   onClick={() => setSelected(lead)}
                   className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                 >
-                  {showLeadColumn("lead") && <td className="px-4 py-3">
+                  <td className="px-4 py-3">
                     <p className="font-medium text-[#111827]">{lead.company}</p>
                     <p className="text-[12px] text-slate-400">{lead.name}</p>
-                  </td>}
-                  {showLeadColumn("industry") && <td className="px-4 py-3 text-slate-500">{lead.industry}</td>}
-                  {showLeadColumn("stage") && <td className="px-4 py-3"><StagePill stage={lead.stage} /></td>}
-                  {showLeadColumn("owner") && <td className="px-4 py-3 text-slate-500">{lead.owner}</td>}
-                  {showLeadColumn("value") && <td className="px-4 py-3 text-right font-mono">{money(lead.value)}</td>}
-                  {showLeadColumn("score") && <td className="px-4 py-3 text-right font-mono text-slate-500">{lead.score}</td>}
-                  {showLeadColumn("actions") && <td className="px-4 py-3 text-right">
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">{lead.industry}</td>
+                  <td className="px-4 py-3"><StagePill stage={lead.stage} /></td>
+                  <td className="px-4 py-3 text-slate-500">{lead.owner}</td>
+                  <td className="px-4 py-3 text-right font-mono">{money(lead.value)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-slate-500">{lead.score}</td>
+                  <td className="px-4 py-3 text-right">
                     <MoreHorizontal size={15} className="text-slate-300 inline" />
-                  </td>}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -8645,9 +8640,6 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [sort, setSort] = useState({ field: null, direction: "asc" });
-  const [visibleSalesColumns, setVisibleSalesColumns] = useState(["document", "customer", "date", "reference", "status", "total", "actions"]);
-  const salesColumns = [{ id: "document", label: "Document" }, { id: "customer", label: "Customer" }, { id: "date", label: "Date" }, { id: "reference", label: "Reference" }, { id: "status", label: "Status" }, { id: "total", label: "Total" }, { id: "actions", label: "Actions" }];
-  const showSalesColumn = (id) => visibleSalesColumns.includes(id);
 
   // A Dashboard Quick Action ("Create Invoice") can deep-link here already
   // on the right tab with the create form open, instead of just switching
@@ -9268,7 +9260,6 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
                 className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
               />
             </div>
-            <EnterpriseColumnCustomizer columns={salesColumns} visibleColumns={visibleSalesColumns} onVisibleColumnsChange={setVisibleSalesColumns} />
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -9276,18 +9267,18 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
         <table className="w-full text-[13px] min-w-[720px]">
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-              {showSalesColumn("document") && <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>}
-              {showSalesColumn("customer") && <SortableHeader label="Customer" field="customer" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
-              {showSalesColumn("date") && <SortableHeader label="Date" field="date" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
-              {showSalesColumn("reference") && <th className="px-4 py-3 font-medium">{columnLabel[1]}</th>}
-              {showSalesColumn("status") && <th className="px-4 py-3 font-medium">Status</th>}
-              {showSalesColumn("total") && <th className="px-4 py-3 font-medium text-right">Total (TZS 000)</th>}
-              {showSalesColumn("actions") && <th className="px-4 py-3"></th>}
+              <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>
+              <SortableHeader label="Customer" field="customer" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
+              <SortableHeader label="Date" field="date" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
+              <th className="px-4 py-3 font-medium">{columnLabel[1]}</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium text-right">Total (TZS 000)</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {loadingByTab[tab] ? (
-              <SkeletonRows cols={visibleSalesColumns.length} />
+              <SkeletonRows cols={7} />
             ) : (
               <>
                 {filtered.map((doc) => {
@@ -9299,15 +9290,15 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
                       onClick={() => setSelected({ ...doc, kind: tab })}
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
-                      {showSalesColumn("document") && <td className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>}
-                      {showSalesColumn("customer") && <td className="px-4 py-3 text-slate-700">{doc.customer}</td>}
-                      {showSalesColumn("date") && <td className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>}
-                      {showSalesColumn("reference") && <td className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>}
-                      {showSalesColumn("status") && <td className="px-4 py-3"><DocStatusPill status={doc.status} /></td>}
-                      {showSalesColumn("total") && <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>}
-                      {showSalesColumn("actions") && <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>
+                      <td className="px-4 py-3 text-slate-700">{doc.customer}</td>
+                      <td className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>
+                      <td className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>
+                      <td className="px-4 py-3"><DocStatusPill status={doc.status} /></td>
+                      <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>
+                      <td className="px-4 py-3 text-right">
                         <ChevronRight size={15} className="text-slate-300 inline" />
-                      </td>}
+                      </td>
                     </tr>
                   );
                 })}
@@ -10529,14 +10520,7 @@ function Inventory({ inventory, suppliersHook }) {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [visibleStockColumns, setVisibleStockColumns] = useState(["item", "category", "warehouse", "onHand", "status", "expiry", "value", "actions"]);
   const { rows: items, setRows: setItems, loading, error } = inventory;
-  const stockColumns = [
-    { id: "item", label: "Item" }, { id: "category", label: "Category" }, { id: "warehouse", label: "Warehouse" },
-    { id: "onHand", label: "On hand" }, { id: "status", label: "Status" }, { id: "expiry", label: "Expiry" },
-    { id: "value", label: "Value" }, { id: "actions", label: "Actions", defaultVisible: true },
-  ];
-  const showStockColumn = (id) => visibleStockColumns.includes(id);
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
   const warehouses = warehousesHook.rows;
 
@@ -10759,7 +10743,6 @@ function Inventory({ inventory, suppliersHook }) {
               className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
             />
           </div>
-          <EnterpriseColumnCustomizer columns={stockColumns} visibleColumns={visibleStockColumns} onVisibleColumnsChange={setVisibleStockColumns} />
           <button
             onClick={() => setShowImport(true)}
             className="btn-secondary text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shrink-0"
@@ -10780,19 +10763,19 @@ function Inventory({ inventory, suppliersHook }) {
         <table className="w-full text-[13px] min-w-[800px]">
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-              {showStockColumn("item") && <th className="px-4 py-3 font-medium">Item</th>}
-              {showStockColumn("category") && <th className="px-4 py-3 font-medium">Category</th>}
-              {showStockColumn("warehouse") && <th className="px-4 py-3 font-medium">Warehouse</th>}
-              {showStockColumn("onHand") && <th className="px-4 py-3 font-medium text-right">On Hand</th>}
-              {showStockColumn("status") && <th className="px-4 py-3 font-medium">Status</th>}
-              {showStockColumn("expiry") && <th className="px-4 py-3 font-medium">Expiry</th>}
-              {showStockColumn("value") && <th className="px-4 py-3 font-medium text-right">Value (TZS 000)</th>}
-              {showStockColumn("actions") && <th className="px-4 py-3"></th>}
+              <th className="px-4 py-3 font-medium">Item</th>
+              <th className="px-4 py-3 font-medium">Category</th>
+              <th className="px-4 py-3 font-medium">Warehouse</th>
+              <th className="px-4 py-3 font-medium text-right">On Hand</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Expiry</th>
+              <th className="px-4 py-3 font-medium text-right">Value (TZS 000)</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <SkeletonRows cols={visibleStockColumns.length} />
+              <SkeletonRows cols={8} />
             ) : (
               <>
                 {filtered.map((it) => {
@@ -10805,14 +10788,14 @@ function Inventory({ inventory, suppliersHook }) {
                       onClick={() => setSelected(it)}
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
-                      {showStockColumn("item") && <td className="px-4 py-3">
+                      <td className="px-4 py-3">
                         <p className="font-medium text-[#111827]">{it.name}</p>
                         <p className="text-[11px] text-slate-400 font-mono">{it.sku}</p>
-                      </td>}
-                      {showStockColumn("category") && <td className="px-4 py-3 text-slate-500">{it.category}</td>}
-                      {showStockColumn("warehouse") && <td className="px-4 py-3 text-slate-500">{wh?.city}</td>}
-                      {showStockColumn("onHand") && <td className="px-4 py-3 text-right font-mono">{it.qty} <span className="text-slate-400">{it.unit}</span></td>}
-                      {showStockColumn("status") && <td className="px-4 py-3">
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">{it.category}</td>
+                      <td className="px-4 py-3 text-slate-500">{wh?.city}</td>
+                      <td className="px-4 py-3 text-right font-mono">{it.qty} <span className="text-slate-400">{it.unit}</span></td>
+                      <td className="px-4 py-3">
                         <span
                           className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
                           style={{ backgroundColor: `${STOCK_STATUS_COLOR[status]}14`, color: STOCK_STATUS_COLOR[status] }}
@@ -10820,8 +10803,8 @@ function Inventory({ inventory, suppliersHook }) {
                           <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STOCK_STATUS_COLOR[status] }} />
                           {status}
                         </span>
-                      </td>}
-                      {showStockColumn("expiry") && <td className="px-4 py-3">
+                      </td>
+                      <td className="px-4 py-3">
                         {expiry && expiry !== "Fresh" ? (
                           <span
                             className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
@@ -10833,24 +10816,24 @@ function Inventory({ inventory, suppliersHook }) {
                         ) : (
                           <span className="text-[11px] text-slate-300">—</span>
                         )}
-                      </td>}
-                      {showStockColumn("value") && <td className="px-4 py-3 text-right font-mono">{money(Math.round(it.qty * it.unitCost))}</td>}
-                      {showStockColumn("actions") && <td className="px-4 py-3 text-right">
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono">{money(Math.round(it.qty * it.unitCost))}</td>
+                      <td className="px-4 py-3 text-right">
                         <ChevronRight size={15} className="text-slate-300 inline" />
-                      </td>}
+                      </td>
                     </tr>
                   );
                 })}
                 {filtered.length === 0 && items.length > 0 && (
                   <tr>
-                    <td colSpan={visibleStockColumns.length} className="px-4 py-10 text-center text-slate-400 text-[13px]">
+                    <td colSpan={8} className="px-4 py-10 text-center text-slate-400 text-[13px]">
                       No items match your filters
                     </td>
                   </tr>
                 )}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={visibleStockColumns.length}>
+                    <td colSpan={8}>
                       <EmptyState
                         icon={Package}
                         title="No inventory yet"
@@ -13479,8 +13462,6 @@ function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, compa
 function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [visibleExpenseColumns, setVisibleExpenseColumns] = useState(["vendor", "category", "dueDate", "aging", "status", "amount"]);
-  const expenseColumns = [{ id: "vendor", label: "Vendor" }, { id: "category", label: "Category" }, { id: "dueDate", label: "Due date" }, { id: "aging", label: "Aging" }, { id: "status", label: "Status" }, { id: "amount", label: "Amount" }];
 
   // Accounts Payable aging — same bucket logic Receivables uses, applied to
   // unpaid vendor bills instead of unpaid customer invoices.
@@ -13498,7 +13479,6 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
         <p className="text-[13px] text-slate-500">
           <span className="font-mono font-semibold text-[#111827]">TZS {money(Math.round(totalPayable))}k</span> owed to {unpaid.length} vendor{unpaid.length === 1 ? "" : "s"}
         </p>
-        <EnterpriseColumnCustomizer columns={expenseColumns} visibleColumns={visibleExpenseColumns} onVisibleColumnsChange={setVisibleExpenseColumns} />
         <button
           onClick={() => setShowForm(true)}
           className="btn-primary text-white text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors"
@@ -13557,12 +13537,12 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
           <table className="w-full text-[13px] min-w-[720px]">
             <thead>
               <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-                {visibleExpenseColumns.includes("vendor") && <th className="px-4 py-3 font-medium">Vendor</th>}
-                {visibleExpenseColumns.includes("category") && <th className="px-4 py-3 font-medium">Category</th>}
-                {visibleExpenseColumns.includes("dueDate") && <th className="px-4 py-3 font-medium">Due Date</th>}
-                {visibleExpenseColumns.includes("aging") && <th className="px-4 py-3 font-medium">Aging</th>}
-                {visibleExpenseColumns.includes("status") && <th className="px-4 py-3 font-medium">Status</th>}
-                {visibleExpenseColumns.includes("amount") && <th className="px-4 py-3 font-medium text-right">Amount (TZS 000)</th>}
+                <th className="px-4 py-3 font-medium">Vendor</th>
+                <th className="px-4 py-3 font-medium">Category</th>
+                <th className="px-4 py-3 font-medium">Due Date</th>
+                <th className="px-4 py-3 font-medium">Aging</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium text-right">Amount (TZS 000)</th>
               </tr>
             </thead>
             <tbody>
@@ -13574,10 +13554,13 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
                     onClick={() => setSelected(e)}
                     className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                   >
-                    {visibleExpenseColumns.includes("vendor") && <td className="px-4 py-3"><p className="font-medium text-[#111827]">{e.vendor}</p><p className="text-[11px] text-slate-400 font-mono">{e.id}</p></td>}
-                    {visibleExpenseColumns.includes("category") && <td className="px-4 py-3 text-slate-500">{e.category}</td>}
-                    {visibleExpenseColumns.includes("dueDate") && <td className="px-4 py-3 text-slate-500 font-mono">{e.dueDate}</td>}
-                    {visibleExpenseColumns.includes("aging") && <td className="px-4 py-3">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-[#111827]">{e.vendor}</p>
+                      <p className="text-[11px] text-slate-400 font-mono">{e.id}</p>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">{e.category}</td>
+                    <td className="px-4 py-3 text-slate-500 font-mono">{e.dueDate}</td>
+                    <td className="px-4 py-3">
                       {bucket ? (
                         <span
                           className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
@@ -13589,16 +13572,24 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
                       ) : (
                         <span className="text-[11px] text-slate-300">—</span>
                       )}
-                    </td>}
-                    {visibleExpenseColumns.includes("status") && <td className="px-4 py-3"><span className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5" style={{ backgroundColor: `${EXPENSE_STATUS_COLOR[e.status]}14`, color: EXPENSE_STATUS_COLOR[e.status] }}><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: EXPENSE_STATUS_COLOR[e.status] }} />{e.status}</span></td>}
-                    {visibleExpenseColumns.includes("amount") && <td className="px-4 py-3 text-right font-mono">{money(e.amount)}</td>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
+                        style={{ backgroundColor: `${EXPENSE_STATUS_COLOR[e.status]}14`, color: EXPENSE_STATUS_COLOR[e.status] }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: EXPENSE_STATUS_COLOR[e.status] }} />
+                        {e.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">{money(e.amount)}</td>
                   </tr>
                 );
               })}
-              {loading && <SkeletonRows cols={visibleExpenseColumns.length} />}
+              {loading && <SkeletonRows cols={6} />}
               {!loading && expenses.length === 0 && (
                 <tr>
-                  <td colSpan={visibleExpenseColumns.length}>
+                  <td colSpan={6}>
                     <EmptyState
                       icon={Wallet}
                       title="No expenses yet"
@@ -32121,7 +32112,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-white text-[11.5px] font-semibold">
-                    <UploadCloud size={12}/> {draft.coverPhoto ? "Change Cover" : "Upload Cover Photo"}
+                    <Upload size={12}/> {draft.coverPhoto ? "Change Cover" : "Upload Cover Photo"}
                   </div>
                 </div>
               </div>
@@ -32156,7 +32147,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                    <UploadCloud size={14} className="text-white"/>
+                    <Upload size={14} className="text-white"/>
                   </div>
                 </div>
                 <input id="logo-upload" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden"
@@ -32307,7 +32298,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                                 <img src={draft.logo} alt="Logo" className="w-full h-full object-contain p-2"/>
                               ):(
                                 <div className="text-center p-2">
-                                  <UploadCloud size={22} className="text-slate-300 mx-auto mb-1"/>
+                                  <Upload size={22} className="text-slate-300 mx-auto mb-1"/>
                                   <p className="text-[9.5px] text-slate-400 leading-tight">Upload logo</p>
                                 </div>
                               )}
@@ -32350,7 +32341,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                             )}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all flex items-center justify-center">
                               <div className="opacity-0 group-hover:opacity-100 bg-black/50 text-white text-[11.5px] font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                                <UploadCloud size={12}/>{draft.coverPhoto?"Change Cover Photo":"Upload Cover Photo"}
+                                <Upload size={12}/>{draft.coverPhoto?"Change Cover Photo":"Upload Cover Photo"}
                               </div>
                             </div>
                           </div>
@@ -38063,7 +38054,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const gradientBg = "linear-gradient(160deg, #052614 0%, #0F4D26 35%, #16A34A 70%, #22C55E 100%)";
 
   if (completedWorkspace) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}><div className="w-full max-w-md rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Congratulations — you’re ready.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your Smart Manager account and {completedWorkspace.mode === "create" ? `${completedWorkspace.name} workspace` : "workspace access"} are ready. Sign in with {completedWorkspace.email} to continue.</p>{completedWorkspace.workspaceWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{completedWorkspace.workspaceWarning}</p>}{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p><p className="mt-1 text-[11px] font-semibold tracking-[.08em] text-[#008A45]">Simamia Biashara Yako. Popote, Wakati Wote.</p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Congratulations — you’re ready.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your Smart Manager account and {completedWorkspace.mode === "create" ? `${completedWorkspace.name} workspace` : "workspace access"} are ready. Sign in with {completedWorkspace.email} to continue.</p>{completedWorkspace.workspaceWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{completedWorkspace.workspaceWarning}</p>}{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
   }
 
   return (

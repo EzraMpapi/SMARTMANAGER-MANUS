@@ -22,7 +22,6 @@ const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAu
 const workspaceAuthMigrationSource = readFileSync(new URL("../supabase_workspace_auth_profile_upsert.sql", import.meta.url), "utf8");
 const passwordAccountProvisioningSource = readFileSync(new URL("./passwordAccountProvisioning.ts", import.meta.url), "utf8");
 const brandLogoSource = readFileSync(new URL("../client/src/components/BrandLogo.tsx", import.meta.url), "utf8");
-const brandLoaderSource = readFileSync(new URL("../client/src/components/BrandLoader.tsx", import.meta.url), "utf8");
 const enterpriseAuthSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
 const indexHtmlSource = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
 
@@ -43,27 +42,19 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-master_88d60979.png"');
-    expect(brandLogoSource).toContain('SMART_MANAGER_ICON_URL = "/manus-storage/smart-manager-mobile-icon_84bd91d9.png"');
-    expect(brandLogoSource).toContain('SMART_MANAGER_FAVICON_URL = "/manus-storage/smart-manager-favicon_a6bf2186.ico"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo_0bf4409d.png"');
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
-    expect(brandLogoSource).toContain('variant?: "full" | "horizontal" | "compact" | "mobile" | "app-icon"');
-    expect(brandLogoSource).toContain('variant === "horizontal"');
-    expect(brandLogoSource).toContain('tone?: "light" | "dark"');
+    expect(brandLogoSource).toContain('width={1254} height={1254}');
+    expect(brandLogoSource).toContain('variant?: "full" | "compact"');
     expect(homeSource).toContain('import { BrandLogo } from "../components/BrandLogo"');
-    expect(homeSource).toContain('className="sm-brand-nav-mobile"');
-    expect(homeSource).toContain('<BrandLogo variant="mobile" priority');
-    expect(homeSource).toContain('className="sm-brand-nav-desktop"');
-    expect(homeSource).toContain('<BrandLogo variant="horizontal" tone="light" priority');
+    expect(homeSource).toContain('<BrandLogo variant="compact" priority');
     expect(enterpriseAuthSource).toContain('import { BrandLogo } from "./BrandLogo"');
     expect(enterpriseAuthSource).toContain('<BrandLogo variant="compact" priority');
     expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
     expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
-    expect(brandLoaderSource).toContain('BrandLogo variant="app-icon"');
-    expect(brandLoaderSource).toContain('sm-brand-loader__circuit');
-    expect(indexHtmlSource).toContain('rel="icon" type="image/x-icon" href="/manus-storage/smart-manager-favicon_a6bf2186.ico"');
+    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-official-logo_0bf4409d.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
   });
 
@@ -167,13 +158,6 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("workspaceBrandingMutation.mutateAsync({ primaryColor: company.brandColor");
     expect(dashboardSource).toContain("brand_primary_color: branding.primaryColor");
     expect(dashboardSource).toContain("brand_accent_color: branding.accentColor");
-  });
-
-  it("uses the available UploadCloud icon throughout Settings and waits for a confirmed workspace response", () => {
-    expect(dashboardSource).not.toMatch(/<Upload(?=[\s>])/);
-    expect(dashboardSource).toContain("<UploadCloud size={12}/>");
-    expect(dashboardSource).toContain("Workspace creation did not return a confirmed company record.");
-    expect(dashboardSource).toContain("authDebug(\"Workspace setup confirmed\"");
   });
 
   it("routes an authenticated profile without a company assignment into company setup before tenant writes", () => {

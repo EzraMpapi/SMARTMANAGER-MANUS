@@ -83,13 +83,24 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+function initialLanguage(): Lang {
+  if (typeof window === "undefined") return "en";
+  const stored = localStorage.getItem("smart_manager_lang");
+  if (stored === "en" || stored === "sw") return stored;
+
+  const browserLanguages = navigator.languages?.length ? navigator.languages : [navigator.language];
+  if (browserLanguages.some((language) => language?.toLowerCase().startsWith("sw"))) return "sw";
+
+  try {
+    if (Intl.DateTimeFormat().resolvedOptions().timeZone === "Africa/Dar_es_Salaam") return "sw";
+  } catch {
+    // Use the English fallback when a browser does not expose a time zone.
+  }
+  return "en";
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("smart_manager_lang") as Lang) || "en";
-    }
-    return "en";
-  });
+  const [lang, setLangState] = useState<Lang>(initialLanguage);
 
   const setLang = (newLang: Lang) => {
     setLangState(newLang);
