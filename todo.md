@@ -477,6 +477,7 @@
 - [x] Reproduce and trace the shared email/password and Google post-sign-in return-to-login failure, including session restoration and workspace membership resolution.
 - [x] Diagnose and repair the Workspace Settings navigation/data-loading failure with server-authorized tenant access preserved.
 - [x] Proactively inspect and repair related runtime, routing, API, database, state-management, and tenant-isolation defects revealed by the audit.
-- [ ] Add or update focused regression tests, run the full suite and production build, then publish the verified post-authentication reliability release.
+- [x] Add or update focused regression tests, run the full suite and production build, then publish the verified post-authentication reliability release.
 - [x] Evaluate Supabase PKCE callback support and retain the compatible implicit callback strategy because production hosting removes OAuth query parameters before client exchange.
-- [ ] Diagnose and repair the remaining live Google callback path that returns to the sign-in page after provider verification without persisting a Smart Manager session.
+- [x] Diagnose and repair the remaining live Google callback path that returns to the sign-in page after provider verification without persisting a Smart Manager session.
+- [x] Repair the authenticated no-workspace route so a verified Google account receives a tenant-safe workspace setup or assignment path instead of a generic retry-to-login message.

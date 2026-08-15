@@ -33,3 +33,9 @@ The deployed Supabase tables used in this repair retained RLS: `profiles`, `comp
 ## Automated validation complete
 
 TypeScript validation completed without errors. The complete automated suite passed 113 tests with 7 existing gated skips, and the production bundle built successfully. A final browser-based authenticated handoff and Settings save remains pending an interactive session; no personal credentials have been requested or stored.
+
+## Final live acceptance finding and repair
+
+The final Google OAuth handoff reached a real authenticated user and initially showed the protected workspace-retry state. Safe browser diagnostics identified the shared root cause: the profile RLS policy called `current_company_id()` but the function lacked `EXECUTE` permission for the `authenticated` database role, producing `42501 permission denied for function current_company_id`.
+
+Migration `20260815_004_grant_current_company_id_to_authenticated.sql` revokes the default public grant and grants execute only to `authenticated`. It does not grant anonymous access, weaken an RLS policy, or alter company membership data. After the deployed migration, the same authenticated profile query changed from HTTP 403 to HTTP 200 with one tenant-scoped profile row, and the live account reached the Smart Manager dashboard. The final automated suite passed 114 tests with 7 existing gated skips; TypeScript and the post-authentication production build passed.
