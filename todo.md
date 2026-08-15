@@ -444,3 +444,5 @@
 - [x] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
 - [ ] Add loading spinner and success toast notification for individual and bulk session revocation actions.
 - [x] Add loading spinner and success toast notification for individual and bulk session revocation actions.
+- [ ] Display specific device icons and browser names for each active session in Session Management.
+- [x] Display specific device icons and browser names for each active session in Session Management.
