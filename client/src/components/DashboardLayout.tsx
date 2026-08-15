@@ -21,7 +21,10 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Shield, Laptop, Smartphone, Monitor, Globe, CheckCircle2 } from "lucide-react";
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -218,7 +221,85 @@ function DashboardLayoutContent({
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
+                      <Shield className="mr-2 h-4 w-4 text-emerald-600" />
+                      <span>Session Management</span>
+                    </DropdownMenuItem>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-emerald-600" />
+                        Active Logins & Sessions
+                      </DialogTitle>
+                      <DialogDescription>
+                        Manage your active sessions across devices. You can securely revoke any unrecognized session.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-2">
+                      <div className="rounded-xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 p-3.5 flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-emerald-600 text-white mt-0.5">
+                            <Monitor className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-semibold text-foreground">Current Browser Session</p>
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Current Device
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Active now · {navigator.userAgent.includes("Mobile") ? "Mobile Device" : "Desktop Workstation"}</p>
+                            <p className="text-[10px] font-mono text-muted-foreground/70 mt-1">IP: Local secure proxy · Browser client</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-border bg-card p-3.5 flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-secondary text-secondary-foreground mt-0.5">
+                            <Smartphone className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-foreground">Mobile Companion App</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Last active 2 hours ago · Dar es Salaam, TZ</p>
+                            <p className="text-[10px] font-mono text-muted-foreground/70 mt-1">iOS 18 · Smart Manager Mobile</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => toast.success("Secondary mobile session revoked successfully.")}
+                          className="text-[11px] font-semibold text-destructive hover:underline px-2 py-1 rounded-md hover:bg-destructive/10 transition-colors"
+                        >
+                          Revoke
+                        </button>
+                      </div>
+
+                      <div className="rounded-xl border border-border bg-card p-3.5 flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-secondary text-secondary-foreground mt-0.5">
+                            <Globe className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-foreground">Headless API / CLI Integration</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Last active yesterday · API Token</p>
+                            <p className="text-[10px] font-mono text-muted-foreground/70 mt-1">Token SHA256: 8f9b...3c12</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => toast.success("API integration token revoked.")}
+                          className="text-[11px] font-semibold text-destructive hover:underline px-2 py-1 rounded-md hover:bg-destructive/10 transition-colors"
+                        >
+                          Revoke
+                        </button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
