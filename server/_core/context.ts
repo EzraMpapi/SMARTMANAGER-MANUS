@@ -16,7 +16,7 @@ export async function createContext(
   try {
     user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
-    const authHeader = opts.req.headers.authorization;
+    const authHeader = (opts.req.headers["x-supabase-authorization"] as string) || opts.req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.slice(7);
       const supabaseUrl = process.env.VITE_SUPABASE_URL;
