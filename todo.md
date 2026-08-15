@@ -460,3 +460,6 @@
 - [x] Diagnose and fix the post-login redirection and session persistence bug causing authenticated users to return to login.
 - [x] Add persistent session-expiration warning banner before token refresh.
 - [x] Add automated end-to-end integration test for login redirection and session survival.
+- [x] Implement automatic silent token refresh in the background before session expiration.
+- [x] Implement tenant activity audit log viewer inside the security settings panel.
+- [x] Implement passkey registration options in the user profile security settings.

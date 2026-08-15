@@ -156,15 +156,39 @@ function DashboardLayoutContent({
 
   const [sessionExpiringSoon, setSessionExpiringSoon] = useState(false);
   useEffect(() => {
-    const checkExpiry = () => {
+    const checkExpiry = async () => {
       try {
         const token = window.localStorage.getItem("bs_access_token");
+        const refreshToken = window.localStorage.getItem("bs_refresh_token");
         if (!token) return;
         const parts = token.split(".");
         if (parts.length === 3) {
           const payload = JSON.parse(atob(parts[1]));
           if (payload?.exp) {
             const timeLeft = payload.exp * 1000 - Date.now();
+            if (timeLeft > 0 && timeLeft < 5 * 60 * 1000 && refreshToken) {
+              // Attempt silent background token refresh
+              try {
+                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+                const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+                if (supabaseUrl && anonKey) {
+                  const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+                    method: "POST",
+                    headers: { apikey: anonKey, "content-type": "application/json" },
+                    body: JSON.stringify({ refresh_token: refreshToken }),
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data?.access_token) {
+                      window.localStorage.setItem("bs_access_token", data.access_token);
+                      if (data.refresh_token) window.localStorage.setItem("bs_refresh_token", data.refresh_token);
+                      setSessionExpiringSoon(false);
+                      return;
+                    }
+                  }
+                }
+              } catch (_refreshErr) {}
+            }
             if (timeLeft > 0 && timeLeft < 10 * 60 * 1000) {
               setSessionExpiringSoon(true);
             }
