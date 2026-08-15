@@ -410,3 +410,22 @@
 - [x] Create reusable enterprise UI primitives (`EnterpriseModuleHeader`, `ScrollableModuleTabs`, `EnterpriseFilterBar`, `EnterpriseKPIGrid`).
 - [x] Reorganize Sales, Inventory, Finance, CRM, and HR module layouts for clean enterprise hierarchy and horizontal touch/mouse scrolling.
 - [x] Verify functionality preservation, test suite, production build, and publish the enterprise re-architecture.
+- [ ] Implement keyboard shortcut navigation (Arrow Left / Arrow Right) for primary module tabs in `ScrollableModuleTabs`.
+- [ ] Implement reusable column-visibility customization menu (`EnterpriseColumnCustomizer`).
+- [ ] Wire column customizer into enterprise table views across major modules.
+- [ ] Verify test suite, production build, and publish the verified update.
+- [x] Audit verified Smart Manager capabilities, brand assets, and UI surfaces for a truthful Swahili promotional-video brief.
+- [x] Write the 60–90 second Swahili storyboard, voice-over script, subtitles, and product-screen capture plan without unsupported marketing claims.
+- [x] Generate and review the premium Smart Manager promotional video using the official brand identity and actual supported ERP capabilities.
+- [x] Prepare a Smart Manager video-launch campaign strategy based on verified product positioning and Tanzania-first business audiences.
+- [x] Write a channel plan, launch timeline, campaign measurement framework, and ready-to-adapt social content for the video release.
+- [x] Create consent-safe segmented email outreach sequences with Swahili-first copy, clear CTAs, and no unsupported product claims.
+- [x] Audit actual Smart Manager modules and supported features for accurate bilingual user-manual coverage.
+- [x] Capture high-quality real screenshots of application navigation, authentication, onboarding, and available module surfaces.
+- [x] Write professionally structured English and Swahili user instructions, feature explanations, workflows, and troubleshooting guidance.
+- [x] Design, compile, verify, and deliver a professional bilingual PDF manual with real product screenshots.
+- [x] Draft a bilingual English and Kiswahili welcome email introducing new users to the Smart Manager manual and verified core system features.
+- [ ] Audit post-login session handoff, route guards, and workspace resolution in `client/src/BusinessSphereDashboard.jsx` and `client/src/components/PublicAuthGateway.jsx`.
+- [ ] Inspect Workspace Settings routing, data loading, and server-confirmed persistence.
+- [ ] Implement robust loading states and ensure transient API/network errors do not prematurely log out authenticated users.
+- [ ] Verify complete authentication matrix, persistence, multi-tenant security, and production build.
