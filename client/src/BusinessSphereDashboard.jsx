@@ -7,7 +7,7 @@ import {
   CircleDollarSign, Clock, CheckCircle2, AlertCircle, Link, Trophy, Medal, Inbox, AtSign, CheckCheck, Lock, Send,
   Printer, Download, ChevronRight, Ban, ReceiptText, ClipboardList,
   FileCheck, Trash2, Copy, Landmark, BarChart3, Grid3x3, List,
-  FileSpreadsheet, FileImage, File, Folder, FolderOpen, Upload, UploadCloud,
+  FileSpreadsheet, FileImage, File, Folder, FolderOpen, UploadCloud,
   Eye, Percent, Globe, CreditCard, Tag, MessageSquare, MousePointerClick, ChevronUp,
   ShoppingBag, Minus, Receipt, Banknote, Smartphone, ArrowUpDown, Repeat,
   UserPlus, CalendarCheck, Stethoscope, ScanLine, Pill, FlaskConical, Edit2, Heart, Award, GraduationCap, HeartHandshake, Layers, ClipboardCheck,
@@ -32179,7 +32179,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-white text-[11.5px] font-semibold">
-                    <Upload size={12}/> {draft.coverPhoto ? "Change Cover" : "Upload Cover Photo"}
+                    <UploadCloud size={12}/> {draft.coverPhoto ? "Change Cover" : "Upload Cover Photo"}
                   </div>
                 </div>
               </div>
@@ -32214,7 +32214,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                    <Upload size={14} className="text-white"/>
+                    <UploadCloud size={14} className="text-white"/>
                   </div>
                 </div>
                 <input id="logo-upload" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden"
@@ -32365,7 +32365,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                                 <img src={draft.logo} alt="Logo" className="w-full h-full object-contain p-2"/>
                               ):(
                                 <div className="text-center p-2">
-                                  <Upload size={22} className="text-slate-300 mx-auto mb-1"/>
+                                  <UploadCloud size={22} className="text-slate-300 mx-auto mb-1"/>
                                   <p className="text-[9.5px] text-slate-400 leading-tight">Upload logo</p>
                                 </div>
                               )}
@@ -32408,7 +32408,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                             )}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-all flex items-center justify-center">
                               <div className="opacity-0 group-hover:opacity-100 bg-black/50 text-white text-[11.5px] font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                                <Upload size={12}/>{draft.coverPhoto?"Change Cover Photo":"Upload Cover Photo"}
+                                <UploadCloud size={12}/>{draft.coverPhoto?"Change Cover Photo":"Upload Cover Photo"}
                               </div>
                             </div>
                           </div>
