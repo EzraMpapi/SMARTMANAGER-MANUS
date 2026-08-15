@@ -451,3 +451,6 @@
 - [x] Audit and comply with premium responsive branding, enterprise module animation system, and accessibility guidelines from pasted directives.
 - [x] Redesign login, signup, and onboarding views to match the supplied Smart Manager reference layout and enterprise branding directives.
 - [x] Fix the mobile signup route dynamic-import failure revealed during responsive visual verification.
+- [x] Add automated browser coverage for login, signup, and workspace completion.
+- [x] Replace presentation-only session metadata with server-backed active-session records.
+- [x] Run the deferred independent Tenant B RLS isolation acceptance test.
