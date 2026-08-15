@@ -254,7 +254,14 @@ function DashboardLayoutContent({
                               </span>
                             </div>
                             <p className="text-[11px] text-muted-foreground mt-0.5">Active now · {navigator.userAgent.includes("Mobile") ? "Mobile Device" : "Desktop Workstation"}</p>
-                            <p className="text-[10px] font-mono text-muted-foreground/70 mt-1">IP: Local secure proxy · Browser client</p>
+                            <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
+                              <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                Dar es Salaam, TZ
+                              </span>
+                              <span>•</span>
+                              <span>IP: 197.250.xxx.xx</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -266,8 +273,12 @@ function DashboardLayoutContent({
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-foreground">Mobile Companion App</p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">Last active 2 hours ago · Dar es Salaam, TZ</p>
-                            <p className="text-[10px] font-mono text-muted-foreground/70 mt-1">iOS 18 · Smart Manager Mobile</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">iOS 18 · Smart Manager Mobile app</p>
+                            <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
+                              <span>Arusha, TZ</span>
+                              <span>•</span>
+                              <span>IP: 196.43.xxx.xx</span>
+                            </div>
                           </div>
                         </div>
                         <button
@@ -285,8 +296,12 @@ function DashboardLayoutContent({
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-foreground">Headless API / CLI Integration</p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">Last active yesterday · API Token</p>
-                            <p className="text-[10px] font-mono text-muted-foreground/70 mt-1">Token SHA256: 8f9b...3c12</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Headless API / CLI Integration</p>
+                            <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
+                              <span>Cloud Gateway (AWS East)</span>
+                              <span>•</span>
+                              <span>IP: 52.213.xxx.xx</span>
+                            </div>
                           </div>
                         </div>
                         <button
