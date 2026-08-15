@@ -169,6 +169,13 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("brand_accent_color: branding.accentColor");
   });
 
+  it("uses the available UploadCloud icon throughout Settings and waits for a confirmed workspace response", () => {
+    expect(dashboardSource).not.toMatch(/<Upload(?=[\s>])/);
+    expect(dashboardSource).toContain("<UploadCloud size={12}/>");
+    expect(dashboardSource).toContain("Workspace creation did not return a confirmed company record.");
+    expect(dashboardSource).toContain("authDebug(\"Workspace setup confirmed\"");
+  });
+
   it("routes an authenticated profile without a company assignment into company setup before tenant writes", () => {
     expect(dashboardSource).toContain("!profile || !profile.company_id || !profile.companies?.id");
     expect(dashboardSource).toContain("setOauthPendingUser({ id: user.id");
