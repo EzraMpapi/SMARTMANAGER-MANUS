@@ -7,7 +7,7 @@ import {
   CircleDollarSign, Clock, CheckCircle2, AlertCircle, Link, Trophy, Medal, Inbox, AtSign, CheckCheck, Lock, Send,
   Printer, Download, ChevronRight, Ban, ReceiptText, ClipboardList,
   FileCheck, Trash2, Copy, Landmark, BarChart3, Grid3x3, List,
-  FileSpreadsheet, FileImage, File, Folder, FolderOpen, UploadCloud,
+  FileSpreadsheet, FileImage, File, Folder, FolderOpen, Upload, UploadCloud,
   Eye, Percent, Globe, CreditCard, Tag, MessageSquare, MousePointerClick, ChevronUp,
   ShoppingBag, Minus, Receipt, Banknote, Smartphone, ArrowUpDown, Repeat,
   UserPlus, CalendarCheck, Stethoscope, ScanLine, Pill, FlaskConical, Edit2, Heart, Award, GraduationCap, HeartHandshake, Layers, ClipboardCheck,
