@@ -2,6 +2,16 @@ import React, { useState } from "react";
 import { ShieldAlert, RefreshCw, Database, Filter, Calendar } from "lucide-react";
 import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
+import { EnterpriseColumnCustomizer } from "./EnterpriseLayout";
+
+const AUDIT_LOG_COLUMNS = [
+  { id: "timestamp", label: "Timestamp" },
+  { id: "module", label: "Module" },
+  { id: "action", label: "Action" },
+  { id: "severity", label: "Severity" },
+  { id: "actor", label: "Actor" },
+  { id: "details", label: "Details" },
+];
 
 interface ComplianceAuditLogViewProps {
   companyId?: string;
@@ -16,6 +26,8 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookEnabled, setWebhookEnabled] = useState(false);
   const [webhookSecret, setWebhookSecret] = useState("");
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => Object.fromEntries(AUDIT_LOG_COLUMNS.map((column) => [column.id, true])));
+  const toggleColumn = (id: string) => setColumnVisibility((current) => ({ ...current, [id]: current[id] === false }));
 
   const utils = trpc.useUtils();
   const { data: logs = [], isLoading, refetch } = trpc.auditLogs.list.useQuery(
@@ -356,6 +368,9 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-[#0B1120] overflow-hidden shadow-xl">
+        <div className="flex items-center justify-end border-b border-white/10 px-4 py-3">
+          <EnterpriseColumnCustomizer columns={AUDIT_LOG_COLUMNS} visibility={columnVisibility} onToggle={toggleColumn} onReset={() => setColumnVisibility(Object.fromEntries(AUDIT_LOG_COLUMNS.map((column) => [column.id, true])))} />
+        </div>
         <div className="overflow-x-auto">
           {isLoading ? (
             <div className="p-12 text-center text-[13px] text-slate-400">Loading audit records...</div>
@@ -367,12 +382,12 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
             <table className="w-full text-left text-[13px]">
               <thead className="bg-[#131C31] text-[#C9A96E] border-b border-white/10 font-medium">
                 <tr>
-                  <th className="p-4">Timestamp</th>
-                  <th className="p-4">Module</th>
-                  <th className="p-4">Action</th>
-                  <th className="p-4">Severity</th>
-                  <th className="p-4">Actor</th>
-                  <th className="p-4">Details</th>
+                  {columnVisibility.timestamp !== false && <th className="p-4">Timestamp</th>}
+                  {columnVisibility.module !== false && <th className="p-4">Module</th>}
+                  {columnVisibility.action !== false && <th className="p-4">Action</th>}
+                  {columnVisibility.severity !== false && <th className="p-4">Severity</th>}
+                  {columnVisibility.actor !== false && <th className="p-4">Actor</th>}
+                  {columnVisibility.details !== false && <th className="p-4">Details</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-slate-300">
@@ -380,18 +395,18 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
                   const isHigh = log.action.includes("DELETE") || log.action.includes("EXCEED") || log.action.includes("ROLE");
                   return (
                     <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-4 whitespace-nowrap text-slate-400 font-mono text-[12px]">
+                      {columnVisibility.timestamp !== false && <td className="p-4 whitespace-nowrap text-slate-400 font-mono text-[12px]">
                         {new Date(log.createdAt).toLocaleString()}
-                      </td>
-                      <td className="p-4 font-semibold text-white">{log.module}</td>
-                      <td className="p-4 font-mono text-amber-300">{log.action}</td>
-                      <td className="p-4">
+                      </td>}
+                      {columnVisibility.module !== false && <td className="p-4 font-semibold text-white">{log.module}</td>}
+                      {columnVisibility.action !== false && <td className="p-4 font-mono text-amber-300">{log.action}</td>}
+                      {columnVisibility.severity !== false && <td className="p-4">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${isHigh ? "bg-red-500/20 text-red-300 border border-red-500/30" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"}`}>
                           {isHigh ? "HIGH" : "INFO"}
                         </span>
-                      </td>
-                      <td className="p-4 text-slate-300">{log.actorName || log.actorOpenId}</td>
-                      <td className="p-4 text-slate-400 truncate max-w-sm">{log.details || "—"}</td>
+                      </td>}
+                      {columnVisibility.actor !== false && <td className="p-4 text-slate-300">{log.actorName || log.actorOpenId}</td>}
+                      {columnVisibility.details !== false && <td className="p-4 text-slate-400 truncate max-w-sm">{log.details || "—"}</td>}
                     </tr>
                   );
                 })}

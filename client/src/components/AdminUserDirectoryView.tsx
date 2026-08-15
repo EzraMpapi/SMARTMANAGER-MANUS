@@ -2,11 +2,23 @@ import React, { useState } from "react";
 import { Users, Shield, UserCheck, Loader2 } from "lucide-react";
 import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
+import { EnterpriseColumnCustomizer } from "./EnterpriseLayout";
+
+const ADMIN_USER_COLUMNS = [
+  { id: "name", label: "User Name" },
+  { id: "email", label: "Email" },
+  { id: "openId", label: "OpenID" },
+  { id: "role", label: "Current Role" },
+  { id: "lastSignedIn", label: "Last Signed In" },
+  { id: "actions", label: "Actions" },
+];
 
 export function AdminUserDirectoryView() {
   const utils = trpc.useUtils();
   const { data: users = [], isLoading, refetch } = trpc.admin.listUsers.useQuery();
   const [updatingOpenId, setUpdatingOpenId] = useState<string | null>(null);
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => Object.fromEntries(ADMIN_USER_COLUMNS.map((column) => [column.id, true])));
+  const toggleColumn = (id: string) => setColumnVisibility((current) => ({ ...current, [id]: current[id] === false }));
 
   const updateRoleMutation = trpc.admin.updateUserRole.useMutation({
     onSuccess: (data) => {
@@ -47,6 +59,9 @@ export function AdminUserDirectoryView() {
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-[#0B1120] overflow-hidden shadow-xl">
+        <div className="flex items-center justify-end border-b border-white/10 px-4 py-3">
+          <EnterpriseColumnCustomizer columns={ADMIN_USER_COLUMNS} visibility={columnVisibility} onToggle={toggleColumn} onReset={() => setColumnVisibility(Object.fromEntries(ADMIN_USER_COLUMNS.map((column) => [column.id, true])))} />
+        </div>
         <div className="overflow-x-auto">
           {isLoading ? (
             <div className="p-12 text-center text-[13px] text-slate-400">Loading user directory...</div>
@@ -56,33 +71,33 @@ export function AdminUserDirectoryView() {
             <table className="w-full text-left text-[13px]">
               <thead className="bg-[#131C31] text-[#C9A96E] border-b border-white/10 font-medium">
                 <tr>
-                  <th className="p-4">User Name</th>
-                  <th className="p-4">Email</th>
-                  <th className="p-4">OpenID</th>
-                  <th className="p-4">Current Role</th>
-                  <th className="p-4">Last Signed In</th>
-                  <th className="p-4 text-right">Actions</th>
+                  {columnVisibility.name !== false && <th className="p-4">User Name</th>}
+                  {columnVisibility.email !== false && <th className="p-4">Email</th>}
+                  {columnVisibility.openId !== false && <th className="p-4">OpenID</th>}
+                  {columnVisibility.role !== false && <th className="p-4">Current Role</th>}
+                  {columnVisibility.lastSignedIn !== false && <th className="p-4">Last Signed In</th>}
+                  {columnVisibility.actions !== false && <th className="p-4 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-slate-300">
                 {users.map((u) => (
                   <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="p-4 font-semibold text-white flex items-center gap-2">
+                    {columnVisibility.name !== false && <td className="p-4 font-semibold text-white flex items-center gap-2">
                       <UserCheck size={15} className="text-emerald-400" />
                       {u.name}
-                    </td>
-                    <td className="p-4 text-slate-400">{u.email || "—"}</td>
-                    <td className="p-4 font-mono text-[11px] text-slate-500">{u.openId}</td>
-                    <td className="p-4">
+                    </td>}
+                    {columnVisibility.email !== false && <td className="p-4 text-slate-400">{u.email || "—"}</td>}
+                    {columnVisibility.openId !== false && <td className="p-4 font-mono text-[11px] text-slate-500">{u.openId}</td>}
+                    {columnVisibility.role !== false && <td className="p-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${u.role === "admin" ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-slate-800 text-slate-300 border border-slate-700"}`}>
                         {u.role === "admin" && <Shield size={12} />}
                         {u.role.toUpperCase()}
                       </span>
-                    </td>
-                    <td className="p-4 text-slate-400 font-mono text-[12px]">
+                    </td>}
+                    {columnVisibility.lastSignedIn !== false && <td className="p-4 text-slate-400 font-mono text-[12px]">
                       {u.lastSignedIn ? new Date(u.lastSignedIn).toLocaleString() : "Never"}
-                    </td>
-                    <td className="p-4 text-right">
+                    </td>}
+                    {columnVisibility.actions !== false && <td className="p-4 text-right">
                       <button
                         disabled={updatingOpenId === u.openId}
                         onClick={() => handleRoleToggle(u.openId, u.role)}
@@ -91,7 +106,7 @@ export function AdminUserDirectoryView() {
                         {updatingOpenId === u.openId && <Loader2 size={12} className="animate-spin" />}
                         <span>{u.role === "admin" ? "Demote to User" : "Promote to Admin"}</span>
                       </button>
-                    </td>
+                    </td>}
                   </tr>
                 ))}
               </tbody>

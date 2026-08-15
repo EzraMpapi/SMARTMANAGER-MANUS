@@ -34,6 +34,7 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPasswordView, VerificationView } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
+import { AuthModuleShowcase } from "./components/AuthModuleShowcase";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 
@@ -31992,6 +31993,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
   const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 
@@ -32000,29 +32002,35 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
   }
 
   async function saveProfile() {
-    if (IS_CONFIGURED) {
-      try {
-        await sb("companies").eq("id", draft.id).update({
-          name: draft.name, industry: draft.industry, country: draft.country, currency: draft.currency,
-          tax_rate: draft.taxRate, timezone: draft.timezone, business_scale: draft.businessScale,
-          receipt_width: draft.receiptWidth, receipt_footer: draft.receiptFooter, receipt_show_logo: draft.receiptShowLogo,
-        }).run();
-        const branding = await workspaceBrandingMutation.mutateAsync({
-          primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A",
-          logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
-        });
-        draft.logo = branding.logo;
-        draft.brandColor = branding.primaryColor;
-        draft.brandAccentColor = branding.accentColor;
-      } catch (e) {
-        notify("Profile changes were not saved to the server. Please try again.", "error");
-        return;
+    if (isSavingProfile) return;
+    setIsSavingProfile(true);
+    try {
+      if (IS_CONFIGURED) {
+        try {
+          await sb("companies").eq("id", draft.id).update({
+            name: draft.name, industry: draft.industry, country: draft.country, currency: draft.currency,
+            tax_rate: draft.taxRate, timezone: draft.timezone, business_scale: draft.businessScale,
+            receipt_width: draft.receiptWidth, receipt_footer: draft.receiptFooter, receipt_show_logo: draft.receiptShowLogo,
+          }).run();
+          const branding = await workspaceBrandingMutation.mutateAsync({
+            primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A",
+            logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
+          });
+          draft.logo = branding.logo;
+          draft.brandColor = branding.primaryColor;
+          draft.brandAccentColor = branding.accentColor;
+        } catch (e) {
+          notify("Profile changes were not saved to the server. Please try again.", "error");
+          return;
+        }
       }
+      setCompany(draft);
+      window.__smartManagerCompany = draft;
+      try { localStorage.setItem("bs_company_profile", JSON.stringify(draft)); } catch(_e){}
+      notify("Company profile saved ✓");
+    } finally {
+      setIsSavingProfile(false);
     }
-    setCompany(draft);
-    window.__smartManagerCompany = draft;
-    try { localStorage.setItem("bs_company_profile", JSON.stringify(draft)); } catch(_e){}
-    notify("Company profile saved ✓");
   }
 
   return (
@@ -32581,9 +32589,10 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                     {/* Save button — always visible */}
                     <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
                       <button onClick={saveProfile}
-                        disabled={!dirty}
-                        className={`flex items-center gap-2 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl transition-all ${dirty?"bg-[#16A34A] hover:bg-[#15803D] shadow-sm":"bg-slate-200 cursor-not-allowed"}`}>
-                        <Save size={14}/> Save Profile
+                        disabled={!dirty || isSavingProfile}
+                        className={`flex items-center gap-2 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl transition-all ${dirty && !isSavingProfile ? "bg-[#16A34A] hover:bg-[#15803D] shadow-sm" : "bg-slate-200 cursor-not-allowed"}`}>
+                        {isSavingProfile ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                        {isSavingProfile ? "Saving to workspace…" : "Save Profile"}
                       </button>
                       {dirty && (
                         <button onClick={()=>setDraft(company)} className="text-[12.5px] font-medium text-slate-500 hover:text-slate-700">
@@ -38069,13 +38078,10 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           </svg>
         </div>
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
-            <BrandLogo variant="compact" priority className="h-12 w-12 ring-1 ring-white/15 shadow-lg" />
-            <div>
-              <p className="text-white font-bold text-[18px] leading-tight" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
-              <p className="text-white/50 text-[11px] tracking-wide uppercase">Enterprise Edition</p>
-            </div>
+          <div className="mb-10">
+            <BrandLogo variant="full" priority className="w-[clamp(170px,20vw,270px)] h-auto drop-shadow-[0_12px_28px_rgba(0,0,0,.18)]" />
           </div>
+          <AuthModuleShowcase />
           <h2 className="text-[34px] font-bold text-white leading-tight mb-4" style={{ fontFamily: "Poppins,sans-serif" }}>Start managing your business the smart way</h2>
           <p className="text-white/65 text-[14px] leading-relaxed mb-8">Set up in minutes. Everything from sales to tax, payroll, and AI insights — ready on day one.</p>
           <div className="space-y-3">
@@ -38095,9 +38101,9 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         <div className="w-full max-w-md py-6">
 
           {/* Mobile brand */}
-          <div className="flex lg:hidden flex-col items-center mb-7">
-            <BrandLogo variant="compact" priority className="mb-2 h-12 w-12 shadow-sm" />
-            <p className="font-bold text-[#111827] text-[18px]" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
+          <div className="flex lg:hidden flex-col items-center mb-5">
+            <BrandLogo variant="full" priority className="w-[clamp(150px,56vw,220px)] h-auto" />
+            <AuthModuleShowcase compact />
           </div>
 
           {/* Mode switcher */}

@@ -410,10 +410,10 @@
 - [x] Create reusable enterprise UI primitives (`EnterpriseModuleHeader`, `ScrollableModuleTabs`, `EnterpriseFilterBar`, `EnterpriseKPIGrid`).
 - [x] Reorganize Sales, Inventory, Finance, CRM, and HR module layouts for clean enterprise hierarchy and horizontal touch/mouse scrolling.
 - [x] Verify functionality preservation, test suite, production build, and publish the enterprise re-architecture.
-- [ ] Implement keyboard shortcut navigation (Arrow Left / Arrow Right) for primary module tabs in `ScrollableModuleTabs`.
-- [ ] Implement reusable column-visibility customization menu (`EnterpriseColumnCustomizer`).
-- [ ] Wire column customizer into enterprise table views across major modules.
-- [ ] Verify test suite, production build, and publish the verified update.
+- [x] Implement keyboard shortcut navigation (Arrow Left / Arrow Right) for primary module tabs in `ScrollableModuleTabs`.
+- [x] Implement reusable column-visibility customization menu (`EnterpriseColumnCustomizer`).
+- [x] Wire column customizer into enterprise table views across major modules.
+- [x] Verify test suite, production build, and publish the verified update.
 - [x] Audit verified Smart Manager capabilities, brand assets, and UI surfaces for a truthful Swahili promotional-video brief.
 - [x] Write the 60–90 second Swahili storyboard, voice-over script, subtitles, and product-screen capture plan without unsupported marketing claims.
 - [x] Generate and review the premium Smart Manager promotional video using the official brand identity and actual supported ERP capabilities.
@@ -425,10 +425,10 @@
 - [x] Write professionally structured English and Swahili user instructions, feature explanations, workflows, and troubleshooting guidance.
 - [x] Design, compile, verify, and deliver a professional bilingual PDF manual with real product screenshots.
 - [x] Draft a bilingual English and Kiswahili welcome email introducing new users to the Smart Manager manual and verified core system features.
-- [ ] Audit post-login session handoff, route guards, and workspace resolution in `client/src/BusinessSphereDashboard.jsx` and `client/src/components/PublicAuthGateway.jsx`.
-- [ ] Inspect Workspace Settings routing, data loading, and server-confirmed persistence.
-- [ ] Implement robust loading states and ensure transient API/network errors do not prematurely log out authenticated users.
-- [ ] Verify complete authentication matrix, persistence, multi-tenant security, and production build.
+- [x] Audit post-login session handoff, route guards, and workspace resolution in `client/src/BusinessSphereDashboard.jsx` and `client/src/components/PublicAuthGateway.jsx`.
+- [x] Inspect Workspace Settings routing, data loading, and server-confirmed persistence.
+- [x] Implement robust loading states and ensure transient API/network errors do not prematurely log out authenticated users.
+- [x] Verify complete authentication matrix, persistence, multi-tenant security, and production build.
 - [x] Add smooth accessible transitions between the four workspace onboarding states.
 - [x] Audit responsive auth breakpoints (320px to 2560px), logo hierarchy, and SVG/brand asset preservation.
 - [x] Ensure subtle, professional module showcase animations use actual ERP modules and respect `prefers-reduced-motion`.
@@ -438,15 +438,16 @@
 - [x] Add "Current Device" badge with green status indicator to active session row in Session Management.
 - [x] Include privacy-conscious location and IP address details for each active session in Session Management.
 - [x] Add explicit visual badge and screen-reader aria label for the Current Session in Session Management.
-- [ ] Add last-active and initial creation timestamps for each active session in Session Management.
 - [x] Add last-active and initial creation timestamps for each active session in Session Management.
-- [ ] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
+- [x] Add last-active and initial creation timestamps for each active session in Session Management.
 - [x] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
-- [ ] Add loading spinner and success toast notification for individual and bulk session revocation actions.
+- [x] Add "Revoke All Other Sessions" button with confirmation prompt in Session Management.
 - [x] Add loading spinner and success toast notification for individual and bulk session revocation actions.
-- [ ] Display specific device icons and browser names for each active session in Session Management.
+- [x] Add loading spinner and success toast notification for individual and bulk session revocation actions.
 - [x] Display specific device icons and browser names for each active session in Session Management.
-- [ ] Display approximate geographical location (city and country) based on IP address for each active session in Session Management.
+- [x] Display specific device icons and browser names for each active session in Session Management.
+- [x] Display approximate geographical location (city and country) based on IP address for each active session in Session Management.
 - [x] Display approximate geographical location (city and country) based on IP address for each active session in Session Management.
 - [x] Audit and comply with premium responsive branding, enterprise module animation system, and accessibility guidelines from pasted directives.
 - [x] Redesign login, signup, and onboarding views to match the supplied Smart Manager reference layout and enterprise branding directives.
+- [x] Fix the mobile signup route dynamic-import failure revealed during responsive visual verification.
