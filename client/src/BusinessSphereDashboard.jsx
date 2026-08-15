@@ -34,6 +34,7 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPasswordView, VerificationView } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
+import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 
@@ -6446,6 +6447,8 @@ function CRM({ crm, invoices, expenses, suppliers }) {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [sort, setSort] = useState({ field: null, direction: "asc" });
+  const [visibleLeadColumns, setVisibleLeadColumns] = useState(["company", "contact", "email", "value", "stage", "action"]);
+  const leadColumns = [{ id: "company", label: "Company", required: true }, { id: "contact", label: "Contact" }, { id: "email", label: "Email" }, { id: "value", label: "Value" }, { id: "stage", label: "Stage" }, { id: "action", label: "Action", required: true }];
 
   // Real bulk import — each row becomes a genuine crm_leads insert, same
   // table and same shape the manual "New Lead" form writes to. Rows
@@ -7506,25 +7509,24 @@ function Opportunities({ leads, onSelect }) {
       {/* Table view */}
       {viewMode === "table" && (
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="flex justify-end border-b border-slate-100 px-4 py-3"><EnterpriseColumnCustomizer columns={leadColumns} visibleColumns={visibleLeadColumns} onVisibleColumnsChange={setVisibleLeadColumns}/></div>
           <table className="w-full text-[12.5px]">
-            <thead><tr className="border-b border-slate-100 bg-slate-50">{["Company","Contact","Email","Value","Stage","Action"].map(h=>(
-              <th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>
-            ))}</tr></thead>
+            <thead><tr className="border-b border-slate-100 bg-slate-50">{leadColumns.filter((column) => visibleLeadColumns.includes(column.id)).map((column)=>(<th key={column.id} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{column.label}</th>))}</tr></thead>
             <tbody>{opportunities.map(opp => {
               const cfg = STAGE_CFG[opp.stage] || STAGE_CFG.Qualified;
               return (
                 <tr key={opp.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-medium text-[#111827]">{opp.company}</td>
-                  <td className="px-4 py-3 text-slate-500">{opp.contact}</td>
-                  <td className="px-4 py-3 text-slate-400 text-[11.5px]">{opp.email}</td>
-                  <td className="px-4 py-3 font-mono font-bold text-[#111827]">TZS {money(opp.value)}k</td>
-                  <td className="px-4 py-3"><span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full" style={{background:cfg.badge,color:cfg.label}}>{opp.stage}</span></td>
-                  <td className="px-4 py-3">
+                  {visibleLeadColumns.includes("company") && <td className="px-4 py-3 font-medium text-[#111827]">{opp.company}</td>}
+                  {visibleLeadColumns.includes("contact") && <td className="px-4 py-3 text-slate-500">{opp.contact}</td>}
+                  {visibleLeadColumns.includes("email") && <td className="px-4 py-3 text-slate-400 text-[11.5px]">{opp.email}</td>}
+                  {visibleLeadColumns.includes("value") && <td className="px-4 py-3 font-mono font-bold text-[#111827]">TZS {money(opp.value)}k</td>}
+                  {visibleLeadColumns.includes("stage") && <td className="px-4 py-3"><span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full" style={{background:cfg.badge,color:cfg.label}}>{opp.stage}</span></td>}
+                  {visibleLeadColumns.includes("action") && <td className="px-4 py-3">
                     <select className="text-[11px] border border-slate-200 rounded-lg px-2 py-1 text-slate-600"
                       value={opp.stage} onChange={e=>moveToStage(opp.id, e.target.value)}>
                       {STAGES.map(s=><option key={s}>{s}</option>)}
                     </select>
-                  </td>
+                  </td>}
                 </tr>
               );
             })}</tbody>
@@ -10520,6 +10522,8 @@ function Inventory({ inventory, suppliersHook }) {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [visibleStockColumns, setVisibleStockColumns] = useState(["item", "category", "warehouse", "onHand", "status", "expiry", "value", "detail"]);
+  const stockColumns = [{ id: "item", label: "Item", required: true }, { id: "category", label: "Category" }, { id: "warehouse", label: "Warehouse" }, { id: "onHand", label: "On hand" }, { id: "status", label: "Status" }, { id: "expiry", label: "Expiry" }, { id: "value", label: "Value" }, { id: "detail", label: "Detail", required: true }];
   const { rows: items, setRows: setItems, loading, error } = inventory;
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
   const warehouses = warehousesHook.rows;
@@ -10755,6 +10759,7 @@ function Inventory({ inventory, suppliersHook }) {
           >
             <Plus size={15} /> New Item
           </button>
+          <EnterpriseColumnCustomizer columns={stockColumns} visibleColumns={visibleStockColumns} onVisibleColumnsChange={setVisibleStockColumns}/>
         </div>
       </div>
 
@@ -10763,14 +10768,7 @@ function Inventory({ inventory, suppliersHook }) {
         <table className="w-full text-[13px] min-w-[800px]">
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-              <th className="px-4 py-3 font-medium">Item</th>
-              <th className="px-4 py-3 font-medium">Category</th>
-              <th className="px-4 py-3 font-medium">Warehouse</th>
-              <th className="px-4 py-3 font-medium text-right">On Hand</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Expiry</th>
-              <th className="px-4 py-3 font-medium text-right">Value (TZS 000)</th>
-              <th className="px-4 py-3"></th>
+              {stockColumns.filter((column) => visibleStockColumns.includes(column.id)).map((column) => <th key={column.id} className={`px-4 py-3 font-medium ${column.id === "onHand" || column.id === "value" || column.id === "detail" ? "text-right" : ""}`}>{column.label}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -10788,14 +10786,14 @@ function Inventory({ inventory, suppliersHook }) {
                       onClick={() => setSelected(it)}
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-3">
+                      {visibleStockColumns.includes("item") && <td className="px-4 py-3">
                         <p className="font-medium text-[#111827]">{it.name}</p>
                         <p className="text-[11px] text-slate-400 font-mono">{it.sku}</p>
-                      </td>
-                      <td className="px-4 py-3 text-slate-500">{it.category}</td>
-                      <td className="px-4 py-3 text-slate-500">{wh?.city}</td>
-                      <td className="px-4 py-3 text-right font-mono">{it.qty} <span className="text-slate-400">{it.unit}</span></td>
-                      <td className="px-4 py-3">
+                      </td>}
+                      {visibleStockColumns.includes("category") && <td className="px-4 py-3 text-slate-500">{it.category}</td>}
+                      {visibleStockColumns.includes("warehouse") && <td className="px-4 py-3 text-slate-500">{wh?.city}</td>}
+                      {visibleStockColumns.includes("onHand") && <td className="px-4 py-3 text-right font-mono">{it.qty} <span className="text-slate-400">{it.unit}</span></td>}
+                      {visibleStockColumns.includes("status") && <td className="px-4 py-3">
                         <span
                           className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
                           style={{ backgroundColor: `${STOCK_STATUS_COLOR[status]}14`, color: STOCK_STATUS_COLOR[status] }}
@@ -10803,8 +10801,8 @@ function Inventory({ inventory, suppliersHook }) {
                           <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STOCK_STATUS_COLOR[status] }} />
                           {status}
                         </span>
-                      </td>
-                      <td className="px-4 py-3">
+                      </td>}
+                      {visibleStockColumns.includes("expiry") && <td className="px-4 py-3">
                         {expiry && expiry !== "Fresh" ? (
                           <span
                             className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
@@ -10816,17 +10814,17 @@ function Inventory({ inventory, suppliersHook }) {
                         ) : (
                           <span className="text-[11px] text-slate-300">—</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono">{money(Math.round(it.qty * it.unitCost))}</td>
-                      <td className="px-4 py-3 text-right">
+                      </td>}
+                      {visibleStockColumns.includes("value") && <td className="px-4 py-3 text-right font-mono">{money(Math.round(it.qty * it.unitCost))}</td>}
+                      {visibleStockColumns.includes("detail") && <td className="px-4 py-3 text-right">
                         <ChevronRight size={15} className="text-slate-300 inline" />
-                      </td>
+                      </td>}
                     </tr>
                   );
                 })}
                 {filtered.length === 0 && items.length > 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-slate-400 text-[13px]">
+                    <td colSpan={visibleStockColumns.length} className="px-4 py-10 text-center text-slate-400 text-[13px]">
                       No items match your filters
                     </td>
                   </tr>

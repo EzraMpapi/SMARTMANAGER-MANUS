@@ -38,6 +38,7 @@ export function ScrollableModuleTabs({
   onChangeTab: (id: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -60,6 +61,22 @@ export function ScrollableModuleTabs({
     el.scrollBy({ left: direction === "left" ? -240 : 240, behavior: "smooth" });
   };
 
+  const selectTabAt = (index: number) => {
+    const nextIndex = (index + tabs.length) % tabs.length;
+    const nextTab = tabs[nextIndex];
+    if (!nextTab) return;
+    onChangeTab(nextTab.id);
+    tabRefs.current[nextIndex]?.focus();
+    tabRefs.current[nextIndex]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  };
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (event.key === "ArrowRight") { event.preventDefault(); selectTabAt(index + 1); }
+    else if (event.key === "ArrowLeft") { event.preventDefault(); selectTabAt(index - 1); }
+    else if (event.key === "Home") { event.preventDefault(); selectTabAt(0); }
+    else if (event.key === "End") { event.preventDefault(); selectTabAt(tabs.length - 1); }
+  };
+
   return (
     <div className="relative flex items-center mb-6 group">
       {canScrollLeft && (
@@ -76,17 +93,24 @@ export function ScrollableModuleTabs({
       <div
         ref={containerRef}
         onScroll={checkScroll}
+        role="tablist"
+        aria-label="Module views"
         className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 px-1 w-full"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              ref={(element) => { tabRefs.current[index] = element; }}
               type="button"
               onClick={() => onChangeTab(tab.id)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium whitespace-nowrap transition-all shrink-0 ${
                 isActive
                   ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 font-semibold"

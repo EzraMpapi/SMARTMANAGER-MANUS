@@ -410,10 +410,10 @@
 - [x] Create reusable enterprise UI primitives (`EnterpriseModuleHeader`, `ScrollableModuleTabs`, `EnterpriseFilterBar`, `EnterpriseKPIGrid`).
 - [x] Reorganize Sales, Inventory, Finance, CRM, and HR module layouts for clean enterprise hierarchy and horizontal touch/mouse scrolling.
 - [x] Verify functionality preservation, test suite, production build, and publish the enterprise re-architecture.
-- [ ] Implement keyboard shortcut navigation (Arrow Left / Arrow Right) for primary module tabs in `ScrollableModuleTabs`.
-- [ ] Implement reusable column-visibility customization menu (`EnterpriseColumnCustomizer`).
-- [ ] Wire column customizer into enterprise table views across major modules.
-- [ ] Verify test suite, production build, and publish the verified update.
+- [x] Implement keyboard shortcut navigation (Arrow Left / Arrow Right) for primary module tabs in `ScrollableModuleTabs`.
+- [x] Implement reusable column-visibility customization menu (`EnterpriseColumnCustomizer`).
+- [x] Wire column customizer into enterprise table views across major modules.
+- [x] Verify test suite, production build, and publish the verified update.
 - [x] Add an optional Tanzania-inspired skyline and flag-accent backdrop behind the mobile authentication header using performant CSS and reduced-motion-safe styling.
 - [x] Extend the centered official Smart Manager lockup to password recovery, password reset, and workspace-completion screens.
 - [x] Default language presentation to Kiswahili for Tanzania-based users while preserving explicit user language choices and English fallback behavior.
