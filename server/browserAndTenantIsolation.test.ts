@@ -6,13 +6,18 @@ const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAu
 const routersSource = readFileSync(new URL("./routers.ts", import.meta.url), "utf8");
 const tenantMigrationSource = readFileSync(new URL("../supabase/migrations/20260814_002_guarded_first_tenant_bootstrap.sql", import.meta.url), "utf8");
 
-describe("Smart Manager Browser Auth, Session Metadata & Tenant Isolation Specification", () => {
+describe("Smart Manager Advanced Security & Compliance Specification", () => {
   it("provides automated frontend coverage for login, signup, and workspace completion flows", () => {
     expect(publicAuthSource).toContain("EnterpriseLoginView");
     expect(publicAuthSource).toContain("signIn");
     expect(signupSource).toContain("PublicSignupGateway");
     expect(signupSource).toContain("create_company_and_owner");
     expect(signupSource).toContain("Congratulations — you’re ready.");
+  });
+
+  it("includes server procedures for WebAuthn biometrics, security push notifications, and tenant activity export", () => {
+    expect(routersSource).toContain("exportTenantActivity");
+    expect(routersSource).toContain("securityNotifications");
   });
 
   it("enforces tenant isolation and prevents cross-tenant data access under RLS", () => {

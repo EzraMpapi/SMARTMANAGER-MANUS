@@ -420,6 +420,23 @@ export const appRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable." });
       return db.select({ id: users.id, openId: users.openId, name: users.name, email: users.email, role: users.role, lastSignedIn: users.lastSignedIn }).from(users);
     }),
+    exportTenantActivity: protectedProcedure.input(z.object({ format: z.enum(["csv", "json"]).default("csv") })).mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable." });
+      const logs = await db.select().from(auditLog).where(eq(auditLog.companyId, ctx.user.companyId)).orderBy(desc(auditLog.createdAt)).limit(500);
+      if (input.format === "json") {
+        return { filename: `tenant-activity-${ctx.user.companyId}-${Date.now()}.json`, data: JSON.stringify(logs, null, 2), mimeType: "application/json" };
+      }
+      const header = "ID,Timestamp,Severity,Action,Entity,User,Details\n";
+      const rows = logs.map(l => `"${l.id}","${new Date(l.createdAt).toISOString()}","${l.severity}","${l.action}","${l.entity || ""}","${l.userName || l.userId || ""}","${String(l.details || "").replace(/"/g, '""')}"`).join("\n");
+      return { filename: `tenant-activity-${ctx.user.companyId}-${Date.now()}.csv`, data: header + rows, mimeType: "text/csv" };
+    }),
+    securityNotifications: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const notifs = await db.select().from(auditLog).where(and(eq(auditLog.companyId, ctx.user.companyId), or(eq(auditLog.action, "SESSION_REVOKED"), eq(auditLog.action, "NEW_LOGIN"), eq(auditLog.action, "SECURITY_ALERT")))).orderBy(desc(auditLog.createdAt)).limit(15);
+      return notifs;
+    }),
     updateUserRole: protectedProcedure.input(z.object({ openId: z.string(), role: z.enum(["user", "admin"]) })).mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can update user roles." });

@@ -454,3 +454,6 @@
 - [x] Add automated browser coverage for login, signup, and workspace completion.
 - [x] Replace presentation-only session metadata with server-backed active-session records.
 - [x] Run the deferred independent Tenant B RLS isolation acceptance test.
+- [x] Implement WebAuthn biometric authentication (TouchID / Windows Hello / Passkey) for mobile login and quick app unlocking.
+- [x] Integrate server-backed notifications for newly detected active logins or remote session revocations.
+- [x] Implement secure tenant activity export feature for compliance audits and security reviews.
