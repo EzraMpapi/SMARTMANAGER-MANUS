@@ -449,3 +449,4 @@
 - [ ] Display approximate geographical location (city and country) based on IP address for each active session in Session Management.
 - [x] Display approximate geographical location (city and country) based on IP address for each active session in Session Management.
 - [x] Audit and comply with premium responsive branding, enterprise module animation system, and accessibility guidelines from pasted directives.
+- [x] Redesign login, signup, and onboarding views to match the supplied Smart Manager reference layout and enterprise branding directives.
