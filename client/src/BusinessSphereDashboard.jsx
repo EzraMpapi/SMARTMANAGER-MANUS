@@ -34,6 +34,7 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPasswordView, VerificationView } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
+import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 
@@ -6446,6 +6447,9 @@ function CRM({ crm, invoices, expenses, suppliers }) {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [sort, setSort] = useState({ field: null, direction: "asc" });
+  const [visibleLeadColumns, setVisibleLeadColumns] = useState(["lead", "industry", "stage", "owner", "value", "score", "actions"]);
+  const leadColumns = [{ id: "lead", label: "Lead" }, { id: "industry", label: "Industry" }, { id: "stage", label: "Stage" }, { id: "owner", label: "Owner" }, { id: "value", label: "Value" }, { id: "score", label: "Score" }, { id: "actions", label: "Actions" }];
+  const showLeadColumn = (id) => visibleLeadColumns.includes(id);
 
   // Real bulk import — each row becomes a genuine crm_leads insert, same
   // table and same shape the manual "New Lead" form writes to. Rows
@@ -6661,6 +6665,7 @@ function CRM({ crm, invoices, expenses, suppliers }) {
           >
             List
           </button>
+          <EnterpriseColumnCustomizer columns={leadColumns} visibleColumns={visibleLeadColumns} onVisibleColumnsChange={setVisibleLeadColumns} />
         </div>
       </div>
 
@@ -6725,13 +6730,13 @@ function CRM({ crm, invoices, expenses, suppliers }) {
           <table className="w-full text-[13px] min-w-[720px]">
             <thead>
               <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-                <SortableHeader label="Lead" field="company" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
-                <SortableHeader label="Industry" field="industry" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
-                <SortableHeader label="Stage" field="stage" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
-                <SortableHeader label="Owner" field="owner" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
-                <SortableHeader label="Value (TZS 000)" field="value" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} align="right" />
-                <SortableHeader label="Score" field="score" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} align="right" />
-                <th className="px-4 py-3"></th>
+                {showLeadColumn("lead") && <SortableHeader label="Lead" field="company" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
+                {showLeadColumn("industry") && <SortableHeader label="Industry" field="industry" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
+                {showLeadColumn("stage") && <SortableHeader label="Stage" field="stage" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
+                {showLeadColumn("owner") && <SortableHeader label="Owner" field="owner" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
+                {showLeadColumn("value") && <SortableHeader label="Value (TZS 000)" field="value" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} align="right" />}
+                {showLeadColumn("score") && <SortableHeader label="Score" field="score" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} align="right" />}
+                {showLeadColumn("actions") && <th className="px-4 py-3"></th>}
               </tr>
             </thead>
             <tbody>
@@ -6741,18 +6746,18 @@ function CRM({ crm, invoices, expenses, suppliers }) {
                   onClick={() => setSelected(lead)}
                   className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                 >
-                  <td className="px-4 py-3">
+                  {showLeadColumn("lead") && <td className="px-4 py-3">
                     <p className="font-medium text-[#111827]">{lead.company}</p>
                     <p className="text-[12px] text-slate-400">{lead.name}</p>
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">{lead.industry}</td>
-                  <td className="px-4 py-3"><StagePill stage={lead.stage} /></td>
-                  <td className="px-4 py-3 text-slate-500">{lead.owner}</td>
-                  <td className="px-4 py-3 text-right font-mono">{money(lead.value)}</td>
-                  <td className="px-4 py-3 text-right font-mono text-slate-500">{lead.score}</td>
-                  <td className="px-4 py-3 text-right">
+                  </td>}
+                  {showLeadColumn("industry") && <td className="px-4 py-3 text-slate-500">{lead.industry}</td>}
+                  {showLeadColumn("stage") && <td className="px-4 py-3"><StagePill stage={lead.stage} /></td>}
+                  {showLeadColumn("owner") && <td className="px-4 py-3 text-slate-500">{lead.owner}</td>}
+                  {showLeadColumn("value") && <td className="px-4 py-3 text-right font-mono">{money(lead.value)}</td>}
+                  {showLeadColumn("score") && <td className="px-4 py-3 text-right font-mono text-slate-500">{lead.score}</td>}
+                  {showLeadColumn("actions") && <td className="px-4 py-3 text-right">
                     <MoreHorizontal size={15} className="text-slate-300 inline" />
-                  </td>
+                  </td>}
                 </tr>
               ))}
             </tbody>
@@ -8640,6 +8645,9 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [sort, setSort] = useState({ field: null, direction: "asc" });
+  const [visibleSalesColumns, setVisibleSalesColumns] = useState(["document", "customer", "date", "reference", "status", "total", "actions"]);
+  const salesColumns = [{ id: "document", label: "Document" }, { id: "customer", label: "Customer" }, { id: "date", label: "Date" }, { id: "reference", label: "Reference" }, { id: "status", label: "Status" }, { id: "total", label: "Total" }, { id: "actions", label: "Actions" }];
+  const showSalesColumn = (id) => visibleSalesColumns.includes(id);
 
   // A Dashboard Quick Action ("Create Invoice") can deep-link here already
   // on the right tab with the create form open, instead of just switching
@@ -9260,6 +9268,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
                 className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
               />
             </div>
+            <EnterpriseColumnCustomizer columns={salesColumns} visibleColumns={visibleSalesColumns} onVisibleColumnsChange={setVisibleSalesColumns} />
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -10520,7 +10529,14 @@ function Inventory({ inventory, suppliersHook }) {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [visibleStockColumns, setVisibleStockColumns] = useState(["item", "category", "warehouse", "onHand", "status", "expiry", "value", "actions"]);
   const { rows: items, setRows: setItems, loading, error } = inventory;
+  const stockColumns = [
+    { id: "item", label: "Item" }, { id: "category", label: "Category" }, { id: "warehouse", label: "Warehouse" },
+    { id: "onHand", label: "On hand" }, { id: "status", label: "Status" }, { id: "expiry", label: "Expiry" },
+    { id: "value", label: "Value" }, { id: "actions", label: "Actions", defaultVisible: true },
+  ];
+  const showStockColumn = (id) => visibleStockColumns.includes(id);
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
   const warehouses = warehousesHook.rows;
 
@@ -10743,6 +10759,7 @@ function Inventory({ inventory, suppliersHook }) {
               className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
             />
           </div>
+          <EnterpriseColumnCustomizer columns={stockColumns} visibleColumns={visibleStockColumns} onVisibleColumnsChange={setVisibleStockColumns} />
           <button
             onClick={() => setShowImport(true)}
             className="btn-secondary text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shrink-0"
@@ -10763,19 +10780,19 @@ function Inventory({ inventory, suppliersHook }) {
         <table className="w-full text-[13px] min-w-[800px]">
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-              <th className="px-4 py-3 font-medium">Item</th>
-              <th className="px-4 py-3 font-medium">Category</th>
-              <th className="px-4 py-3 font-medium">Warehouse</th>
-              <th className="px-4 py-3 font-medium text-right">On Hand</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Expiry</th>
-              <th className="px-4 py-3 font-medium text-right">Value (TZS 000)</th>
-              <th className="px-4 py-3"></th>
+              {showStockColumn("item") && <th className="px-4 py-3 font-medium">Item</th>}
+              {showStockColumn("category") && <th className="px-4 py-3 font-medium">Category</th>}
+              {showStockColumn("warehouse") && <th className="px-4 py-3 font-medium">Warehouse</th>}
+              {showStockColumn("onHand") && <th className="px-4 py-3 font-medium text-right">On Hand</th>}
+              {showStockColumn("status") && <th className="px-4 py-3 font-medium">Status</th>}
+              {showStockColumn("expiry") && <th className="px-4 py-3 font-medium">Expiry</th>}
+              {showStockColumn("value") && <th className="px-4 py-3 font-medium text-right">Value (TZS 000)</th>}
+              {showStockColumn("actions") && <th className="px-4 py-3"></th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <SkeletonRows cols={8} />
+              <SkeletonRows cols={visibleStockColumns.length} />
             ) : (
               <>
                 {filtered.map((it) => {
@@ -10788,14 +10805,14 @@ function Inventory({ inventory, suppliersHook }) {
                       onClick={() => setSelected(it)}
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-3">
+                      {showStockColumn("item") && <td className="px-4 py-3">
                         <p className="font-medium text-[#111827]">{it.name}</p>
                         <p className="text-[11px] text-slate-400 font-mono">{it.sku}</p>
-                      </td>
-                      <td className="px-4 py-3 text-slate-500">{it.category}</td>
-                      <td className="px-4 py-3 text-slate-500">{wh?.city}</td>
-                      <td className="px-4 py-3 text-right font-mono">{it.qty} <span className="text-slate-400">{it.unit}</span></td>
-                      <td className="px-4 py-3">
+                      </td>}
+                      {showStockColumn("category") && <td className="px-4 py-3 text-slate-500">{it.category}</td>}
+                      {showStockColumn("warehouse") && <td className="px-4 py-3 text-slate-500">{wh?.city}</td>}
+                      {showStockColumn("onHand") && <td className="px-4 py-3 text-right font-mono">{it.qty} <span className="text-slate-400">{it.unit}</span></td>}
+                      {showStockColumn("status") && <td className="px-4 py-3">
                         <span
                           className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
                           style={{ backgroundColor: `${STOCK_STATUS_COLOR[status]}14`, color: STOCK_STATUS_COLOR[status] }}
@@ -10803,8 +10820,8 @@ function Inventory({ inventory, suppliersHook }) {
                           <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STOCK_STATUS_COLOR[status] }} />
                           {status}
                         </span>
-                      </td>
-                      <td className="px-4 py-3">
+                      </td>}
+                      {showStockColumn("expiry") && <td className="px-4 py-3">
                         {expiry && expiry !== "Fresh" ? (
                           <span
                             className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
@@ -10816,24 +10833,24 @@ function Inventory({ inventory, suppliersHook }) {
                         ) : (
                           <span className="text-[11px] text-slate-300">—</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono">{money(Math.round(it.qty * it.unitCost))}</td>
-                      <td className="px-4 py-3 text-right">
+                      </td>}
+                      {showStockColumn("value") && <td className="px-4 py-3 text-right font-mono">{money(Math.round(it.qty * it.unitCost))}</td>}
+                      {showStockColumn("actions") && <td className="px-4 py-3 text-right">
                         <ChevronRight size={15} className="text-slate-300 inline" />
-                      </td>
+                      </td>}
                     </tr>
                   );
                 })}
                 {filtered.length === 0 && items.length > 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-slate-400 text-[13px]">
+                    <td colSpan={visibleStockColumns.length} className="px-4 py-10 text-center text-slate-400 text-[13px]">
                       No items match your filters
                     </td>
                   </tr>
                 )}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={visibleStockColumns.length}>
                       <EmptyState
                         icon={Package}
                         title="No inventory yet"
