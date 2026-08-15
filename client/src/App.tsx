@@ -39,9 +39,12 @@ function isSignupRequest() {
 }
 function isPublicAuthRequest() {
   if (typeof window === "undefined") return false;
+  const token = window.localStorage.getItem("bs_access_token");
   const auth = new URLSearchParams(window.location.search).get("auth");
   const explicitPublicScreen = auth && ["login", "forgot", "reset", "verify"].includes(auth);
-  return Boolean(explicitPublicScreen) || (!auth && !window.localStorage.getItem("bs_access_token"));
+  // If a valid session token is stored, never trap the user in a public auth screen
+  if (token && explicitPublicScreen) return false;
+  return Boolean(explicitPublicScreen) || (!auth && !token);
 }
 
 function Router() {

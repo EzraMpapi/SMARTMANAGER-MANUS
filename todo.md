@@ -457,3 +457,4 @@
 - [x] Implement WebAuthn biometric authentication (TouchID / Windows Hello / Passkey) for mobile login and quick app unlocking.
 - [x] Integrate server-backed notifications for newly detected active logins or remote session revocations.
 - [x] Implement secure tenant activity export feature for compliance audits and security reviews.
+- [x] Diagnose and fix the post-login redirection and session persistence bug causing authenticated users to return to login.
