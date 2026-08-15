@@ -246,11 +246,15 @@ function DashboardLayoutContent({
                             <Monitor className="h-4 w-4" />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-xs font-semibold text-foreground">Current Browser Session</p>
-                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Current Device
+                              <span 
+                                role="status"
+                                aria-label="Current active session badge"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 shadow-xs"
+                              >
+                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                ACTIVE CURRENT SESSION
                               </span>
                             </div>
                             <p className="text-[11px] text-muted-foreground mt-0.5">Active now · {navigator.userAgent.includes("Mobile") ? "Mobile Device" : "Desktop Workstation"}</p>

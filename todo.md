@@ -437,3 +437,4 @@
 - [x] Add Session Management section to user profile for viewing and revoking active logins.
 - [x] Add "Current Device" badge with green status indicator to active session row in Session Management.
 - [x] Include privacy-conscious location and IP address details for each active session in Session Management.
+- [x] Add explicit visual badge and screen-reader aria label for the Current Session in Session Management.
