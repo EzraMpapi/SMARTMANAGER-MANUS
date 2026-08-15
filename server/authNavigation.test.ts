@@ -20,8 +20,7 @@ describe("Smart Manager Authentication Navigation & Session Warning Specificatio
 
   it("keeps credential and approved social provider handoffs on the shared authenticated application route", () => {
     expect(publicAuthSource).toContain('window.location.assign(withoutAuthView())');
-    expect(publicAuthSource).toContain("code_challenge_method: \"S256\"");
-    expect(publicAuthSource).toContain("OAUTH_PKCE_VERIFIER_STORAGE_KEY");
+    expect(publicAuthSource).toContain("new URLSearchParams({ provider, redirect_to: redirectTo.toString() })");
     expect(enterpriseAuthSource).toContain('onOAuth("google")');
     expect(enterpriseAuthSource).toContain('onOAuth("azure")');
     expect(enterpriseAuthSource).toContain('onOAuth("apple")');

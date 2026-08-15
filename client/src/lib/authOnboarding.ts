@@ -66,21 +66,3 @@ export function oauthCallbackFromHash(hash: string): OAuthCallbackPayload {
     errorDescription: params.get("error_description"),
   };
 }
-
-export type OAuthCodeCallbackPayload = {
-  code: string | null;
-  state: string | null;
-  errorCode: string | null;
-  errorDescription: string | null;
-};
-
-/** Parses a PKCE authorization-code callback without storing or logging the code. */
-export function oauthCodeCallbackFromSearch(search: string): OAuthCodeCallbackPayload {
-  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
-  return {
-    code: params.get("code"),
-    state: params.get("state"),
-    errorCode: params.get("error"),
-    errorDescription: params.get("error_description"),
-  };
-}

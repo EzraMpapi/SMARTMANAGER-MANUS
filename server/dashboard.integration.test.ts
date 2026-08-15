@@ -124,9 +124,7 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
     expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
-    expect(publicAuthSource).toContain("oauthCodeCallbackFromSearch(window.location.search)");
-    expect(publicAuthSource).toContain('authRequest("token?grant_type=pkce"');
-    expect(publicAuthSource).toContain("code_verifier: verifier");
+    expect(publicAuthSource).not.toContain("code_challenge");
     expect(publicAuthSource).toContain("persistAuthSession({ access_token: implicitCallback.accessToken, refresh_token: implicitCallback.refreshToken })");
     expect(publicAuthSource).toContain("window.location.replace(withoutAuthView())");
     expect(publicAuthSource).toContain("Google authentication did not complete");

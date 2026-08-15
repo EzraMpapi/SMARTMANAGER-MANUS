@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, oauthCallbackFromHash, oauthCodeCallbackFromSearch, passwordStrength } from "../client/src/lib/authOnboarding";
+import { authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, oauthCallbackFromHash, passwordStrength } from "../client/src/lib/authOnboarding";
 
 describe("enterprise authentication onboarding helpers", () => {
   it("requires a balanced, non-trivial password for new password credentials", () => {
@@ -24,8 +24,4 @@ describe("enterprise authentication onboarding helpers", () => {
     expect(oauthCallbackFromHash("#error=access_denied&error_description=cancelled")).toEqual({ accessToken: null, refreshToken: null, errorCode: "access_denied", errorDescription: "cancelled" });
   });
 
-  it("parses a PKCE authorization-code callback without exposing session credentials", () => {
-    expect(oauthCodeCallbackFromSearch("?code=one-time-code&state=csrf-state")).toEqual({ code: "one-time-code", state: "csrf-state", errorCode: null, errorDescription: null });
-    expect(oauthCodeCallbackFromSearch("?error=access_denied&error_description=cancelled")).toEqual({ code: null, state: null, errorCode: "access_denied", errorDescription: "cancelled" });
-  });
 });
