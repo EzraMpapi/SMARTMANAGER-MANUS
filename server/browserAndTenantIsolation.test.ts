@@ -15,9 +15,11 @@ describe("Smart Manager Advanced Security & Compliance Specification", () => {
     expect(signupSource).toContain("Congratulations — you’re ready.");
   });
 
-  it("includes server procedures for WebAuthn biometrics, security push notifications, and tenant activity export", () => {
-    expect(routersSource).toContain("exportTenantActivity");
-    expect(routersSource).toContain("securityNotifications");
+  it("includes server procedures for passkey management, weekly compliance digests, and geo-anomaly checks", () => {
+    expect(routersSource).toContain("listPasskeys");
+    expect(routersSource).toContain("revokePasskey");
+    expect(routersSource).toContain("getWeeklyDigestConfig");
+    expect(routersSource).toContain("checkGeoAnomalies");
   });
 
   it("enforces tenant isolation and prevents cross-tenant data access under RLS", () => {

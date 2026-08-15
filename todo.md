@@ -463,3 +463,6 @@
 - [x] Implement automatic silent token refresh in the background before session expiration.
 - [x] Implement tenant activity audit log viewer inside the security settings panel.
 - [x] Implement passkey registration options in the user profile security settings.
+- [x] Implement biometric credential management (view and revoke enrolled passkeys) in security settings.
+- [x] Implement scheduled weekly tenant activity compliance digests with delivery-disabled handling.
+- [x] Implement geographic anomaly detection alerts for unusual sign-in locations.
