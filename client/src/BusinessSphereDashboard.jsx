@@ -13479,6 +13479,8 @@ function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, compa
 function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [visibleExpenseColumns, setVisibleExpenseColumns] = useState(["vendor", "category", "dueDate", "aging", "status", "amount"]);
+  const expenseColumns = [{ id: "vendor", label: "Vendor" }, { id: "category", label: "Category" }, { id: "dueDate", label: "Due date" }, { id: "aging", label: "Aging" }, { id: "status", label: "Status" }, { id: "amount", label: "Amount" }];
 
   // Accounts Payable aging — same bucket logic Receivables uses, applied to
   // unpaid vendor bills instead of unpaid customer invoices.
@@ -13496,6 +13498,7 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
         <p className="text-[13px] text-slate-500">
           <span className="font-mono font-semibold text-[#111827]">TZS {money(Math.round(totalPayable))}k</span> owed to {unpaid.length} vendor{unpaid.length === 1 ? "" : "s"}
         </p>
+        <EnterpriseColumnCustomizer columns={expenseColumns} visibleColumns={visibleExpenseColumns} onVisibleColumnsChange={setVisibleExpenseColumns} />
         <button
           onClick={() => setShowForm(true)}
           className="btn-primary text-white text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors"
@@ -13554,12 +13557,12 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
           <table className="w-full text-[13px] min-w-[720px]">
             <thead>
               <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-                <th className="px-4 py-3 font-medium">Vendor</th>
-                <th className="px-4 py-3 font-medium">Category</th>
-                <th className="px-4 py-3 font-medium">Due Date</th>
-                <th className="px-4 py-3 font-medium">Aging</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Amount (TZS 000)</th>
+                {visibleExpenseColumns.includes("vendor") && <th className="px-4 py-3 font-medium">Vendor</th>}
+                {visibleExpenseColumns.includes("category") && <th className="px-4 py-3 font-medium">Category</th>}
+                {visibleExpenseColumns.includes("dueDate") && <th className="px-4 py-3 font-medium">Due Date</th>}
+                {visibleExpenseColumns.includes("aging") && <th className="px-4 py-3 font-medium">Aging</th>}
+                {visibleExpenseColumns.includes("status") && <th className="px-4 py-3 font-medium">Status</th>}
+                {visibleExpenseColumns.includes("amount") && <th className="px-4 py-3 font-medium text-right">Amount (TZS 000)</th>}
               </tr>
             </thead>
             <tbody>
