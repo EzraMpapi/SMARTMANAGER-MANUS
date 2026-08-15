@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { EnterpriseLoginView, ForgotPasswordView, ResetPasswordView, VerificationView } from "./EnterpriseAuthViews";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "../lib/authErrors";
-import { authScreenFromSearch, oauthCallbackFromHash } from "../lib/authOnboarding";
+import { authScreenFromSearch, oauthCallbackFromHash, oauthCodeCallbackFromSearch } from "../lib/authOnboarding";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
 const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
+const OAUTH_PKCE_VERIFIER_STORAGE_KEY = "bs_oauth_pkce_verifier";
 const configured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 async function authRequest(path, init = {}) {
@@ -35,8 +36,24 @@ function persistAuthSession(result) {
 function withoutAuthView() {
   const url = new URL(window.location.href);
   url.searchParams.delete("auth");
+  url.searchParams.delete("code");
+  url.searchParams.delete("state");
+  url.searchParams.delete("error");
+  url.searchParams.delete("error_description");
   url.hash = "";
   return `${url.pathname}${url.search}`;
+}
+
+function base64Url(bytes) {
+  let binary = "";
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  return window.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function createPkceChallenge() {
+  const verifier = base64Url(window.crypto.getRandomValues(new Uint8Array(64)));
+  const digest = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  return { verifier, challenge: base64Url(new Uint8Array(digest)) };
 }
 
 function resetRedirectUrl() {
@@ -63,24 +80,51 @@ export default function PublicAuthGateway() {
   }
 
   useEffect(() => {
-    if (!window.location.hash) return;
-    const callback = oauthCallbackFromHash(window.location.hash);
-    if (callback.errorCode) {
-      window.history.replaceState(null, "", withoutAuthView());
-      setOauthError("Google authentication did not complete. Please try again or use another approved sign-in method.");
-      return;
+    let disposed = false;
+
+    async function completeOAuthCallback() {
+      const codeCallback = oauthCodeCallbackFromSearch(window.location.search);
+      const implicitCallback = oauthCallbackFromHash(window.location.hash);
+      if (codeCallback.errorCode || implicitCallback.errorCode) {
+        window.history.replaceState(null, "", withoutAuthView());
+        if (!disposed) setOauthError("Google authentication did not complete. Please try again or use another approved sign-in method.");
+        return;
+      }
+
+      if (codeCallback.code) {
+        const verifier = window.localStorage.getItem(OAUTH_PKCE_VERIFIER_STORAGE_KEY);
+        try {
+          if (!verifier) throw new Error("The secure sign-in verifier is missing. Please start Google sign-in again.");
+          const session = await authRequest("token?grant_type=pkce", {
+            method: "POST",
+            body: JSON.stringify({ auth_code: codeCallback.code, code_verifier: verifier }),
+          });
+          if (!session?.access_token) throw new Error("The authentication server did not return a complete session.");
+          persistAuthSession(session);
+          window.localStorage.removeItem(OAUTH_PKCE_VERIFIER_STORAGE_KEY);
+          window.location.replace(withoutAuthView());
+        } catch (error) {
+          window.localStorage.removeItem(OAUTH_PKCE_VERIFIER_STORAGE_KEY);
+          window.history.replaceState(null, "", withoutAuthView());
+          if (!disposed) setOauthError(error?.message || "Google authentication did not complete. Please try again.");
+        }
+        return;
+      }
+
+      if (!implicitCallback.accessToken) return;
+      if (authScreenFromSearch(window.location.search) === "reset") {
+        setRecoveryToken(implicitCallback.accessToken);
+        window.history.replaceState(null, "", `${window.location.pathname}?auth=reset`);
+        return;
+      }
+      // Preserve compatibility with Supabase implicit-flow callbacks while
+      // the PKCE path above handles modern authorization-code callbacks.
+      persistAuthSession({ access_token: implicitCallback.accessToken, refresh_token: implicitCallback.refreshToken });
+      window.location.replace(withoutAuthView());
     }
-    if (!callback.accessToken) return;
-    if (authScreenFromSearch(window.location.search) === "reset") {
-      setRecoveryToken(callback.accessToken);
-      window.history.replaceState(null, "", `${window.location.pathname}?auth=reset`);
-      return;
-    }
-    // OAuth callbacks land before the lightweight public route can see the
-    // session in browser storage. Persist and immediately re-enter /app so
-    // the existing tenant-aware bootstrap resolves profile → workspace.
-    persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken });
-    window.location.replace(withoutAuthView());
+
+    void completeOAuthCallback();
+    return () => { disposed = true; };
   }, []);
 
   async function signIn(workEmail, password) {
@@ -108,10 +152,19 @@ export default function PublicAuthGateway() {
     await authRequest("resend", { method: "POST", body: JSON.stringify({ type: "signup", email: workEmail }) });
   }
 
-  function oauth(provider) {
+  async function oauth(provider) {
     if (!configured) return;
-    const redirectTo = new URL(window.location.href); redirectTo.searchParams.delete("auth");
-    window.location.assign(`${SUPABASE_URL}/auth/v1/authorize?provider=${encodeURIComponent(provider)}&redirect_to=${encodeURIComponent(redirectTo.toString())}`);
+    try {
+      const { verifier, challenge } = await createPkceChallenge();
+      window.localStorage.setItem(OAUTH_PKCE_VERIFIER_STORAGE_KEY, verifier);
+      const redirectTo = new URL(window.location.href);
+      ["auth", "code", "state", "error", "error_description"].forEach((key) => redirectTo.searchParams.delete(key));
+      redirectTo.hash = "";
+      const params = new URLSearchParams({ provider, redirect_to: redirectTo.toString(), code_challenge: challenge, code_challenge_method: "S256" });
+      window.location.assign(`${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`);
+    } catch (error) {
+      setOauthError(error?.message || "Google sign-in could not start. Please try again.");
+    }
   }
 
   if (view === "forgot") return <ForgotPasswordView onBack={() => navigate("login")} onRequest={requestRecovery} toMessage={toAuthUserMessage} />;

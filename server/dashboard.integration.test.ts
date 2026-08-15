@@ -124,7 +124,10 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
     expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
-    expect(publicAuthSource).toContain("persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken })");
+    expect(publicAuthSource).toContain("oauthCodeCallbackFromSearch(window.location.search)");
+    expect(publicAuthSource).toContain('authRequest("token?grant_type=pkce"');
+    expect(publicAuthSource).toContain("code_verifier: verifier");
+    expect(publicAuthSource).toContain("persistAuthSession({ access_token: implicitCallback.accessToken, refresh_token: implicitCallback.refreshToken })");
     expect(publicAuthSource).toContain("window.location.replace(withoutAuthView())");
     expect(publicAuthSource).toContain("Google authentication did not complete");
   });
@@ -199,7 +202,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("const [workspaceResolutionError, setWorkspaceResolutionError]");
     expect(dashboardSource).toContain("Workspace resolution failed");
     expect(dashboardSource).toContain("Retry workspace loading");
-    expect(dashboardSource).toContain("if (bootstrapError?.status === 401 || bootstrapError?.status === 403)");
+    expect(dashboardSource).toContain("if (!authenticatedUser && (bootstrapError?.status === 401 || bootstrapError?.status === 403))");
     expect(workspaceAuthMigrationSource).toContain("INSERT INTO public.profiles");
     expect(workspaceAuthMigrationSource).toContain("ON CONFLICT (id) DO UPDATE");
     expect(workspaceAuthMigrationSource).toContain("v_user_id uuid := auth.uid()");

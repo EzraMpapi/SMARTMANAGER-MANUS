@@ -2875,6 +2875,25 @@ const ROLES = [
   },
 ];
 
+// Supabase tenant procedures persist compact membership roles, while the
+// dashboard uses human-readable role labels for presentation. Normalize at
+// this display boundary and deliberately fail closed for unfamiliar values;
+// the database remains the source of truth for authorization and RLS.
+const PERSISTED_WORKSPACE_ROLE_LABELS = {
+  owner: "Organization Owner",
+  admin: "Super Administrator",
+  manager: "Employee",
+  staff: "Employee",
+  viewer: "Auditor",
+  employee: "Employee",
+};
+
+function workspaceDisplayRole(role) {
+  const value = String(role || "").trim();
+  if (ROLES.some((candidate) => candidate.id === value)) return value;
+  return PERSISTED_WORKSPACE_ROLE_LABELS[value.toLowerCase()] || "Employee";
+}
+
 // Dynamic Home Screen — every role lands on a genuinely different
 // dashboard, not a cosmetic label change. Reuses the exact real Analytics
 // dashboard functions (section 21) rather than computing the same numbers
@@ -31997,6 +32016,10 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 
+  useEffect(() => {
+    setDraft(company);
+  }, [company]);
+
   function setField(key, val) {
     setDraft((d) => ({ ...d, [key]: val }));
   }
@@ -32007,26 +32030,56 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
     try {
       if (IS_CONFIGURED) {
         try {
-          await sb("companies").eq("id", draft.id).update({
-            name: draft.name, industry: draft.industry, country: draft.country, currency: draft.currency,
-            tax_rate: draft.taxRate, timezone: draft.timezone, business_scale: draft.businessScale,
-            receipt_width: draft.receiptWidth, receipt_footer: draft.receiptFooter, receipt_show_logo: draft.receiptShowLogo,
-          }).run();
+          if (!draft.id) throw new Error("Workspace details are still loading. Please wait a moment and try again.");
           const branding = await workspaceBrandingMutation.mutateAsync({
             primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A",
             logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
+            workspace: {
+              name: draft.name, category: draft.industry || "", country: draft.country, currency: draft.currency,
+              taxRate: draft.taxRate, timezone: draft.timezone, businessScale: draft.businessScale,
+              receiptWidth: draft.receiptWidth, receiptFooter: draft.receiptFooter, receiptShowLogo: draft.receiptShowLogo,
+              phone: draft.phone || "", email: draft.email || "", website: draft.website || "", address: draft.address || "", city: draft.city || "",
+              tin: draft.tin || "", taxId: draft.taxId || "", vrn: draft.regNumber || "",
+            },
           });
-          draft.logo = branding.logo;
-          draft.brandColor = branding.primaryColor;
-          draft.brandAccentColor = branding.accentColor;
+          const confirmed = branding.company || {};
+          const nextCompany = {
+            ...draft,
+            name: confirmed.name ?? draft.name,
+            industry: confirmed.category ?? draft.industry,
+            country: confirmed.country ?? draft.country,
+            currency: confirmed.currency ?? draft.currency,
+            taxRate: confirmed.tax_rate ?? draft.taxRate,
+            timezone: confirmed.timezone ?? draft.timezone,
+            businessScale: confirmed.business_scale ?? draft.businessScale,
+            receiptWidth: confirmed.receipt_width ?? draft.receiptWidth,
+            receiptFooter: confirmed.receipt_footer ?? draft.receiptFooter,
+            receiptShowLogo: confirmed.receipt_show_logo ?? draft.receiptShowLogo,
+            phone: confirmed.phone ?? draft.phone,
+            email: confirmed.email ?? draft.email,
+            website: confirmed.website ?? draft.website,
+            address: confirmed.address ?? draft.address,
+            city: confirmed.city ?? draft.city,
+            tin: confirmed.tin ?? draft.tin,
+            taxId: confirmed.tax_id ?? draft.taxId,
+            regNumber: confirmed.vrn ?? draft.regNumber,
+            logo: branding.logo,
+            brandColor: branding.primaryColor,
+            brandAccentColor: branding.accentColor,
+          };
+          setDraft(nextCompany);
+          setCompany(nextCompany);
+          window.__smartManagerCompany = nextCompany;
         } catch (e) {
-          notify("Profile changes were not saved to the server. Please try again.", "error");
+          notify(`Profile changes were not saved to the server: ${e?.message || "Please try again."}`, "error");
           return;
         }
       }
-      setCompany(draft);
-      window.__smartManagerCompany = draft;
-      try { localStorage.setItem("bs_company_profile", JSON.stringify(draft)); } catch(_e){}
+      if (!IS_CONFIGURED) {
+        setCompany(draft);
+        window.__smartManagerCompany = draft;
+        try { localStorage.setItem("bs_company_profile", JSON.stringify(draft)); } catch(_e){}
+      }
       notify("Company profile saved ✓");
     } finally {
       setIsSavingProfile(false);
@@ -32044,7 +32097,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1">Your role</h2>
         <p className="text-[12.5px] text-slate-500 mb-4">
-          Demo only — there is no login yet, so this stands in for the role a real signed-in user would have. Switching it genuinely changes which modules appear in the sidebar and whether write actions are available.
+          {IS_CONFIGURED ? "Your current role is verified by the active workspace membership. Membership changes are managed through approved workspace administration controls." : "Demo only — there is no login yet, so this stands in for the role a real signed-in user would have. Switching it genuinely changes which modules appear in the sidebar and whether write actions are available."}
         </p>
         {["Executive", "System", "Department Head", "Operations", "Front Line", "General Staff", "Oversight", "External Portal"].map((cat) => {
           const rolesInCat = ROLES.filter((r) => r.category === cat);
@@ -32056,9 +32109,10 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                 {rolesInCat.map((r) => (
                   <button
                     key={r.id}
-                    onClick={() => { logAudit("Role switched", "Settings", currentUser.role, `${currentUser.role} → ${r.id}`); setCurrentUser((u) => ({ ...u, role: r.id })); }}
+                    onClick={() => { if (!IS_CONFIGURED) { logAudit("Role switched", "Settings", currentUser.role, `${currentUser.role} → ${r.id}`); setCurrentUser((u) => ({ ...u, role: r.id })); } }}
+                    disabled={IS_CONFIGURED}
                     title={r.description}
-                    className={`text-[12.5px] font-medium rounded-lg py-2.5 px-2 border transition-colors ${
+                    className={`text-[12.5px] font-medium rounded-lg py-2.5 px-2 border transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                       currentUser.role === r.id ? "border-[#16A34A] bg-[#16A34A]/8 text-[#111827]" : "border-slate-200 text-slate-500 hover:bg-slate-50"
                     }`}
                   >
@@ -46083,7 +46137,11 @@ function SmartManager() {
         setWorkspaceResolutionError(null);
         setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
       } catch (bootstrapError) {
-        if (bootstrapError?.status === 401 || bootstrapError?.status === 403) {
+        // Only clear local credentials when Supabase itself could not verify
+        // them. A valid user can still encounter profile, membership, RLS, or
+        // transient workspace failures, which must remain retryable instead of
+        // being misrepresented as a sign-out.
+        if (!authenticatedUser && (bootstrapError?.status === 401 || bootstrapError?.status === 403)) {
           clearStoredAuthSession();
         } else {
           authDebug("Workspace resolution failed", { message: bootstrapError?.message || "unknown", authenticated: Boolean(authenticatedUser) });
@@ -46232,15 +46290,17 @@ function SmartManager() {
   useEffect(() => {
     if (session && !session.demo) {
       setCompany({
-        id: session.company.id, name: session.company.name, owner: session.fullName, industry: session.company.industry || "",
+        id: session.company.id, name: session.company.name, owner: session.fullName, industry: session.company.category || session.company.industry || "",
         country: session.company.country, currency: session.company.currency,
         taxRate: session.company.taxRate ?? 18, timezone: session.company.timezone || "Africa/Dar_es_Salaam",
         businessScale: session.company.businessScale || "large",
         createdAt: session.company.created_at || null,
         receiptWidth: session.company.receiptWidth || "80mm", receiptFooter: session.company.receiptFooter || "", receiptShowLogo: session.company.receiptShowLogo !== false,
         logo: session.company.logo || null, brandColor: session.company.brandColor || "#0B5D3B", brandAccentColor: session.company.brandAccentColor || "#16A34A",
+        phone: session.company.phone || "", email: session.company.email || "", website: session.company.website || "", address: session.company.address || "", city: session.company.city || "",
+        tin: session.company.tin || "", taxId: session.company.tax_id || "", regNumber: session.company.vrn || "",
       });
-      setCurrentUser({ name: session.fullName, role: session.role, customerRef: session.customerRef || null });
+      setCurrentUser({ name: session.fullName, role: workspaceDisplayRole(session.role), customerRef: session.customerRef || null });
     }
   }, [session]);
 
@@ -46906,22 +46966,24 @@ function SmartManager() {
             />
           )}
           {active === "settings" && (
-            <SettingsPage
-              company={company}
-              setCompany={setCompany}
-              enabledModules={enabledModules}
-              onToggleModule={toggleModule}
-              currentUser={currentUser}
-              setCurrentUser={setCurrentUser}
-              canManage={canManage}
-              darkMode={darkMode}
-              toggleDarkMode={toggleDarkMode}
-              textSize={textSize}
-              onSetTextSize={setTextSize}
-              highContrast={highContrast}
-              onToggleHighContrast={() => setHighContrast((h) => !h)}
-              exportData={{ crm, invoices, expenses, inventory, employees, posTransactions, suppliers }}
-            />
+            <ErrorBoundary renderFallback={() => <section role="alert" className="mx-auto max-w-xl rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center"><h1 className="text-lg font-semibold text-amber-950">Workspace Settings needs attention</h1><p className="mt-2 text-sm leading-6 text-amber-800">The rest of your signed-in workspace is still available. Return to the dashboard and try Settings again; this did not sign you out.</p><button type="button" onClick={() => go("dashboard")} className="mt-5 rounded-lg bg-amber-800 px-4 py-2 text-sm font-semibold text-white">Return to dashboard</button></section>}>
+              <SettingsPage
+                company={company}
+                setCompany={setCompany}
+                enabledModules={enabledModules}
+                onToggleModule={toggleModule}
+                currentUser={currentUser}
+                setCurrentUser={setCurrentUser}
+                canManage={canManage}
+                darkMode={darkMode}
+                toggleDarkMode={toggleDarkMode}
+                textSize={textSize}
+                onSetTextSize={setTextSize}
+                highContrast={highContrast}
+                onToggleHighContrast={() => setHighContrast((h) => !h)}
+                exportData={{ crm, invoices, expenses, inventory, employees, posTransactions, suppliers }}
+              />
+            </ErrorBoundary>
           )}
           {!["dashboard", "crm", "sales", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
@@ -46996,6 +47058,10 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (!this.state.hasError) return this.props.children;
+
+    if (typeof this.props.renderFallback === "function") {
+      return this.props.renderFallback(this.state.error);
+    }
 
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#F8FAFC] p-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>

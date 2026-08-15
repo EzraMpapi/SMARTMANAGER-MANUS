@@ -20,7 +20,8 @@ describe("Smart Manager Authentication Navigation & Session Warning Specificatio
 
   it("keeps credential and approved social provider handoffs on the shared authenticated application route", () => {
     expect(publicAuthSource).toContain('window.location.assign(withoutAuthView())');
-    expect(publicAuthSource).toContain('authorize?provider=${encodeURIComponent(provider)}');
+    expect(publicAuthSource).toContain("code_challenge_method: \"S256\"");
+    expect(publicAuthSource).toContain("OAUTH_PKCE_VERIFIER_STORAGE_KEY");
     expect(enterpriseAuthSource).toContain('onOAuth("google")');
     expect(enterpriseAuthSource).toContain('onOAuth("azure")');
     expect(enterpriseAuthSource).toContain('onOAuth("apple")');
@@ -33,5 +34,18 @@ describe("Smart Manager Authentication Navigation & Session Warning Specificatio
     expect(dashboardSource).toContain("verified membership on the server");
     expect(dashboardSource).toContain("GEO_ANOMALY");
     expect(dashboardSource).toContain("unusual sign-in location detected");
+  });
+
+  it("keeps a verified Supabase session recoverable when profile or workspace resolution fails", () => {
+    expect(dashboardSource).toContain("if (!authenticatedUser && (bootstrapError?.status === 401 || bootstrapError?.status === 403))");
+    expect(dashboardSource).toContain("Workspace connection needs attention");
+    expect(dashboardSource).toContain("workspaceDisplayRole");
+    expect(dashboardSource).toContain("PERSISTED_WORKSPACE_ROLE_LABELS");
+  });
+
+  it("routes Workspace Settings writes through an authorized, server-confirmed company update", () => {
+    expect(dashboardSource).toContain("workspace: {");
+    expect(dashboardSource).toContain("const confirmed = branding.company || {}");
+    expect(dashboardSource).toContain("Workspace Settings needs attention");
   });
 });

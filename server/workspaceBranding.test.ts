@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeLogoBase64, isRecognizedLogo, normalizeBrandColor } from "./workspaceBranding";
+import { canManageWorkspaceBrandingRole, decodeLogoBase64, isRecognizedLogo, normalizeBrandColor } from "./workspaceBranding";
 
 describe("workspace branding validation", () => {
   it("normalizes valid six-digit hexadecimal colors and rejects malformed input", () => {
@@ -20,5 +20,12 @@ describe("workspace branding validation", () => {
     expect(isRecognizedLogo(pngHeader, "image/png")).toBe(true);
     expect(isRecognizedLogo(Buffer.from("not-an-image"), "image/png")).toBe(false);
     expect(isRecognizedLogo(Buffer.from("<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>"), "image/svg+xml")).toBe(true);
+  });
+
+  it("authorizes persisted owner and administrator roles while rejecting standard members", () => {
+    expect(canManageWorkspaceBrandingRole("owner")).toBe(true);
+    expect(canManageWorkspaceBrandingRole("admin")).toBe(true);
+    expect(canManageWorkspaceBrandingRole("staff")).toBe(false);
+    expect(canManageWorkspaceBrandingRole("viewer")).toBe(false);
   });
 });

@@ -5,7 +5,7 @@ import { resolveVerifiedProfile } from "./aiApprovals";
 import { storagePut } from "./storage";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
-const MANAGE_BRANDING_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
+const MANAGE_BRANDING_ROLES = new Set(["owner", "admin", "Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
 const MIME_EXTENSIONS: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -13,8 +13,32 @@ const MIME_EXTENSIONS: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 
+export function canManageWorkspaceBrandingRole(role: string) {
+  return MANAGE_BRANDING_ROLES.has(role);
+}
+
 type LogoPayload = { mimeType: keyof typeof MIME_EXTENSIONS; base64: string };
-type BrandingInput = { primaryColor: string; accentColor: string; logo?: LogoPayload | null; removeLogo?: boolean };
+type WorkspaceSettings = {
+  name: string;
+  category?: string;
+  country?: string;
+  currency?: string;
+  taxRate?: number;
+  timezone?: string;
+  businessScale?: string;
+  receiptWidth?: string;
+  receiptFooter?: string;
+  receiptShowLogo?: boolean;
+  phone?: string;
+  email?: string;
+  website?: string;
+  address?: string;
+  city?: string;
+  tin?: string;
+  taxId?: string;
+  vrn?: string;
+};
+type BrandingInput = { primaryColor: string; accentColor: string; logo?: LogoPayload | null; removeLogo?: boolean; workspace?: WorkspaceSettings };
 
 export function normalizeBrandColor(value: string) {
   const color = value.trim().toUpperCase();
@@ -44,7 +68,7 @@ export function isRecognizedLogo(bytes: Buffer, mimeType: string) {
   return false;
 }
 
-async function updateCompanyBranding(companyId: string, token: string, values: Record<string, string | null>) {
+async function updateCompanyBranding(companyId: string, token: string, values: Record<string, string | number | boolean | null>) {
   if (!ENV.supabaseUrl || !ENV.supabaseAnonKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Workspace branding is not configured." });
   const response = await fetch(`${ENV.supabaseUrl}/rest/v1/companies?id=eq.${encodeURIComponent(companyId)}`, {
     method: "PATCH",
@@ -63,7 +87,7 @@ async function updateCompanyBranding(companyId: string, token: string, values: R
 
 export async function saveWorkspaceBranding(req: CreateExpressContextOptions["req"], input: BrandingInput) {
   const { profile, token } = await resolveVerifiedProfile(req);
-  if (!MANAGE_BRANDING_ROLES.has(profile.role)) {
+  if (!canManageWorkspaceBrandingRole(profile.role)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Only an organization administrator can change workspace branding." });
   }
 
@@ -80,7 +104,28 @@ export async function saveWorkspaceBranding(req: CreateExpressContextOptions["re
     logoUrl = uploaded.url;
   }
 
+  const workspace = input.workspace;
   const company = await updateCompanyBranding(profile.company_id, token, {
+    ...(workspace ? {
+      name: workspace.name.trim(),
+      category: workspace.category?.trim() || null,
+      country: workspace.country?.trim() || null,
+      currency: workspace.currency?.trim() || null,
+      tax_rate: workspace.taxRate ?? null,
+      timezone: workspace.timezone?.trim() || null,
+      business_scale: workspace.businessScale?.trim() || null,
+      receipt_width: workspace.receiptWidth?.trim() || null,
+      receipt_footer: workspace.receiptFooter?.trim() || null,
+      receipt_show_logo: workspace.receiptShowLogo ?? true,
+      phone: workspace.phone?.trim() || null,
+      email: workspace.email?.trim() || null,
+      website: workspace.website?.trim() || null,
+      address: workspace.address?.trim() || null,
+      city: workspace.city?.trim() || null,
+      tin: workspace.tin?.trim() || null,
+      tax_id: workspace.taxId?.trim() || null,
+      vrn: workspace.vrn?.trim() || null,
+    } : {}),
     brand_primary_color: primaryColor,
     brand_accent_color: accentColor,
     ...(logoUrl ? { logo: logoUrl } : input.removeLogo ? { logo: null } : {}),
@@ -88,6 +133,7 @@ export async function saveWorkspaceBranding(req: CreateExpressContextOptions["re
 
   return {
     companyId: profile.company_id,
+    company,
     logo: typeof company.logo === "string" ? company.logo : logoUrl ?? null,
     primaryColor: typeof company.brand_primary_color === "string" ? company.brand_primary_color : primaryColor,
     accentColor: typeof company.brand_accent_color === "string" ? company.brand_accent_color : accentColor,

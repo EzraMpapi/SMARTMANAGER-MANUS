@@ -5,6 +5,7 @@ import { BrandLogo } from "./BrandLogo";
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode | ((error: Error) => ReactNode);
 }
 
 interface State {
@@ -24,6 +25,11 @@ class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return typeof this.props.fallback === "function"
+          ? this.props.fallback(this.state.error ?? new Error("Unknown application error"))
+          : this.props.fallback;
+      }
       return (
         <div className="flex items-center justify-center min-h-screen p-8 bg-background">
           <div className="flex flex-col items-center w-full max-w-2xl p-8">

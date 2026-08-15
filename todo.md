@@ -473,3 +473,9 @@
 - [x] Add automated browser navigation coverage for credential and social sign-in redirection.
 - [x] Add a tenant-switch dropdown for multi-workspace accounts in the user header.
 - [x] Add geographic anomaly detection notification toasts for unusual sign-in locations.
+- [x] Audit the complete post-authentication, workspace-resolution, protected-route, OAuth callback, and Workspace Settings architecture without altering the existing signup fix.
+- [x] Reproduce and trace the shared email/password and Google post-sign-in return-to-login failure, including session restoration and workspace membership resolution.
+- [x] Diagnose and repair the Workspace Settings navigation/data-loading failure with server-authorized tenant access preserved.
+- [x] Proactively inspect and repair related runtime, routing, API, database, state-management, and tenant-isolation defects revealed by the audit.
+- [ ] Add or update focused regression tests, run the full suite and production build, then publish the verified post-authentication reliability release.
+- [x] Support Supabase OAuth authorization-code callbacks with PKCE exchange so Google sign-in persists the verified session before app routing.
