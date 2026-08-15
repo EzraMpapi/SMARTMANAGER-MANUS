@@ -37,6 +37,8 @@ describe("workspace membership administration security contract", () => {
     expect(membershipUi).toContain("confirmRemovalId");
     expect(membershipUi).toContain('role="alert"');
     expect(dashboardSource).toContain("<WorkspaceMembershipManager");
+    expect(dashboardSource).toContain("<UploadCloud");
+    expect(dashboardSource).not.toContain("<Upload ");
   });
 
   it("retains the verified create-or-join workspace setup boundary for authenticated users without a membership", () => {

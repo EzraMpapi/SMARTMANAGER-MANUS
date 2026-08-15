@@ -485,5 +485,5 @@
 - [x] Add server-authorized administrator procedures for listing, assigning roles to, and removing workspace members without allowing self-escalation or cross-tenant management.
 - [x] Add an administrator workspace membership management screen with accessible loading, error, confirmation, and empty states.
 - [x] Add a self-service create-or-join workspace experience for authenticated accounts that have no company membership, preserving atomic tenant bootstrap and RLS.
-- [ ] Add authorization and onboarding regression coverage, validate live flows, run the full suite and production build, and publish the enhancement.
-- [ ] Diagnose and repair the live Workspace Settings runtime error so the new membership management panel is reachable by authorized owners and administrators.
+- [x] Add authorization and onboarding regression coverage, validate live flows, run the full suite and production build, and publish the enhancement.
+- [x] Diagnose and repair the live Workspace Settings runtime error so the new membership management panel is reachable by authorized owners and administrators.
