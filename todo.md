@@ -446,3 +446,5 @@
 - [x] Add loading spinner and success toast notification for individual and bulk session revocation actions.
 - [ ] Display specific device icons and browser names for each active session in Session Management.
 - [x] Display specific device icons and browser names for each active session in Session Management.
+- [ ] Display approximate geographical location (city and country) based on IP address for each active session in Session Management.
+- [x] Display approximate geographical location (city and country) based on IP address for each active session in Session Management.
