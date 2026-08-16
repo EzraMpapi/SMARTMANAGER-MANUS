@@ -486,3 +486,4 @@
 - [x] Repair the POS history fallback so confirmed transactions retain their server item and return records when relationship expansion is unavailable.
 - [x] Repair the authenticated POS return RPC `format()` error without weakening RLS, idempotency, stock locking, or audit behavior.
 - [x] Repair post-confirmation POS fallback reads so confirmed sale and return outcomes are not mistaken for local failures and reconciliation events are recorded durably.
+- [x] Repair tenant-scoped table reloads after a silent access-token refresh so stale pre-refresh 401 responses do not leave POS data empty.

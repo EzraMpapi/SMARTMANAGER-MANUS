@@ -92,6 +92,7 @@ function persistAuthSession(authResult, { remember = true } = {}) {
   inactiveStorage.removeItem(inactiveRefreshKey);
   activeStorage.setItem(activeAccessKey, authResult.access_token);
   if (authResult.refresh_token) activeStorage.setItem(activeRefreshKey, authResult.refresh_token);
+  window.dispatchEvent(new Event("smart-manager:auth-session-updated"));
 }
 
 function clearStoredAuthSession() {
@@ -830,6 +831,12 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
     companyMutationBus.listeners.add(reconcile);
     return () => companyMutationBus.listeners.delete(reconcile);
   }, [isLive, reload, setRows, table]);
+  useEffect(() => {
+    if (!isLive || typeof window === "undefined") return undefined;
+    const reloadAfterSessionUpdate = () => { reload(); };
+    window.addEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+    return () => window.removeEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+  }, [isLive, reload]);
 
   return { rows: rowsState, setRows, loading, refreshing, error, unavailable, reload };
 }
