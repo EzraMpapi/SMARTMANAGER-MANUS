@@ -13,14 +13,14 @@ export function EnterpriseModuleHeader({
   secondaryActions?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-slate-800/80 mb-6">
-      <div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-slate-800/80 mb-6">
+      <div className="min-w-0">
         <h1 className="text-[22px] font-bold text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: "Poppins, sans-serif" }}>
           {title}
         </h1>
         {description && <p className="text-[13.5px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{description}</p>}
       </div>
-      <div className="flex items-center gap-3 shrink-0 flex-wrap">
+      <div className="flex w-full items-center gap-3 shrink-0 flex-wrap md:w-auto">
         {secondaryActions}
         {primaryAction}
       </div>
@@ -158,8 +158,8 @@ export function EnterpriseFilterBar({
 }) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-6 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm">
-      <div className="flex items-center gap-3 flex-1 flex-wrap">
-        <div className="relative min-w-[260px] flex-1 sm:flex-initial">
+      <div className="flex min-w-0 items-center gap-3 flex-1 flex-wrap">
+        <div className="relative min-w-0 w-full flex-1 sm:min-w-[260px] sm:w-auto sm:flex-initial">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -171,7 +171,7 @@ export function EnterpriseFilterBar({
         </div>
         {filterContent}
       </div>
-      {actions && <div className="flex items-center gap-2 flex-wrap shrink-0">{actions}</div>}
+      {actions && <div className="flex w-full items-center gap-2 flex-wrap shrink-0 lg:w-auto">{actions}</div>}
     </div>
   );
 }

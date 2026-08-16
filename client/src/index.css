@@ -159,6 +159,41 @@
     min-width: 0;
   }
 
+  /* Shared segmented-module navigation contract. These class combinations are
+     used throughout the ERP for local module tabs; each tab keeps its
+     readable intrinsic width and the strip—not the page—scrolls. */
+  .flex.items-center.gap-1.bg-slate-100.rounded-lg.p-1.overflow-x-auto {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .flex.items-center.gap-1.bg-slate-100.rounded-lg.p-1.overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
+
+  .flex.items-center.gap-1.bg-slate-100.rounded-lg.p-1.overflow-x-auto > button {
+    flex: 0 0 auto;
+    min-width: max-content;
+    white-space: nowrap;
+  }
+
+  .sm-mobile-action-group {
+    min-width: 0;
+  }
+
+  .sm-table-scroll {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   @media (min-width: 640px) {
     .container {
       padding-left: 1.5rem; /* 24px - tablet padding */
@@ -172,6 +207,47 @@
       padding-right: 2rem;
       max-width: 1280px; /* Standard content width */
     }
+  }
+}
+
+/* Narrow screens use composition changes—not compressed text—to keep content
+   readable. This shell guard supplements intentional tab and table scrolling
+   inside their dedicated containers. */
+@media (max-width: 639px) {
+  #root {
+    overflow-x: clip;
+  }
+
+  .flex.items-center.gap-1.bg-slate-100.rounded-lg.p-1.overflow-x-auto {
+    width: 100%;
+  }
+
+  .sm-mobile-action-group {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: .5rem;
+  }
+
+  .sm-mobile-action-group > button {
+    min-width: 0;
+    flex: 1 1 min(100%, 9.5rem);
+  }
+
+  #root :where(input, select, textarea) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #root .overflow-x-auto {
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #root .overflow-x-auto > table {
+    min-width: max-content;
   }
 }
 

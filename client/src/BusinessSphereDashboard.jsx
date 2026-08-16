@@ -35,6 +35,7 @@ import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPasswordView, VerificationView } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
+import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 
@@ -6662,23 +6663,7 @@ function CRM({ crm, invoices, expenses, suppliers }) {
         <p className="text-[13px] text-slate-500 mt-1">Leads, opportunities, accounts, and the people behind them</p>
       </div>
 
-      <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
-        {CRM_TABS.map((t) => {
-          const Icon = t.icon;
-          const isActive = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
-                isActive ? "bg-white text-[#111827] shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <Icon size={13} /> {t.label}
-            </button>
-          );
-        })}
-      </div>
+      <ScrollableModuleTabs tabs={CRM_TABS} activeTab={tab} onChangeTab={setTab} />
 
       {tab === "opportunities" && <Opportunities leads={leads} onSelect={setSelected} />}
       {tab === "parties" && <PartiesLedger leads={leads} invoices={invoices} expenses={expenses} suppliers={suppliers} />}
@@ -6693,7 +6678,7 @@ function CRM({ crm, invoices, expenses, suppliers }) {
         <div>
           <p className="text-[13px] text-slate-500">{filtered.length} leads across {STAGES.length} stages</p>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="sm-mobile-action-group flex gap-2 shrink-0">
           <button
             onClick={() => setShowImport(true)}
             className="btn-secondary text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5"

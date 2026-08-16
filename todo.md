@@ -443,3 +443,7 @@
 - [x] Run browser-available mobile authentication scenarios and record sanitized release evidence.
 - [x] Prepare the physical-device validation and approved-square-icon handoffs.
 - [x] Publish and deliver the mobile acceptance evidence update.
+- [x] Review the supplied responsive requirements and identify shared tab, header, action, search, card, and table layout primitives.
+- [x] Repair the CRM mobile tab overflow so labels stay readable and horizontally scrollable without collision.
+- [x] Apply shared responsive safeguards for module headers, action groups, searches, cards, and wide table wrappers.
+- [x] Add regression coverage, validate target breakpoints, publish, and deliver the global responsive update.
