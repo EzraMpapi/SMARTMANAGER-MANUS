@@ -31,6 +31,7 @@ import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from
 import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
 import { addProductToPosCart, calculatePosPaymentSummary, createPosSaleAttempt, productMatchesPosLookup } from "./lib/posTransactionEngine";
 import { createPendingPosSale, isRetryablePosTransportError, readPendingPosSales, updatePendingPosSale, writePendingPosSales } from "./lib/posPendingQueue";
+import { DEFAULT_POS_DEVICE_PROFILE, normalizeScannerInput, readPosDeviceProfile, writePosDeviceProfile } from "./lib/posDeviceProfiles";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -35678,6 +35679,7 @@ function BulkSmsView({ crm }) {
 const POS_TABS = [
   { id: "checkout", label: "Checkout", icon: ShoppingBag },
   { id: "history", label: "Register History", icon: Receipt },
+  { id: "reconciliation", label: "Reconciliation", icon: RefreshCw },
 ];
 
 // POS Shifts & Cash Drawer — the control a till cannot run without, and
@@ -35918,6 +35920,19 @@ function POS({ inventory, transactionsHook, company, currentUser }) {
   const [tab, setTab] = useState("checkout");
   const transactions = transactionsHook;
   const customers = useCompanyTable("crm_contacts", contactsSeed, { order: { col: "name", ascending: true }, mapRow: mapContactRow });
+  const deviceScope = useMemo(() => ({ companyId: company?.id || "workspace", userId: currentUser?.id || "session" }), [company?.id, currentUser?.id]);
+  const [deviceProfile, setDeviceProfile] = useState(DEFAULT_POS_DEVICE_PROFILE);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setDeviceProfile(readPosDeviceProfile(window.localStorage, deviceScope));
+  }, [deviceScope]);
+
+  function updateDeviceProfile(patch) {
+    const next = { ...deviceProfile, ...patch };
+    const saved = typeof window === "undefined" ? next : writePosDeviceProfile(window.localStorage, deviceScope, next);
+    setDeviceProfile(saved);
+  }
 
   const todayStr = TODAY.toISOString().slice(0, 10);
   const stats = useMemo(() => {
@@ -35960,17 +35975,84 @@ function POS({ inventory, transactionsHook, company, currentUser }) {
         })}
       </div>
 
+      <details className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <summary className="cursor-pointer text-[12.5px] font-semibold text-slate-700">Counter device profile <span className="font-normal text-slate-400">· stored only on this device</span></summary>
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <label className="text-[11px] font-medium text-slate-500">Printer label<input value={deviceProfile.printerLabel} onChange={(event) => updateDeviceProfile({ printerLabel: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[12px] text-slate-700 outline-none focus:border-[#16A34A]" placeholder="e.g. Counter 1" /></label>
+          <label className="text-[11px] font-medium text-slate-500">Output mode<select value={deviceProfile.printerMode} onChange={(event) => updateDeviceProfile({ printerMode: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[12px] text-slate-700 outline-none focus:border-[#16A34A]"><option value="browser_print">Browser print dialog</option><option value="pdf_only">Save as PDF</option></select></label>
+          <label className="text-[11px] font-medium text-slate-500">Paper width<select value={deviceProfile.paperWidth} onChange={(event) => updateDeviceProfile({ paperWidth: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[12px] text-slate-700 outline-none focus:border-[#16A34A]"><option value="58mm">58mm thermal</option><option value="80mm">80mm thermal</option><option value="A4">A4</option></select></label>
+          <label className="text-[11px] font-medium text-slate-500">Receipt copies<input type="number" min="1" max="5" value={deviceProfile.copyCount} onChange={(event) => updateDeviceProfile({ copyCount: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[12px] text-slate-700 outline-none focus:border-[#16A34A]" /></label>
+          <label className="text-[11px] font-medium text-slate-500">Scanner terminator<select value={deviceProfile.scanTerminator} onChange={(event) => updateDeviceProfile({ scanTerminator: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[12px] text-slate-700 outline-none focus:border-[#16A34A]"><option value="Enter">Enter</option><option value="Tab">Tab</option></select></label>
+          <label className="text-[11px] font-medium text-slate-500">Optional scan prefix<input value={deviceProfile.scannerPrefix} onChange={(event) => updateDeviceProfile({ scannerPrefix: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[12px] text-slate-700 outline-none focus:border-[#16A34A]" placeholder="e.g. POS-" /></label>
+          <label className="text-[11px] font-medium text-slate-500">Minimum scan length<input type="number" min="1" max="64" value={deviceProfile.minScanLength} onChange={(event) => updateDeviceProfile({ minScanLength: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[12px] text-slate-700 outline-none focus:border-[#16A34A]" /></label>
+          <label className="text-[11px] font-medium text-slate-500">Scan debounce (ms)<input type="number" min="0" max="1500" step="50" value={deviceProfile.scanDebounceMs} onChange={(event) => updateDeviceProfile({ scanDebounceMs: event.target.value })} className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[12px] text-slate-700 outline-none focus:border-[#16A34A]" /></label>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-5 text-[11.5px] text-slate-600">
+          <label className="inline-flex items-center gap-2"><input type="checkbox" checked={deviceProfile.autoPrint} onChange={(event) => updateDeviceProfile({ autoPrint: event.target.checked })} /> Automatically open receipt output after a confirmed sale</label>
+          <label className="inline-flex items-center gap-2"><input type="checkbox" checked={deviceProfile.scanFeedback} onChange={(event) => updateDeviceProfile({ scanFeedback: event.target.checked })} /> Sound on accepted scan</label>
+        </div>
+        <p className="mt-2 text-[10.5px] text-slate-400">Browser printing opens the system print dialog; scanners are supported as keyboard-wedge devices. No printer credentials, serial ports, payment tokens, or mobile-money PINs are stored.</p>
+      </details>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {POS_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "checkout" && <Checkout inventory={inventory} transactions={transactions} company={company} currentUser={currentUser} customers={customers.rows} />}
+      {tab === "checkout" && <Checkout inventory={inventory} transactions={transactions} company={company} currentUser={currentUser} customers={customers.rows} deviceProfile={deviceProfile} />}
       {tab === "history" && <RegisterHistory transactions={transactions} inventory={inventory} company={company} />}
+      {tab === "reconciliation" && <PosReconciliationDashboard currentUser={currentUser} />}
     </div>
   );
 }
 
-function Checkout({ inventory, transactions, company, currentUser, customers }) {
+function PosReconciliationDashboard({ currentUser }) {
+  const reconciliation = useCompanyTable("pos_sync_events", [], { order: { col: "updated_at", ascending: false } });
+  const [statusFilter, setStatusFilter] = useState("all");
+  const rows = useMemo(() => reconciliation.rows.filter((row) => statusFilter === "all" || row.status === statusFilter), [reconciliation.rows, statusFilter]);
+  const syncedCount = reconciliation.rows.filter((row) => row.status === "synced").length;
+  const attentionCount = reconciliation.rows.filter((row) => row.status === "needs_attention").length;
+  const displayDate = (value) => value ? new Date(value).toLocaleString() : "—";
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[17px] font-semibold text-[#111827]">POS reconciliation</h2>
+          <p className="mt-1 text-[12.5px] text-slate-500">Manager view of server-observed pending-sale outcomes for this workspace. Device-only pending carts remain visible to the cashier until they reach the server.</p>
+        </div>
+        <button type="button" onClick={() => reconciliation.reload()} disabled={reconciliation.refreshing} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+          <RefreshCw size={13} className={reconciliation.refreshing ? "animate-spin" : ""} /> Refresh
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          ["Server outcomes", reconciliation.rows.length, "#2563EB"],
+          ["Synchronized", syncedCount, "#16A34A"],
+          ["Needs attention", attentionCount, "#EF4444"],
+        ].map(([label, value, color]) => <div key={label} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"><p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-[21px] font-semibold" style={{ color }}>{value}</p></div>)}
+      </div>
+
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter reconciliation outcomes">
+        {["all", "synced", "needs_attention"].map((status) => <button key={status} type="button" onClick={() => setStatusFilter(status)} className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${statusFilter === status ? "bg-[#0B5D3B] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{status === "all" ? "All outcomes" : status === "synced" ? "Synchronized" : "Needs attention"}</button>)}
+      </div>
+
+      <div className="sm-table-scroll rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full min-w-[640px] text-left">
+          <thead className="bg-slate-50 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400"><tr><th className="px-4 py-3">Outcome</th><th className="px-4 py-3">Request key</th><th className="px-4 py-3">Server transaction</th><th className="px-4 py-3">Updated</th><th className="px-4 py-3">Detail</th></tr></thead>
+          <tbody className="text-[12px] text-slate-600">
+            {rows.map((row) => <tr key={row.id} className="border-t border-slate-100"><td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-[10.5px] font-semibold ${row.status === "synced" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>{row.status === "synced" ? "Synchronized" : "Needs attention"}</span></td><td className="px-4 py-3 font-mono text-[10.5px] text-slate-500">{String(row.idempotency_key || "—").slice(0, 22)}</td><td className="px-4 py-3 font-mono text-[10.5px] text-slate-500">{row.transaction_id ? String(row.transaction_id).slice(0, 12) : "—"}</td><td className="px-4 py-3">{displayDate(row.updated_at || row.created_at)}</td><td className="max-w-[260px] px-4 py-3 text-slate-500">{row.message || "—"}</td></tr>)}
+            {!reconciliation.loading && rows.length === 0 && <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-400">No server reconciliation outcomes match this filter.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      {(reconciliation.error || reconciliation.unavailable) && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">Reconciliation outcomes are temporarily unavailable. Cashier pending queues remain explicit and will retry only when a connection is restored.</p>}
+      <p className="text-[10.5px] text-slate-400">Viewing as {currentUser?.role || "workspace member"}. Access is constrained by the workspace’s existing database row-level security.</p>
+    </div>
+  );
+}
+
+function Checkout({ inventory, transactions, company, currentUser, customers, deviceProfile }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [cart, setCart] = useState([]); // [{ sku, name, price, qty }]
@@ -35980,6 +36062,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers }) 
   const [customerId, setCustomerId] = useState("guest");
   const [receipt, setReceipt] = useState(null);
   const [busy, setBusy] = useState(false);
+  const scannerLastAcceptedRef = useRef(0);
   const queueScope = useMemo(() => ({ companyId: company?.id || "workspace", userId: currentUser?.id || "session" }), [company?.id, currentUser?.id]);
   const [pendingSales, setPendingSales] = useState([]);
 
@@ -36192,15 +36275,36 @@ function Checkout({ inventory, transactions, company, currentUser, customers }) 
   }, [pendingSales]);
 
   function handleScan(event) {
-    if (event.key !== "Enter" || !query.trim()) return;
+    if (event.key !== (deviceProfile?.scanTerminator || "Enter") || !query.trim()) return;
     event.preventDefault();
-    const normalized = query.trim().toLocaleLowerCase();
+    const normalized = normalizeScannerInput(query, deviceProfile).toLocaleLowerCase();
+    if (normalized.length < Number(deviceProfile?.minScanLength || 3)) {
+      notify(`Scan ignored: enter at least ${Number(deviceProfile?.minScanLength || 3)} barcode characters.`, "error");
+      return;
+    }
+    const now = Date.now();
+    if (now - scannerLastAcceptedRef.current < Number(deviceProfile?.scanDebounceMs || 0)) return;
     const exact = products.find((product) => [product.barcode, product.sku, product.code].some((value) => String(value || "").trim().toLocaleLowerCase() === normalized));
     if (!exact) {
       notify(`No product matches barcode or SKU “${query.trim()}”.`, "error");
       return;
     }
+    scannerLastAcceptedRef.current = now;
     addToCart(exact);
+    if (deviceProfile?.scanFeedback !== false && typeof window !== "undefined") {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audio = AudioContext && new AudioContext();
+        if (audio) {
+          const oscillator = audio.createOscillator();
+          const gain = audio.createGain();
+          oscillator.frequency.value = 880;
+          gain.gain.setValueAtTime(0.035, audio.currentTime);
+          oscillator.connect(gain); gain.connect(audio.destination); oscillator.start(); oscillator.stop(audio.currentTime + 0.06);
+          window.setTimeout(() => audio.close?.(), 100);
+        }
+      } catch (_error) { /* Audio feedback is optional and must not affect checkout. */ }
+    }
     setQuery("");
   }
 
@@ -36464,13 +36568,14 @@ function Checkout({ inventory, transactions, company, currentUser, customers }) 
         </div>
       </div>
 
-      {receipt && <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} company={company} />}
+      {receipt && <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} company={company} deviceProfile={deviceProfile} />}
     </div>
   );
 }
 
-function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company }) {
+function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company, deviceProfile }) {
   const returns = receipt.returns || [];
+  const autoOutputTriggeredRef = useRef(false);
   const refunded = returns.reduce((s, r) => s + r.refundTotal, 0);
   const fullyReturned = receipt.items.every((it) => {
     const returnedQty = returns.reduce((s, r) => s + (r.items.find((ri) => ri.sku === it.sku)?.qty || 0), 0);
@@ -36485,12 +36590,23 @@ function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company }) 
   // printing whatever happens to be on screen, honoring the real
   // header/footer/logo preferences set in Settings.
   function printReceipt() {
-    const width = company?.receiptWidth || "80mm";
+    const width = deviceProfile?.paperWidth || company?.receiptWidth || "80mm";
     const showLogo = company?.receiptShowLogo !== false;
     const footer = company?.receiptFooter || "Thank you for your business!";
+    const copyCount = Math.min(5, Math.max(1, Number(deviceProfile?.copyCount) || 1));
     const win = window.open("", "_blank", "width=400,height=600");
     if (!win) { notify("Pop-up blocked — allow pop-ups to print receipts.", "error"); return; }
     const itemRows = receipt.items.map((it) => `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>${it.qty}× ${it.name}</span><span>${money(it.qty * it.price)}k</span></div>`).join("");
+    const receiptCopy = (copyNumber) => `
+      <section class="receipt-copy">
+        ${showLogo ? "<h2>" + (company?.name || "Receipt") + "</h2>" : ""}
+        <p style="text-align:center;margin:0;">${receipt.id} · ${TODAY.toISOString().slice(0, 10)}${copyCount > 1 ? ` · Copy ${copyNumber}/${copyCount}` : ""}</p>
+        <hr />
+        ${itemRows}
+        <hr />
+        <div class="total"><span>Total</span><span>TZS ${money(receipt.total)}k</span></div>
+        <div class="footer">${footer}</div>
+      </section>`;
     win.document.write(`
       <html><head><title>Receipt ${receipt.id}</title>
       <style>
@@ -36499,21 +36615,23 @@ function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company }) 
         hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
         .total { display:flex; justify-content:space-between; font-weight:bold; margin-top: 6px; }
         .footer { text-align:center; margin-top: 14px; font-size: 0.9em; }
+        .receipt-copy { break-after: page; page-break-after: always; }
+        .receipt-copy:last-child { break-after: auto; page-break-after: auto; }
       </style></head>
-      <body>
-        ${showLogo ? "<h2>" + (company?.name || "Receipt") + "</h2>" : ""}
-        <p style="text-align:center;margin:0;">${receipt.id} · ${TODAY.toISOString().slice(0, 10)}</p>
-        <hr />
-        ${itemRows}
-        <hr />
-        <div class="total"><span>Total</span><span>TZS ${money(receipt.total)}k</span></div>
-        <div class="footer">${footer}</div>
-      </body></html>
+      <body>${Array.from({ length: copyCount }, (_, index) => receiptCopy(index + 1)).join("")}</body></html>
     `);
     win.document.close();
     win.focus();
+    if (deviceProfile?.printerMode === "pdf_only") notify("Choose “Save as PDF” in the system print dialog to complete this receipt export.");
     win.print();
   }
+
+  useEffect(() => {
+    if (!deviceProfile?.autoPrint || autoOutputTriggeredRef.current) return undefined;
+    autoOutputTriggeredRef.current = true;
+    const timer = window.setTimeout(() => printReceipt(), 120);
+    return () => window.clearTimeout(timer);
+  }, [deviceProfile?.autoPrint, receipt.id]);
 
   return (
     <div className="fixed inset-0 z-30 flex justify-end">

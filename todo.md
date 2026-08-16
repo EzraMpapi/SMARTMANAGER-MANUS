@@ -471,3 +471,8 @@
 - [x] Test pending, synchronized, duplicate, failed, and offline/reconnect POS scenarios; publish and deliver the final POS upgrade.
 - [x] Define explicit offline queue and sync boundaries without presenting unconfirmed sales as completed.
 - [x] Validate POS security, RLS, responsive layouts, tests, production build, publish, and deliver the upgrade.
+- [x] Audit POS staging access, reconciliation ledger fields, and existing receipt/scanner configuration contracts.
+- [x] Add a manager-facing tenant reconciliation dashboard with safe filters and confirmed/pending outcome visibility.
+- [x] Add configurable receipt-printer and barcode-scanner profiles with browser-safe operational behavior.
+- [x] Run automated POS acceptance coverage, TypeScript validation, and production build validation with documented evidence.
+- [ ] Execute staging acceptance coverage, validate security and responsiveness, publish, and deliver the POS operations update.
