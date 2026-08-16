@@ -514,4 +514,4 @@
 - [x] Inspect the deployed native passkey configuration, supported Supabase management path, audit-log contract, scheduled-review capability, and existing role update controls.
 - [x] Resolve passkey workspace readiness through the approved Supabase configuration path or present a precise administrator recovery path when project-level configuration cannot be applied programmatically.
 - [x] Add quarterly administrator in-app security-review reminders with an email-ready, unsent delivery state until an approved project sender is available, plus a tenant-scoped audit-evidence export with confirmed role-based access boundaries.
-- [ ] Add an explicit role-change approval workflow with tenant-safe authorization, durable audit records, validation, publication, and GitHub delivery.
+- [x] Add an explicit role-change approval workflow with tenant-safe authorization, durable audit records, validation, publication, and GitHub delivery.
