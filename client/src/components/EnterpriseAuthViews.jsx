@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle2, ChevronDown, Eye, EyeOff, Globe2, LockKeyhol
 import { PASSWORD_REQUIREMENT_LABELS, getPasswordChecks, isEnterprisePassword, passwordStrength } from "../lib/authOnboarding";
 import { useLanguage } from "../contexts/LanguageContext";
 import { BrandLogo } from "./BrandLogo";
+import { LoginModuleEcosystem } from "./LoginModuleEcosystem";
 
 const copy = {
   en: {
@@ -73,11 +74,12 @@ export function EnterpriseAuthShell({ title, subtitle, children, asideTitle = "Y
     <div className="mx-auto flex min-h-screen max-w-[1680px]">
       <aside className="relative hidden w-[45%] overflow-hidden bg-[#071c15] px-12 py-10 lg:flex lg:flex-col lg:justify-between xl:px-16">
         <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "radial-gradient(circle at 18% 22%, rgba(0,166,81,.38), transparent 27%), radial-gradient(circle at 92% 78%, rgba(31,117,254,.2), transparent 27%), linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)", backgroundSize: "auto,auto,54px 54px,54px 54px" }} />
+        <LoginModuleEcosystem variant="desktop" />
         <div className="relative z-10"><BrandLogo variant="full" priority className="w-[min(25rem,95%)] rounded-[1.7rem]" /></div>
         <div className="relative z-10 max-w-[31rem] pb-14"><p className="mb-5 text-[11px] font-bold uppercase tracking-[.19em] text-emerald-300">{ui.secure}</p><h1 className="max-w-[11ch] text-[48px] font-bold leading-[1.03] tracking-[-.05em] text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>{asideTitle}</h1><p className="mt-6 max-w-md text-[15px] leading-7 text-emerald-50/72">{asideCopy}</p><div className="mt-10 grid grid-cols-3 gap-3 border-t border-white/10 pt-6">{[["Security", "Tenant-aware"], ["Control", "Role-based"], ["Ready", "Modular ERP"]].map(([label, value]) => <div key={label}><p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-200/55">{label}</p><p className="mt-1 text-[12px] font-semibold text-white">{value}</p></div>)}</div></div>
         <p className="relative z-10 text-[11px] text-emerald-100/50">© {new Date().getFullYear()} Smart Manager · Enterprise Business Ecosystem</p>
       </aside>
-      <main className="relative flex flex-1 items-center justify-center px-4 py-7 sm:px-8 sm:py-10 lg:px-14"><section className="relative z-10 w-full max-w-[470px]">
+      <main className="relative flex flex-1 items-center justify-center px-4 py-7 sm:px-8 sm:py-10 lg:px-14"><LoginModuleEcosystem variant="mobile" /><section className="relative z-10 w-full max-w-[470px]">
         <header className="sm-auth-mobile-brand mb-7 flex flex-col items-center text-center lg:hidden"><BrandLogo variant="full" priority className="w-[min(22rem,92vw)] rounded-[1.5rem] shadow-[0_16px_38px_rgba(0,120,73,.14)]" /><p className="sr-only">Simamia Biashara Yako. Popote, Wakati Wote.</p><div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-emerald-800"><TanzaniaMark />{ui.secure}</div></header>
         <div className="sm-auth-card rounded-[28px] border border-emerald-950/8 bg-white/95 p-5 shadow-[0_24px_60px_rgba(19,58,42,.11)] backdrop-blur sm:p-8"><div className="mb-7"><p className="mb-2 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-700">{ui.workspace}</p><h2 className="text-[27px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins', sans-serif" }}>{title}</h2><p className="mt-2 text-[13.5px] leading-6 text-slate-500">{subtitle}</p></div>{children}</div>
         <footer className="mt-5 flex flex-col items-center gap-3 text-center"><p className="flex items-center gap-2 text-[11px] leading-5 text-slate-500"><TanzaniaMark />{ui.madeIn} · {ui.protected}</p><label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm"><Globe2 size={14} aria-hidden="true" /><span className="sr-only">Language</span><select value={lang} onChange={(event) => setLang(event.target.value)} className="appearance-none bg-transparent pr-1 outline-none"><option value="sw">Kiswahili</option><option value="en">English</option></select><ChevronDown size={13} aria-hidden="true" /></label></footer>

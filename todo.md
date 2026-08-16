@@ -491,3 +491,7 @@
 - [x] Add proactive silent Supabase session renewal before the session-expiry warning while preserving secure token storage and tenant data refresh behavior.
 - [x] Add a tenant-scoped activity audit-log viewer inside Security Settings with authorized filtering and readable event context.
 - [x] Add passkey registration, credential management, and revocation controls in user profile security settings with server-verified ownership.
+- [x] Inspect the existing login composition, actual Smart Manager module metadata, icon library, and branding tokens for the safest motion-system integration point.
+- [x] Add a premium responsive login module ecosystem using only actual ERP modules and existing icons without modifying authentication, OAuth, Supabase, session, or RLS behavior.
+- [x] Add reduced-motion, keyboard-accessible, touch-safe, and performance-conscious responsive behavior so animated elements never obstruct authentication controls.
+- [x] Run desktop, tablet, mobile, reduced-motion, automated, type-check, and production-build validation; publish and push the login experience release.
