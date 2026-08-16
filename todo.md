@@ -488,3 +488,6 @@
 - [x] Repair post-confirmation POS fallback reads so confirmed sale and return outcomes are not mistaken for local failures and reconciliation events are recorded durably.
 - [x] Repair tenant-scoped table reloads after a silent access-token refresh so stale pre-refresh 401 responses do not leave POS data empty.
 - [x] Repair new POS transaction refreshes so selected receipts retain confirmed line items and remain returnable.
+- [x] Add proactive silent Supabase session renewal before the session-expiry warning while preserving secure token storage and tenant data refresh behavior.
+- [x] Add a tenant-scoped activity audit-log viewer inside Security Settings with authorized filtering and readable event context.
+- [x] Add passkey registration, credential management, and revocation controls in user profile security settings with server-verified ownership.

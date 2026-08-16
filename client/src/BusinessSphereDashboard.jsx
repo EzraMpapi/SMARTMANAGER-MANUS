@@ -33,6 +33,8 @@ import { addProductToPosCart, calculatePosPaymentSummary, createPosSaleAttempt, 
 import { createPendingPosSale, isRetryablePosTransportError, readPendingPosSales, updatePendingPosSale, writePendingPosSales } from "./lib/posPendingQueue";
 import { DEFAULT_POS_DEVICE_PROFILE, normalizeScannerInput, parsePosDeviceProfileImport, readPosDeviceProfile, serializePosDeviceProfile, writePosDeviceProfile } from "./lib/posDeviceProfiles";
 import { buildPosReconciliationCsv, posReconciliationExportFilename } from "./lib/posReconciliationExport";
+import { getProactiveSessionRenewalDelay, isTerminalSessionRefreshError } from "./lib/proactiveSessionRenewal";
+import { createAccountPasskeyClient, listAccountPasskeys, passkeyUserMessage, registerAccountPasskey, renameAccountPasskey, revokeAccountPasskey } from "./lib/accountPasskeys";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -315,6 +317,69 @@ async function authGetUser(accessToken) {
     throw error;
   }
   return res.json();
+}
+
+// Token expiry is used only to decide when to ask Supabase to renew a session.
+// It is never used for authorization; Supabase still verifies the rotating refresh
+// token before issuing a replacement access token. Failed network renewals retain
+// the current session for a later retry, while definitive credential failures clear
+// only the stored browser session and notify the live auth boundary without exposing
+// any secret in the event payload.
+function useProactiveSessionRefresh(enabled, onRenewed) {
+  const onRenewedRef = useRef(onRenewed);
+  const renewalInFlightRef = useRef(false);
+  onRenewedRef.current = onRenewed;
+
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") return undefined;
+    let disposed = false;
+    let timer = null;
+
+    const renew = async () => {
+      if (disposed || renewalInFlightRef.current) return;
+      const refreshToken = getStoredRefreshToken();
+      if (!refreshToken) return;
+      renewalInFlightRef.current = true;
+      try {
+        const refreshed = await authRefreshSession(refreshToken);
+        const remember = Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY));
+        persistAuthSession(refreshed, { remember });
+        onRenewedRef.current?.(refreshed.access_token);
+      } catch (error) {
+        authDebug("Proactive session renewal deferred", { status: error?.status || null, terminal: isTerminalSessionRefreshError(error) });
+        if (isTerminalSessionRefreshError(error)) {
+          clearStoredAuthSession();
+          window.dispatchEvent(new Event("smart-manager:auth-session-expired"));
+        }
+      } finally {
+        renewalInFlightRef.current = false;
+      }
+    };
+
+    const schedule = () => {
+      if (timer) window.clearTimeout(timer);
+      const delay = getProactiveSessionRenewalDelay(getStoredAccessToken());
+      timer = window.setTimeout(() => {
+        void renew().finally(() => {
+          if (!disposed && getStoredRefreshToken()) schedule();
+        });
+      }, delay);
+    };
+
+    const renewWhenVisible = () => {
+      if (document.visibilityState === "visible") schedule();
+    };
+
+    schedule();
+    window.addEventListener("focus", renewWhenVisible);
+    document.addEventListener("visibilitychange", renewWhenVisible);
+    return () => {
+      disposed = true;
+      if (timer) window.clearTimeout(timer);
+      window.removeEventListener("focus", renewWhenVisible);
+      document.removeEventListener("visibilitychange", renewWhenVisible);
+    };
+  }, [enabled]);
 }
 
 // Real OAuth sign-in — redirects the browser to Supabase's actual
@@ -3518,10 +3583,15 @@ function logAudit(action, module, actor, details) {
     action, module, actor: actor || "Unattributed", details: details || "",
     timestamp: new Date().toISOString(),
   };
-  auditBus.push(entry);
-  if (IS_CONFIGURED) {
-    sb("audit_log").insert({ action, module, actor: entry.actor, details: entry.details }).run().catch(() => {});
+  if (!IS_CONFIGURED) {
+    auditBus.push(entry);
+    return;
   }
+  sb("audit_log").insert({ action, module, actor: entry.actor, details: entry.details }).single().run()
+    .then((row) => {
+      if (row?.id) auditBus.push(mapAuditLogRow(row));
+    })
+    .catch((error) => authDebug("Audit event was not persisted", { message: error?.message || "unknown" }));
 }
 
 // Recording a payment is not a simple status flip — it can be partial, and
@@ -32109,7 +32179,7 @@ function BusinessCardDesigner({ company }) {
 }
 
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
   const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
@@ -32202,6 +32272,8 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
       </section>
 
       <AuditLogViewer timezone={company.timezone} />
+
+      <AccountPasskeyManager session={accountSession} />
 
       {!canManage && (
         <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
@@ -33086,45 +33158,59 @@ function TeamManagement({ currentUser, canManage }) {
 }
 
 function AuditLogViewer({ timezone }) {
-  const [entries, setEntries] = useState([]);
   const [filter, setFilter] = useState("all");
-  const [loading, setLoading] = useState(IS_CONFIGURED);
-
-  useEffect(() => {
-    const onEntry = (e) => setEntries((prev) => [e, ...prev].slice(0, 200));
-    auditBus.listeners.add(onEntry);
-
-    if (IS_CONFIGURED) {
-      sb("audit_log").select("*").order("created_at", { ascending: false }).run()
-        .then((rows) => setEntries((rows || []).map(mapAuditLogRow)))
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    }
-    return () => auditBus.listeners.delete(onEntry);
-  }, []);
-
-  const modules = useMemo(() => ["all", ...Array.from(new Set(entries.map((e) => e.module)))], [entries]);
-  const filtered = filter === "all" ? entries : entries.filter((e) => e.module === filter);
+  const [period, setPeriod] = useState("all");
+  const [query, setQuery] = useState("");
+  const auditLog = useCompanyTable("audit_log", [], {
+    order: { col: "created_at", ascending: false },
+    mapRow: mapAuditLogRow,
+  });
+  const entries = auditLog.rows;
+  const modules = useMemo(() => ["all", ...Array.from(new Set(entries.map((e) => e.module).filter(Boolean)))], [entries]);
+  const cutoff = useMemo(() => {
+    if (period === "all") return null;
+    const days = period === "today" ? 1 : period === "week" ? 7 : 30;
+    return Date.now() - days * 24 * 60 * 60 * 1000;
+  }, [period]);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = entries.filter((entry) => {
+    if (filter !== "all" && entry.module !== filter) return false;
+    if (cutoff && new Date(entry.timestamp).getTime() < cutoff) return false;
+    if (!normalizedQuery) return true;
+    return [entry.action, entry.module, entry.actor, entry.details].join(" ").toLowerCase().includes(normalizedQuery);
+  });
 
   return (
     <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-      <div className="flex items-center justify-between mb-1 gap-3">
-        <h2 className="text-[14.5px] font-semibold text-[#111827]">Audit Log</h2>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="text-[12px] border border-slate-200 rounded-lg px-2 py-1.5 outline-none">
-          {modules.map((m) => <option key={m} value={m}>{m === "all" ? "All modules" : m}</option>)}
-        </select>
+      <div className="flex items-start justify-between mb-1 gap-3">
+        <div>
+          <h2 className="text-[14.5px] font-semibold text-[#111827]">Tenant Activity Audit</h2>
+          <p className="mt-1 text-[11px] font-medium text-[#15803D]">Verified server history</p>
+        </div>
+        <button type="button" onClick={() => auditLog.reload()} disabled={auditLog.refreshing} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50">
+          <RefreshCw size={12} className={auditLog.refreshing ? "animate-spin" : ""} /> Refresh
+        </button>
       </div>
       <p className="text-[12.5px] text-slate-500 mb-4">
-        A real, running record of significant actions across the system — new entries are captured live as they happen, right now, in this session.{" "}
-        {IS_CONFIGURED ? "Loads real historical entries from the server on open." : "Demo mode has no backend log storage, so history does not persist across a page reload."}{" "}
-        Actor reflects whichever demo role is selected above, not a verified identity — see the handover doc.
+        Confirmed activity for your workspace, read directly from the server. The database derives workspace scope from the authenticated session; this screen never supplies a company identifier.
       </p>
-      {loading ? (
+      <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <input value={query} onChange={(event) => setQuery(event.target.value)} className={inputClass} placeholder="Search confirmed activity" aria-label="Search confirmed activity" />
+        <select value={filter} onChange={(event) => setFilter(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] outline-none">
+          {modules.map((module) => <option key={module} value={module}>{module === "all" ? "All modules" : module}</option>)}
+        </select>
+        <select value={period} onChange={(event) => setPeriod(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] outline-none">
+          <option value="all">All time</option><option value="today">Last 24 hours</option><option value="week">Last 7 days</option><option value="month">Last 30 days</option>
+        </select>
+      </div>
+      {auditLog.loading ? (
         <SkeletonRows cols={1} />
+      ) : auditLog.error ? (
+        <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-4 text-[12.5px] text-red-700">Confirmed activity could not be loaded. Your existing records have not been changed. Refresh and try again.</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-8">
           <FileCheck size={18} className="text-slate-300 mx-auto mb-2" />
-          <p className="text-[12.5px] text-slate-400">No actions logged yet. Approve a leave request, record a payment, or adjust stock via the AI Assistant to see one appear here.</p>
+          <p className="text-[12.5px] text-slate-400">No confirmed activity matches these filters.</p>
         </div>
       ) : (
         <div className="space-y-0.5 max-h-[360px] overflow-y-auto">
@@ -33135,13 +33221,134 @@ function AuditLogViewer({ timezone }) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-medium text-[#111827]">{e.action}</p>
-                <p className="text-[11px] text-slate-400 truncate">{e.module} · {e.actor}{e.details && ` · ${e.details}`}</p>
+                <p className="text-[11px] text-slate-400 truncate">{e.module || "System"} · {e.actor || "System"}{e.details && ` · ${e.details}`}</p>
               </div>
               <span className="text-[10.5px] text-slate-400 shrink-0 font-mono">{formatInTimezone(e.timestamp, timezone, { hour: "2-digit", minute: "2-digit" })}</span>
             </div>
           ))}
         </div>
       )}
+    </section>
+  );
+}
+
+function AccountPasskeyManager({ session }) {
+  const [passkeys, setPasskeys] = useState([]);
+  const [loading, setLoading] = useState(Boolean(IS_CONFIGURED && session?.accessToken));
+  const [busy, setBusy] = useState("");
+  const [editingId, setEditingId] = useState("");
+  const [friendlyName, setFriendlyName] = useState("");
+  const [error, setError] = useState("");
+  const supported = typeof window !== "undefined" && Boolean(window.PublicKeyCredential && navigator.credentials?.create);
+
+  const getClient = async () => createAccountPasskeyClient({
+    supabaseUrl: SUPABASE_URL,
+    supabaseAnonKey: SUPABASE_ANON_KEY,
+    session: { accessToken: session?.accessToken || "", refreshToken: getStoredRefreshToken() || "" },
+  });
+
+  const loadPasskeys = async () => {
+    if (!IS_CONFIGURED || !session?.accessToken) { setLoading(false); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const client = await getClient();
+      setPasskeys(await listAccountPasskeys(client));
+    } catch (loadError) {
+      setError(passkeyUserMessage(loadError));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void loadPasskeys(); }, [session?.accessToken]);
+
+  async function registerPasskey() {
+    if (!supported) { notify("This browser cannot create passkeys. Use a recent HTTPS browser with an available authenticator.", "error"); return; }
+    setBusy("register");
+    setError("");
+    try {
+      const client = await getClient();
+      const result = await registerAccountPasskey(client);
+      await loadPasskeys();
+      notify(result?.friendly_name ? `Passkey added: ${result.friendly_name}.` : "Passkey added to your account.");
+    } catch (registerError) {
+      const message = passkeyUserMessage(registerError);
+      setError(message);
+      notify(message, "error");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function saveName(passkeyId) {
+    const normalizedName = friendlyName.trim();
+    if (!normalizedName) return;
+    setBusy(passkeyId);
+    setError("");
+    try {
+      const client = await getClient();
+      await renameAccountPasskey(client, passkeyId, normalizedName.slice(0, 120));
+      setEditingId("");
+      setFriendlyName("");
+      await loadPasskeys();
+      notify("Passkey name updated.");
+    } catch (renameError) {
+      const message = passkeyUserMessage(renameError);
+      setError(message);
+      notify(message, "error");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  function requestRevoke(passkey) {
+    confirmAction(`Revoke “${passkey.friendly_name || "this passkey"}”? This device or password manager will no longer be able to sign in with it.`, async () => {
+      setBusy(passkey.id);
+      setError("");
+      try {
+        const client = await getClient();
+        await revokeAccountPasskey(client, passkey.id);
+        await loadPasskeys();
+        notify("Passkey revoked from your account.");
+      } catch (revokeError) {
+        const message = passkeyUserMessage(revokeError);
+        setError(message);
+        notify(message, "error");
+      } finally {
+        setBusy("");
+      }
+    }, { title: "Revoke account passkey", confirmLabel: "Revoke passkey", danger: true });
+  }
+
+  return (
+    <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-[14.5px] font-semibold text-[#111827]"><Fingerprint size={16} className="text-[#16A34A]" /> Account passkeys</h2>
+          <p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">Register a device, security key, or password-manager passkey for this account. Credentials are created and verified by Supabase Auth; biometric data and private keys never enter this application.</p>
+        </div>
+        <button type="button" onClick={registerPasskey} disabled={!IS_CONFIGURED || !session?.accessToken || !supported || busy === "register"} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#16A34A] px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-[#15803D] disabled:cursor-not-allowed disabled:opacity-50">
+          <Fingerprint size={14} /> {busy === "register" ? "Waiting for device…" : "Add passkey"}
+        </button>
+      </div>
+      {!supported && <p role="status" className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[11.5px] text-amber-800">Passkeys need a recent HTTPS browser with WebAuthn support. No fallback credential is stored locally.</p>}
+      {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[11.5px] text-red-700">{error}</p>}
+      <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
+        {loading ? <p className="p-4 text-center text-[12px] text-slate-400">Loading confirmed account credentials…</p> : passkeys.length === 0 ? <p className="p-4 text-center text-[12px] text-slate-400">No account passkeys are registered yet. Keep your normal sign-in method available before adding one.</p> : passkeys.map((passkey) => (
+          <div key={passkey.id} className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center">
+            <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#16A34A]/10 text-[#15803D]"><Fingerprint size={16} /></div>
+            <div className="min-w-0 flex-1">
+              {editingId === passkey.id ? <div className="flex max-w-sm gap-2"><input value={friendlyName} onChange={(event) => setFriendlyName(event.target.value)} className={inputClass} maxLength={120} aria-label="Passkey name" autoFocus /><button type="button" onClick={() => saveName(passkey.id)} disabled={busy === passkey.id || !friendlyName.trim()} className="rounded-lg bg-slate-900 px-3 text-[11px] font-semibold text-white disabled:opacity-50">Save</button></div> : <><p className="truncate text-[12.5px] font-semibold text-slate-800">{passkey.friendly_name || "Unnamed passkey"}</p><p className="mt-0.5 text-[10.5px] text-slate-400">Added {passkey.created_at ? new Date(passkey.created_at).toLocaleDateString() : "recently"}{passkey.last_used_at ? ` · last used ${new Date(passkey.last_used_at).toLocaleDateString()}` : ""}</p></>}
+            </div>
+            <div className="flex shrink-0 gap-2">
+              {editingId === passkey.id ? <button type="button" onClick={() => { setEditingId(""); setFriendlyName(""); }} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-medium text-slate-500">Cancel</button> : <button type="button" onClick={() => { setEditingId(passkey.id); setFriendlyName(passkey.friendly_name || ""); }} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50">Rename</button>}
+              <button type="button" onClick={() => requestRevoke(passkey)} disabled={busy === passkey.id} className="rounded-lg border border-red-100 px-2.5 py-1.5 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50">Revoke</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[10.5px] leading-5 text-slate-400">Passkeys require the workspace’s Supabase relying-party configuration to be enabled. Do not change the relying-party ID after enrollment because previously registered passkeys would no longer match the service.</p>
     </section>
   );
 }
@@ -46558,6 +46765,19 @@ function SmartManager() {
   const [workspaceResolutionError, setWorkspaceResolutionError] = useState(null);
   const [authRetryKey, setAuthRetryKey] = useState(0);
 
+  useProactiveSessionRefresh(Boolean(session?.accessToken && !session?.demo), (accessToken) => {
+    setSession((current) => current?.demo ? current : current ? { ...current, accessToken } : current);
+  });
+
+  useEffect(() => {
+    const handleSessionExpiry = () => {
+      setSession(IS_CONFIGURED ? null : { demo: true });
+      setAuthView("login");
+    };
+    window.addEventListener("smart-manager:auth-session-expired", handleSessionExpiry);
+    return () => window.removeEventListener("smart-manager:auth-session-expired", handleSessionExpiry);
+  }, []);
+
   useEffect(() => {
     if (!IS_CONFIGURED) {
       const t = setTimeout(() => setAuthChecking(false), 900);
@@ -47412,6 +47632,7 @@ function SmartManager() {
               highContrast={highContrast}
               onToggleHighContrast={() => setHighContrast((h) => !h)}
               exportData={{ crm, invoices, expenses, inventory, employees, posTransactions, suppliers }}
+              accountSession={session?.demo ? null : session}
             />
           )}
           {!["dashboard", "crm", "sales", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration"].includes(active) && (
