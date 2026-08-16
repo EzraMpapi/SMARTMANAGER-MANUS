@@ -475,4 +475,4 @@
 - [x] Add a manager-facing tenant reconciliation dashboard with safe filters and confirmed/pending outcome visibility.
 - [x] Add configurable receipt-printer and barcode-scanner profiles with browser-safe operational behavior.
 - [x] Run automated POS acceptance coverage, TypeScript validation, and production build validation with documented evidence.
-- [ ] Execute staging acceptance coverage, validate security and responsiveness, publish, and deliver the POS operations update.
+- [x] Execute staging acceptance coverage, validate security and responsiveness, publish, and deliver the POS operations update.

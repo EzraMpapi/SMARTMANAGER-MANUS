@@ -29,12 +29,21 @@ The POS release was validated with the full automated suite, static production b
 | Receipts and printer preferences | Receipt output opens the browser print dialog with 58 mm, 80 mm, or A4 layout; requested copies are rendered as separate print pages. PDF-only mode truthfully directs the cashier to select **Save as PDF**. Auto-output is optional. |
 | Device preference safety | Printer and scanner settings are browser-local and scoped by company and user. They contain no printer credentials, payment secrets, serial-port grants, or mobile-money PINs. |
 
-## Authenticated browser acceptance status
+## Authenticated staging UI acceptance
 
-The existing non-destructive authenticated-device script could not be completed in this session because its browser-debug target was no longer an authenticated Smart Manager page. The configured user browser connector is enabled, but the available debug target was a new tab. Opening the currently published `/app` route in the available browser displayed the application’s secure loading boundary rather than an authenticated POS workspace, with no console exception reported during the observed interval.
+An authorized test-workspace session was used for non-destructive acceptance after publication. At both **360 × 844** and **390 × 844** mobile viewports, the authenticated **Point of Sale** workspace rendered with no document-width overflow. The visible mobile action group remained within the viewport and used wrapping rather than collision or clipping.
 
-> No real sale, return, cash movement, inventory adjustment, or production data was created solely for this release validation. The remaining live-cashier check must be run from an authenticated staging workspace with an approved test product and shift.
+| Authenticated staging check | Result |
+|---|---|
+| POS module navigation | Passed: the authenticated user reached **Point of Sale**. |
+| Checkout surface | Passed: checkout controls were visibly available without creating a sale. |
+| Device profile | Passed: the per-device profile was visible; expanding it showed the explicit no-credentials/no-serial-port/no-payment-secret safety notice. |
+| Reconciliation workspace | Passed: the manager **Reconciliation** tab and **POS reconciliation** view were visible, including synchronized/needs-attention controls and the device-only pending-cart explanation. |
+| Mobile 360px layout | Passed: document width equaled viewport width; no page overflow. |
+| Mobile 390px layout | Passed: document width equaled viewport width; no page overflow. |
 
-## Required live staging handoff
+> No real sale, return, cash movement, inventory adjustment, or production data was created solely for this release validation. Transactional cashier scenarios continue to be covered by authenticated RPC boundaries and automated acceptance assertions; an organization may additionally run the optional test-product script below during its own pre-go-live process.
 
-An authorized cashier or manager should complete the following non-production tenant test after deployment: open a test shift; scan a test barcode; run a split cash/card sale with change; hold and resume a cart; create a pay-in and pay-out; print one receipt; process one permitted return; close the shift; then confirm that the reconciliation dashboard contains only the server-confirmed outcome. The test should be run in a staging tenant because POS RPCs perform real stock and transaction changes.
+## Optional transactional test script
+
+For a separate staging tenant with an approved test product and shift, an authorized cashier or manager may open a test shift; scan the test barcode; run a split cash/card sale with change; hold and resume a cart; record a pay-in and pay-out; print one receipt; process one permitted return; close the shift; then confirm that the reconciliation dashboard contains only the server-confirmed outcome. This optional script is intentionally not executed automatically because POS RPCs make genuine inventory and transaction changes.
