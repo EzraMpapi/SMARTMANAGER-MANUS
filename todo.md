@@ -439,3 +439,7 @@
 - [x] Add Microsoft- and Apple-specific OAuth recovery guidance with regression coverage.
 - [x] Create an end-to-end mobile authentication device test matrix and preserve the approved-square-icon handoff requirement.
 - [x] Run validation, publish, and deliver the provider recovery update.
+- [x] Assess available browser and device access for the mobile authentication acceptance matrix.
+- [x] Run browser-available mobile authentication scenarios and record sanitized release evidence.
+- [x] Prepare the physical-device validation and approved-square-icon handoffs.
+- [x] Publish and deliver the mobile acceptance evidence update.
