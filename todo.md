@@ -521,13 +521,13 @@
 - [x] Keep Resend quarterly review delivery disabled and explicitly document the blocked state until a verified sender address passes validation.
 - [x] Add a public landing-page entry point that starts the existing native passkey sign-in flow without creating a parallel authentication path.
 - [x] Extend tenant-scoped compliance CSV exports with server-verified role-change approval history and formula-injection protection.
-- [ ] Add regression tests, validate the build and authenticated/public UI paths, publish the follow-up, and push it to private GitHub.
+- [x] Add regression tests, validate the build and authenticated/public UI paths, publish the follow-up, and push it to private GitHub.
 - [x] Create an evidence-based architecture, module, test, deployment, and operational-constraint map for the commercial-readiness audit.
 - [x] Run a codebase-wide static audit for persistence fallbacks, security risks, placeholder data, error suppression, dead paths, and unresolved defect markers.
 - [x] Repair the server-side audit-log list and record procedures so an authenticated request cannot choose another company identifier; prove the verified Supabase profile company is required.
 - [x] Verify authentication, company membership, tenant authorization, RLS boundaries, and sensitive-operation authorization without weakening Supabase security.
 - [x] Audit confirmed end-to-end persistence and data-integrity paths for POS, inventory, sales, purchasing, finance, HR, and reporting using the available safe test coverage and authenticated validation paths.
-- [ ] Remediate only verified critical or high-severity findings, with root-cause tests and no destructive schema/data changes.
+- [x] Remediate only verified critical or high-severity findings, with root-cause tests and no destructive schema/data changes.
 - [x] Remove random campaign performance metrics and optimistic campaign state transitions that can be shown before a confirmed server write or a real provider event.
 - [x] Remove the browser-persisted WhatsApp Business token path and retain only a truthful no-credential external-link workflow until a server-side integration is approved.
 - [x] Replace the unescaped WhatsApp rich-text preview with safe React rendering and adversarial XSS coverage.
