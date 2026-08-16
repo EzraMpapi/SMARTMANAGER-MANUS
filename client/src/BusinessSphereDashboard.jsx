@@ -35960,12 +35960,15 @@ function POS({ inventory, transactionsHook, transactionItemsHook, company, curre
   const [tab, setTab] = useState("checkout");
   const transactions = useMemo(() => ({
     ...transactionsHook,
+    reload: async () => {
+      await Promise.all([transactionsHook.reload?.(), transactionItemsHook?.reload?.()].filter(Boolean));
+    },
     rows: transactionsHook.rows.map((transaction) => {
       if ((transaction.items || []).length > 0) return transaction;
       const fallbackItems = (transactionItemsHook?.rows || []).filter((item) => item.transactionId === transaction.dbId);
       return fallbackItems.length > 0 ? { ...transaction, items: fallbackItems } : transaction;
     }),
-  }), [transactionsHook, transactionItemsHook?.rows]);
+  }), [transactionsHook, transactionItemsHook?.rows, transactionItemsHook?.reload]);
   const customers = useCompanyTable("crm_contacts", contactsSeed, { order: { col: "name", ascending: true }, mapRow: mapContactRow });
   const deviceScope = useMemo(() => ({ companyId: company?.id || "workspace", userId: currentUser?.id || "session" }), [company?.id, currentUser?.id]);
   const [deviceProfile, setDeviceProfile] = useState(DEFAULT_POS_DEVICE_PROFILE);
@@ -36933,6 +36936,12 @@ function RegisterHistory({ transactions, inventory, company }) {
   const [selected, setSelected] = useState(null);
   const [returning, setReturning] = useState(null);
   const { rows, setRows, loading } = transactions;
+
+  useEffect(() => {
+    if (!selected?.dbId) return;
+    const refreshed = rows.find((entry) => entry.dbId === selected.dbId);
+    if (refreshed && refreshed !== selected) setSelected(refreshed);
+  }, [rows, selected]);
 
   async function processReturn(transaction, { items, reason, refundTotal, idempotencyKey }) {
     try {
