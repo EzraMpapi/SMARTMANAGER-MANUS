@@ -47,3 +47,11 @@ An authorized test-workspace session was used for non-destructive acceptance aft
 ## Optional transactional test script
 
 For a separate staging tenant with an approved test product and shift, an authorized cashier or manager may open a test shift; scan the test barcode; run a split cash/card sale with change; hold and resume a cart; record a pay-in and pay-out; print one receipt; process one permitted return; close the shift; then confirm that the reconciliation dashboard contains only the server-confirmed outcome. This optional script is intentionally not executed automatically because POS RPCs make genuine inventory and transaction changes.
+
+## Authorized staging QA execution — 2026-08-16
+
+With explicit user confirmation of the non-production workspace, a clearly labelled isolated product (`QA-POS-20260816`) was created with three units. The first approved split-payment sale failed atomically with PostgreSQL SQLSTATE `22023`: the audit statement used an unsupported `format('%.2f')` specifier. No sale was confirmed from those rejected attempts; they were removed from the browser-local pending queue.
+
+The focused replacement function was applied through a migration while retaining authenticated tenant resolution, inventory locking, idempotency, and authenticated-only execution. A fresh 0.59k cash plus 0.59k card QA sale subsequently returned HTTP 200 with a server transaction ID. A bounded database read confirmed one completed transaction (`POS-20260816-0CCD`) and its line item; the product quantity is therefore eligible for the controlled return step.
+
+The nested relationship query used by register history returned HTTP 400 in this Supabase schema. The primary query already falls back to the flat transaction table, and a tenant-scoped `pos_transaction_items` fallback was added to make confirmed sales actionable where relationship expansion is unavailable. The published UI verification and authorized return remain the next controlled step.

@@ -1508,6 +1508,26 @@ function mapPosTransactionItemRow(r) {
   };
 }
 
+async function loadPosTransactionForDisplay(transactionId) {
+  try {
+    const nested = await sb("pos_transactions").select("*,pos_transaction_items(*),pos_returns(*,pos_return_items(*))").eq("id", transactionId).single().run();
+    return mapPosTransactionRow(nested);
+  } catch (nestedReadError) {
+    const [flatTransaction, itemRows, returnRows, returnItemRows] = await Promise.all([
+      sb("pos_transactions").select("*").eq("id", transactionId).single().run(),
+      sb("pos_transaction_items").select("*").run(),
+      sb("pos_returns").select("*").run(),
+      sb("pos_return_items").select("*").run(),
+    ]);
+    const transactionItems = itemRows.filter((item) => item?.data?.transaction_id === transactionId);
+    const returns = returnRows
+      .filter((record) => record?.data?.transaction_id === transactionId)
+      .map((record) => ({ ...record, pos_return_items: returnItemRows.filter((item) => item?.data?.return_id === record.id) }));
+    console.warn("POS relationship expansion unavailable; using tenant-scoped flat detail fallback", nestedReadError);
+    return mapPosTransactionRow({ ...flatTransaction, pos_transaction_items: transactionItems, pos_returns: returns });
+  }
+}
+
 /* =============================================================================
    TOASTS — lightweight module-level pub/sub so any handler anywhere can call
    notify() without prop-drilling through seven module trees. The <Toasts />
@@ -36299,8 +36319,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
         p_customer_id: record.customerId,
         p_customer_name: record.customerName,
       }, getStoredAccessToken());
-      const row = await sb("pos_transactions").select("*,pos_transaction_items(*),pos_returns(*,pos_return_items(*))").eq("id", confirmed.transaction_id).single().run();
-      const savedTransaction = mapPosTransactionRow(row);
+      const savedTransaction = await loadPosTransactionForDisplay(confirmed.transaction_id);
       transactions.setRows((previous) => [savedTransaction, ...previous.filter((transaction) => transaction.dbId !== savedTransaction.dbId)]);
       await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean));
       try {
@@ -36430,8 +36449,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
         p_customer_id: selectedCustomer?.dbId || null,
         p_customer_name: selectedCustomer?.name || "Guest",
       }, getStoredAccessToken());
-      const row = await sb("pos_transactions").select("*,pos_transaction_items(*),pos_returns(*,pos_return_items(*))").eq("id", confirmed.transaction_id).single().run();
-      const savedTransaction = mapPosTransactionRow(row);
+      const savedTransaction = await loadPosTransactionForDisplay(confirmed.transaction_id);
       transactions.setRows((previous) => [savedTransaction, ...previous.filter((transaction) => transaction.dbId !== savedTransaction.dbId)]);
       if (activeHeldOrder?.dbId) {
         const { error: convertError } = await runCompanyTableMutation("pos_transactions", "update", {
@@ -36440,6 +36458,16 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
           data: { ...(activeHeldOrder.rawData || {}), converted_transaction_id: savedTransaction.dbId },
         }, { matchVal: activeHeldOrder.dbId });
         if (convertError) throw convertError;
+      }
+      try {
+        await callRpc("record_pos_sync_event", {
+          p_idempotency_key: attempt.idempotencyKey,
+          p_status: "synced",
+          p_transaction_id: confirmed.transaction_id,
+          p_message: confirmed.idempotent_replay ? "Idempotent replay confirmed." : "POS sale confirmed.",
+        }, getStoredAccessToken());
+      } catch (reconciliationError) {
+        console.warn("POS reconciliation event recording failed", reconciliationError);
       }
       await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean));
       const methodLabel = paymentSummary.allocations.map((payment) => payment.method).join(" + ");
@@ -36909,8 +36937,7 @@ function RegisterHistory({ transactions, inventory, company }) {
         p_reason: reason,
         p_refund_total: refundTotal,
       }, getStoredAccessToken());
-      const row = await sb("pos_transactions").select("*,pos_transaction_items(*),pos_returns(*,pos_return_items(*))").eq("id", transaction.dbId).single().run();
-      const savedTransaction = mapPosTransactionRow(row);
+      const savedTransaction = await loadPosTransactionForDisplay(transaction.dbId);
       setRows((previous) => previous.map((entry) => entry.dbId === savedTransaction.dbId ? savedTransaction : entry));
       setSelected(savedTransaction);
       await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean));

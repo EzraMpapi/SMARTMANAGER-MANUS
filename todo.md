@@ -484,3 +484,5 @@
 - [ ] Create, exercise, and clean up isolated staging QA product, shift, sale, and return records under explicit operator control.
 - [x] Repair the authenticated POS sale RPC `format()` error without weakening RLS, idempotency, inventory locking, or audit behavior.
 - [x] Repair the POS history fallback so confirmed transactions retain their server item and return records when relationship expansion is unavailable.
+- [x] Repair the authenticated POS return RPC `format()` error without weakening RLS, idempotency, stock locking, or audit behavior.
+- [x] Repair post-confirmation POS fallback reads so confirmed sale and return outcomes are not mistaken for local failures and reconciliation events are recorded durably.
