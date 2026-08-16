@@ -447,3 +447,7 @@
 - [x] Repair the CRM mobile tab overflow so labels stay readable and horizontally scrollable without collision.
 - [x] Apply shared responsive safeguards for module headers, action groups, searches, cards, and wide table wrappers.
 - [x] Add regression coverage, validate target breakpoints, publish, and deliver the global responsive update.
+- [x] Inventory dense multi-action bars and shared layout patterns across Smart Manager modules.
+- [x] Apply reusable responsive action-bar safeguards and targeted module integrations.
+- [x] Add regression coverage and visually validate representative dense action bars on narrow screens.
+- [x] Publish and deliver the multi-module action-bar responsive update.

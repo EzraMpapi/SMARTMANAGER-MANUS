@@ -32,6 +32,15 @@ describe("enterprise keyboard and table customization controls", () => {
     expect(globalStyles).toContain("#root .overflow-x-auto > table");
   });
 
+  it("makes existing multi-module header action clusters and compact toggle bars safe on phones", () => {
+    expect(globalStyles).toContain("#root .flex.flex-col.sm\\:flex-row.sm\\:items-center.justify-between.gap-3 > .flex:not(.flex-1)");
+    expect(globalStyles).toContain("flex: 1 1 min(100%, 9.5rem)");
+    expect(globalStyles).toContain("#root .flex.bg-slate-100.rounded-lg.p-0\\.5");
+    expect(globalStyles).toContain("#root .flex.bg-slate-100.rounded-lg.p-0\\.5 > button");
+    expect(dashboard).toContain("sm-mobile-action-group flex gap-2 shrink-0");
+    expect((dashboard.match(/sm-mobile-action-group/g) || []).length).toBeGreaterThanOrEqual(3);
+  });
+
   it("offers an accessible reusable column selector and wires it into CRM and Inventory", () => {
     expect(customizer).toContain('role="menuitemcheckbox"');
     expect(customizer).toContain("onVisibleColumnsChange");

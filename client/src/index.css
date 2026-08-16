@@ -235,6 +235,37 @@
     flex: 1 1 min(100%, 9.5rem);
   }
 
+  /* Existing module headers share this Tailwind composition. Their action
+     clusters become a full-width wrapping row on phones instead of competing
+     with the title, search, or KPI summary. */
+  #root .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 > .flex:not(.flex-1) {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  #root .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 > .flex:not(.flex-1) > button {
+    min-width: 0;
+    max-width: 100%;
+    flex: 1 1 min(100%, 9.5rem);
+  }
+
+  /* Compact state/toggle bars retain readable labels and scroll inside their
+     own surface when a phone cannot display every state at once. */
+  #root .flex.bg-slate-100.rounded-lg.p-0\.5 {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  #root .flex.bg-slate-100.rounded-lg.p-0\.5 > button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
   #root :where(input, select, textarea) {
     min-width: 0;
     max-width: 100%;

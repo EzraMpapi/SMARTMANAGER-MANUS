@@ -9224,7 +9224,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
           </p>
         </div>
         {tab !== "subscriptions" && (
-          <>
+          <div className="sm-mobile-action-group flex gap-2 shrink-0">
           <button
             onClick={() => setShowForm(true)}
             className="btn-primary text-white text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors shrink-0"
@@ -9232,7 +9232,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
             <Plus size={15} /> New {tab === "quotations" ? "Quotation" : tab === "orders" ? "Order" : "Invoice"}
           </button>
           <button onClick={() => downloadCSV("sales-" + tab, filtered, [{key:"id",label:"ID"},{key:"customer",label:"Customer"},{key:"date",label:"Date"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12.5px] font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-lg hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"><Download size={13}/>CSV</button>
-          </>
+          </div>
         )}
       </div>
 
@@ -10713,12 +10713,12 @@ function Inventory({ inventory, suppliersHook }) {
           {"Could not reach Supabase — check your connection."}
         </div>
       )}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Inventory</h1>
           <p className="text-[13px] text-slate-500 mt-1">Stock, warehouses, transfers, batches, and suppliers in one place</p>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="sm-mobile-action-group flex gap-2 shrink-0">
           <button onClick={()=>downloadCSV("inventory",inventory.rows.map(it=>({SKU:it.sku||"",Name:it.name,Category:it.category||"",Qty:it.qty||0,UnitCost:it.unitCost||0,Value_k:Math.round((it.qty||0)*(it.unitCost||0)/1000),ReorderPoint:it.reorder||0,Status:it.qty<=0?"Out of Stock":it.qty<=(it.reorder||0)?"Low Stock":"OK"})),[{key:"SKU",label:"SKU"},{key:"Name",label:"Name"},{key:"Category",label:"Category"},{key:"Qty",label:"Qty"},{key:"UnitCost",label:"Unit Cost"},{key:"Value_k",label:"Value (TZS k)"},{key:"ReorderPoint",label:"Reorder At"},{key:"Status",label:"Status"}])}
             className="flex items-center gap-1.5 text-[12px] font-semibold text-[#16A34A] border border-[#16A34A]/25 bg-[#F0FDF4] px-3 py-2 rounded-lg">
             <Download size={12}/> CSV
