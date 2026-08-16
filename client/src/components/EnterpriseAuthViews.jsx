@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2, ChevronDown, Eye, EyeOff, Fingerprint, Globe2, LockKeyhole, Mail, RefreshCw, ShieldCheck, UserRound } from "lucide-react";
 import { PASSWORD_REQUIREMENT_LABELS, getPasswordChecks, isEnterprisePassword, passwordStrength } from "../lib/authOnboarding";
 import { useLanguage } from "../contexts/LanguageContext";
+import { readRememberedOrganizationIndustryFocus } from "../lib/organizationIndustryFocus";
 import { BrandLogo } from "./BrandLogo";
 import { LoginModuleEcosystem } from "./LoginModuleEcosystem";
 
@@ -77,7 +78,7 @@ function AuthInput({ label, icon, children }) {
 export function EnterpriseAuthShell({ title, subtitle, children, asideTitle = "Your business, in command.", asideCopy = "Bring finance, sales, people, inventory, and insight together in one secure workspace." }) {
   const { lang, setLang } = useLanguage();
   const ui = copy[lang];
-  const [industry, setIndustry] = useState("general");
+  const [industry, setIndustry] = useState(readRememberedOrganizationIndustryFocus);
 
   return <div className="sm-auth-scene min-h-screen overflow-x-hidden bg-[#f7fbf8] text-slate-950" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
     <div className="mx-auto flex min-h-screen max-w-[1680px]">

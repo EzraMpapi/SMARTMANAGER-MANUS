@@ -12,6 +12,12 @@ The Account Passkeys panel in Security Settings uses Supabase Auth’s native pa
 
 The login page also offers **Sign in with a passkey**. It uses Supabase Auth’s discoverable-credential ceremony, which lets the selected authenticator identify the user without an email field. The application stores a session only when Supabase returns a complete access token, refresh token, and user. If passkeys are disabled, unavailable, cancelled, or do not match an enrolled credential, the page preserves all other sign-in methods and shows a clear recovery message.
 
+After a verified user signs in, Security Settings shows **Set up your first passkey** when the account has no enrolled passkeys. The guidance does not replace password, recovery, or approved OAuth methods. The **Passkey readiness** card is visible only to organization-administrator roles. It reports the local browser’s WebAuthn capability and surfaces an explicit action-required state when Supabase confirms that passkeys are disabled; it does not claim that the platform relying-party configuration is complete unless a live enrollment succeeds.
+
+## Organization industry focus
+
+An organization administrator can select one supported industry focus in Company Profile: universal business, retail, manufacturing, professional services, healthcare, education, or hospitality. The value is persisted in the tenant’s `companies.category` field through the existing owner-authorized branding procedure. After a confirmed authenticated workspace bootstrap, the login presentation keeps a non-authoritative browser presentation cache of that confirmed value so the next login can restore the appropriate module constellation. The browser cache never authorizes access or replaces the tenant-scoped server value.
+
 | Requirement | Operator action |
 |---|---|
 | Enable the feature | In Supabase Dashboard, open **Authentication → Passkeys**, enable passkeys, and configure the relying-party display name, stable relying-party ID, and allowed HTTPS origins. |

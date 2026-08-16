@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeLogoBase64, isRecognizedLogo, normalizeBrandColor } from "./workspaceBranding";
+import { decodeLogoBase64, isRecognizedLogo, normalizeBrandColor, normalizeOrganizationIndustryFocus } from "./workspaceBranding";
 
 describe("workspace branding validation", () => {
   it("normalizes valid six-digit hexadecimal colors and rejects malformed input", () => {
@@ -20,5 +20,11 @@ describe("workspace branding validation", () => {
     expect(isRecognizedLogo(pngHeader, "image/png")).toBe(true);
     expect(isRecognizedLogo(Buffer.from("not-an-image"), "image/png")).toBe(false);
     expect(isRecognizedLogo(Buffer.from("<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>"), "image/svg+xml")).toBe(true);
+  });
+
+  it("accepts only the controlled organization industry focus values", () => {
+    expect(normalizeOrganizationIndustryFocus("healthcare")).toBe("healthcare");
+    expect(normalizeOrganizationIndustryFocus(undefined)).toBeUndefined();
+    expect(() => normalizeOrganizationIndustryFocus("untrusted-category")).toThrow("supported organization industry focus");
   });
 });

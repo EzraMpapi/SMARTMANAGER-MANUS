@@ -331,6 +331,7 @@ export const appRouter = router({
     save: protectedProcedure.input(z.object({
       primaryColor: z.string().min(7).max(7),
       accentColor: z.string().min(7).max(7),
+      industryFocus: z.enum(["general", "retail", "manufacturing", "services", "healthcare", "education", "hospitality"]).optional(),
       logo: z.object({
         mimeType: z.enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]),
         base64: z.string().min(4).max(2_800_000),

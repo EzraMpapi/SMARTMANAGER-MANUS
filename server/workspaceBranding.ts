@@ -6,6 +6,7 @@ import { storagePut } from "./storage";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const MANAGE_BRANDING_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
+export const ORGANIZATION_INDUSTRY_IDS = new Set(["general", "retail", "manufacturing", "services", "healthcare", "education", "hospitality"]);
 const MIME_EXTENSIONS: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -14,7 +15,15 @@ const MIME_EXTENSIONS: Record<string, string> = {
 };
 
 type LogoPayload = { mimeType: keyof typeof MIME_EXTENSIONS; base64: string };
-type BrandingInput = { primaryColor: string; accentColor: string; logo?: LogoPayload | null; removeLogo?: boolean };
+type BrandingInput = { primaryColor: string; accentColor: string; industryFocus?: string; logo?: LogoPayload | null; removeLogo?: boolean };
+
+export function normalizeOrganizationIndustryFocus(value: string | undefined) {
+  if (value === undefined) return undefined;
+  if (!ORGANIZATION_INDUSTRY_IDS.has(value)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Choose a supported organization industry focus." });
+  }
+  return value;
+}
 
 export function normalizeBrandColor(value: string) {
   const color = value.trim().toUpperCase();
@@ -69,6 +78,7 @@ export async function saveWorkspaceBranding(req: CreateExpressContextOptions["re
 
   const primaryColor = normalizeBrandColor(input.primaryColor);
   const accentColor = normalizeBrandColor(input.accentColor);
+  const industryFocus = normalizeOrganizationIndustryFocus(input.industryFocus);
   let logoUrl: string | undefined;
 
   if (input.logo) {
@@ -83,6 +93,7 @@ export async function saveWorkspaceBranding(req: CreateExpressContextOptions["re
   const company = await updateCompanyBranding(profile.company_id, token, {
     brand_primary_color: primaryColor,
     brand_accent_color: accentColor,
+    ...(industryFocus ? { category: industryFocus } : {}),
     ...(logoUrl ? { logo: logoUrl } : input.removeLogo ? { logo: null } : {}),
   });
 
@@ -91,5 +102,6 @@ export async function saveWorkspaceBranding(req: CreateExpressContextOptions["re
     logo: typeof company.logo === "string" ? company.logo : logoUrl ?? null,
     primaryColor: typeof company.brand_primary_color === "string" ? company.brand_primary_color : primaryColor,
     accentColor: typeof company.brand_accent_color === "string" ? company.brand_accent_color : accentColor,
+    industryFocus: typeof company.category === "string" ? company.category : industryFocus || "general",
   };
 }

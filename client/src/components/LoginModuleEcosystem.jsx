@@ -1,6 +1,7 @@
 import React from "react";
 import { BarChart3, Bell, Brain, Briefcase, ClipboardCheck, Factory, FileText, Gauge, Headphones, HeartPulse, Hotel, Kanban, LayoutDashboard, Package, School, ShoppingBag, ShoppingCart, Tablets, Truck, Users, UtensilsCrossed, Wallet } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
+import { normalizeOrganizationIndustryFocus } from "../lib/organizationIndustryFocus";
 
 // All identifiers and icons below are existing Smart Manager modules from the
 // shared dashboard module registry. This decorative surface never changes
@@ -53,7 +54,8 @@ const NODE_LAYOUT = [
 ];
 
 export function getLoginModulesForIndustry(industry = "general") {
-  return (INDUSTRY_MODULES[industry] || INDUSTRY_MODULES.general).map((id, index) => ({ ...MODULE_CATALOG[id], ...NODE_LAYOUT[index] }));
+  const focus = normalizeOrganizationIndustryFocus(industry);
+  return (INDUSTRY_MODULES[focus] || INDUSTRY_MODULES.general).map((id, index) => ({ ...MODULE_CATALOG[id], ...NODE_LAYOUT[index] }));
 }
 
 function ModuleNode({ module, lang }) {

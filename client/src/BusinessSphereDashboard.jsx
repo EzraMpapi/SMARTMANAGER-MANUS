@@ -35,6 +35,7 @@ import { DEFAULT_POS_DEVICE_PROFILE, normalizeScannerInput, parsePosDeviceProfil
 import { buildPosReconciliationCsv, posReconciliationExportFilename } from "./lib/posReconciliationExport";
 import { getProactiveSessionRenewalDelay, isTerminalSessionRefreshError } from "./lib/proactiveSessionRenewal";
 import { createAccountPasskeyClient, listAccountPasskeys, passkeySignInUserMessage, passkeyUserMessage, registerAccountPasskey, renameAccountPasskey, revokeAccountPasskey, signInWithAccountPasskey } from "./lib/accountPasskeys";
+import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, rememberConfirmedOrganizationIndustryFocus } from "./lib/organizationIndustryFocus";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -32194,17 +32195,19 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
     if (IS_CONFIGURED) {
       try {
         await sb("companies").eq("id", draft.id).update({
-          name: draft.name, industry: draft.industry, country: draft.country, currency: draft.currency,
+          name: draft.name, country: draft.country, currency: draft.currency,
           tax_rate: draft.taxRate, timezone: draft.timezone, business_scale: draft.businessScale,
           receipt_width: draft.receiptWidth, receipt_footer: draft.receiptFooter, receipt_show_logo: draft.receiptShowLogo,
         }).run();
         const branding = await workspaceBrandingMutation.mutateAsync({
-          primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A",
+          primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A", industryFocus: normalizeOrganizationIndustryFocus(draft.industry),
           logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
         });
         draft.logo = branding.logo;
         draft.brandColor = branding.primaryColor;
         draft.brandAccentColor = branding.accentColor;
+        draft.industry = branding.industryFocus;
+        rememberConfirmedOrganizationIndustryFocus(branding.industryFocus);
       } catch (e) {
         notify("Profile changes were not saved to the server. Please try again.", "error");
         return;
@@ -32273,7 +32276,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
 
       <AuditLogViewer timezone={company.timezone} />
 
-      <AccountPasskeyManager session={accountSession} />
+      <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(currentUser.role)} />
 
       {!canManage && (
         <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
@@ -32432,8 +32435,11 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                                 placeholder="Brief description of your company — shown on proposals, PDF cover pages, and the company profile card."/>
                             </FormField>
                           </div>
-                          <FormField label="Industry / Sector">
-                            <input className={inputClass} value={draft.industry} onChange={e=>setField("industry",e.target.value)} placeholder="e.g. Wholesale & Hardware"/>
+                          <FormField label="Organization Industry Focus">
+                            <select className={inputClass} value={normalizeOrganizationIndustryFocus(draft.industry)} onChange={e=>setField("industry",e.target.value)}>
+                              {ORGANIZATION_INDUSTRY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                            </select>
+                            <p className="text-[10.5px] text-slate-400 mt-1">This server-confirmed setting tailors your Smart Manager login module constellation.</p>
                           </FormField>
                           <FormField label="Business Type">
                             <select className={inputClass} value={draft.businessType||"Private Limited Company"} onChange={e=>setField("businessType",e.target.value)}>
@@ -33232,7 +33238,9 @@ function AuditLogViewer({ timezone }) {
   );
 }
 
-function AccountPasskeyManager({ session }) {
+const PASSKEY_READINESS_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
+
+function AccountPasskeyManager({ session, isAdministrator = false }) {
   const [passkeys, setPasskeys] = useState([]);
   const [loading, setLoading] = useState(Boolean(IS_CONFIGURED && session?.accessToken));
   const [busy, setBusy] = useState("");
@@ -33240,6 +33248,7 @@ function AccountPasskeyManager({ session }) {
   const [friendlyName, setFriendlyName] = useState("");
   const [error, setError] = useState("");
   const supported = typeof window !== "undefined" && Boolean(window.PublicKeyCredential && navigator.credentials?.create);
+  const passkeyDisabled = /not enabled|passkey_disabled/i.test(error);
 
   const getClient = async () => createAccountPasskeyClient({
     supabaseUrl: SUPABASE_URL,
@@ -33334,6 +33343,8 @@ function AccountPasskeyManager({ session }) {
       </div>
       {!supported && <p role="status" className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[11.5px] text-amber-800">Passkeys need a recent HTTPS browser with WebAuthn support. No fallback credential is stored locally.</p>}
       {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[11.5px] text-red-700">{error}</p>}
+      {!loading && !error && passkeys.length === 0 && <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5"><p className="text-[12px] font-bold text-emerald-950">Set up your first passkey</p><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">Your verified Smart Manager account can now use a device, password manager, or security key for phishing-resistant sign-in. Keep a second approved recovery method available.</p><button type="button" onClick={registerPasskey} disabled={!supported || busy === "register"} className="mt-3 rounded-lg bg-emerald-700 px-3 py-2 text-[11px] font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">{busy === "register" ? "Waiting for device…" : "Set up passkey"}</button></section>}
+      {isAdministrator && <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3.5" aria-label="Passkey readiness"><div className="flex items-center justify-between gap-3"><div><p className="text-[12px] font-bold text-slate-900">Passkey readiness</p><p className="mt-1 text-[11.5px] leading-5 text-slate-600">{passkeyDisabled ? "Action required: enable Supabase Authentication → Passkeys and configure the stable relying-party ID and allowed HTTPS origins." : !supported ? "This browser cannot verify WebAuthn capability. Review readiness from a recent HTTPS browser." : "This browser can request passkeys. Confirm the Supabase relying-party configuration before organization-wide rollout."}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${passkeyDisabled ? "bg-amber-100 text-amber-800" : supported ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>{passkeyDisabled ? "Setup required" : supported ? "Browser ready" : "Browser check"}</span></div></section>}
       <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
         {loading ? <p className="p-4 text-center text-[12px] text-slate-400">Loading confirmed account credentials…</p> : passkeys.length === 0 ? <p className="p-4 text-center text-[12px] text-slate-400">No account passkeys are registered yet. Keep your normal sign-in method available before adding one.</p> : passkeys.map((passkey) => (
           <div key={passkey.id} className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center">
@@ -46869,7 +46880,9 @@ function SmartManager() {
           return;
         }
         setWorkspaceResolutionError(null);
-        setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
+        const confirmedIndustryFocus = normalizeOrganizationIndustryFocus(profile.companies?.category);
+        rememberConfirmedOrganizationIndustryFocus(confirmedIndustryFocus);
+        setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, industry: confirmedIndustryFocus, industryFocus: confirmedIndustryFocus, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
       } catch (bootstrapError) {
         if (bootstrapError?.status === 401 || bootstrapError?.status === 403) {
           clearStoredAuthSession();

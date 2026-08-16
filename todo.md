@@ -499,3 +499,7 @@
 - [x] Add a secure native passkey sign-in option with confirmed Supabase session handoff and clear unsupported or not-enabled recovery messaging.
 - [x] Tailor the login module constellation to the selected or inferred industry while continuing to use real Smart Manager modules only.
 - [x] Add Kiswahili and English desktop module tooltip labels, then validate authentication, accessibility, responsive behavior, production build, publication, and GitHub delivery.
+- [x] Review tenant-scoped organization branding storage, verified-account onboarding paths, passkey enrollment state, and administrator role gates.
+- [x] Persist an administrator-selected organization industry focus through server-confirmed tenant branding settings and restore it on the login constellation.
+- [x] Add passkey-first enrollment guidance for eligible verified users and an administrator-only passkey readiness indicator in Security Settings.
+- [x] Validate tenant isolation, role boundaries, onboarding behavior, responsive layouts, automated checks, production build, publication, and GitHub delivery.
