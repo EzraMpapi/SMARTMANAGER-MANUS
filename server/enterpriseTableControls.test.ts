@@ -22,4 +22,14 @@ describe("enterprise keyboard and table customization controls", () => {
     expect(dashboard).toContain('<EnterpriseColumnCustomizer columns={leadColumns}');
     expect(dashboard).toContain('<EnterpriseColumnCustomizer columns={stockColumns}');
   });
+
+  it("persists visible columns through the authenticated table preference contract across major ledgers", () => {
+    expect(dashboard).toContain('function usePersistentVisibleColumns');
+    expect(dashboard).toContain('user_table_preferences');
+    expect(dashboard).toContain('onConflict: "company_id,user_id,preference_key"');
+    expect(dashboard).toContain('visibleSalesColumns');
+    expect(dashboard).toContain('visibleExpenseColumns');
+    expect(customizer).toContain('aria-expanded={open}');
+    expect(layout).toContain('tabIndex={isActive ? 0 : -1}');
+  });
 });

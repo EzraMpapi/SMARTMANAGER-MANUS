@@ -395,6 +395,7 @@ function sb(table) {
   let method = "GET";
   let payload = null;
   let single = false;
+  let mergeDuplicates = false;
 
   const builder = {
     select(cols = "*") {
@@ -412,6 +413,13 @@ function sb(table) {
     insert(row) {
       method = "POST";
       payload = row;
+      return builder;
+    },
+    upsert(row, { onConflict } = {}) {
+      method = "POST";
+      payload = row;
+      mergeDuplicates = true;
+      if (onConflict) params.set("on_conflict", onConflict);
       return builder;
     },
     update(patch) {
@@ -462,7 +470,7 @@ function sb(table) {
         method,
         headers: {
           ...authHeaders(),
-          Prefer: method === "GET" ? undefined : "return=representation",
+          Prefer: method === "GET" ? undefined : mergeDuplicates ? "return=representation,resolution=merge-duplicates" : "return=representation",
         },
         body: requestPayload == null ? null : JSON.stringify(requestPayload),
       });
@@ -498,6 +506,50 @@ function sb(table) {
     },
   };
   return builder;
+}
+
+function usePersistentVisibleColumns(preferenceKey, defaultColumns) {
+  const cacheKey = `smart_manager_table_columns:${preferenceKey}`;
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
+      return Array.isArray(cached) && cached.length ? cached : defaultColumns;
+    } catch (_error) {
+      return defaultColumns;
+    }
+  });
+  const readyToPersist = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!IS_CONFIGURED || !getStoredAccessToken()) {
+        readyToPersist.current = true;
+        return;
+      }
+      try {
+        const row = await sb("user_table_preferences").select("value").eq("preference_key", preferenceKey).single().run();
+        if (active && Array.isArray(row?.value) && row.value.length) setVisibleColumns(row.value);
+      } catch (error) {
+        authDebug("Table preference load deferred", { preferenceKey, message: error?.message });
+      } finally {
+        if (active) readyToPersist.current = true;
+      }
+    })();
+    return () => { active = false; };
+  }, [preferenceKey]);
+
+  useEffect(() => {
+    try { localStorage.setItem(cacheKey, JSON.stringify(visibleColumns)); } catch (_error) { /* cache is optional */ }
+    if (!readyToPersist.current || !IS_CONFIGURED || !getStoredAccessToken()) return;
+    const handle = window.setTimeout(() => {
+      sb("user_table_preferences").upsert({ preference_key: preferenceKey, value: visibleColumns }, { onConflict: "company_id,user_id,preference_key" }).run()
+        .catch((error) => authDebug("Table preference save deferred", { preferenceKey, message: error?.message }));
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [cacheKey, preferenceKey, visibleColumns]);
+
+  return [visibleColumns, setVisibleColumns];
 }
 
 /* Generic hook: loads a company-scoped table when configured, otherwise
@@ -6447,7 +6499,7 @@ function CRM({ crm, invoices, expenses, suppliers }) {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [sort, setSort] = useState({ field: null, direction: "asc" });
-  const [visibleLeadColumns, setVisibleLeadColumns] = useState(["company", "contact", "email", "value", "stage", "action"]);
+  const [visibleLeadColumns, setVisibleLeadColumns] = usePersistentVisibleColumns("crm_leads", ["company", "contact", "email", "value", "stage", "action"]);
   const leadColumns = [{ id: "company", label: "Company", required: true }, { id: "contact", label: "Contact" }, { id: "email", label: "Email" }, { id: "value", label: "Value" }, { id: "stage", label: "Stage" }, { id: "action", label: "Action", required: true }];
 
   // Real bulk import — each row becomes a genuine crm_leads insert, same
@@ -8642,6 +8694,8 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [sort, setSort] = useState({ field: null, direction: "asc" });
+  const [visibleSalesColumns, setVisibleSalesColumns] = usePersistentVisibleColumns("sales_documents", ["document", "customer", "date", "reference", "status", "total", "detail"]);
+  const salesColumns = [{ id: "document", label: "Document", required: true }, { id: "customer", label: "Customer" }, { id: "date", label: "Date" }, { id: "reference", label: "Reference" }, { id: "status", label: "Status" }, { id: "total", label: "Total" }, { id: "detail", label: "Detail", required: true }];
 
   // A Dashboard Quick Action ("Create Invoice") can deep-link here already
   // on the right tab with the create form open, instead of just switching
@@ -9253,7 +9307,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div />
-            <div className="relative w-full sm:w-72">
+            <div className="flex w-full items-center justify-end gap-2 sm:w-auto"><div className="relative w-full sm:w-72">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 value={query}
@@ -9261,7 +9315,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
                 placeholder={`Search ${tab}...`}
                 className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
               />
-            </div>
+            </div>{tab !== "subscriptions" && <EnterpriseColumnCustomizer columns={salesColumns} visibleColumns={visibleSalesColumns} onVisibleColumnsChange={setVisibleSalesColumns}/>}</div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -9269,13 +9323,13 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
         <table className="w-full text-[13px] min-w-[720px]">
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-              <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>
-              <SortableHeader label="Customer" field="customer" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
-              <SortableHeader label="Date" field="date" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
-              <th className="px-4 py-3 font-medium">{columnLabel[1]}</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium text-right">Total (TZS 000)</th>
-              <th className="px-4 py-3"></th>
+              {visibleSalesColumns.includes("document") && <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>}
+              {visibleSalesColumns.includes("customer") && <SortableHeader label="Customer" field="customer" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
+              {visibleSalesColumns.includes("date") && <SortableHeader label="Date" field="date" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />}
+              {visibleSalesColumns.includes("reference") && <th className="px-4 py-3 font-medium">{columnLabel[1]}</th>}
+              {visibleSalesColumns.includes("status") && <th className="px-4 py-3 font-medium">Status</th>}
+              {visibleSalesColumns.includes("total") && <th className="px-4 py-3 font-medium text-right">Total (TZS 000)</th>}
+              {visibleSalesColumns.includes("detail") && <th className="px-4 py-3"></th>}
             </tr>
           </thead>
           <tbody>
@@ -9292,21 +9346,21 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
                       onClick={() => setSelected({ ...doc, kind: tab })}
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>
-                      <td className="px-4 py-3 text-slate-700">{doc.customer}</td>
-                      <td className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>
-                      <td className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>
-                      <td className="px-4 py-3"><DocStatusPill status={doc.status} /></td>
-                      <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>
-                      <td className="px-4 py-3 text-right">
+                      {visibleSalesColumns.includes("document") && <td className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>}
+                      {visibleSalesColumns.includes("customer") && <td className="px-4 py-3 text-slate-700">{doc.customer}</td>}
+                      {visibleSalesColumns.includes("date") && <td className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>}
+                      {visibleSalesColumns.includes("reference") && <td className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>}
+                      {visibleSalesColumns.includes("status") && <td className="px-4 py-3"><DocStatusPill status={doc.status} /></td>}
+                      {visibleSalesColumns.includes("total") && <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>}
+                      {visibleSalesColumns.includes("detail") && <td className="px-4 py-3 text-right">
                         <ChevronRight size={15} className="text-slate-300 inline" />
-                      </td>
+                      </td>}
                     </tr>
                   );
                 })}
                 {filtered.length === 0 && rows.length > 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-slate-400 text-[13px]">
+                    <td colSpan={visibleSalesColumns.length} className="px-4 py-10 text-center text-slate-400 text-[13px]">
                       No {tab} match "{query}"
                     </td>
                   </tr>
@@ -10522,7 +10576,7 @@ function Inventory({ inventory, suppliersHook }) {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [visibleStockColumns, setVisibleStockColumns] = useState(["item", "category", "warehouse", "onHand", "status", "expiry", "value", "detail"]);
+  const [visibleStockColumns, setVisibleStockColumns] = usePersistentVisibleColumns("inventory_stock", ["item", "category", "warehouse", "onHand", "status", "expiry", "value", "detail"]);
   const stockColumns = [{ id: "item", label: "Item", required: true }, { id: "category", label: "Category" }, { id: "warehouse", label: "Warehouse" }, { id: "onHand", label: "On hand" }, { id: "status", label: "Status" }, { id: "expiry", label: "Expiry" }, { id: "value", label: "Value" }, { id: "detail", label: "Detail", required: true }];
   const { rows: items, setRows: setItems, loading, error } = inventory;
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
@@ -13460,6 +13514,8 @@ function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, compa
 function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [visibleExpenseColumns, setVisibleExpenseColumns] = usePersistentVisibleColumns("finance_expenses", ["vendor", "category", "dueDate", "aging", "status", "amount"]);
+  const expenseColumns = [{ id: "vendor", label: "Vendor", required: true }, { id: "category", label: "Category" }, { id: "dueDate", label: "Due date" }, { id: "aging", label: "Aging" }, { id: "status", label: "Status" }, { id: "amount", label: "Amount", required: true }];
 
   // Accounts Payable aging — same bucket logic Receivables uses, applied to
   // unpaid vendor bills instead of unpaid customer invoices.
@@ -13483,6 +13539,7 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
         >
           <Plus size={15} /> Record Expense
         </button>
+        <EnterpriseColumnCustomizer columns={expenseColumns} visibleColumns={visibleExpenseColumns} onVisibleColumnsChange={setVisibleExpenseColumns}/>
         <div className="flex gap-2">
           <button onClick={()=>downloadCSV("expenses", expenses.map(e=>({
             Vendor:e.vendor||"",Category:e.category||"",Description:e.description||"",
@@ -13535,12 +13592,7 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
           <table className="w-full text-[13px] min-w-[720px]">
             <thead>
               <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
-                <th className="px-4 py-3 font-medium">Vendor</th>
-                <th className="px-4 py-3 font-medium">Category</th>
-                <th className="px-4 py-3 font-medium">Due Date</th>
-                <th className="px-4 py-3 font-medium">Aging</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Amount (TZS 000)</th>
+                {expenseColumns.filter((column) => visibleExpenseColumns.includes(column.id)).map((column) => <th key={column.id} className={`px-4 py-3 font-medium ${column.id === "amount" ? "text-right" : ""}`}>{column.label}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -13552,13 +13604,13 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
                     onClick={() => setSelected(e)}
                     className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                   >
-                    <td className="px-4 py-3">
+                    {visibleExpenseColumns.includes("vendor") && <td className="px-4 py-3">
                       <p className="font-medium text-[#111827]">{e.vendor}</p>
                       <p className="text-[11px] text-slate-400 font-mono">{e.id}</p>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">{e.category}</td>
-                    <td className="px-4 py-3 text-slate-500 font-mono">{e.dueDate}</td>
-                    <td className="px-4 py-3">
+                    </td>}
+                    {visibleExpenseColumns.includes("category") && <td className="px-4 py-3 text-slate-500">{e.category}</td>}
+                    {visibleExpenseColumns.includes("dueDate") && <td className="px-4 py-3 text-slate-500 font-mono">{e.dueDate}</td>}
+                    {visibleExpenseColumns.includes("aging") && <td className="px-4 py-3">
                       {bucket ? (
                         <span
                           className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
@@ -13570,8 +13622,8 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
                       ) : (
                         <span className="text-[11px] text-slate-300">—</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
+                    </td>}
+                    {visibleExpenseColumns.includes("status") && <td className="px-4 py-3">
                       <span
                         className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
                         style={{ backgroundColor: `${EXPENSE_STATUS_COLOR[e.status]}14`, color: EXPENSE_STATUS_COLOR[e.status] }}
@@ -13579,8 +13631,8 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
                         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: EXPENSE_STATUS_COLOR[e.status] }} />
                         {e.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">{money(e.amount)}</td>
+                    </td>}
+                    {visibleExpenseColumns.includes("amount") && <td className="px-4 py-3 text-right font-mono">{money(e.amount)}</td>}
                   </tr>
                 );
               })}

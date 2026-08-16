@@ -12,12 +12,13 @@ describe("Supabase production schema contract guard", () => {
       [...dashboardSource.matchAll(/(?:sb|useCompanyTable|runCompanyTableQuery|runCompanyTableMutation)\("([^\"]+)"/g)].map((match) => match[1]),
     )];
 
-    expect(referencedTables).toHaveLength(149);
+    expect(referencedTables).toHaveLength(150);
     expect(referencedTables).toContain("finance_expenses");
     expect(referencedTables).toContain("inventory_items");
     expect(referencedTables).toContain("crm_leads");
     expect(referencedTables).toContain("procurement_purchase_orders");
     expect(referencedTables).toContain("manufacturing_work_orders");
+    expect(referencedTables).toContain("user_table_preferences");
     expect(referencedTables).not.toContain("emails");
   });
 
