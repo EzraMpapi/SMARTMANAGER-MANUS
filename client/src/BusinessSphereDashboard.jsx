@@ -1496,6 +1496,18 @@ function mapPosTransactionRow(r) {
   };
 }
 
+function mapPosTransactionItemRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
+  return {
+    dbId: r.id,
+    transactionId: data.transaction_id || null,
+    sku: data.item_sku || data.sku || "",
+    name: data.item_name || r.name || "Item",
+    qty: Number(data.qty ?? r.amount ?? 0),
+    price: Number(data.price ?? 0),
+  };
+}
+
 /* =============================================================================
    TOASTS — lightweight module-level pub/sub so any handler anywhere can call
    notify() without prop-drilling through seven module trees. The <Toasts />
@@ -35917,9 +35929,16 @@ function PosShiftPanel({ transactions, currentUser }) {
   );
 }
 
-function POS({ inventory, transactionsHook, company, currentUser }) {
+function POS({ inventory, transactionsHook, transactionItemsHook, company, currentUser }) {
   const [tab, setTab] = useState("checkout");
-  const transactions = transactionsHook;
+  const transactions = useMemo(() => ({
+    ...transactionsHook,
+    rows: transactionsHook.rows.map((transaction) => {
+      if ((transaction.items || []).length > 0) return transaction;
+      const fallbackItems = (transactionItemsHook?.rows || []).filter((item) => item.transactionId === transaction.dbId);
+      return fallbackItems.length > 0 ? { ...transaction, items: fallbackItems } : transaction;
+    }),
+  }), [transactionsHook, transactionItemsHook?.rows]);
   const customers = useCompanyTable("crm_contacts", contactsSeed, { order: { col: "name", ascending: true }, mapRow: mapContactRow });
   const deviceScope = useMemo(() => ({ companyId: company?.id || "workspace", userId: currentUser?.id || "session" }), [company?.id, currentUser?.id]);
   const [deviceProfile, setDeviceProfile] = useState(DEFAULT_POS_DEVICE_PROFILE);
@@ -46812,6 +46831,7 @@ function SmartManager() {
   const posTransactions = useCompanyTable("pos_transactions", posTransactionsSeed, {
     select: "*,pos_transaction_items(*),profiles(full_name),pos_returns(*,pos_return_items(*))", order: { col: "created_at", ascending: false }, mapRow: mapPosTransactionRow,
   });
+  const posTransactionItems = useCompanyTable("pos_transaction_items", [], { order: { col: "created_at", ascending: false }, mapRow: mapPosTransactionItemRow });
   const subscriptions = useCompanyTable("sales_subscriptions", subscriptionsSeed, {
     order: { col: "next_billing_date", ascending: true }, mapRow: mapSubscriptionRow,
   });
@@ -47284,7 +47304,7 @@ function SmartManager() {
           {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} />}
           {active === "scm" && <SupplyChain />}
           {active === "ecommerce" && <ECommerce inventory={inventory} />}
-          {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} company={company} currentUser={currentUser} />}
+          {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} />}
           {active === "documents" && <Documents filesHook={files} company={company} />}
           {active === "projects" && <Projects filesHook={files} expensesHook={expenses} />}
           {active === "support" && <CustomerSupport company={company} />}
