@@ -53,7 +53,7 @@ Role changes are no longer applied by the local Settings role selector. A user s
 
 The Compliance Audit Trail export now combines confirmed audit events with role-change approval history through a server-verified `auditLogs.complianceExport` boundary. The boundary rejects a company identifier that does not match the authenticated profile’s company before returning either data source. CSV fields are quoted, newline-normalized, and guarded against spreadsheet formulas beginning with `=`, `+`, `-`, or `@`.
 
-Resend has been explicitly approved for the future quarterly reminder sender, but its verified `From` identity is currently blank. The Resend sender-verification test remains gated until an exact verified sender address is configured; outbound quarterly reminders remain disabled, and no delivery success state is shown.
+Resend has been explicitly approved for the future quarterly reminder sender, but the current `From` candidate is not a syntactically valid email identity and therefore cannot be verified. The Resend sender-verification test remains gated until an exact verified sender address is configured; outbound quarterly reminders remain disabled, and no delivery success state is shown.
 
 ## Reference
 

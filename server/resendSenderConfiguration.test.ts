@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 function senderDomain(from: string) {
   const address = (from.match(/<([^>]+)>/)?.[1] || from).trim().toLowerCase();
-  return address.split("@")[1] || "";
+  const match = address.match(/^[^@\s<>]+@([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+)$/i);
+  return match?.[1] || "";
 }
 
 describe("Resend sender configuration", () => {

@@ -14,7 +14,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
-import { decideActionApproval, requestActionApproval } from "./aiApprovals";
+import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
 import { decideRoleChangeApproval, listRoleChangeApprovals, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
@@ -32,6 +32,14 @@ function enforceAssistantRateLimit(identity: string) {
   if (window.requestCount > 12) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "The AI Assistant is receiving too many requests. Please wait a minute and try again." });
   }
+}
+
+async function requireVerifiedAuditCompany(req: Parameters<typeof resolveVerifiedProfile>[0], companyId: string) {
+  const { profile } = await resolveVerifiedProfile(req);
+  if (profile.company_id !== companyId) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "You cannot access audit history for another workspace." });
+  }
+  return profile;
 }
 
 export const appRouter = router({
@@ -400,7 +408,8 @@ export const appRouter = router({
   }),
 
   auditLogs: router({
-    list: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ input }) => {
+    list: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ ctx, input }) => {
+      await requireVerifiedAuditCompany(ctx.req, input.companyId);
       const logs = await listAuditLogs(input.companyId, input.limit || 100);
       return logs.filter(l => {
         if (input.module && l.module !== input.module) return false;
@@ -423,7 +432,10 @@ export const appRouter = router({
       });
       return { logs: filteredLogs, approvals: approvalResult.approvals };
     }),
-    record: protectedProcedure.input(z.object({ companyId: z.string().min(1), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(({ ctx, input }) => recordAuditLog(ctx.user, input)),
+    record: protectedProcedure.input(z.object({ companyId: z.string().min(1), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(async ({ ctx, input }) => {
+      const profile = await requireVerifiedAuditCompany(ctx.req, input.companyId);
+      return recordAuditLog({ ...ctx.user, openId: profile.id, name: profile.full_name || ctx.user.name }, input);
+    }),
   }),
 
   admin: router({

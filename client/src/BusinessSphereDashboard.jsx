@@ -29570,8 +29570,8 @@ function VideoMeetingBar({ currentUser }) {
    ─ Full conversation thread UI (WhatsApp-style bubbles)
    ─ Messages stored in Supabase (whatsapp_messages table)
    ─ Templates: invoice, payment reminder, order confirm, loyalty, custom
-   ─ Delivery via wa.me deep-link (real WhatsApp Web, same tab)
-   ─ WhatsApp Business API config panel (bring-your-own token)
+   ─ Delivery via wa.me deep-link (user-controlled WhatsApp Web handoff)
+   ─ Direct provider delivery requires an approved server-side integration
    ─ Quick-send integration: Receivables, Invoices, Top Buyers
 ═══════════════════════════════════════════════════════════════════════ */
 
@@ -29657,9 +29657,7 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
   const [compose, setCompose]     = useState("");
   const [templateId, setTmplId]   = useState("custom");
   const [vars, setVars]           = useState({});
-  const [showApi, setShowApi]     = useState(false);
-  const [apiToken, setApiToken]   = useState(() => localStorage.getItem("wa_api_token")||"");
-  const [apiPhone, setApiPhone]   = useState(() => localStorage.getItem("wa_api_phone")||"");
+  const [showDeliveryGuidance, setShowDeliveryGuidance] = useState(false);
   const [localMsgs, setLocalMsgs] = useState({});   // contactId → [{...}]
   const endRef = useRef(null);
 
@@ -29704,69 +29702,47 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
     setCompose(merged);
   }
 
-  // Send message — store locally + attempt API, fallback to wa.me
+  // Open a user-controlled WhatsApp handoff. This client never stores or uses provider credentials.
   async function sendMessage() {
     if (!compose.trim() || !contact) return;
     const now = new Date().toISOString();
-    const newMsg = {
-      id: "MSG-"+Date.now(), body:compose.trim(), direction:"out",
-      sentAt:now, status:"sending", contactId:contact.id,
-    };
-    setLocalMsgs(m=>({...m, [contact.id]:[...(m[contact.id]||[]), newMsg]}));
     const msgBody = compose.trim();
+    if (!openWaLink(msgBody, contact.phone)) return;
+    const newMsg = { id: "MSG-"+Date.now(), body:msgBody, direction:"out", sentAt:now, status:"via-link", contactId:contact.id };
+    setLocalMsgs(m=>({...m, [contact.id]:[...(m[contact.id]||[]), newMsg]}));
     setCompose("");
-
-    if (apiToken && apiPhone && contact.phone) {
-      // WhatsApp Business Cloud API
-      try {
-        const num = contact.phone.replace(/[^0-9]/g,"");
-        const res = await fetch(`https://graph.facebook.com/v18.0/${apiPhone}/messages`, {
-          method:"POST",
-          headers:{"Authorization":"Bearer "+apiToken,"Content-Type":"application/json"},
-          body: JSON.stringify({
-            messaging_product:"whatsapp", to:num,
-            type:"text", text:{body:msgBody},
-          }),
-        });
-        const data = await res.json();
-        const waId = data?.messages?.[0]?.id;
-        setLocalMsgs(m=>({...m,[contact.id]:m[contact.id].map(ms=>ms.id===newMsg.id?{...ms,status:waId?"delivered":"failed",waId}:ms)}));
-        notify(waId?`✓ Sent via WhatsApp Business API`:`⚠ API error — opening WhatsApp Web`);
-        if (!waId) openWaLink(msgBody, contact.phone);
-      } catch(e) {
-        notify("API unavailable — opening WhatsApp Web");
-        openWaLink(msgBody, contact.phone);
-        setLocalMsgs(m=>({...m,[contact.id]:m[contact.id].map(ms=>ms.id===newMsg.id?{...ms,status:"via-link"}:ms)}));
-      }
-    } else {
-      openWaLink(msgBody, contact.phone);
-      setLocalMsgs(m=>({...m,[contact.id]:m[contact.id].map(ms=>ms.id===newMsg.id?{...ms,status:"via-link"}:ms)}));
-    }
 
     if (IS_CONFIGURED) {
       try {
         await sb("whatsapp_messages").insert({
           contact_id:contact.id, contact_name:contact.name, body:msgBody,
-          direction:"out", sent_at:now, status:"sent",
-        }).run();
-      } catch(_){}
+          direction:"out", sent_at:now, status:"via-link",
+        }).single().run();
+      } catch(error) {
+        notify("Message handoff opened, but the activity record was not saved to the server.", "error");
+        authDebug("WhatsApp activity persistence failed", { message: error?.message });
+      }
     }
-    logAudit("WhatsApp message sent","Communications",currentUser.name,`To: ${contact.name}`);
+    logAudit("External WhatsApp handoff opened","Communications",currentUser.name,`To: ${contact.name}`);
   }
 
   function openWaLink(text, phone) {
     const num = (phone||"").replace(/[^0-9]/g,"");
-    if (!num) { notify("No phone number for this contact","error"); return; }
-    window.open(`https://wa.me/${num}?text=${encodeURIComponent(text)}`,"_blank","noopener");
+    if (!num) { notify("No phone number for this contact","error"); return false; }
+    const opened = window.open(`https://wa.me/${num}?text=${encodeURIComponent(text)}`,"_blank","noopener");
+    if (!opened) { notify("WhatsApp could not be opened. Allow pop-ups and try again.", "error"); return false; }
     notify("WhatsApp Web opened — message pre-filled, click Send there");
+    return true;
   }
 
-  // Format WhatsApp bold/italic preview
-  function formatPreview(text) {
-    return text
-      .replace(/\*([^*]+)\*/g,"<strong>$1</strong>")
-      .replace(/_([^_]+)_/g,"<em>$1</em>")
-      .replace(/\n/g,"<br/>");
+  // Render WhatsApp-style emphasis without ever turning user text into HTML.
+  function renderWhatsAppPreview(text) {
+    return String(text || "").split(/(\*[^*]+\*|_[^_]+_|\n)/g).map((part, index) => {
+      if (part === "\n") return <br key={`break-${index}`}/>;
+      if (part.startsWith("*") && part.endsWith("*")) return <strong key={`bold-${index}`}>{part.slice(1, -1)}</strong>;
+      if (part.startsWith("_") && part.endsWith("_")) return <em key={`italic-${index}`}>{part.slice(1, -1)}</em>;
+      return <React.Fragment key={`text-${index}`}>{part}</React.Fragment>;
+    });
   }
 
   return (
@@ -29779,8 +29755,8 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
           <div className="flex items-center justify-between mb-3">
             <span className="text-white font-bold text-[15px]">WhatsApp</span>
             <div className="flex gap-2">
-              <button onClick={()=>setShowApi(!showApi)}
-                className="text-white/70 hover:text-white" title="WhatsApp Business API Settings">
+              <button onClick={()=>setShowDeliveryGuidance(!showDeliveryGuidance)}
+                className="text-white/70 hover:text-white" title="WhatsApp delivery guidance">
                 <Settings size={16}/>
               </button>
             </div>
@@ -29793,20 +29769,12 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
           </div>
         </div>
 
-        {/* API Config panel */}
-        {showApi && (
+        {/* Delivery guidance: no browser credential entry or direct provider sending. */}
+        {showDeliveryGuidance && (
           <div className="px-3 py-3 bg-[#DCF8C6]/30 border-b border-green-200 space-y-2">
-            <p className="text-[10.5px] font-bold text-[#075E54]">WhatsApp Business API</p>
-            <input className="w-full text-[11.5px] border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none"
-              placeholder="Access Token (from Meta)" value={apiToken}
-              onChange={e=>{setApiToken(e.target.value); localStorage.setItem("wa_api_token",e.target.value);}}/>
-            <input className="w-full text-[11.5px] border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none"
-              placeholder="Phone Number ID" value={apiPhone}
-              onChange={e=>{setApiPhone(e.target.value); localStorage.setItem("wa_api_phone",e.target.value);}}/>
-            <div className={`text-[10.5px] font-semibold px-2 py-1 rounded ${apiToken&&apiPhone?"text-[#16A34A] bg-[#F0FDF4]":"text-[#F59E0B] bg-[#FFFBEB]"}`}>
-              {apiToken&&apiPhone?"✓ API configured — messages send directly":"⚠ No API — messages open WhatsApp Web"}
-            </div>
-            <p className="text-[9.5px] text-slate-400">Get credentials at business.facebook.com/wa/manage</p>
+            <p className="text-[10.5px] font-bold text-[#075E54]">Secure delivery boundary</p>
+            <p className="text-[10.5px] leading-relaxed text-slate-600">Messages open in the user’s WhatsApp client with the text pre-filled. Smart Manager does not store or transmit WhatsApp provider credentials in this browser.</p>
+            <p className="text-[9.5px] text-slate-400">Direct automated delivery requires an approved server-side integration, verified sender, and audited consent workflow.</p>
           </div>
         )}
 
@@ -29902,8 +29870,7 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
                   <div className={`max-w-[75%] px-3 py-2 rounded-xl shadow-sm relative ${
                     isOut?"rounded-tr-sm text-white":"rounded-tl-sm bg-white text-[#111827]"
                   }`} style={{background:isOut?"#075E54":undefined}}>
-                    <div className="text-[12.5px] leading-snug"
-                      dangerouslySetInnerHTML={{__html:formatPreview(msg.body)}}/>
+                    <div className="text-[12.5px] leading-snug">{renderWhatsAppPreview(msg.body)}</div>
                     <div className={`flex items-center justify-end gap-1 mt-1 ${isOut?"text-white/60":"text-slate-400"}`}>
                       <span className="text-[10px]">{msg.sentAt?.slice(11,16)}</span>
                       {isOut&&statusIcon}
@@ -29927,8 +29894,7 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
               {compose&&(
                 <div className="px-4 pb-2">
                   <p className="text-[10px] text-slate-400 font-medium">Preview (WhatsApp formatting)</p>
-                  <div className="text-[11.5px] text-[#111827] leading-relaxed"
-                    dangerouslySetInnerHTML={{__html:formatPreview(compose)}}/>
+                  <div className="text-[11.5px] text-[#111827] leading-relaxed">{renderWhatsAppPreview(compose)}</div>
                 </div>
               )}
             </div>
@@ -35439,58 +35405,74 @@ function Campaigns({ campaigns, segments }) {
       name: form.name, type: form.type, status: "Draft",
       segment: form.segment, sentDate: null, openRate: null, clickRate: null,
     };
-    setRows((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(`Campaign created: ${draft.name}`);
     if (IS_CONFIGURED) {
       try {
         const header = await sb("marketing_campaigns").insert({
           name: draft.name, campaign_type: draft.type, status: "Draft", segment: draft.segment,
         }).single().run();
-        if (header?.id) setRows((prev) => prev.map((c) => (c.id === draft.id ? { ...c, dbId: header.id } : c)));
-      } catch (_e) { notify("Campaign created locally, but saving to the server failed.", "error"); }
+        if (!header?.id) throw new Error("The server did not confirm the new campaign.");
+        setRows((prev) => [{ ...draft, dbId: header.id }, ...prev]);
+        setShowForm(false);
+        notify(`Campaign saved: ${draft.name}`);
+      } catch (error) {
+        notify("The campaign could not be saved to the server. No campaign was added.", "error");
+        authDebug("Campaign creation failed", { message: error?.message });
+      }
+      return;
     }
+    setRows((prev) => [draft, ...prev]);
+    setShowForm(false);
+    notify(`Demo campaign created: ${draft.name}`);
   }
 
   async function advanceCampaign(id, next) {
     const campaign = rows.find((c) => c.id === id);
-    let sentPatch = {};
-    setRows((prev) => prev.map((c) => {
-      if (c.id !== id) return c;
-      const patch = { status: next };
-      // Sending a campaign is the moment it gets real performance numbers —
-      // modeled here rather than left null, same honesty rule as everywhere
-      // else: no metric is shown until there is a real event to back it.
-      if (next === "Sent") {
-        patch.sentDate = TODAY.toISOString().slice(0, 10);
-        patch.openRate = 35 + Math.floor(Math.random() * 30);
-        patch.clickRate = 6 + Math.floor(Math.random() * 12);
-        sentPatch = patch;
-      }
-      return { ...c, ...patch };
-    }));
-    setSelected((s) => (s && s.id === id ? { ...s, status: next, ...sentPatch } : s));
-    notify(`${id} marked ${next}`);
-    if (IS_CONFIGURED && campaign?.dbId) {
-      try {
-        const dbPatch = { status: next };
-        if (next === "Sent") {
-          dbPatch.sent_date = sentPatch.sentDate;
-          dbPatch.open_rate = sentPatch.openRate;
-          dbPatch.click_rate = sentPatch.clickRate;
-        }
-        await sb("marketing_campaigns").eq("id", campaign.dbId).update(dbPatch).run();
-      } catch (_e) { notify("Couldn't save the campaign status to the server.", "error"); }
+    if (!campaign) return;
+    if (next === "Sent") {
+      notify("Campaign delivery is not configured. The campaign remains unchanged.", "error");
+      return;
     }
+    if (IS_CONFIGURED) {
+      if (!campaign.dbId) {
+        notify("This campaign has no confirmed server record and cannot be changed.", "error");
+        return;
+      }
+      try {
+        await sb("marketing_campaigns").eq("id", campaign.dbId).update({ status: next }).single().run();
+        setRows((prev) => prev.map((c) => (c.id === id ? { ...c, status: next } : c)));
+        setSelected((s) => (s && s.id === id ? { ...s, status: next } : s));
+        notify(`${id} marked ${next}`);
+      } catch (error) {
+        notify("The campaign status could not be saved to the server. The campaign remains unchanged.", "error");
+        authDebug("Campaign status update failed", { message: error?.message });
+      }
+      return;
+    }
+    setRows((prev) => prev.map((c) => (c.id === id ? { ...c, status: next } : c)));
+    setSelected((s) => (s && s.id === id ? { ...s, status: next } : s));
+    notify(`Demo campaign ${id} marked ${next}`);
   }
 
   async function deleteCampaign(id) {
     const campaign = rows.find((c) => c.id === id);
+    if (!campaign) return;
+    if (IS_CONFIGURED) {
+      if (!campaign.dbId) {
+        notify("This campaign has no confirmed server record and cannot be deleted.", "error");
+        return;
+      }
+      try {
+        await sb("marketing_campaigns").eq("id", campaign.dbId).delete().single().run();
+        setRows((prev) => prev.filter((c) => c.id !== id));
+        setSelected(null);
+      } catch (error) {
+        notify("The campaign could not be deleted from the server. It remains available.", "error");
+        authDebug("Campaign deletion failed", { message: error?.message });
+      }
+      return;
+    }
     setRows((prev) => prev.filter((c) => c.id !== id));
     setSelected(null);
-    if (IS_CONFIGURED && campaign?.dbId) {
-      try { await sb("marketing_campaigns").eq("id", campaign.dbId).delete().run(); } catch (_e) { notify("Couldn't delete the campaign on the server.", "error"); }
-    }
   }
 
   return (
