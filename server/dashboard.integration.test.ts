@@ -102,7 +102,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
     expect(publicAuthSource).toContain("persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken })");
     expect(publicAuthSource).toContain("window.location.replace(withoutAuthView())");
-    expect(publicAuthSource).toContain("Google authentication did not complete");
+    expect(publicAuthSource).toContain('provider === "azure" ? "Microsoft" : provider === "apple" ? "Apple" : "Google"');
   });
 
   it("persists and refreshes Supabase tokens before tenant-scoped requests resume", () => {

@@ -30,13 +30,15 @@ describe("public authentication experience", () => {
     expect(dashboardSource).toContain("window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY)");
   });
 
-  it("gives a visible, recoverable path when Google OAuth is cancelled or otherwise returns an error", () => {
-    expect(authViewSource).toContain("oauthRecoveryTitle");
-    expect(authViewSource).toContain("oauthRecoveryCopy");
-    expect(authViewSource).toContain("function retryGoogle()");
-    expect(authViewSource).toContain('onOAuth("google")');
+  it("gives visible, provider-specific recovery paths when Google, Microsoft, or Apple OAuth returns an error", () => {
+    expect(authViewSource).toContain("Google sign-in was not completed");
+    expect(authViewSource).toContain("Microsoft sign-in was not completed");
+    expect(authViewSource).toContain("Apple sign-in was not completed");
+    expect(authViewSource).toContain("function retryProvider()");
+    expect(authViewSource).toContain("onOAuth(oauthProvider)");
     expect(authViewSource).toContain("function useEmailInstead()");
     expect(authGatewaySource).toContain("onClearOAuthError={() => setOauthError(null)}");
-    expect(authGatewaySource).toContain("Google authentication did not complete");
+    expect(authGatewaySource).toContain("oauth_provider");
+    expect(authGatewaySource).toContain('provider === "azure" ? "Microsoft" : provider === "apple" ? "Apple" : "Google"');
   });
 });

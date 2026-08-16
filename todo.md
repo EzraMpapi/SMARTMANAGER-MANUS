@@ -435,3 +435,7 @@
 - [x] Assess session-only mobile logout test prerequisites and the current OAuth error presentation.
 - [x] Add visual OAuth-error recovery guidance and regression coverage for session-only authentication behavior.
 - [x] Run validation, publish, and deliver the authentication recovery update.
+- [x] Review current provider recovery behavior and mobile authentication test coverage.
+- [x] Add Microsoft- and Apple-specific OAuth recovery guidance with regression coverage.
+- [x] Create an end-to-end mobile authentication device test matrix and preserve the approved-square-icon handoff requirement.
+- [x] Run validation, publish, and deliver the provider recovery update.

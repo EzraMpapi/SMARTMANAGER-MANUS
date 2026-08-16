@@ -10,6 +10,12 @@ const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
 const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token";
 const SESSION_REFRESH_TOKEN_STORAGE_KEY = "bs_session_refresh_token";
 const configured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+const OAUTH_PROVIDERS = new Set(["google", "azure", "apple"]);
+
+function oauthProviderFromSearch() {
+  const provider = new URLSearchParams(window.location.search).get("oauth_provider");
+  return OAUTH_PROVIDERS.has(provider) ? provider : "google";
+}
 
 async function authRequest(path, init = {}) {
   if (!configured) {
@@ -45,6 +51,7 @@ function persistAuthSession(result, remember = true) {
 function withoutAuthView() {
   const url = new URL(window.location.href);
   url.searchParams.delete("auth");
+  url.searchParams.delete("oauth_provider");
   url.hash = "";
   return `${url.pathname}${url.search}`;
 }
@@ -61,6 +68,7 @@ export default function PublicAuthGateway() {
   const [email, setEmail] = useState("");
   const [recoveryToken, setRecoveryToken] = useState(null);
   const [oauthError, setOauthError] = useState(null);
+  const [oauthProvider, setOauthProvider] = useState(oauthProviderFromSearch);
   const invitationPending = useMemo(() => new URLSearchParams(window.location.search).has("invite"), []);
 
   function navigate(next, contextEmail = "") {
@@ -76,8 +84,10 @@ export default function PublicAuthGateway() {
     if (!window.location.hash) return;
     const callback = oauthCallbackFromHash(window.location.hash);
     if (callback.errorCode) {
+      const provider = oauthProviderFromSearch();
+      setOauthProvider(provider);
       window.history.replaceState(null, "", withoutAuthView());
-      setOauthError("Google authentication did not complete. Please try again or use another approved sign-in method.");
+      setOauthError(`${provider === "azure" ? "Microsoft" : provider === "apple" ? "Apple" : "Google"} authentication did not complete. Please try again or use another approved sign-in method.`);
       return;
     }
     if (!callback.accessToken) return;
@@ -120,12 +130,14 @@ export default function PublicAuthGateway() {
 
   function oauth(provider) {
     if (!configured) return;
-    const redirectTo = new URL(window.location.href); redirectTo.searchParams.delete("auth");
+    setOauthProvider(provider);
+    setOauthError(null);
+    const redirectTo = new URL(window.location.href); redirectTo.searchParams.delete("auth"); redirectTo.searchParams.set("oauth_provider", provider);
     window.location.assign(`${SUPABASE_URL}/auth/v1/authorize?provider=${encodeURIComponent(provider)}&redirect_to=${encodeURIComponent(redirectTo.toString())}`);
   }
 
   if (view === "forgot") return <ForgotPasswordView onBack={() => navigate("login")} onRequest={requestRecovery} toMessage={toAuthUserMessage} />;
   if (view === "reset") return <ResetPasswordView recoveryToken={recoveryToken} onBack={() => navigate("login")} onUpdate={updatePassword} toMessage={toAuthUserMessage} />;
   if (view === "verify") return <VerificationView email={email} onBack={() => navigate("login")} onResend={resendVerification} toMessage={toAuthUserMessage} />;
-  return <EnterpriseLoginView configured={configured} onSignIn={signIn} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} onClearOAuthError={() => setOauthError(null)} toMessage={toAuthUserMessage} invitationPending={invitationPending} initialError={oauthError} />;
+  return <EnterpriseLoginView configured={configured} onSignIn={signIn} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} onClearOAuthError={() => setOauthError(null)} oauthProvider={oauthProvider} toMessage={toAuthUserMessage} invitationPending={invitationPending} initialError={oauthError} />;
 }
