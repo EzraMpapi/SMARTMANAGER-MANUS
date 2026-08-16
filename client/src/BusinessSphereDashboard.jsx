@@ -3595,6 +3595,23 @@ function logAudit(action, module, actor, details) {
     .catch((error) => authDebug("Audit event was not persisted", { message: error?.message || "unknown" }));
 }
 
+async function recordConfirmedIndustryFocusAudit(previousFocus, nextFocus, actor) {
+  if (previousFocus === nextFocus) return;
+  const entry = {
+    action: "Organization industry focus changed",
+    module: "Settings",
+    actor: actor || "Unattributed",
+    details: `${previousFocus || "general"} → ${nextFocus}`,
+  };
+  if (!IS_CONFIGURED) {
+    auditBus.push({ id: `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ...entry, timestamp: new Date().toISOString() });
+    return;
+  }
+  const row = await sb("audit_log").insert(entry).single().run();
+  if (!row?.id) throw new Error("The organization industry audit event was not confirmed.");
+  auditBus.push(mapAuditLogRow(row));
+}
+
 // Recording a payment is not a simple status flip — it can be partial, and
 // it needs its own record for the payment history an invoice shows. This
 // is shared by Sales and Finance since both operate on the same invoices
@@ -32192,6 +32209,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
   }
 
   async function saveProfile() {
+    const previousIndustryFocus = normalizeOrganizationIndustryFocus(company.industry);
     if (IS_CONFIGURED) {
       try {
         await sb("companies").eq("id", draft.id).update({
@@ -32208,6 +32226,11 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
         draft.brandAccentColor = branding.accentColor;
         draft.industry = branding.industryFocus;
         rememberConfirmedOrganizationIndustryFocus(branding.industryFocus);
+        try {
+          await recordConfirmedIndustryFocusAudit(previousIndustryFocus, branding.industryFocus, currentUser.name);
+        } catch (auditError) {
+          notify("Industry focus was saved, but its audit event could not be persisted. Please retry the change from Settings.", "error");
+        }
       } catch (e) {
         notify("Profile changes were not saved to the server. Please try again.", "error");
         return;
@@ -33249,6 +33272,7 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
   const [error, setError] = useState("");
   const supported = typeof window !== "undefined" && Boolean(window.PublicKeyCredential && navigator.credentials?.create);
   const passkeyDisabled = /not enabled|passkey_disabled/i.test(error);
+  const recoveryReady = passkeys.length >= 2;
 
   const getClient = async () => createAccountPasskeyClient({
     supabaseUrl: SUPABASE_URL,
@@ -33344,6 +33368,7 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
       {!supported && <p role="status" className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[11.5px] text-amber-800">Passkeys need a recent HTTPS browser with WebAuthn support. No fallback credential is stored locally.</p>}
       {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[11.5px] text-red-700">{error}</p>}
       {!loading && !error && passkeys.length === 0 && <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5"><p className="text-[12px] font-bold text-emerald-950">Set up your first passkey</p><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">Your verified Smart Manager account can now use a device, password manager, or security key for phishing-resistant sign-in. Keep a second approved recovery method available.</p><button type="button" onClick={registerPasskey} disabled={!supported || busy === "register"} className="mt-3 rounded-lg bg-emerald-700 px-3 py-2 text-[11px] font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">{busy === "register" ? "Waiting for device…" : "Set up passkey"}</button></section>}
+      {!loading && !error && passkeys.length > 0 && <section className={`mt-4 rounded-xl border p-3.5 ${recoveryReady ? "border-emerald-200 bg-emerald-50/70" : "border-amber-200 bg-amber-50/80"}`}><div className="flex items-start justify-between gap-3"><div><p className={`text-[12px] font-bold ${recoveryReady ? "text-emerald-950" : "text-amber-950"}`}>{recoveryReady ? "Passkey recovery readiness: protected" : "Add a second passkey for recovery"}</p><p className={`mt-1 text-[11.5px] leading-5 ${recoveryReady ? "text-emerald-900/80" : "text-amber-900/80"}`}>{recoveryReady ? `Two or more passkeys are registered (${passkeys.length}). Keep them on separate approved devices or password managers and retain a tested fallback method.` : "One passkey is registered. Add a second passkey on a separate approved device or password manager before relying on passkeys for daily sign-in."}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${recoveryReady ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{recoveryReady ? "2+ passkeys" : "1 passkey"}</span></div>{!recoveryReady && <button type="button" onClick={registerPasskey} disabled={!supported || busy === "register"} className="mt-3 rounded-lg bg-amber-700 px-3 py-2 text-[11px] font-semibold text-white hover:bg-amber-800 disabled:opacity-50">{busy === "register" ? "Waiting for device…" : "Add recovery passkey"}</button>}</section>}
       {isAdministrator && <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3.5" aria-label="Passkey readiness"><div className="flex items-center justify-between gap-3"><div><p className="text-[12px] font-bold text-slate-900">Passkey readiness</p><p className="mt-1 text-[11.5px] leading-5 text-slate-600">{passkeyDisabled ? "Action required: enable Supabase Authentication → Passkeys and configure the stable relying-party ID and allowed HTTPS origins." : !supported ? "This browser cannot verify WebAuthn capability. Review readiness from a recent HTTPS browser." : "This browser can request passkeys. Confirm the Supabase relying-party configuration before organization-wide rollout."}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${passkeyDisabled ? "bg-amber-100 text-amber-800" : supported ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>{passkeyDisabled ? "Setup required" : supported ? "Browser ready" : "Browser check"}</span></div></section>}
       <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">
         {loading ? <p className="p-4 text-center text-[12px] text-slate-400">Loading confirmed account credentials…</p> : passkeys.length === 0 ? <p className="p-4 text-center text-[12px] text-slate-400">No account passkeys are registered yet. Keep your normal sign-in method available before adding one.</p> : passkeys.map((passkey) => (
@@ -38733,7 +38758,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
   const [account, setAccount] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [company, setCompany] = useState({
-    name: "", category: COMPANY_CATEGORIES[0], country: SIGNUP_COUNTRIES[0], currency: SIGNUP_CURRENCIES[0],
+    name: "", category: "general", country: SIGNUP_COUNTRIES[0], currency: SIGNUP_CURRENCIES[0],
     timezone: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).timezone, website: "", taxId: "", logo: null, brandColor: "#0B5D3B", brandAccentColor: "#16A34A",
   });
   const directPasswordSignupMutation = trpc.accountRegistration.createConfirmedPasswordAccount.useMutation();
@@ -38815,8 +38840,10 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       let brandingWarning = null;
       if (mode === "create" && rpcResult?.id) {
         try {
-          const branding = await workspaceBrandingMutation.mutateAsync({ primaryColor: company.brandColor, accentColor: company.brandAccentColor, logo: workspaceLogoPayload(company.logo) });
-          Object.assign(rpcResult, { logo: branding.logo, brand_primary_color: branding.primaryColor, brand_accent_color: branding.accentColor });
+          const branding = await workspaceBrandingMutation.mutateAsync({ primaryColor: company.brandColor, accentColor: company.brandAccentColor, industryFocus: normalizeOrganizationIndustryFocus(company.category), logo: workspaceLogoPayload(company.logo) });
+          rememberConfirmedOrganizationIndustryFocus(branding.industryFocus);
+          await recordConfirmedIndustryFocusAudit("", branding.industryFocus, account.fullName.trim());
+          Object.assign(rpcResult, { logo: branding.logo, brand_primary_color: branding.primaryColor, brand_accent_color: branding.accentColor, category: branding.industryFocus });
         } catch (brandingError) {
           brandingWarning = brandingError?.message || "Workspace branding could not be saved. You can retry from Settings.";
         }
@@ -39001,10 +39028,11 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Industry</label>
+                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Organization industry focus</label>
                   <select className={inputClass} value={company.category} onChange={(e) => setCompanyField("category", e.target.value)}>
-                    {COMPANY_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                    {ORGANIZATION_INDUSTRY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
                   </select>
+                  <p className="mt-1 text-[10.5px] leading-4 text-slate-400">This securely tailors the login module constellation. You can change it later in Settings.</p>
                 </div>
                 <div>
                   <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Time zone</label>
@@ -39058,7 +39086,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [fullName, setFullName] = useState(oauthUser.fullName || "");
-  const [company, setCompany] = useState(() => ({ name: "", category: COMPANY_CATEGORIES[0], country: SIGNUP_COUNTRIES[0], currency: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).currency, timezone: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).timezone, website: "", taxId: "" }));
+  const [company, setCompany] = useState(() => ({ name: "", category: "general", country: SIGNUP_COUNTRIES[0], currency: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).currency, timezone: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).timezone, website: "", taxId: "" }));
   const [selectedModules, setSelectedModules] = useState(() => new Set(ONBOARDING_MODULES.map((m) => m.id)));
   const [businessScale, setBusinessScale] = useState("large");
   const [firstBranch, setFirstBranch] = useState("");
@@ -39093,6 +39121,12 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
 
       if (!rpcResult?.id) throw new Error("Workspace setup did not return a confirmed company record.");
 
+      if (mode === "create") {
+        const confirmedFocus = normalizeOrganizationIndustryFocus(company.category);
+        rememberConfirmedOrganizationIndustryFocus(confirmedFocus);
+        try { await recordConfirmedIndustryFocusAudit("", confirmedFocus, fullName.trim()); } catch (_auditError) { /* signup remains valid; the security viewer does not imply an unconfirmed event */ }
+      }
+
       if (mode === "create" && rpcResult?.id) {
         try {
           await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale, timezone: company.timezone }).run();
@@ -39105,7 +39139,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         userId: oauthUser.id, email: oauthUser.email, accessToken: oauthUser.accessToken,
         fullName: fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
         customerRef: isPortalRole ? customerRef.trim() : null,
-        company: { id: rpcResult.id, name: rpcResult.name || company.name.trim(), country: company.country, currency: company.currency, timezone: company.timezone, businessScale },
+        company: { id: rpcResult.id, name: rpcResult.name || company.name.trim(), category: company.category, industry: company.category, country: company.country, currency: company.currency, timezone: company.timezone, businessScale },
         workspaceCreated: mode === "create",
       });
     } catch (err) {
@@ -39140,8 +39174,11 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
           {mode === "create" ? (
             <div className="space-y-4">
               <FormField label="Organization name" required><input className={inputClass} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder="e.g. BEIRAHISI HARDWARE" /></FormField>
-              <FormField label="Business type">
-                <CategoryPicker value={company.category} onChange={(v) => setCompanyField("category", v)} />
+              <FormField label="Organization industry focus">
+                <select className={inputClass} value={company.category} onChange={(event) => setCompanyField("category", event.target.value)}>
+                  {ORGANIZATION_INDUSTRY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                </select>
+                <p className="mt-1 text-[10.5px] leading-4 text-slate-400">This saves your confirmed organization focus and tailors the next sign-in view.</p>
               </FormField>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Country">

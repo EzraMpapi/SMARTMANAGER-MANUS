@@ -14,9 +14,13 @@ The login page also offers **Sign in with a passkey**. It uses Supabase Auth’s
 
 After a verified user signs in, Security Settings shows **Set up your first passkey** when the account has no enrolled passkeys. The guidance does not replace password, recovery, or approved OAuth methods. The **Passkey readiness** card is visible only to organization-administrator roles. It reports the local browser’s WebAuthn capability and surfaces an explicit action-required state when Supabase confirms that passkeys are disabled; it does not claim that the platform relying-party configuration is complete unless a live enrollment succeeds.
 
+After the first passkey is enrolled, the same panel shows **Add a second passkey for recovery** until the account has at least two registered credentials. The recommendation is to use separate approved devices or password managers and retain a tested recovery method. Two registered passkeys improve account recovery options but do not replace the need for organization-approved account recovery procedures.
+
 ## Organization industry focus
 
 An organization administrator can select one supported industry focus in Company Profile: universal business, retail, manufacturing, professional services, healthcare, education, or hospitality. The value is persisted in the tenant’s `companies.category` field through the existing owner-authorized branding procedure. After a confirmed authenticated workspace bootstrap, the login presentation keeps a non-authoritative browser presentation cache of that confirmed value so the next login can restore the appropriate module constellation. The browser cache never authorizes access or replaces the tenant-scoped server value.
+
+New workspace setup flows—both password-based and OAuth—present the same controlled focus selection. The selected focus is submitted to the tenant-creating RPC and followed by the confirmed branding save where applicable. A confirmed industry-focus change from Settings writes `Organization industry focus changed` to the RLS-scoped `public.audit_log` history only after the tenant audit insert returns a database row. If the audit insert fails, the UI reports that the focus change succeeded but the audit event needs retry; it never presents an unconfirmed audit record as durable history.
 
 | Requirement | Operator action |
 |---|---|

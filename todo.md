@@ -503,3 +503,7 @@
 - [x] Persist an administrator-selected organization industry focus through server-confirmed tenant branding settings and restore it on the login constellation.
 - [x] Add passkey-first enrollment guidance for eligible verified users and an administrator-only passkey readiness indicator in Security Settings.
 - [x] Validate tenant isolation, role boundaries, onboarding behavior, responsive layouts, automated checks, production build, publication, and GitHub delivery.
+- [x] Review workspace setup inputs, existing passkey enrollment state, and the tenant-safe audit-log service before extending the flows.
+- [x] Add a supported organization industry focus selection to workspace setup and persist it through the confirmed tenant branding flow.
+- [x] Add two-passkey recovery readiness guidance and a durable, tenant-scoped audit-log event for confirmed organization industry-focus changes.
+- [x] Validate setup persistence, role boundaries, audit-history behavior, automated checks, production build, publication, and GitHub delivery.
