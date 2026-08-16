@@ -29,6 +29,8 @@ import { jsPDF } from "jspdf";
 import { trpc } from "./lib/trpc";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "./lib/authErrors";
 import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
+import { addProductToPosCart, calculatePosPaymentSummary, createPosSaleAttempt, productMatchesPosLookup } from "./lib/posTransactionEngine";
+import { createPendingPosSale, isRetryablePosTransportError, readPendingPosSales, updatePendingPosSale, writePendingPosSales } from "./lib/posPendingQueue";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -1470,7 +1472,7 @@ function mapCampaignRow(r) {
 }
 
 function mapPosItems(items) {
-  return (items || []).map((it) => ({ sku: it.item_sku, name: it.item_name, qty: Number(it.qty) || 0, price: Number(it.price) || 0 }));
+  return (items || []).map((it) => ({ sku: it.item_sku || it.sku, name: it.item_name || it.name, qty: Number(it.qty) || 0, price: Number(it.price) || 0 }));
 }
 
 function mapReturnRow(rr) {
@@ -1481,11 +1483,13 @@ function mapReturnRow(rr) {
 }
 
 function mapPosTransactionRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
   return {
     id: r.doc_number, dbId: r.id,
-    cashier: r.profiles?.full_name || "Unknown", method: r.payment_method, date: r.created_at?.slice(0, 10),
+    cashier: r.profiles?.full_name || data.cashier || "Unknown", method: r.payment_method || data.payment_method || "",
+    status: r.status || data.status || "Completed", customerId: data.customer_id || null, customer: data.customer_name || "Guest", rawData: data, date: r.created_at?.slice(0, 10),
     createdAt: r.created_at || null,
-    items: mapPosItems(r.pos_transaction_items),
+    items: mapPosItems(r.pos_transaction_items?.length ? r.pos_transaction_items : data.items),
     returns: (r.pos_returns || []).map(mapReturnRow),
   };
 }
@@ -4932,12 +4936,14 @@ const campaignsSeed = [
 // POS prices reuse the same retail markup as the E-Commerce storefront —
 // a physical item costs the customer the same whether they buy it at the
 // counter or online, since both channels are selling the same stock.
-const POS_PAYMENT_METHODS = ["Cash", "Card", "Mobile Money"];
+const POS_PAYMENT_METHODS = ["Cash", "Card", "Mobile Money", "Bank Transfer", "Customer Credit"];
 
 const POS_PAYMENT_COLOR = {
   Cash: "#16A34A",
   Card: "#16A34A",
   "Mobile Money": "#F59E0B",
+  "Bank Transfer": "#2563EB",
+  "Customer Credit": "#7C3AED",
 };
 
 const RETURN_REASONS = ["Customer changed mind", "Wrong item", "Defective / damaged", "Duplicate purchase", "Other"];
@@ -35911,10 +35917,11 @@ function PosShiftPanel({ transactions, currentUser }) {
 function POS({ inventory, transactionsHook, company, currentUser }) {
   const [tab, setTab] = useState("checkout");
   const transactions = transactionsHook;
+  const customers = useCompanyTable("crm_contacts", contactsSeed, { order: { col: "name", ascending: true }, mapRow: mapContactRow });
 
   const todayStr = TODAY.toISOString().slice(0, 10);
   const stats = useMemo(() => {
-    const today = transactions.rows.filter((t) => t.date === todayStr);
+    const today = transactions.rows.filter((t) => t.status === "Completed" && t.date === todayStr);
     const revenue = today.reduce((s, t) => s + t.items.reduce((si, it) => si + it.qty * it.price, 0) * (1 + TAX_RATE), 0);
     const itemsSold = today.reduce((s, t) => s + t.items.reduce((si, it) => si + it.qty, 0), 0);
     return { count: today.length, revenue, itemsSold, avg: today.length ? revenue / today.length : 0 };
@@ -35957,19 +35964,24 @@ function POS({ inventory, transactionsHook, company, currentUser }) {
         {POS_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "checkout" && <Checkout inventory={inventory} transactions={transactions} company={company} />}
+      {tab === "checkout" && <Checkout inventory={inventory} transactions={transactions} company={company} currentUser={currentUser} customers={customers.rows} />}
       {tab === "history" && <RegisterHistory transactions={transactions} inventory={inventory} company={company} />}
     </div>
   );
 }
 
-function Checkout({ inventory, transactions, company }) {
+function Checkout({ inventory, transactions, company, currentUser, customers }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [cart, setCart] = useState([]); // [{ sku, name, price, qty }]
-  const [method, setMethod] = useState("Cash");
+  const [payments, setPayments] = useState([{ id: "payment-1", method: "Cash", amount: "" }]);
+  const [saleAttempt, setSaleAttempt] = useState(null);
+  const [activeHeldOrder, setActiveHeldOrder] = useState(null);
+  const [customerId, setCustomerId] = useState("guest");
   const [receipt, setReceipt] = useState(null);
   const [busy, setBusy] = useState(false);
+  const queueScope = useMemo(() => ({ companyId: company?.id || "workspace", userId: currentUser?.id || "session" }), [company?.id, currentUser?.id]);
+  const [pendingSales, setPendingSales] = useState([]);
 
   // POS sells the same physical stock Inventory tracks, priced with the
   // same retail markup the storefront uses — one product, one price,
@@ -35983,39 +35995,192 @@ function Checkout({ inventory, transactions, company }) {
   const filtered = useMemo(() => {
     return products.filter((p) => {
       const matchesCat = category === "all" || p.category === category;
-      const matchesQ = !query.trim() || p.name.toLowerCase().includes(query.toLowerCase()) || p.sku.toLowerCase().includes(query.toLowerCase());
+      const matchesQ = productMatchesPosLookup(p, query);
       return matchesCat && matchesQ;
     });
   }, [products, category, query]);
 
   function addToCart(item) {
     const stock = inventory.rows.find((it) => it.sku === item.sku)?.qty || 0;
-    setCart((prev) => {
-      const existing = prev.find((c) => c.sku === item.sku);
-      if (existing) {
-        if (existing.qty >= stock) {
-          notify(`Only ${stock} ${item.unit} of ${item.name} in stock`, "error");
-          return prev;
-        }
-        return prev.map((c) => (c.sku === item.sku ? { ...c, qty: c.qty + 1 } : c));
+    setCart((previous) => {
+      const result = addProductToPosCart(previous, item, stock);
+      if (!result.added) {
+        notify(result.reason === "OUT_OF_STOCK" ? `${item.name} is out of stock` : `Only ${stock} ${item.unit} of ${item.name} is available`, "error");
       }
-      if (stock <= 0) {
-        notify(`${item.name} is out of stock`, "error");
-        return prev;
-      }
-      return [...prev, { sku: item.sku, name: item.name, price: item.price, qty: 1, unit: item.unit }];
+      return result.cart;
     });
   }
 
   function changeQty(sku, delta) {
-    setCart((prev) => prev
-      .map((c) => (c.sku === sku ? { ...c, qty: c.qty + delta } : c))
-      .filter((c) => c.qty > 0));
+    setCart((previous) => {
+      const current = previous.find((line) => line.sku === sku);
+      const stock = inventory.rows.find((item) => item.sku === sku)?.qty || 0;
+      if (delta > 0 && current && current.qty >= stock) {
+        notify(`Only ${stock} ${current.unit || "unit"} of ${current.name} is available`, "error");
+        return previous;
+      }
+      return previous.map((line) => (line.sku === sku ? { ...line, qty: line.qty + delta } : line)).filter((line) => line.qty > 0);
+    });
   }
 
   const subtotal = cart.reduce((s, c) => s + c.qty * c.price, 0);
   const tax = Math.round(subtotal * TAX_RATE);
   const total = subtotal + tax;
+  const paymentSummary = useMemo(() => calculatePosPaymentSummary(payments, total), [payments, total]);
+  const heldOrders = useMemo(() => transactions.rows.filter((transaction) => transaction.status === "Held"), [transactions.rows]);
+  const selectedCustomer = useMemo(() => (customers || []).find((customer) => customer.dbId === customerId || customer.id === customerId) || null, [customers, customerId]);
+  const usesCustomerCredit = paymentSummary.allocations.some((payment) => payment.method === "Customer Credit");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setPendingSales(readPendingPosSales(window.localStorage, queueScope));
+  }, [queueScope]);
+
+  function persistPendingSales(nextRecords) {
+    setPendingSales(nextRecords);
+    if (typeof window !== "undefined") writePendingPosSales(window.localStorage, queueScope, nextRecords);
+  }
+
+  function updatePayment(id, patch) {
+    setPayments((current) => current.map((payment) => payment.id === id ? { ...payment, ...patch } : payment));
+    setSaleAttempt(null);
+  }
+
+  function addPaymentAllocation() {
+    setPayments((current) => [...current, { id: `payment-${Date.now()}`, method: "Mobile Money", amount: "" }]);
+    setSaleAttempt(null);
+  }
+
+  function resetSale() {
+    setCart([]);
+    setPayments([{ id: "payment-1", method: "Cash", amount: "" }]);
+    setSaleAttempt(null);
+    setActiveHeldOrder(null);
+    setCustomerId("guest");
+  }
+
+  async function holdSale() {
+    if (cart.length === 0 || busy) return;
+    setBusy(true);
+    const attempt = saleAttempt || createPosSaleAttempt({
+      createDocumentNumber: () => docId("HOLD"),
+      createIdempotencyKey: () => globalThis.crypto?.randomUUID?.() || `hold-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    });
+    setSaleAttempt(attempt);
+    try {
+      if (!IS_CONFIGURED) throw new Error("The POS is not connected to the configured server.");
+      const { data, error } = await runCompanyTableMutation("pos_transactions", "insert", {
+        doc_number: attempt.docNumber,
+        cashier: currentUser?.name || "Cashier",
+        status: "Held",
+        amount: total,
+        notes: "Held POS cart",
+        items: cart.map((line) => ({ sku: line.sku, name: line.name, qty: line.qty, price: line.price })),
+        payments: payments.map((payment) => ({ method: payment.method, amount: Number(payment.amount) || 0 })),
+        subtotal,
+        tax,
+        total,
+        idempotency_key: attempt.idempotencyKey,
+        customer_id: selectedCustomer?.dbId || null,
+        customer_name: selectedCustomer?.name || "Guest",
+      });
+      if (error || !data) throw error || new Error("The held cart was not confirmed by the server.");
+      const saved = mapPosTransactionRow(data);
+      transactions.setRows((previous) => [saved, ...previous.filter((transaction) => transaction.dbId !== saved.dbId)]);
+      notify(`Sale held as ${saved.id}. Inventory has not been deducted.`, "success");
+      resetSale();
+    } catch (error) {
+      notify(persistenceFailureMessage("Holding the sale", error), "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function resumeHeldSale(order) {
+    setCart(order.items || []);
+    const savedPayments = Array.isArray(order.rawData?.payments) && order.rawData.payments.length ? order.rawData.payments : [{ method: "Cash", amount: "" }];
+    setPayments(savedPayments.map((payment, index) => ({ id: `resume-payment-${index}`, method: payment.method || "Cash", amount: String(payment.amount || "") })));
+    setSaleAttempt({ docNumber: order.id, idempotencyKey: order.rawData?.idempotency_key || `held-${order.dbId}` });
+    setActiveHeldOrder(order);
+    setCustomerId(order.rawData?.customer_id || "guest");
+    notify(`Resumed ${order.id}. Complete the payment to finalize the sale.`, "success");
+  }
+
+  function queueCurrentSale(attempt, error) {
+    const record = createPendingPosSale({
+      attempt,
+      items: cart.map((line) => ({ sku: line.sku, name: line.name, qty: line.qty, price: line.price })),
+      payments,
+      subtotal,
+      tax,
+      total,
+      customerId: selectedCustomer?.dbId || null,
+      customerName: selectedCustomer?.name || "Guest",
+    });
+    const nextRecords = [...pendingSales.filter((pending) => pending.idempotencyKey !== record.idempotencyKey), { ...record, lastError: String(error?.message || "Connection unavailable") }];
+    persistPendingSales(nextRecords);
+    resetSale();
+    notify(`Sale ${record.docNumber} is pending sync. It is not yet completed and has not changed inventory or revenue.`, "error");
+  }
+
+  async function synchronizePendingSale(record) {
+    const currentBeforeSync = readPendingPosSales(typeof window === "undefined" ? null : window.localStorage, queueScope);
+    const syncing = updatePendingPosSale(currentBeforeSync, record.idempotencyKey, { status: "syncing", lastError: null });
+    persistPendingSales(syncing);
+    try {
+      const confirmed = await callRpc("complete_pos_sale", {
+        p_idempotency_key: record.idempotencyKey,
+        p_doc_number: record.docNumber,
+        p_items: record.items,
+        p_payments: record.payments,
+        p_subtotal: record.subtotal,
+        p_tax: record.tax,
+        p_total: record.total,
+        p_customer_id: record.customerId,
+        p_customer_name: record.customerName,
+      }, getStoredAccessToken());
+      const row = await sb("pos_transactions").select("*,pos_transaction_items(*),pos_returns(*,pos_return_items(*))").eq("id", confirmed.transaction_id).single().run();
+      const savedTransaction = mapPosTransactionRow(row);
+      transactions.setRows((previous) => [savedTransaction, ...previous.filter((transaction) => transaction.dbId !== savedTransaction.dbId)]);
+      await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean));
+      const currentAfterSync = readPendingPosSales(typeof window === "undefined" ? null : window.localStorage, queueScope);
+      const nextRecords = currentAfterSync.filter((pending) => pending.idempotencyKey !== record.idempotencyKey);
+      persistPendingSales(nextRecords);
+      const summary = calculatePosPaymentSummary(record.payments, record.total);
+      setReceipt({ ...savedTransaction, subtotal: record.subtotal, tax: record.tax, total: record.total, change: summary.change, payments: summary.allocations, method: summary.allocations.map((payment) => payment.method).join(" + ") });
+      notify(confirmed.idempotent_replay ? `Pending receipt ${record.docNumber} was already confirmed.` : `Pending receipt ${record.docNumber} synchronized successfully.`);
+    } catch (error) {
+      const current = readPendingPosSales(typeof window === "undefined" ? null : window.localStorage, queueScope);
+      const nextStatus = isRetryablePosTransportError(error) ? "pending" : "needs_attention";
+      const nextRecords = updatePendingPosSale(current, record.idempotencyKey, { status: nextStatus, attempts: (record.attempts || 0) + 1, lastError: String(error?.message || "Synchronization failed") });
+      persistPendingSales(nextRecords);
+      notify(nextStatus === "needs_attention" ? `Pending receipt ${record.docNumber} needs attention before it can sync.` : `Pending receipt ${record.docNumber} is still waiting for a connection.`, "error");
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleOnline = async () => {
+      for (const record of pendingSales.filter((entry) => entry.status === "pending")) {
+        await synchronizePendingSale(record);
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [pendingSales]);
+
+  function handleScan(event) {
+    if (event.key !== "Enter" || !query.trim()) return;
+    event.preventDefault();
+    const normalized = query.trim().toLocaleLowerCase();
+    const exact = products.find((product) => [product.barcode, product.sku, product.code].some((value) => String(value || "").trim().toLocaleLowerCase() === normalized));
+    if (!exact) {
+      notify(`No product matches barcode or SKU “${query.trim()}”.`, "error");
+      return;
+    }
+    addToCart(exact);
+    setQuery("");
+  }
 
   async function completeSale() {
     if (cart.length === 0 || busy) return;
@@ -36031,44 +36196,62 @@ function Checkout({ inventory, transactions, company }) {
       notify(`Not enough stock for: ${shortages.map((s) => s.name).join(", ")}`, "error");
       return;
     }
-
-    setBusy(true);
-    const draft = { id: docId("POS"), cashier: currentUser?.name || "You", method, date: TODAY.toISOString().slice(0, 10), createdAt: new Date().toISOString(), items: cart.map((c) => ({ sku: c.sku, name: c.name, qty: c.qty, price: c.price })), returns: [] };
-
-    // Deduct sold quantities from the shared Inventory table immediately —
-    // the same table Inventory, Manufacturing, and Sales all read.
-    inventory.setRows((prev) => prev.map((it) => {
-      const line = cart.find((c) => c.sku === it.sku);
-      return line ? { ...it, qty: Math.max(0, it.qty - line.qty) } : it;
-    }));
-    transactions.setRows((prev) => [draft, ...prev]);
-
-    if (IS_CONFIGURED) {
-      try {
-        const header = await sb("pos_transactions").insert({
-          doc_number: draft.id, payment_method: method, subtotal, tax, total,
-        }).single().run();
-        if (header?.id) {
-          await sb("pos_transaction_items").insert(
-            cart.map((c) => ({ transaction_id: header.id, item_name: c.name, item_sku: c.sku, qty: c.qty, price: c.price }))
-          ).run();
-          transactions.setRows((prev) => prev.map((t) => (t.id === draft.id ? { ...t, dbId: header.id } : t)));
-        }
-        for (const c of cart) {
-          const item = inventory.rows.find((it) => it.sku === c.sku);
-          const newQty = Math.max(0, (item?.qty || 0) - c.qty);
-          await sb("inventory_items").eq("sku", c.sku).update({ qty_on_hand: newQty }).run();
-          await sb("inventory_stock_movements").insert({ item_id: c.sku, movement: "Out", qty: c.qty, reference: `${draft.id} sale` }).run();
-        }
-      } catch (e) {
-        notify("Sale completed locally, but saving to the server failed.", "error");
-      }
+    if (!paymentSummary.isComplete) {
+      const message = paymentSummary.overpaymentWithoutCash > 0
+        ? "A non-cash payment cannot exceed the amount due. Adjust the allocation or add a cash tender for change."
+        : `Payment is incomplete — TZS ${money(Math.round(paymentSummary.remaining))}k remains.`;
+      notify(message, "error");
+      return;
+    }
+    if (usesCustomerCredit && !selectedCustomer) {
+      notify("Customer Credit requires an existing customer selected from this workspace.", "error");
+      return;
     }
 
-    notify(`Sale complete — TZS ${money(total)}k`);
-    setReceipt({ ...draft, subtotal, tax, total });
-    setCart([]);
-    setBusy(false);
+    setBusy(true);
+    const attempt = saleAttempt || createPosSaleAttempt({
+      createDocumentNumber: () => docId("POS"),
+      createIdempotencyKey: () => globalThis.crypto?.randomUUID?.() || `pos-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    });
+    setSaleAttempt(attempt);
+    try {
+      if (!IS_CONFIGURED) throw new Error("The POS is not connected to the configured server.");
+      const confirmed = await callRpc("complete_pos_sale", {
+        p_idempotency_key: attempt.idempotencyKey,
+        p_doc_number: attempt.docNumber,
+        p_items: cart.map((line) => ({ sku: line.sku, name: line.name, qty: line.qty, price: line.price })),
+        p_payments: payments.map((payment) => ({ method: payment.method, amount: Number(payment.amount) || 0 })),
+        p_subtotal: subtotal,
+        p_tax: tax,
+        p_total: total,
+        p_customer_id: selectedCustomer?.dbId || null,
+        p_customer_name: selectedCustomer?.name || "Guest",
+      }, getStoredAccessToken());
+      const row = await sb("pos_transactions").select("*,pos_transaction_items(*),pos_returns(*,pos_return_items(*))").eq("id", confirmed.transaction_id).single().run();
+      const savedTransaction = mapPosTransactionRow(row);
+      transactions.setRows((previous) => [savedTransaction, ...previous.filter((transaction) => transaction.dbId !== savedTransaction.dbId)]);
+      if (activeHeldOrder?.dbId) {
+        const { error: convertError } = await runCompanyTableMutation("pos_transactions", "update", {
+          status: "Converted",
+          notes: `Converted to completed receipt ${savedTransaction.id}`,
+          data: { ...(activeHeldOrder.rawData || {}), converted_transaction_id: savedTransaction.dbId },
+        }, { matchVal: activeHeldOrder.dbId });
+        if (convertError) throw convertError;
+      }
+      await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean));
+      const methodLabel = paymentSummary.allocations.map((payment) => payment.method).join(" + ");
+      notify(confirmed.idempotent_replay ? `Sale already confirmed — receipt ${confirmed.doc_number}.` : `Sale complete — TZS ${money(total)}k`);
+      setReceipt({ ...savedTransaction, method: methodLabel, subtotal, tax, total, change: paymentSummary.change, payments: paymentSummary.allocations });
+      resetSale();
+    } catch (error) {
+      if (isRetryablePosTransportError(error)) {
+        queueCurrentSale(attempt, error);
+      } else {
+        notify(persistenceFailureMessage("Completing the sale", error), "error");
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -36098,7 +36281,9 @@ function Checkout({ inventory, transactions, company }) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search or scan SKU..."
+              onKeyDown={handleScan}
+              placeholder="Search product, SKU, barcode, category, or brand..."
+              aria-label="Search products or scan a barcode"
               className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
             />
           </div>
@@ -36170,6 +36355,44 @@ function Checkout({ inventory, transactions, company }) {
           </div>
         )}
 
+        {pendingSales.length > 0 && (
+          <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50/70 p-2.5">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <p className="text-[11px] font-semibold text-sky-900">Pending sync</p>
+              <span className="text-[10px] text-sky-700">Not completed or counted in revenue</span>
+            </div>
+            <div className="space-y-1.5 max-h-28 overflow-y-auto">
+              {pendingSales.map((record) => (
+                <div key={record.idempotencyKey} className="rounded-md bg-white px-2 py-2 text-[11px]">
+                  <div className="flex items-center justify-between gap-2"><span className="font-mono text-slate-700 truncate">{record.docNumber}</span><span className={record.status === "needs_attention" ? "text-[#EF4444] shrink-0" : "text-sky-700 shrink-0"}>{record.status === "needs_attention" ? "Needs attention" : record.status === "syncing" ? "Syncing…" : "Waiting"}</span></div>
+                  {record.lastError && record.status === "needs_attention" && <p className="mt-1 text-[10px] text-[#EF4444] line-clamp-2">{record.lastError}</p>}
+                  <div className="sm-mobile-action-group flex gap-1.5 mt-1.5">
+                    <button type="button" disabled={record.status === "syncing" || busy} onClick={() => { void synchronizePendingSale(record); }} className="flex-1 rounded border border-sky-200 py-1 text-sky-800 hover:bg-sky-100 disabled:opacity-40">Retry sync</button>
+                    <button type="button" disabled={record.status === "syncing"} onClick={() => persistPendingSales(pendingSales.filter((pending) => pending.idempotencyKey !== record.idempotencyKey))} className="rounded border border-slate-200 px-2 py-1 text-slate-500 hover:text-[#EF4444] disabled:opacity-40">Discard</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {heldOrders.length > 0 && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/60 p-2.5">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <p className="text-[11px] font-semibold text-amber-900">Held sales</p>
+              <span className="text-[10px] text-amber-700">Inventory is not deducted</span>
+            </div>
+            <div className="space-y-1.5 max-h-24 overflow-y-auto">
+              {heldOrders.slice(0, 5).map((order) => (
+                <button key={order.dbId} type="button" onClick={() => resumeHeldSale(order)} className="w-full flex items-center justify-between gap-2 rounded-md bg-white px-2 py-1.5 text-left text-[11px] hover:bg-amber-100">
+                  <span className="font-mono text-slate-700 truncate">{order.id}</span>
+                  <span className="text-amber-800 shrink-0">Resume</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="border-t border-slate-100 pt-3 space-y-1.5 text-[12.5px] mb-4">
           <div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-mono">TZS {money(subtotal)}k</span></div>
           <div className="flex justify-between text-slate-500"><span>VAT ({Math.round(TAX_RATE * 100)}%)</span><span className="font-mono">TZS {money(tax)}k</span></div>
@@ -36177,32 +36400,46 @@ function Checkout({ inventory, transactions, company }) {
         </div>
 
         <div className="mb-4">
-          <p className="text-[11px] font-medium text-slate-500 mb-2">Payment method</p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {POS_PAYMENT_METHODS.map((m) => {
-              const Icon = m === "Cash" ? Banknote : m === "Card" ? CreditCard : Smartphone;
-              return (
-                <button
-                  key={m}
-                  onClick={() => setMethod(m)}
-                  className={`flex flex-col items-center gap-1 text-[10.5px] font-medium rounded-lg py-2 border transition-colors ${
-                    method === m ? "border-[#16A34A] bg-[#16A34A]/8 text-[#111827]" : "border-slate-200 text-slate-500 hover:bg-slate-50"
-                  }`}
-                >
-                  <Icon size={15} /> {m}
-                </button>
-              );
-            })}
+          <label className="block text-[11px] font-medium text-slate-500 mb-2" htmlFor="pos-customer">Customer</label>
+          <select id="pos-customer" value={customerId} onChange={(event) => { setCustomerId(event.target.value); setSaleAttempt(null); }} className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-[11px] outline-none focus:border-[#16A34A]">
+            <option value="guest">Guest sale</option>
+            {(customers || []).map((customer) => <option key={customer.dbId || customer.id} value={customer.dbId || customer.id}>{customer.name}{customer.company ? ` · ${customer.company}` : ""}</option>)}
+          </select>
+          {usesCustomerCredit && !selectedCustomer && <p className="mt-1.5 text-[10.5px] text-[#EF4444]">Select a workspace customer before completing customer credit.</p>}
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[11px] font-medium text-slate-500">Payment allocation</p>
+            <button type="button" onClick={() => updatePayment(payments[0]?.id, { amount: String(total) })} className="text-[10.5px] font-medium text-[#16A34A] hover:underline">Apply full total</button>
+          </div>
+          <div className="space-y-2">
+            {payments.map((payment, index) => (
+              <div key={payment.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_auto] gap-1.5">
+                <select aria-label={`Payment method ${index + 1}`} value={payment.method} onChange={(event) => updatePayment(payment.id, { method: event.target.value })} className="min-w-0 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] outline-none focus:border-[#16A34A]">
+                  {POS_PAYMENT_METHODS.map((methodOption) => <option key={methodOption} value={methodOption}>{methodOption}</option>)}
+                </select>
+                <input aria-label={`Payment amount ${index + 1}`} type="number" min="0" step="0.01" value={payment.amount} onChange={(event) => updatePayment(payment.id, { amount: event.target.value })} placeholder="Amount" className="min-w-0 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-mono outline-none focus:border-[#16A34A]" />
+                {payments.length > 1 && <button type="button" onClick={() => { setPayments((current) => current.filter((entry) => entry.id !== payment.id)); setSaleAttempt(null); }} className="w-8 rounded-lg border border-slate-200 text-slate-400 hover:text-[#EF4444]" aria-label={`Remove payment ${index + 1}`}><X size={13} className="mx-auto" /></button>}
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 text-[11px]">
+            <button type="button" onClick={addPaymentAllocation} className="text-[#16A34A] font-medium hover:underline">+ Split payment</button>
+            <span className={paymentSummary.remaining > 0 ? "text-[#EF4444] font-mono" : "text-[#16A34A] font-mono"}>{paymentSummary.remaining > 0 ? `Remaining TZS ${money(Math.round(paymentSummary.remaining))}k` : paymentSummary.change > 0 ? `Change TZS ${money(Math.round(paymentSummary.change))}k` : "Payment covered"}</span>
           </div>
         </div>
 
-        <button
-          onClick={completeSale}
-          disabled={cart.length === 0 || busy}
-          className="btn-primary text-white text-[13px] font-semibold rounded-lg py-3 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {busy ? "Processing..." : `Complete Sale · TZS ${money(total)}k`}
-        </button>
+        <div className="sm-mobile-action-group flex gap-2">
+          <button type="button" onClick={holdSale} disabled={cart.length === 0 || busy} className="flex-1 text-[12px] font-semibold rounded-lg py-3 border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">Hold sale</button>
+          <button
+            onClick={completeSale}
+            disabled={cart.length === 0 || busy || !paymentSummary.isComplete}
+            className="btn-primary flex-[1.4] text-white text-[13px] font-semibold rounded-lg py-3 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {busy ? "Confirming sale..." : `Complete Sale · TZS ${money(total)}k`}
+          </button>
+        </div>
       </div>
 
       {receipt && <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} company={company} />}
@@ -36297,6 +36534,10 @@ function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company }) 
           <div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-mono">TZS {money(receipt.subtotal)}k</span></div>
           <div className="flex justify-between text-slate-500"><span>VAT ({Math.round(TAX_RATE * 100)}%)</span><span className="font-mono">TZS {money(receipt.tax)}k</span></div>
           <div className="flex justify-between text-[#111827] font-semibold text-[14px] pt-1.5 border-t border-slate-100"><span>Total Paid</span><span className="font-mono">TZS {money(receipt.total)}k</span></div>
+          {(receipt.payments || []).map((payment, index) => (
+            <div key={`${payment.method}-${index}`} className="flex justify-between text-slate-500"><span>{payment.method}</span><span className="font-mono">TZS {money(payment.appliedAmount ?? payment.amount)}k</span></div>
+          ))}
+          {Number(receipt.change) > 0 && <div className="flex justify-between text-[#16A34A] font-medium"><span>Cash change</span><span className="font-mono">TZS {money(receipt.change)}k</span></div>}
           {refunded > 0 && (
             <div className="flex justify-between text-[#EF4444] font-medium pt-1"><span>Refunded</span><span className="font-mono">−{money(refunded)}k</span></div>
           )}
@@ -36355,6 +36596,7 @@ function ReturnFormPanel({ transaction, onClose, onSubmit }) {
 
   const [qtys, setQtys] = useState(() => Object.fromEntries(remaining.map((it) => [it.sku, 0])));
   const [reason, setReason] = useState(RETURN_REASONS[0]);
+  const [returnAttemptKey] = useState(() => globalThis.crypto?.randomUUID?.() || `return-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
   function setQty(sku, val, max) {
     setQtys((q) => ({ ...q, [sku]: Math.max(0, Math.min(max, val)) }));
@@ -36416,7 +36658,7 @@ function ReturnFormPanel({ transaction, onClose, onSubmit }) {
             </div>
           )}
 
-          <p className="text-[11.5px] text-slate-400">Returned quantities are restocked to Inventory immediately.</p>
+          <p className="text-[11.5px] text-slate-400">Returned quantities are restocked only after the server confirms the refund.</p>
         </div>
 
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
@@ -36424,7 +36666,7 @@ function ReturnFormPanel({ transaction, onClose, onSubmit }) {
           <button
             type="button"
             disabled={!valid}
-            onClick={() => onSubmit({ items: returnItems, reason, refundTotal })}
+            onClick={() => onSubmit({ items: returnItems, reason, refundTotal, idempotencyKey: returnAttemptKey })}
             className="flex-1 text-[12px] font-medium bg-[#EF4444] text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Refund TZS {money(refundTotal)}k
@@ -36440,39 +36682,25 @@ function RegisterHistory({ transactions, inventory, company }) {
   const [returning, setReturning] = useState(null);
   const { rows, setRows, loading } = transactions;
 
-  async function processReturn(transaction, { items, reason, refundTotal }) {
-    const returnRecord = { id: `RET-${Date.now()}`, items, reason, refundTotal, date: TODAY.toISOString().slice(0, 10) };
-
-    // Restock returned quantities to the shared Inventory immediately.
-    inventory.setRows((prev) => prev.map((it) => {
-      const line = items.find((ri) => ri.sku === it.sku);
-      return line ? { ...it, qty: it.qty + line.qty } : it;
-    }));
-
-    setRows((prev) => prev.map((t) => (t.id === transaction.id ? { ...t, returns: [returnRecord, ...(t.returns || [])] } : t)));
-    setSelected((s) => (s && s.id === transaction.id ? { ...s, returns: [returnRecord, ...(s.returns || [])] } : s));
-    setReturning(null);
-    notify(`Return processed — TZS ${money(refundTotal)}k refunded, stock restocked`);
-
-    if (IS_CONFIGURED && transaction.dbId) {
-      try {
-        const header = await sb("pos_returns").insert({
-          transaction_id: transaction.dbId, reason, refund_total: refundTotal,
-        }).single().run();
-        if (header?.id) {
-          await sb("pos_return_items").insert(
-            items.map((it) => ({ return_id: header.id, item_name: it.name, item_sku: it.sku, qty: it.qty, price: it.price }))
-          ).run();
-        }
-        for (const it of items) {
-          const item = inventory.rows.find((i) => i.sku === it.sku);
-          const newQty = (item?.qty || 0) + it.qty;
-          await sb("inventory_items").eq("sku", it.sku).update({ qty_on_hand: newQty }).run();
-          await sb("inventory_stock_movements").insert({ item_id: it.sku, movement: "In", qty: it.qty, reference: `${transaction.id} return` }).run();
-        }
-      } catch (e) {
-        notify("Return processed locally, but saving to the server failed.", "error");
-      }
+  async function processReturn(transaction, { items, reason, refundTotal, idempotencyKey }) {
+    try {
+      if (!IS_CONFIGURED || !transaction.dbId) throw new Error("The original POS sale is not connected to the configured server.");
+      const confirmed = await callRpc("complete_pos_return", {
+        p_idempotency_key: idempotencyKey,
+        p_transaction_id: transaction.dbId,
+        p_items: items,
+        p_reason: reason,
+        p_refund_total: refundTotal,
+      }, getStoredAccessToken());
+      const row = await sb("pos_transactions").select("*,pos_transaction_items(*),pos_returns(*,pos_return_items(*))").eq("id", transaction.dbId).single().run();
+      const savedTransaction = mapPosTransactionRow(row);
+      setRows((previous) => previous.map((entry) => entry.dbId === savedTransaction.dbId ? savedTransaction : entry));
+      setSelected(savedTransaction);
+      await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean));
+      setReturning(null);
+      notify(confirmed.idempotent_replay ? `Return already confirmed for receipt ${transaction.id}.` : `Return processed — TZS ${money(refundTotal)}k refunded and stock restocked.`);
+    } catch (error) {
+      notify(persistenceFailureMessage("Processing the return", error), "error");
     }
   }
 
@@ -36482,15 +36710,16 @@ function RegisterHistory({ transactions, inventory, company }) {
       const d = new Date(TODAY);
       d.setDate(d.getDate()-6+i);
       const ds = d.toISOString().slice(0,10);
-      const dayTxns = rows.filter(t => t.date === ds);
+      const dayTxns = rows.filter(t => t.status === "Completed" && t.date === ds);
       const revenue = dayTxns.reduce((s,t) => s + t.items.reduce((si,it)=>si+it.qty*it.price,0)*(1+TAX_RATE), 0);
       const txns    = dayTxns.length;
       return { day:d.toLocaleDateString("en",{weekday:"short"}), revenue:Math.round(revenue), txns };
     });
   }, [rows]);
 
-  const totalRevenue = rows.reduce((s,t) => s + t.items.reduce((si,it)=>si+it.qty*it.price,0)*(1+TAX_RATE), 0);
-  const totalTxns    = rows.length;
+  const completedRows = rows.filter((transaction) => transaction.status === "Completed");
+  const totalRevenue = completedRows.reduce((s,t) => s + t.items.reduce((si,it)=>si+it.qty*it.price,0)*(1+TAX_RATE), 0);
+  const totalTxns    = completedRows.length;
   const avgBasket    = totalTxns > 0 ? totalRevenue/totalTxns : 0;
 
   return (
@@ -36539,7 +36768,7 @@ function RegisterHistory({ transactions, inventory, company }) {
           </thead>
           <tbody>
             {loading && <SkeletonRows cols={6} />}
-            {!loading && rows.map((t) => {
+            {!loading && completedRows.map((t) => {
               const total = Math.round(t.items.reduce((s, it) => s + it.qty * it.price, 0) * (1 + TAX_RATE));
               const hasReturns = (t.returns || []).length > 0;
               return (
@@ -46289,7 +46518,7 @@ function SmartManager() {
   // below from the real authenticated session the moment it resolves —
   // this initial state is only ever seen in demo mode, or for the brief
   // instant before that hydration effect runs in live mode.
-  const [currentUser, setCurrentUser] = useState({ name: "EzyMP", role: "Super Administrator", customerRef: null });
+  const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const canManage = currentRole.writeAccess === "full";
 
@@ -46304,7 +46533,7 @@ function SmartManager() {
         receiptWidth: session.company.receiptWidth || "80mm", receiptFooter: session.company.receiptFooter || "", receiptShowLogo: session.company.receiptShowLogo !== false,
         logo: session.company.logo || null, brandColor: session.company.brandColor || "#0B5D3B", brandAccentColor: session.company.brandAccentColor || "#16A34A",
       });
-      setCurrentUser({ name: session.fullName, role: session.role, customerRef: session.customerRef || null });
+      setCurrentUser({ id: session.userId, name: session.fullName, role: session.role, customerRef: session.customerRef || null });
     }
   }, [session]);
 

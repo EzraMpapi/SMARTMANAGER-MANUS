@@ -460,3 +460,14 @@
 - [x] Extract the selected high-cost dashboard boundary into a lazy-loaded module without changing data or authorization behavior.
 - [x] Add end-to-end browser coverage and source-level regression tests for high-density module workflows.
 - [x] Run release validation, publish, and deliver the authenticated responsive and performance update.
+- [x] Audit existing POS transaction, persistence, inventory, shift, return, receipt, and RLS contracts.
+- [x] Define an additive integrated POS domain plan that reuses existing tenant-safe ERP tables and services.
+- [x] Replace POS false-success and optimistic server-write behavior with confirmed, idempotent transaction processing.
+- [x] Add core cashier workflows: barcode-first search, held carts, split payments, permissions, and clear payment states.
+- [x] Extend POS inventory, customer, shift, cash movement, return, receipt, audit, and reporting integrations.
+- [x] Define the pending device-queue lifecycle and durable multi-device reconciliation boundary for POS sales.
+- [x] Implement an explicit device-local pending POS queue with reconnect synchronization and no completed-state claims before confirmation.
+- [ ] Add durable server-side reconciliation foundations for multi-device pending-sale visibility and recovery.
+- [ ] Test pending, synchronized, duplicate, failed, and offline/reconnect POS scenarios; publish and deliver the final POS upgrade.
+- [ ] Define explicit offline queue and sync boundaries without presenting unconfirmed sales as completed.
+- [ ] Validate POS security, RLS, responsive layouts, tests, production build, publish, and deliver the upgrade.

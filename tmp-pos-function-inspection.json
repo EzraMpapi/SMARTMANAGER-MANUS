@@ -1,0 +1,4 @@
+{
+  "project_id": "rlhngsrihahhyxnjxrxm",
+  "query": "SELECT to_regclass('public.pos_transaction_commits') AS commit_table, to_regprocedure('public.complete_pos_sale(text,text,jsonb,jsonb,numeric,numeric,numeric)') AS transaction_function LIMIT 1;"
+}
