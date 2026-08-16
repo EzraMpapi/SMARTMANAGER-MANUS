@@ -507,3 +507,7 @@
 - [x] Add a supported organization industry focus selection to workspace setup and persist it through the confirmed tenant branding flow.
 - [x] Add two-passkey recovery readiness guidance and a durable, tenant-scoped audit-log event for confirmed organization industry-focus changes.
 - [x] Validate setup persistence, role boundaries, audit-history behavior, automated checks, production build, publication, and GitHub delivery.
+- [x] Review the user header, confirmed passkey lifecycle callbacks, tenant audit boundary, and Security Settings administrator controls.
+- [x] Show the server-confirmed organization industry focus in the authenticated user header without exposing tenant data outside the current workspace.
+- [x] Record confirmed passkey enrollment and revocation events in the tenant audit history and add an administrator-only quarterly security review checklist.
+- [x] Validate role boundaries, audit confirmation behavior, responsive layouts, automated checks, production build, publication, and GitHub delivery.

@@ -3595,13 +3595,12 @@ function logAudit(action, module, actor, details) {
     .catch((error) => authDebug("Audit event was not persisted", { message: error?.message || "unknown" }));
 }
 
-async function recordConfirmedIndustryFocusAudit(previousFocus, nextFocus, actor) {
-  if (previousFocus === nextFocus) return;
+async function recordConfirmedTenantAudit(action, module, actor, details) {
   const entry = {
-    action: "Organization industry focus changed",
-    module: "Settings",
+    action,
+    module,
     actor: actor || "Unattributed",
-    details: `${previousFocus || "general"} → ${nextFocus}`,
+    details: details || "",
   };
   if (!IS_CONFIGURED) {
     auditBus.push({ id: `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ...entry, timestamp: new Date().toISOString() });
@@ -3610,6 +3609,11 @@ async function recordConfirmedIndustryFocusAudit(previousFocus, nextFocus, actor
   const row = await sb("audit_log").insert(entry).single().run();
   if (!row?.id) throw new Error("The organization industry audit event was not confirmed.");
   auditBus.push(mapAuditLogRow(row));
+}
+
+async function recordConfirmedIndustryFocusAudit(previousFocus, nextFocus, actor) {
+  if (previousFocus === nextFocus) return;
+  return recordConfirmedTenantAudit("Organization industry focus changed", "Settings", actor, `${previousFocus || "general"} → ${nextFocus}`);
 }
 
 // Recording a payment is not a simple status flip — it can be partial, and
@@ -32300,6 +32304,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
       <AuditLogViewer timezone={company.timezone} />
 
       <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(currentUser.role)} />
+      {PASSKEY_READINESS_ROLES.has(currentUser.role) && <QuarterlySecurityReviewChecklist companyName={company.name} />}
 
       {!canManage && (
         <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
@@ -33304,6 +33309,11 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
       const client = await getClient();
       const result = await registerAccountPasskey(client);
       await loadPasskeys();
+      try {
+        await recordConfirmedTenantAudit("Passkey enrolled", "Security", session?.fullName || session?.email || "Account user", result?.friendly_name || "A confirmed passkey was added.");
+      } catch (_auditError) {
+        notify("Passkey added, but its audit event could not be persisted.", "error");
+      }
       notify(result?.friendly_name ? `Passkey added: ${result.friendly_name}.` : "Passkey added to your account.");
     } catch (registerError) {
       const message = passkeyUserMessage(registerError);
@@ -33343,6 +33353,11 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
         const client = await getClient();
         await revokeAccountPasskey(client, passkey.id);
         await loadPasskeys();
+        try {
+          await recordConfirmedTenantAudit("Passkey revoked", "Security", session?.fullName || session?.email || "Account user", passkey.friendly_name || "A confirmed passkey was revoked.");
+        } catch (_auditError) {
+          notify("Passkey revoked, but its audit event could not be persisted.", "error");
+        }
         notify("Passkey revoked from your account.");
       } catch (revokeError) {
         const message = passkeyUserMessage(revokeError);
@@ -33387,6 +33402,19 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
       <p className="mt-3 text-[10.5px] leading-5 text-slate-400">Passkeys require the workspace’s Supabase relying-party configuration to be enabled. Do not change the relying-party ID after enrollment because previously registered passkeys would no longer match the service.</p>
     </section>
   );
+}
+
+function QuarterlySecurityReviewChecklist({ companyName }) {
+  const [complete, setComplete] = useState(() => new Set());
+  const items = [
+    ["passkeys", "Confirm every administrator has appropriate passkey and recovery coverage."],
+    ["audit", "Review recent Security and Settings events in the tenant activity audit history."],
+    ["roles", "Verify organization administrator roles still match current responsibilities."],
+    ["recovery", "Test an approved recovery path and confirm the current Supabase relying-party configuration."],
+    ["context", "Review the organization industry focus and its login constellation for continued relevance."],
+  ];
+  const completedCount = complete.size;
+  return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Quarterly security review</h2><p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">A guided administrator checklist for {companyName || "this workspace"}. Completion is intentionally local to this browser and is not presented as compliance evidence.</p></div><span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-700">{completedCount}/{items.length} reviewed</span></div><div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">{items.map(([id, label]) => <label key={id} className="flex cursor-pointer items-start gap-3 p-3.5 hover:bg-slate-50"><input type="checkbox" checked={complete.has(id)} onChange={() => setComplete((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; })} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" /><span className={`text-[12px] leading-5 ${complete.has(id) ? "text-slate-400 line-through" : "text-slate-700"}`}>{label}</span></label>)}</div></section>;
 }
 
 function BranchesManager() {
@@ -37616,12 +37644,15 @@ function CommandPalette({ modules, crm, invoices, inventory, expenses, onNavigat
   );
 }
 
-function ProfileMenu({ currentUser, session, onSignOut }) {
+function ProfileMenu({ currentUser, session, onSignOut, company }) {
   const [open, setOpen] = useState(false);
   const initials = currentUser.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase() || "?";
+  const industryFocus = normalizeOrganizationIndustryFocus(company?.industry || company?.category);
+  const industryLabel = ORGANIZATION_INDUSTRY_OPTIONS.find((option) => option.id === industryFocus)?.label || "Universal business";
 
   return (
-    <div className="relative">
+    <div className="relative flex items-center gap-2">
+      {company && <span className="hidden max-w-36 truncate rounded-full border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-800 sm:inline" title={`Organization industry focus: ${industryLabel}`}>{industryLabel}</span>}
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[12px] font-medium"
@@ -37637,6 +37668,7 @@ function ProfileMenu({ currentUser, session, onSignOut }) {
             <div className="px-4 py-3 border-b border-slate-100">
               <p className="text-[13px] font-medium text-[#111827] truncate">{currentUser.name}</p>
               <p className="text-[11.5px] text-slate-400">{currentUser.role}</p>
+              {company && <p className="mt-1 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">{industryLabel}</p>}
               {session && !session.demo && <p className="text-[10.5px] text-slate-400 truncate mt-0.5">{session.email}</p>}
             </div>
             {(!session || session.demo) && (
@@ -47563,7 +47595,7 @@ function SmartManager() {
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
                         <NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
-            <ProfileMenu currentUser={currentUser} session={session} onSignOut={handleSignOut} />
+            <ProfileMenu currentUser={currentUser} session={session} company={company} onSignOut={handleSignOut} />
           </div>
         </header>
 

@@ -16,11 +16,15 @@ After a verified user signs in, Security Settings shows **Set up your first pass
 
 After the first passkey is enrolled, the same panel shows **Add a second passkey for recovery** until the account has at least two registered credentials. The recommendation is to use separate approved devices or password managers and retain a tested recovery method. Two registered passkeys improve account recovery options but do not replace the need for organization-approved account recovery procedures.
 
+Confirmed passkey enrollment and revocation now write `Passkey enrolled` and `Passkey revoked` events to the current tenant’s `public.audit_log` only after the Supabase Auth operation and subsequent audit insert both confirm. If an audit insert fails, the interface reports that the passkey operation succeeded but its history event was not persisted; it does not display an unconfirmed event as durable history.
+
 ## Organization industry focus
 
 An organization administrator can select one supported industry focus in Company Profile: universal business, retail, manufacturing, professional services, healthcare, education, or hospitality. The value is persisted in the tenant’s `companies.category` field through the existing owner-authorized branding procedure. After a confirmed authenticated workspace bootstrap, the login presentation keeps a non-authoritative browser presentation cache of that confirmed value so the next login can restore the appropriate module constellation. The browser cache never authorizes access or replaces the tenant-scoped server value.
 
 New workspace setup flows—both password-based and OAuth—present the same controlled focus selection. The selected focus is submitted to the tenant-creating RPC and followed by the confirmed branding save where applicable. A confirmed industry-focus change from Settings writes `Organization industry focus changed` to the RLS-scoped `public.audit_log` history only after the tenant audit insert returns a database row. If the audit insert fails, the UI reports that the focus change succeeded but the audit event needs retry; it never presents an unconfirmed audit record as durable history.
+
+The authenticated header and account menu display only the current workspace’s confirmed industry focus. It is passed from the hydrated active company record and is not an organization-switcher or a lookup into other tenant data. Organization administrators also receive a guided **Quarterly security review** checklist in Security Settings. Its checkbox progress is deliberately browser-local and expressly not compliance evidence; operators should use the tenant audit history and their formal compliance process for evidence.
 
 | Requirement | Operator action |
 |---|---|
