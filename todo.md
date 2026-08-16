@@ -479,7 +479,7 @@
 - [x] Add a dedicated non-production, safety-gated POS transaction acceptance script for an approved test product and shift.
 - [x] Add controlled manager export for tenant-scoped POS reconciliation outcomes.
 - [x] Add validated device-profile export and import for secure multi-counter rollout.
-- [ ] Run verification, publish, push the release, and document the new POS operational workflows.
+- [x] Run verification, publish, push the release, and document the new POS operational workflows.
 - [x] Confirm a non-production staging workspace before creating any isolated POS QA records.
 - [x] Create, exercise, and clean up isolated staging QA product, shift, sale, and return records under explicit operator control.
 - [x] Repair the authenticated POS sale RPC `format()` error without weakening RLS, idempotency, inventory locking, or audit behavior.
