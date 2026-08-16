@@ -481,7 +481,7 @@
 - [x] Add validated device-profile export and import for secure multi-counter rollout.
 - [ ] Run verification, publish, push the release, and document the new POS operational workflows.
 - [x] Confirm a non-production staging workspace before creating any isolated POS QA records.
-- [ ] Create, exercise, and clean up isolated staging QA product, shift, sale, and return records under explicit operator control.
+- [x] Create, exercise, and clean up isolated staging QA product, shift, sale, and return records under explicit operator control.
 - [x] Repair the authenticated POS sale RPC `format()` error without weakening RLS, idempotency, inventory locking, or audit behavior.
 - [x] Repair the POS history fallback so confirmed transactions retain their server item and return records when relationship expansion is unavailable.
 - [x] Repair the authenticated POS return RPC `format()` error without weakening RLS, idempotency, stock locking, or audit behavior.
