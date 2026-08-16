@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const documentHead = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
 const manifest = readFileSync(new URL("../client/public/manifest.webmanifest", import.meta.url), "utf8");
 const packagingGuide = readFileSync(new URL("../ANDROID_TWA_PACKAGING.md", import.meta.url), "utf8");
+const squareIconHandoff = readFileSync(new URL("../SQUARE_APP_ICON_HANDOFF.md", import.meta.url), "utf8");
 
 describe("Android Trusted Web Activity delivery path", () => {
   it("exposes a production PWA manifest from the Smart Manager document head", () => {
@@ -19,5 +20,12 @@ describe("Android Trusted Web Activity delivery path", () => {
     expect(packagingGuide).toContain("bubblewrap build");
     expect(packagingGuide).toContain("tz.smartmanager.erp");
     expect(packagingGuide).toContain("REPLACE_WITH_RELEASE_SHA256_FINGERPRINT");
+  });
+
+  it("requires an approved square source asset instead of cropping or recreating the official horizontal logo", () => {
+    expect(squareIconHandoff).toContain("1024 × 1024 pixels");
+    expect(squareIconHandoff).toContain("not generated or reconstructed");
+    expect(squareIconHandoff).toContain("No square asset has been fabricated, cropped, recoloured, or inferred");
+    expect(squareIconHandoff).toContain('`purpose` set to `any maskable`');
   });
 });

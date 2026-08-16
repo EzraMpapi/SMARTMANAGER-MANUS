@@ -428,3 +428,7 @@
 - [x] Store and use the newly uploaded official Smart Manager logo through managed web asset storage.
 - [x] Apply the requested responsive Kiswahili-first authentication presentation without changing credential or social sign-in behavior.
 - [x] Add regression coverage, visually verify the updated auth flow, publish, and deliver the branded release.
+- [x] Assess the current mobile Google OAuth callback coverage and official logo constraints for a square application icon.
+- [x] Add automated regressions for mobile Google OAuth initiation and remembered versus session-only authentication storage.
+- [x] Prepare a non-destructive square app-icon handoff from the uploaded official logo and document production replacement steps.
+- [ ] Run validation, publish, and deliver the authentication hardening release.
