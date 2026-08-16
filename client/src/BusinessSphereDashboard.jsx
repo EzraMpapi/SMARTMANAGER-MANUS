@@ -5356,7 +5356,13 @@ function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClos
     onSuccess: (data) => { schedules.refetch(); notify(data.isActive ? "Report schedule resumed." : "Report schedule paused."); },
   });
   const sendNow = trpc.reportSchedules.sendNow.useMutation({
-    onSuccess: () => notify("Report sent successfully."),
+    onSuccess: (result) => {
+      if (result?.skipped === "delivery-disabled") {
+        notify("Report delivery is disabled until an approved Smart Manager sender is verified. No email was sent.", "error");
+        return;
+      }
+      notify("Report delivery completed after the server confirmed the dispatch.");
+    },
     onError: (err) => notify(err.message, "error"),
   });
   function submit(event) {
@@ -21519,7 +21525,7 @@ function AIInsights({ company, reportName, summary }) {
   );
 }
 
-function Reports({ invoices, inventory, expensesHook, company, schedulesHook, posTransactions, onNavigate }) {
+function Reports({ invoices, inventory, expensesHook, company, schedulesHook, posTransactions, onNavigate, currentUser }) {
   const [tab, setTab] = useState("sales");
   const expenses = expensesHook.rows;
 
@@ -21563,7 +21569,7 @@ function Reports({ invoices, inventory, expensesHook, company, schedulesHook, po
       {tab === "balance-sheet" && <BalanceSheetReport invoices={invoices} expenses={expenses} inventory={inventory} posTransactions={posTransactions} company={company} />}
       {tab === "cash-flow" && <CashFlowReport invoices={invoices} expenses={expenses} posTransactions={posTransactions} company={company} />}
       {tab === "credit-profile" && <BusinessCreditProfile invoices={invoices} expenses={expenses} company={company} />}
-      {tab === "scheduled" && <ScheduledReports invoices={invoices} inventory={inventory} expensesHook={expensesHook} company={company} schedulesHook={schedulesHook} />}
+      {tab === "scheduled" && <ScheduledReports company={company} currentUser={currentUser} />}
       {tab === "ar-aging"  && <ARAgingReport   invoices={invoices} company={company} />}
       {tab === "tax"       && <TaxVATReport    invoices={invoices} expenses={expenses} company={company} />}
     </div>
@@ -22569,7 +22575,62 @@ function BusinessCreditProfile({ invoices, expenses, company }) {
 
 /* ------------------------------- SCHEDULED REPORTS ------------------------------- */
 
-function ScheduledReports({ invoices, inventory, expensesHook, company, schedulesHook }) {
+function ScheduledReports({ company, currentUser }) {
+  const schedules = trpc.reportSchedules.list.useQuery(undefined, { enabled: Boolean(company?.id) });
+  const [runningId, setRunningId] = useState(null);
+  const toggleActive = trpc.reportSchedules.toggleActive.useMutation({ onSuccess: () => schedules.refetch() });
+  const removeSchedule = trpc.reportSchedules.remove.useMutation({ onSuccess: () => schedules.refetch() });
+  const sendNow = trpc.reportSchedules.sendNow.useMutation({
+    onSuccess: (result) => {
+      if (result?.skipped === "delivery-disabled") {
+        notify("Report delivery is disabled until an approved Smart Manager sender is verified. No email was sent.", "error");
+        return;
+      }
+      notify("Report delivery completed after the server confirmed the dispatch.");
+    },
+    onError: (error) => notify(error.message, "error"),
+    onSettled: () => setRunningId(null),
+  });
+
+  function requestRun(schedule) {
+    setRunningId(schedule.id);
+    sendNow.mutate({ id: schedule.id });
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+        <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-700" />
+        <div className="text-[12px] leading-relaxed text-amber-900">
+          <p className="font-semibold">Recurring email delivery is currently unavailable.</p>
+          <p className="mt-0.5">Schedules are managed by the server and can only be created after an organization-controlled sender is verified. No report email is sent or marked delivered while this safeguard is active. You can still export reports manually from the report tabs.</p>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-[16px] font-semibold text-[#111827]">Server-managed report schedules</h2>
+          <p className="mt-0.5 text-[12px] text-slate-500">Only schedules confirmed by the server for this signed-in workspace appear here.</p>
+        </div>
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{currentUser?.role || "Workspace user"}</span>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px] text-[13px]">
+            <thead><tr className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-400"><th className="px-4 py-3 font-medium">Report</th><th className="px-4 py-3 font-medium">Frequency</th><th className="px-4 py-3 font-medium">Format</th><th className="px-4 py-3 font-medium">Recipient</th><th className="px-4 py-3 font-medium">Last confirmed delivery</th><th className="px-4 py-3 font-medium">Status</th><th className="px-4 py-3" /></tr></thead>
+            <tbody>
+              {schedules.isLoading && <SkeletonRows cols={7} />}
+              {schedules.error && <tr><td colSpan={7} className="px-4 py-7 text-center text-[12px] text-red-700">{schedules.error.message}</td></tr>}
+              {!schedules.isLoading && !schedules.error && schedules.data?.map((schedule) => <tr key={schedule.id} className="border-b border-slate-50 last:border-0"><td className="px-4 py-3 font-medium text-[#111827]">{schedule.name}</td><td className="px-4 py-3 text-slate-500">{schedule.frequency}</td><td className="px-4 py-3 text-slate-500">{schedule.format.toUpperCase()}</td><td className="px-4 py-3 text-slate-500">{schedule.recipientEmail}</td><td className="px-4 py-3 font-mono text-[11.5px] text-slate-500">{schedule.lastSentAt ? new Date(schedule.lastSentAt).toLocaleString() : "Never"}</td><td className="px-4 py-3"><span className={schedule.isActive ? "rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700" : "rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600"}>{schedule.isActive ? "Active" : "Paused"}</span></td><td className="px-4 py-3 text-right"><div className="flex items-center justify-end gap-1.5"><button onClick={() => requestRun(schedule)} disabled={runningId === schedule.id || sendNow.isPending} className="rounded-md px-2 py-1 text-[11px] font-semibold text-[#16A34A] hover:bg-[#16A34A]/10 disabled:opacity-50">{runningId === schedule.id ? "Checking…" : "Run now"}</button><button onClick={() => toggleActive.mutate({ id: schedule.id, isActive: !schedule.isActive })} disabled={toggleActive.isPending} className="rounded-md px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50">{schedule.isActive ? "Pause" : "Resume"}</button><button onClick={() => removeSchedule.mutate({ id: schedule.id })} disabled={removeSchedule.isPending} aria-label={`Delete ${schedule.name}`} className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"><Trash2 size={13} /></button></div></td></tr>)}
+              {!schedules.isLoading && !schedules.error && !schedules.data?.length && <tr><td colSpan={7}><EmptyState icon={CalendarCheck} title="No server-confirmed schedules" hint="Report email delivery is disabled until a verified workspace sender is configured." /></td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LegacyLocalScheduledReports({ invoices, inventory, expensesHook, company, schedulesHook }) {
   const { rows, setRows, loading } = schedulesHook;
   const [showForm, setShowForm] = useState(false);
   const [running, setRunning] = useState(null);
@@ -22803,7 +22864,7 @@ function ARAgingReport({ invoices, company }) {
 }
 
 function TaxVATReport({ invoices, expenses, company }) {
-  const taxRate = company?.taxRate || 18;
+  const taxRate = company?.taxRate ?? 18;
   const today   = new Date();
   const months  = Array.from({length:6},(_,i)=>{
     const d = new Date(today.getFullYear(), today.getMonth()-5+i, 1);
@@ -31183,12 +31244,19 @@ function NotificationChannels({ channels, onLog, canManage, currentUser }) {
 
   async function updateField(id, key, value) {
     if (!canManage) return;
+    const previous = rows.find((channel) => channel.id === id);
+    if (!previous) return;
     setRows((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: value } : c)));
     if (IS_CONFIGURED) {
-      const c = rows.find((x) => x.id === id);
       try {
-        await sb("notification_channels").eq("channel_id", id).update({ [key === "enabled" ? "enabled" : key]: value }).run();
-      } catch (_e) { /* saved locally regardless; a background sync failure is not worth interrupting typing */ }
+        const confirmed = await sb("notification_channels").eq("channel_id", id).update({ [key === "enabled" ? "enabled" : key]: value }).single().run();
+        if (!confirmed) throw new Error("The server did not confirm the notification-channel change.");
+        setRows((prev) => prev.map((channel) => (channel.id === id ? { ...channel, ...confirmed } : channel)));
+      } catch (error) {
+        setRows((prev) => prev.map((channel) => (channel.id === id ? previous : channel)));
+        notify("The server did not save this notification-channel change. The previous setting was restored.", "error");
+        authDebug("Notification channel update failed", { message: error?.message });
+      }
     }
   }
 
@@ -37608,6 +37676,7 @@ function CommandPalette({ modules, crm, invoices, inventory, expenses, onNavigat
   const results = [...recordResults, ...actionResults, ...moduleResults];
 
   function handleKeyDown(e) {
+    if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
     if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIndex((i) => Math.min(i + 1, results.length - 1)); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setSelectedIndex((i) => Math.max(i - 1, 0)); }
     else if (e.key === "Enter" && results[selectedIndex]) { results[selectedIndex].action(); onClose(); }
@@ -37945,13 +38014,24 @@ function CustomerSupportTab({ myTickets, tickets, customerName }) {
     e.preventDefault();
     if (!form.subject.trim()) return;
     const draft = { id: docId("TK"), subject: form.subject, customer: customerName, category: form.category, priority: "Medium", status: "Open", assignee: null, createdDate: TODAY.toISOString().slice(0, 10) };
+    if (IS_CONFIGURED) {
+      try {
+        const confirmed = await sb("support_tickets").insert({ doc_number: draft.id, subject: draft.subject, customer: draft.customer, category: draft.category }).single().run();
+        if (!confirmed?.id) throw new Error("The server did not confirm the support ticket.");
+        tickets.setRows((prev) => [{ ...draft, dbId: confirmed.id }, ...prev]);
+        setShowForm(false);
+        setForm({ subject: "", category: "General", description: "" });
+        notify(`Ticket ${draft.id} submitted — the support team will follow up.`);
+      } catch (error) {
+        notify("The ticket could not be submitted to the server. Your details are still available to retry.", "error");
+        authDebug("Support ticket submission failed", { message: error?.message });
+      }
+      return;
+    }
     tickets.setRows((prev) => [draft, ...prev]);
     setShowForm(false);
     setForm({ subject: "", category: "General", description: "" });
-    notify(`Ticket ${draft.id} submitted — the support team will follow up.`);
-    if (IS_CONFIGURED) {
-      try { await sb("support_tickets").insert({ doc_number: draft.id, subject: draft.subject, customer: draft.customer, category: draft.category }).run(); } catch (_e) { notify("Ticket saved locally, but sending to the server failed.", "error"); }
-    }
+    notify(`Demo ticket ${draft.id} submitted — the support team will follow up.`);
   }
 
   return (
@@ -47665,7 +47745,7 @@ function SmartManager() {
           {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
-          {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} />}
+      {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} currentUser={currentUser} />}
           {active === "scm" && <SupplyChain />}
           {active === "ecommerce" && <ECommerce inventory={inventory} />}
           {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} />}

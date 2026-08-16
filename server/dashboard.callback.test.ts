@@ -38,8 +38,9 @@ describe("scheduled dashboard report callback", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(runScheduledDashboardReport("cron_test_task_123")).rejects.toThrow(/delivery is disabled/i);
+    await expect(runScheduledDashboardReport("cron_test_task_123")).resolves.toEqual({ ok: true, skipped: "delivery-disabled" });
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("api.resend.com"))).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(markReportSent).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { ENV } from "./_core/env";
 import { getReportScheduleByTaskUid, markReportSent, type ReportDateRange, type ReportFormat, type ReportModules } from "./reportSchedules";
-import { sendTransactionalEmail, workspaceEmailHtml } from "./transactionalEmail";
+import { isTransactionalEmailDeliveryEnabled, sendTransactionalEmail, workspaceEmailHtml } from "./transactionalEmail";
 
 const STAGES = ["New", "Contacted", "Qualified", "Proposal", "Negotiation", "Won", "Lost"];
 const STATUS_BUCKETS = ["Planned", "In Progress", "Completed", "Cancelled"];
@@ -193,6 +193,7 @@ export async function runScheduledDashboardReport(taskUid: string) {
   const schedule = await getReportScheduleByTaskUid(taskUid);
   if (!schedule) return { ok: true as const, skipped: "orphan" as const };
   if (!schedule.isActive) return { ok: true as const, skipped: "paused" as const };
+  if (!isTransactionalEmailDeliveryEnabled()) return { ok: true as const, skipped: "delivery-disabled" as const };
   const data = await buildScheduledReportData({ companyId: schedule.companyId, modules: schedule.modules as ReportModules, dateRange: schedule.dateRange as ReportDateRange });
   const periodLabel = schedule.dateRange && (schedule.dateRange as ReportDateRange).start ? `${(schedule.dateRange as ReportDateRange).start} → ${(schedule.dateRange as ReportDateRange).end || "today"}` : "Current period";
   const filename = `businesssphere-dashboard-${schedule.id}-${new Date().toISOString().slice(0, 10)}.${schedule.format}`;

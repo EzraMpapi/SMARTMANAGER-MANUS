@@ -6,6 +6,9 @@ vi.mock("./_core/heartbeat", () => ({
   updateHeartbeatJob: vi.fn(),
   deleteHeartbeatJob: vi.fn(),
 }));
+vi.mock("./transactionalEmail", () => ({
+  assertTransactionalEmailDeliveryEnabled: vi.fn(),
+}));
 
 import { getDb } from "./db";
 import { createHeartbeatJob } from "./_core/heartbeat";
@@ -17,7 +20,7 @@ afterEach(() => {
 });
 
 describe("report schedule persistence service", () => {
-  it("persists the real Heartbeat task UID using project-owner scheduling", async () => {
+  it("persists the real Heartbeat task UID using the verified requester session", async () => {
     const scheduleRow = {
       id: 77,
       ownerUserId: 1,
@@ -56,7 +59,7 @@ describe("report schedule persistence service", () => {
     });
 
     expect(result).toMatchObject({ id: 77, scheduleCronTaskUid: "heartbeat-task-77" });
-    expect(createHeartbeatJob).toHaveBeenCalledWith(expect.objectContaining({ path: "/api/scheduled/dashboardReport", payload: { scheduleId: 77 } }), "");
+    expect(createHeartbeatJob).toHaveBeenCalledWith(expect.objectContaining({ path: "/api/scheduled/dashboardReport", payload: { scheduleId: 77 } }), "supabase-access-token");
     expect(where).toHaveBeenCalled();
   });
 });

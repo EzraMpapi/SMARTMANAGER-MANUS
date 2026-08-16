@@ -5,6 +5,7 @@ import { getDb } from "./db";
 import { runScheduledDashboardReport } from "./dashboardReports";
 import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { ENV } from "./_core/env";
+import { assertTransactionalEmailDeliveryEnabled } from "./transactionalEmail";
 
 export type ReportFormat = "csv" | "pdf";
 export type ReportFrequency = "daily" | "weekly" | "monthly";
@@ -100,6 +101,7 @@ export async function listReportSchedules(ownerOpenId: string) {
 
 export async function createReportSchedule(owner: { id: number; openId: string }, sessionToken: string, input: ReportScheduleInput) {
   assertValidScheduleInput(input);
+  assertTransactionalEmailDeliveryEnabled();
   await assertSupabaseCompanyAccess(input.companyId, sessionToken);
   const db = await requireDb();
   const [insertResult] = await db.insert(dashboardReportSchedules).values({
@@ -124,7 +126,7 @@ export async function createReportSchedule(owner: { id: number; openId: string }
       path: "/api/scheduled/dashboardReport",
       payload: { scheduleId },
       description: `BusinessSphere dashboard ${input.format.toUpperCase()} report: ${input.name}`,
-    }, "");
+    }, sessionToken);
     await db.update(dashboardReportSchedules)
       .set({ scheduleCronTaskUid: heartbeat.taskUid })
       .where(and(eq(dashboardReportSchedules.id, scheduleId), eq(dashboardReportSchedules.ownerOpenId, owner.openId)));
@@ -155,7 +157,7 @@ export async function updateReportSchedule(ownerOpenId: string, sessionToken: st
       payload: { scheduleId: id },
       description: `BusinessSphere dashboard ${next.format.toUpperCase()} report: ${next.name}`,
       enable: patch.isActive ?? row.isActive,
-    }, "");
+    }, sessionToken);
   }
   await db.update(dashboardReportSchedules).set({
     companyId: next.companyId,
@@ -174,7 +176,7 @@ export async function updateReportSchedule(ownerOpenId: string, sessionToken: st
 
 export async function deleteReportSchedule(ownerOpenId: string, sessionToken: string, id: number) {
   const { db, row } = await getOwnedSchedule(id, ownerOpenId);
-  if (row.scheduleCronTaskUid) await deleteHeartbeatJob(row.scheduleCronTaskUid, "");
+  if (row.scheduleCronTaskUid) await deleteHeartbeatJob(row.scheduleCronTaskUid, sessionToken);
   await db.delete(dashboardReportSchedules).where(and(eq(dashboardReportSchedules.id, id), eq(dashboardReportSchedules.ownerOpenId, ownerOpenId)));
   return { success: true as const };
 }

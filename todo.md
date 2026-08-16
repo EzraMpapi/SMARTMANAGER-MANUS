@@ -518,6 +518,20 @@
 - [x] Inspect the approved email-sender options and current transactional delivery boundary before enabling quarterly security-review emails.
 - [ ] Validate the supplied Resend sender candidate and server-only provider configuration before enabling quarterly security-review email delivery; the supplied value currently includes a URL protocol and is not yet a valid email identity.
 - [ ] Add an approved Resend sender-backed quarterly security review delivery path with scheduled, tenant-safe, and truthful unsent-state safeguards.
+- [ ] Do not create, invent, or impersonate an organization email identity; retain the in-app quarterly reminder until the owner supplies a verified sender it controls.
+- [x] Map every requirement in pasted_content_3.txt to the current Smart Manager implementation, verified evidence, known limitation, or remediation task.
+- [x] Re-audit the architecture, Supabase database contracts, authentication, tenant authorization, RLS, and sensitive data boundaries against the enterprise transformation requirements.
+- [x] Reconcile the legacy Scheduled Reports client UI with the existing tenant-safe server scheduling service and truthful disabled email-delivery boundary.
+- [x] Repair report-schedule Heartbeat create, update, and delete calls so the verified decoded requester session is propagated rather than an empty token.
+- [x] Expose the truthful transactional-email availability state to report scheduling and prevent schedules from being created when delivery is disabled.
+- [x] Audit module workflow integrity across POS, inventory, sales, purchasing, finance, HR, reporting, and notifications; add only high-confidence remediation tasks.
+- [x] Repair support-ticket submission so the UI, success notification, and form reset occur only after a confirmed server response in configured workspaces.
+- [x] Correct VAT reporting so a configured 0% tax rate is respected instead of being replaced by the 18% default.
+- [x] Verify dashboard, Tanzania-first configuration, role-aware access, search/navigation, responsive design, accessibility, performance, and representative authenticated journeys against the supplied production gate.
+- [x] Repair the command palette so its displayed Escape shortcut actually closes the modal and returns users to the dashboard flow.
+- [ ] Repair notification-channel settings so a rejected configured-workspace update rolls back local state and clearly reports that the server did not save the change.
+- [x] Repair notification-channel settings so a rejected configured-workspace update rolls back local state and clearly reports that the server did not save the change.
+- [x] Add regression coverage and publish only verified enterprise-readiness improvements, documenting all gated live-acceptance evidence and remaining risks.
 - [x] Keep Resend quarterly review delivery disabled and explicitly document the blocked state until a verified sender address passes validation.
 - [x] Add a public landing-page entry point that starts the existing native passkey sign-in flow without creating a parallel authentication path.
 - [x] Extend tenant-scoped compliance CSV exports with server-verified role-change approval history and formula-injection protection.

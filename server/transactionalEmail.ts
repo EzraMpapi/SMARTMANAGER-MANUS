@@ -15,6 +15,17 @@ type SendInput = {
 };
 
 const EMAIL_SENDER_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator", "Sales Manager", "Sales Representative", "Finance Manager", "HR Manager", "Customer Support"]);
+export const TRANSACTIONAL_EMAIL_DISABLED_MESSAGE = "Workspace email delivery is disabled. No email was sent.";
+
+export function isTransactionalEmailDeliveryEnabled() {
+  return false;
+}
+
+export function assertTransactionalEmailDeliveryEnabled() {
+  if (!isTransactionalEmailDeliveryEnabled()) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: TRANSACTIONAL_EMAIL_DISABLED_MESSAGE });
+  }
+}
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character] || character));
@@ -40,7 +51,8 @@ export function workspaceEmailHtml({ title, preheader, body }: { title: string; 
 }
 
 export async function sendTransactionalEmail(_input: SendInput): Promise<{ deliveryId: string; acceptedAt: string }> {
-  throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Workspace email delivery is disabled. No email was sent." });
+  assertTransactionalEmailDeliveryEnabled();
+  throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Email delivery provider implementation is unavailable." });
 }
 
 export async function sendWorkspaceEmail(req: CreateExpressContextOptions["req"], input: { to: string; cc?: string; bcc?: string; subject: string; body: string }) {
