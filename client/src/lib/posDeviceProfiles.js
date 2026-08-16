@@ -1,4 +1,6 @@
 const PROFILE_PREFIX = "smart_manager:pos:device-profile:v1";
+const EXPORT_KIND = "smart-manager-pos-device-profile";
+const EXPORT_VERSION = 1;
 
 export const DEFAULT_POS_DEVICE_PROFILE = Object.freeze({
   printerLabel: "Browser print dialog",
@@ -54,4 +56,26 @@ export function normalizeScannerInput(value, profile) {
   const prefix = normalizePosDeviceProfile(profile).scannerPrefix;
   if (prefix && normalized.startsWith(prefix)) normalized = normalized.slice(prefix.length);
   return normalized.trim();
+}
+
+export function serializePosDeviceProfile(profile, exportedAt = new Date().toISOString()) {
+  return JSON.stringify({
+    kind: EXPORT_KIND,
+    version: EXPORT_VERSION,
+    exportedAt,
+    profile: normalizePosDeviceProfile(profile),
+  }, null, 2);
+}
+
+export function parsePosDeviceProfileImport(serializedProfile) {
+  let parsed;
+  try {
+    parsed = JSON.parse(String(serializedProfile || ""));
+  } catch (_error) {
+    throw new Error("The selected file is not valid JSON.");
+  }
+  if (!parsed || parsed.kind !== EXPORT_KIND || parsed.version !== EXPORT_VERSION || !parsed.profile || typeof parsed.profile !== "object") {
+    throw new Error("This file is not a compatible Smart Manager POS device profile.");
+  }
+  return normalizePosDeviceProfile(parsed.profile);
 }

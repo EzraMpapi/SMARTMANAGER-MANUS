@@ -476,3 +476,7 @@
 - [x] Add configurable receipt-printer and barcode-scanner profiles with browser-safe operational behavior.
 - [x] Run automated POS acceptance coverage, TypeScript validation, and production build validation with documented evidence.
 - [x] Execute staging acceptance coverage, validate security and responsiveness, publish, and deliver the POS operations update.
+- [x] Add a dedicated non-production, safety-gated POS transaction acceptance script for an approved test product and shift.
+- [x] Add controlled manager export for tenant-scoped POS reconciliation outcomes.
+- [x] Add validated device-profile export and import for secure multi-counter rollout.
+- [ ] Run verification, publish, push the release, and document the new POS operational workflows.

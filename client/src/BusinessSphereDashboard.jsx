@@ -31,7 +31,8 @@ import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from
 import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
 import { addProductToPosCart, calculatePosPaymentSummary, createPosSaleAttempt, productMatchesPosLookup } from "./lib/posTransactionEngine";
 import { createPendingPosSale, isRetryablePosTransportError, readPendingPosSales, updatePendingPosSale, writePendingPosSales } from "./lib/posPendingQueue";
-import { DEFAULT_POS_DEVICE_PROFILE, normalizeScannerInput, readPosDeviceProfile, writePosDeviceProfile } from "./lib/posDeviceProfiles";
+import { DEFAULT_POS_DEVICE_PROFILE, normalizeScannerInput, parsePosDeviceProfileImport, readPosDeviceProfile, serializePosDeviceProfile, writePosDeviceProfile } from "./lib/posDeviceProfiles";
+import { buildPosReconciliationCsv, posReconciliationExportFilename } from "./lib/posReconciliationExport";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -35922,6 +35923,7 @@ function POS({ inventory, transactionsHook, company, currentUser }) {
   const customers = useCompanyTable("crm_contacts", contactsSeed, { order: { col: "name", ascending: true }, mapRow: mapContactRow });
   const deviceScope = useMemo(() => ({ companyId: company?.id || "workspace", userId: currentUser?.id || "session" }), [company?.id, currentUser?.id]);
   const [deviceProfile, setDeviceProfile] = useState(DEFAULT_POS_DEVICE_PROFILE);
+  const deviceProfileImportRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -35932,6 +35934,39 @@ function POS({ inventory, transactionsHook, company, currentUser }) {
     const next = { ...deviceProfile, ...patch };
     const saved = typeof window === "undefined" ? next : writePosDeviceProfile(window.localStorage, deviceScope, next);
     setDeviceProfile(saved);
+  }
+
+  function downloadDeviceProfile() {
+    if (typeof document === "undefined") return;
+    const blob = new Blob([serializePosDeviceProfile(deviceProfile)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "smart-manager-pos-device-profile.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    notify("Counter device profile exported. It contains settings only, never credentials or payment data.");
+  }
+
+  function importDeviceProfile(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.size > 32 * 1024) { notify("Device profile files must be 32 KB or smaller.", "error"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const saved = writePosDeviceProfile(window.localStorage, deviceScope, parsePosDeviceProfileImport(reader.result));
+        setDeviceProfile(saved);
+        notify("Counter device profile imported for this device and workspace.");
+      } catch (error) {
+        notify(error?.message || "The device profile could not be imported.", "error");
+      }
+    };
+    reader.onerror = () => notify("The device profile file could not be read.", "error");
+    reader.readAsText(file);
   }
 
   const todayStr = TODAY.toISOString().slice(0, 10);
@@ -35991,6 +36026,11 @@ function POS({ inventory, transactionsHook, company, currentUser }) {
           <label className="inline-flex items-center gap-2"><input type="checkbox" checked={deviceProfile.autoPrint} onChange={(event) => updateDeviceProfile({ autoPrint: event.target.checked })} /> Automatically open receipt output after a confirmed sale</label>
           <label className="inline-flex items-center gap-2"><input type="checkbox" checked={deviceProfile.scanFeedback} onChange={(event) => updateDeviceProfile({ scanFeedback: event.target.checked })} /> Sound on accepted scan</label>
         </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <input ref={deviceProfileImportRef} type="file" accept="application/json,.json" className="hidden" onChange={importDeviceProfile} />
+          <button type="button" onClick={downloadDeviceProfile} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50">Export counter profile</button>
+          <button type="button" onClick={() => deviceProfileImportRef.current?.click()} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-medium text-slate-700 hover:bg-slate-50">Import counter profile</button>
+        </div>
         <p className="mt-2 text-[10.5px] text-slate-400">Browser printing opens the system print dialog; scanners are supported as keyboard-wedge devices. No printer credentials, serial ports, payment tokens, or mobile-money PINs are stored.</p>
       </details>
 
@@ -36012,6 +36052,21 @@ function PosReconciliationDashboard({ currentUser }) {
   const syncedCount = reconciliation.rows.filter((row) => row.status === "synced").length;
   const attentionCount = reconciliation.rows.filter((row) => row.status === "needs_attention").length;
   const displayDate = (value) => value ? new Date(value).toLocaleString() : "—";
+  const canExport = ["admin", "manager", "owner"].includes(String(currentUser?.role || "").toLowerCase());
+
+  function exportFilteredReconciliation() {
+    if (!canExport || typeof document === "undefined") return;
+    const blob = new Blob([buildPosReconciliationCsv(rows)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = posReconciliationExportFilename();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    notify(`Exported ${rows.length} filtered, tenant-scoped reconciliation outcome${rows.length === 1 ? "" : "s"}.`);
+  }
 
   return (
     <div className="space-y-4">
@@ -36020,9 +36075,12 @@ function PosReconciliationDashboard({ currentUser }) {
           <h2 className="text-[17px] font-semibold text-[#111827]">POS reconciliation</h2>
           <p className="mt-1 text-[12.5px] text-slate-500">Manager view of server-observed pending-sale outcomes for this workspace. Device-only pending carts remain visible to the cashier until they reach the server.</p>
         </div>
-        <button type="button" onClick={() => reconciliation.reload()} disabled={reconciliation.refreshing} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-          <RefreshCw size={13} className={reconciliation.refreshing ? "animate-spin" : ""} /> Refresh
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {canExport && <button type="button" onClick={exportFilteredReconciliation} disabled={rows.length === 0} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">Export CSV</button>}
+          <button type="button" onClick={() => reconciliation.reload()} disabled={reconciliation.refreshing} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+            <RefreshCw size={13} className={reconciliation.refreshing ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
