@@ -38,6 +38,7 @@ import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomi
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
+const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -27120,7 +27121,23 @@ function Analytics({ company, invoices, expenses, crm, inventory, employees, lea
       {tab === "journal" && <ManualJournalView currentUser={currentUser} />}
       {tab === "periods" && <PeriodClosesView invoices={invoices} expenses={expenses} currentUser={currentUser} />}
       {tab === "reconcile" && <BankReconciliationView invoices={invoices} expenses={expenses} />}
-      {tab === "predictive" && <PredictiveIntelligence invoices={invoices} expenses={expenses} inventory={inventory} employees={employees} leaveRequests={leaveRequests} />}
+      {tab === "predictive" && (
+        <Suspense fallback={<div className="h-64 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading predictive intelligence" />}>
+          <LazyPredictiveAnalyticsWorkspace
+            invoices={invoices}
+            expenses={expenses}
+            inventory={inventory}
+            employees={employees}
+            leaveRequests={leaveRequests}
+            runtime={{
+              useCompanyTable, projectsSeed, projectExpensesSeed, machinesSeed, maintenanceSeed,
+              mapProjectRow, mapProjectExpenseRow, mapMachineRow, mapMaintenanceRow,
+              today: TODAY, lineTotal, money, detectUnusualExpenses,
+              poApprovalThreshold: PO_APPROVAL_THRESHOLD, computePnLFigures, inputClass,
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

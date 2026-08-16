@@ -5,6 +5,8 @@ const layout = readFileSync(new URL("../client/src/components/EnterpriseLayout.t
 const customizer = readFileSync(new URL("../client/src/components/EnterpriseColumnCustomizer.tsx", import.meta.url), "utf8");
 const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const globalStyles = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+const predictiveWorkspace = readFileSync(new URL("../client/src/components/PredictiveAnalyticsWorkspace.jsx", import.meta.url), "utf8");
+const mobileEvidence = readFileSync(new URL("../AUTHENTICATED_MOBILE_ACTION_BAR_EVIDENCE.md", import.meta.url), "utf8");
 
 describe("enterprise keyboard and table customization controls", () => {
   it("provides Arrow, Home, and End navigation for reusable module tabs", () => {
@@ -58,5 +60,23 @@ describe("enterprise keyboard and table customization controls", () => {
     expect(dashboard).toContain('visibleExpenseColumns');
     expect(customizer).toContain('aria-expanded={open}');
     expect(layout).toContain('tabIndex={isActive ? 0 : -1}');
+  });
+
+  it("defers the predictive analytics workspace behind a narrow loading boundary", () => {
+    expect(dashboard).toContain('const LazyPredictiveAnalyticsWorkspace = lazy(');
+    expect(dashboard).toContain('Loading predictive intelligence');
+    expect(dashboard).toContain('<LazyPredictiveAnalyticsWorkspace');
+    expect(predictiveWorkspace).toContain('export function PredictiveAnalyticsWorkspace');
+    expect(predictiveWorkspace).toContain('useCompanyTable("projects"');
+  });
+
+  it("records authenticated high-density browser coverage without mutating the active tenant", () => {
+    expect(mobileEvidence).toContain('360 × 844');
+    expect(mobileEvidence).toContain('390 × 844');
+    expect(mobileEvidence).toContain('| CRM |');
+    expect(mobileEvidence).toContain('| Sales |');
+    expect(mobileEvidence).toContain('| Finance |');
+    expect(mobileEvidence).toContain('did not expose an HR navigation entry');
+    expect(mobileEvidence).toContain('never enters, submits, creates, edits, or deletes operational data');
   });
 });

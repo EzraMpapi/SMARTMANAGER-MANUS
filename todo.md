@@ -451,3 +451,9 @@
 - [x] Apply reusable responsive action-bar safeguards and targeted module integrations.
 - [x] Add regression coverage and visually validate representative dense action bars on narrow screens.
 - [x] Publish and deliver the multi-module action-bar responsive update.
+- [x] Map authenticated browser access and identify the safest remaining oversized dashboard boundary.
+- [x] Validate authenticated CRM, Sales, and Finance at 360px and 390px; record the current tenant's HR-module entitlement block without changing workspace configuration.
+- [ ] Validate authenticated HR at 360px and 390px when the module is enabled for an approved test tenant.
+- [x] Extract the selected high-cost dashboard boundary into a lazy-loaded module without changing data or authorization behavior.
+- [x] Add end-to-end browser coverage and source-level regression tests for high-density module workflows.
+- [x] Run release validation, publish, and deliver the authenticated responsive and performance update.
