@@ -495,3 +495,7 @@
 - [x] Add a premium responsive login module ecosystem using only actual ERP modules and existing icons without modifying authentication, OAuth, Supabase, session, or RLS behavior.
 - [x] Add reduced-motion, keyboard-accessible, touch-safe, and performance-conscious responsive behavior so animated elements never obstruct authentication controls.
 - [x] Run desktop, tablet, mobile, reduced-motion, automated, type-check, and production-build validation; publish and push the login experience release.
+- [x] Review the native Supabase passkey login API, current login session handoff, industry metadata, and language context before extending the login UI.
+- [x] Add a secure native passkey sign-in option with confirmed Supabase session handoff and clear unsupported or not-enabled recovery messaging.
+- [x] Tailor the login module constellation to the selected or inferred industry while continuing to use real Smart Manager modules only.
+- [x] Add Kiswahili and English desktop module tooltip labels, then validate authentication, accessibility, responsive behavior, production build, publication, and GitHub delivery.

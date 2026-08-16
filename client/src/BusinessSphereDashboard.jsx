@@ -34,7 +34,7 @@ import { createPendingPosSale, isRetryablePosTransportError, readPendingPosSales
 import { DEFAULT_POS_DEVICE_PROFILE, normalizeScannerInput, parsePosDeviceProfileImport, readPosDeviceProfile, serializePosDeviceProfile, writePosDeviceProfile } from "./lib/posDeviceProfiles";
 import { buildPosReconciliationCsv, posReconciliationExportFilename } from "./lib/posReconciliationExport";
 import { getProactiveSessionRenewalDelay, isTerminalSessionRefreshError } from "./lib/proactiveSessionRenewal";
-import { createAccountPasskeyClient, listAccountPasskeys, passkeyUserMessage, registerAccountPasskey, renameAccountPasskey, revokeAccountPasskey } from "./lib/accountPasskeys";
+import { createAccountPasskeyClient, listAccountPasskeys, passkeySignInUserMessage, passkeyUserMessage, registerAccountPasskey, renameAccountPasskey, revokeAccountPasskey, signInWithAccountPasskey } from "./lib/accountPasskeys";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -38489,6 +38489,17 @@ function LoginPage({ onAuthenticated, onSwitchToSignup, onForgotPassword }) {
     onSignup={onSwitchToSignup}
     onForgot={onForgotPassword}
     onOAuth={authSignInWithOAuth}
+    onPasskey={async (remember) => {
+      try {
+        const result = await signInWithAccountPasskey({ supabaseUrl: SUPABASE_URL, supabaseAnonKey: SUPABASE_ANON_KEY });
+        persistAuthSession(result, { remember });
+        window.location.reload();
+      } catch (passkeyError) {
+        const error = new Error(passkeySignInUserMessage(passkeyError));
+        error.code = passkeyError?.code;
+        throw error;
+      }
+    }}
     toMessage={toAuthUserMessage}
     onSignIn={async (email, submittedPassword) => {
       if (!IS_CONFIGURED) {

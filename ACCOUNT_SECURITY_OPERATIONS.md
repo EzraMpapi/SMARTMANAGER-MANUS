@@ -10,6 +10,8 @@ The Security Settings page now includes **Tenant Activity Audit**. It reads conf
 
 The Account Passkeys panel in Security Settings uses Supabase Auth’s native passkey workflow. It lists, creates, renames, and revokes the signed-in user’s credentials through Supabase Auth; passkey private keys and biometric templates remain with the user’s authenticator and are never stored by this application. Registration, rename, and revocation update the interface only after Supabase confirms the operation.
 
+The login page also offers **Sign in with a passkey**. It uses Supabase Auth’s discoverable-credential ceremony, which lets the selected authenticator identify the user without an email field. The application stores a session only when Supabase returns a complete access token, refresh token, and user. If passkeys are disabled, unavailable, cancelled, or do not match an enrolled credential, the page preserves all other sign-in methods and shows a clear recovery message.
+
 | Requirement | Operator action |
 |---|---|
 | Enable the feature | In Supabase Dashboard, open **Authentication → Passkeys**, enable passkeys, and configure the relying-party display name, stable relying-party ID, and allowed HTTPS origins. |
@@ -18,7 +20,7 @@ The Account Passkeys panel in Security Settings uses Supabase Auth’s native pa
 | Browser support | Enroll from a recent HTTPS browser with WebAuthn and an available platform authenticator, security key, or password manager. |
 | Recovery | Keep a tested password or OAuth recovery method until at least two passkeys have been verified. |
 
-> Supabase documents passkeys as an experimental feature that requires explicit client opt-in and project-level relying-party configuration. The application enables the client opt-in and reports `passkey_disabled` clearly until the project setting is completed. [1]
+> Supabase documents passkeys as an experimental feature that requires explicit client opt-in and project-level relying-party configuration. The application enables the client opt-in and reports `passkey_disabled` clearly until the project setting is completed. Supabase’s discoverable passkey sign-in returns both a user and session only after server verification. [1]
 
 ## Validation evidence
 

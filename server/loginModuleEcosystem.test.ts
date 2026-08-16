@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { getLoginModulesForIndustry } from "../client/src/components/LoginModuleEcosystem.jsx";
 
 const ecosystem = readFileSync(new URL("../client/src/components/LoginModuleEcosystem.jsx", import.meta.url), "utf8");
 const authView = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
@@ -12,9 +13,17 @@ describe("login module ecosystem", () => {
     expect(ecosystem).toContain("AI Assistant");
   });
 
+  it("tailors the constellation to real industry modules and supplies Kiswahili tooltip labels", () => {
+    expect(getLoginModulesForIndustry("retail").map((module) => module.id)).toContain("pos");
+    expect(getLoginModulesForIndustry("manufacturing").map((module) => module.id)).toContain("manufacturing");
+    expect(getLoginModulesForIndustry("healthcare").map((module) => module.id)).toContain("healthcare");
+    expect(ecosystem).toContain("Dashibodi");
+    expect(ecosystem).toContain("Msaidizi wa Akili Bandia");
+  });
+
   it("renders decorative desktop and mobile compositions without changing authentication callbacks", () => {
-    expect(authView).toContain('<LoginModuleEcosystem variant="desktop" />');
-    expect(authView).toContain('<LoginModuleEcosystem variant="mobile" />');
+    expect(authView).toContain('<LoginModuleEcosystem variant="desktop" industry={industry} />');
+    expect(authView).toContain('<LoginModuleEcosystem variant="mobile" industry={industry} />');
     expect(ecosystem).toContain('aria-hidden="true"');
     expect(ecosystem).not.toContain("onClick");
   });

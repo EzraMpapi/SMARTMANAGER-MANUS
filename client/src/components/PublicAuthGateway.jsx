@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { EnterpriseLoginView, ForgotPasswordView, ResetPasswordView, VerificationView } from "./EnterpriseAuthViews";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "../lib/authErrors";
 import { authScreenFromSearch, oauthCallbackFromHash } from "../lib/authOnboarding";
+import { passkeySignInUserMessage, signInWithAccountPasskey } from "../lib/accountPasskeys";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
@@ -114,6 +115,24 @@ export default function PublicAuthGateway() {
     window.location.assign(withoutAuthView());
   }
 
+  async function signInWithPasskey(remember = true) {
+    if (!configured) {
+      const error = new Error("Authentication is not configured for this application.");
+      error.code = "AUTH_CONFIGURATION_MISSING";
+      throw error;
+    }
+    try {
+      const result = await signInWithAccountPasskey({ supabaseUrl: SUPABASE_URL, supabaseAnonKey: SUPABASE_ANON_KEY });
+      persistAuthSession(result, remember);
+      window.location.assign(withoutAuthView());
+    } catch (passkeyError) {
+      const error = new Error(passkeySignInUserMessage(passkeyError));
+      error.code = passkeyError?.code;
+      error.status = passkeyError?.status;
+      throw error;
+    }
+  }
+
   async function requestRecovery(workEmail) {
     await authRequest("recover", { method: "POST", body: JSON.stringify({ email: workEmail, options: { redirectTo: resetRedirectUrl() } }) });
   }
@@ -139,5 +158,5 @@ export default function PublicAuthGateway() {
   if (view === "forgot") return <ForgotPasswordView onBack={() => navigate("login")} onRequest={requestRecovery} toMessage={toAuthUserMessage} />;
   if (view === "reset") return <ResetPasswordView recoveryToken={recoveryToken} onBack={() => navigate("login")} onUpdate={updatePassword} toMessage={toAuthUserMessage} />;
   if (view === "verify") return <VerificationView email={email} onBack={() => navigate("login")} onResend={resendVerification} toMessage={toAuthUserMessage} />;
-  return <EnterpriseLoginView configured={configured} onSignIn={signIn} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} onClearOAuthError={() => setOauthError(null)} oauthProvider={oauthProvider} toMessage={toAuthUserMessage} invitationPending={invitationPending} initialError={oauthError} />;
+  return <EnterpriseLoginView configured={configured} onSignIn={signIn} onPasskey={signInWithPasskey} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} onClearOAuthError={() => setOauthError(null)} oauthProvider={oauthProvider} toMessage={toAuthUserMessage} invitationPending={invitationPending} initialError={oauthError} />;
 }
