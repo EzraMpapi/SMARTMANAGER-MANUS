@@ -13,6 +13,10 @@ Smart Manager is a deployed React web application, so the appropriate native And
 | Android wrapper | Bubblewrap Trusted Web Activity |
 | Store deliverable | Signed Android App Bundle (`.aab`) for Google Play; signed APK for direct device testing |
 
+## Hosted-manifest verification
+
+The managed production host injects its PWA manifest at `https://bserp-dashbo-xgm6fauw.manus.space/__manus/pwa/manifest.webmanifest`. The project-owned `manifest.webmanifest` remains in the release build and is covered by automated validation, but the hosted wrapper currently routes direct root static-file requests through its application shell. Before initializing Bubblewrap, use the injected hosted manifest route and verify its identity fields match the final Smart Manager application metadata.
+
 > A TWA must be associated with a site the Android package is authorized to represent. The authorization is a Digital Asset Links file on the production origin, generated only after the final Android signing certificate is known.[1]
 
 ## Prerequisites
@@ -57,6 +61,10 @@ Do not publish the placeholder file. It would be invalid and does not establish 
 ## Release checks
 
 The release owner should verify that the TWA opens the production domain without a browser toolbar, authentication still returns to the dashboard, sign-out returns to the login experience, and common tablet and phone breakpoints remain usable. Upload the signed `.aab` to Google Play internal testing before production rollout. Keep the matching keystore safely stored: changing its signing identity prevents normal application updates.
+
+## Verified test artifact
+
+A signed **test APK** was compiled and package-verified from the generated TWA wrapper as `tz.smartmanager.erp`, version `2`, with launcher label **Smart Manager**. It is suitable for direct device installation and functional testing only. Its isolated sandbox signing key is intentionally not a production release key and must **not** be reused for Google Play. Before store distribution, create an organization-controlled release key, update the Digital Asset Links certificate fingerprint, build a signed `.aab`, and complete Play Console testing.
 
 ## References
 
