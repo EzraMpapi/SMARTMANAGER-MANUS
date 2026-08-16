@@ -431,4 +431,4 @@
 - [x] Assess the current mobile Google OAuth callback coverage and official logo constraints for a square application icon.
 - [x] Add automated regressions for mobile Google OAuth initiation and remembered versus session-only authentication storage.
 - [x] Prepare a non-destructive square app-icon handoff from the uploaded official logo and document production replacement steps.
-- [ ] Run validation, publish, and deliver the authentication hardening release.
+- [x] Run validation, publish, and deliver the authentication hardening release.
