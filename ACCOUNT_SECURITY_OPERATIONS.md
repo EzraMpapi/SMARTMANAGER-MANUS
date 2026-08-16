@@ -28,9 +28,10 @@ The authenticated header and account menu display only the current workspace’s
 
 | Requirement | Operator action |
 |---|---|
-| Enable the feature | In Supabase Dashboard, open **Authentication → Passkeys**, enable passkeys, and configure the relying-party display name, stable relying-party ID, and allowed HTTPS origins. |
-| Production origin | Include `https://bserp-dashbo-xgm6fauw.manus.space` or the approved custom domain in the allowed origins. |
-| Relying-party ID | Choose and keep a stable bare domain. Changing it invalidates existing passkeys for sign-in. |
+| Enablement status | **Enabled on 16 August 2026** in the production Supabase project. |
+| Relying-party display name | `Smart Manager` |
+| Production origin | `https://bserp-dashbo-xgm6fauw.manus.space` is configured as an allowed origin. Add any approved custom domain before asking users to enroll from it. |
+| Relying-party ID | `bserp-dashbo-xgm6fauw.manus.space` is the current stable bare domain. Changing it invalidates existing passkeys for sign-in. |
 | Browser support | Enroll from a recent HTTPS browser with WebAuthn and an available platform authenticator, security key, or password manager. |
 | Recovery | Keep a tested password or OAuth recovery method until at least two passkeys have been verified. |
 
@@ -39,6 +40,14 @@ The authenticated header and account menu display only the current workspace’s
 ## Validation evidence
 
 The account-security release passed TypeScript validation, production bundling, and the full automated suite: **53 passing test files, 187 passing tests, and 7 intentionally gated skips**. Focused coverage verifies renewal timing and terminal-error handling, tenant audit-log loading and filtering boundaries, and confirmed passkey list, registration, rename, and revocation behavior.
+
+## Security operations follow-up
+
+Production passkey authentication is enabled for the Smart Manager relying party at `bserp-dashbo-xgm6fauw.manus.space`. Users must register a passkey before attempting discoverable passkey sign-in; a user without an enrolled credential should continue with password or an approved provider and then enroll from Security Settings.
+
+Security Settings now includes a quarterly review-due reminder that remains visible to administrators until the checklist is completed in that browser. The reminder is intentionally local and does not claim compliance completion. Confirmed tenant activity can be exported as a formula-safe CSV evidence file, filtered to the authenticated user’s existing RLS-scoped audit history.
+
+Role changes are no longer applied by the local Settings role selector. A user submits a role request to a server-backed approval record; an independent Organization Owner, CEO, Super Administrator, or System Administrator may approve or reject it. The server rejects self-approval and applies an approved role only after the authenticated request and secure profile update both succeed. A project-approved email sender is still required before quarterly reminder emails can be sent; until then, the application shows the in-app reminder and never reports an email as delivered.
 
 ## Reference
 

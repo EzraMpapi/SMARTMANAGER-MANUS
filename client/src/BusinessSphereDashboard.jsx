@@ -33,6 +33,7 @@ import { addProductToPosCart, calculatePosPaymentSummary, createPosSaleAttempt, 
 import { createPendingPosSale, isRetryablePosTransportError, readPendingPosSales, updatePendingPosSale, writePendingPosSales } from "./lib/posPendingQueue";
 import { DEFAULT_POS_DEVICE_PROFILE, normalizeScannerInput, parsePosDeviceProfileImport, readPosDeviceProfile, serializePosDeviceProfile, writePosDeviceProfile } from "./lib/posDeviceProfiles";
 import { buildPosReconciliationCsv, posReconciliationExportFilename } from "./lib/posReconciliationExport";
+import { auditEvidenceExportFilename, buildAuditEvidenceCsv } from "./lib/auditEvidenceExport";
 import { getProactiveSessionRenewalDelay, isTerminalSessionRefreshError } from "./lib/proactiveSessionRenewal";
 import { createAccountPasskeyClient, listAccountPasskeys, passkeySignInUserMessage, passkeyUserMessage, registerAccountPasskey, renameAccountPasskey, revokeAccountPasskey, signInWithAccountPasskey } from "./lib/accountPasskeys";
 import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, rememberConfirmedOrganizationIndustryFocus } from "./lib/organizationIndustryFocus";
@@ -32257,7 +32258,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1">Your role</h2>
         <p className="text-[12.5px] text-slate-500 mb-4">
-          Demo only — there is no login yet, so this stands in for the role a real signed-in user would have. Switching it genuinely changes which modules appear in the sidebar and whether write actions are available.
+          Your active role is derived from the authenticated workspace profile. Submit a role-change request below; direct local switching is intentionally disabled so that access cannot bypass independent approval.
         </p>
         {["Executive", "System", "Department Head", "Operations", "Front Line", "General Staff", "Oversight", "External Portal"].map((cat) => {
           const rolesInCat = ROLES.filter((r) => r.category === cat);
@@ -32269,7 +32270,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                 {rolesInCat.map((r) => (
                   <button
                     key={r.id}
-                    onClick={() => { logAudit("Role switched", "Settings", currentUser.role, `${currentUser.role} → ${r.id}`); setCurrentUser((u) => ({ ...u, role: r.id })); }}
+                    onClick={() => notify("Use the role-change approval workflow below. Your active access remains unchanged until an independent administrator approves the request.")}
                     title={r.description}
                     className={`text-[12.5px] font-medium rounded-lg py-2.5 px-2 border transition-colors ${
                       currentUser.role === r.id ? "border-[#16A34A] bg-[#16A34A]/8 text-[#111827]" : "border-slate-200 text-slate-500 hover:bg-slate-50"
@@ -32302,6 +32303,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
       </section>
 
       <AuditLogViewer timezone={company.timezone} />
+      <RoleChangeApprovalPanel currentUser={currentUser} />
 
       <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(currentUser.role)} />
       {PASSKEY_READINESS_ROLES.has(currentUser.role) && <QuarterlySecurityReviewChecklist companyName={company.name} />}
@@ -33214,6 +33216,17 @@ function AuditLogViewer({ timezone }) {
     return [entry.action, entry.module, entry.actor, entry.details].join(" ").toLowerCase().includes(normalizedQuery);
   });
 
+  function exportEvidence() {
+    const blob = new Blob([buildAuditEvidenceCsv(filtered)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = auditEvidenceExportFilename();
+    link.click();
+    URL.revokeObjectURL(url);
+    notify(`${filtered.length} confirmed audit record${filtered.length === 1 ? "" : "s"} exported.`);
+  }
+
   return (
     <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
       <div className="flex items-start justify-between mb-1 gap-3">
@@ -33221,9 +33234,7 @@ function AuditLogViewer({ timezone }) {
           <h2 className="text-[14.5px] font-semibold text-[#111827]">Tenant Activity Audit</h2>
           <p className="mt-1 text-[11px] font-medium text-[#15803D]">Verified server history</p>
         </div>
-        <button type="button" onClick={() => auditLog.reload()} disabled={auditLog.refreshing} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50">
-          <RefreshCw size={12} className={auditLog.refreshing ? "animate-spin" : ""} /> Refresh
-        </button>
+        <div className="flex flex-wrap gap-2"><button type="button" onClick={exportEvidence} disabled={auditLog.loading} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Download size={12} /> Export evidence</button><button type="button" onClick={() => auditLog.reload()} disabled={auditLog.refreshing} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><RefreshCw size={12} className={auditLog.refreshing ? "animate-spin" : ""} /> Refresh</button></div>
       </div>
       <p className="text-[12.5px] text-slate-500 mb-4">
         Confirmed activity for your workspace, read directly from the server. The database derives workspace scope from the authenticated session; this screen never supplies a company identifier.
@@ -33264,6 +33275,17 @@ function AuditLogViewer({ timezone }) {
       )}
     </section>
   );
+}
+
+function RoleChangeApprovalPanel({ currentUser }) {
+  const [requestedRole, setRequestedRole] = useState("");
+  const [reason, setReason] = useState("");
+  const approvals = trpc.listRoleChangeApprovals.useQuery(undefined, { retry: false });
+  const requestMutation = trpc.requestRoleChangeApproval.useMutation({ onSuccess: () => { setRequestedRole(""); setReason(""); approvals.refetch(); notify("Role change submitted for independent review. Your active access has not changed."); } });
+  const decideMutation = trpc.decideRoleChangeApproval.useMutation({ onSuccess: () => { approvals.refetch(); notify("Role-change decision recorded. Approved access updates only after the server confirms it."); } });
+  const canDecide = PASSKEY_READINESS_ROLES.has(currentUser.role);
+  const rows = approvals.data?.approvals || [];
+  return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Role change approval</h2><p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">Role changes are requested from the authenticated workspace account and must be decided by an independent authorized administrator. Self-approval is blocked.</p></div><span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-700">Server-reviewed</span></div><div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]"><select value={requestedRole} onChange={(event) => setRequestedRole(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-[12px]"><option value="">Request a role…</option>{ROLES.filter((role) => role.id !== currentUser.role).map((role) => <option key={role.id} value={role.id}>{role.id}</option>)}</select><input value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} className={inputClass} placeholder="Reason for the requested role (optional)" /><button type="button" disabled={!requestedRole || requestMutation.isPending} onClick={() => requestMutation.mutate({ requestedRole, reason: reason || undefined })} className="rounded-lg bg-slate-900 px-3 py-2 text-[11.5px] font-semibold text-white disabled:opacity-50">{requestMutation.isPending ? "Submitting…" : "Request review"}</button></div>{requestMutation.error && <p role="alert" className="mt-2 text-[11.5px] text-red-700">{requestMutation.error.message}</p>}<div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">{approvals.isLoading ? <p className="p-4 text-center text-[12px] text-slate-400">Loading server-backed role requests…</p> : rows.length === 0 ? <p className="p-4 text-center text-[12px] text-slate-400">No role-change requests are awaiting or have recent decisions.</p> : rows.map((row) => { const data = row.data || {}; const pending = row.status === "Pending Review"; const ownRequest = data.targetUserId === currentUser.id; return <div key={row.id} className="flex flex-col gap-2 p-3.5 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-[12px] font-semibold text-slate-800">{data.currentRole || "Current role"} → {data.requestedRole || "Requested role"}</p><p className="mt-0.5 text-[10.5px] text-slate-500">{row.notes || "No reason supplied."}{row.createdAt ? ` · ${new Date(row.createdAt).toLocaleDateString()}` : ""}</p></div><span className={`w-fit rounded-full px-2 py-1 text-[10px] font-bold ${pending ? "bg-amber-100 text-amber-800" : row.status === "Approved" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{row.status}</span>{canDecide && pending && !ownRequest && <div className="flex gap-2"><button type="button" disabled={decideMutation.isPending} onClick={() => decideMutation.mutate({ approvalId: row.id, decision: "approve" })} className="rounded-lg bg-emerald-700 px-2.5 py-1.5 text-[10.5px] font-semibold text-white disabled:opacity-50">Approve</button><button type="button" disabled={decideMutation.isPending} onClick={() => decideMutation.mutate({ approvalId: row.id, decision: "reject" })} className="rounded-lg border border-red-100 px-2.5 py-1.5 text-[10.5px] font-semibold text-red-700 disabled:opacity-50">Reject</button></div>}</div>; })}</div></section>;
 }
 
 const PASSKEY_READINESS_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
@@ -33406,6 +33428,9 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
 
 function QuarterlySecurityReviewChecklist({ companyName }) {
   const [complete, setComplete] = useState(() => new Set());
+  const quarterKey = `${new Date().getUTCFullYear()}-Q${Math.floor(new Date().getUTCMonth() / 3) + 1}`;
+  const reminderKey = `smart-manager:security-review:${quarterKey}`;
+  const [reviewedQuarter, setReviewedQuarter] = useState(() => { try { return window.localStorage.getItem(reminderKey) === "complete"; } catch (_error) { return false; } });
   const items = [
     ["passkeys", "Confirm every administrator has appropriate passkey and recovery coverage."],
     ["audit", "Review recent Security and Settings events in the tenant activity audit history."],
@@ -33414,7 +33439,8 @@ function QuarterlySecurityReviewChecklist({ companyName }) {
     ["context", "Review the organization industry focus and its login constellation for continued relevance."],
   ];
   const completedCount = complete.size;
-  return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Quarterly security review</h2><p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">A guided administrator checklist for {companyName || "this workspace"}. Completion is intentionally local to this browser and is not presented as compliance evidence.</p></div><span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-700">{completedCount}/{items.length} reviewed</span></div><div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">{items.map(([id, label]) => <label key={id} className="flex cursor-pointer items-start gap-3 p-3.5 hover:bg-slate-50"><input type="checkbox" checked={complete.has(id)} onChange={() => setComplete((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; })} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" /><span className={`text-[12px] leading-5 ${complete.has(id) ? "text-slate-400 line-through" : "text-slate-700"}`}>{label}</span></label>)}</div></section>;
+  const markReviewed = () => { try { window.localStorage.setItem(reminderKey, "complete"); } catch (_error) {} setReviewedQuarter(true); notify("Quarterly security review marked complete for this browser. Export audit evidence separately for formal records."); };
+  return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Quarterly security review</h2><p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">A guided administrator checklist for {companyName || "this workspace"}. Completion is intentionally local to this browser and is not presented as compliance evidence.</p></div><span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-700">{completedCount}/{items.length} reviewed</span></div>{!reviewedQuarter && <div role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11.5px] leading-5 text-amber-900"><strong>Quarterly review due — {quarterKey}.</strong> Complete the checks below, export confirmed audit evidence, and record any remediation in your formal compliance process. Email delivery remains off until an approved project sender is configured.</div>}<div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">{items.map(([id, label]) => <label key={id} className="flex cursor-pointer items-start gap-3 p-3.5 hover:bg-slate-50"><input type="checkbox" checked={complete.has(id)} onChange={() => setComplete((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; })} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" /><span className={`text-[12px] leading-5 ${complete.has(id) ? "text-slate-400 line-through" : "text-slate-700"}`}>{label}</span></label>)}</div>{completedCount === items.length && !reviewedQuarter && <button type="button" onClick={markReviewed} className="mt-4 rounded-lg bg-slate-900 px-3 py-2 text-[11px] font-semibold text-white">Mark quarterly review complete</button>}</section>;
 }
 
 function BranchesManager() {

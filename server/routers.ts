@@ -15,6 +15,7 @@ import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
 import { decideActionApproval, requestActionApproval } from "./aiApprovals";
+import { decideRoleChangeApproval, listRoleChangeApprovals, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { sendWorkspaceEmail } from "./transactionalEmail";
@@ -138,6 +139,22 @@ export const appRouter = router({
           module: result.rule.module,
           details: `${result.rule.label}; decided by verified ${result.approver.role} role.`,
         }).catch(() => undefined);
+        return result;
+      }),
+    requestRoleChangeApproval: protectedProcedure
+      .input(z.object({ requestedRole: z.string().min(1).max(80), reason: z.string().max(500).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await requestRoleChangeApproval(ctx.req, input);
+        await recordAuditLog(ctx.user, { companyId: result.requester.company_id, action: "Role change submitted for approval", module: "Security", details: `${result.requester.role} → ${input.requestedRole}; requested by verified user.` });
+        return result;
+      }),
+    listRoleChangeApprovals: protectedProcedure
+      .query(async ({ ctx }) => listRoleChangeApprovals(ctx.req)),
+    decideRoleChangeApproval: protectedProcedure
+      .input(z.object({ approvalId: z.string().uuid(), decision: z.enum(["approve", "reject"]), note: z.string().max(500).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await decideRoleChangeApproval(ctx.req, input);
+        await recordAuditLog(ctx.user, { companyId: result.approver.company_id, action: `Role change ${input.decision === "approve" ? "approved" : "rejected"}`, module: "Security", details: `${result.requestedRole}; decided by verified ${result.approver.role} role.` });
         return result;
       }),
     analyzeAnomalies: protectedProcedure
