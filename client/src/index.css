@@ -261,3 +261,72 @@
     animation: none;
   }
 }
+
+/* Responsive public authentication canvas. Uses CSS-only Tanzania cues so the
+   official uploaded artwork remains unaltered and is the visual anchor. */
+.sm-auth-scene::before,
+.sm-auth-scene::after {
+  position: fixed;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.sm-auth-scene::before {
+  top: -9rem;
+  right: -8rem;
+  width: 25rem;
+  height: 25rem;
+  border-radius: 999px;
+  opacity: .28;
+  background: radial-gradient(circle, rgba(0,166,81,.42), rgba(0,166,81,0) 68%);
+  filter: blur(12px);
+}
+
+.sm-auth-scene::after {
+  bottom: -8rem;
+  left: -8rem;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 999px;
+  opacity: .24;
+  background: radial-gradient(circle, rgba(31,117,254,.28), rgba(31,117,254,0) 70%);
+  filter: blur(12px);
+}
+
+.sm-auth-card,
+.sm-auth-mobile-brand {
+  animation: sm-auth-rise .42s cubic-bezier(.23,1,.32,1) both;
+}
+
+.sm-auth-mobile-brand {
+  position: relative;
+}
+
+.sm-auth-mobile-brand::before {
+  position: absolute;
+  z-index: -1;
+  top: -2.5rem;
+  left: -2rem;
+  width: calc(100% + 4rem);
+  height: 14rem;
+  opacity: .5;
+  background:
+    linear-gradient(180deg, rgba(247,251,248,.3), rgba(247,251,248,.95) 88%),
+    linear-gradient(90deg, transparent 0 7%, rgba(0,138,69,.16) 7% 10%, transparent 10% 21%, rgba(0,138,69,.12) 21% 25%, transparent 25% 38%, rgba(0,138,69,.17) 38% 43%, transparent 43% 100%);
+  content: "";
+}
+
+@keyframes sm-auth-rise {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 420px) {
+  .sm-auth-card { border-radius: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-auth-card,
+  .sm-auth-mobile-brand { animation: none; }
+}

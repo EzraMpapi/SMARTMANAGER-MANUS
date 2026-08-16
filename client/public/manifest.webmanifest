@@ -12,10 +12,10 @@
   "dir": "ltr",
   "icons": [
     {
-      "src": "/manus-storage/smart-manager-official-logo_0bf4409d.png",
-      "sizes": "512x512",
+      "src": "/manus-storage/smart-manager-official-logo-20260816_98336ac7.png",
+      "sizes": "1536x1024",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

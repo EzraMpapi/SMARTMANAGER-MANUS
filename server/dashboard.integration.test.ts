@@ -42,19 +42,22 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo_0bf4409d.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
-    expect(brandLogoSource).toContain('width={1254} height={1254}');
+    expect(brandLogoSource).toContain('width={1536} height={1024}');
     expect(brandLogoSource).toContain('variant?: "full" | "compact"');
     expect(homeSource).toContain('import { BrandLogo } from "../components/BrandLogo"');
     expect(homeSource).toContain('<BrandLogo variant="compact" priority');
     expect(enterpriseAuthSource).toContain('import { BrandLogo } from "./BrandLogo"');
-    expect(enterpriseAuthSource).toContain('<BrandLogo variant="compact" priority');
+    expect(enterpriseAuthSource).toContain('<BrandLogo variant="full" priority');
+    expect(enterpriseAuthSource).toContain('sm-auth-mobile-brand');
+    expect(enterpriseAuthSource).toContain('Simamia Biashara Yako. Popote, Wakati Wote.');
+    expect(enterpriseAuthSource).toContain('rememberMe');
     expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
     expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
-    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-official-logo_0bf4409d.png"');
+    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
   });
 
@@ -104,7 +107,8 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("persists and refreshes Supabase tokens before tenant-scoped requests resume", () => {
     expect(dashboardSource).toContain('const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token"');
-    expect(dashboardSource).toContain("function persistAuthSession(authResult)");
+    expect(dashboardSource).toContain("function persistAuthSession(authResult, { remember = true } = {})");
+    expect(dashboardSource).toContain('const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token"');
     expect(dashboardSource).toContain("async function authRefreshSession(refreshToken)");
     expect(dashboardSource).toContain("const refreshed = await authRefreshSession(storedRefreshToken)");
     expect(dashboardSource).toContain("clearStoredAuthSession()");

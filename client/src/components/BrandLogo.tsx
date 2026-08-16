@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-export const SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo_0bf4409d.png";
+export const SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo-20260816_98336ac7.png";
 
 type BrandLogoProps = {
   variant?: "full" | "compact";
@@ -24,15 +24,15 @@ export function BrandLogo({ variant = "full", className = "", style, decorative 
         <img
           src={SMART_MANAGER_LOGO_URL}
           alt=""
-          width={1254}
-          height={1254}
+          width={1536}
+          height={1024}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
-          className="absolute left-1/2 top-0 h-auto w-full max-w-none -translate-x-1/2 origin-top scale-[1.76]"
+          className="absolute inset-0 h-full w-full object-contain p-[5%]"
         />
       </span>
     );
   }
 
-  return <img src={SMART_MANAGER_LOGO_URL} alt={decorative ? "" : label} width={1254} height={1254} loading={priority ? "eager" : "lazy"} decoding="async" className={`block h-auto max-w-full object-contain ${className}`.trim()} style={style} aria-hidden={decorative || undefined} />;
+  return <img src={SMART_MANAGER_LOGO_URL} alt={decorative ? "" : label} width={1536} height={1024} loading={priority ? "eager" : "lazy"} decoding="async" className={`block h-auto max-w-full object-contain ${className}`.trim()} style={style} aria-hidden={decorative || undefined} />;
 }

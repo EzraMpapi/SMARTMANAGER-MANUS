@@ -62,7 +62,7 @@ const trpcClient = trpc.createClient({
           // sessionStorage unavailable
         }
         try {
-          const supabaseToken = localStorage.getItem("bs_access_token");
+          const supabaseToken = localStorage.getItem("bs_access_token") || sessionStorage.getItem("bs_session_access_token");
           if (supabaseToken) {
             headers["x-supabase-authorization"] = `Bearer ${supabaseToken}`;
             if (!headers.Authorization) headers.Authorization = `Bearer ${supabaseToken}`;

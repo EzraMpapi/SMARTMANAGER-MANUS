@@ -7,6 +7,8 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
 const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
+const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token";
+const SESSION_REFRESH_TOKEN_STORAGE_KEY = "bs_session_refresh_token";
 const configured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 async function authRequest(path, init = {}) {
@@ -26,10 +28,18 @@ async function authRequest(path, init = {}) {
   return payload;
 }
 
-function persistAuthSession(result) {
+function persistAuthSession(result, remember = true) {
   if (!result?.access_token) return;
-  window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, result.access_token);
-  if (result.refresh_token) window.localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, result.refresh_token);
+  const activeStorage = remember ? window.localStorage : window.sessionStorage;
+  const inactiveStorage = remember ? window.sessionStorage : window.localStorage;
+  const activeAccessKey = remember ? ACCESS_TOKEN_STORAGE_KEY : SESSION_ACCESS_TOKEN_STORAGE_KEY;
+  const activeRefreshKey = remember ? REFRESH_TOKEN_STORAGE_KEY : SESSION_REFRESH_TOKEN_STORAGE_KEY;
+  const inactiveAccessKey = remember ? SESSION_ACCESS_TOKEN_STORAGE_KEY : ACCESS_TOKEN_STORAGE_KEY;
+  const inactiveRefreshKey = remember ? SESSION_REFRESH_TOKEN_STORAGE_KEY : REFRESH_TOKEN_STORAGE_KEY;
+  inactiveStorage.removeItem(inactiveAccessKey);
+  inactiveStorage.removeItem(inactiveRefreshKey);
+  activeStorage.setItem(activeAccessKey, result.access_token);
+  if (result.refresh_token) activeStorage.setItem(activeRefreshKey, result.refresh_token);
 }
 
 function withoutAuthView() {
@@ -83,14 +93,14 @@ export default function PublicAuthGateway() {
     window.location.replace(withoutAuthView());
   }, []);
 
-  async function signIn(workEmail, password) {
+  async function signIn(workEmail, password, remember = true) {
     const validation = validatePasswordLogin(workEmail, password);
     if (validation) throw new Error(validation);
     const result = await authRequest("token?grant_type=password", { method: "POST", body: JSON.stringify({ email: workEmail, password }) });
     if (!result?.access_token || !result?.user?.id) {
       const error = new Error("The authentication server returned an incomplete session."); error.code = "AUTH_RESPONSE_INVALID"; throw error;
     }
-    persistAuthSession(result);
+    persistAuthSession(result, remember);
     window.location.assign(withoutAuthView());
   }
 

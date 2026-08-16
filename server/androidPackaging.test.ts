@@ -11,7 +11,7 @@ describe("Android Trusted Web Activity delivery path", () => {
     expect(documentHead).toContain('name="theme-color" content="#101828"');
     expect(manifest).toContain('"name": "Smart Manager — Enterprise ERP"');
     expect(manifest).toContain('"display": "standalone"');
-    expect(manifest).toContain('"purpose": "any maskable"');
+    expect(manifest).toContain('"purpose": "any"');
   });
 
   it("documents Bubblewrap builds while keeping the release signing fingerprint out of the public site", () => {

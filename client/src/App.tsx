@@ -32,7 +32,7 @@ function DashboardRouteFallback() {
 function isPublicAuthRequest() {
   if (typeof window === "undefined") return false;
   const params = new URLSearchParams(window.location.search);
-  return params.get("auth") !== "signup" && !window.localStorage.getItem("bs_access_token");
+  return params.get("auth") !== "signup" && !window.localStorage.getItem("bs_access_token") && !window.sessionStorage.getItem("bs_session_access_token");
 }
 
 function Router() {

@@ -57,21 +57,43 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const IS_CONFIGURED     = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
 const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
+const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token";
+const SESSION_REFRESH_TOKEN_STORAGE_KEY = "bs_session_refresh_token";
 
 function authDebug(event, detail = {}) {
   if (import.meta.env.DEV) console.info(`[AUTH] ${event}`, detail);
 }
 
-function persistAuthSession(authResult) {
+function getStoredAccessToken() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+}
+
+function getStoredRefreshToken() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_REFRESH_TOKEN_STORAGE_KEY);
+}
+
+function persistAuthSession(authResult, { remember = true } = {}) {
   if (typeof window === "undefined" || !authResult?.access_token) return;
-  window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, authResult.access_token);
-  if (authResult.refresh_token) window.localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, authResult.refresh_token);
+  const activeStorage = remember ? window.localStorage : window.sessionStorage;
+  const inactiveStorage = remember ? window.sessionStorage : window.localStorage;
+  const activeAccessKey = remember ? ACCESS_TOKEN_STORAGE_KEY : SESSION_ACCESS_TOKEN_STORAGE_KEY;
+  const activeRefreshKey = remember ? REFRESH_TOKEN_STORAGE_KEY : SESSION_REFRESH_TOKEN_STORAGE_KEY;
+  const inactiveAccessKey = remember ? SESSION_ACCESS_TOKEN_STORAGE_KEY : ACCESS_TOKEN_STORAGE_KEY;
+  const inactiveRefreshKey = remember ? SESSION_REFRESH_TOKEN_STORAGE_KEY : REFRESH_TOKEN_STORAGE_KEY;
+  inactiveStorage.removeItem(inactiveAccessKey);
+  inactiveStorage.removeItem(inactiveRefreshKey);
+  activeStorage.setItem(activeAccessKey, authResult.access_token);
+  if (authResult.refresh_token) activeStorage.setItem(activeRefreshKey, authResult.refresh_token);
 }
 
 function clearStoredAuthSession() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_REFRESH_TOKEN_STORAGE_KEY);
 }
 
 // A real, deliberate architectural choice, not an oversight: IS_CONFIGURED
@@ -97,7 +119,7 @@ let DEMO_OVERRIDE = false;
 // the database is the single source of truth for which rows a session can see.
 
 function authHeaders() {
-  const token = (typeof window !== "undefined" && window.localStorage?.getItem(ACCESS_TOKEN_STORAGE_KEY)) || SUPABASE_ANON_KEY;
+  const token = getStoredAccessToken() || SUPABASE_ANON_KEY;
   return {
     apikey: SUPABASE_ANON_KEY,
     Authorization: `Bearer ${token}`,
@@ -46073,8 +46095,8 @@ function SmartManager() {
       }
     }
 
-    let token = tokenFromOAuth || (typeof window !== "undefined" ? window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) : null);
-    const storedRefreshToken = refreshTokenFromOAuth || (typeof window !== "undefined" ? window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) : null);
+    let token = tokenFromOAuth || getStoredAccessToken();
+    const storedRefreshToken = refreshTokenFromOAuth || getStoredRefreshToken();
     if (!token) { setAuthChecking(false); return; }
     (async () => {
       let authenticatedUser = null;
@@ -46085,7 +46107,7 @@ function SmartManager() {
         } catch (_expiredAccessToken) {
           if (!storedRefreshToken) throw _expiredAccessToken;
           const refreshed = await authRefreshSession(storedRefreshToken);
-          persistAuthSession(refreshed);
+          persistAuthSession(refreshed, { remember: Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)) });
           token = refreshed.access_token;
           user = await authGetUser(token);
         }
