@@ -9,10 +9,10 @@ This evidence records non-destructive browser checks against the published, auth
 | CRM | No document overflow; the module title resolved correctly. | No document overflow; the module title resolved correctly. | The tab list exposed a 320px/350px client width with 895px scrollable content; the visible action group wrapped within its container. |
 | Sales | No document overflow; the Sales module resolved correctly. | No document overflow; the Sales module resolved correctly. | The visible shared mobile action group matched the 320px/350px content width, wrapped, and did not exceed the viewport. |
 | Finance | No document overflow; the Finance module resolved correctly. | No document overflow; the Finance module resolved correctly. | The Finance segmented controls remained inside the 360px/390px document width. |
-| HR | Not run. | Not run. | The authenticated tenant did not expose an HR navigation entry or command-palette result. The test intentionally did not enable the module or alter tenant configuration merely to obtain evidence. |
+| HR | No document overflow; the Human Resources module resolved correctly. | No document overflow; the Human Resources module resolved correctly. | The existing dashboard Module Health control provided an authorized, read-only entry path; no tenant module setting was changed. |
 
 ## Repeatable Browser Flow
 
 The project includes `scripts/validateAuthenticatedMobileModules.mjs` for controlled, read-only reruns against an already-authenticated browser target. It resizes the active published workspace, navigates via existing UI controls, and reports only layout dimensions, module titles, tab scrollability, and action-group wrapping. It never enters, submits, creates, edits, or deletes operational data.
 
-> The HR validation remains intentionally pending until an approved authenticated test tenant exposes the HR module. This preserves the tenant's existing enabled-module configuration and authorization boundaries.
+> HR validation used the existing dashboard Module Health entry path after the command-palette and sidebar surfaces did not expose it. The workspace configuration remained unchanged throughout the check.

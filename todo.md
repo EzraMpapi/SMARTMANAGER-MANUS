@@ -453,7 +453,10 @@
 - [x] Publish and deliver the multi-module action-bar responsive update.
 - [x] Map authenticated browser access and identify the safest remaining oversized dashboard boundary.
 - [x] Validate authenticated CRM, Sales, and Finance at 360px and 390px; record the current tenant's HR-module entitlement block without changing workspace configuration.
-- [ ] Validate authenticated HR at 360px and 390px when the module is enabled for an approved test tenant.
+- [x] Validate authenticated HR at 360px and 390px through the existing dashboard control without changing the approved tenant configuration.
+- [x] Preserve the current HR entitlement state; temporary enablement and restoration were not required.
+- [x] Preserve the current HR entitlement state; existing dashboard module controls allowed validation without changing configuration.
+- [x] Publish and deliver the completed HR mobile-validation evidence update.
 - [x] Extract the selected high-cost dashboard boundary into a lazy-loaded module without changing data or authorization behavior.
 - [x] Add end-to-end browser coverage and source-level regression tests for high-density module workflows.
 - [x] Run release validation, publish, and deliver the authenticated responsive and performance update.

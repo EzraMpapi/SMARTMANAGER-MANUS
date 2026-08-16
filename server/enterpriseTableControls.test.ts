@@ -76,7 +76,8 @@ describe("enterprise keyboard and table customization controls", () => {
     expect(mobileEvidence).toContain('| CRM |');
     expect(mobileEvidence).toContain('| Sales |');
     expect(mobileEvidence).toContain('| Finance |');
-    expect(mobileEvidence).toContain('did not expose an HR navigation entry');
+    expect(mobileEvidence).toContain('Human Resources module resolved correctly');
+    expect(mobileEvidence).toContain('no tenant module setting was changed');
     expect(mobileEvidence).toContain('never enters, submits, creates, edits, or deletes operational data');
   });
 });
