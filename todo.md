@@ -432,3 +432,6 @@
 - [x] Add automated regressions for mobile Google OAuth initiation and remembered versus session-only authentication storage.
 - [x] Prepare a non-destructive square app-icon handoff from the uploaded official logo and document production replacement steps.
 - [x] Run validation, publish, and deliver the authentication hardening release.
+- [x] Assess session-only mobile logout test prerequisites and the current OAuth error presentation.
+- [x] Add visual OAuth-error recovery guidance and regression coverage for session-only authentication behavior.
+- [x] Run validation, publish, and deliver the authentication recovery update.

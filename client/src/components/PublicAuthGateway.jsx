@@ -127,5 +127,5 @@ export default function PublicAuthGateway() {
   if (view === "forgot") return <ForgotPasswordView onBack={() => navigate("login")} onRequest={requestRecovery} toMessage={toAuthUserMessage} />;
   if (view === "reset") return <ResetPasswordView recoveryToken={recoveryToken} onBack={() => navigate("login")} onUpdate={updatePassword} toMessage={toAuthUserMessage} />;
   if (view === "verify") return <VerificationView email={email} onBack={() => navigate("login")} onResend={resendVerification} toMessage={toAuthUserMessage} />;
-  return <EnterpriseLoginView configured={configured} onSignIn={signIn} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} toMessage={toAuthUserMessage} invitationPending={invitationPending} initialError={oauthError} />;
+  return <EnterpriseLoginView configured={configured} onSignIn={signIn} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} onClearOAuthError={() => setOauthError(null)} toMessage={toAuthUserMessage} invitationPending={invitationPending} initialError={oauthError} />;
 }

@@ -29,4 +29,14 @@ describe("public authentication experience", () => {
     expect(dashboardSource).toContain("window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY)");
     expect(dashboardSource).toContain("window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY)");
   });
+
+  it("gives a visible, recoverable path when Google OAuth is cancelled or otherwise returns an error", () => {
+    expect(authViewSource).toContain("oauthRecoveryTitle");
+    expect(authViewSource).toContain("oauthRecoveryCopy");
+    expect(authViewSource).toContain("function retryGoogle()");
+    expect(authViewSource).toContain('onOAuth("google")');
+    expect(authViewSource).toContain("function useEmailInstead()");
+    expect(authGatewaySource).toContain("onClearOAuthError={() => setOauthError(null)}");
+    expect(authGatewaySource).toContain("Google authentication did not complete");
+  });
 });
