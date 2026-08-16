@@ -3,6 +3,7 @@ import { EnterpriseLoginView, ForgotPasswordView, ResetPasswordView, Verificatio
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "../lib/authErrors";
 import { authScreenFromSearch, oauthCallbackFromHash } from "../lib/authOnboarding";
 import { passkeySignInUserMessage, signInWithAccountPasskey } from "../lib/accountPasskeys";
+import { persistAuthSession } from "../lib/authSessionStorage";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
@@ -33,20 +34,6 @@ async function authRequest(path, init = {}) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw createAuthRequestError(response.status, payload, "Authentication request failed.");
   return payload;
-}
-
-function persistAuthSession(result, remember = true) {
-  if (!result?.access_token) return;
-  const activeStorage = remember ? window.localStorage : window.sessionStorage;
-  const inactiveStorage = remember ? window.sessionStorage : window.localStorage;
-  const activeAccessKey = remember ? ACCESS_TOKEN_STORAGE_KEY : SESSION_ACCESS_TOKEN_STORAGE_KEY;
-  const activeRefreshKey = remember ? REFRESH_TOKEN_STORAGE_KEY : SESSION_REFRESH_TOKEN_STORAGE_KEY;
-  const inactiveAccessKey = remember ? SESSION_ACCESS_TOKEN_STORAGE_KEY : ACCESS_TOKEN_STORAGE_KEY;
-  const inactiveRefreshKey = remember ? SESSION_REFRESH_TOKEN_STORAGE_KEY : REFRESH_TOKEN_STORAGE_KEY;
-  inactiveStorage.removeItem(inactiveAccessKey);
-  inactiveStorage.removeItem(inactiveRefreshKey);
-  activeStorage.setItem(activeAccessKey, result.access_token);
-  if (result.refresh_token) activeStorage.setItem(activeRefreshKey, result.refresh_token);
 }
 
 function withoutAuthView() {

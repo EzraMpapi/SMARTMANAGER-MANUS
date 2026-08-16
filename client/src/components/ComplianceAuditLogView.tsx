@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ShieldAlert, RefreshCw, Database, Filter, Calendar } from "lucide-react";
 import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
+import { buildComplianceApprovalCsv } from "../lib/complianceApprovalExport";
 
 interface ComplianceAuditLogViewProps {
   companyId?: string;
@@ -18,7 +19,7 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
   const [webhookSecret, setWebhookSecret] = useState("");
 
   const utils = trpc.useUtils();
-  const { data: logs = [], isLoading, refetch } = trpc.auditLogs.list.useQuery(
+  const { data: complianceData, isLoading, refetch } = trpc.auditLogs.complianceExport.useQuery(
     {
       companyId,
       limit: 100,
@@ -28,6 +29,8 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
     },
     { refetchInterval: 10000 }
   );
+  const logs = complianceData?.logs || [];
+  const roleApprovals = complianceData?.approvals || [];
 
   const { data: backupStatus, refetch: refetchBackup, isLoading: backupLoading } = trpc.admin.verifyBackup.useQuery();
   const { data: webhookCfg } = trpc.admin.getWebhook.useQuery();
@@ -77,28 +80,26 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
   });
 
   const handleExportCsv = () => {
-    if (!logs || logs.length === 0) {
-      toast.error("No logs available to export");
+    const securityApprovals = selectedModule && selectedModule !== "Security" ? [] : roleApprovals.filter((approval) => {
+      const timestamp = approval.createdAt ? new Date(approval.createdAt).getTime() : 0;
+      const afterStart = !startDate || timestamp >= new Date(`${startDate}T00:00:00`).getTime();
+      const beforeEnd = !endDate || timestamp <= new Date(`${endDate}T23:59:59.999`).getTime();
+      return afterStart && beforeEnd;
+    });
+    if ((!logs || logs.length === 0) && securityApprovals.length === 0) {
+      toast.error("No compliance records available to export");
       return;
     }
-    const headers = ["Timestamp", "Module", "Action", "Severity", "Actor", "Details"];
-    const rows = logs.map(l => [
-      `"${new Date(l.createdAt).toISOString()}"`,
-      `"${l.module}"`,
-      `"${l.action}"`,
-      `"${l.action.includes("DELETE") || l.action.includes("EXCEED") ? "HIGH" : "INFO"}"`,
-      `"${l.actorName || l.actorOpenId}"`,
-      `"${(l.details || "").replace(/"/g, '""')}"`,
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = buildComplianceApprovalCsv(logs, securityApprovals);
+    const objectUrl = URL.createObjectURL(new Blob([csvContent], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", objectUrl);
     link.setAttribute("download", `compliance_audit_logs_${companyId}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("Compliance audit log CSV exported successfully");
+    URL.revokeObjectURL(objectUrl);
+    toast.success(`Compliance export created with ${securityApprovals.length} role-change approval record${securityApprovals.length === 1 ? "" : "s"}`);
   };
 
   return (
@@ -144,7 +145,7 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
             onClick={handleExportCsv}
             className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600/20 border border-emerald-500/30 px-4 py-2.5 text-[13px] font-semibold text-emerald-300 hover:bg-emerald-600/30 transition-colors"
           >
-            Export CSV
+            Export compliance CSV
           </button>
           <button
             onClick={() => setShowWebhookModal(true)}
@@ -326,6 +327,7 @@ export function ComplianceAuditLogView({ companyId = "default-company" }: Compli
             <option value="Finance">Finance</option>
             <option value="Inventory">Inventory</option>
             <option value="CRM">CRM</option>
+            <option value="Security">Security</option>
             <option value="Admin">Admin</option>
           </select>
         </div>

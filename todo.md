@@ -515,3 +515,10 @@
 - [x] Resolve passkey workspace readiness through the approved Supabase configuration path or present a precise administrator recovery path when project-level configuration cannot be applied programmatically.
 - [x] Add quarterly administrator in-app security-review reminders with an email-ready, unsent delivery state until an approved project sender is available, plus a tenant-scoped audit-evidence export with confirmed role-based access boundaries.
 - [x] Add an explicit role-change approval workflow with tenant-safe authorization, durable audit records, validation, publication, and GitHub delivery.
+- [x] Inspect the approved email-sender options and current transactional delivery boundary before enabling quarterly security-review emails.
+- [ ] Verify the user-approved Resend sender address and server-only provider configuration before enabling quarterly security-review email delivery.
+- [ ] Add an approved Resend sender-backed quarterly security review delivery path with scheduled, tenant-safe, and truthful unsent-state safeguards.
+- [x] Keep Resend quarterly review delivery disabled and explicitly document the blocked state until a verified sender address passes validation.
+- [x] Add a public landing-page entry point that starts the existing native passkey sign-in flow without creating a parallel authentication path.
+- [x] Extend tenant-scoped compliance CSV exports with server-verified role-change approval history and formula-injection protection.
+- [ ] Add regression tests, validate the build and authenticated/public UI paths, publish the follow-up, and push it to private GitHub.

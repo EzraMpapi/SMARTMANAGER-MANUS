@@ -16,11 +16,15 @@ import {
   Sun,
   Moon,
   Globe,
+  Fingerprint,
 } from "lucide-react";
+import { useState } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { AnimatedGoldMesh } from "../components/AnimatedGoldMesh";
 import { BrandLogo } from "../components/BrandLogo";
+import { passkeySignInUserMessage, signInWithAccountPasskey } from "../lib/accountPasskeys";
+import { persistAuthSession } from "../lib/authSessionStorage";
 
 const capabilities = [
   { title: "CRM & Sales", description: "Connect customer records, quotations, invoices, and commercial activity in one operating flow.", icon: UsersRound, tone: "bg-[#C9A96E]/10 text-[#C9A96E]" },
@@ -31,9 +35,32 @@ const capabilities = [
   { title: "Support & Operations", description: "Give teams practical workflows for service, documents, and business controls.", icon: Headphones, tone: "bg-[#16A34A]/10 text-[#16A34A]" },
 ];
 
+const PUBLIC_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLanguage();
+  const [passkeyPending, setPasskeyPending] = useState(false);
+  const [passkeyError, setPasskeyError] = useState("");
+
+  async function signInWithPublicPasskey() {
+    if (!PUBLIC_SUPABASE_URL || !PUBLIC_SUPABASE_ANON_KEY) {
+      setPasskeyError("Passkey sign-in is not configured for this workspace. Use the secure workspace sign-in page instead.");
+      return;
+    }
+    setPasskeyPending(true);
+    setPasskeyError("");
+    try {
+      const result = await signInWithAccountPasskey({ supabaseUrl: PUBLIC_SUPABASE_URL, supabaseAnonKey: PUBLIC_SUPABASE_ANON_KEY });
+      persistAuthSession(result);
+      window.location.assign("/app");
+    } catch (error) {
+      setPasskeyError(passkeySignInUserMessage(error));
+    } finally {
+      setPasskeyPending(false);
+    }
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#0B1120] text-[#F8FAFC]">
@@ -65,9 +92,14 @@ export default function Home() {
             </button>
           </div>
 
-          <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-[#C9A96E] px-5 py-2.5 text-[13px] font-bold text-[#0B1120] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
-            {t("launchApp")} <ArrowRight size={14} />
-          </Link>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} aria-describedby={passkeyError ? "public-passkey-status" : undefined} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#16A34A]/35 bg-[#16A34A]/10 px-3 text-[12px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70" aria-label="Sign in with a passkey">
+              <Fingerprint size={15} /><span className="hidden sm:inline">{passkeyPending ? "Opening…" : "Passkey"}</span>
+            </button>
+            <Link href="/app" className="inline-flex items-center gap-2 rounded-lg bg-[#C9A96E] px-5 py-2.5 text-[13px] font-bold text-[#0B1120] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
+              {t("launchApp")} <ArrowRight size={14} />
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -94,10 +126,14 @@ export default function Home() {
                 <Link href="/app" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#C9A96E] px-7 py-4 text-[14px] font-bold text-[#0B1120] shadow-[0_15px_30px_rgba(201,169,110,0.15)] transition-all hover:-translate-y-0.5 hover:bg-[#D4B87F] active:scale-[0.97]">
                   Launch Smart Manager <ArrowRight size={16} />
                 </Link>
+                <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#16A34A]/35 bg-[#16A34A]/10 px-7 py-4 text-[14px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70">
+                  <Fingerprint size={16} /> {passkeyPending ? "Opening passkey…" : "Sign in with a passkey"}
+                </button>
                 <a href="#capabilities" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-7 py-4 text-[14px] font-bold text-white transition-all hover:bg-white/10">
                   Explore capabilities <ChevronRight size={16} />
                 </a>
               </div>
+              <p id="public-passkey-status" className="mt-4 min-h-5 max-w-xl text-[13px] text-amber-200" aria-live="polite">{passkeyError}</p>
               <div className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-[13px] font-medium text-[#64748B]">
                 <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> Live operational data</span>
                 <span className="inline-flex items-center gap-2"><Check size={16} className="text-[#16A34A]" /> Connected business modules</span>

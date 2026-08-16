@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const authViewSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
 const authGatewaySource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
+const authSessionStorageSource = readFileSync(new URL("../client/src/lib/authSessionStorage.js", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
 const trpcBootstrapSource = readFileSync(new URL("../client/src/main.tsx", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
@@ -20,9 +21,10 @@ describe("public authentication experience", () => {
   it("honours the Remember Me choice without treating a session-only login as a persistent device session", () => {
     expect(authViewSource).toContain("const [rememberMe, setRememberMe] = useState(true)");
     expect(authViewSource).toContain("await onSignIn(email.trim(), password, rememberMe)");
-    expect(authGatewaySource).toContain("function persistAuthSession(result, remember = true)");
-    expect(authGatewaySource).toContain('const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token"');
-    expect(authGatewaySource).toContain("const activeStorage = remember ? window.localStorage : window.sessionStorage");
+    expect(authGatewaySource).toContain('import { persistAuthSession } from "../lib/authSessionStorage"');
+    expect(authSessionStorageSource).toContain("function persistAuthSession(result, remember = true)");
+    expect(authSessionStorageSource).toContain('const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token"');
+    expect(authSessionStorageSource).toContain("const activeStorage = remember ? window.localStorage : window.sessionStorage");
     expect(appSource).toContain('window.sessionStorage.getItem("bs_session_access_token")');
     expect(trpcBootstrapSource).toContain('sessionStorage.getItem("bs_session_access_token")');
     expect(dashboardSource).toContain("function getStoredAccessToken()");

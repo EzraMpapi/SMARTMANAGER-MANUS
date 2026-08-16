@@ -409,6 +409,20 @@ export const appRouter = router({
         return true;
       });
     }),
+    complianceExport: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().max(100).optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ ctx, input }) => {
+      const approvalResult = await listRoleChangeApprovals(ctx.req);
+      if (approvalResult.profile.company_id !== input.companyId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You cannot export compliance evidence for another workspace." });
+      }
+      const logs = await listAuditLogs(input.companyId, input.limit || 100);
+      const filteredLogs = logs.filter((log) => {
+        if (input.module && log.module !== input.module) return false;
+        if (input.startDate && new Date(log.createdAt) < new Date(input.startDate)) return false;
+        if (input.endDate && new Date(log.createdAt) > new Date(input.endDate)) return false;
+        return true;
+      });
+      return { logs: filteredLogs, approvals: approvalResult.approvals };
+    }),
     record: protectedProcedure.input(z.object({ companyId: z.string().min(1), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(({ ctx, input }) => recordAuditLog(ctx.user, input)),
   }),
 
