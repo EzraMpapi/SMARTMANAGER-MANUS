@@ -467,7 +467,7 @@
 - [x] Extend POS inventory, customer, shift, cash movement, return, receipt, audit, and reporting integrations.
 - [x] Define the pending device-queue lifecycle and durable multi-device reconciliation boundary for POS sales.
 - [x] Implement an explicit device-local pending POS queue with reconnect synchronization and no completed-state claims before confirmation.
-- [ ] Add durable server-side reconciliation foundations for multi-device pending-sale visibility and recovery.
-- [ ] Test pending, synchronized, duplicate, failed, and offline/reconnect POS scenarios; publish and deliver the final POS upgrade.
-- [ ] Define explicit offline queue and sync boundaries without presenting unconfirmed sales as completed.
-- [ ] Validate POS security, RLS, responsive layouts, tests, production build, publish, and deliver the upgrade.
+- [x] Add durable server-side reconciliation foundations for multi-device pending-sale visibility and recovery.
+- [x] Test pending, synchronized, duplicate, failed, and offline/reconnect POS scenarios; publish and deliver the final POS upgrade.
+- [x] Define explicit offline queue and sync boundaries without presenting unconfirmed sales as completed.
+- [x] Validate POS security, RLS, responsive layouts, tests, production build, publish, and deliver the upgrade.

@@ -1,0 +1,4 @@
+{
+  "project_id": "rlhngsrihahhyxnjxrxm",
+  "query": "SELECT to_regclass('public.pos_sync_events') IS NOT NULL AS event_table_exists, EXISTS (SELECT 1 FROM pg_proc WHERE pronamespace = 'public'::regnamespace AND proname = 'record_pos_sync_event') AS reconciliation_function_exists LIMIT 1;"
+}

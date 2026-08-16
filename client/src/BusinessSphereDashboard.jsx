@@ -36143,6 +36143,16 @@ function Checkout({ inventory, transactions, company, currentUser, customers }) 
       const savedTransaction = mapPosTransactionRow(row);
       transactions.setRows((previous) => [savedTransaction, ...previous.filter((transaction) => transaction.dbId !== savedTransaction.dbId)]);
       await Promise.all([inventory.reload?.(), transactions.reload?.()].filter(Boolean));
+      try {
+        await callRpc("record_pos_sync_event", {
+          p_idempotency_key: record.idempotencyKey,
+          p_status: "synced",
+          p_transaction_id: savedTransaction.dbId,
+          p_message: confirmed.idempotent_replay ? "Idempotent replay confirmed." : "Pending sale synchronized.",
+        }, getStoredAccessToken());
+      } catch (reconciliationError) {
+        console.warn("POS reconciliation event recording failed", reconciliationError);
+      }
       const currentAfterSync = readPendingPosSales(typeof window === "undefined" ? null : window.localStorage, queueScope);
       const nextRecords = currentAfterSync.filter((pending) => pending.idempotencyKey !== record.idempotencyKey);
       persistPendingSales(nextRecords);
@@ -36154,6 +36164,18 @@ function Checkout({ inventory, transactions, company, currentUser, customers }) 
       const nextStatus = isRetryablePosTransportError(error) ? "pending" : "needs_attention";
       const nextRecords = updatePendingPosSale(current, record.idempotencyKey, { status: nextStatus, attempts: (record.attempts || 0) + 1, lastError: String(error?.message || "Synchronization failed") });
       persistPendingSales(nextRecords);
+      if (nextStatus === "needs_attention") {
+        try {
+          await callRpc("record_pos_sync_event", {
+            p_idempotency_key: record.idempotencyKey,
+            p_status: "needs_attention",
+            p_transaction_id: null,
+            p_message: String(error?.message || "Synchronization requires cashier attention."),
+          }, getStoredAccessToken());
+        } catch (reconciliationError) {
+          console.warn("POS reconciliation attention event recording failed", reconciliationError);
+        }
+      }
       notify(nextStatus === "needs_attention" ? `Pending receipt ${record.docNumber} needs attention before it can sync.` : `Pending receipt ${record.docNumber} is still waiting for a connection.`, "error");
     }
   }

@@ -65,5 +65,8 @@ describe("POS checkout confirmed persistence integration", () => {
     expect(checkout).toContain("Not completed or counted in revenue");
     expect(checkout).toContain("Retry sync");
     expect(checkout).toContain('callRpc("complete_pos_sale"');
+    expect(checkout).toContain('callRpc("record_pos_sync_event"');
+    expect(checkout).toContain('p_status: "synced"');
+    expect(checkout).toContain('p_status: "needs_attention"');
   });
 });
