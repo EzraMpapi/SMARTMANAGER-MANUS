@@ -48677,79 +48677,100 @@ const ONBOARDING_TOUR_STEPS = [
   {
     id: "dashboard",
     moduleId: "dashboard",
+    roles: ["owner", "admin", "manager", "staff", "viewer"],
     title: { en: "Start at your command center", sw: "Anzia kwenye kituo chako cha uendeshaji" },
     description: {
       en: "See confirmed KPIs, operational guidance, and live workspace status without relying on fabricated trends.",
       sw: "Tazama viashiria vilivyothibitishwa, mwongozo wa kiutendaji, na hali ya mfumo bila kutegemea takwimu za kubuni."
     },
     icon: LayoutDashboard,
-    accent: "#16A34A"
+    accent: "#16A34A",
+    animation: "pulse-slow",
+    illustration: "📊"
   },
   {
     id: "sales",
     moduleId: "sales",
+    roles: ["owner", "admin", "manager", "staff"],
     title: { en: "Turn opportunities into sales", sw: "Badili fursa kuwa mauzo" },
     description: {
       en: "Create and follow sales workflows that only become visible after the server confirms the record.",
       sw: "Tengeneza na fuatilia michakato ya mauzo inayoonekana tu baada ya seva kuthibitisha kumbukumbu."
     },
     icon: ShoppingCart,
-    accent: "#2563EB"
+    accent: "#2563EB",
+    animation: "bounce-subtle",
+    illustration: "💼"
   },
   {
     id: "pos",
     moduleId: "pos",
+    roles: ["owner", "admin", "manager", "staff"],
     title: { en: "Move quickly at the point of sale", sw: "Nenda kwa kasi katika sehemu ya mauzo (POS)" },
     description: {
       en: "Complete checkout, handle offline queues transparently, and use Sync Now when connectivity returns.",
       sw: "Kamilisha malipo, simamia foleni za nje ya mtandao kwa uwazi, na utumie kitufe cha kusawazisha pale mtandao unaporejea."
     },
     icon: ShoppingBag,
-    accent: "#7C3AED"
+    accent: "#7C3AED",
+    animation: "spin-slow",
+    illustration: "🛒"
   },
   {
     id: "inventory",
     moduleId: "inventory",
+    roles: ["owner", "admin", "manager", "staff"],
     title: { en: "Keep stock truthful", sw: "Weka hesabu za bidhaa kuwa za kweli" },
     description: {
       en: "Track confirmed stock movements, low-stock attention, and retry-safe adjustments across locations.",
       sw: "Fuatilia mienendo ya bidhaa iliyothibitishwa, bidhaa zinazokaribia kuisha, na marekebisho salama katika matawi yako."
     },
     icon: Package,
-    accent: "#0891B2"
+    accent: "#0891B2",
+    animation: "float",
+    illustration: "📦"
   },
   {
     id: "finance",
     moduleId: "finance",
+    roles: ["owner", "admin", "manager"],
     title: { en: "Protect cash flow", sw: "Linda mtiririko wa pesa taslimu" },
     description: {
       en: "Review confirmed invoices, expenses, budgets, and collections with clear empty and unavailable states.",
       sw: "Kagua ankara zilizothibitishwa, matumizi, bajeti, na makusanyo kwa mifumo iliyo wazi na ya kweli."
     },
     icon: Wallet,
-    accent: "#D97706"
+    accent: "#D97706",
+    animation: "pulse-slow",
+    illustration: "🪙"
   },
   {
     id: "collaboration",
     moduleId: "collaboration",
+    roles: ["owner", "admin", "manager", "staff", "viewer"],
     title: { en: "Coordinate the whole team", sw: "Ratibu timu nzima kwa pamoja" },
     description: {
       en: "Use Projects and Collaboration Hub to manage confirmed tasks, milestones, channels, and calendar work.",
       sw: "Tumia Miradi na Kituo cha Ushirikiano kusimamia kazi zilizothibitishwa, hatua kuu, na kalenda ya kazi."
     },
     icon: MessageSquare,
-    accent: "#DB2777"
+    accent: "#DB2777",
+    animation: "bounce-subtle",
+    illustration: "👥"
   },
   {
     id: "ai",
     moduleId: "ai",
+    roles: ["owner", "admin", "manager"],
     title: { en: "Let AI assist—never act alone", sw: "Ruhusu AI ikusaidie—kamwe usifanye maamuzi peke yako" },
     description: {
       en: "Ask the assistant for grounded analysis and review recommendations before any role-sensitive action is executed.",
       sw: "Omba msaada wa uchambuzi na uhakiki mapendekezo kabla ya kutekeleza hatua yoyote nyeti."
     },
     icon: Brain,
-    accent: "#0F766E"
+    accent: "#0F766E",
+    animation: "spin-slow",
+    illustration: "🤖"
   },
 ];
 
@@ -48760,6 +48781,15 @@ function onboardingTourStorageKey(currentUser, company) {
 }
 
 function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange }) {
+  const userRole = String(currentUser?.role || "staff").toLowerCase();
+  const roleSteps = useMemo(() => {
+    return ONBOARDING_TOUR_STEPS.filter((item) => {
+      if (!Array.isArray(item.roles)) return true;
+      if (userRole === "owner" || userRole === "admin") return true;
+      return item.roles.includes(userRole);
+    });
+  }, [userRole]);
+  const activeSteps = roleSteps.length > 0 ? roleSteps : ONBOARDING_TOUR_STEPS;
   const [lang, setLang] = useState(() => {
     try { return localStorage.getItem("bs_lang") || "en"; } catch (_e) { return "en"; }
   });
@@ -48783,10 +48813,10 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
   const [spotlightRect, setSpotlightRect] = useState(null);
   const storageKey = useMemo(() => onboardingTourStorageKey(currentUser, company), [currentUser?.id, currentUser?.name, company?.id, company?.name]);
   const ready = IS_CONFIGURED ? Boolean(currentUser?.id && company?.id) : true;
-  const step = ONBOARDING_TOUR_STEPS[stepIndex] || ONBOARDING_TOUR_STEPS[0];
+  const step = activeSteps[stepIndex] || activeSteps[0];
   const StepIcon = step.icon;
   const available = visibleModules.some((module) => module.id === step.moduleId);
-  const remainingSteps = Math.max(0, ONBOARDING_TOUR_STEPS.length - stepIndex - 1);
+  const remainingSteps = Math.max(0, activeSteps.length - stepIndex - 1);
   const remainingLabel = remainingSteps === 0
     ? (isSw ? "Hatua ya mwisho" : "Final step")
     : (isSw ? `Hatua ${remainingSteps} zilizobaki` : `${remainingSteps} step${remainingSteps === 1 ? "" : "s"} remaining`);
@@ -48895,9 +48925,19 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
 
   function persistCompletion(status) {
     try {
-      window.localStorage.setItem(storageKey, JSON.stringify({ status, completedAt: new Date().toISOString(), version: 1 }));
+      window.localStorage.setItem(storageKey, JSON.stringify({ status, completedAt: new Date().toISOString(), role: userRole, version: 1 }));
     } catch (_error) {
       // Tour preferences are optional; never block ERP navigation when storage is unavailable.
+    }
+    if (IS_CONFIGURED && currentUser?.id) {
+      const completedAt = new Date().toISOString();
+      const roleTrack = userRole;
+      sb("profiles").eq("id", currentUser.id).update({
+        onboarding_tour_completed_at: completedAt,
+        onboarding_tour_role_track: roleTrack
+      }).single().run().catch((error) => {
+        authDebug("Server-backed onboarding completion sync deferred", { message: error?.message });
+      });
     }
   }
   function finishTour(status = "completed") {
@@ -48906,7 +48946,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
   function goNext() {
-    if (stepIndex >= ONBOARDING_TOUR_STEPS.length - 1) finishTour("completed");
+    if (stepIndex >= activeSteps.length - 1) finishTour("completed");
     else setStepIndex((current) => current + 1);
   }
   function goPrevious() {
@@ -48971,21 +49011,29 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
             </div>
             <div className="px-5 pb-5 pt-6 sm:px-8 sm:pb-7 sm:pt-8">
               <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm" style={{ background: `linear-gradient(135deg, ${step.accent}, #0F172A)` }} aria-hidden="true">
-                  <StepIcon size={23} />
+                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-md animate-pulse" style={{ background: `linear-gradient(135deg, ${step.accent}, #0F172A)` }} aria-hidden="true">
+                  <StepIcon size={24} />
+                  <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white text-[12px] shadow-sm border border-slate-200" aria-hidden="true">
+                    {step.illustration}
+                  </span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700" aria-live="polite">
-                    {isSw ? `Hatua ya ${stepIndex + 1} kati ya ${ONBOARDING_TOUR_STEPS.length}` : `Step ${stepIndex + 1} of ${ONBOARDING_TOUR_STEPS.length}`}{" "}
-                    <span className="ml-1 text-slate-400 normal-case tracking-normal">· {remainingLabel}</span>
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700" aria-live="polite">
+                      {isSw ? `Hatua ya ${stepIndex + 1} kati ya ${activeSteps.length}` : `Step ${stepIndex + 1} of ${activeSteps.length}`}{" "}
+                      <span className="ml-1 text-slate-400 normal-case tracking-normal">· {remainingLabel}</span>
+                    </p>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 uppercase">
+                      {userRole} track
+                    </span>
+                  </div>
                   <h2 id="onboarding-tour-title" className="mt-1 text-[21px] font-semibold tracking-tight text-slate-900">{step.title[isSw ? "sw" : "en"]}</h2>
                   <p id="onboarding-tour-description" className="mt-2 text-[13px] leading-6 text-slate-600">{step.description[isSw ? "sw" : "en"]}</p>
                 </div>
               </div>
-              <div className="mt-6 flex items-center gap-1.5" role="progressbar" aria-label="Onboarding tour progress" aria-valuemin={1} aria-valuemax={ONBOARDING_TOUR_STEPS.length} aria-valuenow={stepIndex + 1} aria-valuetext={`Step ${stepIndex + 1} of ${ONBOARDING_TOUR_STEPS.length}; ${remainingLabel}`}>
+              <div className="mt-6 flex items-center gap-1.5" role="progressbar" aria-label="Onboarding tour progress" aria-valuemin={1} aria-valuemax={activeSteps.length} aria-valuenow={stepIndex + 1} aria-valuetext={`Step ${stepIndex + 1} of ${activeSteps.length}; ${remainingLabel}`}>
                 <span className="sr-only" aria-live="polite">{remainingLabel}</span>
-                {ONBOARDING_TOUR_STEPS.map((item, index) => <span key={item.id} className={`h-1.5 rounded-full transition-all ${index === stepIndex ? "w-8 bg-emerald-600" : index < stepIndex ? "w-4 bg-emerald-200" : "w-4 bg-slate-200"}`} aria-hidden="true" />)}
+                {activeSteps.map((item, index) => <span key={item.id} className={`h-1.5 rounded-full transition-all ${index === stepIndex ? "w-8 bg-emerald-600" : index < stepIndex ? "w-4 bg-emerald-200" : "w-4 bg-slate-200"}`} aria-hidden="true" />)}
               </div>
               <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3.5 text-[12px] leading-5 text-emerald-950">
                 <div className="flex items-start gap-2">

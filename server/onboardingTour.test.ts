@@ -10,12 +10,21 @@ describe("interactive onboarding tour", () => {
     for (const moduleId of ["dashboard", "sales", "pos", "inventory", "finance", "collaboration", "ai"]) {
       expect(tour).toContain(`moduleId: "${moduleId}"`);
     }
-    expect(tour).toContain("ONBOARDING_TOUR_STEPS.length");
+    expect(tour).toContain("activeSteps.length");
     expect(tour).toContain("remainingSteps = Math.max(0");
     expect(tour).toContain("isSw ? \"Hatua ya mwisho\"");
     expect(tour).toContain("isSw ? \"Ziara ya Smart Manager\"");
     expect(tour).toContain("sw: \"Anzia kwenye kituo chako cha uendeshaji\"");
     expect(tour).toContain("Every permanent change is designed to wait for server confirmation.");
+  });
+
+  it("supports role-specific tour tracks and server-backed completion persistence", () => {
+    expect(tour).toContain("roles:");
+    expect(tour).toContain("userRole");
+    expect(tour).toContain("activeSteps");
+    expect(tour).toContain("onboarding_tour_completed_at");
+    expect(tour).toContain("onboarding_tour_role_track");
+    expect(tour).toContain("illustration");
   });
 
   it("scopes completion to the authenticated user and active workspace", () => {

@@ -706,3 +706,7 @@
 - [x] Implement bilingual onboarding tour steps in `BusinessSphereDashboard.jsx` supporting both English and Kiswahili based on the user's active language preference.
 - [x] Translate tour modal header, progress text, buttons, and server-confirmation reassurance into Kiswahili.
 - [x] Add focused regression coverage verifying Kiswahili step copy and language-responsive onboarding behavior.
+- [x] Implement role-specific onboarding tour tracks (Administrator, Cashier / POS, Finance, Employee Portal) with tailored step sequences.
+- [x] Bind onboarding tour completion status to the user profile table in Supabase with automatic localStorage fallback for offline or demo mode.
+- [x] Add lightweight, theme-aware animated step illustrations with CSS keyframe motion for each tour step.
+- [x] Add automated regression coverage for role tracks, server-backed completion sync, and animated illustrations.
