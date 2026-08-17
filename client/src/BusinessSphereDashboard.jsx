@@ -7621,15 +7621,15 @@ function DataImportPanel({ type, onClose, onImport }) {
 // Two-step delete: first click arms confirmation, second click within the
 // window commits. Used by every detail panel so destructive actions never
 // fire from a single accidental click.
-function ConfirmDeleteButton({ onConfirm, label = "Delete", message, title }) {
+function ConfirmDeleteButton({ onConfirm, label = "Delete", message, title, disabled = false, busy = false }) {
   // Upgraded to use the global confirmAction bus — every ConfirmDeleteButton
   // now shows the premium dialog instead of the in-place two-button pattern.
   // The original armed-state pattern is kept as fallback for call sites that
   // pass no message, so existing usage never breaks.
   if (message) {
     return (
-      <button type="button" onClick={() => confirmAction(message, onConfirm, { variant: "danger", title: title || "Confirm deletion", confirmLabel: label })}
-        className="w-full text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 hover:bg-[#EF4444]/5 transition-colors flex items-center justify-center gap-1.5">
+      <button type="button" disabled={disabled} aria-busy={busy} onClick={() => confirmAction(message, onConfirm, { variant: "danger", title: title || "Confirm deletion", confirmLabel: label })}
+        className="w-full text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 hover:bg-[#EF4444]/5 transition-colors flex items-center justify-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50">
         <Trash2 size={12} /> {label}
       </button>
     );
@@ -7649,7 +7649,9 @@ function ConfirmDeleteButton({ onConfirm, label = "Delete", message, title }) {
         <button
           type="button"
           onClick={onConfirm}
-          className="flex-1 text-[12px] font-medium bg-[#EF4444] text-white rounded-lg py-2.5 hover:bg-[#96201a] transition-colors"
+          disabled={disabled}
+          aria-busy={busy}
+          className="flex-1 text-[12px] font-medium bg-[#EF4444] text-white rounded-lg py-2.5 hover:bg-[#96201a] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           Confirm delete
         </button>
@@ -7661,7 +7663,9 @@ function ConfirmDeleteButton({ onConfirm, label = "Delete", message, title }) {
     <button
       type="button"
       onClick={() => setArmed(true)}
-      className="flex items-center justify-center gap-1.5 text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 px-3.5 hover:bg-[#FEE2E2] transition-colors"
+      disabled={disabled}
+      aria-busy={busy}
+      className="flex items-center justify-center gap-1.5 text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 px-3.5 hover:bg-[#FEE2E2] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
     >
       <Trash2 size={13} /> {label}
     </button>
@@ -24936,6 +24940,8 @@ function Projects({ filesHook, expensesHook }) {
 
   const [selectedId, setSelectedId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [savingProject, setSavingProject] = useState(false);
+  const [savingProjectStatus, setSavingProjectStatus] = useState(false);
   const selectedProject = projects.rows.find((p) => p.id === selectedId);
 
   const todayStr = TODAY.toISOString().slice(0, 10);
@@ -24955,18 +24961,29 @@ function Projects({ filesHook, expensesHook }) {
   ];
 
   async function addProject(form) {
+    if (savingProject) return;
     const draft = { id: docId("PRJ"), name: form.name, client: form.client, status: "Planning", startDate: form.startDate, endDate: form.endDate, budget: Number(form.budget) || 0, manager: form.manager };
-    projects.setRows((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(`Project created: ${draft.name}`);
-    if (IS_CONFIGURED) {
-      try {
-        const header = await sb("projects").insert({
-          name: draft.name, client: draft.client, status: "Planning", start_date: draft.startDate,
-          end_date: draft.endDate, budget: draft.budget, manager: draft.manager,
-        }).single().run();
-        if (header?.id) projects.setRows((prev) => prev.map((p) => (p.id === draft.id ? { ...p, dbId: header.id } : p)));
-      } catch (_e) { notify("Project created locally, but saving to the server failed.", "error"); }
+    setSavingProject(true);
+    try {
+      if (!IS_CONFIGURED) {
+        projects.setRows((prev) => [draft, ...prev]);
+        setShowForm(false);
+        notify(`Project created: ${draft.name}`);
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("projects", "insert", {
+        name: draft.name, client: draft.client, status: draft.status, start_date: draft.startDate,
+        end_date: draft.endDate || null, budget: draft.budget, manager: draft.manager,
+      });
+      if (error || !data?.id) throw error || new Error("The server did not return the created project.");
+      const confirmed = mapProjectRow(data);
+      projects.setRows((prev) => [confirmed, ...prev]);
+      setShowForm(false);
+      notify(`Project created: ${confirmed.name}`);
+    } catch (error) {
+      notify(`Project was not created. ${error?.message || "Check the form and try again."}`, "error");
+    } finally {
+      setSavingProject(false);
     }
   }
 
@@ -24975,10 +24992,25 @@ function Projects({ filesHook, expensesHook }) {
       <ProjectDetail
         project={selectedProject}
         onBack={() => setSelectedId(null)}
+        statusSaving={savingProjectStatus}
         onSetStatus={async (status) => {
-          projects.setRows((prev) => prev.map((p) => (p.id === selectedProject.id ? { ...p, status } : p)));
-          if (IS_CONFIGURED && selectedProject.dbId) {
-            try { await sb("projects").eq("id", selectedProject.dbId).update({ status }).run(); } catch (_e) { notify("Couldn't save the project status to the server.", "error"); }
+          if (savingProjectStatus || status === selectedProject.status) return;
+          if (!IS_CONFIGURED || !selectedProject.dbId) {
+            projects.setRows((prev) => prev.map((p) => (p.id === selectedProject.id ? { ...p, status } : p)));
+            notify(`Project status changed to ${status}.`);
+            return;
+          }
+          setSavingProjectStatus(true);
+          try {
+            const { data, error } = await runCompanyTableMutation("projects", "update", { status }, { matchVal: selectedProject.dbId });
+            if (error || !data?.id) throw error || new Error("The server did not return the updated project.");
+            const confirmed = mapProjectRow(data);
+            projects.setRows((prev) => prev.map((p) => (p.id === selectedProject.id ? { ...p, ...confirmed } : p)));
+            notify(`Project status saved as ${confirmed.status}.`);
+          } catch (error) {
+            notify(`Project status was not saved. ${error?.message || "Try again."}`, "error");
+          } finally {
+            setSavingProjectStatus(false);
           }
         }}
         tasksHook={tasks}
@@ -25210,12 +25242,12 @@ function Projects({ filesHook, expensesHook }) {
         );
       })()}
 
-      {showForm && <ProjectFormPanel onClose={() => setShowForm(false)} onSubmit={addProject} />}
+      {showForm && <ProjectFormPanel onClose={() => setShowForm(false)} onSubmit={addProject} saving={savingProject} />}
     </div>
   );
 }
 
-function ProjectFormPanel({ onClose, onSubmit }) {
+function ProjectFormPanel({ onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({ name: "", client: "", manager: "", startDate: TODAY.toISOString().slice(0, 10), endDate: "", budget: "" });
   const [touched, setTouched] = useState(false);
   const valid = form.name.trim() && form.client.trim();
@@ -25248,7 +25280,7 @@ function ProjectFormPanel({ onClose, onSubmit }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create Project</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Create Project"}</button>
         </div>
       </form>
     </div>
@@ -25264,7 +25296,7 @@ const PROJECT_DETAIL_TABS = [
   { id: "timelog", label: "Time Log", icon: Clock },
 ];
 
-function ProjectDetail({ project, onBack, onSetStatus, tasksHook, milestonesHook, expensesHook, financeExpensesHook, filesHook, currentUser }) {
+function ProjectDetail({ project, onBack, onSetStatus, statusSaving = false, tasksHook, milestonesHook, expensesHook, financeExpensesHook, filesHook, currentUser }) {
   const [tab, setTab] = useState("tasks");
   const projectTasks = tasksHook.rows.filter((t) => t.projectId === project.id);
   const projectMilestones = milestonesHook.rows.filter((m) => m.projectId === project.id);
@@ -25283,7 +25315,9 @@ function ProjectDetail({ project, onBack, onSetStatus, tasksHook, milestonesHook
         <select
           value={project.status}
           onChange={(e) => onSetStatus(e.target.value)}
-          className="text-[12.5px] font-medium rounded-lg px-3 py-2 border shrink-0"
+          disabled={statusSaving}
+          aria-busy={statusSaving}
+          className="text-[12.5px] font-medium rounded-lg px-3 py-2 border shrink-0 disabled:cursor-wait disabled:opacity-60"
           style={{ borderColor: `${PROJECT_STATUS_COLOR[project.status]}40`, color: PROJECT_STATUS_COLOR[project.status], backgroundColor: `${PROJECT_STATUS_COLOR[project.status]}0a` }}
         >
           {Object.keys(PROJECT_STATUS_COLOR).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -25324,6 +25358,8 @@ function ProjectTasks({ project, tasksHook }) {
   const [view, setView] = useState("board");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [savingTask, setSavingTask] = useState(false);
+  const [savingTaskId, setSavingTaskId] = useState(null);
   const { rows: allTasks, setRows: setAllTasks } = tasksHook;
   const tasks = allTasks.filter((t) => t.projectId === project.id);
 
@@ -25335,35 +25371,77 @@ function ProjectTasks({ project, tasksHook }) {
   }, [tasks]);
 
   async function addTask(form) {
+    if (savingTask) return;
     const draft = { id: docId("TSK"), projectId: project.id, title: form.title, assignee: form.assignee, status: "To Do", priority: form.priority, dueDate: form.dueDate };
-    setAllTasks((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(`Task added: ${draft.title}`);
-    if (IS_CONFIGURED) {
-      try {
-        const header = await sb("project_tasks").insert({
-          project_ref: project.id, title: draft.title, assignee: draft.assignee, status: "To Do", priority: draft.priority, due_date: draft.dueDate,
-        }).single().run();
-        if (header?.id) setAllTasks((prev) => prev.map((t) => (t.id === draft.id ? { ...t, dbId: header.id } : t)));
-      } catch (_e) { notify("Task added locally, but saving to the server failed.", "error"); }
+    setSavingTask(true);
+    try {
+      if (!IS_CONFIGURED) {
+        setAllTasks((prev) => [draft, ...prev]);
+        setShowForm(false);
+        notify(`Task added: ${draft.title}`);
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("project_tasks", "insert", {
+        project_ref: project.id, title: draft.title, assignee: draft.assignee, status: draft.status, priority: draft.priority, due_date: draft.dueDate,
+      });
+      if (error || !data?.id) throw error || new Error("The server did not return the created task.");
+      const confirmed = mapProjectTaskRow(data);
+      setAllTasks((prev) => [confirmed, ...prev]);
+      setShowForm(false);
+      notify(`Task added: ${confirmed.title}`);
+    } catch (error) {
+      notify(`Task was not added. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSavingTask(false);
     }
   }
 
   async function moveTask(id, status) {
+    if (savingTaskId) return;
     const t = allTasks.find((x) => x.id === id);
-    setAllTasks((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)));
-    setSelected((s) => (s && s.id === id ? { ...s, status } : s));
-    if (IS_CONFIGURED && t?.dbId) {
-      try { await sb("project_tasks").eq("id", t.dbId).update({ status }).run(); } catch (_e) { notify("Couldn't save the task status to the server.", "error"); }
+    if (!t || t.status === status) return;
+    if (!IS_CONFIGURED || !t.dbId) {
+      setAllTasks((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)));
+      setSelected((s) => (s && s.id === id ? { ...s, status } : s));
+      notify(`Task moved to ${status}.`);
+      return;
+    }
+    setSavingTaskId(id);
+    try {
+      const { data, error } = await runCompanyTableMutation("project_tasks", "update", { status }, { matchVal: t.dbId });
+      if (error || !data?.id) throw error || new Error("The server did not return the updated task.");
+      const confirmed = mapProjectTaskRow(data);
+      setAllTasks((prev) => prev.map((x) => (x.id === id ? { ...x, ...confirmed } : x)));
+      setSelected((s) => (s && s.id === id ? { ...s, ...confirmed } : s));
+      notify(`Task moved to ${confirmed.status}.`);
+    } catch (error) {
+      notify(`Task status was not saved. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSavingTaskId(null);
     }
   }
 
   async function deleteTask(id) {
+    if (savingTaskId) return;
     const t = allTasks.find((x) => x.id === id);
-    setAllTasks((prev) => prev.filter((x) => x.id !== id));
-    setSelected(null);
-    if (IS_CONFIGURED && t?.dbId) {
-      try { await sb("project_tasks").eq("id", t.dbId).delete().run(); } catch (_e) { notify("Couldn't delete the task on the server.", "error"); }
+    if (!t) return;
+    if (!IS_CONFIGURED || !t.dbId) {
+      setAllTasks((prev) => prev.filter((x) => x.id !== id));
+      setSelected(null);
+      notify(`Task deleted: ${t.title}`);
+      return;
+    }
+    setSavingTaskId(id);
+    try {
+      const { error } = await runCompanyTableMutation("project_tasks", "delete", null, { matchVal: t.dbId });
+      if (error) throw error;
+      setAllTasks((prev) => prev.filter((x) => x.id !== id));
+      setSelected(null);
+      notify(`Task deleted: ${t.title}`);
+    } catch (error) {
+      notify(`Task was not deleted. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSavingTaskId(null);
     }
   }
 
@@ -25434,13 +25512,13 @@ function ProjectTasks({ project, tasksHook }) {
         </div>
       )}
 
-      {selected && <TaskPanel task={selected} onClose={() => setSelected(null)} onMove={moveTask} onDelete={deleteTask} />}
-      {showForm && <TaskFormPanel onClose={() => setShowForm(false)} onSubmit={addTask} />}
+      {selected && <TaskPanel task={selected} busy={savingTaskId === selected.id} onClose={() => setSelected(null)} onMove={moveTask} onDelete={deleteTask} />}
+      {showForm && <TaskFormPanel onClose={() => setShowForm(false)} onSubmit={addTask} saving={savingTask} />}
     </div>
   );
 }
 
-function TaskPanel({ task, onClose, onMove, onDelete }) {
+function TaskPanel({ task, busy = false, onClose, onMove, onDelete }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
@@ -25464,19 +25542,19 @@ function TaskPanel({ task, onClose, onMove, onDelete }) {
           <p className="text-[11px] font-medium text-slate-500">Move to</p>
           <div className="grid grid-cols-2 gap-1.5">
             {TASK_STATUSES.map((s) => (
-              <button key={s} onClick={() => onMove(task.id, s)} disabled={s === task.status} className={`text-[11.5px] font-medium rounded-lg py-2 border transition-colors ${s === task.status ? "opacity-40 cursor-not-allowed border-slate-200" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+              <button key={s} onClick={() => onMove(task.id, s)} disabled={busy || s === task.status} aria-busy={busy} className={`text-[11.5px] font-medium rounded-lg py-2 border transition-colors ${busy || s === task.status ? "opacity-40 cursor-not-allowed border-slate-200" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
                 {s}
               </button>
             ))}
           </div>
-          <ConfirmDeleteButton label="Delete task" onConfirm={() => onDelete(task.id)} />
+          <ConfirmDeleteButton label={busy ? "Deleting…" : "Delete task"} disabled={busy} busy={busy} onConfirm={() => onDelete(task.id)} />
         </div>
       </div>
     </div>
   );
 }
 
-function TaskFormPanel({ onClose, onSubmit }) {
+function TaskFormPanel({ onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({ title: "", assignee: "", priority: "Medium", dueDate: TODAY.toISOString().slice(0, 10) });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.title.trim()) return; onSubmit(form); }
@@ -25503,7 +25581,7 @@ function TaskFormPanel({ onClose, onSubmit }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add Task</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Add Task"}</button>
         </div>
       </form>
     </div>
@@ -25556,24 +25634,57 @@ function ProjectTimeline({ tasks, milestones }) {
 function ProjectMilestones({ project, milestonesHook }) {
   const { rows: allMilestones, setRows: setAllMilestones } = milestonesHook;
   const [showForm, setShowForm] = useState(false);
+  const [savingMilestone, setSavingMilestone] = useState(false);
+  const [savingMilestoneId, setSavingMilestoneId] = useState(null);
   const milestones = allMilestones.filter((m) => m.projectId === project.id);
 
   async function addMilestone(form) {
+    if (savingMilestone) return;
     const draft = { id: docId("MS"), projectId: project.id, title: form.title, dueDate: form.dueDate, completed: false };
-    setAllMilestones((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(`Milestone added: ${draft.title}`);
-    if (IS_CONFIGURED) {
-      try { await sb("project_milestones").insert({ project_ref: project.id, title: draft.title, due_date: draft.dueDate, completed: false }).run(); } catch (_e) { notify("Added locally, but saving to the server failed.", "error"); }
+    setSavingMilestone(true);
+    try {
+      if (!IS_CONFIGURED) {
+        setAllMilestones((prev) => [draft, ...prev]);
+        setShowForm(false);
+        notify(`Milestone added: ${draft.title}`);
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("project_milestones", "insert", {
+        project_ref: project.id, title: draft.title, due_date: draft.dueDate, completed: false,
+      });
+      if (error || !data?.id) throw error || new Error("The server did not return the created milestone.");
+      const confirmed = mapMilestoneRow(data);
+      setAllMilestones((prev) => [confirmed, ...prev]);
+      setShowForm(false);
+      notify(`Milestone added: ${confirmed.title}`);
+    } catch (error) {
+      notify(`Milestone was not added. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSavingMilestone(false);
     }
   }
 
   async function toggleComplete(id) {
+    if (savingMilestoneId) return;
     const m = allMilestones.find((x) => x.id === id);
+    if (!m) return;
     const next = !m.completed;
-    setAllMilestones((prev) => prev.map((x) => (x.id === id ? { ...x, completed: next } : x)));
-    if (IS_CONFIGURED && m?.dbId) {
-      try { await sb("project_milestones").eq("id", m.dbId).update({ completed: next }).run(); } catch (_e) { notify("Couldn't save the milestone on the server.", "error"); }
+    if (!IS_CONFIGURED || !m.dbId) {
+      setAllMilestones((prev) => prev.map((x) => (x.id === id ? { ...x, completed: next } : x)));
+      notify(`Milestone marked ${next ? "complete" : "incomplete"}.`);
+      return;
+    }
+    setSavingMilestoneId(id);
+    try {
+      const { data, error } = await runCompanyTableMutation("project_milestones", "update", { completed: next }, { matchVal: m.dbId });
+      if (error || !data?.id) throw error || new Error("The server did not return the updated milestone.");
+      const confirmed = mapMilestoneRow(data);
+      setAllMilestones((prev) => prev.map((x) => (x.id === id ? { ...x, ...confirmed } : x)));
+      notify(`Milestone marked ${confirmed.completed ? "complete" : "incomplete"}.`);
+    } catch (error) {
+      notify(`Milestone was not saved. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSavingMilestoneId(null);
     }
   }
 
@@ -25595,7 +25706,7 @@ function ProjectMilestones({ project, milestonesHook }) {
             return (
               <div key={m.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button onClick={() => toggleComplete(m.id)} className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${m.completed ? "bg-[#16A34A] border-[#16A34A]" : "border-slate-300"}`} aria-label={m.completed ? "Mark incomplete" : "Mark complete"}>
+                  <button onClick={() => toggleComplete(m.id)} disabled={savingMilestoneId === m.id} aria-busy={savingMilestoneId === m.id} className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors disabled:cursor-wait disabled:opacity-60 ${m.completed ? "bg-[#16A34A] border-[#16A34A]" : "border-slate-300"}`} aria-label={m.completed ? "Mark incomplete" : "Mark complete"}>
                     {m.completed && <CheckCircle2 size={12} className="text-white" />}
                   </button>
                   <div className="min-w-0">
@@ -25611,12 +25722,12 @@ function ProjectMilestones({ project, milestonesHook }) {
           })}
         </div>
       )}
-      {showForm && <MilestoneFormPanel onClose={() => setShowForm(false)} onSubmit={addMilestone} />}
+      {showForm && <MilestoneFormPanel onClose={() => setShowForm(false)} onSubmit={addMilestone} saving={savingMilestone} />}
     </div>
   );
 }
 
-function MilestoneFormPanel({ onClose, onSubmit }) {
+function MilestoneFormPanel({ onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({ title: "", dueDate: TODAY.toISOString().slice(0, 10) });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.title.trim()) return; onSubmit(form); }
@@ -25635,7 +25746,7 @@ function MilestoneFormPanel({ onClose, onSubmit }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add Milestone</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Add Milestone"}</button>
         </div>
       </form>
     </div>

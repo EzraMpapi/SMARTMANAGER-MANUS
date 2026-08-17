@@ -679,3 +679,10 @@
 - [x] Add an accessible manual Sync Now button beside the POS offline queue pending-count badge, using the existing confirmed synchronization flow with loading and disabled states.
 - [x] Add success and error completion toasts after the POS manual offline-queue sync finishes, with truthful counts and retry-safe behavior.
 - [x] Add a visible loading spinner and disabled state to the POS Sync Now button while queue synchronization is in progress.
+- [ ] Execute module-by-module international enterprise upgrade plan across Dashboard, POS, Sales, CRM, Inventory, Finance, Procurement, HR, Manufacturing, Collaboration, AI Assistant, and Settings.
+- [x] Establish the enterprise review baseline and implementation backlog.
+- [x] Audit architecture, modules, data contracts, security, and UX gaps.
+- [x] Upgrade Projects create and status-change flows to wait for server confirmation, preserve drafts on failure, block duplicate submissions, and expose truthful loading/error states.
+- [x] Add focused Projects persistence regression coverage and verify the module build and runtime boundary.
+- [x] Harden Projects task create, status-change, and delete flows with server-confirmed state, preserved retry context, and duplicate-action guards.
+- [x] Harden Projects milestone creation and completion toggles with confirmed server responses, preserved failure context, and duplicate-action protection.
