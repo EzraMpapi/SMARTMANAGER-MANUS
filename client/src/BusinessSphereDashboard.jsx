@@ -14493,12 +14493,12 @@ function GeneralLedger({ invoices, expenses, posTransactions }) {
       </div>
 
       {/* Running balance AreaChart */}
-      {entries.length > 0 && (
+      {ledger.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
           <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Running Cash Balance</h3>
           <ResponsiveContainer width="100%" height={140}>
             <AreaChart
-              data={entries.slice(-30).map(e=>({date:e.date.slice(5),balance:Math.round(e.balance/1000)}))}
+              data={ledger.slice(-30).map(e=>({date:e.date.slice(5),balance:Math.round(e.balance/1000)}))}
               margin={{left:-10,right:4,top:0,bottom:0}}
             >
               <CartesianGrid vertical={false} stroke="#F3F4F6"/>

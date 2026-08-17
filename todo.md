@@ -649,3 +649,4 @@
 - [x] Complete authenticated non-destructive Settings acceptance for representative saved preferences and denied-action recovery when a workspace session is available.
 - [x] Repair the authenticated Sales Invoice creation handler so its optional CRM credit-limit check cannot throw before a confirmed server write or meaningful retry-safe error.
 - [x] Preserve typed Sales Invoice document, customer, issue-date, and due-date fields through generic-table normalization so server storage matches the repaired schema contract.
+- [ ] Repair the authenticated Finance General Ledger view so it does not reference an undefined `entries` collection and safely displays confirmed ledger data or an empty state.
