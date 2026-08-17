@@ -20,3 +20,7 @@ Manufacturing was selected after Human Resources because work-order transitions 
 Focused Manufacturing persistence contracts passed with **1 file / 2 tests**, covering confirmed mutation ordering, reconciliation-safe failure behavior, and duplicate-submit prevention. Static TypeScript validation also passed. The complete suite passed with **95 files / 308 tests**, alongside 5 intentionally gated files and 8 skips. The bounded-heap production build passed with 2,653 modules transformed. Authenticated non-destructive browser acceptance remains in the final validation phase.
 
 No work order, bill of materials, component, stock quantity, stock movement, machine, quality inspection, maintenance record, RLS policy, credential, provider configuration, or Resend setting changed during this repair.
+
+## Published Live Acceptance
+
+The authenticated KMKM owner workspace loaded the Manufacturing module and displayed a truthful zero-record state: **0** work orders in progress, **0** planned, **0** completed, and **TZS 0k** WIP value. The module rendered its explicit `No work orders yet` state with a `New Work Order` control and no runtime error. This was a non-destructive review; no work order, bill of materials, component, machine, quality-control, maintenance, stock, or movement record changed.
