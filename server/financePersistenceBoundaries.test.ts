@@ -45,5 +45,8 @@ describe("Finance persistence boundaries", () => {
     expect(source).toContain("const cashflowTrend = useMemo(() => {");
     expect(source).toContain("buildLedger(invoices, expenses, posTransactions)");
     expect(source).toContain("No confirmed cash movement yet");
+    expect(source).toContain("Confirmed cash inflow vs. outflow, TZS thousands");
+    expect(source).toContain("No confirmed expense categories yet.");
+    expect(source).not.toContain("Inflow vs. outflow, TZS millions");
   });
 });

@@ -13867,7 +13867,7 @@ function FinanceOverview({ invoices, expenses, posTransactions }) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-[14px] font-semibold text-[#111827]">Cash Flow</h3>
-            <p className="text-[12px] text-slate-400">Inflow vs. outflow, TZS millions</p>
+            <p className="text-[12px] text-slate-400">Confirmed cash inflow vs. outflow, TZS thousands</p>
           </div>
           {cashflowTrend.length > 0 && <div className="flex items-center gap-3 text-[11px] text-slate-500">
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#16A34A]" /> Inflow</span>
@@ -13889,7 +13889,7 @@ function FinanceOverview({ invoices, expenses, posTransactions }) {
             <CartesianGrid vertical={false} stroke="#EEF1F4" />
             <XAxis dataKey="m" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #EEF1F4", fontSize: 12, fontFamily: "monospace" }} formatter={(v) => [`TZS ${v}M`]} />
+            <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #EEF1F4", fontSize: 12, fontFamily: "monospace" }} formatter={(v) => [`TZS ${money(Math.round(Number(v) || 0))}k`]} />
             <Area type="monotone" dataKey="inflow" stroke="#16A34A" strokeWidth={2} fill="url(#inflow)" />
             <Area type="monotone" dataKey="outflow" stroke="#F59E0B" strokeWidth={2} fill="url(#outflow)" />
           </AreaChart>
@@ -13899,7 +13899,7 @@ function FinanceOverview({ invoices, expenses, posTransactions }) {
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
         <h3 className="text-[14px] font-semibold text-[#111827] mb-4">Expenses by Category</h3>
         <div className="space-y-3.5">
-          {catTotals.map((c) => (
+          {catTotals.length > 0 ? catTotals.map((c) => (
             <div key={c.category}>
               <div className="flex items-center justify-between text-[12.5px] mb-1">
                 <span className="text-slate-600">{c.category}</span>
@@ -13909,7 +13909,7 @@ function FinanceOverview({ invoices, expenses, posTransactions }) {
                 <div className="h-full rounded-full" style={{ width: `${c.pct}%`, background: "linear-gradient(90deg, #16A34A, #22C55E)" }} />
               </div>
             </div>
-          ))}
+          )) : <p className="text-[12px] text-slate-400 py-8 text-center">No confirmed expense categories yet.</p>}
         </div>
       </div>
     </div>

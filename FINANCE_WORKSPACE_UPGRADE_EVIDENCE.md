@@ -16,6 +16,7 @@ Finance was selected as the next functional area after CRM because it governs in
 | Duplicate submissions | The expense form and detail action controls had no in-flight protection. | Saving states now disable repeated expense-form and status controls while their server request is pending. |
 | Cash-flow overview | The live workspace showed a fixed chart despite zero confirmed invoices and expenses. | The chart now derives from cash-basis ledger entries only; with no confirmed movement it renders an explicit empty state instead of sample values. |
 | KPI period language | All-record Finance totals were labeled `MTD`. | KPI context now identifies confirmed record counts or confirmed-record totals and does not imply an uncalculated reporting period. |
+| Cash-flow units and empty categories | The cash-flow copy named millions despite ledger values being stored and displayed in TZS thousands, while a category panel was blank with no expenses. | The chart and tooltip now consistently state TZS thousands, and expenses by category has an explicit confirmed-data empty state. |
 
 ## Validation
 
@@ -26,5 +27,7 @@ Authenticated browser acceptance had first exposed the static cash-flow chart un
 ## Deployment Verification Note
 
 Immediately after the final release checkpoint, the authenticated browser was still served a prior dashboard bundle: it retained the fixed cash-flow chart and `MTD` labels, while source inspection confirmed the new implementation. This is being treated as a deployment/cache propagation state, not as successful acceptance. The workspace will be rechecked only after a fresh published bundle contains the neutral cash-flow state.
+
+The refined Finance implementation passed the complete regression suite again with **90 files / 299 tests** and the bounded-heap production build again with 2,653 modules transformed. The final build also contains the explicit no-cash-movement state, TZS-thousands chart labels, and the confirmed expense-category empty state.
 
 No invoice, expense, payment, accounting setting, credential, RLS policy, external provider configuration, or Resend setting was changed while implementing this repair.
