@@ -633,3 +633,7 @@
 - [x] Repair controls that lack a safe supported response while preserving tenant scope, non-destructive behavior, and existing module access rules.
 - [x] Add interaction-contract regression coverage and non-destructive public browser evidence for the repaired control set.
 - [ ] Complete authenticated representative-module button and menu acceptance without creating, changing, or deleting operational records.
+- [x] Inventory Sales module buttons, menus, mutations, authorization gates, and denial/error feedback against their supported handlers.
+- [x] Repair Sales controls and convert authorization or database denials into clear recoverable feedback without weakening database protections.
+- [x] Add regression coverage and non-destructive validation for Sales module interactions, server-confirmation, and denial/error paths.
+- [ ] Complete authenticated non-destructive Sales acceptance for document creation, lifecycle controls, invoice printing, payment, subscription, and server-denial recovery when a workspace session is available.

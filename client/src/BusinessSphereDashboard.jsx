@@ -121,6 +121,10 @@ function clearStoredAuthSession() {
 // and low-risk instead of scattered and error-prone.
 let DEMO_OVERRIDE = false;
 
+function requiresConfirmedPersistence() {
+  return IS_CONFIGURED && !DEMO_OVERRIDE;
+}
+
 // There is deliberately no ACTIVE_COMPANY_ID constant. Company scoping is
 // enforced entirely by RLS's current_company_id(), which reads the real
 // authenticated session (see section 32 of the handover doc) — a single
@@ -175,7 +179,15 @@ function emitCompanyMutation(event) {
 
 function persistenceFailureMessage(action, error) {
   const detail = String(error?.message || "").trim();
-  return detail ? `${action} failed: ${detail}` : `${action} failed. Your form is still available to retry.`;
+  const isDenied = [401, 403].includes(Number(error?.status))
+    || /permission denied|row-level security|not authorized|forbidden/i.test(detail);
+  const isOffline = error?.code === "PERSISTENCE_OFFLINE" || Number(error?.status) === 0;
+  const prefix = isDenied
+    ? `${action} was denied by your workspace permissions. The server did not save this change.`
+    : isOffline
+      ? `${action} could not be sent because this browser is offline. No server change was made.`
+      : `${action} failed. The server did not confirm this change.`;
+  return detail ? `${prefix} Details: ${detail}` : `${prefix} Your form is still available to retry.`;
 }
 
 function authRedirectUrl(screen) {
@@ -3623,12 +3635,12 @@ async function recordConfirmedIndustryFocusAudit(previousFocus, nextFocus, actor
 // it needs its own record for the payment history an invoice shows. This
 // is shared by Sales and Finance since both operate on the same invoices
 // table (see the architecture note in the handover doc on shared state).
-// Synchronous by design: computes the patch and applies it to shared state
-// immediately, then persists in the background. Returns the patch so a
-// caller holding its own snapshot of the doc (e.g. an open detail panel)
-// can update it in the same tick rather than waiting on the network.
-function recordPayment(invoicesHook, docId, payment, actor) {
-  const inv = invoicesHook.rows.find((d) => d.id === docId);
+// A payment changes both the payment history and the invoice balance. In a
+// live workspace neither is reflected in the UI until both writes have a
+// confirmed database response. This deliberately avoids a local-only payment
+// success state when RLS, session context, or the database rejects a write.
+async function recordPayment(invoicesHook, invoiceDocumentId, payment, actor) {
+  const inv = invoicesHook.rows.find((d) => d.id === invoiceDocumentId);
   if (!inv) return null;
   const { total } = lineTotal(inv.items);
   const newAmountPaid = Math.min(total, (inv.amountPaid || 0) + payment.amount);
@@ -3636,16 +3648,44 @@ function recordPayment(invoicesHook, docId, payment, actor) {
   const paymentRecord = { id: `PMT-${Date.now()}`, amount: payment.amount, method: payment.method, date: payment.date, reference: payment.reference || null };
   const patch = { amountPaid: newAmountPaid, status: newStatus, payments: [paymentRecord, ...(inv.payments || [])] };
 
-  invoicesHook.setRows((prev) => prev.map((d) => (d.id === docId ? { ...d, ...patch } : d)));
-  notify(`Payment of TZS ${money(payment.amount)}k recorded for ${docId}${payment.reference ? " (ref: " + payment.reference + ")" : ""}`);
+  if (IS_CONFIGURED && !DEMO_OVERRIDE) {
+    if (!inv.dbId) {
+      notify("This invoice is not linked to a confirmed server record. Refresh Sales before recording a payment.", "error");
+      return null;
+    }
+    try {
+      await sb("sales_payments").insert({
+        invoice_id: inv.dbId,
+        amount: payment.amount,
+        method: payment.method,
+        payment_date: payment.date,
+        reference: payment.reference || null,
+      }).single().run();
+      try {
+        await sb("sales_invoices").eq("id", inv.dbId).update({ amount_paid: newAmountPaid, status: newStatus }).single().run();
+      } catch (error) {
+        await invoicesHook.reload?.();
+        notify(`${persistenceFailureMessage("Updating the invoice balance after its payment was confirmed", error)} Live invoice data was reloaded.`, "error");
+        return null;
+      }
+      invoicesHook.setRows((prev) => prev.map((d) => (d.id === invoiceDocumentId ? { ...d, ...patch } : d)));
+    } catch (error) {
+      notify(persistenceFailureMessage("Recording the payment", error), "error");
+      return null;
+    }
+  } else {
+    invoicesHook.setRows((prev) => prev.map((d) => (d.id === invoiceDocumentId ? { ...d, ...patch } : d)));
+  }
+
+  notify(`Payment of TZS ${money(payment.amount)}k recorded for ${invoiceDocumentId}${payment.reference ? " (ref: " + payment.reference + ")" : ""}`);
 
   // Auto-receipt: when a payment brings the invoice to fully Paid, generate
   // the receipt immediately and push it to the receiptBus so any open
   // SendReceiptPanel can offer to dispatch it to the customer straight away.
   if (newStatus === "Paid") {
     const receipt = {
-      id: docId(`RCT`),
-      invoiceId: docId,
+      id: docId("RCT"),
+      invoiceId: invoiceDocumentId,
       customer: inv.customer,
       customerEmail: inv.customerEmail || null,
       customerPhone: inv.customerPhone || null,
@@ -3658,18 +3698,7 @@ function recordPayment(invoicesHook, docId, payment, actor) {
     };
     receiptBus.push(receipt);
   }
-  logAudit(newStatus === "Paid" ? "Invoice paid in full" : "Partial payment recorded", "Finance", actor, `${docId} — TZS ${money(payment.amount)}k via ${payment.method}${payment.reference ? " (" + payment.reference + ")" : ""}`);
-
-  if (IS_CONFIGURED && inv.dbId) {
-    (async () => {
-      try {
-        await sb("sales_payments").insert({ invoice_id: inv.dbId, amount: payment.amount, method: payment.method, payment_date: payment.date, reference: payment.reference || null }).run();
-        await sb("sales_invoices").eq("id", inv.dbId).update({ amount_paid: newAmountPaid, status: newStatus }).run();
-      } catch (e) {
-        notify("Payment recorded locally, but the server update failed.", "error");
-      }
-    })();
-  }
+  logAudit(newStatus === "Paid" ? "Invoice paid in full" : "Partial payment recorded", "Finance", actor, `${invoiceDocumentId} — TZS ${money(payment.amount)}k via ${payment.method}${payment.reference ? " (" + payment.reference + ")" : ""}`);
 
   return patch;
 }
@@ -9424,7 +9453,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
     setTimeout(() => win.focus(), 200);
   }
 
-  function convertQuoteToInvoice(quote) {
+  async function convertQuoteToInvoice(quote) {
     const dueD = new Date(TODAY); dueD.setDate(dueD.getDate()+30);
     const newInv = {
       id: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -9435,9 +9464,52 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
       quotationRef: quote.id,
       owner: quote.owner || currentUser.name, kind: "invoices",
     };
-    invoices.setRows((prev) => [newInv, ...prev]);
+
+    if (requiresConfirmedPersistence()) {
+      if (!quote.dbId) {
+        notify("This quotation is not linked to a confirmed server record. Refresh Sales before converting it.", "error");
+        return false;
+      }
+      let invoiceHeader = null;
+      try {
+        invoiceHeader = await sb("sales_invoices").insert({
+          doc_number: newInv.id,
+          customer: newInv.customer,
+          issue_date: newInv.date,
+          due_date: newInv.dueDate,
+          status: newInv.status,
+          amount_paid: 0,
+        }).single().run();
+        if (!invoiceHeader?.id) throw buildConfirmedMutationError({ table: "sales_invoices", method: "POST", status: 200 });
+        if (newInv.items.length) {
+          await sb("sales_invoice_items").insert(newInv.items.map((item, index) => ({
+            invoice_id: invoiceHeader.id,
+            item_name: item.name,
+            item_sku: item.sku || null,
+            qty: item.qty,
+            rate: item.rate,
+            sort_order: index,
+          }))).run();
+        }
+        await sb("sales_quotations").eq("id", quote.dbId).update({ status: "Converted" }).single().run();
+      } catch (error) {
+        if (invoiceHeader?.id) {
+          try { await sb("sales_invoices").eq("id", invoiceHeader.id).delete().single().run(); } catch (_cleanupError) { /* Live reload below is the truthful source of record state. */ }
+        }
+        await Promise.all([invoices.reload?.(), quotations.reload?.()].filter(Boolean));
+        notify(persistenceFailureMessage("Converting the quotation", error), "error");
+        return false;
+      }
+      invoices.setRows((prev) => [{ ...newInv, dbId: invoiceHeader.id }, ...prev]);
+      quotations.setRows((prev) => prev.map((document) => (document.id === quote.id ? { ...document, status: "Converted" } : document)));
+    } else {
+      invoices.setRows((prev) => [newInv, ...prev]);
+      quotations.setRows((prev) => prev.map((document) => (document.id === quote.id ? { ...document, status: "Converted" } : document)));
+    }
+
     notify("Invoice " + newInv.id + " created from " + quote.id);
     logAudit("Quote to Invoice", "Sales", currentUser.name, quote.id + " to " + newInv.id);
+    return true;
   }
 
   async function addDocument(form) {
@@ -9466,39 +9538,43 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
       ...(tab === "invoices" && { dueDate: form.secondaryDate, status: "Unpaid", amountPaid: 0, payments: [], orderRef: form.reference || "—" }),
     };
 
-    hooksByTab[tab].setRows((prev) => [draft, ...prev]);
-    notify(`${draft.id} created for ${draft.customer}`);
-    setShowForm(false);
-    // Fire the post-create dispatch for invoices so WA/Email panel slides up
-    if (tab === "invoices") invoiceCreatedBus.push(draft);
-
-    if (IS_CONFIGURED) {
+    if (requiresConfirmedPersistence()) {
       const table = { quotations: "sales_quotations", orders: "sales_orders", invoices: "sales_invoices" }[tab];
       const itemsTable = { quotations: "sales_quotation_items", orders: "sales_order_items", invoices: "sales_invoice_items" }[tab];
       const fk = { quotations: "quotation_id", orders: "order_id", invoices: "invoice_id" }[tab];
+      let header = null;
       try {
-        const header = await sb(table).insert({
+        header = await sb(table).insert({
           doc_number: draft.id,
           customer: form.customer,
           issue_date: form.date,
+          ...(tab !== "orders" && { status: draft.status }),
           ...(tab === "quotations" && { valid_until: form.secondaryDate }),
           ...(tab === "orders" && { order_date: form.date }),
           ...(tab === "invoices" && { due_date: form.secondaryDate }),
         }).single().run();
-        if (header?.id && draft.items.length) {
+        if (!header?.id) throw buildConfirmedMutationError({ table, method: "POST", status: 200 });
+        if (draft.items.length) {
           await sb(itemsTable).insert(
             draft.items.map((it, i) => ({ [fk]: header.id, item_name: it.name, item_sku: it.sku || null, qty: it.qty, rate: it.rate, sort_order: i }))
           ).run();
         }
-        // The optimistic row was created before the server assigned a UUID;
-        // stitch it in now so later advance/delete calls target the right row.
-        if (header?.id) {
-          hooksByTab[tab].setRows((prev) => prev.map((d) => (d.id === draft.id ? { ...d, dbId: header.id } : d)));
-        }
+        hooksByTab[tab].setRows((prev) => [{ ...draft, dbId: header.id }, ...prev]);
       } catch (e) {
-        notify(`Document created locally, but saving to the server failed.`, "error");
+        if (header?.id) {
+          try { await sb(table).eq("id", header.id).delete().single().run(); } catch (_cleanupError) { /* A reload below restores only confirmed rows. */ }
+        }
+        await hooksByTab[tab].reload?.();
+        notify(persistenceFailureMessage(`Creating the ${tab.slice(0, -1)}`, e), "error");
+        return false;
       }
+    } else {
+      hooksByTab[tab].setRows((prev) => [draft, ...prev]);
     }
+    notify(`${draft.id} created for ${draft.customer}`);
+    // Fire the post-create dispatch only after the invoice is confirmed.
+    if (tab === "invoices") invoiceCreatedBus.push(draft);
+    return true;
   }
 
   // Mirrors POS returns exactly: the return is its own record, not a
@@ -9507,112 +9583,112 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
   // ones that actually shipped — are eligible.
   async function processOrderReturn(order, { items, reason }) {
     const returnRecord = { id: `RET-${Date.now()}`, reason, date: TODAY.toISOString().slice(0, 10), items };
-
-    inventory.setRows((prev) => prev.map((it) => {
-      const line = items.find((ri) => (ri.sku ? ri.sku === it.sku : ri.name.toLowerCase() === it.name.toLowerCase()));
-      return line ? { ...it, qty: it.qty + line.qty } : it;
-    }));
-
-    hooksByTab.orders.setRows((prev) => prev.map((o) => (o.id === order.id ? { ...o, returns: [returnRecord, ...(o.returns || [])] } : o)));
-    setSelected((s) => (s && s.id === order.id ? { ...s, returns: [returnRecord, ...(s.returns || [])] } : s));
     const refundValue = items.reduce((s, it) => s + it.qty * it.rate, 0);
-    notify(`Return processed for ${order.id} — TZS ${money(Math.round(refundValue))}k, stock restocked`);
 
-    if (IS_CONFIGURED && order.dbId) {
+    if (requiresConfirmedPersistence()) {
+      if (!order.dbId) {
+        notify("This sales order is not linked to a confirmed server record. Refresh Sales before processing a return.", "error");
+        return false;
+      }
+      let header = null;
       try {
-        const header = await sb("sales_order_returns").insert({ order_id: order.dbId, reason }).single().run();
-        if (header?.id) {
-          await sb("sales_order_return_items").insert(
-            items.map((it) => ({ return_id: header.id, item_name: it.name, item_sku: it.sku || null, qty: it.qty, rate: it.rate }))
-          ).run();
-        }
+        header = await sb("sales_order_returns").insert({ order_id: order.dbId, reason }).single().run();
+        if (!header?.id) throw buildConfirmedMutationError({ table: "sales_order_returns", method: "POST", status: 200 });
+        await sb("sales_order_return_items").insert(
+          items.map((it) => ({ return_id: header.id, item_name: it.name, item_sku: it.sku || null, qty: it.qty, rate: it.rate }))
+        ).run();
         for (const it of items) {
           const invItem = inventory.rows.find((i) => (it.sku ? i.sku === it.sku : i.name.toLowerCase() === it.name.toLowerCase()));
           if (invItem) {
-            await sb("inventory_items").eq("sku", invItem.sku).update({ qty_on_hand: invItem.qty + it.qty }).run();
+            await sb("inventory_items").eq("sku", invItem.sku).update({ qty_on_hand: invItem.qty + it.qty }).single().run();
             await sb("inventory_stock_movements").insert({ item_id: invItem.sku, movement: "In", qty: it.qty, reference: `${order.id} return` }).run();
           }
         }
       } catch (e) {
-        notify("Return processed locally, but saving to the server failed.", "error");
+        await Promise.all([orders.reload?.(), inventory.reload?.()].filter(Boolean));
+        notify(persistenceFailureMessage("Processing the return", e), "error");
+        return false;
       }
     }
+
+    const confirmedReturn = requiresConfirmedPersistence() ? { ...returnRecord, id: header.id } : returnRecord;
+    inventory.setRows((prev) => prev.map((it) => {
+      const line = items.find((ri) => (ri.sku ? ri.sku === it.sku : ri.name.toLowerCase() === it.name.toLowerCase()));
+      return line ? { ...it, qty: it.qty + line.qty } : it;
+    }));
+    hooksByTab.orders.setRows((prev) => prev.map((o) => (o.id === order.id ? { ...o, returns: [confirmedReturn, ...(o.returns || [])] } : o)));
+    setSelected((s) => (s && s.id === order.id ? { ...s, returns: [confirmedReturn, ...(s.returns || [])] } : s));
+    notify(`Return processed for ${order.id} — TZS ${money(Math.round(refundValue))}k, stock restocked`);
+    return true;
   }
 
   const DOC_TABLE = { quotations: "sales_quotations", orders: "sales_orders", invoices: "sales_invoices" };
 
   async function advanceDocument(kind, id, nextStatus) {
     const doc = hooksByTab[kind].rows.find((d) => d.id === id);
-
-    hooksByTab[kind].setRows((prev) => prev.map((d) => {
-      if (d.id !== id) return d;
-      const patch = { status: nextStatus };
-      if (kind === "invoices" && nextStatus === "Paid") patch.amountPaid = lineTotal(d.items).total;
-      return { ...d, ...patch };
-    }));
-    setSelected((s) => {
-      if (!s || s.id !== id) return s;
-      const patch = { status: nextStatus };
-      if (kind === "invoices" && nextStatus === "Paid") patch.amountPaid = lineTotal(s.items).total;
-      return { ...s, ...patch };
-    });
+    if (!doc) return false;
+    const patch = { status: nextStatus };
+    if (kind === "invoices" && nextStatus === "Paid") patch.amountPaid = lineTotal(doc.items).total;
 
     // Fulfilling a sales order ships goods: deduct matching stock items from
     // the shared Inventory. Line items are matched by name — unmatched lines
     // (services, labor, install fees) are correctly left alone.
+    const deductions = [];
     if (kind === "orders" && nextStatus === "Fulfilled" && doc) {
-      const deductions = [];
-      inventory.setRows((prev) => prev.map((it) => {
-        // SKU reference is authoritative; name match remains as the fallback
-        // for legacy/free-text lines created before SKU linking existed.
-        const line = doc.items.find((li) => (li.sku ? li.sku === it.sku : li.name.toLowerCase() === it.name.toLowerCase()));
-        if (!line) return it;
-        deductions.push({ sku: it.sku, qty: line.qty, prevQty: it.qty });
-        return { ...it, qty: Math.max(0, it.qty - line.qty) };
-      }));
-      notify(deductions.length
-        ? `${doc.id} fulfilled — ${deductions.length} stock item${deductions.length > 1 ? "s" : ""} deducted`
-        : `${doc.id} fulfilled`);
-
-      if (IS_CONFIGURED) {
-        try {
-          for (const d of deductions) {
-            // SKU is a real unique column, so this eq is correct as-is.
-            await sb("inventory_items").eq("sku", d.sku).update({ qty_on_hand: Math.max(0, d.prevQty - d.qty) }).run();
-            await sb("inventory_stock_movements").insert({
-              item_id: d.sku, movement: "Out", qty: d.qty, reference: `${doc.id} fulfilled`,
-            }).run();
-          }
-        } catch (e) {
-          notify("Stock deducted locally, but the server update failed.", "error");
-        }
-      }
+      inventory.rows.forEach((item) => {
+        const line = doc.items.find((li) => (li.sku ? li.sku === item.sku : li.name.toLowerCase() === item.name.toLowerCase()));
+        if (line) deductions.push({ sku: item.sku, qty: line.qty, prevQty: item.qty });
+      });
     }
 
-    if (IS_CONFIGURED && doc?.dbId) {
+    if (requiresConfirmedPersistence()) {
+      if (!doc.dbId) {
+        notify("This document is not linked to a confirmed server record. Refresh Sales before changing its status.", "error");
+        return false;
+      }
       try {
-        const patch = { status: nextStatus };
-        if (kind === "invoices" && nextStatus === "Paid" && doc) {
-          patch.amount_paid = lineTotal(doc.items).total;
+        const serverPatch = { status: nextStatus };
+        if (kind === "invoices" && nextStatus === "Paid") serverPatch.amount_paid = lineTotal(doc.items).total;
+        await sb(DOC_TABLE[kind]).eq("id", doc.dbId).update(serverPatch).single().run();
+        for (const deduction of deductions) {
+          await sb("inventory_items").eq("sku", deduction.sku).update({ qty_on_hand: Math.max(0, deduction.prevQty - deduction.qty) }).single().run();
+          await sb("inventory_stock_movements").insert({ item_id: deduction.sku, movement: "Out", qty: deduction.qty, reference: `${doc.id} fulfilled` }).run();
         }
-        await sb(DOC_TABLE[kind]).eq("id", doc.dbId).update(patch).run();
       } catch (e) {
-        notify("Couldn't save the status change to the server.", "error");
+        await Promise.all([hooksByTab[kind].reload?.(), ...(deductions.length ? [inventory.reload?.()] : [])].filter(Boolean));
+        notify(persistenceFailureMessage("Changing the document status", e), "error");
+        return false;
       }
     }
+    hooksByTab[kind].setRows((prev) => prev.map((document) => (document.id === id ? { ...document, ...patch } : document)));
+    setSelected((selectedDocument) => (selectedDocument && selectedDocument.id === id ? { ...selectedDocument, ...patch } : selectedDocument));
+    if (deductions.length) inventory.setRows((prev) => prev.map((item) => {
+      const deduction = deductions.find((entry) => entry.sku === item.sku);
+      return deduction ? { ...item, qty: Math.max(0, item.qty - deduction.qty) } : item;
+    }));
+    notify(deductions.length ? `${doc.id} fulfilled — ${deductions.length} stock item${deductions.length > 1 ? "s" : ""} deducted` : `${doc.id} marked ${nextStatus}`);
+    return true;
   }
 
   async function deleteDocument(kind, id) {
     const doc = hooksByTab[kind].rows.find((d) => d.id === id);
-    hooksByTab[kind].setRows((prev) => prev.filter((d) => d.id !== id));
-    setSelected(null);
-    if (IS_CONFIGURED && doc?.dbId) {
+    if (!doc) return false;
+    if (requiresConfirmedPersistence()) {
+      if (!doc.dbId) {
+        notify("This document is not linked to a confirmed server record. Refresh Sales before deleting it.", "error");
+        return false;
+      }
       try {
-        await sb(DOC_TABLE[kind]).eq("id", doc.dbId).delete().run();
+        await sb(DOC_TABLE[kind]).eq("id", doc.dbId).delete().single().run();
       } catch (e) {
-        notify("Couldn't delete the document on the server.", "error");
+        notify(persistenceFailureMessage("Deleting the document", e), "error");
+        return false;
       }
     }
+    hooksByTab[kind].setRows((prev) => prev.filter((document) => document.id !== id));
+    setSelected(null);
+    notify(`${doc.id} deleted`);
+    return true;
   }
 
   return (
@@ -9806,10 +9882,12 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
           onClose={() => setSelected(null)}
           onAdvance={(id, next) => advanceDocument(selected.kind, id, next)}
           onDelete={(id) => deleteDocument(selected.kind, id)}
-          onConvertToInvoice={(quote) => convertQuoteToInvoice(quote)}
-          onRecordPayment={(id, payment) => {
-            const patch = recordPayment(invoices, id, payment, `${currentUser.name} (${currentUser.role})`);
+          onPrint={printInvoice}
+          onConvertToInvoice={convertQuoteToInvoice}
+          onRecordPayment={async (id, payment) => {
+            const patch = await recordPayment(invoices, id, payment, `${currentUser.name} (${currentUser.role})`);
             if (patch) setSelected((s) => (s && s.id === id ? { ...s, ...patch } : s));
+            return Boolean(patch);
           }}
           onProcessReturn={(payload) => processOrderReturn(selected, payload)}
         />
@@ -9823,7 +9901,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
   );
 }
 
-function DocPanel({ doc, onClose, onAdvance, onDelete, onRecordPayment, onProcessReturn }) {
+function DocPanel({ doc, onClose, onAdvance, onDelete, onPrint, onConvertToInvoice, onRecordPayment, onProcessReturn }) {
   // Escape key closes the panel — WCAG 2.1 SC 2.1.2 (keyboard trap) and
   // basic quality-of-life for keyboard users. Added here because DocPanel
   // is the highest-traffic slide-over in the system (Sales, Finance, Procurement).
@@ -9844,6 +9922,13 @@ function DocPanel({ doc, onClose, onAdvance, onDelete, onRecordPayment, onProces
   const [payRef, setPayRef] = useState("");
   const [returnOpen, setReturnOpen] = useState(false);
   const [showPayLink, setShowPayLink] = useState(false);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [actionSaving, setActionSaving] = useState(false);
+
+  async function runDocumentAction(action) {
+    setActionSaving(true);
+    try { return await action(); } finally { setActionSaving(false); }
+  }
 
   // Generate a payment reference number (M-Pesa / mobile money style)
   function genRef(method) {
@@ -9870,16 +9955,22 @@ function DocPanel({ doc, onClose, onAdvance, onDelete, onRecordPayment, onProces
   // is meaningful because completeSale() genuinely awaits a server call
   // mid-function, creating a real gap a second click could land in; this
   // function has no such gap to protect.
-  function submitPayment() {
+  async function submitPayment() {
     const amt = Number(payAmount);
     if (!amt || amt <= 0) return;
     const ref = payRef.trim() || genRef(payMethod);
-    onRecordPayment(doc.id, { amount: Math.min(amt, balance), method: payMethod, date: TODAY.toISOString().slice(0, 10), reference: ref });
-    setPayOpen(false);
-    setPayAmount("");
-    setPayRef("");
-    setShowPayLink(false);
-    notify("Payment recorded · Ref: " + ref);
+    setPaymentSaving(true);
+    try {
+      const confirmed = await onRecordPayment(doc.id, { amount: Math.min(amt, balance), method: payMethod, date: TODAY.toISOString().slice(0, 10), reference: ref });
+      if (!confirmed) return;
+      setPayOpen(false);
+      setPayAmount("");
+      setPayRef("");
+      setShowPayLink(false);
+      notify("Payment recorded · Ref: " + ref);
+    } finally {
+      setPaymentSaving(false);
+    }
   }
 
   return (
@@ -9895,7 +9986,7 @@ function DocPanel({ doc, onClose, onAdvance, onDelete, onRecordPayment, onProces
             </div>
             <div className="flex items-center gap-1.5">
               {isInvoice && (
-                <button onClick={() => printInvoice(doc)} title="Print invoice"
+                <button type="button" onClick={() => onPrint?.(doc)} title="Print invoice"
                   className="flex items-center gap-1 text-[11.5px] font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-[#16A34A] hover:border-[#16A34A] transition-colors">
                   <Printer size={13} /> Print
                 </button>
@@ -10015,8 +10106,8 @@ function DocPanel({ doc, onClose, onAdvance, onDelete, onRecordPayment, onProces
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => { setPayOpen(false); setShowPayLink(false); setPayRef(""); }}
                   className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 text-slate-500 hover:bg-slate-100">Cancel</button>
-                <button type="button" onClick={submitPayment} disabled={!Number(payAmount)||Number(payAmount)<=0}
-                  className="flex-1 text-[12.5px] font-bold btn-primary text-white rounded-lg py-2.5 disabled:opacity-40">✓ Confirm</button>
+                <button type="button" onClick={submitPayment} disabled={paymentSaving || !Number(payAmount)||Number(payAmount)<=0}
+                  className="flex-1 text-[12.5px] font-bold btn-primary text-white rounded-lg py-2.5 disabled:opacity-40">{paymentSaving ? "Saving…" : "✓ Confirm"}</button>
               </div>
             </div>
           )}
@@ -10120,10 +10211,10 @@ ${co.name||"BusinessSphere"}`);
             </div>
           )}
           <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
+            <button type="button" onClick={() => isInvoice ? onPrint?.(doc) : notify("Printing is available for invoices. Convert an accepted quotation to an invoice first.", "error")} className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
               <Printer size={13} /> Print
             </button>
-            <button className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
+            <button type="button" onClick={() => isInvoice ? onPrint?.(doc) : notify("PDF export is available from an invoice's browser print dialog.", "error")} className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
               <Download size={13} /> PDF
             </button>
             {isInvoice ? (
@@ -10141,28 +10232,28 @@ ${co.name||"BusinessSphere"}`);
               )
             ) : isFulfilledOrder ? (
               <button
-                onClick={() => setReturnOpen(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 hover:bg-[#EF4444]/5 transition-colors"
+                type="button" disabled={actionSaving} onClick={() => setReturnOpen(true)}
+                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 hover:bg-[#EF4444]/5 transition-colors disabled:opacity-50"
               >
                 <ArrowUpDown size={13} /> Process Return
               </button>
             ) : nextStatus && onAdvance ? (
               <button
-                onClick={() => onAdvance(doc.id, nextStatus)}
-                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors"
+                type="button" disabled={actionSaving} onClick={() => runDocumentAction(() => onAdvance(doc.id, nextStatus))}
+                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50"
               >
-                Mark {nextStatus}
+                {actionSaving ? "Saving…" : `Mark ${nextStatus}`}
               </button>
             ) : (
-              <button className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors">
-                <Send size={13} /> Send
-              </button>
+              <span className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium text-slate-500 bg-slate-100 rounded-lg py-2.5">
+                <CheckCircle2 size={13} /> No further action
+              </span>
             )}
           </div>
           {doc.kind === "quotations" && (
-            <button onClick={() => { onAdvance(doc.id, "Converted"); if (onConvertToInvoice) onConvertToInvoice(doc); onClose(); }}
-              className="w-full mt-2 py-2.5 rounded-xl text-[13px] font-bold border-2 border-[#16A34A] text-[#16A34A] hover:bg-[#F0FDF4] transition-colors flex items-center justify-center gap-2">
-              <ArrowRight size={14}/> Convert to Invoice
+            <button type="button" disabled={actionSaving} onClick={async () => { const converted = await runDocumentAction(() => onConvertToInvoice?.(doc)); if (converted) onClose(); }}
+              className="w-full mt-2 py-2.5 rounded-xl text-[13px] font-bold border-2 border-[#16A34A] text-[#16A34A] hover:bg-[#F0FDF4] transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+              <ArrowRight size={14}/> {actionSaving ? "Converting…" : "Convert to Invoice"}
             </button>
           )}
           {onDelete && <ConfirmDeleteButton label={`Delete ${kindLabel.toLowerCase()}`} onConfirm={() => onDelete(doc.id)} />}
@@ -10172,7 +10263,11 @@ ${co.name||"BusinessSphere"}`);
         <OrderReturnFormPanel
           order={doc}
           onClose={() => setReturnOpen(false)}
-          onSubmit={(payload) => { onProcessReturn(payload); setReturnOpen(false); }}
+          onSubmit={async (payload) => {
+            const confirmed = await runDocumentAction(() => onProcessReturn(payload));
+            if (confirmed) setReturnOpen(false);
+            return confirmed;
+          }}
         />
       )}
     </div>
@@ -10191,6 +10286,7 @@ function OrderReturnFormPanel({ order, onClose, onSubmit }) {
 
   const [qtys, setQtys] = useState(() => Object.fromEntries(remaining.map((it) => [it.name, 0])));
   const [reason, setReason] = useState(RETURN_REASONS[0]);
+  const [submitting, setSubmitting] = useState(false);
 
   function setQty(name, val, max) {
     setQtys((q) => ({ ...q, [name]: Math.max(0, Math.min(max, val)) }));
@@ -10250,8 +10346,8 @@ function OrderReturnFormPanel({ order, onClose, onSubmit }) {
 
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
-          <button type="button" disabled={!valid} onClick={() => onSubmit({ items: returnItems, reason })} className="flex-1 text-[12px] font-medium bg-[#EF4444] text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed">
-            Refund TZS {money(Math.round(refundValue))}k
+          <button type="button" disabled={submitting || !valid} onClick={async () => { setSubmitting(true); try { await onSubmit({ items: returnItems, reason }); } finally { setSubmitting(false); } }} className="flex-1 text-[12px] font-medium bg-[#EF4444] text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed">
+            {submitting ? "Saving…" : `Refund TZS ${money(Math.round(refundValue))}k`}
           </button>
         </div>
       </div>
@@ -10271,6 +10367,7 @@ function DocFormPanel({ kind, onClose, onSubmit, inventory }) {
     items: [{ name: "", qty: 1, rate: "" }],
   });
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const usableItems = form.items.filter((it) => it.name.trim() && Number(it.rate) > 0);
   const valid = form.customer.trim() && usableItems.length > 0;
@@ -10304,14 +10401,20 @@ function DocFormPanel({ kind, onClose, onSubmit, inventory }) {
     setForm((f) => ({ ...f, items: f.items.filter((_, idx) => idx !== i) }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setTouched(true);
     if (!valid) return;
-    onSubmit({
-      ...form,
-      items: usableItems.map((it) => ({ name: it.name, qty: Number(it.qty) || 0, rate: Number(it.rate) || 0, sku: it.sku || null })),
-    });
+    setSubmitting(true);
+    try {
+      const confirmed = await onSubmit({
+        ...form,
+        items: usableItems.map((it) => ({ name: it.name, qty: Number(it.qty) || 0, rate: Number(it.rate) || 0, sku: it.sku || null })),
+      });
+      if (confirmed) onClose();
+    } finally {
+      setSubmitting(false);
+    }
   }
 
 
@@ -10445,8 +10548,8 @@ function DocFormPanel({ kind, onClose, onSubmit, inventory }) {
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors">
-            Create {meta.label}
+          <button type="submit" disabled={submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
+            {submitting ? "Saving…" : `Create ${meta.label}`}
           </button>
         </div>
       </form>
@@ -10474,36 +10577,46 @@ function Subscriptions({ subscriptions, invoices }) {
       customer: form.customer, plan: form.plan, amount: Number(form.amount) || 0, cycle: form.cycle,
       status: "Active", startDate: form.startDate, nextBillingDate: form.startDate,
     };
-    setRows((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(`Subscription created: ${draft.plan} for ${draft.customer}`);
-    if (IS_CONFIGURED) {
+    if (requiresConfirmedPersistence()) {
       try {
         const header = await sb("sales_subscriptions").insert({
           doc_number: draft.id, customer: draft.customer, plan: draft.plan, amount: draft.amount,
           cycle: draft.cycle, status: "Active", start_date: draft.startDate, next_billing_date: draft.startDate,
         }).single().run();
-        if (header?.id) setRows((prev) => prev.map((s) => (s.id === draft.id ? { ...s, dbId: header.id } : s)));
-      } catch (_e) { notify("Subscription created locally, but saving to the server failed.", "error"); }
+        if (!header?.id) throw buildConfirmedMutationError({ table: "sales_subscriptions", method: "POST", status: 200 });
+        setRows((prev) => [{ ...draft, dbId: header.id }, ...prev]);
+      } catch (error) { notify(persistenceFailureMessage("Creating the subscription", error), "error"); return false; }
+    } else {
+      setRows((prev) => [draft, ...prev]);
     }
+    notify(`Subscription created: ${draft.plan} for ${draft.customer}`);
+    return true;
   }
 
   async function setStatus(id, status) {
     const sub = rows.find((s) => s.id === id);
-    setRows((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));
-    setSelected((s) => (s && s.id === id ? { ...s, status } : s));
-    if (IS_CONFIGURED && sub?.dbId) {
-      try { await sb("sales_subscriptions").eq("id", sub.dbId).update({ status }).run(); } catch (_e) { notify("Couldn't save the subscription status to the server.", "error"); }
+    if (!sub) return false;
+    if (requiresConfirmedPersistence()) {
+      if (!sub.dbId) { notify("This subscription is not linked to a confirmed server record. Refresh Sales before changing its status.", "error"); return false; }
+      try { await sb("sales_subscriptions").eq("id", sub.dbId).update({ status }).single().run(); } catch (error) { notify(persistenceFailureMessage("Changing the subscription status", error), "error"); return false; }
     }
+    setRows((prev) => prev.map((entry) => (entry.id === id ? { ...entry, status } : entry)));
+    setSelected((entry) => (entry && entry.id === id ? { ...entry, status } : entry));
+    notify(`${sub.id} marked ${status}`);
+    return true;
   }
 
   async function deleteSubscription(id) {
     const sub = rows.find((s) => s.id === id);
-    setRows((prev) => prev.filter((s) => s.id !== id));
-    setSelected(null);
-    if (IS_CONFIGURED && sub?.dbId) {
-      try { await sb("sales_subscriptions").eq("id", sub.dbId).delete().run(); } catch (_e) { notify("Couldn't delete the subscription on the server.", "error"); }
+    if (!sub) return false;
+    if (requiresConfirmedPersistence()) {
+      if (!sub.dbId) { notify("This subscription is not linked to a confirmed server record. Refresh Sales before deleting it.", "error"); return false; }
+      try { await sb("sales_subscriptions").eq("id", sub.dbId).delete().single().run(); } catch (error) { notify(persistenceFailureMessage("Deleting the subscription", error), "error"); return false; }
     }
+    setRows((prev) => prev.filter((entry) => entry.id !== id));
+    setSelected(null);
+    notify(`${sub.id} deleted`);
+    return true;
   }
 
   // Generating an invoice from a subscription creates a real row in the
@@ -10518,25 +10631,31 @@ function Subscriptions({ subscriptions, invoices }) {
       orderRef: "—", status: "Unpaid", amountPaid: 0, payments: [],
       items: [{ name: `${sub.plan} (${sub.cycle})`, qty: 1, rate: Math.round(sub.amount / (1 + TAX_RATE)) }],
     };
-    invoices.setRows((prev) => [draft, ...prev]);
-
     const nextDate = addCycle(sub.nextBillingDate, sub.cycle);
-    setRows((prev) => prev.map((s) => (s.id === sub.id ? { ...s, nextBillingDate: nextDate } : s)));
-    setSelected((s) => (s && s.id === sub.id ? { ...s, nextBillingDate: nextDate } : s));
-    notify(`${draft.id} generated for ${sub.customer} — next billing ${nextDate}`);
-
-    if (IS_CONFIGURED) {
+    if (requiresConfirmedPersistence()) {
+      if (!sub.dbId) { notify("This subscription is not linked to a confirmed server record. Refresh Sales before generating an invoice.", "error"); return false; }
+      let header = null;
       try {
-        const header = await sb("sales_invoices").insert({
-          doc_number: draft.id, customer: draft.customer, issue_date: draft.date, due_date: draft.dueDate,
+        header = await sb("sales_invoices").insert({
+          doc_number: draft.id, customer: draft.customer, issue_date: draft.date, due_date: draft.dueDate, status: "Unpaid", amount_paid: 0,
         }).single().run();
-        if (header?.id) {
-          await sb("sales_invoice_items").insert([{ invoice_id: header.id, item_name: draft.items[0].name, qty: 1, rate: draft.items[0].rate, sort_order: 0 }]).run();
-          invoices.setRows((prev) => prev.map((d) => (d.id === draft.id ? { ...d, dbId: header.id } : d)));
-        }
-        if (sub.dbId) await sb("sales_subscriptions").eq("id", sub.dbId).update({ next_billing_date: nextDate }).run();
-      } catch (_e) { notify("Invoice generated locally, but saving to the server failed.", "error"); }
+        if (!header?.id) throw buildConfirmedMutationError({ table: "sales_invoices", method: "POST", status: 200 });
+        await sb("sales_invoice_items").insert([{ invoice_id: header.id, item_name: draft.items[0].name, qty: 1, rate: draft.items[0].rate, sort_order: 0 }]).run();
+        await sb("sales_subscriptions").eq("id", sub.dbId).update({ next_billing_date: nextDate }).single().run();
+        invoices.setRows((prev) => [{ ...draft, dbId: header.id }, ...prev]);
+      } catch (error) {
+        if (header?.id) { try { await sb("sales_invoices").eq("id", header.id).delete().single().run(); } catch (_cleanupError) { /* Reload restores confirmed rows. */ } }
+        await Promise.all([invoices.reload?.(), subscriptions.reload?.()].filter(Boolean));
+        notify(persistenceFailureMessage("Generating the subscription invoice", error), "error");
+        return false;
+      }
+    } else {
+      invoices.setRows((prev) => [draft, ...prev]);
     }
+    setRows((prev) => prev.map((entry) => (entry.id === sub.id ? { ...entry, nextBillingDate: nextDate } : entry)));
+    setSelected((entry) => (entry && entry.id === sub.id ? { ...entry, nextBillingDate: nextDate } : entry));
+    notify(`${draft.id} generated for ${sub.customer} — next billing ${nextDate}`);
+    return true;
   }
 
 
@@ -10672,6 +10791,12 @@ function Subscriptions({ subscriptions, invoices }) {
 
 function SubscriptionPanel({ subscription, onClose, onSetStatus, onDelete, onGenerateInvoice }) {
   const isOverdue = subscription.status === "Active" && subscription.nextBillingDate < TODAY.toISOString().slice(0, 10);
+  const [saving, setSaving] = useState(false);
+
+  async function runConfirmed(action) {
+    setSaving(true);
+    try { await action(); } finally { setSaving(false); }
+  }
 
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
@@ -10723,21 +10848,21 @@ function SubscriptionPanel({ subscription, onClose, onSetStatus, onDelete, onGen
         <div className="border-t border-slate-100 pt-4 flex flex-col gap-2">
           {subscription.status === "Active" && (
             <button
-              onClick={() => onGenerateInvoice(subscription)}
-              className="btn-primary text-white text-[12px] font-medium rounded-lg py-2.5 flex items-center justify-center gap-1.5"
+              type="button" disabled={saving} onClick={() => runConfirmed(() => onGenerateInvoice(subscription))}
+              className="btn-primary text-white text-[12px] font-medium rounded-lg py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               <ReceiptText size={13} /> Generate Invoice Now
             </button>
           )}
           <div className="flex gap-2">
             {subscription.status !== "Active" && (
-              <button onClick={() => onSetStatus(subscription.id, "Active")} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2 hover:bg-slate-50">Resume</button>
+              <button type="button" disabled={saving} onClick={() => runConfirmed(() => onSetStatus(subscription.id, "Active"))} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2 hover:bg-slate-50 disabled:opacity-50">Resume</button>
             )}
             {subscription.status === "Active" && (
-              <button onClick={() => onSetStatus(subscription.id, "Paused")} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2 hover:bg-slate-50">Pause</button>
+              <button type="button" disabled={saving} onClick={() => runConfirmed(() => onSetStatus(subscription.id, "Paused"))} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2 hover:bg-slate-50 disabled:opacity-50">Pause</button>
             )}
             {subscription.status !== "Cancelled" && (
-              <button onClick={() => onSetStatus(subscription.id, "Cancelled")} className="flex-1 text-[12px] font-medium border border-[#EF4444]/25 text-[#EF4444] rounded-lg py-2 hover:bg-[#EF4444]/5">Cancel</button>
+              <button type="button" disabled={saving} onClick={() => runConfirmed(() => onSetStatus(subscription.id, "Cancelled"))} className="flex-1 text-[12px] font-medium border border-[#EF4444]/25 text-[#EF4444] rounded-lg py-2 hover:bg-[#EF4444]/5 disabled:opacity-50">Cancel</button>
             )}
           </div>
           <ConfirmDeleteButton label="Delete subscription" onConfirm={() => onDelete(subscription.id)} />
@@ -10750,14 +10875,21 @@ function SubscriptionPanel({ subscription, onClose, onSetStatus, onDelete, onGen
 function SubscriptionFormPanel({ onClose, onSubmit }) {
   const [form, setForm] = useState({ customer: "", plan: "", amount: "", cycle: "Monthly", startDate: TODAY.toISOString().slice(0, 10) });
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const valid = form.customer.trim() && form.plan.trim() && Number(form.amount) > 0;
 
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setTouched(true);
     if (!valid) return;
-    onSubmit(form);
+    setSubmitting(true);
+    try {
+      const confirmed = await onSubmit(form);
+      if (confirmed) onClose();
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -10806,7 +10938,7 @@ function SubscriptionFormPanel({ onClose, onSubmit }) {
 
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
-          <button type="submit" className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5">Create Subscription</button>
+          <button type="submit" disabled={submitting} className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5 disabled:opacity-50">{submitting ? "Saving…" : "Create Subscription"}</button>
         </div>
       </form>
     </div>
