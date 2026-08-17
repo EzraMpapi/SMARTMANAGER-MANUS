@@ -37862,12 +37862,31 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   return (
     <div className="space-y-4">
       {!isOnline && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-[12.5px] text-amber-900 flex items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-[12.5px] text-amber-900 flex items-center justify-between gap-3 shadow-sm flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
             <span><strong>Network connection interrupted.</strong> POS counter is operating in offline pending-sync queue mode. Sales will queue securely until reconnection.</span>
           </div>
-          <span className="text-[11px] font-mono text-amber-700">{pendingSales.length} queued</span>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <span className="text-[11px] font-mono text-amber-700">{pendingSales.length} queued</span>
+            <button
+              type="button"
+              disabled={pendingSales.length === 0}
+              onClick={async () => {
+                const pending = pendingSales.filter((entry) => entry.status === "pending" || entry.status === "needs_attention");
+                if (pending.length === 0) {
+                  notify("No pending sales to sync.");
+                  return;
+                }
+                for (const record of pending) {
+                  await synchronizePendingSale(record);
+                }
+              }}
+              className="rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-colors"
+            >
+              Force sync all
+            </button>
+          </div>
         </div>
       )}
       {busy && (

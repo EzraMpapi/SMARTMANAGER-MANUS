@@ -6,8 +6,9 @@ describe("POS UX Enhancements", () => {
   const dashboardPath = path.resolve("/home/ubuntu/businesssphere-erp/client/src/BusinessSphereDashboard.jsx");
   const source = fs.readFileSync(dashboardPath, "utf-8");
 
-  it("includes offline connection status alert banner", () => {
+  it("includes offline connection status alert banner with manual force sync button", () => {
     expect(source).toContain("Network connection interrupted");
+    expect(source).toContain("Force sync all");
     expect(source).toContain("isOnline");
   });
 
