@@ -63,6 +63,8 @@ export function TraPortalModule({ companyId, lang = "en" }) {
   const [vatMonthStart, setVatMonthStart] = useState("2026-01");
   const [vatMonthEnd, setVatMonthEnd] = useState("2026-12");
   const [vatSearch, setVatSearch] = useState("");
+  const [vatSortField, setVatSortField] = useState("date"); // date, amount, receipt
+  const [vatSortOrder, setVatSortOrder] = useState("desc"); // asc, desc
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -214,11 +216,28 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     return inRange && matchSearch;
   });
 
-  const vatTotalGross = filteredVatReceipts.reduce((acc, r) => acc + Number(r.grossAmount), 0);
-  const vatTotalVat = filteredVatReceipts.reduce((acc, r) => acc + Number(r.vatAmount), 0);
+  const sortedVatReceipts = [...filteredVatReceipts].sort((a, b) => {
+    let valA, valB;
+    if (vatSortField === "date") {
+      valA = new Date(a.createdAt || Date.now()).getTime();
+      valB = new Date(b.createdAt || Date.now()).getTime();
+    } else if (vatSortField === "amount") {
+      valA = Number(a.grossAmount || 0);
+      valB = Number(b.grossAmount || 0);
+    } else {
+      valA = String(a.receiptNumber || "");
+      valB = String(b.receiptNumber || "");
+    }
+    if (valA < valB) return vatSortOrder === "asc" ? -1 : 1;
+    if (valA > valB) return vatSortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const vatTotalGross = sortedVatReceipts.reduce((acc, r) => acc + Number(r.grossAmount), 0);
+  const vatTotalVat = sortedVatReceipts.reduce((acc, r) => acc + Number(r.vatAmount), 0);
 
   const exportVatCsv = () => {
-    const wsData = filteredVatReceipts.map(r => ({
+    const wsData = sortedVatReceipts.map(r => ({
       "Receipt Number": r.receiptNumber,
       "Source Type": r.sourceType,
       "Source ID": r.sourceId,
@@ -249,7 +268,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     doc.setFont("helvetica", "bold");
     doc.text(`Total Taxable Turnover: TZS ${vatTotalGross.toLocaleString()}`, 14, 46);
     doc.text(`Total Output VAT (18%): TZS ${vatTotalVat.toLocaleString()}`, 14, 54);
-    doc.text(`Total Fiscal Receipts in Period: ${filteredVatReceipts.length}`, 14, 62);
+    doc.text(`Total Fiscal Receipts in Period: ${sortedVatReceipts.length}`, 14, 62);
 
     let y = 76;
     doc.setFont("helvetica", "bold");
@@ -259,7 +278,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     doc.text("VAT (TZS)", 155, y);
 
     doc.setFont("helvetica", "normal");
-    filteredVatReceipts.slice(0, 25).forEach(r => {
+    sortedVatReceipts.slice(0, 25).forEach(r => {
       y += 8;
       if (y > 280) {
         doc.addPage();
@@ -686,6 +705,81 @@ export function TraPortalModule({ companyId, lang = "en" }) {
               <p className="text-xs font-bold text-slate-500 uppercase">Reconciliation Status</p>
               <p className="text-2xl font-extrabold text-emerald-600">Reconciled ✓</p>
               <p className="text-xs text-slate-500">Zero manual variance</p>
+            </div>
+          </div>
+
+          {/* Itemized Fiscal Receipts Table with Column Sorting */}
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900 mt-6">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h4 className="text-[14px] font-bold text-slate-900 dark:text-white">Itemized Fiscal Register</h4>
+                <p className="text-[12px] text-slate-500">Click column headers below to sort by date, amount, or receipt number.</p>
+              </div>
+              <div className="flex items-center gap-2 text-[12px] text-slate-500">
+                <span>Sorting by: <strong className="text-emerald-600 uppercase">{vatSortField} ({vatSortOrder})</strong></span>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[13px]">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 dark:bg-slate-800/60 dark:border-slate-800">
+                  <tr>
+                    <th
+                      className="px-6 py-3 font-semibold cursor-pointer hover:text-emerald-600 transition"
+                      onClick={() => {
+                        if (vatSortField === "receipt") setVatSortOrder(vatSortOrder === "asc" ? "desc" : "asc");
+                        else { setVatSortField("receipt"); setVatSortOrder("asc"); }
+                      }}
+                    >
+                      Receipt # {vatSortField === "receipt" && (vatSortOrder === "asc" ? "▲" : "▼")}
+                    </th>
+                    <th className="px-6 py-3 font-semibold">Source / Buyer</th>
+                    <th
+                      className="px-6 py-3 font-semibold cursor-pointer hover:text-emerald-600 transition"
+                      onClick={() => {
+                        if (vatSortField === "amount") setVatSortOrder(vatSortOrder === "asc" ? "desc" : "asc");
+                        else { setVatSortField("amount"); setVatSortOrder("desc"); }
+                      }}
+                    >
+                      Gross Amount (TZS) {vatSortField === "amount" && (vatSortOrder === "asc" ? "▲" : "▼")}
+                    </th>
+                    <th className="px-6 py-3 font-semibold">Output VAT (18%)</th>
+                    <th
+                      className="px-6 py-3 font-semibold cursor-pointer hover:text-emerald-600 transition"
+                      onClick={() => {
+                        if (vatSortField === "date") setVatSortOrder(vatSortOrder === "asc" ? "desc" : "asc");
+                        else { setVatSortField("date"); setVatSortOrder("desc"); }
+                      }}
+                    >
+                      Date & Time {vatSortField === "date" && (vatSortOrder === "asc" ? "▲" : "▼")}
+                    </th>
+                    <th className="px-6 py-3 font-semibold text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {sortedVatReceipts.map(r => (
+                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                      <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200">{r.receiptNumber}</td>
+                      <td className="px-6 py-3 text-xs text-slate-600 dark:text-slate-400">
+                        <span className="font-semibold uppercase">{r.sourceType}</span>: {r.sourceId}
+                        {r.buyerName && <span className="block text-slate-400">Buyer: {r.buyerName}</span>}
+                      </td>
+                      <td className="px-6 py-3 font-mono font-bold">TZS {Number(r.grossAmount).toLocaleString()}</td>
+                      <td className="px-6 py-3 font-mono text-emerald-600">TZS {Number(r.vatAmount).toLocaleString()}</td>
+                      <td className="px-6 py-3 text-xs text-slate-500 font-mono">{new Date(r.createdAt || Date.now()).toLocaleString()}</td>
+                      <td className="px-6 py-3 text-right">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${r.status === 'VERIFIED' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                          {r.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {sortedVatReceipts.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400">No fiscal receipts found for the selected month range and search query.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
