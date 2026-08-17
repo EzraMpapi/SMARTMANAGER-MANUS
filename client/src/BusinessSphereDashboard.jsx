@@ -11358,22 +11358,33 @@ function Inventory({ inventory, suppliersHook }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
-        {INV_TABS.map((t) => {
-          const Icon = t.icon;
-          const isActive = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
-                isActive ? "bg-white text-[#111827] shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <Icon size={13} /> {t.label}
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
+          {INV_TABS.map((t) => {
+            const Icon = t.icon;
+            const isActive = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+                  isActive ? "bg-white text-[#111827] shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Icon size={13} /> {t.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center justify-between gap-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl px-3.5 py-2.5 text-[12px] text-emerald-900">
+          <div className="flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-[10px]">💡</span>
+            <span><strong>Guided Inventory Tip:</strong> Use Warehouses to track multi-location stock, Batches for expiration control, and Reorder Alerts to safely restock without stockouts.</span>
+          </div>
+          <span className="shrink-0 text-[11px] font-semibold text-emerald-700 bg-white/80 border border-emerald-200 px-2 py-1 rounded-md">
+            Active Workspace Guidance
+          </span>
+        </div>
       </div>
 
       {tab === "warehouses" && <Warehouses inventory={inventory} />}
