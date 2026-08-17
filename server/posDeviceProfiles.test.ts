@@ -20,4 +20,10 @@ describe("POS device profiles", () => {
     expect(normalizeScannerInput("POS-123456", { scannerPrefix: "POS-" })).toBe("123456");
     expect(normalizePosDeviceProfile({ paperWidth: "unsupported", scannerMode: "serial", scanTerminator: "Escape", copyCount: 99, minScanLength: 1000, scanDebounceMs: 4000 })).toEqual({ ...DEFAULT_POS_DEVICE_PROFILE, copyCount: 5, minScanLength: 64, scanDebounceMs: 1500 });
   });
+
+  it("retains each supported browser-print receipt width in the scoped device profile", () => {
+    for (const paperWidth of ["58mm", "80mm", "A4"] as const) {
+      expect(normalizePosDeviceProfile({ paperWidth }).paperWidth).toBe(paperWidth);
+    }
+  });
 });

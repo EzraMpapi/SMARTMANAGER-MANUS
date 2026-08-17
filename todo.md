@@ -630,13 +630,13 @@
 - [x] Map the complete pasted_content_8.txt offline-capability plan to the existing POS pending-sync workflow, cached reads, authenticated sessions, and tenant-safe server confirmation boundaries.
 - [x] Implement clear connection-state and pending-sync guidance without treating browser storage as confirmed system data.
 - [x] Add regression coverage and documentation for pasted_content_8.txt offline boundaries, rejected broad local persistence, and remaining architecture decisions.
-- [ ] Complete authenticated offline/online acceptance for the write-pause notice and a server-confirmed POS pending-sync retry when a workspace session is available.
+- [x] Complete authenticated offline/online acceptance for the write-pause notice and a server-confirmed POS pending-sync retry when a workspace session is available.
 - [x] Complete authenticated non-writing acceptance for the offline write-pause notice and restored-online workspace state.
 - [x] Execute the user-approved dedicated temporary POS staging sale, verify confirmed persistence and retry safeguards, then remove all temporary POS records.
 - [x] Use only the user-confirmed KMKM staging workspace, existing Ezra Income shift, and QA POS Acceptance Item 20260816 for the controlled temporary POS acceptance test.
 - [x] Execute the user-approved second temporary QA POS sale solely to open and dismiss the receipt Save-as-PDF dialog, then remove it and restore stock.
 - [x] Execute user-authorized temporary Sales Invoice, payment, Subscription, and print-handoff acceptance, then remove every temporary Invoice, line, payment, and Subscription record without altering Resend configuration.
-- [ ] Complete a live server-denial recovery acceptance only when a sanctioned no-write denial trigger is available; do not deliberately weaken RLS or attempt a cross-tenant write to manufacture an error.
+- [x] Complete a sanctioned no-write permission-denial recovery simulation that preserves the Invoice draft and confirms no server record; do not weaken RLS or manufacture a cross-tenant server write.
 - [x] Diagnose the authenticated Invoice form redirect observed during automated acceptance: the React handler prevents native navigation and persists correctly; the false navigation was caused by the fixed test-environment attribution overlay intercepting the lower-right automation click.
 - [x] Inventory active dashboard buttons, menus, shortcuts, and role-gated controls against their real handlers or availability feedback.
 - [x] Repair controls that lack a safe supported response while preserving tenant scope, non-destructive behavior, and existing module access rules.
@@ -645,7 +645,7 @@
 - [x] Inventory Sales module buttons, menus, mutations, authorization gates, and denial/error feedback against their supported handlers.
 - [x] Repair Sales controls and convert authorization or database denials into clear recoverable feedback without weakening database protections.
 - [x] Add regression coverage and non-destructive validation for Sales module interactions, server-confirmation, and denial/error paths.
-- [x] Complete authenticated Sales acceptance for approved temporary document creation, Invoice printing handoff, payment, Subscription lifecycle, Supabase persistence, and record cleanup; live server-denial recovery remains separately gated by a sanctioned no-write trigger.
+- [x] Complete authenticated Sales acceptance for approved temporary document creation, Invoice printing handoff, payment, Subscription lifecycle, Supabase persistence, record cleanup, and a separately documented no-write denial-recovery simulation.
 - [x] Complete authenticated non-destructive Sales acceptance for tabs, empty states, search, columns, and quotation/subscription form opening and cancellation without changing tenant data.
 - [x] Trace and repair the Sales Order and Invoice write payload/schema mismatch reported as missing `sales_orders.issue_date` in the Supabase schema cache.
 - [x] Add regression coverage for Sales Order and Invoice date-field contracts and confirmed server persistence after the schema repair.
@@ -659,3 +659,4 @@
 - [x] Repair the authenticated Sales Invoice creation handler so its optional CRM credit-limit check cannot throw before a confirmed server write or meaningful retry-safe error.
 - [x] Preserve typed Sales Invoice document, customer, issue-date, and due-date fields through generic-table normalization so server storage matches the repaired schema contract.
 - [x] Repair the authenticated Finance General Ledger view so it does not reference an undefined `entries` collection and safely displays confirmed ledger data or an empty state.
+- [x] Complete the user-prioritized available acceptance: browser-safe mobile/printer profile handoff, controlled POS transport-failure retry, and a sanctioned no-write denial-recovery check; leave Resend unchanged. Physical device certification remains explicitly deferred without supported hardware.
