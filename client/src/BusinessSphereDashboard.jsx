@@ -32808,7 +32808,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
   const [profileTab, setProfileTab] = useState("identity");
   const workspaceSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: IS_CONFIGURED });
   const workspaceSettingsMutation = trpc.workspaceSettings.save.useMutation();
-  const canManageCompanySettings = ["Organization Owner", "CEO", "Super Administrator", "System Administrator"].includes(currentUser.role);
+  const canManageCompanySettings = ["owner", "Owner", "Organization Owner", "CEO", "Super Administrator", "System Administrator"].includes(currentUser.role);
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 

@@ -5,7 +5,7 @@ import { resolveVerifiedProfile } from "./aiApprovals";
 import { storagePut } from "./storage";
 import { decodeLogoBase64, isRecognizedLogo, normalizeBrandColor, normalizeOrganizationIndustryFocus } from "./workspaceBranding";
 
-const MANAGE_SETTINGS_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
+const MANAGE_SETTINGS_ROLES = new Set(["owner", "Owner", "Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 
 type ImagePayload = { mimeType: "image/png" | "image/jpeg" | "image/webp"; base64: string };
