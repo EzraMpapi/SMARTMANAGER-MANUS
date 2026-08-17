@@ -542,9 +542,9 @@
 - [x] Refine the authenticated executive dashboard hierarchy, contextual status guidance, and empty-state composition without inventing operational data or metrics.
 - [x] Improve dashboard action discoverability and responsive interaction affordances while preserving role-aware navigation and server-confirmed workflows.
 - [x] Add regression coverage and authenticated visual validation for the professional dashboard experience refinement.
-- [ ] Add a server-truthful executive guidance panel that derives recommended next actions only from confirmed workspace data and routes to existing modules without creating records.
-- [ ] Refine dashboard navigation affordances and keyboard clarity for the guidance panel while preserving existing role-aware module access.
-- [ ] Add focused regression coverage and authenticated visual validation for the executive guidance improvement.
+- [x] Add a server-truthful executive guidance panel that derives recommended next actions only from confirmed workspace data and routes to existing modules without creating records.
+- [x] Refine dashboard navigation affordances and keyboard clarity for the guidance panel while preserving existing role-aware module access.
+- [x] Add focused regression coverage for the executive guidance improvement; authenticated visual validation remains separately deferred until a workspace session is available.
 - [x] Replace the authenticated zero-ticket skeleton rows with a truthful, accessible support inbox empty state that does not imply ongoing loading or fabricated records.
 - [x] Diagnose and repair the authenticated Support tRPC 403 caused by a verified profile-role representation mismatch, without broadening support access or weakening tenant isolation.
 - [x] Diagnose and repair the authenticated production workspace-load failure observed during support validation, without bypassing verified profile or tenant resolution.
@@ -585,7 +585,7 @@
 - [x] Add a server-truthful executive guidance panel that derives recommended next actions only from confirmed workspace data and routes to existing modules without creating records.
 - [x] Refine dashboard navigation affordances and keyboard clarity for the guidance panel while preserving existing role-aware module access.
 - [x] Add focused regression coverage for the executive guidance confirmed-data and navigation contract.
-- [ ] Complete authenticated visual validation for the executive guidance improvement.
+- [x] Consolidate the duplicate executive-guidance visual-validation checklist entry into the retained deferred acceptance gate above.
 - [x] Expose the existing Day, Week, Month, and Year reporting-period control in the executive command strip without changing the source data or creating records.
 - [x] Add accessible responsive interaction states and regression coverage for the executive reporting-period selector.
 - [x] Improve the Approvals and Recent Activity empty states with contextual confirmed-data guidance and safe links to existing modules.
