@@ -5701,7 +5701,11 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         {pendingLeave.length === 0 ? (
           <div className="flex flex-col items-center py-6 text-center">
             <CheckCircle2 size={18} className="text-[#16A34A] mb-2" />
-            <p className="text-[12.5px] text-slate-500">No approvals waiting.</p>
+            <p className="text-[12.5px] font-medium text-slate-600">No approvals are waiting.</p>
+            <p className="mt-1 max-w-[260px] text-[11px] leading-relaxed text-slate-400">The confirmed leave queue is clear. Review team availability or open the leave workspace when a new request arrives.</p>
+            <button onClick={() => onQuickAction("hr", { tab: "leave" })} className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-[#16A34A] hover:text-[#15803D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded">
+              Open leave workspace <ChevronRight size={13} />
+            </button>
           </div>
         ) : (
           <div className="space-y-1">
@@ -5720,7 +5724,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
         <h3 className="text-[14px] font-semibold text-[#111827] mb-3">Recent Activity</h3>
         {recentActivity.length === 0 ? (
-          <div className="flex flex-col items-center py-6 text-center"><FileText size={18} className="text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">Nothing recorded yet this session.</p></div>
+          <div className="flex flex-col items-center py-6 text-center">
+            <FileText size={18} className="text-slate-300 mb-2" />
+            <p className="text-[12.5px] font-medium text-slate-600">No recorded activity yet.</p>
+            <p className="mt-1 max-w-[260px] text-[11px] leading-relaxed text-slate-400">This panel lists confirmed invoice, expense, and leave activity only. It does not create an activity history from local actions.</p>
+            <button onClick={() => onNavigate("reports")} className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 rounded">
+              Open reports <ChevronRight size={13} />
+            </button>
+          </div>
         ) : (
           <div className="space-y-1">
             {recentActivity.map((a, i) => {

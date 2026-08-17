@@ -588,3 +588,5 @@
 - [ ] Complete authenticated visual validation for the executive guidance improvement.
 - [x] Expose the existing Day, Week, Month, and Year reporting-period control in the executive command strip without changing the source data or creating records.
 - [x] Add accessible responsive interaction states and regression coverage for the executive reporting-period selector.
+- [x] Improve the Approvals and Recent Activity empty states with contextual confirmed-data guidance and safe links to existing modules.
+- [x] Add focused regression coverage for the role-safe dashboard side-panel empty-state refinement.

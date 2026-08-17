@@ -211,6 +211,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart)');
   });
 
+  it("keeps dashboard side-panel empty states truthful and routes users only to existing leave and reporting modules", () => {
+    expect(dashboardSource).toContain("No approvals are waiting.");
+    expect(dashboardSource).toContain("The confirmed leave queue is clear.");
+    expect(dashboardSource).toContain('onClick={() => onQuickAction("hr", { tab: "leave" })}');
+    expect(dashboardSource).toContain("No recorded activity yet.");
+    expect(dashboardSource).toContain("confirmed invoice, expense, and leave activity only");
+    expect(dashboardSource).toContain('onClick={() => onNavigate("reports")}');
+    expect(dashboardSource).toContain("does not create an activity history from local actions");
+  });
+
   it("turns empty dashboard analytics into accessible next actions rather than fabricated chart data", () => {
     expect(dashboardSource).toContain('title="No invoice data yet"');
     expect(dashboardSource).toContain('actionLabel="Create invoice"');
