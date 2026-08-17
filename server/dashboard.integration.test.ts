@@ -221,6 +221,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("does not create an activity history from local actions");
   });
 
+  it("keeps focused and minimal role home views inside each role's allowed module scope", () => {
+    expect(dashboardSource).toContain('const preferredTarget = currentUser.role === "Project Manager" ? "projects" : "support"');
+    expect(dashboardSource).toContain("currentRole.allowedModules.includes(preferredTarget)");
+    expect(dashboardSource).toContain('aria-label={`Open permitted ${targetLabel} workspace`}');
+    expect(dashboardSource).toContain("does not duplicate that view or expose unrelated company-wide data");
+    expect(dashboardSource).toContain("const primaryModuleId = currentRole.primaryModules[0] || currentRole.allowedModules[0]");
+    expect(dashboardSource).toContain("currentRole.allowedModules.includes(primaryModuleId)");
+    expect(dashboardSource).toContain("intentionally does not show company-wide metrics or create records");
+  });
+
   it("turns empty dashboard analytics into accessible next actions rather than fabricated chart data", () => {
     expect(dashboardSource).toContain('title="No invoice data yet"');
     expect(dashboardSource).toContain('actionLabel="Create invoice"');

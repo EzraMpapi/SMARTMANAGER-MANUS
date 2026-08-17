@@ -5804,15 +5804,18 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // for data this screen genuinely does not have, this gives a direct,
   // one-click path into the real module instead.
   if (roleView === "focused") {
-    const target = currentUser.role === "Project Manager" ? "projects" : "support";
-    const targetLabel = currentUser.role === "Project Manager" ? "Projects" : "Customer Support";
+    const preferredTarget = currentUser.role === "Project Manager" ? "projects" : "support";
+    const target = currentRole.allowedModules.includes(preferredTarget)
+      ? preferredTarget
+      : (currentRole.primaryModules[0] || currentRole.allowedModules[0]);
+    const targetLabel = MODULES.find((module) => module.id === target)?.label || "your workspace";
     return (
       <div className="space-y-6">
         {roleHeader(`your work lives in ${targetLabel} — jump straight in`)}
-        <button onClick={() => onNavigate(target)} className="w-full bg-white rounded-xl border border-slate-200/80 shadow-sm p-6 flex items-center justify-between hover:border-[#16A34A]/40 transition-colors text-left">
+        <button onClick={() => onNavigate(target)} aria-label={`Open permitted ${targetLabel} workspace`} className="w-full bg-white rounded-xl border border-slate-200/80 shadow-sm p-6 flex items-center justify-between hover:border-[#16A34A]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 transition-colors text-left">
           <div>
             <p className="text-[15px] font-semibold text-[#111827] mb-1">Open {targetLabel}</p>
-            <p className="text-[12.5px] text-slate-500">Tasks, timelines, and details for your role live there — this home screen does not duplicate that view.</p>
+            <p className="text-[12.5px] text-slate-500">Tasks, timelines, and details for your role live there — this home screen does not duplicate that view or expose unrelated company-wide data.</p>
           </div>
           <ChevronRight size={20} className="text-slate-300 shrink-0" />
         </button>
@@ -5826,6 +5829,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // than showing company-wide numbers a role with this little access
   // shouldn't be the one place surfacing.
   if (roleView === "minimal") {
+    const primaryModuleId = currentRole.primaryModules[0] || currentRole.allowedModules[0];
+    const primaryModuleLabel = MODULES.find((module) => module.id === primaryModuleId)?.label || "your permitted workspace";
     return (
       <div className="space-y-6">
         {roleHeader(currentRole.description)}
@@ -5835,8 +5840,13 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           </div>
           <p className="text-[14.5px] font-semibold text-[#111827] mb-1">Welcome to {company.name}</p>
           <p className="text-[12.5px] text-slate-500 max-w-[380px] mx-auto leading-relaxed">
-            Your access is scoped to {currentRole.allowedModules.map((m) => MODULES.find((mm) => mm.id === m)?.label).filter(Boolean).join(" and ")} — use the sidebar to get started.
+            Your access is scoped to {currentRole.allowedModules.map((m) => MODULES.find((mm) => mm.id === m)?.label).filter(Boolean).join(" and ")}. This home view intentionally does not show company-wide metrics or create records.
           </p>
+          {primaryModuleId && currentRole.allowedModules.includes(primaryModuleId) && (
+            <button onClick={() => onNavigate(primaryModuleId)} aria-label={`Open permitted ${primaryModuleLabel} workspace`} className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40">
+              Open {primaryModuleLabel} <ChevronRight size={14} />
+            </button>
+          )}
         </div>
       </div>
     );

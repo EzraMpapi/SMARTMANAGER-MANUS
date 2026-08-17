@@ -590,3 +590,5 @@
 - [x] Add accessible responsive interaction states and regression coverage for the executive reporting-period selector.
 - [x] Improve the Approvals and Recent Activity empty states with contextual confirmed-data guidance and safe links to existing modules.
 - [x] Add focused regression coverage for the role-safe dashboard side-panel empty-state refinement.
+- [x] Add role-aware actionable guidance to focused and minimal home views without surfacing company-wide data or creating records.
+- [x] Add focused regression coverage for restricted-view module navigation and access-scope preservation.
