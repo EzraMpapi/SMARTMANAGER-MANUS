@@ -32,6 +32,17 @@ describe("support operations", () => {
     await expect(listSupportTickets({ headers: {} } as any)).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("accepts only the established owner alias as an Organization Owner and returns the canonical role", async () => {
+    resolveVerifiedProfile.mockResolvedValue({ profile: { id: "profile-owner", company_id: "company-a", role: "owner", full_name: "Ezra" }, token: "session-owner" });
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { listSupportTickets } = await import("./supportOperations");
+    const result = await listSupportTickets({ headers: {} } as any);
+    expect(result.tickets).toEqual([]);
+    expect(result.profile.role).toBe("Organization Owner");
+    expect(fetchMock.mock.calls[0][0]).toContain("support_tickets?select=");
+  });
+
   it("writes an explicit internal note and never models it as an outbound message", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "ticket-a", company_id: "company-a" }]), { status: 200 }))

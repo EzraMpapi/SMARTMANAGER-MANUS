@@ -25,6 +25,13 @@ describe("server-confirmed support inbox", () => {
     expect(panelSection).not.toContain("Send reply");
   });
 
+  it("shows a retryable confirmed-service error instead of presenting rejected ticket reads as loading or empty data", () => {
+    expect(ticketSection).toContain("serverTickets.isError");
+    expect(ticketSection).toContain("Tickets could not be loaded");
+    expect(ticketSection).toContain("Retry tickets");
+    expect(ticketSection).toContain("serverTickets.refetch()");
+  });
+
   it("shows only server-sanitized provider readiness and retains the truthful WhatsApp Web handoff", () => {
     expect(whatsappSection).toContain("trpc.support.whatsappProviderReadiness.useQuery");
     expect(whatsappSection).toContain("Smart Manager does not store or transmit WhatsApp provider credentials in this browser.");

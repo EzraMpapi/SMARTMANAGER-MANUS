@@ -49,6 +49,7 @@ All support records will carry a non-null `company_id`, enable RLS, and use `com
 | Authentication | Every support mutation and read resolves the current Supabase user and profile from the forwarded bearer token. Missing/invalid sessions are rejected before any lookup. |
 | Tenant | Procedures derive `company_id` from the verified profile. A caller cannot choose a company through a request body, URL parameter, or provider payload. |
 | Support role | Organization Owner, CEO, Super Administrator, System Administrator, Support Manager, and Support Agent roles can perform the support actions appropriate to their role. A server-side role matrix will gate configuration, assignment, status transition, note, and message actions. |
+| Role representation | The Support boundary canonicalizes only its known privileged role labels and the established `owner` alias to **Organization Owner** after profile verification. It does not map generic administrator, manager, user, or customer labels into a support role. |
 | Internal notes | Internal notes are stored with `kind = internal_note`; outbound provider and customer-message queries explicitly exclude them. |
 | Audit history | Ticket creation, assignment, status/priority change, internal-note creation, provider send acceptance/failure, workflow action, and SLA escalation are appended only after the source operation returns a confirmed record. |
 | Attachments | Attachment metadata must reference secure object storage rather than database bytes; accepted types, size, ownership, and tenant relation are checked before records are created. |
@@ -88,6 +89,12 @@ Only the verified support-configuration role matrix may create, revise, or enabl
 Support search will run only through the verified support tRPC boundary. The server will derive the tenant from the authenticated profile, accept a bounded text query, and return a limited set of tenant-visible ticket fields. It will not query or infer data from other workspaces, return raw provider payloads, or allow a browser-provided company identifier.
 
 Support drafting will use the project’s server-side `gpt-5-mini` model with a strict structured response. The request will be derived from a ticket already verified as tenant-visible and will include only its subject, category, priority, customer display name, and a bounded sample of non-internal conversation messages. Internal notes are deliberately excluded from the prompt. The resulting text is a suggested **internal draft** for an agent to review; it is not stored, sent, logged as provider delivery, or applied to the ticket. No AI-support route will invoke Bird, create a provider message, alter ticket state, send a message, or perform an automated workflow action.
+
+## Authenticated validation evidence and limits
+
+An authenticated production workspace was opened on 17 August 2026 without creating or altering any operational data. The Support ticket view loaded with zero confirmed tickets and a functional tenant-scoped search control. The Automation & SLA view disclosed its configuration-only boundary and showed read-only access where applicable. The support AI view showed its tenant-verified, non-internal-message-only draft boundary and disabled **Generate review draft** because the workspace had no confirmed ticket. A desktop overflow check reported no horizontal document overflow at a 1600-pixel viewport.
+
+The complete automated suite passed **248 tests in 78 files**, with five intentionally gated files and eight gated tests. The production build passed. Narrow-screen authenticated support verification remains a separate pending acceptance item because the available authenticated browser session exposes only a desktop viewport. Bird inbound-webhook verification remains blocked until the organization supplies the server-side Bird API key, webhook signing secret, workspace identifier, and registered WhatsApp channel identifier.
 
 ## References
 

@@ -25595,7 +25595,8 @@ function Tickets({ tickets }) {
             </tr></thead>
             <tbody>
               {loading && <SkeletonRows cols={5} />}
-              {!loading && filtered.map((t) => (
+              {!loading && serverTickets.isError && <tr><td colSpan={5}><EmptyState icon={AlertTriangle} title="Tickets could not be loaded" hint={serverTickets.error?.message || "The confirmed support service did not return tickets for this workspace."} actionLabel="Retry tickets" onAction={() => serverTickets.refetch()} /></td></tr>}
+              {!loading && !serverTickets.isError && filtered.map((t) => (
                 <tr key={t.id} onClick={() => setSelected(t)} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors">
                   <td className="px-4 py-3"><p className="font-medium text-[#111827]">{t.subject}</p><p className="text-[11px] text-slate-400 font-mono">{t.docNumber || t.id} · {t.category}</p></td>
                   <td className="px-4 py-3 text-slate-500">{t.customer}</td>
@@ -25608,8 +25609,8 @@ function Tickets({ tickets }) {
                   </td>
                 </tr>
               ))}
-              {!loading && filtered.length === 0 && rows.length > 0 && <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-400 text-[13px]">No tickets match "{query}"</td></tr>}
-              {!loading && rows.length === 0 && <tr><td colSpan={5}><EmptyState icon={Ticket} title="No tickets yet" hint="Customer issues will appear here for tracking and resolution." actionLabel="New Ticket" onAction={() => setShowForm(true)} /></td></tr>}
+              {!loading && !serverTickets.isError && filtered.length === 0 && rows.length > 0 && <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-400 text-[13px]">No tickets match "{query}"</td></tr>}
+              {!loading && !serverTickets.isError && rows.length === 0 && <tr><td colSpan={5}><EmptyState icon={Ticket} title="No tickets yet" hint="Customer issues will appear here for tracking and resolution." actionLabel="New Ticket" onAction={() => setShowForm(true)} /></td></tr>}
             </tbody>
           </table>
         </div>

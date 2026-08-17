@@ -20,6 +20,15 @@ const SUPPORT_CONFIGURATION_ROLES = new Set([
   "System Administrator",
   "Support Manager",
 ]);
+const SUPPORT_ROLE_ALIASES = new Map([
+  ["owner", "Organization Owner"],
+  ["organization owner", "Organization Owner"],
+  ["ceo", "CEO"],
+  ["super administrator", "Super Administrator"],
+  ["system administrator", "System Administrator"],
+  ["support manager", "Support Manager"],
+  ["support agent", "Support Agent"],
+]);
 
 const SUPPORT_STATUSES = new Set(["Open", "In Progress", "Waiting", "Resolved", "Closed"]);
 const SUPPORT_PRIORITIES = new Set(["Low", "Medium", "High", "Urgent"]);
@@ -34,11 +43,18 @@ type SupportSlaPolicyRow = { id: string; company_id: string; name?: string | nul
 type SupportWorkflowActionInput = { type: string; config?: Record<string, unknown> };
 type SupportMessageRow = { body?: string | null; sender_kind?: string | null; sent_at?: string | null; is_internal?: boolean | null };
 
+function canonicalSupportRole(role: string) {
+  const normalized = role.trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  return SUPPORT_ROLE_ALIASES.get(normalized) || role.trim();
+}
+
 function requireSupportRole(profile: SupportProfile, configuration = false) {
   const roles = configuration ? SUPPORT_CONFIGURATION_ROLES : SUPPORT_ROLES;
-  if (!roles.has(profile.role)) {
+  const role = canonicalSupportRole(profile.role);
+  if (!roles.has(role)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Your verified workspace role cannot perform this support operation." });
   }
+  profile.role = role;
 }
 
 async function requestWithSession(path: string, token: string, init: RequestInit = {}) {
