@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const resolveVerifiedProfile = vi.fn();
 vi.mock("./aiApprovals", () => ({ resolveVerifiedProfile }));
+const invokeLLM = vi.fn();
+vi.mock("./_core/llm", () => ({ invokeLLM }));
 
 describe("support operations", () => {
   beforeEach(() => {
@@ -72,5 +74,35 @@ describe("support operations", () => {
     const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(payload.company_id).toBe("company-a");
     expect(payload.is_active).toBe(true);
+  });
+
+  it("searches only tickets returned through the verified workspace session", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify([
+      { id: "ticket-a", company_id: "company-a", subject: "Invoice discrepancy", customer: "Kilimo Fresh", priority: "High", status: "Open" },
+      { id: "ticket-b", company_id: "company-a", subject: "Stock question", customer: "Mtaa Store", priority: "Low", status: "Closed" },
+    ]), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { searchSupportTickets } = await import("./supportOperations");
+    const result = await searchSupportTickets({ headers: {} } as any, "invoice");
+    expect(result.query).toBe("invoice");
+    expect(result.tickets).toHaveLength(1);
+    expect(result.tickets[0].id).toBe("ticket-a");
+    expect(fetchMock.mock.calls[0][0]).toContain("support_tickets?select=");
+  });
+
+  it("returns an AI review draft from bounded non-internal ticket context without sending or mutating a ticket", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: "ticket-a", company_id: "company-a", subject: "Invoice discrepancy", customer: "Kilimo Fresh", category: "Billing", priority: "High" }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ sender_kind: "customer", body: "Please confirm why this invoice changed.", sent_at: "2026-08-17T01:00:00Z", is_internal: false }]), { status: 200 }));
+    invokeLLM.mockResolvedValueOnce({ model: "gpt-5-mini", choices: [{ message: { content: JSON.stringify({ draft: "Thank you for raising this. We are reviewing the invoice details.", cautions: ["Confirm the invoice revision before sending."] }) } }] });
+    vi.stubGlobal("fetch", fetchMock);
+    const { draftSupportTicketReply } = await import("./supportOperations");
+    const result = await draftSupportTicketReply({ headers: {} } as any, { ticketId: "ticket-a", tone: "professional" });
+    expect(result.reviewOnly).toBe(true);
+    expect(result.draft).toContain("reviewing the invoice");
+    expect(result.cautions).toEqual(["Confirm the invoice revision before sending."]);
+    expect(fetchMock.mock.calls[1][0]).toContain("is_internal=eq.false");
+    expect(JSON.stringify(invokeLLM.mock.calls[0][0])).not.toContain("support_ticket_notes");
+    expect(fetchMock.mock.calls).toHaveLength(2);
   });
 });

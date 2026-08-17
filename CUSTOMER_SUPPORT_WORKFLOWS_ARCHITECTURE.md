@@ -83,6 +83,12 @@ Only the verified support-configuration role matrix may create, revise, or enabl
 
 `support_sla_policies` remains the sole SLA policy store. A policy binds one supported ticket priority to a positive first-response deadline, a positive resolution deadline, an optional non-negative warning lead time, and an active state. Verified support-configuration roles may manage it; support agents may read it but cannot alter it. Policy changes are audited after confirmation. SLA configuration alone does not create a breach, escalation, delivery, or customer notification event; those require an observed ticket event and a separately implemented evaluation/notification path.
 
+## Approved support search and review-only drafting contract
+
+Support search will run only through the verified support tRPC boundary. The server will derive the tenant from the authenticated profile, accept a bounded text query, and return a limited set of tenant-visible ticket fields. It will not query or infer data from other workspaces, return raw provider payloads, or allow a browser-provided company identifier.
+
+Support drafting will use the project’s server-side `gpt-5-mini` model with a strict structured response. The request will be derived from a ticket already verified as tenant-visible and will include only its subject, category, priority, customer display name, and a bounded sample of non-internal conversation messages. Internal notes are deliberately excluded from the prompt. The resulting text is a suggested **internal draft** for an agent to review; it is not stored, sent, logged as provider delivery, or applied to the ticket. No AI-support route will invoke Bird, create a provider message, alter ticket state, send a message, or perform an automated workflow action.
+
 ## References
 
 [1]: [Bird Webhooks & Events](https://bird.com/en-us/docs/guides/webhooks)

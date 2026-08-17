@@ -25265,7 +25265,7 @@ function CustomerSupport({ company }) {
       {tab === "chat" && <LiveChat />}
       {tab === "kb" && <KnowledgeBase />}
       {tab === "calls" && <CallCenter />}
-      {tab === "ai" && <SupportAI company={company} tickets={tickets.rows} />}
+      {tab === "ai" && <SupportAI tickets={tickets.rows} />}
     </div>
   );
 }
@@ -26059,78 +26059,66 @@ function CallFormPanel({ onClose, onSubmit }) {
 // Uses the same authenticated, server-side Smart Manager AI boundary as
 // the main AI module. It drafts a reply only; a person still reviews and
 // sends it through the normal support workflow.
-function SupportAI({ company, tickets }) {
-  const [ticketId, setTicketId] = useState(tickets[0]?.id || "");
+function SupportAI({ tickets }) {
+  const [ticketId, setTicketId] = useState("");
+  const [searchText, setSearchText] = useState("");
+  const [tone, setTone] = useState("professional");
   const [draftReply, setDraftReply] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [cautions, setCautions] = useState([]);
   const [error, setError] = useState(null);
-  const ticket = tickets.find((t) => t.id === ticketId);
-  const assistantMutation = trpc.ai.assist.useMutation();
+  const serverTickets = trpc.support.listTickets.useQuery(undefined, { enabled: IS_CONFIGURED });
+  const normalizedSearch = useMemo(() => searchText.trim(), [searchText]);
+  const searchInput = useMemo(() => ({ query: normalizedSearch }), [normalizedSearch]);
+  const searchResults = trpc.support.searchTickets.useQuery(searchInput, { enabled: IS_CONFIGURED && normalizedSearch.length >= 2 });
+  const draftMutation = trpc.support.draftTicketReply.useMutation();
+  const confirmedTickets = IS_CONFIGURED ? (serverTickets.data?.tickets || []) : tickets;
+  const visibleTickets = IS_CONFIGURED && normalizedSearch.length >= 2 ? (searchResults.data?.tickets || []) : confirmedTickets;
+  const ticket = visibleTickets.find((candidate) => candidate.id === ticketId) || confirmedTickets.find((candidate) => candidate.id === ticketId);
 
-  async function generateReply() {
+  useEffect(() => {
+    if (!ticketId && visibleTickets[0]?.id) setTicketId(visibleTickets[0].id);
+  }, [ticketId, visibleTickets]);
+
+  async function generateDraft() {
     if (!ticket) return;
-    setBusy(true);
     setError(null);
     setDraftReply("");
+    setCautions([]);
     try {
-      const conversation = ticket.messages.map((m) => `${m.from}: ${m.text}`).join("\n");
-      const data = await assistantMutation.mutateAsync({
-        task: "chat",
-        message: `Draft a professional, concise, friendly reply to the customer's most recent message. Plain text only, no preamble.\n\nTicket: ${ticket.subject}\nCategory: ${ticket.category}\nPriority: ${ticket.priority}\n\nConversation so far:\n${conversation}`,
-        company: { name: company.name, industry: company.industry, country: company.country, currency: company.currency || "TZS" },
-        persona: { name: "Customer Support Drafting Assistant", scope: ["support"] },
-        context: { ticketSubject: ticket.subject, category: ticket.category, priority: ticket.priority },
-      });
-      setDraftReply(data.content.trim());
-    } catch (e) {
-      setError(e?.message || "Couldn't reach the AI service. Try again in a moment.");
-    } finally {
-      setBusy(false);
+      const result = await draftMutation.mutateAsync({ ticketId: ticket.id, tone });
+      setDraftReply(result.draft);
+      setCautions(result.cautions || []);
+    } catch (requestError) {
+      setError(requestError?.message || "The AI drafting service could not prepare a review draft. No message was sent and no ticket was changed.");
     }
   }
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <div className="flex items-start gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-3">
-        <Brain size={15} className="text-slate-400 shrink-0 mt-0.5" />
-        <p className="text-[12px] text-slate-500 leading-relaxed">
-          Drafts a suggested reply using the authenticated AI service. Review before sending; this does not reply automatically.
-        </p>
+    <div className="max-w-3xl space-y-4">
+      <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-3">
+        <Brain size={15} className="text-amber-700 shrink-0 mt-0.5" />
+        <p className="text-[12px] text-amber-900 leading-relaxed">This assistant prepares an internal review draft from a tenant-verified ticket and non-internal conversation messages only. It cannot send a message, change a ticket, run a workflow, or contact a customer.</p>
       </div>
 
-      {tickets.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm"><EmptyState icon={Brain} title="No tickets to draft replies for" hint="Create a ticket first." /></div>
-      ) : (
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6 space-y-4">
-          <FormField label="Ticket">
-            <select className={inputClass} value={ticketId} onChange={(e) => { setTicketId(e.target.value); setDraftReply(""); setError(null); }}>
-              {tickets.map((t) => <option key={t.id} value={t.id}>{t.id} — {t.subject}</option>)}
-            </select>
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px] gap-3">
+          <FormField label="Find a ticket">
+            <div className="relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input className={`${inputClass} pl-8`} value={searchText} onChange={(event) => { setSearchText(event.target.value); setTicketId(""); setDraftReply(""); setCautions([]); setError(null); }} placeholder="Search ticket, customer, or reference..." /></div>
           </FormField>
-
-          {ticket && (
-            <div className="border border-slate-100 rounded-lg p-3 max-h-[160px] overflow-y-auto space-y-1.5">
-              {ticket.messages.map((m, i) => (
-                <p key={i} className="text-[12.5px] text-slate-600"><span className="font-medium text-[#111827]">{m.from}:</span> {m.text}</p>
-              ))}
-              {ticket.messages.length === 0 && <p className="text-[12.5px] text-slate-400">No messages on this ticket yet.</p>}
-            </div>
-          )}
-
-          <button onClick={generateReply} disabled={busy || !ticket} className="btn-primary text-white text-[13px] font-medium rounded-lg py-2.5 w-full disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-            {busy ? <><LoaderCircle size={14} className="animate-spin" /> Drafting reply...</> : <><Brain size={14} /> Generate AI Reply</>}
-          </button>
-
-          {error && <p className="text-[12.5px] text-[#EF4444]">{error}</p>}
-
-          {draftReply && (
-            <div className="bg-[#16A34A]/5 border border-[#16A34A]/20 rounded-lg p-3.5">
-              <p className="text-[11px] font-medium text-[#16A34A] mb-1.5">Suggested reply</p>
-              <p className="text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed">{draftReply}</p>
-            </div>
-          )}
+          <FormField label="Draft tone"><select className={inputClass} value={tone} onChange={(event) => setTone(event.target.value)}><option value="professional">Professional</option><option value="empathetic">Empathetic</option><option value="concise">Concise</option></select></FormField>
         </div>
-      )}
+
+        {IS_CONFIGURED && normalizedSearch.length === 1 && <p className="text-[11.5px] text-slate-500">Enter at least two characters to search confirmed workspace tickets.</p>}
+        {searchResults.isLoading && <div className="h-10 rounded-lg skeleton-shimmer" />}
+        {visibleTickets.length > 0 ? <FormField label="Ticket"><select className={inputClass} value={ticketId} onChange={(event) => { setTicketId(event.target.value); setDraftReply(""); setCautions([]); setError(null); }}>{visibleTickets.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.doc_number || candidate.docNumber || candidate.id} — {candidate.subject}</option>)}</select></FormField> : <div className="border border-dashed border-slate-200 rounded-lg py-8 text-center"><p className="text-[12.5px] text-slate-500">{normalizedSearch.length >= 2 ? "No tenant-visible tickets match this search." : "No confirmed tickets are available for drafting."}</p></div>}
+
+        {ticket && <div className="bg-slate-50 border border-slate-100 rounded-lg p-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Draft context</p><p className="text-[13px] font-medium text-[#111827] mt-1">{ticket.subject}</p><p className="text-[11.5px] text-slate-500 mt-0.5">{ticket.customer} · {ticket.category || "General"} · {ticket.priority || "Medium"}</p><p className="text-[10.5px] text-slate-400 mt-2">Internal notes and provider credentials are excluded from the AI request.</p></div>}
+
+        <button onClick={generateDraft} disabled={draftMutation.isPending || !ticket} className="btn-primary text-white text-[13px] font-medium rounded-lg py-2.5 w-full disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">{draftMutation.isPending ? <><LoaderCircle size={14} className="animate-spin" /> Preparing review draft...</> : <><Brain size={14} /> Generate review draft</>}</button>
+        {error && <p className="text-[12.5px] text-[#EF4444]">{error}</p>}
+
+        {draftReply && <div className="bg-[#16A34A]/5 border border-[#16A34A]/20 rounded-lg p-4"><div className="flex items-center justify-between gap-3 mb-2"><p className="text-[11px] font-semibold text-[#16803B]">Review-only suggested draft</p><span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Not sent</span></div><p className="text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed">{draftReply}</p>{cautions.length > 0 && <div className="mt-3 pt-3 border-t border-[#16A34A]/15"><p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 mb-1">Agent checks before any separate send</p><ul className="space-y-1">{cautions.map((caution, index) => <li key={index} className="text-[11.5px] text-slate-600">• {caution}</li>)}</ul></div>}</div>}
+      </div>
     </div>
   );
 }

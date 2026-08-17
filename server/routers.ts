@@ -20,7 +20,7 @@ import { saveWorkspaceBranding } from "./workspaceBranding";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
-import { addSupportInternalNote, createSupportTicket, getSupportWhatsAppProviderReadiness, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, updateSupportTicket } from "./supportOperations";
+import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -380,6 +380,8 @@ export const appRouter = router({
 
   support: router({
     listTickets: protectedProcedure.query(({ ctx }) => listSupportTickets(ctx.req)),
+    searchTickets: protectedProcedure.input(z.object({ query: z.string().trim().min(2).max(120) })).query(({ ctx, input }) => searchSupportTickets(ctx.req, input.query)),
+    draftTicketReply: protectedProcedure.input(z.object({ ticketId: z.string().uuid(), tone: z.enum(["professional", "empathetic", "concise"]).default("professional") })).mutation(({ ctx, input }) => draftSupportTicketReply(ctx.req, input)),
     whatsappProviderReadiness: protectedProcedure.query(({ ctx }) => getSupportWhatsAppProviderReadiness(ctx.req)),
     listWorkflowPolicies: protectedProcedure.query(({ ctx }) => listSupportWorkflowPolicies(ctx.req)),
     saveWorkflowPolicy: protectedProcedure.input(z.object({

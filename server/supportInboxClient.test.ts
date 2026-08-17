@@ -40,4 +40,14 @@ describe("server-confirmed support inbox", () => {
     expect(dashboard).toContain("Automatic execution is disabled.");
     expect(dashboard).toContain("It does not run in the background or change a ticket automatically.");
   });
+
+  it("uses tenant-verified support search and review-only drafting rather than browser-built prompts or send actions", () => {
+    const supportAiSection = dashboard.slice(dashboard.indexOf("function SupportAI("), dashboard.indexOf("/* ------------------------------------ ANALYTICS"));
+    expect(supportAiSection).toContain("trpc.support.searchTickets.useQuery");
+    expect(supportAiSection).toContain("trpc.support.draftTicketReply.useMutation");
+    expect(supportAiSection).toContain("Review-only suggested draft");
+    expect(supportAiSection).toContain("It cannot send a message, change a ticket, run a workflow, or contact a customer.");
+    expect(supportAiSection).not.toContain("trpc.ai.assist.useMutation");
+    expect(supportAiSection).not.toContain("sendWebhookNotification");
+  });
 });

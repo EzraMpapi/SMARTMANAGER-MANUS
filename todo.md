@@ -531,7 +531,10 @@
 - [x] Replace the active ticket interface's direct browser Supabase mutations with the verified support tRPC service and preserve unsaved form input on failure.
 - [x] Prepare a server-only Bird WhatsApp provider adapter, templates, and outbound message contracts; leave real delivery disabled until provider credentials and an approved channel are configured.
 - [ ] Implement idempotent, signature-verified Bird inbound webhook handling only after provider credentials and webhook requirements are configured.
-- [ ] Add permission-aware support workflows, configurable SLA policy/state logic, AI suggestions requiring review before send, and real-data support analytics/search.
+- [x] Add permission-aware support workflows, configurable SLA policy/state logic, AI suggestions requiring review before send, and real-data support analytics/search.
+- [x] Implement verified tenant-scoped support ticket search with bounded query inputs and truthful empty/error states.
+- [x] Implement server-generated support drafting suggestions with least-privilege ticket context and explicit review-only, never-send behavior.
+- [x] Add UI controls and regression coverage proving support AI suggestions cannot send external messages or mutate tickets without a separate confirmed user action.
 - [x] Define and implement verified-role, tenant-scoped support workflow lifecycle operations with auditable approval and activation boundaries.
 - [x] Define and implement tenant-scoped SLA policy management with server-confirmed policy state and no fabricated breach or escalation events.
 - [x] Add support-management controls and focused regression coverage for workflow and SLA contracts before activating any AI suggestions or provider automation.
