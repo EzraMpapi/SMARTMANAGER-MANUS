@@ -11195,14 +11195,23 @@ function Inventory({ inventory, suppliersHook }) {
       warehouse: warehouses[0]?.id || "", qty: Number(r.qty_on_hand) || 0, reorder: 10,
       unitCost: Number(r.unit_cost) || 0, unit: "pcs", barcode: "", expiryDate: null,
     }));
-    setItems((prev) => [...drafts, ...prev]);
     if (IS_CONFIGURED) {
       try {
-        await sb("inventory_items").insert(drafts.map((d) => ({
+        const savedRows = await sb("inventory_items").insert(drafts.map((d) => ({
           sku: d.sku, name: d.name, category: d.category, qty_on_hand: d.qty, reorder_level: d.reorder, unit_cost: d.unitCost, unit: d.unit,
         }))).run();
-      } catch (e) { throw new Error("Some rows saved locally but failed to reach the server."); }
+        const confirmed = (Array.isArray(savedRows) ? savedRows : [savedRows]).map(mapInventoryRow);
+        setItems((prev) => [...confirmed, ...prev]);
+        notify(`Imported ${confirmed.length} item${confirmed.length === 1 ? "" : "s"}.`);
+        return confirmed;
+      } catch (e) {
+        notify("Inventory import could not be saved to the server. Your selected rows are still available to retry.", "error");
+        return false;
+      }
     }
+    setItems((prev) => [...drafts, ...prev]);
+    notify(`Imported ${drafts.length} item${drafts.length === 1 ? "" : "s"}.`);
+    return drafts;
   }
 
   const filtered = useMemo(() => {
@@ -11245,13 +11254,9 @@ function Inventory({ inventory, suppliersHook }) {
       expiryDate: form.expiryDate || null,
     };
 
-    setItems((prev) => [draft, ...prev]);
-    notify(`Item added: ${draft.name}`);
-    setShowForm(false);
-
     if (IS_CONFIGURED) {
       try {
-        await sb("inventory_items").insert({
+        const saved = await sb("inventory_items").insert({
           sku: draft.sku,
           name: draft.name,
           category: draft.category,
@@ -11262,41 +11267,63 @@ function Inventory({ inventory, suppliersHook }) {
           unit: draft.unit,
           barcode: draft.barcode,
           expiry_date: draft.expiryDate,
-        }).run();
+        }).single().run();
+        const confirmed = mapInventoryRow(saved);
+        setItems((prev) => [confirmed, ...prev]);
+        notify(`Item added: ${confirmed.name}`);
+        return confirmed;
       } catch (e) {
-        notify("Item created locally, but saving to the server failed.", "error");
+        notify("Item could not be saved to the server. Review the details and try again.", "error");
+        return false;
       }
     }
+    setItems((prev) => [draft, ...prev]);
+    notify(`Item added: ${draft.name}`);
+    return draft;
   }
 
   async function adjustStock(sku, delta) {
-    setItems((prev) => prev.map((it) => (it.sku === sku ? { ...it, qty: Math.max(0, it.qty + delta) } : it)));
-    setSelected((s) => (s && s.sku === sku ? { ...s, qty: Math.max(0, s.qty + delta) } : s));
-
     if (IS_CONFIGURED) {
       try {
         const current = items.find((it) => it.sku === sku);
         const newQty = Math.max(0, (current?.qty || 0) + delta);
-        await sb("inventory_items").eq("sku", sku).update({ qty_on_hand: newQty }).run();
-        await sb("inventory_stock_movements").insert({
-          item_id: sku, movement: delta > 0 ? "In" : "Out", qty: Math.abs(delta), reference: "Manual adjustment",
-        }).run();
+        const saved = await sb("inventory_items").eq("sku", sku).update({ qty_on_hand: newQty }).single().run();
+        const confirmed = mapInventoryRow(saved);
+        setItems((prev) => prev.map((it) => (it.sku === sku ? confirmed : it)));
+        setSelected((selectedItem) => (selectedItem && selectedItem.sku === sku ? confirmed : selectedItem));
+        try {
+          await sb("inventory_stock_movements").insert({
+            item_id: sku, movement: delta > 0 ? "In" : "Out", qty: Math.abs(delta), reference: "Manual adjustment",
+          }).single().run();
+        } catch (_movementError) {
+          notify("Stock quantity is saved, but its movement audit record could not be saved. Reconcile this item before relying on its history.", "error");
+        }
+        return confirmed;
       } catch (e) {
-        notify("Couldn't save the stock adjustment to the server.", "error");
+        notify("Stock adjustment could not be saved to the server. The quantity has not changed here.", "error");
+        return false;
       }
     }
+    const current = items.find((it) => it.sku === sku);
+    const newQty = Math.max(0, (current?.qty || 0) + delta);
+    setItems((prev) => prev.map((it) => (it.sku === sku ? { ...it, qty: newQty } : it)));
+    setSelected((selectedItem) => (selectedItem && selectedItem.sku === sku ? { ...selectedItem, qty: newQty } : selectedItem));
+    return true;
   }
 
   async function deleteItem(sku) {
-    setItems((prev) => prev.filter((it) => it.sku !== sku));
-    setSelected(null);
     if (IS_CONFIGURED) {
       try {
-        await sb("inventory_items").eq("sku", sku).delete().run();
+        await sb("inventory_items").eq("sku", sku).delete().single().run();
+        setItems((prev) => prev.filter((it) => it.sku !== sku));
+        return true;
       } catch (e) {
-        notify("Couldn't delete the item on the server.", "error");
+        notify("Item could not be deleted from the server. It remains available here.", "error");
+        return false;
       }
     }
+    setItems((prev) => prev.filter((it) => it.sku !== sku));
+    return true;
   }
 
   return (
@@ -11503,7 +11530,11 @@ function Inventory({ inventory, suppliersHook }) {
         </div>
       </div>
 
-      {showForm && <ItemFormPanel onClose={() => setShowForm(false)} onSubmit={addItem} warehouses={warehouses} />}
+      {showForm && <ItemFormPanel onClose={() => setShowForm(false)} onSubmit={async (form) => {
+        const created = await addItem(form);
+        if (created) setShowForm(false);
+        return created;
+      }} warehouses={warehouses} />}
       {showImport && <DataImportPanel type="products" onClose={() => setShowImport(false)} onImport={importProducts} />}
         </>
       )}
@@ -11520,13 +11551,32 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, warehouses }) {
   const value = Math.round(item.qty * item.unitCost);
   const [adjusting, setAdjusting] = useState(false);
   const [delta, setDelta] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function applyAdjustment() {
+  async function applyAdjustment() {
     const n = Number(delta);
-    if (!n) return;
-    onAdjust(item.sku, n);
-    setDelta("");
-    setAdjusting(false);
+    if (!n || saving) return;
+    setSaving(true);
+    try {
+      const adjusted = await onAdjust(item.sku, n);
+      if (adjusted) {
+        setDelta("");
+        setAdjusting(false);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeItem() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const deleted = await onDelete(item.sku);
+      if (deleted) onClose();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -11625,8 +11675,8 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, warehouses }) {
                   onChange={(e) => setDelta(e.target.value)}
                   placeholder="e.g. 10 or -5"
                 />
-                <button type="button" onClick={applyAdjustment} className="text-[12px] font-medium btn-primary text-white rounded-lg px-4 shrink-0">
-                  Apply
+                <button type="button" onClick={applyAdjustment} disabled={saving} className="text-[12px] font-medium btn-primary text-white rounded-lg px-4 shrink-0 disabled:opacity-50">
+                  {saving ? "Saving…" : "Apply"}
                 </button>
               </div>
             </div>
@@ -11659,7 +11709,8 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, warehouses }) {
             <button
               type="button"
               onClick={() => setAdjusting((a) => !a)}
-              className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors"
+              disabled={saving}
+              className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors disabled:opacity-50"
             >
               Adjust Stock
             </button>
@@ -11667,7 +11718,7 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, warehouses }) {
               Raise Purchase Order
             </button>
           </div>
-          <ConfirmDeleteButton label="Delete item" onConfirm={() => onDelete(item.sku)} />
+          <ConfirmDeleteButton label={saving ? "Saving…" : "Delete item"} onConfirm={removeItem} />
         </div>
       </div>
     </div>
@@ -11679,17 +11730,23 @@ function ItemFormPanel({ onClose, onSubmit, warehouses }) {
     sku: "", name: "", category: "", warehouse: warehouses[0]?.id, qty: "", reorder: "", unitCost: "", unit: "unit",
   });
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const valid = form.name.trim() && Number(form.unitCost) >= 0;
 
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setTouched(true);
-    if (!valid) return;
-    onSubmit(form);
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(form);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -11757,8 +11814,8 @@ function ItemFormPanel({ onClose, onSubmit, warehouses }) {
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors">
-            Create Item
+          <button type="submit" disabled={submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
+            {submitting ? "Saving…" : "Create Item"}
           </button>
         </div>
       </form>
