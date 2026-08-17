@@ -48689,12 +48689,13 @@ function onboardingTourStorageKey(currentUser, company) {
   return `bs_onboarding_tour_${encodeURIComponent(String(userKey))}_${encodeURIComponent(String(workspaceKey))}`;
 }
 
-function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate }) {
+function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange }) {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const dialogRef = useRef(null);
   const triggerRef = useRef(null);
   const checkedKeyRef = useRef("");
+  const [spotlightRect, setSpotlightRect] = useState(null);
   const storageKey = useMemo(() => onboardingTourStorageKey(currentUser, company), [currentUser?.id, currentUser?.name, company?.id, company?.name]);
   const ready = IS_CONFIGURED ? Boolean(currentUser?.id && company?.id) : true;
   const step = ONBOARDING_TOUR_STEPS[stepIndex] || ONBOARDING_TOUR_STEPS[0];
@@ -48714,6 +48715,52 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate 
       setOpen(true);
     }
   }, [ready, storageKey]);
+
+  useEffect(() => {
+    onTourVisibilityChange?.(open);
+  }, [open, onTourVisibilityChange]);
+
+  useEffect(() => {
+    if (!open) {
+      setSpotlightRect(null);
+      return undefined;
+    }
+    let frameId = 0;
+    const measureTarget = () => {
+      const target = document.querySelector(`[data-tour-target="${step.moduleId}"]`);
+      if (!target) {
+        setSpotlightRect(null);
+        return;
+      }
+      const rect = target.getBoundingClientRect();
+      const visible = rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight && rect.right > 0 && rect.left < window.innerWidth;
+      if (!visible) {
+        setSpotlightRect(null);
+        return;
+      }
+      const padding = 6;
+      const left = Math.max(8, rect.left - padding);
+      const top = Math.max(8, rect.top - padding);
+      setSpotlightRect({
+        left,
+        top,
+        width: Math.min(window.innerWidth - left - 8, rect.width + padding * 2),
+        height: Math.min(window.innerHeight - top - 8, rect.height + padding * 2),
+      });
+    };
+    const scheduleMeasure = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(measureTarget);
+    };
+    scheduleMeasure();
+    window.addEventListener("resize", scheduleMeasure);
+    window.addEventListener("scroll", scheduleMeasure, true);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", scheduleMeasure);
+      window.removeEventListener("scroll", scheduleMeasure, true);
+    };
+  }, [open, step.moduleId]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -48783,7 +48830,10 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate 
     setOpen(true);
   }
   function openModule() {
-    if (available && onNavigate) onNavigate(step.moduleId);
+    if (available && onNavigate) {
+      onNavigate(step.moduleId);
+      onTourVisibilityChange?.(true);
+    }
   }
 
   return (
@@ -48799,15 +48849,28 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate 
         <Info size={13} /> Take a Tour
       </button>
       {open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" data-onboarding-tour="true">
-          <div className="absolute inset-0" aria-hidden="true" onClick={() => finishTour("dismissed")} />
+        <div
+          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${spotlightRect ? "bg-transparent" : "bg-slate-950/55 backdrop-blur-sm"}`}
+          data-onboarding-tour="true"
+          onClick={(event) => { if (event.target === event.currentTarget) finishTour("dismissed"); }}
+        >
+          {spotlightRect ? (
+            <div
+              className="pointer-events-none fixed z-[101] rounded-xl border-2 border-emerald-300/95 bg-emerald-200/10 shadow-[0_0_28px_rgba(52,211,153,.52)] animate-pulse"
+              style={{ left: spotlightRect.left, top: spotlightRect.top, width: spotlightRect.width, height: spotlightRect.height, boxShadow: "0 0 0 9999px rgba(15,23,42,.64), 0 0 28px rgba(52,211,153,.52)" }}
+              aria-hidden="true"
+              data-tour-spotlight={step.moduleId}
+            />
+          ) : (
+            <div className="pointer-events-none absolute inset-0" aria-hidden="true" />
+          )}
           <section
             ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="onboarding-tour-title"
             aria-describedby="onboarding-tour-description"
-            className="relative w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="relative z-[102] w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
             data-onboarding-step={step.id}
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
@@ -49035,6 +49098,9 @@ function SmartManager() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const handleOnboardingVisibilityChange = useCallback((isOpen) => {
+    setSidebarOpen(isOpen);
+  }, []);
 
   // Company profile is editable in Settings; the topbar and dashboard
   // greeting read from this state, so edits are reflected immediately.
@@ -49531,6 +49597,7 @@ function SmartManager() {
             return (
               <button
                 key={m.id}
+                data-tour-target={m.id}
                 onClick={() => go(m.id)}
                 aria-current={isActive ? "page" : undefined}
                 className={`relative w-full flex items-center justify-between gap-2.5 pl-3 pr-3 py-2.5 rounded-lg text-[13.5px] transition-all duration-200 group ${
@@ -49621,7 +49688,7 @@ function SmartManager() {
               <span className="hidden md:inline">Search anything...</span>
               <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>
-            <OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} />
+            <OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} />
             <span className="hidden lg:inline-flex items-center text-[11.5px] font-medium text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}

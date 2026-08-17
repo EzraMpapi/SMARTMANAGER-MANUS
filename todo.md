@@ -700,3 +700,6 @@
 - [x] Add a discoverable "Take a Tour" restart trigger in the user header or command strip.
 - [x] Add focused regression tests for tour steps, workspace-scoped dismissal persistence, and keyboard navigation.
 - [x] Add a prominent remaining-steps indicator to the onboarding tour modal header and progress bar with accessible aria-live updates.
+- [x] Implement a visual spotlight effect in `OnboardingTour` that highlights the target dashboard module tab or command element for each step, with a smooth pulse animation and fallback centering.
+- [x] Add `data-tour-target` attribute selectors to the dashboard sidebar and header action elements.
+- [x] Add focused regression tests verifying spotlight target mapping across all onboarding tour steps.

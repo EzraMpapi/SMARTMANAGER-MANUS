@@ -26,6 +26,16 @@ describe("interactive onboarding tour", () => {
     expect(tour).toContain("window.localStorage.setItem(storageKey");
   });
 
+  it("maps every tour step to a real dashboard spotlight target", () => {
+    expect(tour).toContain('document.querySelector(`[data-tour-target="${step.moduleId}"]`)');
+    for (const moduleId of ["dashboard", "sales", "pos", "inventory", "finance", "collaboration", "ai"]) {
+      expect(source).toContain("data-tour-target={m.id}");
+      expect(tour).toContain(`moduleId: "${moduleId}"`);
+    }
+    expect(tour).toContain("data-tour-spotlight={step.moduleId}");
+    expect(source).toContain("onTourVisibilityChange={handleOnboardingVisibilityChange}");
+  });
+
   it("provides dialog semantics, focus management, keyboard navigation, and restart access", () => {
     expect(tour).toContain('role="dialog"');
     expect(tour).toContain('aria-modal="true"');
