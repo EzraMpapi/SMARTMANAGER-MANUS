@@ -532,6 +532,9 @@
 - [x] Prepare a server-only Bird WhatsApp provider adapter, templates, and outbound message contracts; leave real delivery disabled until provider credentials and an approved channel are configured.
 - [ ] Implement idempotent, signature-verified Bird inbound webhook handling only after provider credentials and webhook requirements are configured.
 - [ ] Add permission-aware support workflows, configurable SLA policy/state logic, AI suggestions requiring review before send, and real-data support analytics/search.
+- [x] Define and implement verified-role, tenant-scoped support workflow lifecycle operations with auditable approval and activation boundaries.
+- [x] Define and implement tenant-scoped SLA policy management with server-confirmed policy state and no fabricated breach or escalation events.
+- [x] Add support-management controls and focused regression coverage for workflow and SLA contracts before activating any AI suggestions or provider automation.
 - [ ] Validate mobile support workflows, security, tenant isolation, provider failures, idempotency, full regression, production build, and publish only verified capabilities.
 - [x] Map every requirement in pasted_content_3.txt to the current Smart Manager implementation, verified evidence, known limitation, or remediation task.
 - [x] Re-audit the architecture, Supabase database contracts, authentication, tenant authorization, RLS, and sensitive data boundaries against the enterprise transformation requirements.

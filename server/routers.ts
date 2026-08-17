@@ -20,7 +20,7 @@ import { saveWorkspaceBranding } from "./workspaceBranding";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
-import { addSupportInternalNote, createSupportTicket, getSupportWhatsAppProviderReadiness, listSupportTicketTimeline, listSupportTickets, updateSupportTicket } from "./supportOperations";
+import { addSupportInternalNote, createSupportTicket, getSupportWhatsAppProviderReadiness, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, updateSupportTicket } from "./supportOperations";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -381,6 +381,33 @@ export const appRouter = router({
   support: router({
     listTickets: protectedProcedure.query(({ ctx }) => listSupportTickets(ctx.req)),
     whatsappProviderReadiness: protectedProcedure.query(({ ctx }) => getSupportWhatsAppProviderReadiness(ctx.req)),
+    listWorkflowPolicies: protectedProcedure.query(({ ctx }) => listSupportWorkflowPolicies(ctx.req)),
+    saveWorkflowPolicy: protectedProcedure.input(z.object({
+      workflowId: z.string().uuid().optional(),
+      name: z.string().trim().min(2).max(160),
+      trigger: z.enum(["support.ticket.created", "support.ticket.updated"]),
+      condition: z.object({ priority: z.enum(["Low", "Medium", "High", "Urgent"]).optional(), status: z.enum(["Open", "In Progress", "Waiting", "Resolved", "Closed"]).optional() }).optional().nullable(),
+      actions: z.array(z.object({ type: z.enum(["add_internal_note", "set_ticket_priority", "assign_support_team"]), config: z.record(z.string(), z.unknown()).optional() })).min(1).max(8),
+      enabled: z.boolean(),
+    })).mutation(async ({ ctx, input }) => {
+      const result = await saveSupportWorkflowPolicy(ctx.req, input);
+      await recordAuditLog(ctx.user, { companyId: result.profile.company_id, action: "Support workflow configuration saved", module: "Customer Support", details: `Confirmed support workflow ${result.workflow.name}; automatic execution remains disabled until a verified runner is implemented.` });
+      return result;
+    }),
+    listSlaPolicies: protectedProcedure.query(({ ctx }) => listSupportSlaPolicies(ctx.req)),
+    saveSlaPolicy: protectedProcedure.input(z.object({
+      policyId: z.string().uuid().optional(),
+      name: z.string().trim().min(2).max(160),
+      priority: z.enum(["Low", "Medium", "High", "Urgent"]),
+      firstResponseMinutes: z.number().int().positive().max(525_600),
+      resolutionMinutes: z.number().int().positive().max(525_600),
+      warningMinutes: z.number().int().min(0).max(525_600).nullable().optional(),
+      isActive: z.boolean(),
+    })).mutation(async ({ ctx, input }) => {
+      const result = await saveSupportSlaPolicy(ctx.req, input);
+      await recordAuditLog(ctx.user, { companyId: result.profile.company_id, action: "Support SLA policy saved", module: "Customer Support", details: `Confirmed ${result.policy.priority} SLA policy ${result.policy.name}; no breach or escalation is asserted by configuration alone.` });
+      return result;
+    }),
     createTicket: protectedProcedure.input(z.object({
       subject: z.string().trim().min(2).max(240),
       customer: z.string().trim().min(1).max(240),

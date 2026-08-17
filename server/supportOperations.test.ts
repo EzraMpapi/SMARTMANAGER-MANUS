@@ -43,4 +43,34 @@ describe("support operations", () => {
     expect(payload.kind).toBe("internal_note");
     expect(JSON.stringify(payload)).not.toContain("whatsapp");
   });
+
+  it("creates a bounded support workflow only with the verified profile company and supported internal action", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify([{ id: "workflow-a", company_id: "company-a", name: "Urgent triage", trigger_type: "support.ticket.created", enabled: true, steps: JSON.stringify([{ type: "add_internal_note", config: { body: "Triage within the support team." } }]) }]), { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { saveSupportWorkflowPolicy } = await import("./supportOperations");
+    const result = await saveSupportWorkflowPolicy({ headers: {} } as any, { name: "Urgent triage", trigger: "support.ticket.created", actions: [{ type: "add_internal_note", config: { body: "Triage within the support team." } }], enabled: true });
+    expect(result.workflow.id).toBe("workflow-a");
+    const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(payload.company_id).toBe("company-a");
+    expect(payload.steps).toContain("add_internal_note");
+    expect(payload.steps).not.toContain("whatsapp");
+  });
+
+  it("rejects workflow and SLA configuration writes from a support agent", async () => {
+    resolveVerifiedProfile.mockResolvedValue({ profile: { id: "profile-agent", company_id: "company-a", role: "Support Agent", full_name: "Neema" }, token: "session-agent" });
+    const { saveSupportSlaPolicy, saveSupportWorkflowPolicy } = await import("./supportOperations");
+    await expect(saveSupportWorkflowPolicy({ headers: {} } as any, { name: "Update triage", trigger: "support.ticket.updated", actions: [{ type: "set_ticket_priority", config: { priority: "High" } }], enabled: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(saveSupportSlaPolicy({ headers: {} } as any, { name: "High response", priority: "High", firstResponseMinutes: 60, resolutionMinutes: 480, warningMinutes: 60, isActive: true })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("creates an SLA policy from validated values and verified tenant ownership", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify([{ id: "sla-a", company_id: "company-a", name: "Urgent commitment", priority: "Urgent", first_response_minutes: 15, resolution_minutes: 240, warning_minutes: 30, is_active: true }]), { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { saveSupportSlaPolicy } = await import("./supportOperations");
+    const result = await saveSupportSlaPolicy({ headers: {} } as any, { name: "Urgent commitment", priority: "Urgent", firstResponseMinutes: 15, resolutionMinutes: 240, warningMinutes: 30, isActive: true });
+    expect(result.policy.id).toBe("sla-a");
+    const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(payload.company_id).toBe("company-a");
+    expect(payload.is_active).toBe(true);
+  });
 });

@@ -23,9 +23,14 @@ const SUPPORT_CONFIGURATION_ROLES = new Set([
 const SUPPORT_STATUSES = new Set(["Open", "In Progress", "Waiting", "Resolved", "Closed"]);
 const SUPPORT_PRIORITIES = new Set(["Low", "Medium", "High", "Urgent"]);
 const SUPPORT_CHANNELS = new Set(["manual", "web", "email", "whatsapp", "phone"]);
+const SUPPORT_WORKFLOW_TRIGGERS = new Set(["support.ticket.created", "support.ticket.updated"]);
+const SUPPORT_WORKFLOW_ACTIONS = new Set(["add_internal_note", "set_ticket_priority", "assign_support_team"]);
 
 type SupportProfile = { id: string; company_id: string; role: string; full_name: string | null };
 type SupportTicketRow = { id: string; company_id: string; doc_number?: string | null; subject?: string | null; customer?: string | null; category?: string | null; assignee?: string | null; status?: string | null; priority?: string | null; assigned_profile_id?: string | null; team_id?: string | null; source_channel?: string | null; customer_reference?: string | null; due_at?: string | null; created_at?: string | null; updated_at?: string | null };
+type SupportWorkflowRow = { id: string; company_id: string; name?: string | null; trigger_type?: string | null; condition?: string | null; steps?: string | null; enabled?: string | boolean | null; last_run?: string | null; created_at?: string | null; updated_at?: string | null };
+type SupportSlaPolicyRow = { id: string; company_id: string; name?: string | null; priority?: string | null; first_response_minutes?: number | null; resolution_minutes?: number | null; warning_minutes?: number | null; is_active?: boolean | null; created_at?: string | null; updated_at?: string | null };
+type SupportWorkflowActionInput = { type: string; config?: Record<string, unknown> };
 
 function requireSupportRole(profile: SupportProfile, configuration = false) {
   const roles = configuration ? SUPPORT_CONFIGURATION_ROLES : SUPPORT_ROLES;
@@ -80,11 +85,160 @@ async function getTicket(token: string, ticketId: string) {
   return ticket;
 }
 
+function parseStoredObject(value: string | null | undefined) {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseStoredArray(value: string | null | undefined) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+async function requireSupportTeam(token: string, teamId: string) {
+  const rows = await requestWithSession(`support_teams?select=id&id=eq.${encodeURIComponent(teamId)}&is_active=eq.true&limit=1`, token) as Array<{ id?: string }>;
+  if (!rows[0]?.id) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose an active support team from this workspace." });
+}
+
+async function normalizeSupportWorkflowActions(token: string, actions: SupportWorkflowActionInput[]) {
+  if (!Array.isArray(actions) || actions.length < 1 || actions.length > 8) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "A support workflow needs between one and eight approved actions." });
+  }
+  const normalized: Array<{ type: string; config: Record<string, string> }> = [];
+  for (const action of actions) {
+    if (!SUPPORT_WORKFLOW_ACTIONS.has(action.type)) throw new TRPCError({ code: "BAD_REQUEST", message: "This support workflow action is not allowed." });
+    const config = action.config && typeof action.config === "object" && !Array.isArray(action.config) ? action.config : {};
+    if (action.type === "add_internal_note") {
+      const body = typeof config.body === "string" ? config.body.trim() : "";
+      if (!body || body.length > 1_000) throw new TRPCError({ code: "BAD_REQUEST", message: "An internal-note action needs text up to 1,000 characters." });
+      normalized.push({ type: action.type, config: { body } });
+    } else if (action.type === "set_ticket_priority") {
+      const priority = typeof config.priority === "string" ? config.priority : "";
+      if (!SUPPORT_PRIORITIES.has(priority)) throw new TRPCError({ code: "BAD_REQUEST", message: "A priority action must use a supported ticket priority." });
+      normalized.push({ type: action.type, config: { priority } });
+    } else if (action.type === "assign_support_team") {
+      const teamId = config.teamId;
+      if (!isUuid(teamId)) throw new TRPCError({ code: "BAD_REQUEST", message: "A team-assignment action needs a valid support team." });
+      await requireSupportTeam(token, teamId);
+      normalized.push({ type: action.type, config: { teamId } });
+    }
+  }
+  return normalized;
+}
+
+function normalizeSupportWorkflowCondition(condition: Record<string, unknown> | null | undefined) {
+  if (!condition) return null;
+  const normalized: Record<string, string> = {};
+  if (condition.priority !== undefined) {
+    if (typeof condition.priority !== "string" || !SUPPORT_PRIORITIES.has(condition.priority)) throw new TRPCError({ code: "BAD_REQUEST", message: "A workflow priority condition must use a supported ticket priority." });
+    normalized.priority = condition.priority;
+  }
+  if (condition.status !== undefined) {
+    if (typeof condition.status !== "string" || !SUPPORT_STATUSES.has(condition.status)) throw new TRPCError({ code: "BAD_REQUEST", message: "A workflow status condition must use a supported ticket status." });
+    normalized.status = condition.status;
+  }
+  return Object.keys(normalized).length ? normalized : null;
+}
+
+function mapSupportWorkflow(row: SupportWorkflowRow) {
+  return {
+    id: row.id,
+    name: row.name || "Untitled support workflow",
+    trigger: row.trigger_type || "",
+    condition: parseStoredObject(row.condition),
+    actions: parseStoredArray(row.steps),
+    enabled: row.enabled === true || row.enabled === "true",
+    lastRun: row.last_run || null,
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null,
+  };
+}
+
+async function getSupportWorkflow(token: string, workflowId: string) {
+  const rows = await requestWithSession(`workflows?select=id,company_id,name,trigger_type,condition,steps,enabled,last_run,created_at,updated_at&id=eq.${encodeURIComponent(workflowId)}&limit=1`, token) as SupportWorkflowRow[];
+  const workflow = rows[0];
+  if (!workflow || !SUPPORT_WORKFLOW_TRIGGERS.has(workflow.trigger_type || "")) throw new TRPCError({ code: "NOT_FOUND", message: "The support workflow is unavailable in this workspace." });
+  return workflow;
+}
+
+async function getSupportSlaPolicy(token: string, policyId: string) {
+  const rows = await requestWithSession(`support_sla_policies?select=*&id=eq.${encodeURIComponent(policyId)}&limit=1`, token) as SupportSlaPolicyRow[];
+  const policy = rows[0];
+  if (!policy) throw new TRPCError({ code: "NOT_FOUND", message: "The SLA policy is unavailable in this workspace." });
+  return policy;
+}
+
 export async function listSupportTickets(req: CreateExpressContextOptions["req"]) {
   const { profile, token } = await resolveVerifiedProfile(req);
   requireSupportRole(profile);
   const rows = await requestWithSession("support_tickets?select=id,doc_number,subject,customer,category,priority,status,assignee,assigned_profile_id,team_id,source_channel,customer_reference,due_at,resolved_at,closed_at,created_at,updated_at&order=updated_at.desc&limit=100", token);
   return { tickets: rows as SupportTicketRow[], profile };
+}
+
+export async function listSupportWorkflowPolicies(req: CreateExpressContextOptions["req"]) {
+  const { profile, token } = await resolveVerifiedProfile(req);
+  requireSupportRole(profile);
+  const rows = await requestWithSession("workflows?select=id,company_id,name,trigger_type,condition,steps,enabled,last_run,created_at,updated_at&order=updated_at.desc&limit=100", token) as SupportWorkflowRow[];
+  return { workflows: rows.filter((row) => SUPPORT_WORKFLOW_TRIGGERS.has(row.trigger_type || "")).map(mapSupportWorkflow), profile };
+}
+
+export async function saveSupportWorkflowPolicy(req: CreateExpressContextOptions["req"], input: { workflowId?: string; name: string; trigger: string; condition?: Record<string, unknown> | null; actions: SupportWorkflowActionInput[]; enabled: boolean }) {
+  const { profile, token } = await resolveVerifiedProfile(req);
+  requireSupportRole(profile, true);
+  if (!SUPPORT_WORKFLOW_TRIGGERS.has(input.trigger)) throw new TRPCError({ code: "BAD_REQUEST", message: "Choose a supported support-workflow trigger." });
+  const actions = await normalizeSupportWorkflowActions(token, input.actions);
+  const condition = normalizeSupportWorkflowCondition(input.condition);
+  const payload = { name: input.name.trim(), trigger_type: input.trigger, condition: condition ? JSON.stringify(condition) : null, steps: JSON.stringify(actions), enabled: input.enabled };
+  let rows: SupportWorkflowRow[];
+  if (input.workflowId) {
+    await getSupportWorkflow(token, input.workflowId);
+    rows = await requestWithSession(`workflows?id=eq.${encodeURIComponent(input.workflowId)}`, token, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) }) as SupportWorkflowRow[];
+  } else {
+    rows = await requestWithSession("workflows", token, { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ company_id: profile.company_id, ...payload }) }) as SupportWorkflowRow[];
+  }
+  const workflow = rows[0];
+  if (!workflow?.id) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The support workflow was not confirmed by the server." });
+  return { workflow: mapSupportWorkflow(workflow), profile };
+}
+
+export async function listSupportSlaPolicies(req: CreateExpressContextOptions["req"]) {
+  const { profile, token } = await resolveVerifiedProfile(req);
+  requireSupportRole(profile);
+  const policies = await requestWithSession("support_sla_policies?select=id,name,priority,first_response_minutes,resolution_minutes,warning_minutes,is_active,created_at,updated_at&order=priority.asc,name.asc&limit=100", token) as SupportSlaPolicyRow[];
+  return { policies, profile };
+}
+
+export async function saveSupportSlaPolicy(req: CreateExpressContextOptions["req"], input: { policyId?: string; name: string; priority: string; firstResponseMinutes: number; resolutionMinutes: number; warningMinutes?: number | null; isActive: boolean }) {
+  const { profile, token } = await resolveVerifiedProfile(req);
+  requireSupportRole(profile, true);
+  if (!SUPPORT_PRIORITIES.has(input.priority) || !Number.isInteger(input.firstResponseMinutes) || input.firstResponseMinutes <= 0 || !Number.isInteger(input.resolutionMinutes) || input.resolutionMinutes <= 0 || (input.warningMinutes != null && (!Number.isInteger(input.warningMinutes) || input.warningMinutes < 0))) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Use a supported priority and positive SLA response and resolution deadlines." });
+  }
+  const payload = { name: input.name.trim(), priority: input.priority, first_response_minutes: input.firstResponseMinutes, resolution_minutes: input.resolutionMinutes, warning_minutes: input.warningMinutes ?? null, is_active: input.isActive };
+  let rows: SupportSlaPolicyRow[];
+  if (input.policyId) {
+    await getSupportSlaPolicy(token, input.policyId);
+    rows = await requestWithSession(`support_sla_policies?id=eq.${encodeURIComponent(input.policyId)}`, token, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) }) as SupportSlaPolicyRow[];
+  } else {
+    rows = await requestWithSession("support_sla_policies", token, { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ company_id: profile.company_id, ...payload }) }) as SupportSlaPolicyRow[];
+  }
+  const policy = rows[0];
+  if (!policy?.id) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The SLA policy was not confirmed by the server." });
+  return { policy, profile };
 }
 
 export async function getSupportWhatsAppProviderReadiness(req: CreateExpressContextOptions["req"]) {

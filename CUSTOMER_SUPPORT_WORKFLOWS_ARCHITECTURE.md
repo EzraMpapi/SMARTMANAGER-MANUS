@@ -75,6 +75,14 @@ The ticket drawer now distinguishes customer messages from amber internal notes.
 
 The contract also prevents unsupported outbound status jumps. A provider request may advance from `sending` to `accepted` only after Bird accepts it; later `sent`, `delivered`, and `read` states require the relevant signed provider event. The existing `via-link` state remains a distinct terminal state for a user-controlled WhatsApp Web handoff, not a claim of provider delivery. The WhatsApp center displays only the server-sanitized availability message and continues to operate through the truthful external-client handoff.
 
+## Approved workflow and SLA configuration contract
+
+The existing tenant-scoped `workflows` table remains the single workflow configuration store. Support configuration will use a bounded namespace in its existing fields: `trigger_type` may be only `support.ticket.created` or `support.ticket.updated`; `condition` and `steps` are serialized bounded JSON documents; and the only allowed support action definitions are **add an internal note**, **set a ticket priority**, and **assign a support team**. A support workflow record is configuration, not a background worker, and no configured workflow will execute automatically while no verified server-side runner exists. The service will therefore never claim an action has run, sent a notification, modified a ticket, or escalated a case solely because a configuration record is enabled.
+
+Only the verified support-configuration role matrix may create, revise, or enable support workflow records. Each confirmed workflow configuration change is recorded in the tenant audit trail only after the workflow table mutation succeeds. The browser does not submit a company identifier, arbitrary action type, arbitrary destination, or executable script.
+
+`support_sla_policies` remains the sole SLA policy store. A policy binds one supported ticket priority to a positive first-response deadline, a positive resolution deadline, an optional non-negative warning lead time, and an active state. Verified support-configuration roles may manage it; support agents may read it but cannot alter it. Policy changes are audited after confirmation. SLA configuration alone does not create a breach, escalation, delivery, or customer notification event; those require an observed ticket event and a separately implemented evaluation/notification path.
+
 ## References
 
 [1]: [Bird Webhooks & Events](https://bird.com/en-us/docs/guides/webhooks)

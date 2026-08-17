@@ -30,4 +30,14 @@ describe("server-confirmed support inbox", () => {
     expect(whatsappSection).toContain("Smart Manager does not store or transmit WhatsApp provider credentials in this browser.");
     expect(whatsappSection).toContain("providerReadiness.data.message");
   });
+
+  it("uses the verified support configuration contract for workflow and SLA policies without claiming automatic execution", () => {
+    expect(dashboard).toContain("function SupportPolicyCenter()");
+    expect(dashboard).toContain("trpc.support.listWorkflowPolicies.useQuery");
+    expect(dashboard).toContain("trpc.support.saveWorkflowPolicy.useMutation");
+    expect(dashboard).toContain("trpc.support.listSlaPolicies.useQuery");
+    expect(dashboard).toContain("trpc.support.saveSlaPolicy.useMutation");
+    expect(dashboard).toContain("Automatic execution is disabled.");
+    expect(dashboard).toContain("It does not run in the background or change a ticket automatically.");
+  });
 });

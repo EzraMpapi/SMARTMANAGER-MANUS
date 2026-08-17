@@ -25206,6 +25206,7 @@ function ProjectExpenseFormPanel({ onClose, onSubmit }) {
 
 const SUPPORT_TABS = [
   { id: "tickets", label: "Tickets", icon: Ticket },
+  { id: "policies", label: "Automation & SLA", icon: GitBranch },
   { id: "chat", label: "Live Chat", icon: MessageCircle },
   { id: "kb", label: "Knowledge Base", icon: BookOpen },
   { id: "calls", label: "Call Center", icon: PhoneCall },
@@ -25260,12 +25261,125 @@ function CustomerSupport({ company }) {
       </div>
 
       {tab === "tickets" && <Tickets tickets={tickets} />}
+      {tab === "policies" && <SupportPolicyCenter />}
       {tab === "chat" && <LiveChat />}
       {tab === "kb" && <KnowledgeBase />}
       {tab === "calls" && <CallCenter />}
       {tab === "ai" && <SupportAI company={company} tickets={tickets.rows} />}
     </div>
   );
+}
+
+const SUPPORT_CONFIGURATION_ROLE_NAMES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator", "Support Manager"]);
+const SUPPORT_WORKFLOW_ACTION_LABELS = { add_internal_note: "Add internal note", set_ticket_priority: "Set ticket priority", assign_support_team: "Assign support team" };
+
+function SupportPolicyCenter() {
+  const utils = trpc.useUtils();
+  const workflowPolicies = trpc.support.listWorkflowPolicies.useQuery(undefined, { enabled: IS_CONFIGURED });
+  const slaPolicies = trpc.support.listSlaPolicies.useQuery(undefined, { enabled: IS_CONFIGURED });
+  const saveWorkflowPolicy = trpc.support.saveWorkflowPolicy.useMutation();
+  const saveSlaPolicy = trpc.support.saveSlaPolicy.useMutation();
+  const [workflowPanel, setWorkflowPanel] = useState(false);
+  const [slaPanel, setSlaPanel] = useState(false);
+  const profile = workflowPolicies.data?.profile || slaPolicies.data?.profile;
+  const canConfigure = !IS_CONFIGURED || SUPPORT_CONFIGURATION_ROLE_NAMES.has(profile?.role);
+  const workflows = workflowPolicies.data?.workflows || [];
+  const policies = slaPolicies.data?.policies || [];
+
+  async function saveWorkflow(form) {
+    try {
+      await saveWorkflowPolicy.mutateAsync(form);
+      await utils.support.listWorkflowPolicies.invalidate();
+      setWorkflowPanel(false);
+      notify("Support workflow configuration saved to the server.");
+    } catch (error) {
+      notify(error?.message || "The server did not confirm this support workflow. Your form remains open so you can retry.", "error");
+    }
+  }
+
+  async function saveSla(form) {
+    try {
+      await saveSlaPolicy.mutateAsync(form);
+      await utils.support.listSlaPolicies.invalidate();
+      setSlaPanel(false);
+      notify("SLA policy saved to the server.");
+    } catch (error) {
+      notify(error?.message || "The server did not confirm this SLA policy. Your form remains open so you can retry.", "error");
+    }
+  }
+
+  if (!IS_CONFIGURED) {
+    return <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm"><EmptyState icon={GitBranch} title="Support policy setup needs a connected workspace" hint="Workflow and SLA policies become available after this workspace is connected to the confirmed support service." /></div>;
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 rounded-2xl p-5 sm:p-6 text-white shadow-sm">
+        <div className="max-w-2xl">
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-emerald-300">Support control center</p>
+          <h2 className="text-[19px] sm:text-[22px] font-semibold tracking-tight mt-1">Workflow policy and service-level configuration</h2>
+          <p className="text-[12.5px] leading-relaxed text-slate-300 mt-2">Policies are server-confirmed configuration only. No workflow runs, ticket changes, messages, escalations, or customer notifications are claimed until a separately verified execution path exists.</p>
+        </div>
+        <div className="flex items-center gap-2 text-[11px] shrink-0 bg-white/10 border border-white/10 rounded-lg px-3 py-2">
+          <ShieldCheck size={14} className="text-emerald-300" /> {canConfigure ? "Configuration role verified" : "Read-only support access"}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-start justify-between gap-3">
+            <div><h3 className="text-[14px] font-semibold text-[#111827] flex items-center gap-2"><GitBranch size={15} className="text-[#16A34A]" /> Support workflows</h3><p className="text-[11.5px] text-slate-500 mt-1">Bounded ticket triggers and internal actions. Automatic execution is disabled.</p></div>
+            {canConfigure && <button onClick={() => setWorkflowPanel(true)} className="btn-primary text-white text-[11.5px] font-medium px-3 py-1.5 rounded-lg shrink-0 flex items-center gap-1"><Plus size={13} /> Workflow</button>}
+          </div>
+          <div className="divide-y divide-slate-100">
+            {workflowPolicies.isLoading && <div className="p-5"><div className="h-14 rounded-lg skeleton-shimmer" /></div>}
+            {!workflowPolicies.isLoading && workflows.map((workflow) => (
+              <div key={workflow.id} className="p-4 sm:p-5 flex gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${workflow.enabled ? "bg-emerald-50 text-[#16A34A]" : "bg-slate-100 text-slate-400"}`}><GitBranch size={14} /></div>
+                <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><p className="text-[12.5px] font-semibold text-[#111827]">{workflow.name}</p><span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${workflow.enabled ? "bg-emerald-50 text-[#16803B]" : "bg-slate-100 text-slate-500"}`}>{workflow.enabled ? "Configured" : "Disabled"}</span></div><p className="text-[11px] text-slate-500 mt-1">{workflow.trigger === "support.ticket.created" ? "When a ticket is created" : "When a ticket is updated"} · {(workflow.actions || []).map((action) => SUPPORT_WORKFLOW_ACTION_LABELS[action.type] || "Approved action").join(" → ")}</p><p className="text-[10.5px] text-amber-700 mt-1">No automatic run recorded or implied.</p></div>
+              </div>
+            ))}
+            {!workflowPolicies.isLoading && workflows.length === 0 && <EmptyState icon={GitBranch} title="No support workflows configured" hint={canConfigure ? "Create a controlled ticket policy. It remains configuration until a verified runner is introduced." : "Ask a Support Manager or administrator to configure ticket policies."} />}
+          </div>
+        </section>
+
+        <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-start justify-between gap-3">
+            <div><h3 className="text-[14px] font-semibold text-[#111827] flex items-center gap-2"><Clock size={15} className="text-[#2563EB]" /> SLA policies</h3><p className="text-[11.5px] text-slate-500 mt-1">Response and resolution commitments by priority. A policy is not a breach event.</p></div>
+            {canConfigure && <button onClick={() => setSlaPanel(true)} className="border border-slate-200 text-slate-700 hover:bg-slate-50 text-[11.5px] font-medium px-3 py-1.5 rounded-lg shrink-0 flex items-center gap-1"><Plus size={13} /> SLA policy</button>}
+          </div>
+          <div className="divide-y divide-slate-100">
+            {slaPolicies.isLoading && <div className="p-5"><div className="h-14 rounded-lg skeleton-shimmer" /></div>}
+            {!slaPolicies.isLoading && policies.map((policy) => (
+              <div key={policy.id} className="p-4 sm:p-5 flex gap-3"><div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${policy.is_active ? "bg-blue-50 text-[#2563EB]" : "bg-slate-100 text-slate-400"}`}><Clock size={14} /></div><div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><p className="text-[12.5px] font-semibold text-[#111827]">{policy.name}</p><span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: `${TICKET_PRIORITY_COLOR[policy.priority] || "#64748B"}14`, color: TICKET_PRIORITY_COLOR[policy.priority] || "#64748B" }}>{policy.priority}</span><span className={`text-[10px] font-medium ${policy.is_active ? "text-[#16803B]" : "text-slate-400"}`}>{policy.is_active ? "Active" : "Inactive"}</span></div><p className="text-[11px] text-slate-500 mt-1">First response: {policy.first_response_minutes} min · Resolution: {policy.resolution_minutes} min{policy.warning_minutes != null ? ` · Warning lead: ${policy.warning_minutes} min` : ""}</p></div></div>
+            ))}
+            {!slaPolicies.isLoading && policies.length === 0 && <EmptyState icon={Clock} title="No SLA policies configured" hint={canConfigure ? "Define a priority-based commitment. No escalation or breach will be claimed until it is observed and evaluated." : "Ask a Support Manager or administrator to configure service commitments."} />}
+          </div>
+        </section>
+      </div>
+
+      {workflowPanel && <SupportWorkflowPolicyPanel onClose={() => setWorkflowPanel(false)} onSubmit={saveWorkflow} />}
+      {slaPanel && <SupportSlaPolicyPanel onClose={() => setSlaPanel(false)} onSubmit={saveSla} />}
+    </div>
+  );
+}
+
+function SupportWorkflowPolicyPanel({ onClose, onSubmit }) {
+  const [form, setForm] = useState({ name: "", trigger: "support.ticket.created", conditionPriority: "", conditionStatus: "", actionType: "add_internal_note", noteBody: "", priority: "Medium", enabled: false });
+  const [touched, setTouched] = useState(false);
+  const valid = form.name.trim() && (form.actionType !== "add_internal_note" || form.noteBody.trim());
+  function set(key, value) { setForm((previous) => ({ ...previous, [key]: value })); }
+  function submit(e) { e.preventDefault(); setTouched(true); if (!valid) return; const condition = {}; if (form.conditionPriority) condition.priority = form.conditionPriority; if (form.conditionStatus) condition.status = form.conditionStatus; const config = form.actionType === "add_internal_note" ? { body: form.noteBody.trim() } : { priority: form.priority }; onSubmit({ name: form.name.trim(), trigger: form.trigger, condition: Object.keys(condition).length ? condition : null, actions: [{ type: form.actionType, config }], enabled: form.enabled }); }
+  return <div className="fixed inset-0 z-40 flex justify-end"><div className="absolute inset-0 bg-[#111827]/25 backdrop-blur-[2px]" onClick={onClose} /><form onSubmit={submit} className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"><div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between"><div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Customer Support</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New workflow policy</h2></div><button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button></div><div className="px-6 py-5 flex-1 space-y-4"><div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[11.5px] text-amber-900 leading-relaxed">This saves a reviewed configuration only. It does not run in the background or change a ticket automatically.</div><FormField label="Policy name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Urgent ticket triage" />{touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">A policy name is required.</p>}</FormField><FormField label="Ticket event"><select className={inputClass} value={form.trigger} onChange={(e) => set("trigger", e.target.value)}><option value="support.ticket.created">Ticket created</option><option value="support.ticket.updated">Ticket updated</option></select></FormField><div className="grid grid-cols-2 gap-3"><FormField label="Priority condition"><select className={inputClass} value={form.conditionPriority} onChange={(e) => set("conditionPriority", e.target.value)}><option value="">Any priority</option>{["Low", "Medium", "High", "Urgent"].map((priority) => <option key={priority}>{priority}</option>)}</select></FormField><FormField label="Status condition"><select className={inputClass} value={form.conditionStatus} onChange={(e) => set("conditionStatus", e.target.value)}><option value="">Any status</option>{TICKET_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></FormField></div><FormField label="Approved action"><select className={inputClass} value={form.actionType} onChange={(e) => set("actionType", e.target.value)}><option value="add_internal_note">Add internal note</option><option value="set_ticket_priority">Set ticket priority</option></select></FormField>{form.actionType === "add_internal_note" ? <FormField label="Internal note text" required><textarea className={inputClass} rows={4} value={form.noteBody} onChange={(e) => set("noteBody", e.target.value)} placeholder="Instruction for the support team..." />{touched && !form.noteBody.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Internal-note text is required.</p>}</FormField> : <FormField label="Set priority to"><select className={inputClass} value={form.priority} onChange={(e) => set("priority", e.target.value)}>{["Low", "Medium", "High", "Urgent"].map((priority) => <option key={priority}>{priority}</option>)}</select></FormField>}<label className="flex items-start gap-2 text-[12px] text-slate-600"><input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} className="mt-0.5 rounded border-slate-300" /><span><strong className="font-medium text-[#111827]">Mark as configured</strong><br />It remains non-executing until a verified server runner is added.</span></label></div><div className="px-6 py-4 border-t border-slate-100 flex gap-2"><button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button><button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save policy</button></div></form></div>;
+}
+
+function SupportSlaPolicyPanel({ onClose, onSubmit }) {
+  const [form, setForm] = useState({ name: "", priority: "High", firstResponseMinutes: "60", resolutionMinutes: "480", warningMinutes: "60", isActive: true });
+  const [touched, setTouched] = useState(false);
+  const valid = form.name.trim() && Number(form.firstResponseMinutes) > 0 && Number(form.resolutionMinutes) > 0 && Number(form.warningMinutes) >= 0;
+  function set(key, value) { setForm((previous) => ({ ...previous, [key]: value })); }
+  function submit(e) { e.preventDefault(); setTouched(true); if (!valid) return; onSubmit({ name: form.name.trim(), priority: form.priority, firstResponseMinutes: Number(form.firstResponseMinutes), resolutionMinutes: Number(form.resolutionMinutes), warningMinutes: form.warningMinutes === "" ? null : Number(form.warningMinutes), isActive: form.isActive }); }
+  return <div className="fixed inset-0 z-40 flex justify-end"><div className="absolute inset-0 bg-[#111827]/25 backdrop-blur-[2px]" onClick={onClose} /><form onSubmit={submit} className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"><div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between"><div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Customer Support</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New SLA policy</h2></div><button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button></div><div className="px-6 py-5 flex-1 space-y-4"><div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-[11.5px] text-blue-900 leading-relaxed">This records a service commitment. It does not claim a breach, escalation, or customer notification.</div><FormField label="Policy name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. High-priority customer issue" />{touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">A policy name is required.</p>}</FormField><FormField label="Ticket priority"><select className={inputClass} value={form.priority} onChange={(e) => set("priority", e.target.value)}>{["Low", "Medium", "High", "Urgent"].map((priority) => <option key={priority}>{priority}</option>)}</select></FormField><div className="grid grid-cols-2 gap-3"><FormField label="First response (minutes)"><input type="number" min="1" className={inputClass} value={form.firstResponseMinutes} onChange={(e) => set("firstResponseMinutes", e.target.value)} /></FormField><FormField label="Resolution (minutes)"><input type="number" min="1" className={inputClass} value={form.resolutionMinutes} onChange={(e) => set("resolutionMinutes", e.target.value)} /></FormField></div><FormField label="Warning lead time (minutes)"><input type="number" min="0" className={inputClass} value={form.warningMinutes} onChange={(e) => set("warningMinutes", e.target.value)} />{touched && !valid && <p className="text-[11px] text-[#EF4444] mt-1">Use positive response and resolution times and a non-negative warning lead time.</p>}</FormField><label className="flex items-center gap-2 text-[12px] text-slate-600"><input type="checkbox" checked={form.isActive} onChange={(e) => set("isActive", e.target.checked)} className="rounded border-slate-300" /> Active policy</label></div><div className="px-6 py-4 border-t border-slate-100 flex gap-2"><button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button><button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save policy</button></div></form></div>;
 }
 
 /* ----------------------------------- TICKETS ----------------------------------- */
