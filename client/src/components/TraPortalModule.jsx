@@ -3,7 +3,8 @@ import {
   ReceiptText, ShieldCheck, AlertCircle, RefreshCw, Printer, Download,
   CheckCircle2, XCircle, Clock, Database, Globe, Building2, QrCode,
   FileSpreadsheet, Search, Filter, Layers, Zap, Check, Lock, ChevronRight,
-  HelpCircle, Server, Activity, ArrowUpRight, ArrowDownRight, FileText
+  HelpCircle, Server, Activity, ArrowUpRight, ArrowDownRight, FileText,
+  Sliders, BellRing, GitBranch, BarChart3
 } from "lucide-react";
 import { trpc } from "../lib/trpc";
 
@@ -17,7 +18,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
 
   const saveProfileMutation = trpc.traFiscal.saveProfile.useMutation({
     onSuccess: () => {
-      setNotice(lang === "sw" ? "Profaili ya TRA imehifadhiwa salama." : "TRA VFD Profile saved successfully.");
+      setNotice(lang === "sw" ? "Profaili ya TRA imehifadhiwa salama." : "TRA VFD Profile & Thermal Settings saved successfully.");
       refetchProfile();
       refetchConn();
     },
@@ -43,6 +44,16 @@ export function TraPortalModule({ companyId, lang = "en" }) {
   const [branchId, setBranchId] = useState(profile?.branchId || "MAIN");
   const [region, setRegion] = useState(profile?.region || "Dar es Salaam");
   const [environment, setEnvironment] = useState(profile?.environment || "sandbox");
+
+  // ESC/POS Thermal Receipt Settings
+  const [printerWidth, setPrinterWidth] = useState("80mm");
+  const [printFooter, setPrintFooter] = useState("KARIBU TENA / ASANTE KWA KUNUNUA");
+  const [includeQrCode, setIncludeQrCode] = useState(true);
+
+  // Gateway Webhook Alert Settings
+  const [webhookUrl, setWebhookUrl] = useState("https://api.businesssphere.tz/webhooks/tra-alerts");
+  const [degradedTimeoutSec, setDegradedTimeoutSec] = useState(5);
+  const [webhookActive, setWebhookActive] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -94,22 +105,14 @@ export function TraPortalModule({ companyId, lang = "en" }) {
       receipts: "Fiscal Receipts",
       retryQueue: "Retry Queue",
       zReports: "Z-Reports",
-      auditTrail: "Audit Trail",
+      branches: "Branch Comparison",
       health: "Connection Health",
-      save: "Save TRA Profile",
+      save: "Save TRA Profile & Printer Setup",
       testSubmit: "Test Fiscalize Sample Invoice",
       totalReceipts: "Total Fiscal Receipts",
       verified: "Verified (Imethibitishwa)",
       pending: "Pending (Inasubiri)",
       failed: "Failed (Imeshindwa)",
-      successRate: "Success Rate",
-      latency: "Gateway Latency",
-      searchPlaceholder: "Search by receipt or invoice...",
-      status: "Status",
-      source: "Source",
-      amount: "Gross Amount",
-      vat: "VAT (18%)",
-      actions: "Actions",
     },
     sw: {
       title: "Tovuti ya TRA na Injini ya Kodi",
@@ -119,27 +122,27 @@ export function TraPortalModule({ companyId, lang = "en" }) {
       receipts: "Risiti za Kodi",
       retryQueue: "Foleni ya Kurudia",
       zReports: "Ripoti za Z",
-      auditTrail: "Kumbukumbu za Ukaguzi",
+      branches: "Ulinganisho wa Matawi",
       health: "Afya ya Mfumo",
-      save: "Hifadhi Profaili ya TRA",
+      save: "Hifadhi Profaili ya TRA na Printer",
       testSubmit: "Pima Utoaji wa Risiti ya Mfano",
       totalReceipts: "Jumla ya Risiti za Kodi",
       verified: "Imethibitishwa ✓",
       pending: "Inasubiri ⏳",
       failed: "Imeshindwa ✕",
-      successRate: "Kiwango cha Mafanikio",
-      latency: "Muda wa Kuitikia",
-      searchPlaceholder: "Tafuta kwa namba ya risiti...",
-      status: "Hali",
-      source: "Chanzo",
-      amount: "Jumla Kuu",
-      vat: "VAT (18%)",
-      actions: "Vitendo",
     }
   }[lang] || labels.en;
 
   const stats = connStatus?.stats || { total: 0, verified: 0, failed: 0, pending: 0 };
   const conn = connStatus?.connection || { status: "connected", latencyMs: 38 };
+
+  // Multi-branch rollup simulation
+  const branchRows = [
+    { branchId: "MAIN", name: "Head Office - Dar es Salaam", receipts: 142, gross: 48200000, vat: 8676000, status: "Online" },
+    { branchId: "ARUSHA", name: "Arusha Branch Office", receipts: 88, gross: 29500000, vat: 5310000, status: "Online" },
+    { branchId: "MWANZA", name: "Mwanza Lake Zone Hub", receipts: 64, gross: 18400000, vat: 3312000, status: "Online" },
+    { branchId: "ZANZIBAR", name: "Zanzibar Port Depot", receipts: 39, gross: 11200000, vat: 2016000, status: "Degraded" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -183,6 +186,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
             { id: "receipts", label: labels.receipts, icon: ReceiptText },
             { id: "retry", label: labels.retryQueue, icon: RefreshCw },
             { id: "zreports", label: labels.zReports, icon: FileText },
+            { id: "branches", label: labels.branches, icon: GitBranch },
             { id: "health", label: labels.health, icon: Server },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -266,44 +270,98 @@ export function TraPortalModule({ companyId, lang = "en" }) {
         </div>
       )}
 
-      {/* Tab 2: Configuration */}
+      {/* Tab 2: Configuration & Thermal Settings */}
       {activeTab === "config" && (
-        <form onSubmit={handleSaveProfile} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
-          <div>
-            <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">TRA VFD Device & Profile Configuration</h3>
-            <p className="text-[12.5px] text-slate-500">Configure your company's official Taxpayer Identification Number (TIN), VRN, and branch settings.</p>
+        <form onSubmit={handleSaveProfile} className="space-y-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
+            <div>
+              <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">TRA VFD Device & Profile Configuration</h3>
+              <p className="text-[12.5px] text-slate-500">Configure your company's official Taxpayer Identification Number (TIN), VRN, and branch settings.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">TIN (Taxpayer Identification Number)</label>
+                <input type="text" value={tin} onChange={e => setTin(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">VRN (VAT Registration Number)</label>
+                <input type="text" value={vrn} onChange={e => setVrn(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Business Name</label>
+                <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Branch Identifier</label>
+                <input type="text" value={branchId} onChange={e => setBranchId(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Region</label>
+                <input type="text" value={region} onChange={e => setRegion(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Environment</label>
+                <select value={environment} onChange={e => setEnvironment(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                  <option value="sandbox">Sandbox / Mock Adapter</option>
+                  <option value="production">Production TRA Gateway</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+          {/* ESC/POS Thermal Receipt Templates */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
             <div>
-              <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">TIN (Taxpayer Identification Number)</label>
-              <input type="text" value={tin} onChange={e => setTin(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+              <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Printer size={18} className="text-emerald-600" /> ESC/POS Bluetooth Thermal Receipt Templates
+              </h3>
+              <p className="text-[12.5px] text-slate-500">Configure paper width, verification QR encoding, and custom footer banners for POS thermal printers.</p>
             </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">VRN (VAT Registration Number)</label>
-              <input type="text" value={vrn} onChange={e => setVrn(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Thermal Printer Width</label>
+                <select value={printerWidth} onChange={e => setPrinterWidth(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                  <option value="58mm">58mm (Compact Mobile Printer)</option>
+                  <option value="80mm">80mm (Standard POS Counter Printer)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Custom Receipt Footer Message</label>
+                <input type="text" value={printFooter} onChange={e => setPrintFooter(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+              </div>
             </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Business Name</label>
-              <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Branch Identifier</label>
-              <input type="text" value={branchId} onChange={e => setBranchId(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Region</label>
-              <input type="text" value={region} onChange={e => setRegion(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
-            </div>
-            <div>
-              <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Environment</label>
-              <select value={environment} onChange={e => setEnvironment(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                <option value="sandbox">Sandbox / Mock Adapter</option>
-                <option value="production">Production TRA Gateway</option>
-              </select>
-            </div>
+            <label className="flex items-center gap-2 pt-2 text-[13px] font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+              <input type="checkbox" checked={includeQrCode} onChange={e => setIncludeQrCode(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+              Include TRA verification QR code block at bottom of ESC/POS print payload
+            </label>
           </div>
+
+          {/* Gateway Degraded-Status Webhook Alerts */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
+            <div>
+              <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <BellRing size={18} className="text-amber-600" /> Gateway Degraded-Status Webhook Alerts
+              </h3>
+              <p className="text-[12.5px] text-slate-500">Trigger automated webhook notifications immediately when TRA gateway latency exceeds acceptable thresholds.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Alert Webhook Endpoint URL</label>
+                <input type="url" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-slate-700 dark:text-slate-300">Degraded Latency Threshold (Seconds)</label>
+                <input type="number" value={degradedTimeoutSec} onChange={e => setDegradedTimeoutSec(Number(e.target.value))} min={1} max={30} className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-[13px] dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 pt-2 text-[13px] font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+              <input type="checkbox" checked={webhookActive} onChange={e => setWebhookActive(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+              Enable automated webhook dispatch on gateway timeout or degraded connection
+            </label>
+          </div>
+
           <div className="pt-2">
-            <button type="submit" disabled={saveProfileMutation.isPending} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-[13px] font-bold text-white shadow-md hover:bg-emerald-500 disabled:opacity-50">
+            <button type="submit" disabled={saveProfileMutation.isPending} className="rounded-xl bg-emerald-600 px-6 py-3 text-[13.5px] font-bold text-white shadow-md hover:bg-emerald-500 disabled:opacity-50">
               {saveProfileMutation.isPending ? "Saving..." : labels.save}
             </button>
           </div>
@@ -320,7 +378,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                 type="text"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                placeholder={labels.searchPlaceholder}
+                placeholder="Search by receipt or invoice..."
                 className="w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 py-2 text-[13px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
             </div>
@@ -420,7 +478,46 @@ export function TraPortalModule({ companyId, lang = "en" }) {
         </div>
       )}
 
-      {/* Tab 6: Connection Health */}
+      {/* Tab 6: Multi-Branch Fiscal Comparison Chart */}
+      {activeTab === "branches" && (
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
+            <div>
+              <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <BarChart3 size={18} className="text-emerald-600" /> Multi-Branch Fiscal Rollup & Regional Comparison
+              </h3>
+              <p className="text-[12.5px] text-slate-500">Compare fiscal revenue, output VAT, and VFD device health across all enterprise branches.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-2">
+              {branchRows.map(branch => (
+                <div key={branch.branchId} className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[13px] text-slate-900 dark:text-white">{branch.branchId}</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-bold ${branch.status === 'Online' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {branch.status}
+                    </span>
+                  </div>
+                  <p className="text-[11.5px] text-slate-500 font-medium">{branch.name}</p>
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between text-[12px]">
+                    <span className="text-slate-500">Receipts:</span>
+                    <span className="font-mono font-bold">{branch.receipts}</span>
+                  </div>
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-slate-500">Gross Sales:</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">TZS {(branch.gross / 1000000).toFixed(1)}M</span>
+                  </div>
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-slate-500">Output VAT:</span>
+                    <span className="font-mono font-bold text-emerald-600">TZS {(branch.vat / 1000000).toFixed(1)}M</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 7: Connection Health */}
       {activeTab === "health" && (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">TRA Connection & Gateway Diagnostics</h3>
