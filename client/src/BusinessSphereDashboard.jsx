@@ -17353,7 +17353,7 @@ function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearInten
 
   const HR_KPIS = [
     { label: "Total Employees", value: String(stats.total), delta: `${stats.active} active`, up: true, icon: Users },
-    { label: "On Leave", value: String(stats.onLeave), delta: "This period", up: false, icon: Clock },
+    { label: "On Leave", value: String(stats.onLeave), delta: "Current status", up: false, icon: Clock },
     { label: "Monthly Payroll", value: `TZS ${money(stats.payroll)}k`, delta: "Active staff", up: true, icon: CircleDollarSign },
     { label: "Pending Leave", value: String(leaveRequests.filter((l) => l.status === "Pending").length), delta: "Needs review", up: false, icon: AlertCircle },
   ];
@@ -17457,10 +17457,6 @@ function Employees({ employees, setEmployees, loading }) {
       contractType: form.contractType || "Permanent",
       contractEndDate: form.contractType === "Permanent" ? null : (form.contractEndDate || null),
     };
-    setEmployees((prev) => [draft, ...prev]);
-    notify(`Employee added: ${draft.name}`);
-    setShowForm(false);
-
     if (IS_CONFIGURED) {
       try {
         const header = await sb("hr_employees").insert({
@@ -17469,31 +17465,54 @@ function Employees({ employees, setEmployees, loading }) {
           salary: Number(form.salary) || 0, hire_date: form.hireDate,
           contract_type: draft.contractType, contract_end_date: draft.contractEndDate,
         }).single().run();
-        if (header?.id) setEmployees((prev) => prev.map((e) => (e.id === draft.id ? { ...e, dbId: header.id } : e)));
+        const confirmed = mapEmployeeRow(header);
+        setEmployees((prev) => [confirmed, ...prev]);
+        notify(`Employee added: ${confirmed.name}`);
+        return confirmed;
       } catch (e) {
-        notify("Employee created locally, but saving to the server failed.", "error");
+        notify("Employee could not be saved to the server. Review the details and try again.", "error");
+        return false;
       }
     }
+    setEmployees((prev) => [draft, ...prev]);
+    notify(`Employee added: ${draft.name}`);
+    return draft;
   }
 
   async function setStatus(id, status) {
     const emp = employees.find((e) => e.id === id);
-    setEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
-    setSelected((s) => (s && s.id === id ? { ...s, status } : s));
     if (IS_CONFIGURED && emp?.dbId) {
-      try { await sb("hr_employees").eq("id", emp.dbId).update({ status }).run(); }
-      catch (e) { notify("Couldn't update the employee status on the server.", "error"); }
+      try {
+        const saved = await sb("hr_employees").eq("id", emp.dbId).update({ status }).single().run();
+        const confirmed = mapEmployeeRow(saved);
+        setEmployees((prev) => prev.map((employee) => (employee.id === id ? confirmed : employee)));
+        setSelected((selectedEmployee) => (selectedEmployee && selectedEmployee.id === id ? confirmed : selectedEmployee));
+        return confirmed;
+      } catch (e) {
+        notify("Employee status could not be saved to the server. The current status remains unchanged.", "error");
+        return false;
+      }
     }
+    const updated = { ...emp, status };
+    setEmployees((prev) => prev.map((employee) => (employee.id === id ? updated : employee)));
+    setSelected((selectedEmployee) => (selectedEmployee && selectedEmployee.id === id ? updated : selectedEmployee));
+    return updated;
   }
 
   async function deleteEmployee(id) {
     const emp = employees.find((e) => e.id === id);
-    setEmployees((prev) => prev.filter((e) => e.id !== id));
-    setSelected(null);
     if (IS_CONFIGURED && emp?.dbId) {
-      try { await sb("hr_employees").eq("id", emp.dbId).delete().run(); }
-      catch (e) { notify("Couldn't remove the employee on the server.", "error"); }
+      try {
+        await sb("hr_employees").eq("id", emp.dbId).delete().single().run();
+        setEmployees((prev) => prev.filter((employee) => employee.id !== id));
+        return true;
+      } catch (e) {
+        notify("Employee could not be removed from the server. The roster remains unchanged.", "error");
+        return false;
+      }
     }
+    setEmployees((prev) => prev.filter((employee) => employee.id !== id));
+    return true;
   }
 
   return (
@@ -17685,12 +17704,39 @@ function Employees({ employees, setEmployees, loading }) {
       {selected && (
         <EmployeePanel employee={selected} onClose={() => setSelected(null)} onSetStatus={setStatus} onDelete={deleteEmployee} />
       )}
-      {showForm && <EmployeeFormPanel onClose={() => setShowForm(false)} onSubmit={addEmployee} />}
+      {showForm && <EmployeeFormPanel onClose={() => setShowForm(false)} onSubmit={async (form) => {
+        const created = await addEmployee(form);
+        if (created) setShowForm(false);
+        return created;
+      }} />}
     </div>
   );
 }
 
 function EmployeePanel({ employee, onClose, onSetStatus, onDelete }) {
+  const [saving, setSaving] = useState(false);
+
+  async function updateStatus(status) {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSetStatus(employee.id, status);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeEmployee() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const deleted = await onDelete(employee.id);
+      if (deleted) onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
@@ -17750,22 +17796,22 @@ function EmployeePanel({ employee, onClose, onSetStatus, onDelete }) {
         <div className="border-t border-slate-100 pt-4 flex flex-col gap-2">
           <div className="flex gap-2">
             {employee.status !== "Active" && (
-              <button onClick={() => onSetStatus(employee.id, "Active")} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
+              <button onClick={() => updateStatus("Active")} disabled={saving} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors disabled:opacity-50">
                 Mark Active
               </button>
             )}
             {employee.status !== "On Leave" && (
-              <button onClick={() => onSetStatus(employee.id, "On Leave")} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
+              <button onClick={() => updateStatus("On Leave")} disabled={saving} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors disabled:opacity-50">
                 Mark On Leave
               </button>
             )}
             {employee.status !== "Inactive" && (
-              <button onClick={() => onSetStatus(employee.id, "Inactive")} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors">
+              <button onClick={() => updateStatus("Inactive")} disabled={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
                 Mark Inactive
               </button>
             )}
           </div>
-          <ConfirmDeleteButton label="Remove employee" onConfirm={() => onDelete(employee.id)} />
+          <ConfirmDeleteButton label={saving ? "Saving…" : "Remove employee"} onConfirm={removeEmployee} />
         </div>
       </div>
     </div>
@@ -17775,14 +17821,20 @@ function EmployeePanel({ employee, onClose, onSetStatus, onDelete }) {
 function EmployeeFormPanel({ onClose, onSubmit }) {
   const [form, setForm] = useState({ name: "", role: "", department: DEPARTMENTS[0], email: "", phone: "", salary: "", hireDate: TODAY.toISOString().slice(0, 10), contractType: "Permanent", contractEndDate: "" });
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const valid = form.name.trim() && form.role.trim();
 
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setTouched(true);
-    if (!valid) return;
-    onSubmit(form);
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(form);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -17848,7 +17900,7 @@ function EmployeeFormPanel({ onClose, onSubmit }) {
 
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors">Create Employee</button>
+          <button type="submit" disabled={submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">{submitting ? "Saving…" : "Create Employee"}</button>
         </div>
       </form>
     </div>
@@ -17857,11 +17909,18 @@ function EmployeeFormPanel({ onClose, onSubmit }) {
 
 function LeaveRequests({ requests, setRequests, loading, employees }) {
   async function setStatus(id, status) {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     if (IS_CONFIGURED) {
-      try { await sb("hr_leave_requests").eq("id", id).update({ status }).run(); }
-      catch (e) { notify("Couldn't update the leave request on the server.", "error"); }
+      try {
+        const saved = await sb("hr_leave_requests").eq("id", id).update({ status }).single().run();
+        setRequests((prev) => prev.map((request) => request.id === id ? { ...request, status: saved.status } : request));
+        return true;
+      } catch (e) {
+        notify("Leave decision could not be saved to the server. The request remains unchanged.", "error");
+        return false;
+      }
     }
+    setRequests((prev) => prev.map((request) => request.id === id ? { ...request, status } : request));
+    return true;
   }
 
   // Real balance, not a stored number: allocation minus actual days used
