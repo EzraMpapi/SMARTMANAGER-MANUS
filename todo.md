@@ -669,4 +669,4 @@
 - [x] Normalize the first area’s tenant-scoped support configuration policy targets from `public` to `authenticated` without weakening `current_company_id()` checks, then verify the deployed policy contract.
 - [x] Select and fully upgrade the next verified high-priority functional area using the same confirmed-data, server-boundary, security, usability, and regression standard.
 - [x] Remove arbitrary default lead scores in the next customer-relationship upgrade and render an explicit unavailable state until a confirmed scoring model provides a value.
-- [ ] Select and fully upgrade the Finance workspace as the next verified high-priority functional area, covering confirmed-data truthfulness, server-confirmed workflows, error recovery, accessibility, responsive behavior, and regression evidence.
+- [x] Select and fully upgrade the Finance workspace as the next verified high-priority functional area, covering confirmed-data truthfulness, server-confirmed workflows, error recovery, accessibility, responsive behavior, and regression evidence.

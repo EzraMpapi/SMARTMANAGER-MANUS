@@ -36,4 +36,8 @@ The public origin continued to reference an earlier Vite entry-script hash after
 
 The mitigation adds a dedicated regression test. The complete suite now passes with **91 files / 300 tests**, alongside 5 intentionally gated files and 8 skips; TypeScript and the bounded-heap production build both pass.
 
+## Published Live Acceptance
+
+After the cache-control release, the authenticated KMKM owner workspace loaded the current Finance bundle. With zero confirmed invoices and expenses, the overview correctly displayed **0 confirmed invoices**, **0 confirmed expenses**, **Confirmed record total**, **No confirmed cash movement yet**, and **No confirmed expense categories yet**. The earlier fabricated multi-month chart and unsupported `MTD` labels were absent. This was a non-destructive review; no financial record was created, modified, or deleted.
+
 No invoice, expense, payment, accounting setting, credential, RLS policy, external provider configuration, or Resend setting was changed while implementing this repair.
