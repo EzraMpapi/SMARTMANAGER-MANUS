@@ -37,6 +37,15 @@ describe("Settings backend integration contracts", () => {
     expect(routerSource).toContain("saveWorkspaceSettings(ctx.req, input)");
   });
 
+  it("exposes truthful protected-workspace connection states with a retry control", () => {
+    expect(settingsSource).toContain('role="status" aria-live="polite"');
+    expect(settingsSource).toContain("Server-confirmed workspace settings are loaded for this session.");
+    expect(settingsSource).toContain("The protected workspace settings service could not be reached.");
+    expect(settingsSource).toContain("workspaceSettingsQuery.refetch()");
+    expect(settingsSource).toContain("Retry connection");
+    expect(settingsSource).toContain("disabled={workspaceSettingsQuery.isFetching}");
+  });
+
   it("updates module entitlements only after a confirmed server response and surfaces a recoverable failure", () => {
     expect(dashboardSource).toContain("const [moduleSettingPending, setModuleSettingPending] = useState(false)");
     expect(rootSource).toContain("if (!saved?.id) throw buildConfirmedMutationError");

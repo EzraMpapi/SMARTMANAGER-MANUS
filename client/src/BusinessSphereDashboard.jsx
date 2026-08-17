@@ -33376,6 +33376,26 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         <p className="text-[13px] text-slate-500 mt-1">Company profile, module entitlements, and connection status</p>
       </div>
 
+      <section className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm" role="status" aria-live="polite">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${!IS_CONFIGURED ? "bg-slate-400" : workspaceSettingsQuery.isLoading ? "bg-amber-400 animate-pulse" : workspaceSettingsQuery.isError ? "bg-red-500" : workspaceSettingsQuery.data ? "bg-emerald-500" : "bg-slate-400"}`} aria-hidden="true" />
+            <div>
+              <p className="text-[12.5px] font-semibold text-slate-800">Workspace settings connection</p>
+              <p className="mt-0.5 text-[11.5px] text-slate-500">
+                {!IS_CONFIGURED ? "Demo mode: protected workspace settings are not connected." : workspaceSettingsQuery.isLoading ? "Loading confirmed settings from the protected workspace service…" : workspaceSettingsQuery.isError ? "The protected workspace settings service could not be reached." : workspaceSettingsQuery.data ? "Server-confirmed workspace settings are loaded for this session." : "No confirmed settings response is available yet."}
+              </p>
+            </div>
+          </div>
+          {IS_CONFIGURED && workspaceSettingsQuery.isError && (
+            <button type="button" onClick={() => workspaceSettingsQuery.refetch()} disabled={workspaceSettingsQuery.isFetching} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-[11.5px] font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-wait disabled:opacity-50">
+              <RefreshCw size={12} className={workspaceSettingsQuery.isFetching ? "animate-spin" : ""} />
+              {workspaceSettingsQuery.isFetching ? "Retrying…" : "Retry connection"}
+            </button>
+          )}
+        </div>
+      </section>
+
       {/* Role — demo switcher */}
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1">Your role</h2>
