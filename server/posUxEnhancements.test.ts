@@ -39,4 +39,10 @@ describe("POS UX Enhancements", () => {
     expect(source).toContain("Sync Error:");
     expect(source).toContain("Reason:");
   });
+
+  it("includes options to edit or delete failed transactions directly from the offline queue modal", () => {
+    expect(source).toContain("editingQueueItem");
+    expect(source).toContain("Edit Queued Sale");
+    expect(source).toContain("Save changes");
+  });
 });

@@ -37520,6 +37520,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   const [receipt, setReceipt] = useState(null);
   const [busy, setBusy] = useState(false);
   const [inspectingQueueItem, setInspectingQueueItem] = useState(null);
+  const [editingQueueItem, setEditingQueueItem] = useState(null);
   const scannerLastAcceptedRef = useRef(0);
   const queueScope = useMemo(() => ({ companyId: company?.id || "workspace", userId: currentUser?.id || "session" }), [company?.id, currentUser?.id]);
   const [pendingSales, setPendingSales] = useState([]);
@@ -38249,8 +38250,33 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-400 bg-amber-50 border border-amber-200/70 p-2.5 rounded-xl">
-                This transaction is stored locally until connection is restored. Inspecting it does not alter inventory or revenue records.
+              <div className="text-[11px] text-slate-400 bg-amber-50 border border-amber-200/70 p-2.5 rounded-xl flex items-center justify-between gap-3">
+                <span>This transaction is stored locally until connection is restored. Editing or deleting it does not alter confirmed server inventory or revenue.</span>
+                <div className="flex gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingQueueItem({ ...inspectingQueueItem, editTotal: String(inspectingQueueItem.total || 0), editCustomer: inspectingQueueItem.customerName || "Guest" });
+                    }}
+                    className="px-2.5 py-1 rounded bg-white border border-amber-300 text-amber-900 font-semibold hover:bg-amber-100 text-[11px]"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to discard queued receipt ${inspectingQueueItem.docNumber}?`)) {
+                        const next = pendingSales.filter((p) => p.idempotencyKey !== inspectingQueueItem.idempotencyKey);
+                        persistPendingSales(next);
+                        setInspectingQueueItem(null);
+                        notify(`Queued receipt ${inspectingQueueItem.docNumber} discarded.`);
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded bg-white border border-red-300 text-red-700 font-semibold hover:bg-red-50 text-[11px]"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
             <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex gap-2">
@@ -38277,7 +38303,64 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
           </div>
         </div>
       )}
-    </div>
+
+      {editingQueueItem && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/75">
+              <h3 className="text-[15px] font-bold text-[#111827]">Edit Queued Sale ({editingQueueItem.docNumber})</h3>
+              <button type="button" onClick={() => setEditingQueueItem(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4 text-[13px]">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Customer Name</label>
+                <input
+                  type="text"
+                  value={editingQueueItem.editCustomer}
+                  onChange={(e) => setEditingQueueItem({ ...editingQueueItem, editCustomer: e.target.value })}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] outline-none focus:border-[#16A34A]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Total Amount (TZS k)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editingQueueItem.editTotal}
+                  onChange={(e) => setEditingQueueItem({ ...editingQueueItem, editTotal: e.target.value })}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[12px] font-mono outline-none focus:border-[#16A34A]"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400">Editing queue parameters updates local pending metadata before the next synchronization attempt.</p>
+            </div>
+            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const updatedTotal = Number(editingQueueItem.editTotal) || editingQueueItem.total || 0;
+                  const updatedCustomer = editingQueueItem.editCustomer.trim() || "Guest";
+                  const nextRecords = pendingSales.map((p) => p.idempotencyKey === editingQueueItem.idempotencyKey ? { ...p, total: updatedTotal, customerName: updatedCustomer, status: "pending", lastError: null } : p);
+                  persistPendingSales(nextRecords);
+                  setEditingQueueItem(null);
+                  setInspectingQueueItem(null);
+                  notify(`Updated queued receipt ${editingQueueItem.docNumber}. Ready for retry.`);
+                }}
+                className="flex-1 rounded-xl bg-[#16A34A] py-2 text-[12px] font-semibold text-white hover:bg-[#15803D] shadow-sm"
+              >
+                Save changes
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingQueueItem(null)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-[12px] font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
     </div>
   );
 }

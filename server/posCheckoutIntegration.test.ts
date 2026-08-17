@@ -62,8 +62,8 @@ describe("POS checkout confirmed persistence integration", () => {
     expect(checkout).toContain("Sale ${record.docNumber} is pending sync. It is not yet completed");
     expect(checkout).toContain('window.addEventListener("online", handleOnline)');
     expect(checkout).toContain("Pending sync");
-    expect(checkout).toContain("Not completed or counted in revenue");
-    expect(checkout).toContain("Retry sync");
+    expect(checkout).toContain("These sales require server confirmation before inventory, revenue, receipt output, or customer balances change.");
+    expect(checkout).toContain("Force sync all");
     expect(checkout).toContain('callRpc("complete_pos_sale"');
     expect(checkout).toContain('callRpc("record_pos_sync_event"');
     expect(checkout).toContain('p_status: "synced"');
