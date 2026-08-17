@@ -48673,6 +48673,183 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
 }
 
 
+const ONBOARDING_TOUR_STEPS = [
+  { id: "dashboard", moduleId: "dashboard", title: "Start at your command center", description: "See confirmed KPIs, operational guidance, and live workspace status without relying on fabricated trends.", icon: LayoutDashboard, accent: "#16A34A" },
+  { id: "sales", moduleId: "sales", title: "Turn opportunities into sales", description: "Create and follow sales workflows that only become visible after the server confirms the record.", icon: ShoppingCart, accent: "#2563EB" },
+  { id: "pos", moduleId: "pos", title: "Move quickly at the point of sale", description: "Complete checkout, handle offline queues transparently, and use Sync Now when connectivity returns.", icon: ShoppingBag, accent: "#7C3AED" },
+  { id: "inventory", moduleId: "inventory", title: "Keep stock truthful", description: "Track confirmed stock movements, low-stock attention, and retry-safe adjustments across locations.", icon: Package, accent: "#0891B2" },
+  { id: "finance", moduleId: "finance", title: "Protect cash flow", description: "Review confirmed invoices, expenses, budgets, and collections with clear empty and unavailable states.", icon: Wallet, accent: "#D97706" },
+  { id: "collaboration", moduleId: "collaboration", title: "Coordinate the whole team", description: "Use Projects and Collaboration Hub to manage confirmed tasks, milestones, channels, and calendar work.", icon: MessageSquare, accent: "#DB2777" },
+  { id: "ai", moduleId: "ai", title: "Let AI assist—never act alone", description: "Ask the assistant for grounded analysis and review recommendations before any role-sensitive action is executed.", icon: Brain, accent: "#0F766E" },
+];
+
+function onboardingTourStorageKey(currentUser, company) {
+  const userKey = currentUser?.id || currentUser?.name || "demo-user";
+  const workspaceKey = company?.id || company?.name || "demo-workspace";
+  return `bs_onboarding_tour_${encodeURIComponent(String(userKey))}_${encodeURIComponent(String(workspaceKey))}`;
+}
+
+function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate }) {
+  const [open, setOpen] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
+  const dialogRef = useRef(null);
+  const triggerRef = useRef(null);
+  const checkedKeyRef = useRef("");
+  const storageKey = useMemo(() => onboardingTourStorageKey(currentUser, company), [currentUser?.id, currentUser?.name, company?.id, company?.name]);
+  const ready = IS_CONFIGURED ? Boolean(currentUser?.id && company?.id) : true;
+  const step = ONBOARDING_TOUR_STEPS[stepIndex] || ONBOARDING_TOUR_STEPS[0];
+  const StepIcon = step.icon;
+  const available = visibleModules.some((module) => module.id === step.moduleId);
+
+  useEffect(() => {
+    if (!ready || checkedKeyRef.current === storageKey) return;
+    checkedKeyRef.current = storageKey;
+    setStepIndex(0);
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+      setOpen(!saved);
+    } catch (_error) {
+      setOpen(true);
+    }
+  }, [ready, storageKey]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const previous = document.activeElement;
+    const focusTimer = window.setTimeout(() => {
+      const first = dialogRef.current?.querySelector("button:not([disabled])");
+      first?.focus();
+    }, 0);
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        finishTour("dismissed");
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goNext();
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goPrevious();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll("button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previous && typeof previous.focus === "function") window.setTimeout(() => previous.focus(), 0);
+    };
+  }, [open, stepIndex]);
+
+  function persistCompletion(status) {
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify({ status, completedAt: new Date().toISOString(), version: 1 }));
+    } catch (_error) {
+      // Tour preferences are optional; never block ERP navigation when storage is unavailable.
+    }
+  }
+  function finishTour(status = "completed") {
+    persistCompletion(status);
+    setOpen(false);
+    window.setTimeout(() => triggerRef.current?.focus(), 0);
+  }
+  function goNext() {
+    if (stepIndex >= ONBOARDING_TOUR_STEPS.length - 1) finishTour("completed");
+    else setStepIndex((current) => current + 1);
+  }
+  function goPrevious() {
+    setStepIndex((current) => Math.max(0, current - 1));
+  }
+  function restartTour() {
+    setStepIndex(0);
+    setOpen(true);
+  }
+  function openModule() {
+    if (available && onNavigate) onNavigate(step.moduleId);
+  }
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={restartTour}
+        className="hidden lg:inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11.5px] font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+        aria-label="Take the Smart Manager onboarding tour"
+        data-onboarding-trigger="true"
+      >
+        <Info size={13} /> Take a Tour
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" data-onboarding-tour="true">
+          <div className="absolute inset-0" aria-hidden="true" onClick={() => finishTour("dismissed")} />
+          <section
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="onboarding-tour-title"
+            aria-describedby="onboarding-tour-description"
+            className="relative w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            data-onboarding-step={step.id}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                <BrandLogo variant="compact" className="h-7 w-7" />
+                Smart Manager tour
+              </div>
+              <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" aria-label="Close onboarding tour">
+                <X size={17} />
+              </button>
+            </div>
+            <div className="px-5 pb-5 pt-6 sm:px-8 sm:pb-7 sm:pt-8">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm" style={{ background: `linear-gradient(135deg, ${step.accent}, #0F172A)` }} aria-hidden="true">
+                  <StepIcon size={23} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700">Step {stepIndex + 1} of {ONBOARDING_TOUR_STEPS.length}</p>
+                  <h2 id="onboarding-tour-title" className="mt-1 text-[21px] font-semibold tracking-tight text-slate-900">{step.title}</h2>
+                  <p id="onboarding-tour-description" className="mt-2 text-[13px] leading-6 text-slate-600">{step.description}</p>
+                </div>
+              </div>
+              <div className="mt-6 flex items-center gap-1.5" aria-label={`Tour progress: step ${stepIndex + 1} of ${ONBOARDING_TOUR_STEPS.length}`}>
+                {ONBOARDING_TOUR_STEPS.map((item, index) => <span key={item.id} className={`h-1.5 rounded-full transition-all ${index === stepIndex ? "w-8 bg-emerald-600" : index < stepIndex ? "w-4 bg-emerald-200" : "w-4 bg-slate-200"}`} aria-hidden="true" />)}
+              </div>
+              <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3.5 text-[12px] leading-5 text-emerald-950">
+                <div className="flex items-start gap-2"><CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-600" /><span>Every permanent change is designed to wait for server confirmation. If a request fails, the screen preserves your work for retry.</span></div>
+              </div>
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg px-3 py-2 text-left text-[12px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">Skip tour</button>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={goPrevious} disabled={stepIndex === 0} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"><ChevronLeft size={14} /> Back</button>
+                  {available && <button type="button" onClick={openModule} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-3 py-2 text-[12px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">Open module <ArrowRight size={14} /></button>}
+                  <button type="button" onClick={goNext} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50">{stepIndex === ONBOARDING_TOUR_STEPS.length - 1 ? "Finish tour" : "Next"} <ArrowRight size={14} /></button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
+  );
+}
+
 function SmartManager() {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   // Real session state. Demo mode (no Supabase project connected) skips
@@ -49441,6 +49618,7 @@ function SmartManager() {
               <span className="hidden md:inline">Search anything...</span>
               <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>
+            <OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} />
             <span className="hidden lg:inline-flex items-center text-[11.5px] font-medium text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}

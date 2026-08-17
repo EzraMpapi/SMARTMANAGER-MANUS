@@ -695,3 +695,7 @@
 - [x] Harden Customer Support ticket, internal reply, and knowledge-article mutations with confirmed server state, preserved drafts, and duplicate-action guards.
 - [x] Harden Supply Chain vehicle, shipment, and logistics-record mutations with confirmed server responses, retry-safe forms, and busy controls.
 - [x] Harden Maintenance record creation and linked expense persistence so visible records appear only after server confirmation, with retry-safe form state and busy controls.
+- [x] Implement an interactive, accessible onboarding tour component in `BusinessSphereDashboard.jsx` introducing key upgraded ERP modules (Dashboard, POS, Sales, Inventory, Finance).
+- [x] Scope onboarding tour completion state to the authenticated user ID and active company/workspace in localStorage.
+- [x] Add a discoverable "Take a Tour" restart trigger in the user header or command strip.
+- [x] Add focused regression tests for tour steps, workspace-scoped dismissal persistence, and keyboard navigation.
