@@ -23,4 +23,8 @@ The focused Finance regression suite passed with **2 files and 4 tests**, coveri
 
 Authenticated browser acceptance had first exposed the static cash-flow chart under an empty live Finance workspace. That chart has now been replaced; final post-release browser acceptance remains the last verification step before the Finance checklist entry is completed.
 
+## Deployment Verification Note
+
+Immediately after the final release checkpoint, the authenticated browser was still served a prior dashboard bundle: it retained the fixed cash-flow chart and `MTD` labels, while source inspection confirmed the new implementation. This is being treated as a deployment/cache propagation state, not as successful acceptance. The workspace will be rechecked only after a fresh published bundle contains the neutral cash-flow state.
+
 No invoice, expense, payment, accounting setting, credential, RLS policy, external provider configuration, or Resend setting was changed while implementing this repair.
