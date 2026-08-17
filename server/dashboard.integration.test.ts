@@ -245,6 +245,20 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('onNavigate("crm")');
   });
 
+  it("turns Module Health into role-safe drill-down cards with evidence-based statuses and no invented recency", () => {
+    expect(dashboardSource).toContain("Confirmed workspace signals only");
+    expect(dashboardSource).toContain("No recency estimates");
+    expect(dashboardSource).toContain('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4');
+    expect(dashboardSource).toContain("const moduleCards = [");
+    expect(dashboardSource).toContain("const statusConfig = {");
+    expect(dashboardSource).toContain('currentRole.allowedModules.includes(module.id)');
+    expect(dashboardSource).toContain("No root-level signal");
+    expect(dashboardSource).toContain("Ticket data stays in Support");
+    expect(dashboardSource).toContain("No confirmed POS transactions");
+    expect(dashboardSource).toContain("No confirmed data");
+    expect(dashboardSource).toContain("Not assessed");
+  });
+
   it("turns empty dashboard analytics into accessible next actions rather than fabricated chart data", () => {
     expect(dashboardSource).toContain('title="No invoice data yet"');
     expect(dashboardSource).toContain('actionLabel="Create invoice"');

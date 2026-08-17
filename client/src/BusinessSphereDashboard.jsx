@@ -6209,47 +6209,69 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       {/* ══════════════════ MODULE HEALTH GRID ══════════════════ */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-[14px] font-bold text-[#111827]">Module Health</h3>
-          <p className="text-[11.5px] text-slate-400">Click any module to navigate</p>
+          <div>
+            <h3 className="text-[14px] font-bold text-[#111827]">Module Health</h3>
+            <p className="mt-0.5 text-[11px] text-slate-400">Confirmed workspace signals only — open a permitted module to review records.</p>
+          </div>
+          <span className="hidden sm:inline-flex rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-500">No recency estimates</span>
         </div>
-        <div className="p-3 grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-9 gap-2">
-          {[
-            {id:"dashboard",label:"Dashboard",icon:LayoutDashboard,status:"ok"},
-            {id:"crm",label:"CRM",icon:Users,status: crm.rows.length===0?"empty":"ok"},
-            {id:"sales",label:"Sales",icon:ReceiptText,status: invoices.rows.filter(i=>i.status!=="Paid"&&i.dueDate<TODAY.toISOString().slice(0,10)).length>0?"warn":"ok"},
-            {id:"inventory",label:"Inventory",icon:Package,status: inventory.rows.filter(it=>it.qty<=it.reorder&&it.reorder>0).length>0?"warn":inventory.rows.length===0?"empty":"ok"},
-            {id:"procurement",label:"Procurement",icon:ShoppingBag,status:"ok"},
-            {id:"finance",label:"Finance",icon:CircleDollarSign,status: expenses.rows.length===0?"empty":"ok"},
-            {id:"hr",label:"HR",icon:UserCheck,status: leaveRequests.rows.filter(l=>l.status==="Pending").length>0?"warn":"ok"},
-            {id:"manufacturing",label:"Mfg",icon:Factory,status: workOrders.rows.filter(w=>w.status!=="Completed"&&w.dueDate<TODAY.toISOString().slice(0,10)).length>0?"warn":"ok"},
-            {id:"projects",label:"Projects",icon:FolderKanban,status:"ok"},
-            {id:"support",label:"Support",icon:Headphones,status:"ok"},
-            {id:"analytics",label:"Analytics",icon:BarChart3,status:"ok"},
-            {id:"reports",label:"Reports",icon:FileText,status:"ok"},
-            {id:"pos",label:"POS",icon:ScanLine,status:"ok"},
-            {id:"marketing",label:"Marketing",icon:Megaphone,status:"ok"},
-            {id:"ecommerce",label:"Ecommerce",icon:Store,status:"ok"},
-            {id:"collaboration",label:"Collab",icon:MessageCircle,status:"ok"},
-            {id:"ai",label:"AI",icon:Brain,status:"ok"},
-            {id:"employee-portal",label:"Portal",icon:UserCircle,status:"ok"},
-          ].map(({id,label,icon:Icon,status})=>{
-            const cfg={ok:{ring:"#16A34A",dot:"#16A34A",bg:"#F0FDF4"},warn:{ring:"#F59E0B",dot:"#F59E0B",bg:"#FFFBEB"},empty:{ring:"#94A3B8",dot:"#94A3B8",bg:"#F8FAFC"}};
-            const s=cfg[status]||cfg.ok;
-            return (
-              <button key={id} onClick={()=>onNavigate(id)}
-                className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-slate-50 transition-all group">
-                <div className="relative w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all group-hover:scale-105"
-                  style={{background:s.bg,borderColor:s.ring+"40"}}>
-                  <Icon size={16} style={{color:s.ring}}/>
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white" style={{background:s.dot}}/>
-                </div>
-                <span className="text-[9.5px] font-semibold text-slate-500 text-center leading-tight">{label}</span>
-              </button>
-            );
-          })}
+        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
+          {(() => {
+            const overdueInvoices = invoices.rows.filter((invoice) => invoice.status !== "Paid" && invoice.dueDate < TODAY.toISOString().slice(0, 10));
+            const lowStockItems = inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0);
+            const pendingLeaves = leaveRequests.rows.filter((request) => request.status === "Pending");
+            const overdueWorkOrders = workOrders.rows.filter((workOrder) => workOrder.status !== "Completed" && workOrder.dueDate < TODAY.toISOString().slice(0, 10));
+            const activeEmployees = (employees?.rows || employees || []).filter((employee) => employee.status === "Active");
+            const moduleCards = [
+              { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, status: "available", metric: "Workspace overview available", detail: "Uses confirmed dashboard data" },
+              { id: "crm", label: "CRM", icon: Users, status: crm.rows.length ? "tracking" : "noData", metric: crm.rows.length ? `${crm.rows.length} confirmed lead${crm.rows.length === 1 ? "" : "s"}` : "No confirmed leads", detail: crm.rows.length ? "Review pipeline records" : "Open CRM to add or review leads" },
+              { id: "sales", label: "Sales", icon: ReceiptText, status: overdueInvoices.length ? "attention" : (invoices.rows.length ? "tracking" : "noData"), metric: overdueInvoices.length ? `${overdueInvoices.length} overdue invoice${overdueInvoices.length === 1 ? "" : "s"}` : (invoices.rows.length ? `${invoices.rows.length} invoice${invoices.rows.length === 1 ? "" : "s"} tracked` : "No confirmed invoices"), detail: overdueInvoices.length ? "Review receivables" : "Open sales records" },
+              { id: "inventory", label: "Inventory", icon: Package, status: lowStockItems.length ? "attention" : (inventory.rows.length ? "tracking" : "noData"), metric: lowStockItems.length ? `${lowStockItems.length} item${lowStockItems.length === 1 ? "" : "s"} need review` : (inventory.rows.length ? `${inventory.rows.length} stocked SKU${inventory.rows.length === 1 ? "" : "s"}` : "No confirmed stock items"), detail: lowStockItems.length ? "Review stock levels" : "Open inventory records" },
+              { id: "procurement", label: "Procurement", icon: ShoppingBag, status: "unavailable", metric: "No root-level signal", detail: "Open procurement to review records" },
+              { id: "finance", label: "Finance", icon: CircleDollarSign, status: (invoices.rows.length || expenses.rows.length) ? "tracking" : "noData", metric: (invoices.rows.length || expenses.rows.length) ? `${invoices.rows.length} invoice${invoices.rows.length === 1 ? "" : "s"} · ${expenses.rows.length} expense${expenses.rows.length === 1 ? "" : "s"}` : "No confirmed finance entries", detail: "Open finance records" },
+              { id: "hr", label: "Human Resources", icon: UserCheck, status: pendingLeaves.length ? "attention" : (activeEmployees.length ? "tracking" : "noData"), metric: pendingLeaves.length ? `${pendingLeaves.length} leave request${pendingLeaves.length === 1 ? "" : "s"} pending` : (activeEmployees.length ? `${activeEmployees.length} active employee${activeEmployees.length === 1 ? "" : "s"}` : "No confirmed HR records"), detail: pendingLeaves.length ? "Review leave requests" : "Open HR records" },
+              { id: "manufacturing", label: "Manufacturing", icon: Factory, status: overdueWorkOrders.length ? "attention" : (workOrders.rows.length ? "tracking" : "noData"), metric: overdueWorkOrders.length ? `${overdueWorkOrders.length} work order${overdueWorkOrders.length === 1 ? "" : "s"} overdue` : (workOrders.rows.length ? `${workOrders.rows.length} work order${workOrders.rows.length === 1 ? "" : "s"} tracked` : "No confirmed work orders"), detail: overdueWorkOrders.length ? "Review production schedule" : "Open manufacturing records" },
+              { id: "projects", label: "Projects", icon: FolderKanban, status: "unavailable", metric: "No root-level signal", detail: "Open projects to review work" },
+              { id: "support", label: "Customer Support", icon: Headphones, status: "unavailable", metric: "Ticket data stays in Support", detail: "Open the support inbox" },
+              { id: "analytics", label: "Analytics", icon: BarChart3, status: "available", metric: "Uses confirmed source modules", detail: "Open analytics views" },
+              { id: "reports", label: "Reports", icon: FileText, status: "available", metric: "Exports confirmed dashboard data", detail: "Open reporting workspace" },
+              { id: "pos", label: "Point of Sale", icon: ScanLine, status: posTransactions.rows.length ? "tracking" : "noData", metric: posTransactions.rows.length ? `${posTransactions.rows.length} confirmed transaction${posTransactions.rows.length === 1 ? "" : "s"}` : "No confirmed POS transactions", detail: "Open point of sale" },
+              { id: "marketing", label: "Marketing", icon: Megaphone, status: "unavailable", metric: "No root-level signal", detail: "Open marketing workspace" },
+              { id: "ecommerce", label: "Ecommerce", icon: Store, status: "unavailable", metric: "No root-level signal", detail: "Open ecommerce workspace" },
+              { id: "collaboration", label: "Collaboration", icon: MessageCircle, status: "unavailable", metric: "No root-level signal", detail: "Open collaboration workspace" },
+              { id: "ai", label: "AI Assistant", icon: Brain, status: "available", metric: "Available on demand", detail: "Open AI assistant" },
+              { id: "employee-portal", label: "Employee Portal", icon: UserCircle, status: "unavailable", metric: "No root-level signal", detail: "Open employee portal" },
+            ];
+            const statusConfig = {
+              attention: { label: "Needs review", color: "#D97706", background: "#FFFBEB" },
+              tracking: { label: "Data available", color: "#16A34A", background: "#F0FDF4" },
+              noData: { label: "No confirmed data", color: "#64748B", background: "#F8FAFC" },
+              unavailable: { label: "Not assessed", color: "#64748B", background: "#F8FAFC" },
+              available: { label: "Available", color: "#2563EB", background: "#EFF6FF" },
+            };
+
+            return moduleCards.filter((module) => currentRole.allowedModules.includes(module.id)).map((module) => {
+              const Icon = module.icon;
+              const status = statusConfig[module.status];
+              return (
+                <button key={module.id} type="button" onClick={() => onNavigate(module.id)} aria-label={`${module.label}: ${status.label}. ${module.metric}. ${module.detail}.`} className="group rounded-xl border border-slate-200/80 bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: status.background }}><Icon size={16} style={{ color: status.color }} /></div>
+                      <span className="truncate text-[12.5px] font-semibold text-[#111827]">{module.label}</span>
+                    </div>
+                    <ChevronRight size={14} className="mt-1 shrink-0 text-slate-300 transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" />
+                  </div>
+                  <div className="mt-3 flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full" style={{ background: status.color }} /><span className="text-[10px] font-semibold" style={{ color: status.color }}>{status.label}</span></div>
+                  <p className="mt-1 text-[12px] font-medium leading-snug text-slate-700">{module.metric}</p>
+                  <p className="mt-1 text-[10.5px] leading-snug text-slate-400">{module.detail}</p>
+                </button>
+              );
+            });
+          })()}
         </div>
-        <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50 flex items-center gap-4">
-          {[["ok","#16A34A","Healthy"],["warn","#F59E0B","Needs attention"],["empty","#94A3B8","No data yet"]].map(([k,col,label])=>(
+        <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          {[['tracking','#16A34A','Data available'],['attention','#D97706','Needs review'],['noData','#64748B','No confirmed data'],['unavailable','#64748B','Not assessed']].map(([k,col,label])=>(
             <span key={k} className="flex items-center gap-1.5 text-[11px] text-slate-500">
               <span className="w-2 h-2 rounded-full" style={{background:col}}/>{label}
             </span>

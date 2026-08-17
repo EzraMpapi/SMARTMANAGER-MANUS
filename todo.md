@@ -596,3 +596,7 @@
 - [x] Replace zero-value KPI presentation with honest per-metric context rather than fabricated targets, percentages, trends, or progress.
 - [x] Add regression coverage for the responsive Workspace Overview KPI-card refinement.
 - [ ] Complete authenticated visual validation for the responsive Workspace Overview KPI-card refinement when a workspace session is available.
+- [x] Transform Module Health into responsive drill-down cards driven only by confirmed module signals and permitted navigation paths.
+- [x] Replace generic Healthy or No data labels with data-backed status context, preserving honest unavailable states and avoiding fabricated timestamps or user counts.
+- [x] Add regression coverage for the Module Health intelligence refinement.
+- [ ] Complete authenticated visual validation for the Module Health intelligence refinement when a workspace session is available.
