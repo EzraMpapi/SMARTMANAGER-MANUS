@@ -51,4 +51,12 @@ describe("POS UX Enhancements", () => {
     expect(source).toContain("aria-label={`${pendingSales.length} pending offline transactions`}");
     expect(source).toContain("{pendingSales.length} pending");
   });
+
+  it("provides a disabled-aware Sync Now action beside the pending badge", () => {
+    expect(source).toContain("async function syncPendingSales()");
+    expect(source).toContain("setSyncingQueue(true)");
+    expect(source).toContain("Sync Now");
+    expect(source).toContain("disabled={pendingSales.length === 0 || syncingQueue}");
+    expect(source).toContain("Sync pending offline transactions now");
+  });
 });

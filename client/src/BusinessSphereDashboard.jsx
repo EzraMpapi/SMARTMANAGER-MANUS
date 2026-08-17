@@ -37519,6 +37519,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   const [customerId, setCustomerId] = useState("guest");
   const [receipt, setReceipt] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [syncingQueue, setSyncingQueue] = useState(false);
   const [inspectingQueueItem, setInspectingQueueItem] = useState(null);
   const [editingQueueItem, setEditingQueueItem] = useState(null);
   const scannerLastAcceptedRef = useRef(0);
@@ -37808,6 +37809,24 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
     }
   }
 
+  async function syncPendingSales() {
+    if (syncingQueue) return;
+    const current = readPendingPosSales(typeof window === "undefined" ? null : window.localStorage, queueScope);
+    const pending = current.filter((entry) => entry.status === "pending" || entry.status === "needs_attention");
+    if (pending.length === 0) {
+      notify("No pending offline transactions to sync.");
+      return;
+    }
+    setSyncingQueue(true);
+    try {
+      for (const record of pending) {
+        await synchronizePendingSale(record);
+      }
+    } finally {
+      setSyncingQueue(false);
+    }
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     const handleOnline = async () => {
@@ -37960,20 +37979,11 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
             <span className="text-[11px] font-mono text-amber-700">{pendingSales.length} queued</span>
             <button
               type="button"
-              disabled={pendingSales.length === 0}
-              onClick={async () => {
-                const pending = pendingSales.filter((entry) => entry.status === "pending" || entry.status === "needs_attention");
-                if (pending.length === 0) {
-                  notify("No pending sales to sync.");
-                  return;
-                }
-                for (const record of pending) {
-                  await synchronizePendingSale(record);
-                }
-              }}
+              disabled={pendingSales.length === 0 || syncingQueue}
+              onClick={syncPendingSales}
               className="rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-colors"
             >
-              Force sync all
+              {syncingQueue ? "Syncing…" : "Force sync all"}
             </button>
           </div>
         </div>
@@ -38290,7 +38300,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
                 }}
                 className="flex-1 rounded-xl bg-[#16A34A] py-2 text-[12px] font-semibold text-white hover:bg-[#15803D] shadow-sm disabled:opacity-40"
               >
-                Sync now
+                {syncingQueue ? "Syncing…" : "Sync now"}
               </button>
               <button
                 type="button"
@@ -38318,6 +38328,16 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
                   >
                     {pendingSales.length} pending
                   </span>
+                  <button
+                    type="button"
+                    onClick={syncPendingSales}
+                    disabled={pendingSales.length === 0 || syncingQueue}
+                    className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45"
+                    aria-label={syncingQueue ? "Synchronizing pending offline transactions" : "Sync pending offline transactions now"}
+                  >
+                    <RefreshCw size={10} className={syncingQueue ? "animate-spin" : ""} />
+                    {syncingQueue ? "Syncing…" : "Sync Now"}
+                  </button>
                 </div>
                 <p className="mt-1 text-[10.5px] text-slate-500">Pending offline transactions in this counter queue</p>
               </div>
