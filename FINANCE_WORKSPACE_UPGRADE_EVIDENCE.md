@@ -30,4 +30,10 @@ Immediately after the final release checkpoint, the authenticated browser was st
 
 The refined Finance implementation passed the complete regression suite again with **90 files / 299 tests** and the bounded-heap production build again with 2,653 modules transformed. The final build also contains the explicit no-cash-movement state, TZS-thousands chart labels, and the confirmed expense-category empty state.
 
+## Production Entry Cache Mitigation
+
+The public origin continued to reference an earlier Vite entry-script hash after multiple checkpoints, including cache-busting navigation and hard reloads. The production static server now applies `Cache-Control: no-store, max-age=0, must-revalidate` to HTML responses, including the single-page-app fallback, while leaving hashed static assets on their normal immutable path. This ensures current entry HTML can reference the latest hashed client assets rather than pinning users to an obsolete asset graph.
+
+The mitigation adds a dedicated regression test. The complete suite now passes with **91 files / 300 tests**, alongside 5 intentionally gated files and 8 skips; TypeScript and the bounded-heap production build both pass.
+
 No invoice, expense, payment, accounting setting, credential, RLS policy, external provider configuration, or Resend setting was changed while implementing this repair.
