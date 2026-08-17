@@ -13635,27 +13635,44 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
 
   async function markInvoicePaid(id) {
     const inv = allInvoices.find((i) => i.id === id);
-    setAllInvoices((prev) => prev.map((i) => (i.id === id ? { ...i, status: "Paid", amountPaid: lineTotal(i.items).total } : i)));
+    if (!inv) return false;
+    const amount = lineTotal(inv.items).total;
     if (IS_CONFIGURED && inv?.dbId) {
       try {
-        const amount = lineTotal(inv.items).total;
-        await sb("sales_invoices").eq("id", inv.dbId).update({ status: "Paid", amount_paid: amount }).run();
+        const confirmed = await sb("sales_invoices").eq("id", inv.dbId).update({ status: "Paid", amount_paid: amount }).single().run();
+        if (!confirmed?.id) throw buildConfirmedMutationError({ table: "sales_invoices", method: "PATCH", status: 200 });
+        const data = confirmed.data && typeof confirmed.data === "object" ? confirmed.data : {};
+        setAllInvoices((prev) => prev.map((item) => (item.id === id ? {
+          ...item,
+          status: confirmed.status || data.status || "Paid",
+          amountPaid: Number(confirmed.amount_paid ?? data.amount_paid ?? amount),
+        } : item)));
+        notify(`Invoice ${id} marked as paid.`);
+        return true;
       } catch (e) {
-        notify("Couldn't mark the invoice paid on the server.", "error");
+        notify(persistenceFailureMessage("Marking the invoice paid", e), "error");
+        return false;
       }
     }
+    setAllInvoices((prev) => prev.map((item) => (item.id === id ? { ...item, status: "Paid", amountPaid: amount } : item)));
+    return true;
   }
 
   async function deleteInvoice(id) {
     const inv = allInvoices.find((i) => i.id === id);
-    setAllInvoices((prev) => prev.filter((i) => i.id !== id));
+    if (!inv) return false;
     if (IS_CONFIGURED && inv?.dbId) {
       try {
         await sb("sales_invoices").eq("id", inv.dbId).delete().run();
+        setAllInvoices((prev) => prev.filter((item) => item.id !== id));
+        return true;
       } catch (e) {
-        notify("Couldn't delete the invoice on the server.", "error");
+        notify(persistenceFailureMessage("Deleting the invoice", e), "error");
+        return false;
       }
     }
+    setAllInvoices((prev) => prev.filter((item) => item.id !== id));
+    return true;
   }
 
   async function addExpense(form) {
@@ -13673,9 +13690,6 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
       costCenter: form.costCenter || "CC-OPS-01",
     };
 
-    setExpenses((prev) => [draft, ...prev]);
-    notify(`Expense recorded: ${draft.vendor}`);
-
     if (IS_CONFIGURED) {
       try {
         const header = await sb("finance_expenses").insert({
@@ -13689,37 +13703,54 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
           department: form.department || "Operations",
           cost_center: form.costCenter || "CC-OPS-01",
         }).single().run();
-        if (header?.id) {
-          setExpenses((prev) => prev.map((e) => (e.id === draft.id ? { ...e, dbId: header.id } : e)));
-        }
+        if (!header?.id) throw buildConfirmedMutationError({ table: "finance_expenses", method: "POST", status: 200 });
+        setExpenses((prev) => [mapExpenseRow(header), ...prev]);
+        notify(`Expense recorded: ${draft.vendor}`);
+        return true;
       } catch (e) {
-        notify("Expense recorded locally, but saving to the server failed.", "error");
+        notify(persistenceFailureMessage("Recording the expense", e), "error");
+        return false;
       }
     }
+    setExpenses((prev) => [draft, ...prev]);
+    notify(`Expense recorded: ${draft.vendor}`);
+    return true;
   }
 
   async function setExpenseStatus(id, status) {
     const exp = expenses.find((e) => e.id === id);
-    setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
+    if (!exp) return false;
     if (IS_CONFIGURED && (exp?.dbId || exp?.id)) {
       try {
-        await sb("finance_expenses").eq("id", exp.dbId ?? exp.id).update({ status }).run();
+        const confirmed = await sb("finance_expenses").eq("id", exp.dbId ?? exp.id).update({ status }).single().run();
+        if (!confirmed?.id) throw buildConfirmedMutationError({ table: "finance_expenses", method: "PATCH", status: 200 });
+        setExpenses((prev) => prev.map((item) => (item.id === id ? { ...item, status: confirmed.status || status } : item)));
+        notify(`Expense ${id} marked as ${confirmed.status || status}.`);
+        return true;
       } catch (e) {
-        notify("Couldn't update the expense status on the server.", "error");
+        notify(persistenceFailureMessage("Updating the expense status", e), "error");
+        return false;
       }
     }
+    setExpenses((prev) => prev.map((item) => (item.id === id ? { ...item, status } : item)));
+    return true;
   }
 
   async function deleteExpense(id) {
     const exp = expenses.find((e) => e.id === id);
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    if (!exp) return false;
     if (IS_CONFIGURED && (exp?.dbId || exp?.id)) {
       try {
         await sb("finance_expenses").eq("id", exp.dbId ?? exp.id).delete().run();
+        setExpenses((prev) => prev.filter((item) => item.id !== id));
+        return true;
       } catch (e) {
-        notify("Couldn't delete the expense on the server.", "error");
+        notify(persistenceFailureMessage("Deleting the expense", e), "error");
+        return false;
       }
     }
+    setExpenses((prev) => prev.filter((item) => item.id !== id));
+    return true;
   }
 
   const outstanding = useMemo(
@@ -14266,14 +14297,22 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
         <ExpensePanel
           expense={selected}
           onClose={() => setSelected(null)}
-          onSetStatus={(id, status) => { onSetStatus(id, status); setSelected((s) => (s ? { ...s, status } : s)); }}
-          onDelete={(id) => { onDelete(id); setSelected(null); }}
+          onSetStatus={async (id, status) => {
+            const updated = await onSetStatus(id, status);
+            if (updated) setSelected((current) => (current ? { ...current, status } : current));
+            return updated;
+          }}
+          onDelete={onDelete}
         />
       )}
       {showForm && (
         <ExpenseFormPanel
           onClose={() => setShowForm(false)}
-          onSubmit={(form) => { onAdd(form); setShowForm(false); }}
+          onSubmit={async (form) => {
+            const created = await onAdd(form);
+            if (created) setShowForm(false);
+            return created;
+          }}
         />
       )}
     </div>
@@ -14282,6 +14321,28 @@ function Expenses({ expenses, onAdd, onSetStatus, onDelete, loading }) {
 
 function ExpensePanel({ expense, onClose, onSetStatus, onDelete }) {
   const nextStatus = { Pending: "Paid", Scheduled: "Paid", Paid: null }[expense.status];
+  const [saving, setSaving] = useState(false);
+
+  async function applyStatus() {
+    if (!nextStatus || saving) return;
+    setSaving(true);
+    try {
+      await onSetStatus(expense.id, nextStatus);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeExpense() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const deleted = await onDelete(expense.id);
+      if (deleted) onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
@@ -14330,14 +14391,15 @@ function ExpensePanel({ expense, onClose, onSetStatus, onDelete }) {
             </button>
             {nextStatus && (
               <button
-                onClick={() => onSetStatus(expense.id, nextStatus)}
-                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors"
+                onClick={applyStatus}
+                disabled={saving}
+                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50"
               >
-                Mark as {nextStatus}
+                {saving ? "Saving…" : `Mark as ${nextStatus}`}
               </button>
             )}
           </div>
-          <ConfirmDeleteButton label="Delete expense" onConfirm={() => onDelete(expense.id)} />
+          <ConfirmDeleteButton label={saving ? "Saving…" : "Delete expense"} onConfirm={removeExpense} />
         </div>
       </div>
     </div>
@@ -14350,17 +14412,23 @@ function ExpenseFormPanel({ onClose, onSubmit }) {
     amount: "", status: "Paid", method: "Bank Transfer", department: "Operations", costCenter: "CC-OPS-01",
   });
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const valid = form.vendor.trim() && Number(form.amount) > 0;
 
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setTouched(true);
-    if (!valid) return;
-    onSubmit(form);
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(form);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -14444,8 +14512,8 @@ function ExpenseFormPanel({ onClose, onSubmit }) {
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors">
-            Save Expense
+          <button type="submit" disabled={submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
+            {submitting ? "Saving…" : "Save Expense"}
           </button>
         </div>
       </form>
