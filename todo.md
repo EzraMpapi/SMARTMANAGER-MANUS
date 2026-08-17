@@ -629,3 +629,7 @@
 - [x] Implement clear connection-state and pending-sync guidance without treating browser storage as confirmed system data.
 - [x] Add regression coverage and documentation for pasted_content_8.txt offline boundaries, rejected broad local persistence, and remaining architecture decisions.
 - [ ] Complete authenticated offline/online acceptance for the write-pause notice and a server-confirmed POS pending-sync retry when a workspace session is available.
+- [x] Inventory active dashboard buttons, menus, shortcuts, and role-gated controls against their real handlers or availability feedback.
+- [x] Repair controls that lack a safe supported response while preserving tenant scope, non-destructive behavior, and existing module access rules.
+- [x] Add interaction-contract regression coverage and non-destructive public browser evidence for the repaired control set.
+- [ ] Complete authenticated representative-module button and menu acceptance without creating, changing, or deleting operational records.

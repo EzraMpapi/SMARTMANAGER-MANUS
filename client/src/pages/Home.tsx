@@ -76,6 +76,7 @@ export default function Home() {
           
           <div className="flex items-center gap-2 border-l border-white/10 pl-4">
             <button
+              type="button"
               onClick={toggleTheme}
               className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
               title="Toggle theme"
@@ -83,6 +84,7 @@ export default function Home() {
               {theme === "dark" ? <Sun size={15} className="text-[#C9A96E]" /> : <Moon size={15} className="text-[#C9A96E]" />}
             </button>
             <button
+              type="button"
               onClick={() => setLang(lang === "en" ? "sw" : "en")}
               className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/10"
               title="Switch language"
