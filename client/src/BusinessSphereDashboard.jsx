@@ -37390,6 +37390,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
               <p className="text-[11px] font-semibold text-sky-900">Pending sync</p>
               <span className="text-[10px] text-sky-700">Not completed or counted in revenue</span>
             </div>
+            <p className="mb-2 text-[10px] leading-relaxed text-sky-800">These sales require server confirmation before inventory, revenue, receipt output, or customer balances change. Retry after the connection is restored.</p>
             <div className="space-y-1.5 max-h-28 overflow-y-auto">
               {pendingSales.map((record) => (
                 <div key={record.idempotencyKey} className="rounded-md bg-white px-2 py-2 text-[11px]">
@@ -47888,9 +47889,10 @@ function SmartManager() {
   // Device preferences remain local, but permanent business writes are paused
   // offline rather than being represented as saved and silently discarded.
   const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
+  const [offlineNoticeDismissed, setOfflineNoticeDismissed] = useState(false);
   useEffect(() => {
-    const up = () => { setOnline(true); notify("Back online — live Supabase writes are available again."); };
-    const down = () => { setOnline(false); notify("Offline — server writes are paused until you reconnect.", "error"); };
+    const up = () => { setOnline(true); setOfflineNoticeDismissed(false); notify("Back online — live Supabase writes are available again."); };
+    const down = () => { setOnline(false); setOfflineNoticeDismissed(false); notify("Offline — server writes are paused until you reconnect.", "error"); };
     window.addEventListener("online", up); window.addEventListener("offline", down);
     return () => { window.removeEventListener("online", up); window.removeEventListener("offline", down); };
   }, []);
@@ -47988,12 +47990,17 @@ function SmartManager() {
       />
 
       <Toasts />
-      {!online && IS_CONFIGURED && (
+      {!online && IS_CONFIGURED && !offlineNoticeDismissed && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center bg-slate-950/45 p-4" role="alert" aria-live="assertive">
           <div className="max-w-sm rounded-2xl border border-amber-200 bg-white p-5 text-center shadow-2xl">
             <WifiOff className="mx-auto mb-3 text-amber-600" size={24} />
-            <p className="text-sm font-semibold text-slate-900">Server writes are paused</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-600">This ERP does not store business changes locally while offline. Reconnect to save a confirmed change to Supabase.</p>
+            <p className="text-sm font-semibold text-slate-900">Connection unavailable — writes are paused</p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">You can continue viewing the workspace already loaded in this tab, but permanent changes are not saved until the server confirms them after reconnection.</p>
+            <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-left text-[11px] leading-relaxed text-amber-900">
+              <p><strong>Business records:</strong> create, update, and delete actions remain paused.</p>
+              <p className="mt-1"><strong>Point of Sale:</strong> a failed sale may appear only as an explicit <em>Pending sync</em> record; it is not completed, counted in revenue, or deducted from inventory until server confirmation.</p>
+            </div>
+            <button type="button" onClick={() => setOfflineNoticeDismissed(true)} className="mt-4 w-full rounded-xl bg-[#0B5D3B] py-2.5 text-[12px] font-semibold text-white transition hover:bg-[#084B30]">Continue viewing current workspace</button>
           </div>
         </div>
       )}

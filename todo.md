@@ -625,3 +625,7 @@
 - [x] Implement safe browser-download naming and user-visible guidance for confirmed Smart Manager documents without claiming direct filesystem access or local-only durability.
 - [x] Add regression coverage and documentation for pasted_content_7.txt browser, consent, cache, and storage boundaries.
 - [ ] Complete authenticated browser acceptance for a confirmed CSV export and a POS receipt Save-as-PDF flow when a workspace session and user download dialog are available.
+- [x] Map the complete pasted_content_8.txt offline-capability plan to the existing POS pending-sync workflow, cached reads, authenticated sessions, and tenant-safe server confirmation boundaries.
+- [x] Implement clear connection-state and pending-sync guidance without treating browser storage as confirmed system data.
+- [x] Add regression coverage and documentation for pasted_content_8.txt offline boundaries, rejected broad local persistence, and remaining architecture decisions.
+- [ ] Complete authenticated offline/online acceptance for the write-pause notice and a server-confirmed POS pending-sync retry when a workspace session is available.
