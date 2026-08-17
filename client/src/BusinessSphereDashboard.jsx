@@ -32340,7 +32340,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
       <RoleChangeApprovalPanel currentUser={currentUser} />
 
       <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(currentUser.role)} />
-      {PASSKEY_READINESS_ROLES.has(currentUser.role) && <QuarterlySecurityReviewChecklist companyName={company.name} />}
+      {PASSKEY_READINESS_ROLES.has(currentUser.role) && <QuarterlySecurityReviewChecklist companyName={company.name} companyId={company.id} userId={currentUser.id} />}
 
       {!canManage && (
         <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
@@ -33460,11 +33460,13 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
   );
 }
 
-function QuarterlySecurityReviewChecklist({ companyName }) {
+function QuarterlySecurityReviewChecklist({ companyName, companyId, userId }) {
   const [complete, setComplete] = useState(() => new Set());
   const quarterKey = `${new Date().getUTCFullYear()}-Q${Math.floor(new Date().getUTCMonth() / 3) + 1}`;
-  const reminderKey = `smart-manager:security-review:${quarterKey}`;
+  const reminderScope = `${String(companyId || "unknown-workspace")}:${String(userId || "unknown-user")}`;
+  const reminderKey = `smart-manager:security-review:${reminderScope}:${quarterKey}`;
   const [reviewedQuarter, setReviewedQuarter] = useState(() => { try { return window.localStorage.getItem(reminderKey) === "complete"; } catch (_error) { return false; } });
+  useEffect(() => { try { setReviewedQuarter(window.localStorage.getItem(reminderKey) === "complete"); } catch (_error) { setReviewedQuarter(false); } }, [reminderKey]);
   const items = [
     ["passkeys", "Confirm every administrator has appropriate passkey and recovery coverage."],
     ["audit", "Review recent Security and Settings events in the tenant activity audit history."],
@@ -33474,7 +33476,7 @@ function QuarterlySecurityReviewChecklist({ companyName }) {
   ];
   const completedCount = complete.size;
   const markReviewed = () => { try { window.localStorage.setItem(reminderKey, "complete"); } catch (_error) {} setReviewedQuarter(true); notify("Quarterly security review marked complete for this browser. Export audit evidence separately for formal records."); };
-  return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Quarterly security review</h2><p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">A guided administrator checklist for {companyName || "this workspace"}. Completion is intentionally local to this browser and is not presented as compliance evidence.</p></div><span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-700">{completedCount}/{items.length} reviewed</span></div>{!reviewedQuarter && <div role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11.5px] leading-5 text-amber-900"><strong>Quarterly review due — {quarterKey}.</strong> Complete the checks below, export confirmed audit evidence, and record any remediation in your formal compliance process. Email delivery remains off until an approved project sender is configured.</div>}<div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">{items.map(([id, label]) => <label key={id} className="flex cursor-pointer items-start gap-3 p-3.5 hover:bg-slate-50"><input type="checkbox" checked={complete.has(id)} onChange={() => setComplete((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; })} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" /><span className={`text-[12px] leading-5 ${complete.has(id) ? "text-slate-400 line-through" : "text-slate-700"}`}>{label}</span></label>)}</div>{completedCount === items.length && !reviewedQuarter && <button type="button" onClick={markReviewed} className="mt-4 rounded-lg bg-slate-900 px-3 py-2 text-[11px] font-semibold text-white">Mark quarterly review complete</button>}</section>;
+  return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Quarterly security review</h2><p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">A guided administrator checklist for {companyName || "this workspace"}. Completion is intentionally local to this browser, account, and workspace and is not presented as compliance evidence.</p></div><span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-700">{completedCount}/{items.length} reviewed</span></div>{!reviewedQuarter && <div role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11.5px] leading-5 text-amber-900"><strong>Quarterly review due — {quarterKey}.</strong> Complete the checks below, export confirmed audit evidence, and record any remediation in your formal compliance process. Email delivery remains off until an approved project sender is configured.</div>}<div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">{items.map(([id, label]) => <label key={id} className="flex cursor-pointer items-start gap-3 p-3.5 hover:bg-slate-50"><input type="checkbox" checked={complete.has(id)} onChange={() => setComplete((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; })} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" /><span className={`text-[12px] leading-5 ${complete.has(id) ? "text-slate-400 line-through" : "text-slate-700"}`}>{label}</span></label>)}</div>{completedCount === items.length && !reviewedQuarter && <button type="button" onClick={markReviewed} className="mt-4 rounded-lg bg-slate-900 px-3 py-2 text-[11px] font-semibold text-white">Mark quarterly review complete</button>}</section>;
 }
 
 function BranchesManager() {

@@ -518,7 +518,11 @@
 - [x] Inspect the approved email-sender options and current transactional delivery boundary before enabling quarterly security-review emails.
 - [ ] Validate the supplied Resend sender candidate and server-only provider configuration before enabling quarterly security-review email delivery; the supplied value currently includes a URL protocol and is not yet a valid email identity.
 - [ ] Add an approved Resend sender-backed quarterly security review delivery path with scheduled, tenant-safe, and truthful unsent-state safeguards.
-- [ ] Do not create, invent, or impersonate an organization email identity; retain the in-app quarterly reminder until the owner supplies a verified sender it controls.
+- [x] Do not create, invent, or impersonate an organization email identity; retain the in-app quarterly reminder until the owner supplies a verified sender it controls.
+- [x] Review the quarterly security reminder implementation, browser-local state scope, due calculation, accessibility, and recent reminder-related tests for verified optimization opportunities.
+- [x] Scope browser-local quarterly review completion to the authenticated user and active workspace so one browser user or tenant cannot suppress another tenant’s reminder.
+- [x] Optimize verified security reminder usability or reliability issues without treating browser-local completion as durable compliance evidence or enabling email delivery.
+- [x] Add focused reminder regression coverage, validate the optimized flow, publish the improvement, and document the unchanged email-delivery limitation.
 - [x] Map every requirement in pasted_content_3.txt to the current Smart Manager implementation, verified evidence, known limitation, or remediation task.
 - [x] Re-audit the architecture, Supabase database contracts, authentication, tenant authorization, RLS, and sensitive data boundaries against the enterprise transformation requirements.
 - [x] Reconcile the legacy Scheduled Reports client UI with the existing tenant-safe server scheduling service and truthful disabled email-delivery boundary.
@@ -529,7 +533,7 @@
 - [x] Correct VAT reporting so a configured 0% tax rate is respected instead of being replaced by the 18% default.
 - [x] Verify dashboard, Tanzania-first configuration, role-aware access, search/navigation, responsive design, accessibility, performance, and representative authenticated journeys against the supplied production gate.
 - [x] Repair the command palette so its displayed Escape shortcut actually closes the modal and returns users to the dashboard flow.
-- [ ] Repair notification-channel settings so a rejected configured-workspace update rolls back local state and clearly reports that the server did not save the change.
+- [x] Repair notification-channel settings so a rejected configured-workspace update rolls back local state and clearly reports that the server did not save the change.
 - [x] Repair notification-channel settings so a rejected configured-workspace update rolls back local state and clearly reports that the server did not save the change.
 - [x] Add regression coverage and publish only verified enterprise-readiness improvements, documenting all gated live-acceptance evidence and remaining risks.
 - [x] Keep Resend quarterly review delivery disabled and explicitly document the blocked state until a verified sender address passes validation.

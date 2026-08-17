@@ -26,6 +26,8 @@ New workspace setup flows—both password-based and OAuth—present the same con
 
 The authenticated header and account menu display only the current workspace’s confirmed industry focus. It is passed from the hydrated active company record and is not an organization-switcher or a lookup into other tenant data. Organization administrators also receive a guided **Quarterly security review** checklist in Security Settings. Its checkbox progress is deliberately browser-local and expressly not compliance evidence; operators should use the tenant audit history and their formal compliance process for evidence.
 
+Quarterly review completion is scoped to the active browser, active account, active workspace, and calendar quarter. A completion marker belonging to a different user or workspace cannot suppress the current administrator’s reminder. The marker does not write a compliance record, create an audit event, or trigger email; confirmed tenant audit exports and formal compliance processes remain the evidence source.
+
 | Requirement | Operator action |
 |---|---|
 | Enablement status | **Enabled on 16 August 2026** in the production Supabase project. |
