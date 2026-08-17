@@ -20,3 +20,7 @@ Inventory was selected after Finance because stock quantities directly affect sa
 Focused Inventory persistence contracts passed with **1 file / 2 tests**, covering server-before-state ordering, failure preservation, and in-flight controls. Static TypeScript validation also passed. The complete suite passed with **92 files / 302 tests**, alongside 5 intentionally gated files and 8 skips. The bounded-heap production build passed with 2,653 modules transformed. Authenticated non-destructive browser acceptance remains the final validation phase.
 
 No inventory item, stock movement, supplier, warehouse, POS record, RLS policy, credential, external provider setting, or Resend setting changed during this repair.
+
+## Published Live Acceptance
+
+The authenticated KMKM owner workspace loaded the published Inventory module and displayed the one confirmed QA POS Acceptance Item with SKU `QA-POS-20260816`, quantity **3**, and **In Stock** status. The dashboard’s confirmed inventory count and the module’s stock table were consistent. Search, CSV/PDF, table-column, import, new-item, and stock-detail controls were visible without an error. This was a non-destructive review: no inventory item, quantity, warehouse, supplier, or movement record changed.
