@@ -714,3 +714,4 @@
 - [x] Add gateway degraded-status webhook alerts.
 - [x] Add multi-branch fiscal summary comparison chart for regional operations.
 - [ ] Add PDF and Excel export options for the multi-branch fiscal summary comparison chart in the TRA Portal.
+- [ ] Fix the undefined `lang` reference crash in TraPortalModule.jsx.

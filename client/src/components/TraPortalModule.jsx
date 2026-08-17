@@ -11,6 +11,7 @@ import { jsPDF } from "jspdf";
 import { trpc } from "../lib/trpc";
 
 export function TraPortalModule({ companyId, lang = "en" }) {
+  const currentLang = lang || "en";
   const [activeTab, setActiveTab] = useState("dashboard");
   const [notice, setNotice] = useState(null);
 
@@ -20,7 +21,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
 
   const saveProfileMutation = trpc.traFiscal.saveProfile.useMutation({
     onSuccess: () => {
-      setNotice(lang === "sw" ? "Profaili ya TRA imehifadhiwa salama." : "TRA VFD Profile & Thermal Settings saved successfully.");
+      setNotice(currentLang === "sw" ? "Profaili ya TRA imehifadhiwa salama." : "TRA VFD Profile & Thermal Settings saved successfully.");
       refetchProfile();
       refetchConn();
     },
@@ -98,7 +99,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     return matchSearch && matchStatus;
   });
 
-  const labels = {
+  const allLabels = {
     en: {
       title: "TRA Portal & Fiscalization Engine",
       subtitle: "Official Tanzania Revenue Authority VFD/EFD integration, multi-branch compliance, and receipt lifecycle management.",
@@ -133,7 +134,9 @@ export function TraPortalModule({ companyId, lang = "en" }) {
       pending: "Inasubiri ⏳",
       failed: "Imeshindwa ✕",
     }
-  }[lang] || labels.en;
+  };
+
+  const labels = allLabels[currentLang] || allLabels.en;
 
   const stats = connStatus?.stats || { total: 0, verified: 0, failed: 0, pending: 0 };
   const conn = connStatus?.connection || { status: "connected", latencyMs: 38 };
@@ -359,7 +362,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
             </div>
           </div>
 
-          {/* ESC/POS Thermal Receipt Templates */}
+          {/* ESC/POS Thermal Receipt Settings */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
             <div>
               <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
