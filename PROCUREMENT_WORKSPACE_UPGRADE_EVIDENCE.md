@@ -18,3 +18,7 @@ Procurement was selected after Inventory because purchase orders govern committe
 Focused Procurement persistence contracts passed with **1 file / 2 tests**, covering server-before-state ordering, failed-write preservation, and duplicate-submit prevention. Static TypeScript validation also passed. The complete suite passed with **93 files / 304 tests**, alongside 5 intentionally gated files and 8 skips. The bounded-heap production build passed with 2,653 modules transformed. Authenticated non-destructive browser acceptance remains in the final validation phase.
 
 No purchase order, PO line, stock quantity, stock movement, supplier, contract, expense, RLS policy, credential, provider configuration, or Resend setting changed during this repair.
+
+## Published Live Acceptance
+
+The authenticated KMKM owner workspace loaded the published Procurement module and showed a truthful zero-record state: **0** open purchase orders, **0** pending approvals, **TZS 0k** committed spend, and **0** awaiting payment. The purchase-order table presented its explicit `No purchase orders yet` empty state and the `New Purchase Order` control was available without a runtime error. This was a non-destructive review; no purchase order, line item, receipt, cancellation, supplier, contract, or payment record changed.
