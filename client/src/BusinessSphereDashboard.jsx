@@ -26342,6 +26342,7 @@ function Tickets({ tickets }) {
   }, [query, shouldSearchServer, visibleRows]);
 
   async function addTicket(form) {
+    if (createTicket.isPending) return;
     if (IS_CONFIGURED) {
       try {
         const result = await createTicket.mutateAsync({
@@ -26385,6 +26386,7 @@ function Tickets({ tickets }) {
   }
 
   async function setStatus(id, status) {
+    if (updateTicket.isPending) return;
     const t = rows.find((x) => x.id === id);
     if (IS_CONFIGURED) {
       try {
@@ -26402,6 +26404,7 @@ function Tickets({ tickets }) {
   }
 
   async function addNote(id, text) {
+    if (addInternalNote.isPending) return;
     const t = rows.find((x) => x.id === id);
     if (IS_CONFIGURED) {
       try {
@@ -26541,13 +26544,13 @@ function Tickets({ tickets }) {
         </div>
       </div>
 
-      {selected && <TicketPanel ticket={selected} onClose={() => setSelected(null)} onSetStatus={setStatus} onAddInternalNote={addNote} onDelete={deleteTicket} />}
-      {showForm && <TicketFormPanel onClose={() => setShowForm(false)} onSubmit={addTicket} />}
+      {selected && <TicketPanel ticket={selected} onClose={() => setSelected(null)} onSetStatus={setStatus} onAddInternalNote={addNote} onDelete={deleteTicket} statusSaving={updateTicket.isPending} noteSaving={addInternalNote.isPending} />}
+      {showForm && <TicketFormPanel onClose={() => setShowForm(false)} onSubmit={addTicket} saving={createTicket.isPending} />}
     </div>
   );
 }
 
-function TicketPanel({ ticket, onClose, onSetStatus, onAddInternalNote, onDelete }) {
+function TicketPanel({ ticket, onClose, onSetStatus, onAddInternalNote, onDelete, statusSaving = false, noteSaving = false }) {
   const [replyText, setReplyText] = useState("");
   const timeline = trpc.support.ticketTimeline.useQuery({ ticketId: ticket.id }, { enabled: IS_CONFIGURED && Boolean(ticket?.id) });
   const timelineEntries = IS_CONFIGURED
@@ -26557,7 +26560,7 @@ function TicketPanel({ ticket, onClose, onSetStatus, onAddInternalNote, onDelete
     ]
     : (ticket.messages || []);
   function submitInternalNote() {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() || noteSaving) return;
     onAddInternalNote(ticket.id, replyText.trim());
     setReplyText("");
   }
@@ -26595,13 +26598,13 @@ function TicketPanel({ ticket, onClose, onSetStatus, onAddInternalNote, onDelete
         <div className="px-6 py-4 border-t border-slate-100 space-y-3">
           <div className="flex gap-2">
             <input value={replyText} onChange={(e) => setReplyText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitInternalNote()} placeholder="Add internal note..." className={inputClass} />
-            <button onClick={submitInternalNote} aria-label="Add internal note" className="bg-amber-500 hover:bg-amber-600 text-white px-4 rounded-lg shrink-0"><PenTool size={15} /></button>
+            <button onClick={submitInternalNote} disabled={noteSaving} aria-busy={noteSaving} aria-label="Add internal note" className="bg-amber-500 hover:bg-amber-600 text-white px-4 rounded-lg shrink-0 disabled:cursor-not-allowed disabled:opacity-60">{noteSaving ? <LoaderCircle size={15} className="animate-spin" /> : <PenTool size={15} />}</button>
           </div>
           <p className="text-[10.5px] text-amber-700">Internal note — visible to your support team only and never sent to the customer.</p>
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-[11px] font-medium text-slate-500 mr-1">Status:</p>
             {TICKET_STATUSES.map((s) => (
-              <button key={s} onClick={() => onSetStatus(ticket.id, s)} disabled={s === ticket.status} className={`text-[11px] font-medium rounded-md px-2 py-1 border transition-colors ${s === ticket.status ? "opacity-40 cursor-not-allowed border-slate-200" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+              <button key={s} onClick={() => onSetStatus(ticket.id, s)} disabled={statusSaving || s === ticket.status} aria-busy={statusSaving && s !== ticket.status} className={`text-[11px] font-medium rounded-md px-2 py-1 border transition-colors ${statusSaving || s === ticket.status ? "opacity-40 cursor-not-allowed border-slate-200" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
                 {s}
               </button>
             ))}
@@ -26613,7 +26616,7 @@ function TicketPanel({ ticket, onClose, onSetStatus, onAddInternalNote, onDelete
   );
 }
 
-function TicketFormPanel({ onClose, onSubmit }) {
+function TicketFormPanel({ onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({ subject: "", customer: "", category: TICKET_CATEGORIES[0], priority: "Medium", assignee: "", description: "" });
   const [touched, setTouched] = useState(false);
   const valid = form.subject.trim() && form.customer.trim();
@@ -26654,7 +26657,7 @@ function TicketFormPanel({ onClose, onSubmit }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create Ticket</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Creating…" : "Create Ticket"}</button>
         </div>
       </form>
     </div>

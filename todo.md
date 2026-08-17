@@ -692,3 +692,4 @@
 - [x] Replace the Dashboard's simulated six-month trend with a truthful live-data trend or explicit empty state, preserving accurate KPI calculations and drill-down navigation.
 - [x] Harden Documents upload, version, and delete flows with confirmed server state, retry-safe errors, and busy controls.
 - [x] Harden Notebook note creation and status changes with confirmed server state and preserved retry context.
+- [x] Harden Customer Support ticket, internal reply, and knowledge-article mutations with confirmed server state, preserved drafts, and duplicate-action guards.
