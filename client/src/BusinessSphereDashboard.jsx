@@ -6838,6 +6838,19 @@ function Customer360View({ crm, invoices }) {
   const [selected, setSelected] = useState("");
   const customer = selected || customers[0] || "";
 
+  const mapInteractionRow = (r) => {
+    const data = r.data && typeof r.data === "object" ? r.data : {};
+    return {
+      id: r.id,
+      dbId: r.id,
+      customer: r.customer_name || data.customer_name || r.customer || data.customer || "",
+      channel: r.channel || data.channel || "Interaction",
+      direction: r.direction || data.direction || "inbound",
+      summary: r.summary || data.summary || r.notes || "",
+      date: r.occurred_at || data.occurred_at || r.created_at || null,
+    };
+  };
+
   function printStatement() {
     if (customer) printCustomerStatement(customer, invoices.rows);
   }
@@ -6847,21 +6860,31 @@ function Customer360View({ crm, invoices }) {
   // payments already feed; when WhatsApp/Meta/Telegram webhooks exist
   // (real server-side work, named), they write to this same table.
   const CHANNELS = ["WhatsApp", "Email", "SMS", "Phone Call", "Live Chat", "Facebook Messenger", "Instagram", "Telegram", "Meeting"];
-  const interactions = useCompanyTable("crm_interactions", [], { order: { col: "occurred_at", ascending: false }, mapRow: (r) => ({ id: r.id, dbId: r.id, customer: r.customer_name, channel: r.channel, direction: r.direction, summary: r.summary, date: r.occurred_at }) });
+  const interactions = useCompanyTable("crm_interactions", [], { order: { col: "occurred_at", ascending: false }, mapRow: mapInteractionRow });
   const [logDraft, setLogDraft] = useState({ channel: "WhatsApp", direction: "inbound", summary: "" });
+  const [savingInteraction, setSavingInteraction] = useState(false);
 
   async function logInteraction() {
-    if (!logDraft.summary.trim() || !customer) return;
+    if (!logDraft.summary.trim() || !customer || savingInteraction) return;
     const row = { id: `INT-${Date.now()}`, customer, channel: logDraft.channel, direction: logDraft.direction, summary: logDraft.summary.trim(), date: TODAY.toISOString().slice(0, 10) };
-    interactions.setRows((prev) => [row, ...prev]);
-    setLogDraft({ ...logDraft, summary: "" });
-    notify(`${row.channel} interaction logged for ${customer}.`);
     if (IS_CONFIGURED) {
+      setSavingInteraction(true);
       try {
         const header = await sb("crm_interactions").insert({ customer_name: customer, channel: row.channel, direction: row.direction, summary: row.summary, occurred_at: row.date }).single().run();
-        if (header?.id) interactions.setRows((prev) => prev.map((x) => (x.id === row.id ? { ...x, dbId: header.id } : x)));
-      } catch (_e) { notify("Logged locally, but the server update failed.", "error"); }
+        if (!header?.id) throw buildConfirmedMutationError({ table: "crm_interactions", method: "POST", status: 200 });
+        interactions.setRows((prev) => [mapInteractionRow(header), ...prev]);
+        setLogDraft((current) => ({ ...current, summary: "" }));
+        notify(`${row.channel} interaction saved for ${customer}.`);
+      } catch (e) {
+        notify(persistenceFailureMessage("Logging the customer interaction", e), "error");
+      } finally {
+        setSavingInteraction(false);
+      }
+      return;
     }
+    interactions.setRows((prev) => [row, ...prev]);
+    setLogDraft((current) => ({ ...current, summary: "" }));
+    notify(`${row.channel} interaction logged for ${customer}.`);
   }
 
   const view = useMemo(() => {
@@ -6922,7 +6945,7 @@ function Customer360View({ crm, invoices }) {
             <option value="inbound">Inbound</option><option value="outbound">Outbound</option>
           </select>
           <input className={inputClass + " flex-1 min-w-[180px]"} value={logDraft.summary} onChange={(e) => setLogDraft({ ...logDraft, summary: e.target.value })} onKeyDown={(e) => e.key === "Enter" && logInteraction()} placeholder={`Log a ${logDraft.channel} conversation with ${customer}...`} />
-          <button onClick={logInteraction} disabled={!logDraft.summary.trim()} className="btn-primary text-white text-[12px] font-medium rounded-lg px-3.5 py-2 disabled:opacity-40">Log</button>
+          <button onClick={logInteraction} disabled={!logDraft.summary.trim() || savingInteraction} className="btn-primary text-white text-[12px] font-medium rounded-lg px-3.5 py-2 disabled:opacity-40">{savingInteraction ? "Saving…" : "Log"}</button>
         </div>
       )}
       {!view && <p className="text-[12px] text-slate-400 text-center py-8">No invoiced customers yet.</p>}
@@ -7704,6 +7727,7 @@ function EmptyState({ icon: Icon, title, hint, actionLabel, onAction, tips = [],
 function LeadFormPanel({ onClose, onSubmit }) {
   const [form, setForm] = useState({ name: "", company: "", email: "", phone: "", industry: "", value: "", owner: "" });
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const valid = form.name.trim() && form.company.trim();
 
@@ -7714,8 +7738,13 @@ function LeadFormPanel({ onClose, onSubmit }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setTouched(true);
-    if (!valid) return;
-    await onSubmit(form);
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(form);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -7783,8 +7812,8 @@ function LeadFormPanel({ onClose, onSubmit }) {
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors">
-            Create Lead
+          <button type="submit" disabled={submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
+            {submitting ? "Saving…" : "Create Lead"}
           </button>
         </div>
       </form>

@@ -667,5 +667,5 @@
 - [x] Map the first area’s existing verified server timestamps into the UI so lifecycle timing, support role state, and server-confirmed feedback have one truthful source.
 - [x] Add focused regression coverage for the first area’s truthful KPI, loading/error/empty states, debounced verified search, and server-confirmed workflow boundaries.
 - [x] Normalize the first area’s tenant-scoped support configuration policy targets from `public` to `authenticated` without weakening `current_company_id()` checks, then verify the deployed policy contract.
-- [ ] Select and fully upgrade the next verified high-priority functional area using the same confirmed-data, server-boundary, security, usability, and regression standard.
+- [x] Select and fully upgrade the next verified high-priority functional area using the same confirmed-data, server-boundary, security, usability, and regression standard.
 - [x] Remove arbitrary default lead scores in the next customer-relationship upgrade and render an explicit unavailable state until a confirmed scoring model provides a value.
