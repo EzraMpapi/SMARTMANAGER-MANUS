@@ -24,3 +24,5 @@ No employee, leave request, attendance row, candidate, performance review, train
 ## Published Acceptance Observation
 
 The authenticated KMKM owner workspace opened the Human Resources module and rendered the truthful zero-record employee and leave state without a runtime error. However, the public origin initially served an older dashboard asset that still contained the previous `This period` label rather than the repaired `Current status` label. The deployed source was therefore treated as stale and not recorded as final acceptance of the label correction. No people, leave, attendance, payroll, or access record was changed during this non-destructive review.
+
+The locally built production dashboard asset was independently checked and contained `Current status` with no `This period` occurrence, confirming that the application source and build artifact are correct. The remaining limitation is an upstream production asset-version mismatch rather than an HR module implementation failure.

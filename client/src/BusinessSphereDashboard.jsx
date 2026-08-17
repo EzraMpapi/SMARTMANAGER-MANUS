@@ -20106,32 +20106,66 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
       dueDate: form.dueDate,
       assignedTo: form.assignedTo || "Unassigned",
     };
-    setWorkOrders((prev) => [draft, ...prev]);
-    notify(`Work order ${draft.id} created`);
-    setShowForm(false);
-
     if (IS_CONFIGURED) {
       try {
         const header = await sb("manufacturing_work_orders").insert({
           bom_id: form.bomId, product: draft.product, qty: draft.qty, status: "Planned",
           start_date: form.startDate, due_date: form.dueDate, assigned_to: form.assignedTo,
         }).single().run();
-        if (header?.id) setWorkOrders((prev) => prev.map((w) => (w.id === draft.id ? { ...w, dbId: header.id } : w)));
+        const confirmed = { ...mapWorkOrderRow(header), assignedTo: header.profiles?.full_name || draft.assignedTo };
+        setWorkOrders((prev) => [confirmed, ...prev]);
+        notify(`Work order ${confirmed.id} created`);
+        return confirmed;
       } catch (e) {
-        notify("Work order created locally, but saving to the server failed.", "error");
+        notify("Work order could not be saved to the server. Review the details and try again.", "error");
+        return false;
       }
     }
+    setWorkOrders((prev) => [draft, ...prev]);
+    notify(`Work order ${draft.id} created`);
+    return draft;
   }
 
   async function advanceOrder(id, next) {
     const order = workOrders.find((w) => w.id === id);
-    setWorkOrders((prev) => prev.map((w) => (w.id === id ? { ...w, status: next } : w)));
-    setSelected((s) => (s && s.id === id ? { ...s, status: next } : s));
+    if (!order) return false;
 
     // Completing a run actually consumes raw materials from Inventory —
     // the same shared table Inventory itself reads, so the deduction is
     // visible there immediately, not just inside Manufacturing.
-    if (next === "Completed" && order) {
+    if (IS_CONFIGURED) {
+      try {
+        const inventoryUpdates = [];
+        if (next === "Completed") {
+          const bom = boms.rows.find((b) => b.id === order.bomId);
+          if (!bom) throw new Error("The work order Bill of Materials is unavailable.");
+          for (const c of bom.components) {
+            const consumed = c.qty * order.qty;
+            const item = inventory.rows.find((it) => it.sku === c.sku);
+            if (!item || item.qty < consumed) throw new Error(`Insufficient confirmed stock for ${c.sku}.`);
+            const savedItem = await sb("inventory_items").eq("sku", c.sku).update({ qty_on_hand: item.qty - consumed }).single().run();
+            inventoryUpdates.push(mapInventoryRow(savedItem));
+            await sb("inventory_stock_movements").insert({
+              item_id: c.sku, movement: "Out", qty: consumed, reference: `${order.id} completed`,
+            }).run();
+          }
+        }
+        const savedOrder = await sb("manufacturing_work_orders").eq("id", order.dbId ?? order.id).update({ status: next }).single().run();
+        const confirmed = { ...mapWorkOrderRow(savedOrder), assignedTo: savedOrder.profiles?.full_name || order.assignedTo };
+        if (inventoryUpdates.length) {
+          inventory.setRows((prev) => prev.map((item) => inventoryUpdates.find((updated) => updated.sku === item.sku) || item));
+        }
+        setWorkOrders((prev) => prev.map((existing) => (existing.id === id ? confirmed : existing)));
+        setSelected((selectedOrder) => (selectedOrder && selectedOrder.id === id ? confirmed : selectedOrder));
+        notify(next === "Completed" ? `${order.id} completed — server-confirmed materials deducted from Inventory` : `${order.id} marked ${next}`);
+        return confirmed;
+      } catch (e) {
+        setNotice(`Work order could not be fully confirmed. The screen has not changed; reconcile this order and its stock before retrying because a server-side step may have completed.`);
+        return false;
+      }
+    }
+
+    if (next === "Completed") {
       const bom = boms.rows.find((b) => b.id === order.bomId);
       if (bom) {
         const shortages = [];
@@ -20148,38 +20182,28 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
           notify(`${order.id} completed — materials deducted from Inventory`);
         }
 
-        if (IS_CONFIGURED) {
-          try {
-            for (const c of bom.components) {
-              const consumed = c.qty * order.qty;
-              const item = inventory.rows.find((it) => it.sku === c.sku);
-              const newQty = Math.max(0, (item?.qty || 0) - consumed);
-              await sb("inventory_items").eq("sku", c.sku).update({ qty_on_hand: newQty }).run();
-              await sb("inventory_stock_movements").insert({
-                item_id: c.sku, movement: "Out", qty: consumed, reference: `${order.id} completed`,
-              }).run();
-            }
-          } catch (e) {
-            notify("Materials deducted locally, but the server update failed.", "error");
-          }
-        }
       }
     }
-
-    if (IS_CONFIGURED && order?.dbId) {
-      try { await sb("manufacturing_work_orders").eq("id", order.dbId).update({ status: next }).run(); }
-      catch (e) { notify("Couldn't save the work order status to the server.", "error"); }
-    }
+    const advanced = { ...order, status: next };
+    setWorkOrders((prev) => prev.map((existing) => (existing.id === id ? advanced : existing)));
+    setSelected((selectedOrder) => (selectedOrder && selectedOrder.id === id ? advanced : selectedOrder));
+    return advanced;
   }
 
   async function deleteOrder(id) {
     const order = workOrders.find((w) => w.id === id);
-    setWorkOrders((prev) => prev.filter((w) => w.id !== id));
-    setSelected(null);
     if (IS_CONFIGURED && order?.dbId) {
-      try { await sb("manufacturing_work_orders").eq("id", order.dbId).delete().run(); }
-      catch (e) { notify("Couldn't delete the work order on the server.", "error"); }
+      try {
+        await sb("manufacturing_work_orders").eq("id", order.dbId).delete().single().run();
+        setWorkOrders((prev) => prev.filter((workOrder) => workOrder.id !== id));
+        return true;
+      } catch (e) {
+        notify("Work order could not be deleted from the server. It remains available here.", "error");
+        return false;
+      }
     }
+    setWorkOrders((prev) => prev.filter((workOrder) => workOrder.id !== id));
+    return true;
   }
 
 
@@ -20357,7 +20381,11 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
       {selected && (
         <WorkOrderPanel order={selected} onClose={() => setSelected(null)} onAdvance={advanceOrder} onDelete={deleteOrder} inventory={inventory} boms={boms} />
       )}
-      {showForm && <WorkOrderFormPanel boms={boms} inventory={inventory} onClose={() => setShowForm(false)} onSubmit={addWorkOrder} />}
+      {showForm && <WorkOrderFormPanel boms={boms} inventory={inventory} onClose={() => setShowForm(false)} onSubmit={async (form) => {
+        const created = await addWorkOrder(form);
+        if (created) setShowForm(false);
+        return created;
+      }} />}
     </div>
   );
 }
@@ -20366,6 +20394,7 @@ function WorkOrderPanel({ order, onClose, onAdvance, onDelete, inventory, boms }
   const bom = boms.rows.find((b) => b.id === order.bomId);
   const nextStatus = WO_STATUS_NEXT[order.status];
   const unitCost = bom ? bomUnitCost(bom, inventory.rows) : 0;
+  const [saving, setSaving] = useState(false);
 
   // Live sufficiency check against the shared Inventory table — a component
   // is short if the required qty exceeds what is actually on hand right now.
@@ -20377,6 +20406,27 @@ function WorkOrderPanel({ order, onClose, onAdvance, onDelete, inventory, boms }
   });
   const hasShortage = requirements.some((r) => r.short);
   const completing = nextStatus === "Completed";
+
+  async function advance() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onAdvance(order.id, nextStatus);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeOrder() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const deleted = await onDelete(order.id);
+      if (deleted) onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
@@ -20450,14 +20500,14 @@ function WorkOrderPanel({ order, onClose, onAdvance, onDelete, inventory, boms }
         <div className="px-6 py-4 border-t border-slate-100 flex flex-col gap-2">
           {nextStatus && (
             <button
-              onClick={() => onAdvance(order.id, nextStatus)}
-              disabled={completing && hasShortage}
+              onClick={advance}
+              disabled={saving || (completing && hasShortage)}
               className="text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {completing && hasShortage ? "Insufficient stock to complete" : `Mark ${nextStatus}`}
+              {saving ? "Saving…" : completing && hasShortage ? "Insufficient stock to complete" : `Mark ${nextStatus}`}
             </button>
           )}
-          <ConfirmDeleteButton label="Delete work order" onConfirm={() => onDelete(order.id)} />
+          <ConfirmDeleteButton label={saving ? "Saving…" : "Delete work order"} onConfirm={removeOrder} />
         </div>
       </div>
     </div>
@@ -20467,15 +20517,21 @@ function WorkOrderPanel({ order, onClose, onAdvance, onDelete, inventory, boms }
 function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
   const [form, setForm] = useState({ bomId: boms.rows[0]?.id || "", qty: "", startDate: TODAY.toISOString().slice(0, 10), dueDate: "", assignedTo: "" });
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const valid = Number(form.qty) > 0 && form.dueDate;
   const bom = boms.rows.find((b) => b.id === form.bomId);
 
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setTouched(true);
-    if (!valid) return;
-    onSubmit(form);
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(form);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -20525,7 +20581,7 @@ function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
 
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors">Create Work Order</button>
+          <button type="submit" disabled={submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">{submitting ? "Saving…" : "Create Work Order"}</button>
         </div>
       </form>
     </div>
