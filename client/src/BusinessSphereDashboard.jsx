@@ -20942,44 +20942,49 @@ function Maintenance({ expensesHook }) {
   const records = useCompanyTable("manufacturing_maintenance", maintenanceSeed, { order: { col: "maintenance_date", ascending: false }, mapRow: mapMaintenanceRow });
   const { rows, setRows, loading } = records;
   const [showForm, setShowForm] = useState(false);
+  const [savingMaintenance, setSavingMaintenance] = useState(false);
   const todayStr = TODAY.toISOString().slice(0, 10);
   const overdue = rows.filter((r) => r.nextDueDate && r.nextDueDate < todayStr);
 
   async function addRecord(form) {
+    if (savingMaintenance) return;
     const draft = {
       id: docId("MT"), machine: form.machine, type: form.type, technician: form.technician,
       date: TODAY.toISOString().slice(0, 10), cost: Number(form.cost) || 0, notes: form.notes, nextDueDate: form.nextDueDate || null,
     };
-    setRows((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(`Maintenance logged: ${draft.machine}`);
-
-    // A maintenance record with a real cost is a real expense — the same
-    // shared Finance table Payroll and Vendor Payments already write to.
-    if (draft.cost > 0) {
-      const expenseDraft = {
-        id: docId("EX"), vendor: `Maintenance — ${draft.machine}`, category: "Maintenance",
-        date: draft.date, dueDate: draft.date, amount: draft.cost, status: "Paid", method: "Cash",
-      };
-      expensesHook.setRows((prev) => [expenseDraft, ...prev]);
-      if (IS_CONFIGURED) {
-        try {
-          const expHeader = await sb("finance_expenses").insert({
-            vendor: expenseDraft.vendor, category: "Maintenance", expense_date: expenseDraft.date,
-            due_date: expenseDraft.dueDate, amount: expenseDraft.amount, status: "Paid", method: "Cash",
-          }).single().run();
-          if (expHeader?.id) expensesHook.setRows((prev) => prev.map((e) => (e.id === expenseDraft.id ? { ...e, dbId: expHeader.id } : e)));
-        } catch (_e) { /* the maintenance record itself still saves below; a failed expense sync is reported there */ }
+    setSavingMaintenance(true);
+    try {
+      if (!IS_CONFIGURED) {
+        setRows((prev) => [draft, ...prev]);
+        if (draft.cost > 0) expensesHook.setRows((prev) => [{ id: docId("EX"), vendor: `Maintenance — ${draft.machine}`, category: "Maintenance", date: draft.date, dueDate: draft.date, amount: draft.cost, status: "Paid", method: "Cash" }, ...prev]);
+        setShowForm(false);
+        notify(`Maintenance logged: ${draft.machine}`);
+        return;
       }
-    }
-
-    if (IS_CONFIGURED) {
-      try {
-        await sb("manufacturing_maintenance").insert({
-          machine_name: draft.machine, maintenance_type: draft.type, technician: draft.technician,
-          maintenance_date: draft.date, cost: draft.cost, notes: draft.notes, next_due_date: draft.nextDueDate,
-        }).run();
-      } catch (_e) { notify("Logged locally, but saving to the server failed.", "error"); }
+      const { data, error } = await runCompanyTableMutation("manufacturing_maintenance", "insert", {
+        machine_name: draft.machine, maintenance_type: draft.type, technician: draft.technician,
+        maintenance_date: draft.date, cost: draft.cost, notes: draft.notes, next_due_date: draft.nextDueDate,
+      });
+      if (error || !data?.id) throw error || new Error("The server did not return the maintenance record.");
+      const confirmed = mapMaintenanceRow(data);
+      setRows((prev) => [confirmed, ...prev]);
+      setShowForm(false);
+      notify(`Maintenance logged: ${confirmed.machine}`);
+      if (draft.cost > 0) {
+        const { data: expenseData, error: expenseError } = await runCompanyTableMutation("finance_expenses", "insert", {
+          vendor: `Maintenance — ${draft.machine}`, category: "Maintenance", expense_date: draft.date,
+          due_date: draft.date, amount: draft.cost, status: "Paid", method: "Cash",
+        });
+        if (expenseError || !expenseData?.id) {
+          notify("Maintenance is confirmed, but its linked Finance expense needs reconciliation and retry.", "error");
+        } else {
+          expensesHook.setRows((prev) => [mapExpenseRow(expenseData), ...prev]);
+        }
+      }
+    } catch (error) {
+      notify(`Maintenance was not logged. ${error?.message || "Your form is still available to retry."}`, "error");
+    } finally {
+      setSavingMaintenance(false);
     }
   }
 
@@ -21088,12 +21093,12 @@ function Maintenance({ expensesHook }) {
           </table>
         </div>
       </div>
-      {showForm && <MaintenanceFormPanel onClose={() => setShowForm(false)} onSubmit={addRecord} />}
+      {showForm && <MaintenanceFormPanel onClose={() => setShowForm(false)} onSubmit={addRecord} saving={savingMaintenance} />}
     </div>
   );
 }
 
-function MaintenanceFormPanel({ onClose, onSubmit }) {
+function MaintenanceFormPanel({ onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({ machine: machinesSeed[0]?.name || "", type: MAINTENANCE_TYPES[0], technician: "", cost: "", notes: "", nextDueDate: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.machine.trim() || !form.technician.trim()) return; onSubmit(form); }
@@ -21125,7 +21130,7 @@ function MaintenanceFormPanel({ onClose, onSubmit }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Log Maintenance</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Log Maintenance"}</button>
         </div>
       </form>
     </div>
