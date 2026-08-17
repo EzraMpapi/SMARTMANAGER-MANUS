@@ -5848,7 +5848,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                   </div>
                 )}
               </div>
-              <button onClick={()=>onNavigate("ai")} className="flex items-center gap-1.5 text-[12px] font-bold text-[#111827] bg-[#16A34A] px-3.5 py-2 rounded-xl hover:bg-[#15803D]">
+              <button onClick={()=>onNavigate("ai")} className="flex items-center gap-1.5 text-[12px] font-bold text-white bg-[#16A34A] px-3.5 py-2 rounded-xl hover:bg-[#15803D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
                 <Sparkles size={13}/> Ask AI
               </button>
               <button onClick={()=>typeof window.__openDailyBrief==="function"&&window.__openDailyBrief()} className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]">
@@ -5927,8 +5927,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             {alerts.length===0?(
               <div className="py-10 text-center">
                 <CheckCircle2 size={24} className="text-[#16A34A] mx-auto mb-2"/>
-                <p className="text-[12.5px] text-slate-400 font-semibold">All Clear</p>
-                <p className="text-[11px] text-slate-300">No active alerts</p>
+                <p className="text-[12.5px] text-slate-500 font-semibold">All clear</p>
+                <p className="text-[11px] text-slate-400">No active attention signals in this workspace.</p>
               </div>
             ):alerts.slice(0,8).map((a,i)=>{
               const cols={critical:["#FEF2F2","#EF4444"],high:["#FFFBEB","#F59E0B"],medium:["#EFF6FF","#2563EB"],low:["#F0FDF4","#16A34A"]};
@@ -5968,8 +5968,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               {label:"View Reports",  icon:BarChart3,     col:"#1E3A8A", action:()=>onNavigate("reports")},
               {label:"AI Assistant",  icon:Sparkles,      col:"#F9A8D4", action:()=>onNavigate("ai")},
             ].map(({label,icon:Icon,col,action})=>(
-              <button key={label} onClick={action}
-                className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group">
+              <button key={label} onClick={action} aria-label={label}
+                className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 transition-all group">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all group-hover:scale-105"
                   style={{background:col+"15"}}>
                   <Icon size={16} style={{color:col}}/>
@@ -6130,7 +6130,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               name:name.length>16?name.slice(0,14)+"…":name,
               value:Math.round(val/1000),
             }));
-            if (!custData.length) return <p className="text-slate-300 text-center py-8 text-[12px]">No invoices yet</p>;
+            if (!custData.length) return <EmptyState icon={ReceiptText} title="No invoice data yet" hint="Create a confirmed invoice to begin tracking customer revenue here." actionLabel="Create invoice" onAction={()=>onQuickAction("sales",{tab:"invoices",openForm:true})}/>;
             return (
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={custData} layout="vertical" margin={{left:5,right:24,top:0,bottom:0}}>
@@ -6157,7 +6157,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             });
             const catData = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6)
               .map(([name,val],i)=>({name:name.slice(0,12),value:Math.round(val/1000),fill:["#16A34A","#2563EB","#D97706","#7C3AED","#EF4444","#0891B2"][i%6]}));
-            if (!catData.length) return <p className="text-slate-300 text-center py-8 text-[12px]">No inventory yet</p>;
+            if (!catData.length) return <EmptyState icon={Package} title="No inventory data yet" hint="Add or import a confirmed stock item to see category value and availability." actionLabel="Open inventory" onAction={()=>onNavigate("inventory")}/>;
             return (
               <div className="flex items-center gap-3">
                 <ResponsiveContainer width="55%" height={150}>
@@ -6193,7 +6193,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               name:s, value:Math.round(crm.rows.filter(l=>l.stage===s).reduce((sum,l)=>sum+(l.value||0),0)/1000),
               fill:STAGE_COLORS[s],
             })).filter(d=>d.value>0);
-            if (!stageData.length) return <p className="text-slate-300 text-center py-8 text-[12px]">No leads yet</p>;
+            if (!stageData.length) return <EmptyState icon={Users} title="No active pipeline yet" hint="Create a confirmed lead to start visualizing deal stages and potential value." actionLabel="Add lead" onAction={()=>onQuickAction("crm",{tab:"leads"})}/>;
             return (
               <ResponsiveContainer width="100%" height={155}>
                 <BarChart data={stageData} margin={{left:0,right:10,top:0,bottom:0}}>

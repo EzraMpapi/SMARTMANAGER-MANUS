@@ -189,6 +189,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("{PERIOD_LABELS[period]} reporting view");
   });
 
+  it("turns empty dashboard analytics into accessible next actions rather than fabricated chart data", () => {
+    expect(dashboardSource).toContain('title="No invoice data yet"');
+    expect(dashboardSource).toContain('actionLabel="Create invoice"');
+    expect(dashboardSource).toContain('title="No inventory data yet"');
+    expect(dashboardSource).toContain('actionLabel="Open inventory"');
+    expect(dashboardSource).toContain('title="No active pipeline yet"');
+    expect(dashboardSource).toContain('actionLabel="Add lead"');
+    expect(dashboardSource).toContain('aria-label={label}');
+  });
+
   it("routes an authenticated profile without a company assignment into company setup before tenant writes", () => {
     expect(dashboardSource).toContain("!profile || !profile.company_id || !profile.companies?.id");
     expect(dashboardSource).toContain("setOauthPendingUser({ id: user.id");
