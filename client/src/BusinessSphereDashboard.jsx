@@ -45,6 +45,7 @@ import { EnterpriseLoginView, ForgotPasswordView, PasswordStrengthMeter, ResetPa
 import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
+import { TraPortalModule } from "./components/TraPortalModule";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -3022,7 +3023,7 @@ function Toasts() {
 const ALL_MODULE_IDS = [
   "dashboard", "crm", "sales", "inventory", "procurement", "finance", "reports", "hr",
   "manufacturing", "scm", "marketing", "ecommerce", "pos", "documents", "projects",
-  "support", "analytics", "notifications", "integrations", "ai", "workflows", "collaboration",
+  "support", "analytics", "notifications", "integrations", "ai", "workflows", "collaboration", "tra_portal",
 ];
 
 const ROLES = [
@@ -3083,8 +3084,8 @@ const ROLES = [
   },
   {
     id: "Employee", category: "General Staff",
-    description: "General staff access — company documents, team chat, and the shared calendar. No administrative capability.",
-    allowedModules: ["dashboard", "documents", "collaboration"], primaryModules: ["documents"], writeAccess: "none",
+    description: "General staff access — Dashboard and Employee Portal only.",
+    allowedModules: ["dashboard", "employee-portal"], primaryModules: ["employee-portal"], writeAccess: "none",
   },
   {
     id: "Auditor", category: "Oversight",
@@ -3155,6 +3156,7 @@ const MODULES = [
   { id: "integrations", label: "Integration Hub", icon: Globe, live: true },
   { id: "workflows", label: "Workflow Studio", icon: GitBranch, live: true },
   { id: "collaboration", label: "Collaboration Hub", icon: MessageSquare, live: true },
+  { id: "tra_portal", label: "TRA Portal", icon: ReceiptText, live: true },
   { id: "ai", label: "AI Assistant", icon: Brain, live: true },
   { id: "microfinance", label: "Microfinance", icon: HandCoins, live: true },
   { id: "vicoba", label: "VICOBA / SACCOS", icon: Users2, live: true },
@@ -49964,6 +49966,9 @@ function SmartManager() {
           )}
           {active === "collaboration" && (
             <CollaborationHub currentUser={currentUser} filesHook={files} employees={employees} invoices={invoices} crm={crm} workOrders={workOrders} leaveRequests={leaveRequests} onNavigate={go} />
+          )}
+          {active === "tra_portal" && (
+            <TraPortalModule companyId={company?.id || company?.companyId || "default-company"} lang={lang} />
           )}
           {active === "marketing" && <Marketing crm={crm} />}
           {active === "hr" && <HR employeesHook={employees} leaveRequestsHook={leaveRequests} expensesHook={expenses} intent={intent} clearIntent={clearIntent} currentUser={currentUser} canManage={canManage} />}

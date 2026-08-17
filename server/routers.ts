@@ -22,6 +22,7 @@ import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resend
 import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
+import { traFiscalRouter } from "./traFiscalRouter";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -47,6 +48,7 @@ async function requireVerifiedAuditCompany(req: Parameters<typeof resolveVerifie
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+  traFiscal: traFiscalRouter,
   accountRegistration: router({
     createConfirmedPasswordAccount: publicProcedure
       .input(z.object({ email: z.string().email().max(320), password: z.string().min(1).max(256) }))
