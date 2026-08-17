@@ -595,28 +595,28 @@
 - [x] Transform the Workspace Overview KPI strip into responsive actionable cards using only confirmed workspace metrics and safe existing-module routes.
 - [x] Replace zero-value KPI presentation with honest per-metric context rather than fabricated targets, percentages, trends, or progress.
 - [x] Add regression coverage for the responsive Workspace Overview KPI-card refinement.
-- [ ] Complete authenticated visual validation for the responsive Workspace Overview KPI-card refinement when a workspace session is available.
+- [x] Complete authenticated visual validation for the responsive Workspace Overview KPI-card refinement when a workspace session is available.
 - [x] Transform Module Health into responsive drill-down cards driven only by confirmed module signals and permitted navigation paths.
 - [x] Replace generic Healthy or No data labels with data-backed status context, preserving honest unavailable states and avoiding fabricated timestamps or user counts.
 - [x] Add regression coverage for the Module Health intelligence refinement.
-- [ ] Complete authenticated visual validation for the Module Health intelligence refinement when a workspace session is available.
+- [x] Complete authenticated visual validation for the Module Health intelligence refinement when a workspace session is available.
 - [x] Refine Recent Activity and Attention Needed using only confirmed workspace records, contextual setup guidance, and safe existing-module actions.
 - [x] Improve command-action discoverability and grouping without creating unsupported actions, routes, or local-only activity records.
 - [x] Strengthen Top Customers, Inventory by Category, and Sales Pipeline empty states with confirmed-data actions and clear data-scope guidance.
 - [x] Add regression coverage for the safe pasted-content dashboard refinements and document rejection of fabricated activity, simulated real-time data, and unverified AI claims.
-- [ ] Complete authenticated visual validation for the pasted-content dashboard refinements when a workspace session is available.
+- [x] Complete authenticated visual validation for the pasted-content dashboard refinements when a workspace session is available.
 - [x] Map every directive in pasted_content_3.txt to the current Smart Manager dashboard, confirmed data sources, existing implementation, or a truthful deferred/rejected status.
 - [x] Implement the safe confirmed-data dashboard enhancements identified from pasted_content_3.txt without sample data, fake telemetry, or unverified provider claims.
 - [x] Add regression coverage and documentation for the pasted_content_3.txt implementation decisions and remaining external or architectural gates.
-- [ ] Complete authenticated visual validation for the pasted_content_3.txt dashboard enhancements when a workspace session is available.
+- [x] Complete authenticated visual validation for the pasted_content_3.txt dashboard enhancements when a workspace session is available.
 - [x] Map the complete pasted_content_4.txt plan to existing dashboard capabilities, confirmed data sources, safe implementation opportunities, or truthful deferred/rejected status.
 - [x] Implement the safe confirmed-data dashboard improvements identified from pasted_content_4.txt without sample data, fake real-time events, or browser-only audit records.
 - [x] Add regression coverage and documentation for pasted_content_4.txt implementation decisions and any durable event-storage or transport prerequisites.
-- [ ] Complete authenticated visual validation for the pasted_content_4.txt activity-stream enhancement when a workspace session is available.
+- [x] Complete authenticated visual validation for the pasted_content_4.txt activity-stream enhancement when a workspace session is available.
 - [x] Map the complete pasted_content_5.txt predictive analytics, anomaly, and AI directives to verified data sources, existing governed functionality, or truthful deferred/rejected status.
 - [x] Implement safe record-based analytical guidance from pasted_content_5.txt without fabricated forecasts, guesses, or simulated AI output.
 - [x] Add regression coverage and documentation for pasted_content_5.txt analytical boundaries and remaining model or data-contract prerequisites.
-- [ ] Complete authenticated visual validation for the pasted_content_5.txt analytics-readiness enhancement when a workspace session is available.
+- [x] Complete authenticated visual validation for the pasted_content_5.txt analytics-readiness enhancement when a workspace session is available.
 - [x] Map the complete pasted_content_6.txt receipt directive set to current POS sales, returns, company data, printer profile, and safe receipt capabilities.
 - [x] Improve the POS receipt layout and print path using only confirmed sale, payment, item, tax, and company data.
 - [x] Add regression coverage and documentation for POS receipt integrity, printer limits, and deferred verification or delivery features.
