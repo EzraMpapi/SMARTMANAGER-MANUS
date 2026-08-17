@@ -605,3 +605,7 @@
 - [x] Strengthen Top Customers, Inventory by Category, and Sales Pipeline empty states with confirmed-data actions and clear data-scope guidance.
 - [x] Add regression coverage for the safe pasted-content dashboard refinements and document rejection of fabricated activity, simulated real-time data, and unverified AI claims.
 - [ ] Complete authenticated visual validation for the pasted-content dashboard refinements when a workspace session is available.
+- [x] Map every directive in pasted_content_3.txt to the current Smart Manager dashboard, confirmed data sources, existing implementation, or a truthful deferred/rejected status.
+- [x] Implement the safe confirmed-data dashboard enhancements identified from pasted_content_3.txt without sample data, fake telemetry, or unverified provider claims.
+- [x] Add regression coverage and documentation for the pasted_content_3.txt implementation decisions and remaining external or architectural gates.
+- [ ] Complete authenticated visual validation for the pasted_content_3.txt dashboard enhancements when a workspace session is available.

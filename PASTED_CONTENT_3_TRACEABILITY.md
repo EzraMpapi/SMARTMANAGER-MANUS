@@ -1,0 +1,15 @@
+# Pasted Content 3: Dashboard Transformation Traceability
+
+This document records the implementation assessment for `pasted_content_3.txt`. Smart Manager’s dashboard is intentionally built around confirmed, tenant-scoped workspace records. A visual improvement cannot represent fabricated activity, generated financial data, guessed user behavior, or unverified external service status as live business information.
+
+| Attached directive | Current outcome | Evidence and boundary |
+| --- | --- | --- |
+| Smart empty states | **Implemented safely.** The shared `EmptyState` supports a confirmed-data action, optional helpful next steps, and a source note. The executive customer, inventory, and pipeline cards now use it. | Tips guide the user to an existing module; they do not create sample data, pretend an import opened, send analytics, or claim a tutorial exists. |
+| Smart onboarding | **Implemented safely.** The established `GettingStartedChecklist` is now mounted on the executive dashboard and has an accessible in-page anchor. | Progress is calculated only from confirmed inventory, CRM, invoice, payment/POS, and expense rows. It does not estimate completion time, profile completeness, or team-size state that has no verified dashboard contract. |
+| Activity feed | **Already implemented safely and retained.** It merges confirmed invoices, expenses, and leave entries with date-level recency. | The attachment’s sample people, login events, system patches, auto-refresh simulation, read state, local quick notes, and WebSocket endpoint are not implemented. They require a durable tenant audit/activity contract and, where relevant, an authenticated real-time provider. |
+| Attention center | **Implemented safely.** Smart Tips & Actions surfaces confirmed low stock and overdue work orders, then only setup navigation when confirmed inventory, invoices, or CRM leads are absent. | No arbitrary timestamps, local dismissal ledger, or unverified “AI insight” is represented as a business alert. |
+| AI assistant widget | **Existing governed route retained.** The dashboard continues to navigate to the established AI workspace. | The attachment’s claim that the assistant is online, its static suggestions, and generated customer insight are not inserted because they would bypass the existing server-side review and approval boundary. |
+| Real-time data simulation | **Rejected.** | Counter increments, simulated revenue, generated users, and random events would contradict the confirmed-server-data requirement and create a misleading operational dashboard. |
+| Real-time activity delivery | **Deferred.** | A future implementation requires a tenant-scoped durable event table, verified writer identities, retention rules, access controls, and a configured real-time transport. No browser-local substitute is acceptable. |
+
+The attached code is therefore used as design direction, not as a source of authoritative business data or persistence behavior. Every completed dashboard action continues to route into an existing workspace module, where the application’s current server-confirmed workflows govern record creation and modification.

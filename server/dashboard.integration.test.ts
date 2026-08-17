@@ -275,6 +275,18 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).not.toContain("activeUsers: 0");
   });
 
+  it("implements the safe pasted-content-3 onboarding and smart empty-state enhancements without sample data or fake realtime activity", () => {
+    expect(dashboardSource).toContain("<GettingStartedChecklist inventory={inventory} crm={crm} invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />");
+    expect(dashboardSource).toContain('id="getting-started-checklist"');
+    expect(dashboardSource).toContain("function EmptyState({ icon: Icon, title, hint, actionLabel, onAction, tips = [], sourceNote })");
+    expect(dashboardSource).toContain("Helpful next steps");
+    expect(dashboardSource).toContain("Source: confirmed invoice records only.");
+    expect(dashboardSource).toContain("Source: confirmed inventory rows only.");
+    expect(dashboardSource).toContain("Source: confirmed CRM lead records only.");
+    expect(dashboardSource).not.toContain("generateSampleActivities");
+    expect(dashboardSource).not.toContain("useWebSocket('/api/activities'");
+  });
+
   it("turns empty customer, inventory, and pipeline analytics into accessible source-aware actions rather than fabricated chart data", () => {
     expect(dashboardSource).toContain('title="No billed customers yet"');
     expect(dashboardSource).toContain('actionLabel="Open CRM"');

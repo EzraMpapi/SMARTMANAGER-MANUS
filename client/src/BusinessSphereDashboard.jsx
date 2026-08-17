@@ -5872,6 +5872,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
       <DashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
 
+      <GettingStartedChecklist inventory={inventory} crm={crm} invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
+
       {/* ══════════════════ COMMAND STRIP ══════════════════ */}
       <div className="rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 55%,#16A34A 130%)"}}>
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -6322,7 +6324,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               name:name.length>16?name.slice(0,14)+"…":name,
               value:Math.round(val/1000),
             }));
-            if (!custData.length) return <EmptyState icon={Users} title="No billed customers yet" hint="Customer revenue appears here after a confirmed invoice is linked to a customer. Open CRM to add or review customer records first." actionLabel="Open CRM" onAction={()=>onQuickAction("crm",{tab:"leads"})}/>;
+            if (!custData.length) return <EmptyState icon={Users} title="No billed customers yet" hint="Customer revenue appears here after a confirmed invoice is linked to a customer. Open CRM to add or review customer records first." actionLabel="Open CRM" onAction={()=>onQuickAction("crm",{tab:"leads"})} tips={["Add or review a customer or lead in CRM before recording the first invoice."]} sourceNote="Source: confirmed invoice records only."/>;
             return (
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={custData} layout="vertical" margin={{left:5,right:24,top:0,bottom:0}}>
@@ -6349,7 +6351,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             });
             const catData = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6)
               .map(([name,val],i)=>({name:name.slice(0,12),value:Math.round(val/1000),fill:["#16A34A","#2563EB","#D97706","#7C3AED","#EF4444","#0891B2"][i%6]}));
-            if (!catData.length) return <EmptyState icon={Package} title="No inventory items yet" hint="Add or import a confirmed stock item to populate category value and availability. This chart does not use placeholder inventory." actionLabel="Open inventory" onAction={()=>onNavigate("inventory")}/>;
+            if (!catData.length) return <EmptyState icon={Package} title="No inventory items yet" hint="Add or import a confirmed stock item to populate category value and availability. This chart does not use placeholder inventory." actionLabel="Open inventory" onAction={()=>onNavigate("inventory")} tips={["Begin with products or services that you need to track for stock availability."]} sourceNote="Source: confirmed inventory rows only."/>;
             return (
               <div className="flex items-center gap-3">
                 <ResponsiveContainer width="55%" height={150}>
@@ -6387,7 +6389,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             })).filter(d=>d.count>0);
             const totalPipelineValue = stageData.reduce((sum, stage) => sum + stage.value, 0);
             const metricKey = totalPipelineValue > 0 ? "value" : "count";
-            if (!stageData.length) return <EmptyState icon={Users} title="No active pipeline yet" hint="Create a confirmed lead to begin visualizing deal stages. Potential value appears once it is recorded on a lead." actionLabel="Open Leads" onAction={()=>onQuickAction("crm",{tab:"leads"})}/>;
+            if (!stageData.length) return <EmptyState icon={Users} title="No active pipeline yet" hint="Create a confirmed lead to begin visualizing deal stages. Potential value appears once it is recorded on a lead." actionLabel="Open Leads" onAction={()=>onQuickAction("crm",{tab:"leads"})} tips={["Capture the next customer opportunity in CRM, then update its stage as the conversation progresses."]} sourceNote="Source: confirmed CRM lead records only."/>;
             return (
               <ResponsiveContainer width="100%" height={155}>
                 <BarChart data={stageData} margin={{left:0,right:10,top:0,bottom:0}}>
@@ -6517,7 +6519,7 @@ function GettingStartedChecklist({ inventory, crm, invoices, expenses, posTransa
   if (allDone || dismissed) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
+    <div id="getting-started-checklist" aria-label="Getting started checklist" className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
       <div className="flex items-start justify-between mb-1">
         <div>
           <h3 className="text-[14.5px] font-semibold text-[#111827]">Getting Started</h3>
@@ -7557,7 +7559,7 @@ function SkeletonRows({ cols, rows = 5 }) {
 // Shown when a live table loads successfully but has zero records — the
 // onboarding moment for a fresh company. Filtered-empty states ("no match")
 // stay separate; this is specifically "you haven't created anything yet."
-function EmptyState({ icon: Icon, title, hint, actionLabel, onAction }) {
+function EmptyState({ icon: Icon, title, hint, actionLabel, onAction, tips = [], sourceNote }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-14 px-6">
       <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-3.5" style={{ backgroundColor: "#DCFCE7" }}>
@@ -7573,6 +7575,13 @@ function EmptyState({ icon: Icon, title, hint, actionLabel, onAction }) {
           <Plus size={14} /> {actionLabel}
         </button>
       )}
+      {tips.length > 0 && (
+        <div className="mt-4 w-full max-w-sm space-y-1.5 text-left">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Helpful next steps</p>
+          {tips.map((tip) => <p key={tip} className="flex gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-500"><Sparkles size={13} className="mt-0.5 shrink-0 text-[#16A34A]" />{tip}</p>)}
+        </div>
+      )}
+      {sourceNote && <p className="mt-3 text-[10.5px] leading-relaxed text-slate-400">{sourceNote}</p>}
     </div>
   );
 }
