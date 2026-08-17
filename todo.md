@@ -703,3 +703,6 @@
 - [x] Implement a visual spotlight effect in `OnboardingTour` that highlights the target dashboard module tab or command element for each step, with a smooth pulse animation and fallback centering.
 - [x] Add `data-tour-target` attribute selectors to the dashboard sidebar and header action elements.
 - [x] Add focused regression tests verifying spotlight target mapping across all onboarding tour steps.
+- [x] Implement bilingual onboarding tour steps in `BusinessSphereDashboard.jsx` supporting both English and Kiswahili based on the user's active language preference.
+- [x] Translate tour modal header, progress text, buttons, and server-confirmation reassurance into Kiswahili.
+- [x] Add focused regression coverage verifying Kiswahili step copy and language-responsive onboarding behavior.

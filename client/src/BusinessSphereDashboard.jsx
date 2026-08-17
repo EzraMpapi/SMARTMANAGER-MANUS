@@ -48674,13 +48674,83 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
 
 
 const ONBOARDING_TOUR_STEPS = [
-  { id: "dashboard", moduleId: "dashboard", title: "Start at your command center", description: "See confirmed KPIs, operational guidance, and live workspace status without relying on fabricated trends.", icon: LayoutDashboard, accent: "#16A34A" },
-  { id: "sales", moduleId: "sales", title: "Turn opportunities into sales", description: "Create and follow sales workflows that only become visible after the server confirms the record.", icon: ShoppingCart, accent: "#2563EB" },
-  { id: "pos", moduleId: "pos", title: "Move quickly at the point of sale", description: "Complete checkout, handle offline queues transparently, and use Sync Now when connectivity returns.", icon: ShoppingBag, accent: "#7C3AED" },
-  { id: "inventory", moduleId: "inventory", title: "Keep stock truthful", description: "Track confirmed stock movements, low-stock attention, and retry-safe adjustments across locations.", icon: Package, accent: "#0891B2" },
-  { id: "finance", moduleId: "finance", title: "Protect cash flow", description: "Review confirmed invoices, expenses, budgets, and collections with clear empty and unavailable states.", icon: Wallet, accent: "#D97706" },
-  { id: "collaboration", moduleId: "collaboration", title: "Coordinate the whole team", description: "Use Projects and Collaboration Hub to manage confirmed tasks, milestones, channels, and calendar work.", icon: MessageSquare, accent: "#DB2777" },
-  { id: "ai", moduleId: "ai", title: "Let AI assist—never act alone", description: "Ask the assistant for grounded analysis and review recommendations before any role-sensitive action is executed.", icon: Brain, accent: "#0F766E" },
+  {
+    id: "dashboard",
+    moduleId: "dashboard",
+    title: { en: "Start at your command center", sw: "Anzia kwenye kituo chako cha uendeshaji" },
+    description: {
+      en: "See confirmed KPIs, operational guidance, and live workspace status without relying on fabricated trends.",
+      sw: "Tazama viashiria vilivyothibitishwa, mwongozo wa kiutendaji, na hali ya mfumo bila kutegemea takwimu za kubuni."
+    },
+    icon: LayoutDashboard,
+    accent: "#16A34A"
+  },
+  {
+    id: "sales",
+    moduleId: "sales",
+    title: { en: "Turn opportunities into sales", sw: "Badili fursa kuwa mauzo" },
+    description: {
+      en: "Create and follow sales workflows that only become visible after the server confirms the record.",
+      sw: "Tengeneza na fuatilia michakato ya mauzo inayoonekana tu baada ya seva kuthibitisha kumbukumbu."
+    },
+    icon: ShoppingCart,
+    accent: "#2563EB"
+  },
+  {
+    id: "pos",
+    moduleId: "pos",
+    title: { en: "Move quickly at the point of sale", sw: "Nenda kwa kasi katika sehemu ya mauzo (POS)" },
+    description: {
+      en: "Complete checkout, handle offline queues transparently, and use Sync Now when connectivity returns.",
+      sw: "Kamilisha malipo, simamia foleni za nje ya mtandao kwa uwazi, na utumie kitufe cha kusawazisha pale mtandao unaporejea."
+    },
+    icon: ShoppingBag,
+    accent: "#7C3AED"
+  },
+  {
+    id: "inventory",
+    moduleId: "inventory",
+    title: { en: "Keep stock truthful", sw: "Weka hesabu za bidhaa kuwa za kweli" },
+    description: {
+      en: "Track confirmed stock movements, low-stock attention, and retry-safe adjustments across locations.",
+      sw: "Fuatilia mienendo ya bidhaa iliyothibitishwa, bidhaa zinazokaribia kuisha, na marekebisho salama katika matawi yako."
+    },
+    icon: Package,
+    accent: "#0891B2"
+  },
+  {
+    id: "finance",
+    moduleId: "finance",
+    title: { en: "Protect cash flow", sw: "Linda mtiririko wa pesa taslimu" },
+    description: {
+      en: "Review confirmed invoices, expenses, budgets, and collections with clear empty and unavailable states.",
+      sw: "Kagua ankara zilizothibitishwa, matumizi, bajeti, na makusanyo kwa mifumo iliyo wazi na ya kweli."
+    },
+    icon: Wallet,
+    accent: "#D97706"
+  },
+  {
+    id: "collaboration",
+    moduleId: "collaboration",
+    title: { en: "Coordinate the whole team", sw: "Ratibu timu nzima kwa pamoja" },
+    description: {
+      en: "Use Projects and Collaboration Hub to manage confirmed tasks, milestones, channels, and calendar work.",
+      sw: "Tumia Miradi na Kituo cha Ushirikiano kusimamia kazi zilizothibitishwa, hatua kuu, na kalenda ya kazi."
+    },
+    icon: MessageSquare,
+    accent: "#DB2777"
+  },
+  {
+    id: "ai",
+    moduleId: "ai",
+    title: { en: "Let AI assist—never act alone", sw: "Ruhusu AI ikusaidie—kamwe usifanye maamuzi peke yako" },
+    description: {
+      en: "Ask the assistant for grounded analysis and review recommendations before any role-sensitive action is executed.",
+      sw: "Omba msaada wa uchambuzi na uhakiki mapendekezo kabla ya kutekeleza hatua yoyote nyeti."
+    },
+    icon: Brain,
+    accent: "#0F766E"
+  },
 ];
 
 function onboardingTourStorageKey(currentUser, company) {
@@ -48690,6 +48760,21 @@ function onboardingTourStorageKey(currentUser, company) {
 }
 
 function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange }) {
+  const [lang, setLang] = useState(() => {
+    try { return localStorage.getItem("bs_lang") || "en"; } catch (_e) { return "en"; }
+  });
+  useEffect(() => {
+    function handleStorage() {
+      try { setLang(localStorage.getItem("bs_lang") || "en"); } catch (_e) {}
+    }
+    window.addEventListener("storage", handleStorage);
+    const interval = window.setInterval(handleStorage, 1000);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.clearInterval(interval);
+    };
+  }, []);
+  const isSw = lang === "sw";
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const dialogRef = useRef(null);
@@ -48702,7 +48787,9 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
   const StepIcon = step.icon;
   const available = visibleModules.some((module) => module.id === step.moduleId);
   const remainingSteps = Math.max(0, ONBOARDING_TOUR_STEPS.length - stepIndex - 1);
-  const remainingLabel = remainingSteps === 0 ? "Final step" : `${remainingSteps} step${remainingSteps === 1 ? "" : "s"} remaining`;
+  const remainingLabel = remainingSteps === 0
+    ? (isSw ? "Hatua ya mwisho" : "Final step")
+    : (isSw ? `Hatua ${remainingSteps} zilizobaki` : `${remainingSteps} step${remainingSteps === 1 ? "" : "s"} remaining`);
 
   useEffect(() => {
     if (!ready || checkedKeyRef.current === storageKey) return;
@@ -48843,10 +48930,10 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
         type="button"
         onClick={restartTour}
         className="hidden lg:inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11.5px] font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-        aria-label="Take the Smart Manager onboarding tour"
+        aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : "Take the Smart Manager onboarding tour"}
         data-onboarding-trigger="true"
       >
-        <Info size={13} /> Take a Tour
+        <Info size={13} /> {isSw ? "Anza Ziara" : "Take a Tour"}
       </button>
       {open && (
         <div
@@ -48876,9 +48963,9 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
               <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
                 <BrandLogo variant="compact" className="h-7 w-7" />
-                Smart Manager tour
+                {isSw ? "Ziara ya Smart Manager" : "Smart Manager tour"}
               </div>
-              <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" aria-label="Close onboarding tour">
+              <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" aria-label={isSw ? "Funga ziara ya mfumo" : "Close onboarding tour"}>
                 <X size={17} />
               </button>
             </div>
@@ -48888,9 +48975,12 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
                   <StepIcon size={23} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700" aria-live="polite">Step {stepIndex + 1} of {ONBOARDING_TOUR_STEPS.length} <span className="ml-1 text-slate-400 normal-case tracking-normal">· {remainingLabel}</span></p>
-                  <h2 id="onboarding-tour-title" className="mt-1 text-[21px] font-semibold tracking-tight text-slate-900">{step.title}</h2>
-                  <p id="onboarding-tour-description" className="mt-2 text-[13px] leading-6 text-slate-600">{step.description}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700" aria-live="polite">
+                    {isSw ? `Hatua ya ${stepIndex + 1} kati ya ${ONBOARDING_TOUR_STEPS.length}` : `Step ${stepIndex + 1} of ${ONBOARDING_TOUR_STEPS.length}`}{" "}
+                    <span className="ml-1 text-slate-400 normal-case tracking-normal">· {remainingLabel}</span>
+                  </p>
+                  <h2 id="onboarding-tour-title" className="mt-1 text-[21px] font-semibold tracking-tight text-slate-900">{step.title[isSw ? "sw" : "en"]}</h2>
+                  <p id="onboarding-tour-description" className="mt-2 text-[13px] leading-6 text-slate-600">{step.description[isSw ? "sw" : "en"]}</p>
                 </div>
               </div>
               <div className="mt-6 flex items-center gap-1.5" role="progressbar" aria-label="Onboarding tour progress" aria-valuemin={1} aria-valuemax={ONBOARDING_TOUR_STEPS.length} aria-valuenow={stepIndex + 1} aria-valuetext={`Step ${stepIndex + 1} of ${ONBOARDING_TOUR_STEPS.length}; ${remainingLabel}`}>
@@ -48898,14 +48988,31 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
                 {ONBOARDING_TOUR_STEPS.map((item, index) => <span key={item.id} className={`h-1.5 rounded-full transition-all ${index === stepIndex ? "w-8 bg-emerald-600" : index < stepIndex ? "w-4 bg-emerald-200" : "w-4 bg-slate-200"}`} aria-hidden="true" />)}
               </div>
               <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3.5 text-[12px] leading-5 text-emerald-950">
-                <div className="flex items-start gap-2"><CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-600" /><span>Every permanent change is designed to wait for server confirmation. If a request fails, the screen preserves your work for retry.</span></div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <span>
+                    {isSw
+                      ? "Kila mabadiliko ya kudumu yanasubiri uthibitisho wa seva. Ombi likishindwa, mfumo huhifadhi kazi yako ili uweze kujaribu tena."
+                      : "Every permanent change is designed to wait for server confirmation. If a request fails, the screen preserves your work for retry."}
+                  </span>
+                </div>
               </div>
               <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg px-3 py-2 text-left text-[12px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">Skip tour</button>
+                <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg px-3 py-2 text-left text-[12px] font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                  {isSw ? " ruka ziara " : "Skip tour"}
+                </button>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={goPrevious} disabled={stepIndex === 0} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"><ChevronLeft size={14} /> Back</button>
-                  {available && <button type="button" onClick={openModule} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-3 py-2 text-[12px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">Open module <ArrowRight size={14} /></button>}
-                  <button type="button" onClick={goNext} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50">{stepIndex === ONBOARDING_TOUR_STEPS.length - 1 ? "Finish tour" : "Next"} <ArrowRight size={14} /></button>
+                  <button type="button" onClick={goPrevious} disabled={stepIndex === 0} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                    <ChevronLeft size={14} /> {isSw ? "Nyuma" : "Back"}
+                  </button>
+                  {available && (
+                    <button type="button" onClick={openModule} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-3 py-2 text-[12px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                      {isSw ? "Fungua mfumo" : "Open module"} <ArrowRight size={14} />
+                    </button>
+                  )}
+                  <button type="button" onClick={goNext} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50">
+                    {stepIndex === ONBOARDING_TOUR_STEPS.length - 1 ? (isSw ? "Maliza ziara" : "Finish tour") : (isSw ? "Endelea" : "Next")} <ArrowRight size={14} />
+                  </button>
                 </div>
               </div>
             </div>

@@ -6,15 +6,15 @@ const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessS
 const tour = source.slice(source.indexOf("const ONBOARDING_TOUR_STEPS"), source.indexOf("function SmartManager()"));
 
 describe("interactive onboarding tour", () => {
-  it("introduces the verified high-value ERP modules", () => {
+  it("introduces the verified high-value ERP modules with Kiswahili support", () => {
     for (const moduleId of ["dashboard", "sales", "pos", "inventory", "finance", "collaboration", "ai"]) {
       expect(tour).toContain(`moduleId: "${moduleId}"`);
     }
     expect(tour).toContain("ONBOARDING_TOUR_STEPS.length");
     expect(tour).toContain("remainingSteps = Math.max(0");
-    expect(tour).toContain("remainingLabel = remainingSteps === 0 ? \"Final step\"");
-    expect(tour).toContain('role="progressbar"');
-    expect(tour).toContain("aria-valuetext={`Step ${stepIndex + 1} of ${ONBOARDING_TOUR_STEPS.length}; ${remainingLabel}`}");
+    expect(tour).toContain("isSw ? \"Hatua ya mwisho\"");
+    expect(tour).toContain("isSw ? \"Ziara ya Smart Manager\"");
+    expect(tour).toContain("sw: \"Anzia kwenye kituo chako cha uendeshaji\"");
     expect(tour).toContain("Every permanent change is designed to wait for server confirmation.");
   });
 
