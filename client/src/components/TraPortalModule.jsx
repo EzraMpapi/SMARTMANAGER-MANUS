@@ -202,6 +202,64 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     setNotice("Branch fiscal comparison exported to PDF successfully.");
   };
 
+  const exportVatCsv = () => {
+    const wsData = receipts.map(r => ({
+      "Receipt Number": r.receiptNumber,
+      "Source Type": r.sourceType,
+      "Source ID": r.sourceId,
+      "Verification Number": r.verificationNumber || "",
+      "Gross Amount (TZS)": r.grossAmount,
+      "VAT Amount 18% (TZS)": r.vatAmount,
+      "Net Amount (TZS)": r.netAmount,
+      "Status": r.status,
+      "Date": new Date(r.createdAt || Date.now()).toISOString()
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, "VAT Return");
+    XLSX.writeFile(wb, `TRA_VAT_Return_PreFilled_${Date.now()}.csv`);
+    setNotice("Pre-filled VAT Return exported to CSV successfully.");
+  };
+
+  const exportVatPdf = () => {
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("BusinessSphere ERP — TRA Pre-Filled VAT Return", 14, 20);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+    doc.text(`TIN: ${tin} | VRN: ${vrn || "N/A"} | Business: ${businessName}`, 14, 34);
+
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total Taxable Turnover: TZS ${totalGross.toLocaleString()}`, 14, 46);
+    doc.text(`Total Output VAT (18%): TZS ${totalVat.toLocaleString()}`, 14, 54);
+    doc.text(`Total Fiscal Receipts: ${receipts.length}`, 14, 62);
+
+    let y = 76;
+    doc.setFont("helvetica", "bold");
+    doc.text("Receipt #", 14, y);
+    doc.text("Source", 60, y);
+    doc.text("Gross (TZS)", 110, y);
+    doc.text("VAT (TZS)", 155, y);
+
+    doc.setFont("helvetica", "normal");
+    receipts.slice(0, 20).forEach(r => {
+      y += 8;
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(r.receiptNumber, 14, y);
+      doc.text(`${r.sourceType}:${r.sourceId}`, 60, y);
+      doc.text(Number(r.grossAmount).toLocaleString(), 110, y);
+      doc.text(Number(r.vatAmount).toLocaleString(), 155, y);
+    });
+
+    doc.save(`TRA_VAT_Return_PreFilled_${Date.now()}.pdf`);
+    setNotice("Pre-filled VAT Return exported to PDF successfully.");
+  };
+
   const totalGross = receipts.reduce((acc, r) => acc + Number(r.grossAmount), 0);
   const totalVat = receipts.reduce((acc, r) => acc + Number(r.vatAmount), 0);
 
@@ -540,9 +598,14 @@ export function TraPortalModule({ companyId, lang = "en" }) {
               <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">Monthly VAT Return — Pre-Filled & Ready</h3>
               <p className="text-[12.5px] text-slate-500">Every fiscal receipt feeds into your VAT calculation automatically. No spreadsheet reconciliation needed.</p>
             </div>
-            <button onClick={() => alert("VAT Return generated in TRA-compliant format successfully.")} className="rounded-xl bg-emerald-600 px-4 py-2 text-[12.5px] font-bold text-white shadow hover:bg-emerald-500">
-              Export TRA-Compliant VAT Return
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={exportVatCsv} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                <FileSpreadsheet size={15} className="text-emerald-600" /> Export CSV
+              </button>
+              <button onClick={exportVatPdf} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-emerald-500">
+                <Download size={15} /> Export PDF
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40 space-y-1">
