@@ -677,3 +677,4 @@
 - [x] Select, fully upgrade, and verify the Projects & Collaboration workspace alongside POS offline queue hardening and regression tests, confirming zero syntax errors, 100% passing tests, and successful bounded production builds.
 - [x] Add an accessible pending-transaction count badge to the POS offline queue editing modal and verify it without changing queue persistence behavior.
 - [x] Add an accessible manual Sync Now button beside the POS offline queue pending-count badge, using the existing confirmed synchronization flow with loading and disabled states.
+- [x] Add success and error completion toasts after the POS manual offline-queue sync finishes, with truthful counts and retry-safe behavior.

@@ -59,4 +59,12 @@ describe("POS UX Enhancements", () => {
     expect(source).toContain("disabled={pendingSales.length === 0 || syncingQueue}");
     expect(source).toContain("Sync pending offline transactions now");
   });
+
+  it("shows truthful completion toasts after the manual queue sync finishes", () => {
+    expect(source).toContain("Sync complete:");
+    expect(source).toContain("confirmed by the server");
+    expect(source).toContain("Sync finished with");
+    expect(source).toContain("still pending");
+    expect(source).toContain("needs attention");
+  });
 });

@@ -37788,6 +37788,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
           }
         } catch (_e) { /* Audio alert is non-blocking */ }
       }
+      return { status: "synced", record };
     } catch (error) {
       const current = readPendingPosSales(typeof window === "undefined" ? null : window.localStorage, queueScope);
       const nextStatus = isRetryablePosTransportError(error) ? "pending" : "needs_attention";
@@ -37806,6 +37807,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
         }
       }
       notify(nextStatus === "needs_attention" ? `Pending receipt ${record.docNumber} needs attention before it can sync.` : `Pending receipt ${record.docNumber} is still waiting for a connection.`, "error");
+      return { status: nextStatus, record, error: String(error?.message || "Synchronization failed") };
     }
   }
 
@@ -37819,8 +37821,18 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
     }
     setSyncingQueue(true);
     try {
+      const results = [];
       for (const record of pending) {
-        await synchronizePendingSale(record);
+        results.push(await synchronizePendingSale(record));
+      }
+      const syncedCount = results.filter((result) => result?.status === "synced").length;
+      const attentionCount = results.filter((result) => result?.status === "needs_attention").length;
+      const waitingCount = results.filter((result) => result?.status === "pending").length;
+      if (syncedCount === pending.length) {
+        notify(`Sync complete: ${syncedCount} offline transaction${syncedCount === 1 ? "" : "s"} confirmed by the server.`, "success");
+      } else {
+        const remainingCount = attentionCount + waitingCount;
+        notify(`Sync finished with ${syncedCount} confirmed and ${remainingCount} still pending${attentionCount ? ` (${attentionCount} need attention)` : ""}.`, "error");
       }
     } finally {
       setSyncingQueue(false);
