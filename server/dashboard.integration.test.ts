@@ -189,6 +189,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("{PERIOD_LABELS[period]} reporting view");
   });
 
+  it("derives executive guidance from confirmed workspace rows and opens an existing module without creating a record", () => {
+    expect(dashboardSource).toContain("const executiveGuidance = useMemo(() =>");
+    expect(dashboardSource).toContain("No confirmed invoice data is available for this workspace yet.");
+    expect(dashboardSource).toContain("No confirmed customer opportunities are available yet.");
+    expect(dashboardSource).toContain("No confirmed stock items are available for this workspace yet.");
+    expect(dashboardSource).toContain("Executive Guidance");
+    expect(dashboardSource).toContain("onClick={() => onNavigate(executiveGuidance.target)}");
+    expect(dashboardSource).toContain("no record is created automatically");
+  });
+
   it("turns empty dashboard analytics into accessible next actions rather than fabricated chart data", () => {
     expect(dashboardSource).toContain('title="No invoice data yet"');
     expect(dashboardSource).toContain('actionLabel="Create invoice"');

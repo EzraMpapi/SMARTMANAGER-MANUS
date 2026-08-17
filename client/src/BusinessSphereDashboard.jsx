@@ -5584,6 +5584,65 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const pendingLeave = useMemo(() => leaveRequests.rows.filter((l) => l.status === "Pending"), [leaveRequests.rows]);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
+  // The guidance panel intentionally derives only from confirmed rows already
+  // visible to this role. It recommends an existing module to review, never
+  // manufactures a metric, creates a record, or performs an automatic action.
+  const executiveGuidance = useMemo(() => {
+    if (alerts.length > 0) {
+      return {
+        icon: Bell,
+        accent: "#EF4444",
+        eyebrow: "Attention recommended",
+        title: `${alerts.length} workspace signal${alerts.length === 1 ? "" : "s"} need review`,
+        detail: "Review the current operational signals before planning new work.",
+        actionLabel: "Review signals",
+        target: alerts[0]?.target || "dashboard",
+      };
+    }
+    if (invoices.rows.length === 0) {
+      return {
+        icon: ReceiptText,
+        accent: "#16A34A",
+        eyebrow: "Revenue readiness",
+        title: "Start with customer billing",
+        detail: "No confirmed invoice data is available for this workspace yet.",
+        actionLabel: "Open sales",
+        target: "sales",
+      };
+    }
+    if (crm.rows.length === 0) {
+      return {
+        icon: Users,
+        accent: "#7C3AED",
+        eyebrow: "Pipeline readiness",
+        title: "Build the sales pipeline",
+        detail: "No confirmed customer opportunities are available yet.",
+        actionLabel: "Open CRM",
+        target: "crm",
+      };
+    }
+    if (inventory.rows.length === 0) {
+      return {
+        icon: Package,
+        accent: "#0891B2",
+        eyebrow: "Inventory readiness",
+        title: "Set up inventory visibility",
+        detail: "No confirmed stock items are available for this workspace yet.",
+        actionLabel: "Open inventory",
+        target: "inventory",
+      };
+    }
+    return {
+      icon: CheckCircle2,
+      accent: "#16A34A",
+      eyebrow: "Workspace status",
+      title: "Core workspace signals are in place",
+      detail: "Review the latest reports to keep decisions aligned with confirmed data.",
+      actionLabel: "Open reports",
+      target: "reports",
+    };
+  }, [alerts, crm.rows.length, inventory.rows.length, invoices.rows.length]);
+
 
   // Recent Activity — a real merged feed, not a fabricated log. Built only
   // from the domains with reliable, directly comparable ISO date fields
@@ -5915,7 +5974,35 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       </div>
 
       {/* ══════════════════ ALERTS + QUICK ACTIONS ══════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+
+        {/* Executive Guidance — recommendation only; it opens an existing module and never creates data. */}
+        {(() => {
+          const GuidanceIcon = executiveGuidance.icon;
+          return (
+            <section className="lg:col-span-1 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden" aria-label="Executive guidance">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100" style={{ background: "#0D2214" }}>
+                <h3 className="text-[13px] font-bold text-white flex items-center gap-1.5"><Sparkles size={13} /> Executive Guidance</h3>
+                <span className="text-[9.5px] font-semibold text-white/55 uppercase tracking-wide">Confirmed data</span>
+              </div>
+              <div className="p-4">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: `${executiveGuidance.accent}14` }}>
+                  <GuidanceIcon size={17} style={{ color: executiveGuidance.accent }} />
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: executiveGuidance.accent }}>{executiveGuidance.eyebrow}</p>
+                <h4 className="mt-1 text-[14px] font-semibold leading-snug text-[#111827]">{executiveGuidance.title}</h4>
+                <p className="mt-1.5 text-[11.5px] leading-relaxed text-slate-500">{executiveGuidance.detail}</p>
+                <button
+                  onClick={() => onNavigate(executiveGuidance.target)}
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-[11.5px] font-semibold text-white transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
+                >
+                  {executiveGuidance.actionLabel} <ChevronRight size={13} />
+                </button>
+                <p className="mt-3 text-[10px] leading-relaxed text-slate-400">Opens an existing workspace module; no record is created automatically.</p>
+              </div>
+            </section>
+          );
+        })()}
 
         {/* Smart Alerts */}
         <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
