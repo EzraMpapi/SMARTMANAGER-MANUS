@@ -6,6 +6,8 @@ import {
   HelpCircle, Server, Activity, ArrowUpRight, ArrowDownRight, FileText,
   Sliders, BellRing, GitBranch, BarChart3
 } from "lucide-react";
+import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
 import { trpc } from "../lib/trpc";
 
 export function TraPortalModule({ companyId, lang = "en" }) {
@@ -143,6 +145,54 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     { branchId: "MWANZA", name: "Mwanza Lake Zone Hub", receipts: 64, gross: 18400000, vat: 3312000, status: "Online" },
     { branchId: "ZANZIBAR", name: "Zanzibar Port Depot", receipts: 39, gross: 11200000, vat: 2016000, status: "Degraded" },
   ];
+
+  const exportBranchExcel = () => {
+    const wsData = branchRows.map(b => ({
+      "Branch ID": b.branchId,
+      "Branch Name": b.name,
+      "Fiscal Receipts": b.receipts,
+      "Gross Sales (TZS)": b.gross,
+      "Output VAT 18% (TZS)": b.vat,
+      "VFD Status": b.status
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, "Branch Fiscal Summary");
+    XLSX.writeFile(wb, `TRA_Multi_Branch_Fiscal_Summary_${Date.now()}.xlsx`);
+    setNotice("Branch fiscal comparison exported to Excel successfully.");
+  };
+
+  const exportBranchPdf = () => {
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("BusinessSphere ERP — TRA Multi-Branch Fiscal Summary", 14, 20);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+    doc.text(`TIN: ${tin} | VRN: ${vrn || "N/A"}`, 14, 34);
+
+    let y = 46;
+    doc.setFont("helvetica", "bold");
+    doc.text("Branch ID", 14, y);
+    doc.text("Branch Name", 50, y);
+    doc.text("Receipts", 120, y);
+    doc.text("Gross Sales (TZS)", 145, y);
+    doc.text("Status", 185, y);
+
+    doc.setFont("helvetica", "normal");
+    branchRows.forEach(b => {
+      y += 8;
+      doc.text(b.branchId, 14, y);
+      doc.text(b.name, 50, y);
+      doc.text(String(b.receipts), 120, y);
+      doc.text(Number(b.gross).toLocaleString(), 145, y);
+      doc.text(b.status, 185, y);
+    });
+
+    doc.save(`TRA_Multi_Branch_Fiscal_Summary_${Date.now()}.pdf`);
+    setNotice("Branch fiscal comparison exported to PDF successfully.");
+  };
 
   return (
     <div className="space-y-6">
@@ -478,15 +528,31 @@ export function TraPortalModule({ companyId, lang = "en" }) {
         </div>
       )}
 
-      {/* Tab 6: Multi-Branch Fiscal Comparison Chart */}
+      {/* Tab 6: Multi-Branch Fiscal Comparison Chart & Offline Reports */}
       {activeTab === "branches" && (
         <div className="space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 dark:border-slate-800 dark:bg-slate-900">
-            <div>
-              <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <BarChart3 size={18} className="text-emerald-600" /> Multi-Branch Fiscal Rollup & Regional Comparison
-              </h3>
-              <p className="text-[12.5px] text-slate-500">Compare fiscal revenue, output VAT, and VFD device health across all enterprise branches.</p>
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div>
+                <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <BarChart3 size={18} className="text-emerald-600" /> Multi-Branch Fiscal Rollup & Regional Comparison
+                </h3>
+                <p className="text-[12.5px] text-slate-500">Compare fiscal revenue, output VAT, and VFD device health across all enterprise branches.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={exportBranchExcel}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  <FileSpreadsheet size={15} className="text-emerald-600" /> Export Excel
+                </button>
+                <button
+                  onClick={exportBranchPdf}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-emerald-500"
+                >
+                  <Download size={15} /> Export PDF
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-2">
               {branchRows.map(branch => (
