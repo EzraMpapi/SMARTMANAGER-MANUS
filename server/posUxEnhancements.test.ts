@@ -28,4 +28,9 @@ describe("POS UX Enhancements", () => {
     expect(source).toContain("printPendingSalesQueue");
     expect(source).toContain("POS Offline Pending-Sync Queue Report");
   });
+
+  it("includes success notification and audio feedback when queued sales successfully synchronize", () => {
+    expect(source).toContain("synchronized successfully. Inventory deducted and revenue recorded");
+    expect(source).toContain("AudioContext");
+  });
 });

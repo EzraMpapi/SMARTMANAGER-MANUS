@@ -37770,7 +37770,22 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
       persistPendingSales(nextRecords);
       const summary = calculatePosPaymentSummary(record.payments, record.total);
       setReceipt({ ...savedTransaction, subtotal: record.subtotal, tax: record.tax, total: record.total, change: summary.change, payments: summary.allocations, method: summary.allocations.map((payment) => payment.method).join(" + ") });
-      notify(confirmed.idempotent_replay ? `Pending receipt ${record.docNumber} was already confirmed.` : `Pending receipt ${record.docNumber} synchronized successfully.`);
+      notify(confirmed.idempotent_replay ? `Pending receipt ${record.docNumber} was already confirmed.` : `Pending receipt ${record.docNumber} synchronized successfully. Inventory deducted and revenue recorded.`, "success");
+      if (deviceProfile?.scanFeedback !== false && typeof window !== "undefined") {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          const audio = AudioContext && new AudioContext();
+          if (audio) {
+            const osc = audio.createOscillator();
+            const gain = audio.createGain();
+            osc.frequency.setValueAtTime(587.33, audio.currentTime);
+            osc.frequency.setValueAtTime(880, audio.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.04, audio.currentTime);
+            osc.connect(gain); gain.connect(audio.destination); osc.start(); osc.stop(audio.currentTime + 0.18);
+            window.setTimeout(() => audio.close?.(), 250);
+          }
+        } catch (_e) { /* Audio alert is non-blocking */ }
+      }
     } catch (error) {
       const current = readPendingPosSales(typeof window === "undefined" ? null : window.localStorage, queueScope);
       const nextStatus = isRetryablePosTransportError(error) ? "pending" : "needs_attention";
