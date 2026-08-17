@@ -5688,6 +5688,21 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     { label: "AI Assistant", icon: Brain, action: () => onNavigate("ai") },
   ];
 
+  // Attention guidance is derived from confirmed workspace rows. Setup tips
+  // are navigation suggestions only: they do not create records, imitate AI
+  // reasoning, or turn a missing record into a fabricated alert.
+  const attentionItems = [
+    ...inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0).slice(0, 3).map((item) => ({
+      id: `inventory-${item.id}`, icon: Package, color: "#DC2626", surface: "#FEF2F2", title: item.name, detail: item.qty <= 0 ? "Out of stock" : `${item.qty} left — reorder at ${item.reorder}`, actionLabel: "Review stock", action: () => onNavigate("inventory"),
+    })),
+    ...workOrders.rows.filter((workOrder) => workOrder.status !== "Completed" && workOrder.status !== "Cancelled" && workOrder.dueDate < TODAY.toISOString().slice(0, 10)).slice(0, 2).map((workOrder) => ({
+      id: `work-order-${workOrder.id}`, icon: Factory, color: "#D97706", surface: "#FFFBEB", title: workOrder.productName || workOrder.id, detail: `Work order overdue · ${workOrder.dueDate}`, actionLabel: "Review production", action: () => onNavigate("manufacturing"),
+    })),
+    ...(inventory.rows.length === 0 ? [{ id: "setup-inventory", icon: Package, color: "#2563EB", surface: "#EFF6FF", title: "Start with inventory", detail: "No confirmed stock items yet. Add a product or service to track availability.", actionLabel: "Add product", action: () => onNavigate("inventory") }] : []),
+    ...(invoices.rows.length === 0 ? [{ id: "setup-invoice", icon: ReceiptText, color: "#16A34A", surface: "#F0FDF4", title: "Start tracking revenue", detail: "No confirmed invoices yet. Create an invoice when a sale is ready to record.", actionLabel: "Create invoice", action: () => onQuickAction("sales", { tab: "invoices", openForm: true }) }] : []),
+    ...(crm.rows.length === 0 ? [{ id: "setup-crm", icon: Users, color: "#7C3AED", surface: "#F5F3FF", title: "Build your pipeline", detail: "No confirmed leads yet. Add a lead to begin tracking customer opportunities.", actionLabel: "Add lead", action: () => onQuickAction("crm", { tab: "leads" }) }] : []),
+  ].slice(0, 5);
+
   // Shared across every focused role view below, so Approvals and Recent
   // Activity do not have to be reimplemented per role — only the top-level
   // dashboard content (which real numbers lead the page) actually differs.
@@ -6095,32 +6110,42 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
         {/* Quick Actions Command Panel */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100" style={{background:"#0D2214"}}>
-            <h3 className="text-[13px] font-bold text-white">⚡ Command Actions</h3>
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3" style={{background:"#0D2214"}}>
+            <div><h3 className="text-[13px] font-bold text-white">⚡ Command Actions</h3><p className="mt-0.5 text-[10.5px] text-white/55">Organized shortcuts to existing workspaces</p></div>
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.08] px-2 py-1 text-[10px] font-semibold text-white/75">Search all <kbd className="rounded bg-black/20 px-1 font-mono text-[9px]">⌘K</kbd></span>
           </div>
-          <div className="p-3 grid grid-cols-4 sm:grid-cols-6 gap-2">
+          <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              {label:"New Invoice",   icon:ReceiptText,  col:"#16A34A", action:()=>onQuickAction("sales",{tab:"invoices",openForm:true})},
-              {label:"New Lead",      icon:Users,         col:"#7C3AED", action:()=>onQuickAction("crm",{tab:"leads"})},
-              {label:"Record Expense",icon:Wallet,        col:"#F59E0B", action:()=>onQuickAction("finance",{tab:"expenses"})},
-              {label:"New PO",        icon:ShoppingBag,   col:"#2563EB", action:()=>onNavigate("procurement")},
-              {label:"Add Stock",     icon:Package,       col:"#0891B2", action:()=>onNavigate("inventory")},
-              {label:"Approve Leave", icon:Clock,         col:"#EF4444", action:()=>onQuickAction("hr",{tab:"leave"})},
-              {label:"New Employee",  icon:UserPlus,      col:"#059669", action:()=>onQuickAction("hr",{tab:"employees"})},
-              {label:"New Project",   icon:FolderKanban,  col:"#DC2626", action:()=>onNavigate("projects")},
-              {label:"POS Sale",      icon:ScanLine,      col:"#7C3AED", action:()=>onNavigate("pos")},
-              {label:"Send Message",  icon:MessageCircle, col:"#25D366", action:()=>onNavigate("collaboration")},
-              {label:"View Reports",  icon:BarChart3,     col:"#1E3A8A", action:()=>onNavigate("reports")},
-              {label:"AI Assistant",  icon:Sparkles,      col:"#F9A8D4", action:()=>onNavigate("ai")},
-            ].map(({label,icon:Icon,col,action})=>(
-              <button key={label} onClick={action} aria-label={label}
-                className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 transition-all group">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all group-hover:scale-105"
-                  style={{background:col+"15"}}>
-                  <Icon size={16} style={{color:col}}/>
+              { category: "Finance", actions: [
+                { label: "New Invoice", icon: ReceiptText, color: "#16A34A", action: () => onQuickAction("sales", { tab: "invoices", openForm: true }) },
+                { label: "Record Expense", icon: Wallet, color: "#D97706", action: () => onQuickAction("finance", { tab: "expenses" }) },
+                { label: "Open Procurement", icon: ShoppingBag, color: "#2563EB", action: () => onNavigate("procurement") },
+              ] },
+              { category: "Sales", actions: [
+                { label: "Open Leads", icon: Users, color: "#7C3AED", action: () => onQuickAction("crm", { tab: "leads" }) },
+                { label: "POS Sale", icon: ScanLine, color: "#7C3AED", action: () => onNavigate("pos") },
+                { label: "View Reports", icon: BarChart3, color: "#1E3A8A", action: () => onNavigate("reports") },
+              ] },
+              { category: "Operations", actions: [
+                { label: "Add Stock", icon: Package, color: "#0891B2", action: () => onNavigate("inventory") },
+                { label: "Review Leave", icon: Clock, color: "#DC2626", action: () => onQuickAction("hr", { tab: "leave" }) },
+                { label: "Open Projects", icon: FolderKanban, color: "#DC2626", action: () => onNavigate("projects") },
+              ] },
+              { category: "People & Tools", actions: [
+                { label: "New Employee", icon: UserPlus, color: "#059669", action: () => onQuickAction("hr", { tab: "employees" }) },
+                { label: "Send Message", icon: MessageCircle, color: "#16A34A", action: () => onNavigate("collaboration") },
+                { label: "AI Assistant", icon: Sparkles, color: "#9333EA", action: () => onNavigate("ai") },
+              ] },
+            ].map((group) => (
+              <section key={group.category} aria-label={`${group.category} command actions`} className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5">
+                <p className="mb-2 text-[9.5px] font-bold uppercase tracking-[0.12em] text-slate-400">{group.category}</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {group.actions.map(({ label, icon: Icon, color, action }) => <button key={label} type="button" onClick={action} aria-label={label} className="group flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-lg border border-white bg-white px-1.5 py-2 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-200 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: `${color}14` }}><Icon size={14} style={{ color }} /></span>
+                    <span className="text-[10px] font-semibold leading-tight text-slate-600">{label}</span>
+                  </button>)}
                 </div>
-                <span className="text-[10.5px] font-semibold text-slate-600 text-center leading-tight">{label}</span>
-              </button>
+              </section>
             ))}
           </div>
         </div>
@@ -6285,7 +6310,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         {/* Top Customers BarChart */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
           <h3 className="text-[13.5px] font-bold text-[#111827] mb-1">Top Customers</h3>
-          <p className="text-[11.5px] text-slate-400 mb-3">By billed revenue (TZS k)</p>
+          <p className="text-[11.5px] text-slate-400 mb-3">Billed revenue from confirmed invoices (TZS k)</p>
           {(() => {
             const custData = Object.entries(
               invoices.rows.reduce((m,inv)=>{
@@ -6297,7 +6322,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               name:name.length>16?name.slice(0,14)+"…":name,
               value:Math.round(val/1000),
             }));
-            if (!custData.length) return <EmptyState icon={ReceiptText} title="No invoice data yet" hint="Create a confirmed invoice to begin tracking customer revenue here." actionLabel="Create invoice" onAction={()=>onQuickAction("sales",{tab:"invoices",openForm:true})}/>;
+            if (!custData.length) return <EmptyState icon={Users} title="No billed customers yet" hint="Customer revenue appears here after a confirmed invoice is linked to a customer. Open CRM to add or review customer records first." actionLabel="Open CRM" onAction={()=>onQuickAction("crm",{tab:"leads"})}/>;
             return (
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={custData} layout="vertical" margin={{left:5,right:24,top:0,bottom:0}}>
@@ -6315,7 +6340,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         {/* Inventory Category PieChart */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
           <h3 className="text-[13.5px] font-bold text-[#111827] mb-1">Inventory by Category</h3>
-          <p className="text-[11.5px] text-slate-400 mb-3">Stock value distribution</p>
+          <p className="text-[11.5px] text-slate-400 mb-3">Confirmed stock value distribution</p>
           {(() => {
             const cats = {};
             inventory.rows.forEach(it=>{
@@ -6324,7 +6349,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             });
             const catData = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6)
               .map(([name,val],i)=>({name:name.slice(0,12),value:Math.round(val/1000),fill:["#16A34A","#2563EB","#D97706","#7C3AED","#EF4444","#0891B2"][i%6]}));
-            if (!catData.length) return <EmptyState icon={Package} title="No inventory data yet" hint="Add or import a confirmed stock item to see category value and availability." actionLabel="Open inventory" onAction={()=>onNavigate("inventory")}/>;
+            if (!catData.length) return <EmptyState icon={Package} title="No inventory items yet" hint="Add or import a confirmed stock item to populate category value and availability. This chart does not use placeholder inventory." actionLabel="Open inventory" onAction={()=>onNavigate("inventory")}/>;
             return (
               <div className="flex items-center gap-3">
                 <ResponsiveContainer width="55%" height={150}>
@@ -6353,22 +6378,24 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         {/* CRM Pipeline Funnel */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
           <h3 className="text-[13.5px] font-bold text-[#111827] mb-1">Sales Pipeline</h3>
-          <p className="text-[11.5px] text-slate-400 mb-3">Leads by stage (TZS k value)</p>
+          <p className="text-[11.5px] text-slate-400 mb-3">{crm.rows.length ? "Confirmed leads by stage; value shown when recorded" : "Add confirmed leads to visualize pipeline stages"}</p>
           {(() => {
             const STAGE_COLORS={"New":"#64748B","Contacted":"#2563EB","Qualified":"#7C3AED","Proposal":"#D97706","Negotiation":"#EF4444","Won":"#16A34A","Lost":"#94A3B8"};
             const stageData = ["New","Contacted","Qualified","Proposal","Negotiation"].map(s=>({
-              name:s, value:Math.round(crm.rows.filter(l=>l.stage===s).reduce((sum,l)=>sum+(l.value||0),0)/1000),
+              name:s, count:crm.rows.filter(l=>l.stage===s).length, value:Math.round(crm.rows.filter(l=>l.stage===s).reduce((sum,l)=>sum+(l.value||0),0)/1000),
               fill:STAGE_COLORS[s],
-            })).filter(d=>d.value>0);
-            if (!stageData.length) return <EmptyState icon={Users} title="No active pipeline yet" hint="Create a confirmed lead to start visualizing deal stages and potential value." actionLabel="Add lead" onAction={()=>onQuickAction("crm",{tab:"leads"})}/>;
+            })).filter(d=>d.count>0);
+            const totalPipelineValue = stageData.reduce((sum, stage) => sum + stage.value, 0);
+            const metricKey = totalPipelineValue > 0 ? "value" : "count";
+            if (!stageData.length) return <EmptyState icon={Users} title="No active pipeline yet" hint="Create a confirmed lead to begin visualizing deal stages. Potential value appears once it is recorded on a lead." actionLabel="Open Leads" onAction={()=>onQuickAction("crm",{tab:"leads"})}/>;
             return (
               <ResponsiveContainer width="100%" height={155}>
                 <BarChart data={stageData} margin={{left:0,right:10,top:0,bottom:0}}>
                   <CartesianGrid vertical={false} stroke="#F3F4F6"/>
                   <XAxis dataKey="name" tick={{fontSize:9.5,fill:"#94A3B8"}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fontSize:9,fill:"#94A3B8"}} axisLine={false} tickLine={false}/>
-                  <Tooltip formatter={(v)=>[`TZS ${money(v)}k`,"Value"]}/>
-                  <Bar dataKey="value" radius={[4,4,0,0]} maxBarSize={40}>
+                  <Tooltip formatter={(value)=>metricKey === "value" ? [`TZS ${money(value)}k`,"Recorded value"] : [value,"Confirmed leads"]}/>
+                  <Bar dataKey={metricKey} radius={[4,4,0,0]} maxBarSize={40}>
                     {stageData.map((d,i)=><Cell key={i} fill={d.fill}/>)}
                   </Bar>
                 </BarChart>
@@ -6410,12 +6437,18 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
         {/* Recent Activity */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <h3 className="text-[13.5px] font-bold text-[#111827]">Recent Activity</h3>
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+            <div><h3 className="text-[13.5px] font-bold text-[#111827]">Recent Activity</h3><p className="mt-0.5 text-[10.5px] text-slate-400">Confirmed invoice, expense, and leave entries</p></div>
+            <button type="button" onClick={() => onNavigate("reports")} className="shrink-0 text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 rounded">View reports</button>
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="max-h-[300px] divide-y divide-slate-50 overflow-y-auto">
             {recentActivity.length===0?(
-              <div className="py-10 text-center text-slate-400"><FileText size={20} className="mx-auto mb-2 text-slate-200"/><p className="text-[12px]">No recent activity</p></div>
+              <div className="px-5 py-9 text-center">
+                <FileText size={20} className="mx-auto mb-2 text-slate-200"/>
+                <p className="text-[12.5px] font-medium text-slate-600">No confirmed activity yet.</p>
+                <p className="mx-auto mt-1 max-w-[255px] text-[11px] leading-relaxed text-slate-400">This feed does not create sample events or local notes. Confirmed invoices, expenses, and leave activity will appear here.</p>
+                <button type="button" onClick={() => onNavigate("reports")} className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 rounded">Open reports <ChevronRight size={13} /></button>
+              </div>
             ):recentActivity.map((a,i)=>{
               const Icon=a.icon;
               return (
@@ -6437,32 +6470,19 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         {/* Low Stock + Work Orders */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100">
-            <h3 className="text-[13.5px] font-bold text-[#111827]">Attention Needed</h3>
+            <h3 className="text-[13.5px] font-bold text-[#111827]">Smart Tips &amp; Actions</h3>
+            <p className="mt-0.5 text-[10.5px] text-slate-400">Based on confirmed workspace data</p>
           </div>
           <div className="divide-y divide-slate-50">
-            {inventory.rows.filter(it=>it.qty<=it.reorder&&it.reorder>0).slice(0,3).map(it=>(
-              <button key={it.id} onClick={()=>onNavigate("inventory")}
-                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-slate-50">
-                <div className="w-8 h-8 rounded-xl bg-[#EF4444]/10 flex items-center justify-center shrink-0"><Package size={13} className="text-[#EF4444]"/></div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-semibold text-[#111827] truncate">{it.name}</p>
-                  <p className="text-[11px] text-[#EF4444]">{it.qty<=0?"Out of stock":`${it.qty} left — reorder at ${it.reorder}`}</p>
-                </div>
-              </button>
-            ))}
-            {workOrders.rows.filter(w=>w.status!=="Completed"&&w.status!=="Cancelled"&&w.dueDate<TODAY.toISOString().slice(0,10)).slice(0,2).map(w=>(
-              <button key={w.id} onClick={()=>onNavigate("manufacturing")}
-                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-slate-50">
-                <div className="w-8 h-8 rounded-xl bg-[#F59E0B]/10 flex items-center justify-center shrink-0"><Factory size={13} className="text-[#F59E0B]"/></div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-semibold text-[#111827] truncate">{w.productName||w.id}</p>
-                  <p className="text-[11px] text-[#F59E0B]">Work order overdue · {w.dueDate}</p>
-                </div>
-              </button>
-            ))}
-            {inventory.rows.filter(it=>it.qty<=it.reorder&&it.reorder>0).length===0&&workOrders.rows.filter(w=>w.status!=="Completed"&&w.dueDate<TODAY.toISOString().slice(0,10)).length===0&&(
-              <div className="py-10 text-center"><CheckCircle2 size={20} className="text-[#16A34A] mx-auto mb-2"/><p className="text-[12px] text-slate-400">Everything looks good</p></div>
-            )}
+            {attentionItems.map((item) => {
+              const Icon = item.icon;
+              return <button key={item.id} type="button" onClick={item.action} className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/40">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: item.surface }}><Icon size={13} style={{ color: item.color }} /></div>
+                <div className="flex-1 min-w-0"><p className="text-[12px] font-semibold text-[#111827] truncate">{item.title}</p><p className="text-[11px] leading-snug text-slate-400">{item.detail}</p></div>
+                <span className="shrink-0 text-[10.5px] font-semibold" style={{ color: item.color }}>{item.actionLabel}</span>
+              </button>;
+            })}
+            {attentionItems.length === 0 && <div className="px-5 py-9 text-center"><CheckCircle2 size={20} className="text-[#16A34A] mx-auto mb-2"/><p className="text-[12.5px] font-medium text-slate-600">No current follow-ups from connected sources.</p><p className="mt-1 text-[11px] leading-relaxed text-slate-400">Inventory and manufacturing signals have no outstanding items to review.</p></div>}
           </div>
         </div>
       </div>

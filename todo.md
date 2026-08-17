@@ -600,3 +600,8 @@
 - [x] Replace generic Healthy or No data labels with data-backed status context, preserving honest unavailable states and avoiding fabricated timestamps or user counts.
 - [x] Add regression coverage for the Module Health intelligence refinement.
 - [ ] Complete authenticated visual validation for the Module Health intelligence refinement when a workspace session is available.
+- [x] Refine Recent Activity and Attention Needed using only confirmed workspace records, contextual setup guidance, and safe existing-module actions.
+- [x] Improve command-action discoverability and grouping without creating unsupported actions, routes, or local-only activity records.
+- [x] Strengthen Top Customers, Inventory by Category, and Sales Pipeline empty states with confirmed-data actions and clear data-scope guidance.
+- [x] Add regression coverage for the safe pasted-content dashboard refinements and document rejection of fabricated activity, simulated real-time data, and unverified AI claims.
+- [ ] Complete authenticated visual validation for the pasted-content dashboard refinements when a workspace session is available.

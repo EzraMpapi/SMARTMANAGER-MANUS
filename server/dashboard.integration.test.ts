@@ -259,13 +259,30 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("Not assessed");
   });
 
-  it("turns empty dashboard analytics into accessible next actions rather than fabricated chart data", () => {
-    expect(dashboardSource).toContain('title="No invoice data yet"');
-    expect(dashboardSource).toContain('actionLabel="Create invoice"');
-    expect(dashboardSource).toContain('title="No inventory data yet"');
+  it("implements pasted dashboard directives with confirmed activity, safe setup guidance, grouped commands, and no simulated data", () => {
+    expect(dashboardSource).toContain("const attentionItems = [");
+    expect(dashboardSource).toContain("This feed does not create sample events or local notes.");
+    expect(dashboardSource).toContain("Confirmed invoice, expense, and leave entries");
+    expect(dashboardSource).toContain("Smart Tips &amp; Actions");
+    expect(dashboardSource).toContain("Based on confirmed workspace data");
+    expect(dashboardSource).toContain("Start with inventory");
+    expect(dashboardSource).toContain("Start tracking revenue");
+    expect(dashboardSource).toContain("Build your pipeline");
+    expect(dashboardSource).toContain("People & Tools");
+    expect(dashboardSource).toContain("Search all");
+    expect(dashboardSource).toContain("Open Leads");
+    expect(dashboardSource).not.toContain("function useDemoData");
+    expect(dashboardSource).not.toContain("activeUsers: 0");
+  });
+
+  it("turns empty customer, inventory, and pipeline analytics into accessible source-aware actions rather than fabricated chart data", () => {
+    expect(dashboardSource).toContain('title="No billed customers yet"');
+    expect(dashboardSource).toContain('actionLabel="Open CRM"');
+    expect(dashboardSource).toContain('title="No inventory items yet"');
     expect(dashboardSource).toContain('actionLabel="Open inventory"');
     expect(dashboardSource).toContain('title="No active pipeline yet"');
-    expect(dashboardSource).toContain('actionLabel="Add lead"');
+    expect(dashboardSource).toContain('actionLabel="Open Leads"');
+    expect(dashboardSource).toContain('dataKey={metricKey}');
     expect(dashboardSource).toContain('aria-label={label}');
   });
 
@@ -349,7 +366,7 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("imports the project quick-action icon before rendering dashboard shortcuts", () => {
     expect(dashboardSource).toContain("FolderKanban");
-    expect(dashboardSource).toContain("icon:FolderKanban");
+    expect(dashboardSource).toMatch(/icon:\s*FolderKanban/);
   });
 
   it("executes a compatible parent-table fallback when nested relationships are unavailable", async () => {
