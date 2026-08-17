@@ -1102,8 +1102,8 @@ function mapOrderReturnRow(rr) {
 function mapOrderRow(r) {
   return {
     id: r.doc_number, dbId: r.id,
-    customer: r.customer, date: r.order_date, quotationRef: r.quotation_id ? "linked" : "—",
-    status: r.status, owner: r.owner_id || "Unassigned",
+    customer: r.customer, date: r.order_date, quotationRef: r.quotation_reference || (r.quotation_id ? "linked" : "—"),
+    status: r.status, owner: r.owner_name || r.owner_id || "Unassigned",
     items: mapDocItems(r.items ?? r.sales_order_items),
     returns: (r.returns ?? r.sales_order_returns ?? []).map(mapOrderReturnRow),
   };
@@ -9549,7 +9549,12 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
           customer: form.customer,
           ...(tab !== "orders" && { status: draft.status }),
           ...(tab === "quotations" && { valid_until: form.secondaryDate }),
-          ...(tab === "orders" ? { order_date: form.date } : { issue_date: form.date }),
+          ...(tab === "orders" ? {
+            order_date: form.date,
+            status: draft.status,
+            quotation_reference: form.reference || null,
+            owner_name: form.owner || null,
+          } : { issue_date: form.date }),
           ...(tab === "invoices" && { due_date: form.secondaryDate }),
         }).single().run();
         if (!header?.id) throw buildConfirmedMutationError({ table, method: "POST", status: 200 });
@@ -9558,7 +9563,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
             draft.items.map((it, i) => ({ [fk]: header.id, item_name: it.name, item_sku: it.sku || null, qty: it.qty, rate: it.rate, sort_order: i }))
           ).run();
         }
-        hooksByTab[tab].setRows((prev) => [{ ...draft, dbId: header.id }, ...prev]);
+        await hooksByTab[tab].reload?.();
       } catch (e) {
         if (header?.id) {
           try { await sb(table).eq("id", header.id).delete().single().run(); } catch (_cleanupError) { /* A reload below restores only confirmed rows. */ }

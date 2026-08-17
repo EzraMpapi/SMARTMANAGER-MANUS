@@ -13,3 +13,9 @@ The **Subscriptions** tab opened its on-demand detail workspace and showed zero 
 In Quotations, the **Columns** control opened its accessible visible-column menu and exposed required and optional table-column choices without changing a record. The quotation search accepted a temporary harmless query and was then cleared; the zero-record view remained accurate and no data was written.
 
 The primary **New Quotation** control opened a complete quotation form with customer, dates, line item, quantity, rate, discount, and owner inputs. It was closed with **Cancel** before any field was entered or submitted. The Sales workspace returned to its original zero-quotation confirmed-data state without creating a document.
+
+## Approved temporary Sales Order persistence check — 17 August 2026
+
+With explicit approval, a clearly labeled temporary order for `TEST-DELETE Sales Acceptance` was submitted with one `TEST-DELETE acceptance service` line. The Supabase server confirmed exactly one header row (`SO-2539`) with one line item and a line total of `1`; the prior `sales_orders.issue_date` schema-cache error did not recur.
+
+The first post-submit screen exposed two presentation issues: the database row lacked its locally-derived `Pending` status, quotation reference, and owner label, and it was displayed alongside a temporary client row. These were traced to server normalization and manual post-create prepending. The follow-up repair adds the supported Sales Order metadata columns, persists the status/reference/owner in the confirmed header write, and reloads the canonical server row instead of prepending a second local representation. The repaired live flow still requires final post-deployment verification and removal of the temporary order.

@@ -11,7 +11,7 @@ describe("Sales interaction and persistence contracts", () => {
     expect(salesSource).toContain("requiresConfirmedPersistence()");
     expect(salesSource).toContain("if (!header?.id) throw buildConfirmedMutationError");
     expect(salesSource).toContain("await sb(itemsTable).insert(");
-    expect(salesSource).toContain("hooksByTab[tab].setRows((prev) => [{ ...draft, dbId: header.id }, ...prev])");
+    expect(salesSource).toContain("await hooksByTab[tab].reload?.();");
     expect(salesSource).toContain("return false;");
     expect(salesSource).not.toContain("Document created locally, but saving to the server failed.");
   });
@@ -41,7 +41,7 @@ describe("Sales interaction and persistence contracts", () => {
   });
 
   it("uses the Sales Order order_date contract rather than sending the Invoice-only issue_date field", () => {
-    expect(salesSource).toContain('...(tab === "orders" ? { order_date: form.date } : { issue_date: form.date })');
+    expect(salesSource).toContain('...(tab === "orders" ? {\n            order_date: form.date,');
     expect(salesSource).not.toContain('issue_date: form.date,\n          ...(tab !== "orders"');
   });
 
@@ -50,6 +50,15 @@ describe("Sales interaction and persistence contracts", () => {
     expect(salesSource).toContain('returns:sales_order_returns(*,items:sales_order_return_items(*))');
     expect(dashboardSource).toContain('items:sales_invoice_items(*),payments:sales_payments(*)');
     expect(dashboardSource).toContain('items:sales_quotation_items(*)');
-    expect(dashboardSource).toContain('Array.isArray(items) ? items : []');
+    expect(dashboardSource).toContain("Array.isArray(items) ? items : []");
+  });
+
+  it("persists Sales Order state and form metadata before reloading its single confirmed representation", () => {
+    expect(salesSource).toContain("status: draft.status,");
+    expect(salesSource).toContain("quotation_reference: form.reference || null,");
+    expect(salesSource).toContain("owner_name: form.owner || null,");
+    expect(salesSource).not.toContain("hooksByTab[tab].setRows((prev) => [{ ...draft, dbId: header.id }, ...prev])");
+    expect(dashboardSource).toContain("r.quotation_reference || (r.quotation_id ? \"linked\" : \"—\")");
+    expect(dashboardSource).toContain("r.owner_name || r.owner_id || \"Unassigned\"");
   });
 });
