@@ -1078,7 +1078,7 @@ function mapAssetRow(r) {
 // table as a nested array keyed by its own table name when the select
 // string embeds it (e.g. "*,sales_invoice_items(*)").
 function mapDocItems(items) {
-  return (items || [])
+  return (Array.isArray(items) ? items : [])
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     .map((it) => ({ name: it.item_name, qty: Number(it.qty) || 0, rate: Number(it.rate) || 0, sku: it.item_sku || null }));
 }
@@ -1088,14 +1088,14 @@ function mapQuotationRow(r) {
     id: r.doc_number, dbId: r.id,
     customer: r.customer, date: r.issue_date, validUntil: r.valid_until,
     status: r.status, owner: r.owner_id || "Unassigned",
-    items: mapDocItems(r.sales_quotation_items),
+    items: mapDocItems(r.items ?? r.sales_quotation_items),
   };
 }
 
 function mapOrderReturnRow(rr) {
   return {
     id: rr.id, reason: rr.reason, date: rr.created_at?.slice(0, 10),
-    items: (rr.sales_order_return_items || []).map((it) => ({ name: it.item_name, sku: it.item_sku, qty: Number(it.qty) || 0, rate: Number(it.rate) || 0 })),
+    items: (rr.items ?? rr.sales_order_return_items ?? []).map((it) => ({ name: it.item_name, sku: it.item_sku, qty: Number(it.qty) || 0, rate: Number(it.rate) || 0 })),
   };
 }
 
@@ -1104,8 +1104,8 @@ function mapOrderRow(r) {
     id: r.doc_number, dbId: r.id,
     customer: r.customer, date: r.order_date, quotationRef: r.quotation_id ? "linked" : "—",
     status: r.status, owner: r.owner_id || "Unassigned",
-    items: mapDocItems(r.sales_order_items),
-    returns: (r.sales_order_returns || []).map(mapOrderReturnRow),
+    items: mapDocItems(r.items ?? r.sales_order_items),
+    returns: (r.returns ?? r.sales_order_returns ?? []).map(mapOrderReturnRow),
   };
 }
 
@@ -1121,8 +1121,8 @@ function mapInvoiceRow(r) {
     customer: r.customer || data.customer || r.name, date: r.issue_date || data.issue_date || r.created_at, dueDate: r.due_date || data.due_date,
     orderRef: r.order_id || data.order_id ? "linked" : "—", status: r.status || data.status,
     amountPaid: Number(r.amount_paid ?? data.amount_paid) || 0,
-    items: mapDocItems(r.sales_invoice_items || data.items),
-    payments: (r.sales_payments || []).map(mapPaymentRow).sort((a, b) => (a.date < b.date ? 1 : -1)),
+    items: mapDocItems(r.items ?? r.sales_invoice_items ?? data.items),
+    payments: (r.payments ?? r.sales_payments ?? []).map(mapPaymentRow).sort((a, b) => (a.date < b.date ? 1 : -1)),
   };
 }
 
@@ -9166,7 +9166,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
   // build.
   const quotations = quotationsHook;
   const orders = useCompanyTable("sales_orders", ordersSeed, {
-    select: "*,sales_order_items(*),sales_order_returns(*,sales_order_return_items(*))", order: { col: "order_date", ascending: false }, mapRow: mapOrderRow,
+    select: "*,items:sales_order_items(*),returns:sales_order_returns(*,items:sales_order_return_items(*))", order: { col: "order_date", ascending: false }, mapRow: mapOrderRow,
   });
 
   const subscriptions = subscriptionsHook;
@@ -9547,10 +9547,9 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, current
         header = await sb(table).insert({
           doc_number: draft.id,
           customer: form.customer,
-          issue_date: form.date,
           ...(tab !== "orders" && { status: draft.status }),
           ...(tab === "quotations" && { valid_until: form.secondaryDate }),
-          ...(tab === "orders" && { order_date: form.date }),
+          ...(tab === "orders" ? { order_date: form.date } : { issue_date: form.date }),
           ...(tab === "invoices" && { due_date: form.secondaryDate }),
         }).single().run();
         if (!header?.id) throw buildConfirmedMutationError({ table, method: "POST", status: 200 });
@@ -47938,7 +47937,7 @@ function SmartManager() {
   // Finance still shows Unpaid" drift between two independent copies.
   const inventory = useCompanyTable("inventory_items", inventorySeed, { order: { col: "name", ascending: true }, mapRow: mapInventoryRow });
   const invoices = useCompanyTable("sales_invoices", invoicesSeed, {
-    select: "*,sales_invoice_items(*),sales_payments(*)", order: { col: "due_date", ascending: true }, mapRow: mapInvoiceRow,
+    select: "*,items:sales_invoice_items(*),payments:sales_payments(*)", order: { col: "due_date", ascending: true }, mapRow: mapInvoiceRow,
   });
   const crm = useCompanyTable("crm_leads", seedLeads, { order: { col: "created_at", ascending: false }, mapRow: mapLeadRow });
   const expenses = useCompanyTable("finance_expenses", expensesSeed, { order: { col: "expense_date", ascending: false }, mapRow: mapExpenseRow });
@@ -47951,7 +47950,7 @@ function SmartManager() {
     order: { col: "next_billing_date", ascending: true }, mapRow: mapSubscriptionRow,
   });
   const quotations = useCompanyTable("sales_quotations", quotationsSeed, {
-    select: "*,sales_quotation_items(*)", order: { col: "issue_date", ascending: false }, mapRow: mapQuotationRow,
+    select: "*,items:sales_quotation_items(*)", order: { col: "issue_date", ascending: false }, mapRow: mapQuotationRow,
   });
   const scheduledWorkflows = useCompanyTable("scheduled_reports", scheduledReportsSeed, { mapRow: mapScheduledReportRow });
   const files = useCompanyTable("documents", filesSeed, {

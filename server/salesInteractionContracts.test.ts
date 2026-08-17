@@ -39,4 +39,17 @@ describe("Sales interaction and persistence contracts", () => {
     expect(dashboardSource).toContain("Details: ${detail}");
     expect(dashboardSource).toContain("PERSISTENCE_CONFIRMATION_MISSING");
   });
+
+  it("uses the Sales Order order_date contract rather than sending the Invoice-only issue_date field", () => {
+    expect(salesSource).toContain('...(tab === "orders" ? { order_date: form.date } : { issue_date: form.date })');
+    expect(salesSource).not.toContain('issue_date: form.date,\n          ...(tab !== "orders"');
+  });
+
+  it("aliases document child relations so legacy parent columns cannot mask confirmed line, payment, or return records", () => {
+    expect(salesSource).toContain('items:sales_order_items(*)');
+    expect(salesSource).toContain('returns:sales_order_returns(*,items:sales_order_return_items(*))');
+    expect(dashboardSource).toContain('items:sales_invoice_items(*),payments:sales_payments(*)');
+    expect(dashboardSource).toContain('items:sales_quotation_items(*)');
+    expect(dashboardSource).toContain('Array.isArray(items) ? items : []');
+  });
 });

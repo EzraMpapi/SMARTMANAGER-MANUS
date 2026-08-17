@@ -638,6 +638,9 @@
 - [x] Add regression coverage and non-destructive validation for Sales module interactions, server-confirmation, and denial/error paths.
 - [ ] Complete authenticated non-destructive Sales acceptance for document creation, lifecycle controls, invoice printing, payment, subscription, and server-denial recovery when a workspace session is available.
 - [x] Complete authenticated non-destructive Sales acceptance for tabs, empty states, search, columns, and quotation/subscription form opening and cancellation without changing tenant data.
+- [x] Trace and repair the Sales Order and Invoice write payload/schema mismatch reported as missing `sales_orders.issue_date` in the Supabase schema cache.
+- [x] Add regression coverage for Sales Order and Invoice date-field contracts and confirmed server persistence after the schema repair.
+- [ ] Complete approved staging acceptance for Sales document creation and error recovery without masking server failures.
 - [x] Inventory every Settings section, control, tenant-scoped loader, backend mutation, role gate, and current failure state.
 - [x] Repair Settings controls that do not await confirmed backend responses or provide clear authorization, validation, offline, and database error feedback.
 - [x] Add Settings persistence and interaction regression coverage, then run non-destructive validation without changing operational records.
