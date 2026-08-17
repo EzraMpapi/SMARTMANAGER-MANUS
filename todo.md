@@ -710,6 +710,6 @@
 - [x] Bind onboarding tour completion status to the user profile table in Supabase with automatic localStorage fallback for offline or demo mode.
 - [x] Add lightweight, theme-aware animated step illustrations with CSS keyframe motion for each tour step.
 - [x] Add automated regression coverage for role tracks, server-backed completion sync, and animated illustrations.
-- [ ] Add configurable ESC/POS thermal receipt templates in TRA Portal settings.
-- [ ] Add gateway degraded-status webhook alerts.
-- [ ] Add multi-branch fiscal summary comparison chart for regional operations.
+- [x] Add configurable ESC/POS thermal receipt templates in TRA Portal settings.
+- [x] Add gateway degraded-status webhook alerts.
+- [x] Add multi-branch fiscal summary comparison chart for regional operations.
