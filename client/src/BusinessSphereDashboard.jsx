@@ -21146,6 +21146,7 @@ const SCM_TABS = [
 
 function SupplyChain() {
   const [tab, setTab] = useState("shipments");
+  const [savingVehicleReg, setSavingVehicleReg] = useState(null);
   const shipments = useCompanyTable("scm_shipments", shipmentsSeed, { order: { col: "dispatch_date", ascending: false }, mapRow: mapShipmentRow });
   const vehicles = useCompanyTable("scm_vehicles", vehiclesSeed, { order: { col: "reg", ascending: true }, mapRow: mapVehicleRow });
 
@@ -21167,10 +21168,23 @@ function SupplyChain() {
   // The cross-entity consequence: dispatching a shipment puts its assigned
   // vehicle On Route; delivering it frees the vehicle again.
   async function setVehicleStatus(reg, status) {
-    if (!reg) return;
-    vehicles.setRows((prev) => prev.map((v) => (v.reg === reg ? { ...v, status } : v)));
-    if (IS_CONFIGURED) {
-      try { await sb("scm_vehicles").eq("reg", reg).update({ status }).run(); } catch (_e) { notify("Vehicle status saved locally, but the server update failed.", "error"); }
+    if (!reg || savingVehicleReg === reg) return false;
+    setSavingVehicleReg(reg);
+    try {
+      if (!IS_CONFIGURED) {
+        vehicles.setRows((prev) => prev.map((v) => (v.reg === reg ? { ...v, status } : v)));
+        return true;
+      }
+      const { data, error } = await runCompanyTableMutation("scm_vehicles", "update", { status }, { matchCol: "reg", matchVal: reg });
+      if (error || !data?.id) throw error || new Error("The server did not return the updated vehicle.");
+      const confirmed = mapVehicleRow(data);
+      vehicles.setRows((prev) => prev.map((v) => (v.reg === reg ? confirmed : v)));
+      return true;
+    } catch (error) {
+      notify(`Vehicle ${reg} was not updated. ${error?.message || "The shipment remains available for retry."}`, "error");
+      return false;
+    } finally {
+      setSavingVehicleReg(null);
     }
   }
 
@@ -21281,16 +21295,19 @@ function SupplyChain() {
         </div>
       )}
 
-      {tab === "shipments" && <Shipments shipments={shipments} vehicles={vehicles} onVehicleStatus={setVehicleStatus} />}
+      {tab === "shipments" && <Shipments shipments={shipments} vehicles={vehicles} onVehicleStatus={setVehicleStatus} vehicleSaving={savingVehicleReg} />}
       {tab === "fleet" && <Fleet vehicles={vehicles} />}
     </div>
   );
 }
 
-function Shipments({ shipments, vehicles, onVehicleStatus }) {
+function Shipments({ shipments, vehicles, onVehicleStatus, vehicleSaving = null }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [savingShipment, setSavingShipment] = useState(false);
+  const [advancingShipmentId, setAdvancingShipmentId] = useState(null);
+  const [deletingShipmentId, setDeletingShipmentId] = useState(null);
   const { rows, setRows, loading } = shipments;
 
   const filtered = useMemo(() => {
@@ -21300,6 +21317,7 @@ function Shipments({ shipments, vehicles, onVehicleStatus }) {
   }, [rows, query]);
 
   async function addShipment(form) {
+    if (savingShipment) return;
     const draft = {
       id: docId("DL"),
       orderRef: form.orderRef || "—",
@@ -21310,42 +21328,80 @@ function Shipments({ shipments, vehicles, onVehicleStatus }) {
       expectedDate: form.expectedDate,
       status: "Preparing",
     };
-    setRows((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(`Shipment ${draft.id} created for ${draft.customer}`);
-    if (IS_CONFIGURED) {
-      try {
-        const header = await sb("scm_shipments").insert({
-          order_ref: draft.orderRef, customer: draft.customer, destination: draft.destination,
-          vehicle_reg: draft.vehicle, dispatch_date: draft.dispatchDate, expected_date: draft.expectedDate, status: "Preparing",
-        }).single().run();
-        if (header?.id) setRows((prev) => prev.map((s) => (s.id === draft.id ? { ...s, dbId: header.id } : s)));
-      } catch (_e) { notify("Shipment created locally, but saving to the server failed.", "error"); }
+    setSavingShipment(true);
+    try {
+      if (!IS_CONFIGURED) {
+        setRows((prev) => [draft, ...prev]);
+        setShowForm(false);
+        notify(`Shipment ${draft.id} created for ${draft.customer}`);
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("scm_shipments", "insert", {
+        order_ref: draft.orderRef, customer: draft.customer, destination: draft.destination,
+        vehicle_reg: draft.vehicle, dispatch_date: draft.dispatchDate, expected_date: draft.expectedDate, status: "Preparing",
+      });
+      if (error || !data?.id) throw error || new Error("The server did not return the shipment.");
+      const confirmed = mapShipmentRow(data);
+      setRows((prev) => [confirmed, ...prev]);
+      setShowForm(false);
+      notify(`Shipment ${confirmed.id} created for ${confirmed.customer}`);
+    } catch (error) {
+      notify(`Shipment was not created. ${error?.message || "Your form is still available to retry."}`, "error");
+    } finally {
+      setSavingShipment(false);
     }
   }
 
   async function advanceShipment(id, next) {
+    if (advancingShipmentId || deletingShipmentId) return false;
     const shp = rows.find((s) => s.id === id);
-    setRows((prev) => prev.map((s) => (s.id === id ? { ...s, status: next } : s)));
-    setSelected((s) => (s && s.id === id ? { ...s, status: next } : s));
-
-    if (shp?.vehicle) {
-      if (next === "Dispatched") onVehicleStatus(shp.vehicle, "On Route");
-      if (next === "Delivered") onVehicleStatus(shp.vehicle, "Available");
-    }
-    if (next === "Delivered") notify(id + " delivered" + (shp?.vehicle ? " — " + shp.vehicle + " is available again" : ""));
-
-    if (IS_CONFIGURED && shp?.dbId) {
-      try { await sb("scm_shipments").eq("id", shp.dbId).update({ status: next }).run(); } catch (_e) { notify("Couldn't save the shipment status to the server.", "error"); }
+    if (!shp) return false;
+    setAdvancingShipmentId(id);
+    try {
+      let confirmed = { ...shp, status: next };
+      if (IS_CONFIGURED && shp.dbId) {
+        const { data, error } = await runCompanyTableMutation("scm_shipments", "update", { status: next }, { matchVal: shp.dbId });
+        if (error || !data?.id) throw error || new Error("The server did not return the updated shipment.");
+        confirmed = mapShipmentRow(data);
+      }
+      setRows((prev) => prev.map((s) => (s.id === id ? confirmed : s)));
+      setSelected((s) => (s && s.id === id ? confirmed : s));
+      if (shp.vehicle) {
+        const vehicleStatus = next === "Dispatched" ? "On Route" : next === "Delivered" ? "Available" : null;
+        if (vehicleStatus) {
+          const vehicleSaved = await onVehicleStatus(shp.vehicle, vehicleStatus);
+          if (!vehicleSaved) notify("Shipment status is confirmed, but the linked vehicle needs reconciliation.", "error");
+        }
+      }
+      if (next === "Delivered") notify(id + " delivered" + (shp.vehicle ? " — " + shp.vehicle + " is available again" : ""));
+      return true;
+    } catch (error) {
+      notify(`Shipment status was not changed. ${error?.message || "Try again."}`, "error");
+      return false;
+    } finally {
+      setAdvancingShipmentId(null);
     }
   }
 
   async function deleteShipment(id) {
+    if (deletingShipmentId || advancingShipmentId) return false;
     const shp = rows.find((s) => s.id === id);
-    setRows((prev) => prev.filter((s) => s.id !== id));
-    setSelected(null);
-    if (IS_CONFIGURED && shp?.dbId) {
-      try { await sb("scm_shipments").eq("id", shp.dbId).delete().run(); } catch (_e) { notify("Couldn't delete the shipment on the server.", "error"); }
+    if (!shp) return false;
+    setDeletingShipmentId(id);
+    try {
+      if (IS_CONFIGURED && shp.dbId) {
+        const { error } = await runCompanyTableMutation("scm_shipments", "delete", null, { matchVal: shp.dbId });
+        if (error) throw error;
+      }
+      setRows((prev) => prev.filter((s) => s.id !== id));
+      setSelected(null);
+      notify(`Shipment ${id} deleted.`);
+      return true;
+    } catch (error) {
+      notify(`Shipment was not deleted. ${error?.message || "Try again."}`, "error");
+      return false;
+    } finally {
+      setDeletingShipmentId(null);
     }
   }
 
@@ -21433,14 +21489,14 @@ function Shipments({ shipments, vehicles, onVehicleStatus }) {
       </div>
 
       {selected && (
-        <ShipmentPanel shipment={selected} onClose={() => setSelected(null)} onAdvance={advanceShipment} onDelete={deleteShipment} />
+        <ShipmentPanel shipment={selected} onClose={() => setSelected(null)} onAdvance={advanceShipment} onDelete={deleteShipment} advancing={advancingShipmentId === selected.id} deleting={deletingShipmentId === selected.id} vehicleSaving={Boolean(vehicleSaving && selected.vehicle === vehicleSaving)} />
       )}
-      {showForm && <ShipmentFormPanel vehicles={vehicles.rows} onClose={() => setShowForm(false)} onSubmit={addShipment} />}
+      {showForm && <ShipmentFormPanel vehicles={vehicles.rows} onClose={() => setShowForm(false)} onSubmit={addShipment} saving={savingShipment} />}
     </div>
   );
 }
 
-function ShipmentPanel({ shipment, onClose, onAdvance, onDelete }) {
+function ShipmentPanel({ shipment, onClose, onAdvance, onDelete, advancing = false, deleting = false, vehicleSaving = false }) {
   const nextStatus = SHIPMENT_STATUS_NEXT[shipment.status];
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
@@ -21486,19 +21542,21 @@ function ShipmentPanel({ shipment, onClose, onAdvance, onDelete }) {
           {nextStatus && (
             <button
               onClick={() => onAdvance(shipment.id, nextStatus)}
-              className="btn-primary text-white text-[12px] font-medium rounded-lg py-2.5"
+              disabled={advancing || deleting || vehicleSaving}
+              aria-busy={advancing || vehicleSaving}
+              className="btn-primary text-white text-[12px] font-medium rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Mark {nextStatus}
+              {advancing || vehicleSaving ? "Saving…" : `Mark ${nextStatus}`}
             </button>
           )}
-          <ConfirmDeleteButton label="Delete shipment" onConfirm={() => onDelete(shipment.id)} />
+          <ConfirmDeleteButton label={deleting ? "Deleting…" : "Delete shipment"} busy={deleting} disabled={deleting || advancing || vehicleSaving} onConfirm={() => onDelete(shipment.id)} />
         </div>
       </div>
     </div>
   );
 }
 
-function ShipmentFormPanel({ vehicles, onClose, onSubmit }) {
+function ShipmentFormPanel({ vehicles, onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({
     customer: "", orderRef: "", destination: "", vehicle: "",
     dispatchDate: TODAY.toISOString().slice(0, 10), expectedDate: "",
@@ -21567,7 +21625,7 @@ function ShipmentFormPanel({ vehicles, onClose, onSubmit }) {
 
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
-          <button type="submit" className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5">Create Shipment</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Creating…" : "Create Shipment"}</button>
         </div>
       </form>
     </div>

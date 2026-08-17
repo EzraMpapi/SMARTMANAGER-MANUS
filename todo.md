@@ -693,5 +693,5 @@
 - [x] Harden Documents upload, version, and delete flows with confirmed server state, retry-safe errors, and busy controls.
 - [x] Harden Notebook note creation and status changes with confirmed server state and preserved retry context.
 - [x] Harden Customer Support ticket, internal reply, and knowledge-article mutations with confirmed server state, preserved drafts, and duplicate-action guards.
-- [ ] Harden Supply Chain vehicle, shipment, and logistics-record mutations with confirmed server responses, retry-safe forms, and busy controls.
+- [x] Harden Supply Chain vehicle, shipment, and logistics-record mutations with confirmed server responses, retry-safe forms, and busy controls.
 - [x] Harden Maintenance record creation and linked expense persistence so visible records appear only after server confirmation, with retry-safe form state and busy controls.
