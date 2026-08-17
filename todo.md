@@ -563,3 +563,7 @@
 - [x] Review representative desktop and mobile workflows for responsive layout, accessibility, loading/empty/error/retry states, and workflow clarity.
 - [x] Assess bundle, query, and large-data readiness; prioritize safe performance improvements without destabilizing ERP workflows.
 - [x] Re-run security, regression, build, and production-readiness validation; document evidence, limitations, and remaining risks before publication.
+- [x] Diagnose and repair the reported Join Company failure without weakening authentication, invitation validation, profile ownership, or tenant isolation.
+- [x] Diagnose and repair the reported Settings failure while preserving server-confirmed workspace, branding, security, and provider boundaries.
+- [x] Refine the authenticated Smart Manager dashboard presentation with professional enterprise visual hierarchy, responsive safeguards, and accessibility preservation.
+- [x] Add focused tests and complete visual, regression, and production-build validation for the dashboard and error-path repairs.

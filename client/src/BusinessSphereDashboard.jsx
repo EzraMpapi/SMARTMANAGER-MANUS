@@ -16,7 +16,7 @@ import {
   Hash, Video, Mic, PenTool, QrCode, MapPin, EyeOff, User, UserCircle, ArrowRight, LogOut,
   Target, Crosshair, GitBranch, Circle, ScanText, History, Calendar, ChevronLeft, Sparkles, Zap, HeartPulse, HardHat, Fingerprint, Activity, FolderKanban
 , PiggyBank, HandCoins, Users2, Coins, BookHeart, TreePine, Scale, CircleUserRound, BadgeDollarSign, Shield, ArrowRightLeft,
-  School, Bus, Tablets, TestTube, Building, Hotel, Bed, Car, BookMarked, CalendarDays, UserCheck, Library, NotebookPen, Clipboard, DollarSign, BadgeCheck, Microscope, Syringe, UtensilsCrossed, ChefHat, Utensils, CookingPot, ConciergeBell, BedDouble, Key, DoorOpen, Split, MinusCircle, PlusCircle, RefreshCw, Shuffle, ArrowLeftRight, Wallet2, Coffee, Wine, ShoppingBasket, Pizza, Timer, Salad, CheckCircle, XCircle, RotateCcw, Archive, Moon, Sun, Sliders, SortAsc, SortDesc, CheckSquare, Undo2, BellRing, BarChart2, BadgePercent, Calculator, FolderSync, Database, Cpu, Globe2, Languages, GanttChart, KanbanSquare, Wifi, WifiOff, RefreshCcw, PanelLeftClose, PanelLeftOpen, ArrowUpCircle, ChevronFirst, ChevronLast, ImageIcon, Palette, Save, Info} from "lucide-react";
+  School, Bus, Tablets, TestTube, Building, Hotel, Bed, Car, BookMarked, CalendarDays, UserCheck, Library, NotebookPen, Clipboard, DollarSign, BadgeCheck, Microscope, Syringe, UtensilsCrossed, ChefHat, Utensils, CookingPot, ConciergeBell, BedDouble, Key, DoorOpen, Split, MinusCircle, PlusCircle, RefreshCw, Shuffle, ArrowLeftRight, Wallet2, Coffee, Wine, ShoppingBasket, Pizza, Timer, Salad, CheckCircle, XCircle, RotateCcw, Archive, Moon, Sun, Sliders, SortAsc, SortDesc, CheckSquare, Undo2, BellRing, BarChart2, BadgePercent, Calculator, FolderSync, Database, Cpu, Globe2, Languages, GanttChart, KanbanSquare, Wifi, WifiOff, RefreshCcw, PanelLeftClose, PanelLeftOpen, ArrowUpCircle, ChevronFirst, ChevronLast, ImageIcon, Palette, Save, Info, Upload} from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, CartesianGrid, Cell,
@@ -5788,7 +5788,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-widest">Executive Command Center</span>
+                <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-[0.16em]">Workspace overview</span>
                 <span className="text-[rgba(255,255,255,.3)]">·</span>
                 <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{TODAY.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span>
               </div>
@@ -5867,6 +5867,12 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             </div>
           </div>
 
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-[10.5px]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/70"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live workspace data</span>
+            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{PERIOD_LABELS[period]} reporting view</span>
+            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{alerts.length} operational alert{alerts.length === 1 ? "" : "s"}</span>
+          </div>
+
           {/* 8-KPI strip */}
           {(() => {
             const invRows = invoices.rows;
@@ -5896,7 +5902,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                   {l:"Pipeline",    v:formatMoney(crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).reduce((s,l)=>s+(l.value||0),0)),col:"#F9A8D4",sub:openLeads+" open deals"},
                   {l:"MRR",         v:formatMoney(MRR),col:"#34D399",sub:activeSubs.length+" active subs"},
                 ].map(({l,v,col,sub})=>(
-                  <div key={l} className="bg-[rgba(0,0,0,.25)] px-3 py-3 text-center">
+                  <div key={l} className="bg-[rgba(0,0,0,.25)] px-3 py-3 text-center transition-colors hover:bg-[rgba(255,255,255,.07)]">
                     <p className="text-[9.5px] font-bold uppercase tracking-wide text-[rgba(255,255,255,.45)] mb-1">{l}</p>
                     <p className="text-[14px] font-black leading-tight" style={{color:col}}>{v}</p>
                     <p className="text-[9.5px] text-[rgba(255,255,255,.35)] mt-0.5">{sub}</p>
@@ -32314,12 +32320,17 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 
+  useEffect(() => {
+    setDraft(company);
+  }, [company]);
+
   function setField(key, val) {
     setDraft((d) => ({ ...d, [key]: val }));
   }
 
   async function saveProfile() {
     const previousIndustryFocus = normalizeOrganizationIndustryFocus(company.industry);
+    let confirmedDraft = draft;
     if (IS_CONFIGURED) {
       try {
         await sb("companies").eq("id", draft.id).update({
@@ -32331,10 +32342,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
           primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A", industryFocus: normalizeOrganizationIndustryFocus(draft.industry),
           logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
         });
-        draft.logo = branding.logo;
-        draft.brandColor = branding.primaryColor;
-        draft.brandAccentColor = branding.accentColor;
-        draft.industry = branding.industryFocus;
+        confirmedDraft = { ...draft, logo: branding.logo, brandColor: branding.primaryColor, brandAccentColor: branding.accentColor, industry: branding.industryFocus };
         rememberConfirmedOrganizationIndustryFocus(branding.industryFocus);
         try {
           await recordConfirmedIndustryFocusAudit(previousIndustryFocus, branding.industryFocus, currentUser.name);
@@ -32346,9 +32354,11 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
         return;
       }
     }
-    setCompany(draft);
-    window.__smartManagerCompany = draft;
-    try { localStorage.setItem("bs_company_profile", JSON.stringify(draft)); } catch(_e){}
+    const savedCompany = IS_CONFIGURED ? { ...confirmedDraft } : draft;
+    setCompany(savedCompany);
+    setDraft(savedCompany);
+    window.__smartManagerCompany = savedCompany;
+    try { localStorage.setItem("bs_company_profile", JSON.stringify(savedCompany)); } catch(_e){}
     notify("Company profile saved ✓");
   }
 
@@ -38884,6 +38894,19 @@ function MicrosoftGlyph({ size = 18 }) {
 }
 
 const WORKSPACE_BRAND_SWATCHES = ["#0B5D3B", "#16A34A", "#2563EB", "#7C3AED", "#D97706", "#DC2626", "#0F766E", "#0F172A"];
+const JOIN_COMPANY_ROLE_OPTIONS = [
+  { id: "Employee", label: "Employee" },
+  { id: "External Client", label: "External Client" },
+  { id: "Supplier", label: "Supplier" },
+];
+
+function workspaceJoinErrorMessage(error, fallback) {
+  const message = String(error?.message || "").toLowerCase();
+  if (message.includes("invalid join code")) return "That company join code is not recognised. Check the code with your administrator and try again.";
+  if (message.includes("already belongs to a different company")) return "This account already belongs to another workspace. Use the account assigned to this company or ask an administrator for help.";
+  if (message.includes("not authenticated") || message.includes("sign in")) return "Your session has expired. Sign in again, then retry joining the company.";
+  return error?.message || fallback;
+}
 
 function workspaceLogoPayload(dataUrl) {
   if (!dataUrl || !dataUrl.startsWith("data:")) return undefined;
@@ -39009,7 +39032,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
             p_name: company.name.trim(), p_industry: company.category, p_country: company.country, p_currency: company.currency, p_full_name: account.fullName.trim(),
           }, accessToken)
         : await callRpc("join_company_with_code", {
-            p_join_code: joinCode.trim(), p_full_name: account.fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
+            p_join_code: joinCode.trim().toUpperCase(), p_full_name: account.fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
           }, accessToken);
 
       if (!rpcResult?.id) throw new Error("Workspace creation did not return a confirmed company record.");
@@ -39050,7 +39073,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning });
     } catch (err) {
       clearStoredAuthSession();
-      setError(accountCreated ? "Your account was created, but workspace setup could not complete. Please sign in to continue setup." : (err.message || "Couldn't complete sign up. Please try again."));
+      setError(accountCreated ? workspaceJoinErrorMessage(err, "Your account was created, but workspace setup could not complete. Please sign in to continue setup.") : workspaceJoinErrorMessage(err, "Couldn't complete sign up. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -39153,12 +39176,13 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 {account.password && account.confirmPassword && account.password !== account.confirmPassword && (
                   <p className="text-[11.5px] text-red-500 flex items-center gap-1"><AlertCircle size={11}/> Passwords do not match</p>
                 )}
-                <AuthTextField label="Join code" icon={Lock} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="e.g. a3f9b2" />
+                <AuthTextField label="Join code" icon={Lock} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="e.g. A3F9B2" />
                 <div>
                   <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Your role</label>
                   <select className={inputClass} value={joinRole} onChange={(e) => setJoinRole(e.target.value)}>
-                    {ROLES.filter((r) => r !== "Organization Owner").map((r) => <option key={r}>{r}</option>)}
+                    {JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{role.label}</option>)}
                   </select>
+                  <p className="mt-1 text-[10.5px] leading-4 text-slate-400">Company administrators assign elevated roles after your workspace access is confirmed.</p>
                 </div>
                 {isPortalRole && <AuthTextField label="Customer or supplier reference" icon={Building2} value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} placeholder="As it appears in the system" />}
                 <button onClick={handleFinalSubmit} disabled={busy || !step2Valid}
@@ -39309,7 +39333,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
             p_name: company.name.trim(), p_industry: company.category, p_country: company.country, p_currency: company.currency, p_full_name: fullName.trim(),
           }, oauthUser.accessToken)
         : await callRpc("join_company_with_code", {
-            p_join_code: joinCode.trim(), p_full_name: fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
+            p_join_code: joinCode.trim().toUpperCase(), p_full_name: fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
           }, oauthUser.accessToken);
 
       if (!rpcResult?.id) throw new Error("Workspace setup did not return a confirmed company record.");
@@ -39336,7 +39360,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         workspaceCreated: mode === "create",
       });
     } catch (err) {
-      setError(err.message || "Couldn't complete setup. Please try again.");
+      setError(workspaceJoinErrorMessage(err, "Couldn't complete setup. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -39426,8 +39450,9 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
               <FormField label="Company join code" required><input className={inputClass} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="e.g. A1B2C3D4" /></FormField>
               <FormField label="Your role">
                 <select className={inputClass} value={joinRole} onChange={(e) => setJoinRole(e.target.value)}>
-                  {ROLES.map((r) => <option key={r.id} value={r.id}>{r.id}</option>)}
+                  {JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{role.label}</option>)}
                 </select>
+                <p className="mt-1 text-[10.5px] leading-4 text-slate-400">For security, workspace administrators approve elevated roles after access is confirmed.</p>
               </FormField>
               {isPortalRole && (
                 <FormField label="Your company name, exactly as it appears on your records" required>

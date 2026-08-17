@@ -164,6 +164,22 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("brand_accent_color: branding.accentColor");
   });
 
+  it("keeps Settings upload controls defined and constrains both Join Company flows to supported workspace roles", () => {
+    expect(dashboardSource).toContain("Info, Upload} from \"lucide-react\"");
+    expect(dashboardSource).toContain("const JOIN_COMPANY_ROLE_OPTIONS");
+    expect(dashboardSource).toContain("JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{role.label}</option>)");
+    expect(dashboardSource).not.toContain('ROLES.filter((r) => r !== "Organization Owner").map((r) => <option key={r}>{r}</option>)');
+    expect(dashboardSource).toContain("p_join_code: joinCode.trim().toUpperCase()");
+    expect(dashboardSource).toContain("workspaceJoinErrorMessage(err");
+  });
+
+  it("retains the professional executive command hierarchy and operational context without adding fabricated metrics", () => {
+    expect(dashboardSource).toContain(">Workspace overview<");
+    expect(dashboardSource).toContain("Live workspace data");
+    expect(dashboardSource).toContain("operational alert{alerts.length === 1 ? \"\" : \"s\"}");
+    expect(dashboardSource).toContain("{PERIOD_LABELS[period]} reporting view");
+  });
+
   it("routes an authenticated profile without a company assignment into company setup before tenant writes", () => {
     expect(dashboardSource).toContain("!profile || !profile.company_id || !profile.companies?.id");
     expect(dashboardSource).toContain("setOauthPendingUser({ id: user.id");
