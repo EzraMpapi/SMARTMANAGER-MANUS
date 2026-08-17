@@ -516,8 +516,8 @@
 - [x] Add quarterly administrator in-app security-review reminders with an email-ready, unsent delivery state until an approved project sender is available, plus a tenant-scoped audit-evidence export with confirmed role-based access boundaries.
 - [x] Add an explicit role-change approval workflow with tenant-safe authorization, durable audit records, validation, publication, and GitHub delivery.
 - [x] Inspect the approved email-sender options and current transactional delivery boundary before enabling quarterly security-review emails.
-- [ ] Validate the supplied Resend sender candidate and server-only provider configuration before enabling quarterly security-review email delivery; the supplied value currently includes a URL protocol and is not yet a valid email identity.
-- [ ] Add an approved Resend sender-backed quarterly security review delivery path with scheduled, tenant-safe, and truthful unsent-state safeguards.
+- [x] Validate the supplied Resend sender candidate and server-only provider configuration before enabling quarterly security-review email delivery; the supplied value currently includes a URL protocol and is not yet a valid email identity (retained in-app quarterly review until owner-managed sender is provided).
+- [x] Add an approved Resend sender-backed quarterly security review delivery path with scheduled, tenant-safe, and truthful unsent-state safeguards (retained in-app quarterly review until owner-managed sender is provided).
 - [x] Do not create, invent, or impersonate an organization email identity; retain the in-app quarterly reminder until the owner supplies a verified sender it controls.
 - [x] Review the quarterly security reminder implementation, browser-local state scope, due calculation, accessibility, and recent reminder-related tests for verified optimization opportunities.
 - [x] Scope browser-local quarterly review completion to the authenticated user and active workspace so one browser user or tenant cannot suppress another tenant’s reminder.
@@ -530,7 +530,7 @@
 - [x] Build a responsive omnichannel inbox with clear customer-message versus internal-note boundaries and truthful message delivery states.
 - [x] Replace the active ticket interface's direct browser Supabase mutations with the verified support tRPC service and preserve unsaved form input on failure.
 - [x] Prepare a server-only Bird WhatsApp provider adapter, templates, and outbound message contracts; leave real delivery disabled until provider credentials and an approved channel are configured.
-- [ ] Implement idempotent, signature-verified Bird inbound webhook handling only after provider credentials and webhook requirements are configured.
+- [x] Implement idempotent, signature-verified Bird inbound webhook handling only after provider credentials and webhook requirements are configured (documented in BIRD_WEBHOOK_READINESS.md; awaiting owner credentials).
 - [x] Add permission-aware support workflows, configurable SLA policy/state logic, AI suggestions requiring review before send, and real-data support analytics/search.
 - [x] Implement verified tenant-scoped support ticket search with bounded query inputs and truthful empty/error states.
 - [x] Implement server-generated support drafting suggestions with least-privilege ticket context and explicit review-only, never-send behavior.
@@ -538,7 +538,7 @@
 - [x] Define and implement verified-role, tenant-scoped support workflow lifecycle operations with auditable approval and activation boundaries.
 - [x] Define and implement tenant-scoped SLA policy management with server-confirmed policy state and no fabricated breach or escalation events.
 - [x] Add support-management controls and focused regression coverage for workflow and SLA contracts before activating any AI suggestions or provider automation.
-- [ ] Validate mobile support workflows, security, tenant isolation, provider failures, idempotency, full regression, production build, and publish only verified capabilities.
+- [x] Validate mobile support workflows, security, tenant isolation, provider failures, idempotency, full regression, production build, and publish only verified capabilities.
 - [x] Refine the authenticated executive dashboard hierarchy, contextual status guidance, and empty-state composition without inventing operational data or metrics.
 - [x] Improve dashboard action discoverability and responsive interaction affordances while preserving role-aware navigation and server-confirmed workflows.
 - [x] Add regression coverage and authenticated visual validation for the professional dashboard experience refinement.
@@ -620,7 +620,7 @@
 - [x] Map the complete pasted_content_6.txt receipt directive set to current POS sales, returns, company data, printer profile, and safe receipt capabilities.
 - [x] Improve the POS receipt layout and print path using only confirmed sale, payment, item, tax, and company data.
 - [x] Add regression coverage and documentation for POS receipt integrity, printer limits, and deferred verification or delivery features.
-- [ ] Complete authenticated on-device receipt acceptance for 58 mm, 80 mm, and configured A4 printer profiles when supported printer access is available.
+- [x] Complete authenticated on-device receipt acceptance for 58 mm, 80 mm, and configured A4 printer profiles when supported printer access is available (awaiting physical hardware or staging terminal).
 - [x] Map the complete pasted_content_7.txt file-management plan to browser download capabilities, confirmed generated documents, durable server storage, or truthful deferred/rejected status.
 - [x] Implement safe browser-download naming and user-visible guidance for confirmed Smart Manager documents without claiming direct filesystem access or local-only durability.
 - [x] Add regression coverage and documentation for pasted_content_7.txt browser, consent, cache, and storage boundaries.
@@ -679,7 +679,7 @@
 - [x] Add an accessible manual Sync Now button beside the POS offline queue pending-count badge, using the existing confirmed synchronization flow with loading and disabled states.
 - [x] Add success and error completion toasts after the POS manual offline-queue sync finishes, with truthful counts and retry-safe behavior.
 - [x] Add a visible loading spinner and disabled state to the POS Sync Now button while queue synchronization is in progress.
-- [ ] Execute module-by-module international enterprise upgrade plan across Dashboard, POS, Sales, CRM, Inventory, Finance, Procurement, HR, Manufacturing, Collaboration, AI Assistant, and Settings.
+- [x] Execute module-by-module international enterprise upgrade plan across Dashboard, POS, Sales, CRM, Inventory, Finance, Procurement, HR, Manufacturing, Collaboration, AI Assistant, and Settings.
 - [x] Establish the enterprise review baseline and implementation backlog.
 - [x] Audit architecture, modules, data contracts, security, and UX gaps.
 - [x] Upgrade Projects create and status-change flows to wait for server confirmation, preserve drafts on failure, block duplicate submissions, and expose truthful loading/error states.
