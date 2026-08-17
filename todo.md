@@ -718,4 +718,5 @@
 - [x] Integrate reference screen TRA Portal features: automated VAT calculation & monthly return pre-fill view, invoice-to-TRA processing pipeline status cards, permanent cryptographic audit trail view, sequential counter allocation monitor, and VFD direct-connection diagnostics.
 - [x] Add PDF and CSV export download buttons to the Pre-Filled Monthly VAT Returns view in the TRA Portal.
 - [x] Add month-based date range filter to the Pre-Filled Monthly VAT Returns view and apply to PDF and CSV exports.
-- [ ] Add receipt number and buyer search filter to the Pre-Filled Monthly VAT Returns view and apply to summaries and exports.
+- [x] Add receipt number and buyer search filter to the Pre-Filled Monthly VAT Returns view and apply to summaries and exports.
+- [ ] Add a "Clear Filters" button to reset the VAT Returns month range and search query to their default states.

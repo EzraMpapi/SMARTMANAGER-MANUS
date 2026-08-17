@@ -653,8 +653,21 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                 className="w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
             </div>
-            <div className="text-[12px] text-slate-500 font-medium whitespace-nowrap">
-              Match: <span className="font-bold text-slate-800 dark:text-slate-200">{filteredVatReceipts.length}</span> receipts
+            <div className="flex items-center gap-3">
+              <span className="text-[12px] text-slate-500 font-medium whitespace-nowrap">
+                Match: <span className="font-bold text-slate-800 dark:text-slate-200">{filteredVatReceipts.length}</span> receipts
+              </span>
+              <button
+                onClick={() => {
+                  setVatMonthStart("2026-01");
+                  setVatMonthEnd("2026-12");
+                  setVatSearch("");
+                  setNotice("VAT filters reset to default successfully.");
+                }}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                Clear Filters
+              </button>
             </div>
           </div>
 
