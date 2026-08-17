@@ -25,6 +25,7 @@ This record covers the first focused upgrade under the attached enterprise-trans
 | Tenant and permission boundary | The live policy inspection found tenant predicates based on `current_company_id()`; service reads and writes continue to derive identity and company from `resolveVerifiedProfile`. |
 | Browser/runtime inspection | The authenticated workspace loaded normally after restart with confirmed-data dashboard states and no client-console output. Direct first-area visual validation will be repeated against the newly published version. |
 | Full production bundle | Initial unbounded Vite renders were terminated by the constrained sandbox during chunk rendering. Retrying with a bounded Node heap completed successfully: 2,653 modules transformed; client and server bundles were written. The output retains a 6.24 MB uncompressed dashboard chunk warning, so further safe code-splitting remains a measured follow-up rather than a hidden issue. |
+| Support policy role targets | The additive Supabase migration completed successfully. Read-only inspection verified all seven reviewed support policies now target `{authenticated}` and retain both `USING` and `WITH CHECK` predicates of `company_id = current_company_id()`. |
 
 ## Security and data integrity position
 
@@ -32,4 +33,4 @@ The upgrade does not trust browser-supplied tenant identifiers. It does not add 
 
 ## Remaining area-specific work
 
-The support configuration policies should be normalized from the broad `public` role target to `authenticated` while retaining their current `current_company_id()` predicate, following a dedicated migration review and tenant-isolation acceptance. Physical mobile and printer acceptance, provider-backed inbound messaging, and Resend work remain independent, deferred checklist items.
+The reviewed support configuration policies have been normalized from the broad `public` role target to `authenticated` while retaining their `current_company_id()` predicate. Physical mobile and printer acceptance, provider-backed inbound messaging, and Resend work remain independent, deferred checklist items.
