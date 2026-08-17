@@ -38344,8 +38344,9 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
                     type="button"
                     onClick={syncPendingSales}
                     disabled={pendingSales.length === 0 || syncingQueue}
-                    className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45"
+                    className="inline-flex min-w-[74px] items-center justify-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45"
                     aria-label={syncingQueue ? "Synchronizing pending offline transactions" : "Sync pending offline transactions now"}
+                    aria-busy={syncingQueue}
                   >
                     <RefreshCw size={10} className={syncingQueue ? "animate-spin" : ""} />
                     {syncingQueue ? "Syncing…" : "Sync Now"}

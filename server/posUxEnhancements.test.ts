@@ -58,6 +58,8 @@ describe("POS UX Enhancements", () => {
     expect(source).toContain("Sync Now");
     expect(source).toContain("disabled={pendingSales.length === 0 || syncingQueue}");
     expect(source).toContain("Sync pending offline transactions now");
+    expect(source).toContain("aria-busy={syncingQueue}");
+    expect(source).toContain('className={syncingQueue ? "animate-spin" : ""}');
   });
 
   it("shows truthful completion toasts after the manual queue sync finishes", () => {

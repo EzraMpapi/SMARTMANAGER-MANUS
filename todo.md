@@ -678,3 +678,4 @@
 - [x] Add an accessible pending-transaction count badge to the POS offline queue editing modal and verify it without changing queue persistence behavior.
 - [x] Add an accessible manual Sync Now button beside the POS offline queue pending-count badge, using the existing confirmed synchronization flow with loading and disabled states.
 - [x] Add success and error completion toasts after the POS manual offline-queue sync finishes, with truthful counts and retry-safe behavior.
+- [x] Add a visible loading spinner and disabled state to the POS Sync Now button while queue synchronization is in progress.
