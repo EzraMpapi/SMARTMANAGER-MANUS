@@ -24351,6 +24351,9 @@ function Documents({ filesHook, company }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [savingFile, setSavingFile] = useState(false);
+  const [versionSavingFileId, setVersionSavingFileId] = useState(null);
+  const [deletingFileId, setDeletingFileId] = useState(null);
   const { rows: files, setRows: setFiles, loading, error } = filesHook;
 
   const folderCounts = useMemo(() => {
@@ -24378,55 +24381,91 @@ function Documents({ filesHook, company }) {
   }, [files]);
 
   async function addFile(form) {
+    if (savingFile) return;
     const draft = {
       id: docId("DOC"),
       name: form.name,
       type: form.type,
       folder: form.folder,
-      size: `${(0.1 + Math.random() * 2).toFixed(1)} MB`,
+      size: "Not measured",
       uploadedBy: "You",
       date: TODAY.toISOString().slice(0, 10),
       linkedRecord: form.linkedRecord || null,
       content: form.content || "",
       versions: [],
     };
-    setFiles((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(`Uploaded: ${draft.name}`);
-    if (IS_CONFIGURED) {
-      try {
-        const header = await sb("documents").insert({
-          name: draft.name, file_type: draft.type, folder: draft.folder,
-          size_label: draft.size, linked_record: draft.linkedRecord, content: draft.content, versions: draft.versions,
-        }).single().run();
-        if (header?.id) setFiles((prev) => prev.map((f) => (f.id === draft.id ? { ...f, dbId: header.id } : f)));
-      } catch (_e) { notify("File added locally, but saving to the server failed.", "error"); }
+    setSavingFile(true);
+    try {
+      if (!IS_CONFIGURED) {
+        setFiles((prev) => [draft, ...prev]);
+        setShowForm(false);
+        notify(`Uploaded: ${draft.name}`);
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("documents", "insert", {
+        name: draft.name, file_type: draft.type, folder: draft.folder,
+        size_label: draft.size, linked_record: draft.linkedRecord, content: draft.content, versions: draft.versions,
+      });
+      if (error || !data?.id) throw error || new Error("The server did not return the uploaded document.");
+      const confirmed = mapFileRow(data);
+      setFiles((prev) => [confirmed, ...prev]);
+      setShowForm(false);
+      notify(`Uploaded: ${confirmed.name}`);
+    } catch (error) {
+      notify(`File was not uploaded. ${error?.message || "Your form is still available to retry."}`, "error");
+    } finally {
+      setSavingFile(false);
     }
   }
 
   async function addVersion(fileId, versionForm) {
+    if (versionSavingFileId) return false;
     const file = files.find((f) => f.id === fileId);
-    if (!file) return;
+    if (!file) return false;
     const newVersion = { version: (file.versions?.length || 0) + 1, date: TODAY.toISOString().slice(0, 10), size: versionForm.size || file.size, note: versionForm.note || "" };
     const updatedVersions = [...(file.versions || []), { version: file.versions?.length ? file.versions[file.versions.length - 1].version : 0, date: file.date, size: file.size, note: "Previous version" }];
-    // The version being replaced is archived into the history; the file's
-    // own top-level date/size become the new version's — so "current" is
-    // always what the document actually is right now, and history is a
-    // real, ordered trail of what it used to be, not a guess.
-    setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, date: newVersion.date, size: newVersion.size, versions: updatedVersions } : f)));
-    setSelected((s) => (s && s.id === fileId ? { ...s, date: newVersion.date, size: newVersion.size, versions: updatedVersions } : s));
-    notify(`New version added to ${file.name}`);
-    if (IS_CONFIGURED && file.dbId) {
-      try { await sb("documents").eq("id", file.dbId).update({ size_label: newVersion.size, versions: updatedVersions, created_at: newVersion.date }).run(); } catch (_e) { notify("Version saved locally, but the server update failed.", "error"); }
+    setVersionSavingFileId(fileId);
+    try {
+      if (!IS_CONFIGURED || !file.dbId) {
+        setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, date: newVersion.date, size: newVersion.size, versions: updatedVersions } : f)));
+        setSelected((s) => (s && s.id === fileId ? { ...s, date: newVersion.date, size: newVersion.size, versions: updatedVersions } : s));
+        notify(`New version added to ${file.name}`);
+        return true;
+      }
+      const { data, error } = await runCompanyTableMutation("documents", "update", { size_label: newVersion.size, versions: updatedVersions, created_at: newVersion.date }, { matchVal: file.dbId });
+      if (error || !data?.id) throw error || new Error("The server did not return the updated document.");
+      const confirmed = mapFileRow(data);
+      setFiles((prev) => prev.map((f) => (f.id === fileId ? confirmed : f)));
+      setSelected((s) => (s && s.id === fileId ? confirmed : s));
+      notify(`New version added to ${confirmed.name}`);
+      return true;
+    } catch (error) {
+      notify(`Version was not saved. ${error?.message || "The previous version remains available."}`, "error");
+      return false;
+    } finally {
+      setVersionSavingFileId(null);
     }
   }
 
   async function deleteFile(id) {
+    if (deletingFileId) return false;
     const file = files.find((f) => f.id === id);
-    setFiles((prev) => prev.filter((f) => f.id !== id));
-    setSelected(null);
-    if (IS_CONFIGURED && file?.dbId) {
-      try { await sb("documents").eq("id", file.dbId).delete().run(); } catch (_e) { notify("Couldn't delete the file on the server.", "error"); }
+    if (!file) return false;
+    setDeletingFileId(id);
+    try {
+      if (IS_CONFIGURED && file.dbId) {
+        const { error } = await runCompanyTableMutation("documents", "delete", null, { matchVal: file.dbId });
+        if (error) throw error;
+      }
+      setFiles((prev) => prev.filter((f) => f.id !== id));
+      setSelected(null);
+      notify(`Deleted: ${file.name}`);
+      return true;
+    } catch (error) {
+      notify(`File was not deleted. ${error?.message || "Try again."}`, "error");
+      return false;
+    } finally {
+      setDeletingFileId(null);
     }
   }
 
@@ -24577,13 +24616,13 @@ function Documents({ filesHook, company }) {
         </div>
       </div>
 
-      {selected && <FilePanel file={selected} company={company} onClose={() => setSelected(null)} onDelete={deleteFile} onAddVersion={addVersion} />}
-      {showForm && <FileFormPanel onClose={() => setShowForm(false)} onSubmit={addFile} />}
+      {selected && <FilePanel file={selected} company={company} onClose={() => setSelected(null)} onDelete={deleteFile} onAddVersion={addVersion} deleting={deletingFileId === selected.id} versionSaving={versionSavingFileId === selected.id} />}
+      {showForm && <FileFormPanel onClose={() => setShowForm(false)} onSubmit={addFile} saving={savingFile} />}
     </div>
   );
 }
 
-function FilePanel({ file, company, onClose, onDelete, onAddVersion }) {
+function FilePanel({ file, company, onClose, onDelete, onAddVersion, deleting = false, versionSaving = false }) {
   const meta = FILE_TYPE_STYLE[file.type] || FILE_TYPE_STYLE.pdf;
   const Icon = meta.Icon;
   const [showVersionForm, setShowVersionForm] = useState(false);
@@ -24661,7 +24700,7 @@ function FilePanel({ file, company, onClose, onDelete, onAddVersion }) {
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide flex items-center gap-1.5"><History size={12} /> Version History</p>
-            <button onClick={() => setShowVersionForm(true)} className="text-[11px] font-medium text-[#16A34A] hover:text-[#15803D]">+ New Version</button>
+            <button onClick={() => setShowVersionForm(true)} disabled={versionSaving || deleting} className="text-[11px] font-medium text-[#16A34A] hover:text-[#15803D] disabled:cursor-not-allowed disabled:opacity-50">+ New Version</button>
           </div>
           {(!file.versions || file.versions.length === 0) ? (
             <p className="text-[12px] text-slate-400">No prior versions — this is the only one on record.</p>
@@ -24728,11 +24767,11 @@ function FilePanel({ file, company, onClose, onDelete, onAddVersion }) {
           <button className="flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             <Eye size={13} /> Preview
           </button>
-          <ConfirmDeleteButton label="Delete file" onConfirm={() => onDelete(file.id)} />
+          <ConfirmDeleteButton label={deleting ? "Deleting…" : "Delete file"} busy={deleting} disabled={deleting || versionSaving} onConfirm={() => onDelete(file.id)} />
         </div>
       </div>
 
-      {showVersionForm && <VersionUploadPanel currentSize={file.size} onClose={() => setShowVersionForm(false)} onSubmit={(v) => { onAddVersion(file.id, v); setShowVersionForm(false); }} />}
+      {showVersionForm && <VersionUploadPanel currentSize={file.size} saving={versionSaving} onClose={() => setShowVersionForm(false)} onSubmit={async (v) => { const saved = await onAddVersion(file.id, v); if (saved) setShowVersionForm(false); }} />}
       {showSignaturePad && (
         <DocumentSignaturePad
           documentId={file.id}
@@ -24744,7 +24783,7 @@ function FilePanel({ file, company, onClose, onDelete, onAddVersion }) {
   );
 }
 
-function VersionUploadPanel({ currentSize, onClose, onSubmit }) {
+function VersionUploadPanel({ currentSize, onClose, onSubmit, saving = false }) {
   const [note, setNote] = useState("");
   const [size, setSize] = useState(currentSize);
   function handleSubmit(e) { e.preventDefault(); onSubmit({ note, size }); }
@@ -24764,7 +24803,7 @@ function VersionUploadPanel({ currentSize, onClose, onSubmit }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save New Version</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Save New Version"}</button>
         </div>
       </form>
     </div>
@@ -24836,7 +24875,7 @@ function DocumentSignaturePad({ documentId, onClose, onSigned }) {
   );
 }
 
-function FileFormPanel({ onClose, onSubmit }) {
+function FileFormPanel({ onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({ name: "", type: "pdf", folder: DOC_FOLDERS[0], linkedRecord: "", content: "" });
   const [touched, setTouched] = useState(false);
   const [ocrBusy, setOcrBusy] = useState(false);
@@ -24923,7 +24962,7 @@ function FileFormPanel({ onClose, onSubmit }) {
 
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
-          <button type="submit" className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5">Upload</button>
+          <button type="submit" disabled={saving || ocrBusy} aria-busy={saving} className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Uploading…" : "Upload"}</button>
         </div>
       </form>
     </div>
@@ -32065,6 +32104,8 @@ function NotebookView({ currentUser }) {
   const notes = useCompanyTable("notebook_notes", [], { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ id: r.id, dbId: r.id, title: r.title, content: r.content || "", status: r.status, visibility: r.visibility, createdBy: r.created_by || "" }) });
   const [filter, setFilter] = useState("active");
   const [showForm, setShowForm] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
+  const [togglingNoteId, setTogglingNoteId] = useState(null);
   const [form, setForm] = useState({ title: "", content: "", visibility: "Team" });
 
   // Real visibility enforcement at the display layer: a Private note only
@@ -32078,25 +32119,49 @@ function NotebookView({ currentUser }) {
 
   async function addNote(e) {
     e.preventDefault();
-    if (!form.title.trim()) return;
+    if (savingNote || !form.title.trim()) return;
     const draft = { id: `NOTE-${Date.now()}`, title: form.title.trim(), content: form.content, status: "Active", visibility: form.visibility, createdBy: currentUser.name };
-    notes.setRows((prev) => [draft, ...prev]);
-    setShowForm(false);
-    setForm({ title: "", content: "", visibility: "Team" });
-    notify("Note added.");
-    if (IS_CONFIGURED) {
-      try {
-        const header = await sb("notebook_notes").insert({ title: draft.title, content: draft.content, visibility: draft.visibility, created_by: draft.createdBy }).single().run();
-        if (header?.id) notes.setRows((prev) => prev.map((n) => (n.id === draft.id ? { ...n, dbId: header.id } : n)));
-      } catch (_e) { notify("Saved locally, but the server update failed.", "error"); }
+    setSavingNote(true);
+    try {
+      if (!IS_CONFIGURED) {
+        notes.setRows((prev) => [draft, ...prev]);
+        setShowForm(false);
+        setForm({ title: "", content: "", visibility: "Team" });
+        notify("Note added.");
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("notebook_notes", "insert", { title: draft.title, content: draft.content, visibility: draft.visibility, created_by: draft.createdBy });
+      if (error || !data?.id) throw error || new Error("The server did not return the saved note.");
+      const confirmed = { id: data.id, dbId: data.id, title: data.title, content: data.content || "", status: data.status || "Active", visibility: data.visibility || draft.visibility, createdBy: data.created_by || draft.createdBy };
+      notes.setRows((prev) => [confirmed, ...prev]);
+      setShowForm(false);
+      setForm({ title: "", content: "", visibility: "Team" });
+      notify("Note added.");
+    } catch (error) {
+      notify(`Note was not saved. ${error?.message || "Your draft is still available to retry."}`, "error");
+    } finally {
+      setSavingNote(false);
     }
   }
 
   async function toggleStatus(note) {
+    if (togglingNoteId) return;
     const newStatus = note.status === "Active" ? "Completed" : "Active";
-    notes.setRows((prev) => prev.map((n) => (n.id === note.id ? { ...n, status: newStatus } : n)));
-    if (IS_CONFIGURED && note.dbId) {
-      try { await sb("notebook_notes").eq("id", note.dbId).update({ status: newStatus }).run(); } catch (_e) { notify("Couldn't update the server.", "error"); }
+    setTogglingNoteId(note.id);
+    try {
+      if (!IS_CONFIGURED || !note.dbId) {
+        notes.setRows((prev) => prev.map((n) => (n.id === note.id ? { ...n, status: newStatus } : n)));
+        notify(newStatus === "Completed" ? "Note completed." : "Note reopened.");
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("notebook_notes", "update", { status: newStatus }, { matchVal: note.dbId });
+      if (error || !data?.id) throw error || new Error("The server did not return the updated note.");
+      notes.setRows((prev) => prev.map((n) => (n.id === note.id ? { ...n, status: data.status || newStatus } : n)));
+      notify(newStatus === "Completed" ? "Note completed." : "Note reopened.");
+    } catch (error) {
+      notify(`Note status was not changed. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setTogglingNoteId(null);
     }
   }
 
@@ -32118,7 +32183,7 @@ function NotebookView({ currentUser }) {
           <div key={n.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
             <div className="flex items-start justify-between mb-1.5">
               <p className={`text-[13.5px] font-medium ${n.status === "Completed" ? "text-slate-400 line-through" : "text-[#111827]"}`}>{n.title}</p>
-              <button onClick={() => toggleStatus(n)} aria-label={n.status === "Active" ? "Mark completed" : "Mark active"}>
+              <button onClick={() => toggleStatus(n)} disabled={togglingNoteId === n.id} aria-busy={togglingNoteId === n.id} className="disabled:cursor-wait disabled:opacity-50" aria-label={n.status === "Active" ? "Mark completed" : "Mark active"}>
                 {n.status === "Completed" ? <CheckCircle2 size={16} className="text-[#16A34A]" /> : <Circle size={16} className="text-slate-300" />}
               </button>
             </div>
@@ -32154,7 +32219,7 @@ function NotebookView({ currentUser }) {
             </div>
             <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
               <button type="button" onClick={() => setShowForm(false)} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5">Cancel</button>
-              <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save Note</button>
+              <button type="submit" disabled={savingNote} aria-busy={savingNote} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{savingNote ? "Saving…" : "Save Note"}</button>
             </div>
           </form>
         </div>

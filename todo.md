@@ -690,3 +690,5 @@
 - [x] Harden Collaboration Hub channel creation and message sending with server-confirmed state, retry-safe drafts, and duplicate-send protection.
 - [x] Harden Collaboration Hub calendar event and team workspace mutations with server-confirmed state and recoverable loading/error UI.
 - [x] Replace the Dashboard's simulated six-month trend with a truthful live-data trend or explicit empty state, preserving accurate KPI calculations and drill-down navigation.
+- [x] Harden Documents upload, version, and delete flows with confirmed server state, retry-safe errors, and busy controls.
+- [x] Harden Notebook note creation and status changes with confirmed server state and preserved retry context.
