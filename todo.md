@@ -617,3 +617,7 @@
 - [x] Implement safe record-based analytical guidance from pasted_content_5.txt without fabricated forecasts, guesses, or simulated AI output.
 - [x] Add regression coverage and documentation for pasted_content_5.txt analytical boundaries and remaining model or data-contract prerequisites.
 - [ ] Complete authenticated visual validation for the pasted_content_5.txt analytics-readiness enhancement when a workspace session is available.
+- [x] Map the complete pasted_content_6.txt receipt directive set to current POS sales, returns, company data, printer profile, and safe receipt capabilities.
+- [x] Improve the POS receipt layout and print path using only confirmed sale, payment, item, tax, and company data.
+- [x] Add regression coverage and documentation for POS receipt integrity, printer limits, and deferred verification or delivery features.
+- [ ] Complete authenticated on-device receipt acceptance for 58 mm, 80 mm, and configured A4 printer profiles when supported printer access is available.

@@ -44,4 +44,16 @@ describe("POS cashier acceptance contract", () => {
     expect(source).toContain("keyboard-wedge devices");
     expect(source).not.toContain("navigator.serial.requestPort");
   });
+
+  it("renders a printer-profile-aware receipt from confirmed transaction values without hard-coded tax, unsafe markup, or fake verification artifacts", () => {
+    expect(receipt).toContain('const configuredWidth = deviceProfile?.paperWidth || company?.receiptWidth || "80mm"');
+    expect(receipt).toContain('const receiptTax = Number.isFinite(Number(receipt.tax)) ? Number(receipt.tax) : Math.round(receiptSubtotal * TAX_RATE)');
+    expect(receipt).toContain('const issuedAtIso = issuedAt && !Number.isNaN(new Date(issuedAt).getTime()) ? new Date(issuedAt).toISOString() : null');
+    expect(receipt).toContain('const escapeHtml = (value) => String(value ?? "").replace');
+    expect(receipt).toContain("Issued (ISO 8601)");
+    expect(receipt).toContain("Verification is by the receipt number and payment reference shown above.");
+    expect(receipt).toContain("@page { size:");
+    expect(receipt).not.toContain("VAT (18%)");
+    expect(receipt).not.toContain("qrcode");
+  });
 });

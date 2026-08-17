@@ -37480,33 +37480,53 @@ function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company, de
   // printing whatever happens to be on screen, honoring the real
   // header/footer/logo preferences set in Settings.
   function printReceipt() {
-    const width = deviceProfile?.paperWidth || company?.receiptWidth || "80mm";
+    const configuredWidth = deviceProfile?.paperWidth || company?.receiptWidth || "80mm";
+    const width = ["58mm", "80mm", "A4"].includes(configuredWidth) ? configuredWidth : "80mm";
     const showLogo = company?.receiptShowLogo !== false;
     const footer = company?.receiptFooter || "Thank you for your business!";
     const copyCount = Math.min(5, Math.max(1, Number(deviceProfile?.copyCount) || 1));
     const win = window.open("", "_blank", "width=400,height=600");
     if (!win) { notify("Pop-up blocked — allow pop-ups to print receipts.", "error"); return; }
-    const itemRows = receipt.items.map((it) => `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>${it.qty}× ${it.name}</span><span>${money(it.qty * it.price)}k</span></div>`).join("");
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
+    const receiptSubtotal = Number.isFinite(Number(receipt.subtotal)) ? Number(receipt.subtotal) : receipt.items.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.price || 0), 0);
+    const receiptTax = Number.isFinite(Number(receipt.tax)) ? Number(receipt.tax) : Math.round(receiptSubtotal * TAX_RATE);
+    const receiptTotal = Number.isFinite(Number(receipt.total)) ? Number(receipt.total) : receiptSubtotal + receiptTax;
+    const taxPercent = Math.round(TAX_RATE * 100);
+    const issuedAt = receipt.createdAt || receipt.completedAt || receipt.date || receipt.issuedAt;
+    const issuedAtIso = issuedAt && !Number.isNaN(new Date(issuedAt).getTime()) ? new Date(issuedAt).toISOString() : null;
+    const currencyCode = company?.currencyCode || "TZS";
+    const itemRows = receipt.items.map((item) => {
+      const quantity = Number(item.qty || 0);
+      const unitPrice = Number(item.price || 0);
+      const rowTotal = quantity * unitPrice;
+      return `<tr><td><strong>${escapeHtml(item.name)}</strong>${item.sku ? `<small>SKU: ${escapeHtml(item.sku)}</small>` : ""}</td><td class="numeric">${quantity}</td><td class="numeric">${currencyCode} ${money(unitPrice)}k</td><td class="numeric strong">${currencyCode} ${money(rowTotal)}k</td></tr>`;
+    }).join("");
+    const paymentRows = (receipt.payments || []).map((payment) => `<div class="payment-row"><span>${escapeHtml(payment.method || "Payment")}${payment.reference ? ` · Ref ${escapeHtml(payment.reference)}` : ""}</span><strong>${currencyCode} ${money(Number(payment.appliedAmount ?? payment.amount ?? 0))}k</strong></div>`).join("");
+    const returnRows = (returns || []).map((returnRecord) => `<div class="return-row"><span>${escapeHtml(returnRecord.reason || "Return")} · ${escapeHtml(returnRecord.date || "Date not recorded")}</span><strong>−${currencyCode} ${money(Number(returnRecord.refundTotal || 0))}k</strong></div>`).join("");
+    const businessContact = [company?.address, company?.phone, company?.email, company?.tin ? `TIN: ${company.tin}` : ""].filter(Boolean).map(escapeHtml).join("<br/>");
+    const brandLogo = showLogo && company?.logo ? `<img class="brand-logo" src="${escapeHtml(company.logo)}" alt="${escapeHtml(company.name || "Company")} logo"/>` : "";
     const receiptCopy = (copyNumber) => `
       <section class="receipt-copy">
-        ${showLogo ? "<h2>" + (company?.name || "Receipt") + "</h2>" : ""}
-        <p style="text-align:center;margin:0;">${receipt.id} · ${TODAY.toISOString().slice(0, 10)}${copyCount > 1 ? ` · Copy ${copyNumber}/${copyCount}` : ""}</p>
-        <hr />
-        ${itemRows}
-        <hr />
-        <div class="total"><span>Total</span><span>TZS ${money(receipt.total)}k</span></div>
-        <div class="footer">${footer}</div>
+        <header class="receipt-header">${brandLogo}<h1>${escapeHtml(company?.name || "Smart Manager")}</h1>${company?.tagline ? `<p class="tagline">${escapeHtml(company.tagline)}</p>` : ""}${businessContact ? `<p class="business-contact">${businessContact}</p>` : ""}</header>
+        <div class="document-title">TAX PAYMENT RECEIPT</div>
+        <div class="receipt-meta"><div><span>Receipt number</span><strong>${escapeHtml(receipt.id || "Not recorded")}</strong></div><div><span>Issued (ISO 8601)</span><strong>${issuedAtIso || "Not recorded"}</strong></div></div>
+        <div class="customer-block"><span>Customer</span><strong>${escapeHtml(receipt.customer || "Guest sale")}</strong>${receipt.customerEmail ? `<small>${escapeHtml(receipt.customerEmail)}</small>` : ""}${receipt.customerPhone ? `<small>${escapeHtml(receipt.customerPhone)}</small>` : ""}</div>
+        <table><thead><tr><th>Item</th><th class="numeric">Qty</th><th class="numeric">Unit</th><th class="numeric">Amount</th></tr></thead><tbody>${itemRows}</tbody></table>
+        <div class="summary"><div><span>Subtotal</span><strong>${currencyCode} ${money(receiptSubtotal)}k</strong></div><div><span>VAT (${taxPercent}%)</span><strong>${currencyCode} ${money(receiptTax)}k</strong></div><div class="grand-total"><span>Total paid</span><strong>${currencyCode} ${money(receiptTotal)}k</strong></div></div>
+        <div class="payment-block"><span>Payment method</span><strong>${escapeHtml(receipt.method || "Not recorded")}</strong>${receipt.reference ? `<small>Transaction reference: ${escapeHtml(receipt.reference)}</small>` : ""}${paymentRows}</div>
+        ${returnRows ? `<div class="returns-block"><span>Returns on this receipt</span>${returnRows}</div>` : ""}
+        ${Number(receipt.change) > 0 ? `<div class="change-row"><span>Cash change</span><strong>${currencyCode} ${money(Number(receipt.change))}k</strong></div>` : ""}
+        <p class="integrity-note">Generated from a confirmed Point of Sale transaction. Verification is by the receipt number and payment reference shown above.</p>
+        <footer>${escapeHtml(footer)}${copyCount > 1 ? `<br/>Copy ${copyNumber} of ${copyCount}` : ""}</footer>
       </section>`;
     win.document.write(`
       <html><head><title>Receipt ${receipt.id}</title>
       <style>
-        body { font-family: monospace; padding: 12px; max-width: ${width === "A4" ? "210mm" : width}; margin: 0 auto; font-size: ${width === "58mm" ? "10px" : "12px"}; }
-        h2 { text-align: center; margin: 4px 0; }
-        hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
-        .total { display:flex; justify-content:space-between; font-weight:bold; margin-top: 6px; }
-        .footer { text-align:center; margin-top: 14px; font-size: 0.9em; }
-        .receipt-copy { break-after: page; page-break-after: always; }
+        @page { size: ${width === "A4" ? "A4" : `${width} auto`}; margin: ${width === "A4" ? "12mm" : "4mm"}; }
+        * { box-sizing: border-box; } body { font-family: Arial, Helvetica, sans-serif; color:#111827; padding: ${width === "A4" ? "18px" : "0"}; max-width: ${width === "A4" ? "190mm" : width}; margin: 0 auto; font-size: ${width === "58mm" ? "9px" : "11px"}; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .receipt-copy { break-after: page; page-break-after: always; border: ${width === "A4" ? "1px solid #E5E7EB" : "0"}; border-radius: ${width === "A4" ? "10px" : "0"}; padding: ${width === "A4" ? "20px" : "6px"}; }
         .receipt-copy:last-child { break-after: auto; page-break-after: auto; }
+        .receipt-header { text-align:center; border-bottom:1px dashed #94A3B8; padding-bottom:10px; } .brand-logo { display:block; max-width:96px; max-height:54px; object-fit:contain; margin:0 auto 6px; } h1 { font-size:1.35em; margin:0; } .tagline { margin:3px 0 0; color:#64748B; } .business-contact { margin:6px 0 0; color:#475569; line-height:1.45; } .document-title { text-align:center; font-weight:800; letter-spacing:.12em; font-size:.92em; color:#166534; padding:9px 0; } .receipt-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; border:1px solid #E2E8F0; border-radius:6px; padding:7px; } .receipt-meta div { min-width:0; } .receipt-meta span, .customer-block > span, .payment-block > span, .returns-block > span { display:block; color:#64748B; font-size:.83em; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; } .receipt-meta strong { display:block; word-break:break-word; font-size:.95em; } .customer-block { border-left:3px solid #16A34A; background:#F8FAFC; padding:8px; margin:10px 0; } .customer-block small { display:block; color:#64748B; margin-top:2px; } table { width:100%; border-collapse:collapse; margin-top:6px; } th { border-bottom:1px solid #CBD5E1; color:#64748B; font-size:.82em; text-align:left; text-transform:uppercase; padding:5px 2px; } td { border-bottom:1px solid #F1F5F9; padding:6px 2px; vertical-align:top; } td small { display:block; color:#94A3B8; margin-top:2px; } .numeric { text-align:right; white-space:nowrap; } .strong { font-weight:700; } .summary { border-top:1px dashed #94A3B8; margin-top:9px; padding-top:7px; } .summary > div, .payment-row, .return-row, .change-row { display:flex; justify-content:space-between; gap:8px; padding:3px 0; } .grand-total { margin-top:4px; padding:8px 7px !important; background:#052614; color:#fff; font-size:1.18em; } .payment-block, .returns-block { margin-top:10px; padding:8px; border-radius:6px; background:#F0FDF4; border:1px solid #BBF7D0; } .payment-block small { display:block; color:#475569; margin-top:3px; } .payment-row { color:#475569; font-size:.92em; } .returns-block { background:#FFF7ED; border-color:#FED7AA; } .return-row { color:#9A3412; font-size:.92em; } .change-row { margin-top:8px; color:#166534; } .integrity-note { margin:12px 0 0; padding:7px; border:1px solid #E2E8F0; border-radius:6px; color:#475569; font-size:.9em; text-align:center; } footer { text-align:center; border-top:1px dashed #94A3B8; margin-top:12px; padding-top:8px; color:#64748B; font-size:.88em; }
       </style></head>
       <body>${Array.from({ length: copyCount }, (_, index) => receiptCopy(index + 1)).join("")}</body></html>
     `);
