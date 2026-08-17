@@ -11,6 +11,10 @@ describe("interactive onboarding tour", () => {
       expect(tour).toContain(`moduleId: "${moduleId}"`);
     }
     expect(tour).toContain("ONBOARDING_TOUR_STEPS.length");
+    expect(tour).toContain("remainingSteps = Math.max(0");
+    expect(tour).toContain("remainingLabel = remainingSteps === 0 ? \"Final step\"");
+    expect(tour).toContain('role="progressbar"');
+    expect(tour).toContain("aria-valuetext={`Step ${stepIndex + 1} of ${ONBOARDING_TOUR_STEPS.length}; ${remainingLabel}`}");
     expect(tour).toContain("Every permanent change is designed to wait for server confirmation.");
   });
 

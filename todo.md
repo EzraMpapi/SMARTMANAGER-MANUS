@@ -699,3 +699,4 @@
 - [x] Scope onboarding tour completion state to the authenticated user ID and active company/workspace in localStorage.
 - [x] Add a discoverable "Take a Tour" restart trigger in the user header or command strip.
 - [x] Add focused regression tests for tour steps, workspace-scoped dismissal persistence, and keyboard navigation.
+- [x] Add a prominent remaining-steps indicator to the onboarding tour modal header and progress bar with accessible aria-live updates.

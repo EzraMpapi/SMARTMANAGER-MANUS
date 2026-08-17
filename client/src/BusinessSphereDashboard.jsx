@@ -48700,6 +48700,8 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate 
   const step = ONBOARDING_TOUR_STEPS[stepIndex] || ONBOARDING_TOUR_STEPS[0];
   const StepIcon = step.icon;
   const available = visibleModules.some((module) => module.id === step.moduleId);
+  const remainingSteps = Math.max(0, ONBOARDING_TOUR_STEPS.length - stepIndex - 1);
+  const remainingLabel = remainingSteps === 0 ? "Final step" : `${remainingSteps} step${remainingSteps === 1 ? "" : "s"} remaining`;
 
   useEffect(() => {
     if (!ready || checkedKeyRef.current === storageKey) return;
@@ -48823,12 +48825,13 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate 
                   <StepIcon size={23} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700">Step {stepIndex + 1} of {ONBOARDING_TOUR_STEPS.length}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700" aria-live="polite">Step {stepIndex + 1} of {ONBOARDING_TOUR_STEPS.length} <span className="ml-1 text-slate-400 normal-case tracking-normal">· {remainingLabel}</span></p>
                   <h2 id="onboarding-tour-title" className="mt-1 text-[21px] font-semibold tracking-tight text-slate-900">{step.title}</h2>
                   <p id="onboarding-tour-description" className="mt-2 text-[13px] leading-6 text-slate-600">{step.description}</p>
                 </div>
               </div>
-              <div className="mt-6 flex items-center gap-1.5" aria-label={`Tour progress: step ${stepIndex + 1} of ${ONBOARDING_TOUR_STEPS.length}`}>
+              <div className="mt-6 flex items-center gap-1.5" role="progressbar" aria-label="Onboarding tour progress" aria-valuemin={1} aria-valuemax={ONBOARDING_TOUR_STEPS.length} aria-valuenow={stepIndex + 1} aria-valuetext={`Step ${stepIndex + 1} of ${ONBOARDING_TOUR_STEPS.length}; ${remainingLabel}`}>
+                <span className="sr-only" aria-live="polite">{remainingLabel}</span>
                 {ONBOARDING_TOUR_STEPS.map((item, index) => <span key={item.id} className={`h-1.5 rounded-full transition-all ${index === stepIndex ? "w-8 bg-emerald-600" : index < stepIndex ? "w-4 bg-emerald-200" : "w-4 bg-slate-200"}`} aria-hidden="true" />)}
               </div>
               <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3.5 text-[12px] leading-5 text-emerald-950">
