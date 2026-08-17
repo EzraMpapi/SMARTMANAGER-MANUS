@@ -94,6 +94,8 @@ Support drafting will use the project’s server-side `gpt-5-mini` model with a 
 
 An authenticated production workspace was opened on 17 August 2026 without creating or altering any operational data. The Support ticket view loaded with zero confirmed tickets and a functional tenant-scoped search control. The Automation & SLA view disclosed its configuration-only boundary and showed read-only access where applicable. The support AI view showed its tenant-verified, non-internal-message-only draft boundary and disabled **Generate review draft** because the workspace had no confirmed ticket. A desktop overflow check reported no horizontal document overflow at a 1600-pixel viewport.
 
+The same authenticated owner workspace initially received a Support `403` because production profiles use the established `owner` role label while the Support matrix expected its display form, **Organization Owner**. The server now uses a limited canonical mapping after profile verification; generic labels are not elevated. The published production Support screen was rechecked after deployment and returned the expected zero-ticket empty state rather than skeleton rows, without creating a ticket or changing any support data.
+
 The complete automated suite passed **248 tests in 78 files**, with five intentionally gated files and eight gated tests. The production build passed. Narrow-screen authenticated support verification remains a separate pending acceptance item because the available authenticated browser session exposes only a desktop viewport. Bird inbound-webhook verification remains blocked until the organization supplies the server-side Bird API key, webhook signing secret, workspace identifier, and registered WhatsApp channel identifier.
 
 ## References
