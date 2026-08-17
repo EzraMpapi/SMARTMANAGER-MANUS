@@ -31449,6 +31449,8 @@ function ChannelsView({ currentUser, employees }) {
   const [messages, setMessages] = useState(collabMessagesSeed);
   const [draft, setDraft] = useState("");
   const [showChannelForm, setShowChannelForm] = useState(false);
+  const [messageSending, setMessageSending] = useState(false);
+  const [savingChannel, setSavingChannel] = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -31485,25 +31487,52 @@ function ChannelsView({ currentUser, employees }) {
   const channelMessages = messages.filter((m) => m.channelId === activeChannelId);
 
   async function sendMessage() {
-    if (!draft.trim() || !activeChannelId) return;
-    const entry = { id: `MSG-${Date.now()}`, channelId: activeChannelId, sender: currentUser.name, text: draft.trim(), timestamp: new Date().toISOString() };
-    setMessages((prev) => [...prev, entry]);
-    setDraft("");
-    if (IS_CONFIGURED) {
-      try { await sb("collab_messages").insert({ channel_ref: activeChannelId, sender: currentUser.name, body: entry.text }).run(); } catch (_e) { notify("Message shown locally, but saving to the server failed.", "error"); }
+    const text = draft.trim();
+    if (!text || !activeChannelId || messageSending) return;
+    setMessageSending(true);
+    try {
+      if (!IS_CONFIGURED) {
+        setMessages((prev) => [...prev, { id: `MSG-${Date.now()}`, channelId: activeChannelId, sender: currentUser.name, text, timestamp: new Date().toISOString() }]);
+        setDraft("");
+        notify("Message sent.");
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("collab_messages", "insert", { channel_ref: activeChannelId, sender: currentUser.name, body: text });
+      if (error || !data?.id) throw error || new Error("The server did not return the sent message.");
+      const confirmed = mapCollabMessageRow(data);
+      setMessages((prev) => [...prev, confirmed]);
+      setDraft("");
+      notify("Message sent.");
+    } catch (error) {
+      notify(`Message was not sent. ${error?.message || "Your draft is still available to retry."}`, "error");
+    } finally {
+      setMessageSending(false);
     }
   }
 
   async function addChannel(form) {
+    if (savingChannel) return;
     const draftChannel = { id: docId("CH"), name: form.name, scope: form.scope, description: form.description };
-    channels.setRows((prev) => [...prev, draftChannel]);
-    setActiveChannelId(draftChannel.id);
-    setShowChannelForm(false);
-    if (IS_CONFIGURED) {
-      try {
-        const header = await sb("collab_channels").insert({ name: draftChannel.name, scope: draftChannel.scope, description: draftChannel.description }).single().run();
-        if (header?.id) channels.setRows((prev) => prev.map((c) => (c.id === draftChannel.id ? { ...c, dbId: header.id } : c)));
-      } catch (_e) { notify("Channel created locally, but saving to the server failed.", "error"); }
+    setSavingChannel(true);
+    try {
+      if (!IS_CONFIGURED) {
+        channels.setRows((prev) => [...prev, draftChannel]);
+        setActiveChannelId(draftChannel.id);
+        setShowChannelForm(false);
+        notify(`Channel created: ${draftChannel.name}`);
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("collab_channels", "insert", { name: draftChannel.name, scope: draftChannel.scope, description: draftChannel.description });
+      if (error || !data?.id) throw error || new Error("The server did not return the created channel.");
+      const confirmed = mapCollabChannelRow(data);
+      channels.setRows((prev) => [...prev, confirmed]);
+      setActiveChannelId(confirmed.id);
+      setShowChannelForm(false);
+      notify(`Channel created: ${confirmed.name}`);
+    } catch (error) {
+      notify(`Channel was not created. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSavingChannel(false);
     }
   }
 
@@ -31554,7 +31583,7 @@ function ChannelsView({ currentUser, employees }) {
                 placeholder={`Message #${activeChannel.name}`}
                 className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30"
               />
-              <button onClick={sendMessage} disabled={!draft.trim()} className="btn-primary text-white rounded-lg px-3 disabled:opacity-40" aria-label="Send"><Send size={15} /></button>
+              <button onClick={sendMessage} disabled={!draft.trim() || messageSending} aria-busy={messageSending} className="btn-primary text-white rounded-lg px-3 disabled:cursor-not-allowed disabled:opacity-40" aria-label={messageSending ? "Sending message" : "Send message"}><Send size={15} className={messageSending ? "animate-pulse" : ""} /></button>
             </div>
           </>
         ) : (
@@ -31562,12 +31591,12 @@ function ChannelsView({ currentUser, employees }) {
         )}
       </div>
 
-      {showChannelForm && <ChannelFormPanel departments={departments} onClose={() => setShowChannelForm(false)} onSubmit={addChannel} />}
+      {showChannelForm && <ChannelFormPanel departments={departments} onClose={() => setShowChannelForm(false)} onSubmit={addChannel} saving={savingChannel} />}
     </div>
   );
 }
 
-function ChannelFormPanel({ departments, onClose, onSubmit }) {
+function ChannelFormPanel({ departments, onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({ name: "", scope: "Company-wide", description: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.name.trim()) return; onSubmit(form); }
@@ -31593,7 +31622,7 @@ function ChannelFormPanel({ departments, onClose, onSubmit }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create Channel</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Create Channel"}</button>
         </div>
       </form>
     </div>
@@ -31638,6 +31667,7 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
   const events = useCompanyTable("calendar_events", calendarEventsSeed, { mapRow: mapCalendarEventRow });
   const [monthOffset, setMonthOffset] = useState(0);
   const [showForm, setShowForm] = useState(false);
+  const [savingEvent, setSavingEvent] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [visibleCategories, setVisibleCategories] = useState(() => new Set(CALENDAR_CATEGORIES.map((c) => c.id)));
 
@@ -31697,18 +31727,29 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
   }
 
   async function addEvent(form) {
+    if (savingEvent) return;
     const draft = { id: docId("EVT"), ...form };
-    events.setRows((prev) => [...prev, draft]);
-    setShowForm(false);
-    notify(`Scheduled: ${draft.title}`);
-    if (IS_CONFIGURED) {
-      try {
-        const header = await sb("calendar_events").insert({
-          title: draft.title, event_type: draft.type, event_date: draft.date, start_time: draft.startTime,
-          end_time: draft.endTime, meeting_link: draft.meetingLink, attendees: draft.attendees, description: draft.description,
-        }).single().run();
-        if (header?.id) events.setRows((prev) => prev.map((e) => (e.id === draft.id ? { ...e, dbId: header.id } : e)));
-      } catch (_e) { notify("Event saved locally, but the server update failed.", "error"); }
+    setSavingEvent(true);
+    try {
+      if (!IS_CONFIGURED) {
+        events.setRows((prev) => [...prev, draft]);
+        setShowForm(false);
+        notify(`Scheduled: ${draft.title}`);
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("calendar_events", "insert", {
+        title: draft.title, event_type: draft.type, event_date: draft.date, start_time: draft.startTime,
+        end_time: draft.endTime, meeting_link: draft.meetingLink, attendees: draft.attendees, description: draft.description,
+      });
+      if (error || !data?.id) throw error || new Error("The server did not return the scheduled event.");
+      const confirmed = mapCalendarEventRow(data);
+      events.setRows((prev) => [...prev, confirmed]);
+      setShowForm(false);
+      notify(`Scheduled: ${confirmed.title}`);
+    } catch (error) {
+      notify(`Event was not scheduled. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSavingEvent(false);
     }
   }
 
@@ -31802,12 +31843,12 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
         </div>
       </div>
 
-      {showForm && <EventFormPanel defaultDate={selectedDate} onClose={() => setShowForm(false)} onSubmit={addEvent} />}
+      {showForm && <EventFormPanel defaultDate={selectedDate} onClose={() => setShowForm(false)} onSubmit={addEvent} saving={savingEvent} />}
     </div>
   );
 }
 
-function EventFormPanel({ defaultDate, onClose, onSubmit }) {
+function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({ title: "", type: MEETING_TYPES[0], date: defaultDate, startTime: "09:00", endTime: "09:30", meetingLink: "", attendees: "", description: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.title.trim()) return; onSubmit(form); }
@@ -31844,7 +31885,7 @@ function EventFormPanel({ defaultDate, onClose, onSubmit }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save Event</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Save Event"}</button>
         </div>
       </form>
     </div>
@@ -31856,26 +31897,53 @@ function EventFormPanel({ defaultDate, onClose, onSubmit }) {
 function TeamWorkspaces({ employees }) {
   const workspaces = useCompanyTable("workspaces", workspacesSeed, { mapRow: mapWorkspaceRow });
   const [showForm, setShowForm] = useState(false);
+  const [savingWorkspace, setSavingWorkspace] = useState(false);
+  const [deletingWorkspaceId, setDeletingWorkspaceId] = useState(null);
   const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
 
   async function addWorkspace(form) {
+    if (savingWorkspace) return;
     const draft = { id: docId("WS"), ...form };
-    workspaces.setRows((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(`Workspace created: ${draft.name}`);
-    if (IS_CONFIGURED) {
-      try {
-        const header = await sb("workspaces").insert({ name: draft.name, department: draft.department, members: draft.members, description: draft.description }).single().run();
-        if (header?.id) workspaces.setRows((prev) => prev.map((w) => (w.id === draft.id ? { ...w, dbId: header.id } : w)));
-      } catch (_e) { notify("Workspace created locally, but saving to the server failed.", "error"); }
+    setSavingWorkspace(true);
+    try {
+      if (!IS_CONFIGURED) {
+        workspaces.setRows((prev) => [draft, ...prev]);
+        setShowForm(false);
+        notify(`Workspace created: ${draft.name}`);
+        return;
+      }
+      const { data, error } = await runCompanyTableMutation("workspaces", "insert", { name: draft.name, department: draft.department, members: draft.members, description: draft.description });
+      if (error || !data?.id) throw error || new Error("The server did not return the created workspace.");
+      const confirmed = mapWorkspaceRow(data);
+      workspaces.setRows((prev) => [confirmed, ...prev]);
+      setShowForm(false);
+      notify(`Workspace created: ${confirmed.name}`);
+    } catch (error) {
+      notify(`Workspace was not created. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSavingWorkspace(false);
     }
   }
 
   async function deleteWorkspace(id) {
+    if (deletingWorkspaceId) return;
     const w = workspaces.rows.find((x) => x.id === id);
-    workspaces.setRows((prev) => prev.filter((x) => x.id !== id));
-    if (IS_CONFIGURED && w?.dbId) {
-      try { await sb("workspaces").eq("id", w.dbId).delete().run(); } catch (_e) { notify("Couldn't delete the workspace on the server.", "error"); }
+    if (!w) return;
+    if (!IS_CONFIGURED || !w.dbId) {
+      workspaces.setRows((prev) => prev.filter((x) => x.id !== id));
+      notify(`Workspace deleted: ${w.name}`);
+      return;
+    }
+    setDeletingWorkspaceId(id);
+    try {
+      const { error } = await runCompanyTableMutation("workspaces", "delete", null, { matchVal: w.dbId });
+      if (error) throw error;
+      workspaces.setRows((prev) => prev.filter((x) => x.id !== id));
+      notify(`Workspace deleted: ${w.name}`);
+    } catch (error) {
+      notify(`Workspace was not deleted. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setDeletingWorkspaceId(null);
     }
   }
 
@@ -31889,7 +31957,7 @@ function TeamWorkspaces({ employees }) {
           <div key={w.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
             <div className="flex items-start justify-between mb-2">
               <p className="text-[13.5px] font-semibold text-[#111827]">{w.name}</p>
-              <button onClick={() => deleteWorkspace(w.id)} className="text-slate-300 hover:text-[#EF4444]" aria-label={`Delete ${w.name}`}><Trash2 size={13} /></button>
+              <button onClick={() => deleteWorkspace(w.id)} disabled={deletingWorkspaceId === w.id} aria-busy={deletingWorkspaceId === w.id} className="text-slate-300 hover:text-[#EF4444] disabled:cursor-wait disabled:opacity-50" aria-label={`Delete ${w.name}`}><Trash2 size={13} /></button>
             </div>
             {w.department && <span className="text-[10.5px] font-medium text-[#16A34A] bg-[#16A34A]/10 px-2 py-0.5 rounded-full">{w.department}</span>}
             <p className="text-[12px] text-slate-500 mt-2 leading-relaxed">{w.description}</p>
@@ -31903,12 +31971,12 @@ function TeamWorkspaces({ employees }) {
         )}
         {workspaces.loading && <p className="text-[12px] text-slate-400 text-center py-6">Loading...</p>}
       </div>
-      {showForm && <WorkspaceFormPanel departments={departments} onClose={() => setShowForm(false)} onSubmit={addWorkspace} />}
+      {showForm && <WorkspaceFormPanel departments={departments} onClose={() => setShowForm(false)} onSubmit={addWorkspace} saving={savingWorkspace} />}
     </div>
   );
 }
 
-function WorkspaceFormPanel({ departments, onClose, onSubmit }) {
+function WorkspaceFormPanel({ departments, onClose, onSubmit, saving = false }) {
   const [form, setForm] = useState({ name: "", department: departments[0] || "", members: "", description: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.name.trim()) return; onSubmit(form); }
@@ -31934,7 +32002,7 @@ function WorkspaceFormPanel({ departments, onClose, onSubmit }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create Workspace</button>
+          <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Create Workspace"}</button>
         </div>
       </form>
     </div>

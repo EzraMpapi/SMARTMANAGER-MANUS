@@ -687,3 +687,5 @@
 - [x] Harden Projects task create, status-change, and delete flows with server-confirmed state, preserved retry context, and duplicate-action guards.
 - [x] Harden Projects milestone creation and completion toggles with confirmed server responses, preserved failure context, and duplicate-action protection.
 - [x] Add a truthful Settings workspace-connection status panel with loading, last-confirmed, unavailable, and retry states sourced from the protected backend query.
+- [x] Harden Collaboration Hub channel creation and message sending with server-confirmed state, retry-safe drafts, and duplicate-send protection.
+- [x] Harden Collaboration Hub calendar event and team workspace mutations with server-confirmed state and recoverable loading/error UI.
