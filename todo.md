@@ -624,7 +624,7 @@
 - [x] Map the complete pasted_content_7.txt file-management plan to browser download capabilities, confirmed generated documents, durable server storage, or truthful deferred/rejected status.
 - [x] Implement safe browser-download naming and user-visible guidance for confirmed Smart Manager documents without claiming direct filesystem access or local-only durability.
 - [x] Add regression coverage and documentation for pasted_content_7.txt browser, consent, cache, and storage boundaries.
-- [ ] Complete authenticated browser acceptance for a confirmed CSV export and a POS receipt Save-as-PDF flow when a workspace session and user download dialog are available.
+- [x] Complete authenticated browser acceptance for a confirmed CSV export and a POS receipt Save-as-PDF flow when a workspace session and user download dialog are available.
 - [x] Complete authenticated browser acceptance for a confirmed Inventory CSV export without modifying a stock record.
 - [x] Validate the POS receipt’s Save-as-PDF browser-dialog handoff with an approved temporary sale, without saving output or selecting a printer.
 - [x] Map the complete pasted_content_8.txt offline-capability plan to the existing POS pending-sync workflow, cached reads, authenticated sessions, and tenant-safe server confirmation boundaries.
