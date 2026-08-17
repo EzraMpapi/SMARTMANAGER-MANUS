@@ -626,6 +626,7 @@
 - [x] Add regression coverage and documentation for pasted_content_7.txt browser, consent, cache, and storage boundaries.
 - [ ] Complete authenticated browser acceptance for a confirmed CSV export and a POS receipt Save-as-PDF flow when a workspace session and user download dialog are available.
 - [x] Complete authenticated browser acceptance for a confirmed Inventory CSV export without modifying a stock record.
+- [x] Validate the POS receipt’s Save-as-PDF browser-dialog handoff with an approved temporary sale, without saving output or selecting a printer.
 - [x] Map the complete pasted_content_8.txt offline-capability plan to the existing POS pending-sync workflow, cached reads, authenticated sessions, and tenant-safe server confirmation boundaries.
 - [x] Implement clear connection-state and pending-sync guidance without treating browser storage as confirmed system data.
 - [x] Add regression coverage and documentation for pasted_content_8.txt offline boundaries, rejected broad local persistence, and remaining architecture decisions.
@@ -633,6 +634,7 @@
 - [x] Complete authenticated non-writing acceptance for the offline write-pause notice and restored-online workspace state.
 - [x] Execute the user-approved dedicated temporary POS staging sale, verify confirmed persistence and retry safeguards, then remove all temporary POS records.
 - [x] Use only the user-confirmed KMKM staging workspace, existing Ezra Income shift, and QA POS Acceptance Item 20260816 for the controlled temporary POS acceptance test.
+- [x] Execute the user-approved second temporary QA POS sale solely to open and dismiss the receipt Save-as-PDF dialog, then remove it and restore stock.
 - [x] Inventory active dashboard buttons, menus, shortcuts, and role-gated controls against their real handlers or availability feedback.
 - [x] Repair controls that lack a safe supported response while preserving tenant scope, non-destructive behavior, and existing module access rules.
 - [x] Add interaction-contract regression coverage and non-destructive public browser evidence for the repaired control set.
