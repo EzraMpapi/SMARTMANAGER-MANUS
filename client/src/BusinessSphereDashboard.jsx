@@ -33,6 +33,7 @@ import { addProductToPosCart, calculatePosPaymentSummary, createPosSaleAttempt, 
 import { createPendingPosSale, isRetryablePosTransportError, readPendingPosSales, updatePendingPosSale, writePendingPosSales } from "./lib/posPendingQueue";
 import { DEFAULT_POS_DEVICE_PROFILE, normalizeScannerInput, parsePosDeviceProfileImport, readPosDeviceProfile, serializePosDeviceProfile, writePosDeviceProfile } from "./lib/posDeviceProfiles";
 import { buildPosReconciliationCsv, posReconciliationExportFilename } from "./lib/posReconciliationExport";
+import { calculateSupportMetrics } from "./lib/supportMetrics";
 import { auditEvidenceExportFilename, buildAuditEvidenceCsv } from "./lib/auditEvidenceExport";
 import { getProactiveSessionRenewalDelay, isTerminalSessionRefreshError } from "./lib/proactiveSessionRenewal";
 import { createAccountPasskeyClient, listAccountPasskeys, passkeySignInUserMessage, passkeyUserMessage, registerAccountPasskey, renameAccountPasskey, revokeAccountPasskey, signInWithAccountPasskey } from "./lib/accountPasskeys";
@@ -1383,6 +1384,9 @@ function mapTicketRow(r) {
     id: r.doc_number, dbId: r.id,
     subject: r.subject, customer: r.customer, category: r.category, priority: r.priority,
     status: r.status, assignee: r.assignee || "", createdDate: r.created_date,
+    createdAt: r.created_at || r.created_date || null,
+    resolvedAt: r.resolved_at || null,
+    closedAt: r.closed_at || null,
     messages: mapTicketMessages(r.support_ticket_messages),
   };
 }
@@ -5159,7 +5163,8 @@ const posTransactionsSeed = [
 
 function KpiCard({ item }) {
   const Icon = item.icon;
-  const accent = item.up ? "#16A34A" : "#F59E0B";
+  const neutral = item.trend === "neutral";
+  const accent = neutral ? "#64748B" : item.up ? "#16A34A" : "#F59E0B";
   return (
     <div className="kpi-card relative bg-white rounded-xl border border-slate-200/70 p-5 flex flex-col gap-4 overflow-hidden group">
       <div
@@ -5177,7 +5182,7 @@ function KpiCard({ item }) {
           className="text-[11px] font-mono font-medium flex items-center gap-1 px-1.5 py-0.5 rounded-md"
           style={{ color: accent, backgroundColor: `${accent}12` }}
         >
-          {item.up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+          {neutral ? <Minus size={11} /> : item.up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
           {item.delta}
         </span>
       </div>
@@ -25631,17 +25636,20 @@ function CustomerSupport({ company }) {
   const tickets = useCompanyTable("support_tickets", supportTicketsSeed, {
     select: "*,support_ticket_messages(*)", order: { col: "created_date", ascending: false }, mapRow: mapTicketRow,
   });
-
-  const openCount = tickets.rows.filter((t) => t.status === "Open").length;
-  const urgentCount = tickets.rows.filter((t) => t.status !== "Closed" && t.status !== "Resolved" && t.priority === "Urgent").length;
-  const resolvedCount = tickets.rows.filter((t) => t.status === "Resolved" || t.status === "Closed").length;
-  const resolutionRate = tickets.rows.length ? Math.round((resolvedCount / tickets.rows.length) * 100) : null;
-
+  const supportMetrics = useMemo(() => calculateSupportMetrics(tickets.rows), [tickets.rows]);
+  const metricState = tickets.loading ? "loading" : tickets.error ? "error" : tickets.unavailable ? "unavailable" : "ready";
+  const unavailableMetricLabel = metricState === "loading"
+    ? "Loading confirmed tickets"
+    : metricState === "error"
+      ? "Could not load confirmed tickets"
+      : metricState === "unavailable"
+        ? "Ticket data source unavailable"
+        : "No resolved tickets with timestamps";
   const SUPPORT_KPIS = [
-    { label: "Open Tickets", value: String(openCount), delta: `${tickets.rows.length} total`, up: false, icon: Ticket },
-    { label: "Urgent", value: String(urgentCount), delta: "Needs attention", up: false, icon: AlertCircle },
-    { label: "Resolution Rate", value: resolutionRate === null ? "—" : `${resolutionRate}%`, delta: "All time", up: true, icon: CheckCircle2 },
-    { label: "Avg Handle Time", value: "8 min", delta: "From call log", up: true, icon: Clock },
+    { label: "Open Tickets", value: metricState === "ready" ? String(supportMetrics.openCount) : "—", delta: metricState === "ready" ? `${supportMetrics.totalCount} total` : unavailableMetricLabel, up: false, trend: metricState === "ready" ? undefined : "neutral", icon: Ticket },
+    { label: "Urgent", value: metricState === "ready" ? String(supportMetrics.urgentCount) : "—", delta: metricState === "ready" ? "Needs attention" : unavailableMetricLabel, up: false, trend: metricState === "ready" ? undefined : "neutral", icon: AlertCircle },
+    { label: "Resolution Rate", value: metricState === "ready" && supportMetrics.resolutionRate !== null ? `${supportMetrics.resolutionRate}%` : "—", delta: metricState === "ready" && supportMetrics.resolutionRate !== null ? "All confirmed tickets" : unavailableMetricLabel, up: true, trend: metricState === "ready" && supportMetrics.resolutionRate !== null ? undefined : "neutral", icon: CheckCircle2 },
+    { label: "Avg Handle Time", value: metricState === "ready" && supportMetrics.avgHandleMinutes !== null ? `${supportMetrics.avgHandleMinutes} min` : "—", delta: metricState === "ready" && supportMetrics.avgHandleMinutes !== null ? `${supportMetrics.completedWithTimingCount} completed ticket${supportMetrics.completedWithTimingCount === 1 ? "" : "s"}` : unavailableMetricLabel, up: true, trend: metricState === "ready" && supportMetrics.avgHandleMinutes !== null ? undefined : "neutral", icon: Clock },
   ];
 
   return (
@@ -25800,12 +25808,18 @@ function SupportSlaPolicyPanel({ onClose, onSubmit }) {
 function Tickets({ tickets }) {
   const utils = trpc.useUtils();
   const serverTickets = trpc.support.listTickets.useQuery(undefined, { enabled: IS_CONFIGURED });
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query.trim(), 250);
+  const shouldSearchServer = IS_CONFIGURED && debouncedQuery.length >= 2;
+  const searchedTickets = trpc.support.searchTickets.useQuery(
+    { query: debouncedQuery },
+    { enabled: shouldSearchServer, staleTime: 15_000 },
+  );
   const createTicket = trpc.support.createTicket.useMutation();
   const updateTicket = trpc.support.updateTicket.useMutation();
   const addInternalNote = trpc.support.addInternalNote.useMutation();
   const { rows: fallbackRows, setRows: setFallbackRows, loading: fallbackLoading } = tickets;
-  const rows = IS_CONFIGURED
-    ? (serverTickets.data?.tickets || []).map((ticket) => ({
+  const mapVerifiedTicket = (ticket) => ({
       id: ticket.id,
       docNumber: ticket.doc_number || ticket.id,
       subject: ticket.subject || "Untitled ticket",
@@ -25816,18 +25830,21 @@ function Tickets({ tickets }) {
       assignee: ticket.assignee || "Unassigned",
       sourceChannel: ticket.source_channel || "manual",
       messages: [],
-    }))
+    });
+  const rows = IS_CONFIGURED
+    ? (serverTickets.data?.tickets || []).map(mapVerifiedTicket)
     : fallbackRows;
-  const loading = IS_CONFIGURED ? serverTickets.isLoading : fallbackLoading;
-  const [query, setQuery] = useState("");
+  const visibleRows = shouldSearchServer ? (searchedTickets.data?.tickets || []).map(mapVerifiedTicket) : rows;
+  const loading = IS_CONFIGURED ? serverTickets.isLoading || (shouldSearchServer && searchedTickets.isLoading) : fallbackLoading;
+  const queryError = shouldSearchServer ? searchedTickets.error : serverTickets.error;
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return rows;
+    if (shouldSearchServer || !query.trim()) return visibleRows;
     const q = query.toLowerCase();
-    return rows.filter((t) => t.subject.toLowerCase().includes(q) || t.customer.toLowerCase().includes(q));
-  }, [rows, query]);
+    return visibleRows.filter((t) => t.subject.toLowerCase().includes(q) || t.customer.toLowerCase().includes(q));
+  }, [query, shouldSearchServer, visibleRows]);
 
   async function addTicket(form) {
     if (IS_CONFIGURED) {
@@ -26008,8 +26025,8 @@ function Tickets({ tickets }) {
             </tr></thead>
             <tbody>
               {loading && <SkeletonRows cols={5} />}
-              {!loading && serverTickets.isError && <tr><td colSpan={5}><EmptyState icon={AlertTriangle} title="Tickets could not be loaded" hint={serverTickets.error?.message || "The confirmed support service did not return tickets for this workspace."} actionLabel="Retry tickets" onAction={() => serverTickets.refetch()} /></td></tr>}
-              {!loading && !serverTickets.isError && filtered.map((t) => (
+              {!loading && queryError && <tr><td colSpan={5}><EmptyState icon={AlertTriangle} title="Tickets could not be loaded" hint={queryError.message || "The confirmed support service did not return tickets for this workspace."} actionLabel="Retry tickets" onAction={() => shouldSearchServer ? searchedTickets.refetch() : serverTickets.refetch()} /></td></tr>}
+              {!loading && !queryError && filtered.map((t) => (
                 <tr key={t.id} onClick={() => setSelected(t)} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors">
                   <td className="px-4 py-3"><p className="font-medium text-[#111827]">{t.subject}</p><p className="text-[11px] text-slate-400 font-mono">{t.docNumber || t.id} · {t.category}</p></td>
                   <td className="px-4 py-3 text-slate-500">{t.customer}</td>
@@ -26022,8 +26039,8 @@ function Tickets({ tickets }) {
                   </td>
                 </tr>
               ))}
-              {!loading && !serverTickets.isError && filtered.length === 0 && rows.length > 0 && <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-400 text-[13px]">No tickets match "{query}"</td></tr>}
-              {!loading && !serverTickets.isError && rows.length === 0 && <tr><td colSpan={5}><EmptyState icon={Ticket} title="No tickets yet" hint="Customer issues will appear here for tracking and resolution." actionLabel="New Ticket" onAction={() => setShowForm(true)} /></td></tr>}
+              {!loading && !queryError && query.trim() && filtered.length === 0 && <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-400 text-[13px]">No confirmed tickets match "{query}"</td></tr>}
+              {!loading && !queryError && !query.trim() && rows.length === 0 && <tr><td colSpan={5}><EmptyState icon={Ticket} title="No tickets yet" hint="Customer issues will appear here for tracking and resolution." actionLabel="New Ticket" onAction={() => setShowForm(true)} /></td></tr>}
             </tbody>
           </table>
         </div>

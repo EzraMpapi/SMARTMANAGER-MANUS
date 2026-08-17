@@ -660,3 +660,9 @@
 - [x] Preserve typed Sales Invoice document, customer, issue-date, and due-date fields through generic-table normalization so server storage matches the repaired schema contract.
 - [x] Repair the authenticated Finance General Ledger view so it does not reference an undefined `entries` collection and safely displays confirmed ledger data or an empty state.
 - [x] Complete the user-prioritized available acceptance: browser-safe mobile/printer profile handoff, controlled POS transport-failure retry, and a sanctioned no-write denial-recovery check; leave Resend unchanged. Physical device certification remains explicitly deferred without supported hardware.
+- [x] Complete evidence-based system discovery for the attached enterprise-transformation directive, including architecture, security boundaries, shared UI patterns, functional-area inventory, and first-area priority rationale.
+- [x] Establish the reusable enterprise-quality baseline and select the first verified high-priority functional area using business criticality, dependency importance, user impact, stability, and security evidence.
+- [ ] Fully upgrade the first verified functional area with confirmed persistence, validation, permissions, error/loading/empty states, accessibility, responsive behavior, and regression evidence before moving to another area.
+- [x] Replace the first area’s hard-coded operational KPI with a confirmed-data calculation or an explicit unavailable state, while preserving tenant-scoped data loading.
+- [x] Map the first area’s existing verified server timestamps into the UI so lifecycle timing, support role state, and server-confirmed feedback have one truthful source.
+- [x] Add focused regression coverage for the first area’s truthful KPI, loading/error/empty states, debounced verified search, and server-confirmed workflow boundaries.

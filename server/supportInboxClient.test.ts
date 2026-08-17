@@ -26,10 +26,10 @@ describe("server-confirmed support inbox", () => {
   });
 
   it("shows a retryable confirmed-service error instead of presenting rejected ticket reads as loading or empty data", () => {
-    expect(ticketSection).toContain("serverTickets.isError");
+    expect(ticketSection).toContain("const queryError = shouldSearchServer ? searchedTickets.error : serverTickets.error;");
     expect(ticketSection).toContain("Tickets could not be loaded");
     expect(ticketSection).toContain("Retry tickets");
-    expect(ticketSection).toContain("serverTickets.refetch()");
+    expect(ticketSection).toContain("shouldSearchServer ? searchedTickets.refetch() : serverTickets.refetch()");
   });
 
   it("shows only server-sanitized provider readiness and retains the truthful WhatsApp Web handoff", () => {
