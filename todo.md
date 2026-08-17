@@ -635,6 +635,9 @@
 - [x] Execute the user-approved dedicated temporary POS staging sale, verify confirmed persistence and retry safeguards, then remove all temporary POS records.
 - [x] Use only the user-confirmed KMKM staging workspace, existing Ezra Income shift, and QA POS Acceptance Item 20260816 for the controlled temporary POS acceptance test.
 - [x] Execute the user-approved second temporary QA POS sale solely to open and dismiss the receipt Save-as-PDF dialog, then remove it and restore stock.
+- [x] Execute user-authorized temporary Sales Invoice, payment, Subscription, and print-handoff acceptance, then remove every temporary Invoice, line, payment, and Subscription record without altering Resend configuration.
+- [ ] Complete a live server-denial recovery acceptance only when a sanctioned no-write denial trigger is available; do not deliberately weaken RLS or attempt a cross-tenant write to manufacture an error.
+- [x] Diagnose the authenticated Invoice form redirect observed during automated acceptance: the React handler prevents native navigation and persists correctly; the false navigation was caused by the fixed test-environment attribution overlay intercepting the lower-right automation click.
 - [x] Inventory active dashboard buttons, menus, shortcuts, and role-gated controls against their real handlers or availability feedback.
 - [x] Repair controls that lack a safe supported response while preserving tenant scope, non-destructive behavior, and existing module access rules.
 - [x] Add interaction-contract regression coverage and non-destructive public browser evidence for the repaired control set.
@@ -642,7 +645,7 @@
 - [x] Inventory Sales module buttons, menus, mutations, authorization gates, and denial/error feedback against their supported handlers.
 - [x] Repair Sales controls and convert authorization or database denials into clear recoverable feedback without weakening database protections.
 - [x] Add regression coverage and non-destructive validation for Sales module interactions, server-confirmation, and denial/error paths.
-- [ ] Complete authenticated non-destructive Sales acceptance for document creation, lifecycle controls, invoice printing, payment, subscription, and server-denial recovery when a workspace session is available.
+- [x] Complete authenticated Sales acceptance for approved temporary document creation, Invoice printing handoff, payment, Subscription lifecycle, Supabase persistence, and record cleanup; live server-denial recovery remains separately gated by a sanctioned no-write trigger.
 - [x] Complete authenticated non-destructive Sales acceptance for tabs, empty states, search, columns, and quotation/subscription form opening and cancellation without changing tenant data.
 - [x] Trace and repair the Sales Order and Invoice write payload/schema mismatch reported as missing `sales_orders.issue_date` in the Supabase schema cache.
 - [x] Add regression coverage for Sales Order and Invoice date-field contracts and confirmed server persistence after the schema repair.

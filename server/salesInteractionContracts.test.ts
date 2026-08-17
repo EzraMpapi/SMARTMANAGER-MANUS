@@ -18,6 +18,7 @@ describe("Sales interaction and persistence contracts", () => {
 
   it("retains Sales form data for retry and exposes a clear saving state instead of closing before confirmation", () => {
     expect(salesSource).toContain("const [submitting, setSubmitting] = useState(false);");
+    expect(salesSource).toContain("async function handleSubmit(e) {\n    e.preventDefault();");
     expect(salesSource).toContain("const confirmed = await onSubmit({");
     expect(salesSource).toContain("if (confirmed) onClose();");
     expect(salesSource).toContain('{submitting ? "Saving…" : `Create ${meta.label}`}');

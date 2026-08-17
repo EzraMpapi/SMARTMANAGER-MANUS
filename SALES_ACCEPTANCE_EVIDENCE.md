@@ -15,6 +15,8 @@ The Sales workspace opened from the supported dashboard action and loaded withou
 | Quotation and Subscription form opening/cancellation | Passed | No document, plan, or invoice was submitted. |
 | Server-confirmed temporary Order and Invoice creation | Passed | Explicitly approved temporary data only. |
 | Temporary record cleanup | Passed | Final Supabase check found no approved temporary Order or Invoice row. |
+| Temporary Invoice payment lifecycle | Passed | Explicitly approved TZS 1k temporary payment only; final server cleanup verified. |
+| Temporary Subscription lifecycle | Passed | Explicitly approved temporary subscription only; final server cleanup verified. |
 
 ## Sales Order schema and metadata acceptance
 
@@ -50,6 +52,16 @@ After publication, replacement temporary Invoice `INV-8577` was created through 
 
 The application deletion control displayed its confirmation state; however, the automation browser navigated away during confirmation, so its completion could not be observed reliably. With the owner's explicit approval already granted for these temporary records, cleanup was completed through the server-side database control. Direct final queries returned **no matching row** for the approved temporary Sales Order or either temporary Invoice. This preserves the workspace's original operational data state.
 
+## Authorized Invoice, payment, print, and Subscription lifecycle acceptance
+
+With explicit approval, the authenticated KMKM workspace created temporary Invoice `INV-4902` for `TEMP QA Invoice 20260817`. Supabase confirmed its canonical `sales_invoices` row with typed document number, customer, issue date, due date, `Unpaid` status, and `amount_paid = 0`. The normal post-create panel invoked the **Print / Save PDF** handoff and showed its completed state. No printer was selected and no file was saved, because the system print dialog remains outside browser automation.
+
+The Invoice was opened through the normal Sales detail panel and paid in full through **Record Payment** with the temporary Cash reference `TEMP-PAY-20260817`. The UI changed to `Paid`, showed `amount_paid = TZS 1k`, a zero balance, and one payment-history entry. Supabase independently confirmed `sales_invoices.status = Paid`, `amount_paid = 1`, and one `sales_payments` row for amount `1.00`, method `Cash`, and the same temporary reference.
+
+The authenticated Subscription form created `SUB-20260817-E83A` for `TEMP QA Subscription 20260817` on `TEMP QA Plan`, monthly, for TZS 1k. Its detail panel successfully moved it from `Active` to `Paused`, changed the available lifecycle control to **Resume**, and reduced active MRR to zero. A direct Supabase read confirmed the typed Subscription fields and its `Paused` status.
+
+The lower-right fixed attribution overlay intercepted two automated confirmation clicks and navigated the test browser away. This did **not** represent an application persistence failure: direct React-managed submission created the Invoice and Subscription correctly, and the form source calls `preventDefault()` before awaiting server confirmation. The regression suite now asserts that native-submit prevention remains present. A direct company-scoped read mapped both temporary rows to the KMKM company ID, so no cross-tenant write was observed. Because the user had already authorized cleanup, the temporary Invoice, invoice line, payment, and Subscription were deleted through a company-scoped server transaction. A final verification returned zero rows for all four temporary record categories.
+
 ## Remaining validation boundaries
 
-The following work is intentionally not claimed as complete in this evidence record: lifecycle progression through fulfillment, payment recording, invoice printing/download behavior, quotation conversion, subscription billing, and a live server-denial recovery path. Those actions need a dedicated non-production document and a separately approved scope because they can affect inventory, receivables, payment history, print outputs, or recurring billing state.
+The following work is intentionally not claimed as complete in this evidence record: fulfillment and returns, quotation conversion, subscription invoice generation, physical printer output, actual PDF-save completion, and a live server-denial recovery path. These require either a dedicated non-production document with an appropriate scope, supported hardware/system-dialog access, or a sanctioned no-write denial trigger. No RLS weakening or cross-tenant write will be used merely to manufacture a denial.
