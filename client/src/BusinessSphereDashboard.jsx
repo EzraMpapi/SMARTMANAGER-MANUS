@@ -25265,7 +25265,27 @@ function CustomerSupport({ company }) {
 /* ----------------------------------- TICKETS ----------------------------------- */
 
 function Tickets({ tickets }) {
-  const { rows, setRows, loading } = tickets;
+  const utils = trpc.useUtils();
+  const serverTickets = trpc.support.listTickets.useQuery(undefined, { enabled: IS_CONFIGURED });
+  const createTicket = trpc.support.createTicket.useMutation();
+  const updateTicket = trpc.support.updateTicket.useMutation();
+  const addInternalNote = trpc.support.addInternalNote.useMutation();
+  const { rows: fallbackRows, setRows: setFallbackRows, loading: fallbackLoading } = tickets;
+  const rows = IS_CONFIGURED
+    ? (serverTickets.data?.tickets || []).map((ticket) => ({
+      id: ticket.id,
+      docNumber: ticket.doc_number || ticket.id,
+      subject: ticket.subject || "Untitled ticket",
+      customer: ticket.customer || "Unassigned customer",
+      category: ticket.category || "General",
+      priority: ticket.priority || "Medium",
+      status: ticket.status || "Open",
+      assignee: ticket.assignee || "Unassigned",
+      sourceChannel: ticket.source_channel || "manual",
+      messages: [],
+    }))
+    : fallbackRows;
+  const loading = IS_CONFIGURED ? serverTickets.isLoading : fallbackLoading;
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -25277,13 +25297,30 @@ function Tickets({ tickets }) {
   }, [rows, query]);
 
   async function addTicket(form) {
+    if (IS_CONFIGURED) {
+      try {
+        const result = await createTicket.mutateAsync({
+          subject: form.subject,
+          customer: form.customer,
+          category: form.category,
+          priority: form.priority,
+          initialMessage: form.description || undefined,
+        });
+        await utils.support.listTickets.invalidate();
+        setShowForm(false);
+        notify(`Ticket created: ${result.ticket.doc_number || result.ticket.id}`);
+      } catch (error) {
+        notify(error?.message || "The server did not confirm this ticket. Your form remains open so you can retry.", "error");
+      }
+      return;
+    }
     const draft = {
       id: docId("TCK"), subject: form.subject, customer: form.customer,
       category: form.category, priority: form.priority, status: "Open", assignee: form.assignee || "Unassigned",
       createdDate: TODAY.toISOString().slice(0, 10),
       messages: form.description ? [{ from: "Customer", text: form.description, date: TODAY.toISOString().slice(0, 10) }] : [],
     };
-    setRows((prev) => [draft, ...prev]);
+    setFallbackRows((prev) => [draft, ...prev]);
     setShowForm(false);
     notify(`Ticket created: ${draft.id}`);
     if (IS_CONFIGURED) {
@@ -25296,7 +25333,7 @@ function Tickets({ tickets }) {
           if (form.description) {
             await sb("support_ticket_messages").insert({ ticket_id: header.id, sender: "Customer", body: form.description }).run();
           }
-          setRows((prev) => prev.map((t) => (t.id === draft.id ? { ...t, dbId: header.id } : t)));
+          setFallbackRows((prev) => prev.map((t) => (t.id === draft.id ? { ...t, dbId: header.id } : t)));
         }
       } catch (_e) { notify("Ticket created locally, but saving to the server failed.", "error"); }
     }
@@ -25304,28 +25341,50 @@ function Tickets({ tickets }) {
 
   async function setStatus(id, status) {
     const t = rows.find((x) => x.id === id);
-    setRows((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)));
-    setSelected((s) => (s && s.id === id ? { ...s, status } : s));
-    if (IS_CONFIGURED && t?.dbId) {
-      try { await sb("support_tickets").eq("id", t.dbId).update({ status }).run(); } catch (_e) { notify("Couldn't save the ticket status to the server.", "error"); }
+    if (IS_CONFIGURED) {
+      try {
+        const result = await updateTicket.mutateAsync({ ticketId: id, status });
+        setSelected((s) => (s && s.id === id ? { ...s, status: result.ticket.status || status } : s));
+        await utils.support.listTickets.invalidate();
+        notify("Ticket status saved to the server.");
+      } catch (error) {
+        notify(error?.message || "The server did not confirm this status change.", "error");
+      }
+      return;
     }
+    setFallbackRows((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)));
+    setSelected((s) => (s && s.id === id ? { ...s, status } : s));
   }
 
-  async function reply(id, text) {
+  async function addNote(id, text) {
     const t = rows.find((x) => x.id === id);
-    const message = { from: "Agent", text, date: TODAY.toISOString().slice(0, 10) };
-    setRows((prev) => prev.map((x) => (x.id === id ? { ...x, messages: [...x.messages, message] } : x)));
+    if (IS_CONFIGURED) {
+      try {
+        await addInternalNote.mutateAsync({ ticketId: id, body: text });
+        await utils.support.ticketTimeline.invalidate({ ticketId: id });
+        notify("Internal note saved to the server.");
+      } catch (error) {
+        notify(error?.message || "The server did not confirm this internal note.", "error");
+      }
+      return;
+    }
+    const message = { from: "Internal note", text, date: TODAY.toISOString().slice(0, 10), internal: true };
+    setFallbackRows((prev) => prev.map((x) => (x.id === id ? { ...x, messages: [...x.messages, message] } : x)));
     setSelected((s) => (s && s.id === id ? { ...s, messages: [...s.messages, message] } : s));
-    if (IS_CONFIGURED && t?.dbId) {
-      try { await sb("support_ticket_messages").insert({ ticket_id: t.dbId, sender: "Agent", body: text }).run(); } catch (_e) { notify("Reply saved locally, but the server update failed.", "error"); }
+    if (t?.dbId) {
+      try { await sb("support_ticket_messages").insert({ ticket_id: t.dbId, sender: "Internal note", body: text }).run(); } catch (_e) { notify("Internal note was not saved to the server.", "error"); }
     }
   }
 
   async function deleteTicket(id) {
     const t = rows.find((x) => x.id === id);
-    setRows((prev) => prev.filter((x) => x.id !== id));
+    if (IS_CONFIGURED) {
+      notify("Ticket deletion is not enabled in the support service. Close the ticket instead so its history is retained.", "error");
+      return;
+    }
+    setFallbackRows((prev) => prev.filter((x) => x.id !== id));
     setSelected(null);
-    if (IS_CONFIGURED && t?.dbId) {
+    if (t?.dbId) {
       try { await sb("support_tickets").eq("id", t.dbId).delete().run(); } catch (_e) { notify("Couldn't delete the ticket on the server.", "error"); }
     }
   }
@@ -25418,7 +25477,7 @@ function Tickets({ tickets }) {
               {loading && <SkeletonRows cols={5} />}
               {!loading && filtered.map((t) => (
                 <tr key={t.id} onClick={() => setSelected(t)} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors">
-                  <td className="px-4 py-3"><p className="font-medium text-[#111827]">{t.subject}</p><p className="text-[11px] text-slate-400 font-mono">{t.id} · {t.category}</p></td>
+                  <td className="px-4 py-3"><p className="font-medium text-[#111827]">{t.subject}</p><p className="text-[11px] text-slate-400 font-mono">{t.docNumber || t.id} · {t.category}</p></td>
                   <td className="px-4 py-3 text-slate-500">{t.customer}</td>
                   <td className="px-4 py-3"><span className="text-[11px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: `${TICKET_PRIORITY_COLOR[t.priority]}14`, color: TICKET_PRIORITY_COLOR[t.priority] }}>{t.priority}</span></td>
                   <td className="px-4 py-3 text-slate-500">{t.assignee}</td>
@@ -25436,17 +25495,24 @@ function Tickets({ tickets }) {
         </div>
       </div>
 
-      {selected && <TicketPanel ticket={selected} onClose={() => setSelected(null)} onSetStatus={setStatus} onReply={reply} onDelete={deleteTicket} />}
+      {selected && <TicketPanel ticket={selected} onClose={() => setSelected(null)} onSetStatus={setStatus} onAddInternalNote={addNote} onDelete={deleteTicket} />}
       {showForm && <TicketFormPanel onClose={() => setShowForm(false)} onSubmit={addTicket} />}
     </div>
   );
 }
 
-function TicketPanel({ ticket, onClose, onSetStatus, onReply, onDelete }) {
+function TicketPanel({ ticket, onClose, onSetStatus, onAddInternalNote, onDelete }) {
   const [replyText, setReplyText] = useState("");
-  function submitReply() {
+  const timeline = trpc.support.ticketTimeline.useQuery({ ticketId: ticket.id }, { enabled: IS_CONFIGURED && Boolean(ticket?.id) });
+  const timelineEntries = IS_CONFIGURED
+    ? [
+      ...(timeline.data?.messages || []).filter((message) => !message.is_internal).map((message) => ({ from: message.sender_kind === "customer" ? "Customer" : "Agent", text: message.body || "", date: message.sent_at || "" })),
+      ...(timeline.data?.notes || []).map((note) => ({ from: "Internal note", text: note.body || "", date: note.created_at || "", internal: true })),
+    ]
+    : (ticket.messages || []);
+  function submitInternalNote() {
     if (!replyText.trim()) return;
-    onReply(ticket.id, replyText.trim());
+    onAddInternalNote(ticket.id, replyText.trim());
     setReplyText("");
   }
 
@@ -25456,7 +25522,7 @@ function TicketPanel({ ticket, onClose, onSetStatus, onReply, onDelete }) {
       <div className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="px-6 pt-6 pb-5 border-b border-slate-100">
           <div className="flex items-start justify-between mb-3">
-            <div><p className="text-[11px] font-mono text-slate-400">{ticket.id}</p><h2 className="text-[16px] font-semibold text-[#111827] mt-0.5 leading-snug">{ticket.subject}</h2></div>
+            <div><p className="text-[11px] font-mono text-slate-400">{ticket.docNumber || ticket.id}</p><h2 className="text-[16px] font-semibold text-[#111827] mt-0.5 leading-snug">{ticket.subject}</h2></div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600 shrink-0" aria-label="Close"><X size={18} /></button>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -25469,22 +25535,23 @@ function TicketPanel({ ticket, onClose, onSetStatus, onReply, onDelete }) {
         </div>
 
         <div className="px-6 py-5 flex-1 space-y-3">
-          {ticket.messages.map((m, i) => (
+          {timelineEntries.map((m, i) => (
             <div key={i} className={`flex ${m.from === "Agent" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-[13px] ${m.from === "Agent" ? "btn-primary text-white rounded-br-sm" : "bg-slate-50 text-slate-700 border border-slate-100 rounded-bl-sm"}`}>
+              <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-[13px] ${m.internal ? "bg-amber-50 text-amber-900 border border-amber-200 rounded-bl-sm" : m.from === "Agent" ? "btn-primary text-white rounded-br-sm" : "bg-slate-50 text-slate-700 border border-slate-100 rounded-bl-sm"}`}>
                 <p className="whitespace-pre-wrap leading-relaxed">{m.text}</p>
                 <p className={`text-[10.5px] mt-1 ${m.from === "Agent" ? "text-white/70" : "text-slate-400"}`}>{m.from} · {m.date}</p>
               </div>
             </div>
           ))}
-          {ticket.messages.length === 0 && <p className="text-[12.5px] text-slate-400 text-center py-6">No messages yet on this ticket.</p>}
+          {timelineEntries.length === 0 && <p className="text-[12.5px] text-slate-400 text-center py-6">No customer messages or internal notes yet on this ticket.</p>}
         </div>
 
         <div className="px-6 py-4 border-t border-slate-100 space-y-3">
           <div className="flex gap-2">
-            <input value={replyText} onChange={(e) => setReplyText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitReply()} placeholder="Type a reply..." className={inputClass} />
-            <button onClick={submitReply} aria-label="Send reply" className="btn-primary text-white px-4 rounded-lg shrink-0"><Send size={15} /></button>
+            <input value={replyText} onChange={(e) => setReplyText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitInternalNote()} placeholder="Add internal note..." className={inputClass} />
+            <button onClick={submitInternalNote} aria-label="Add internal note" className="bg-amber-500 hover:bg-amber-600 text-white px-4 rounded-lg shrink-0"><PenTool size={15} /></button>
           </div>
+          <p className="text-[10.5px] text-amber-700">Internal note — visible to your support team only and never sent to the customer.</p>
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-[11px] font-medium text-slate-500 mr-1">Status:</p>
             {TICKET_STATUSES.map((s) => (
@@ -29697,6 +29764,7 @@ function useWaMessages(contactId) {
 
 function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
   const co = company || window.__smartManagerCompany || {};
+  const providerReadiness = trpc.support.whatsappProviderReadiness.useQuery(undefined, { enabled: IS_CONFIGURED });
 
   // Build contact list: CRM won leads + employees
   const contacts = useMemo(() => {
@@ -29835,6 +29903,9 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
           <div className="px-3 py-3 bg-[#DCF8C6]/30 border-b border-green-200 space-y-2">
             <p className="text-[10.5px] font-bold text-[#075E54]">Secure delivery boundary</p>
             <p className="text-[10.5px] leading-relaxed text-slate-600">Messages open in the user’s WhatsApp client with the text pre-filled. Smart Manager does not store or transmit WhatsApp provider credentials in this browser.</p>
+            {IS_CONFIGURED && providerReadiness.isLoading && <p className="text-[9.5px] text-slate-400">Checking server-side provider availability…</p>}
+            {IS_CONFIGURED && providerReadiness.data && <p className={`text-[9.5px] ${providerReadiness.data.deliveryEnabled ? "text-emerald-700" : "text-amber-700"}`}>{providerReadiness.data.message}</p>}
+            {IS_CONFIGURED && providerReadiness.error && <p className="text-[9.5px] text-slate-400">Provider availability is restricted to authorized support roles. WhatsApp Web handoff remains available.</p>}
             <p className="text-[9.5px] text-slate-400">Direct automated delivery requires an approved server-side integration, verified sender, and audited consent workflow.</p>
           </div>
         )}
@@ -29878,7 +29949,7 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
             <MessageCircle size={36} className="text-white"/>
           </div>
           <p className="text-[16px] font-semibold text-[#111827]">BusinessSphere WhatsApp</p>
-          <p className="text-[13px] text-slate-500 text-center max-w-xs">Select a contact to start messaging. Messages open WhatsApp Web pre-filled or send directly via the Business API.</p>
+          <p className="text-[13px] text-slate-500 text-center max-w-xs">Select a contact to start a message. Smart Manager opens WhatsApp Web with the text pre-filled; automated provider delivery is inactive until its server-side boundary is approved and enabled.</p>
         </div>
       ) : (
         <div className="flex-1 flex flex-col" style={{background:"#ECE5DD"}}>

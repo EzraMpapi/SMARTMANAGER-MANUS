@@ -20,6 +20,7 @@ import { saveWorkspaceBranding } from "./workspaceBranding";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
+import { addSupportInternalNote, createSupportTicket, getSupportWhatsAppProviderReadiness, listSupportTicketTimeline, listSupportTickets, updateSupportTicket } from "./supportOperations";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -375,6 +376,44 @@ export const appRouter = router({
 
   transactionalEmail: router({
     send: publicProcedure.input(z.object({ to: z.string().min(3).max(6_000), cc: z.string().max(6_000).optional(), bcc: z.string().max(6_000).optional(), subject: z.string().min(1).max(160), body: z.string().min(1).max(12_000) })).mutation(({ ctx, input }) => sendWorkspaceEmail(ctx.req, input)),
+  }),
+
+  support: router({
+    listTickets: protectedProcedure.query(({ ctx }) => listSupportTickets(ctx.req)),
+    whatsappProviderReadiness: protectedProcedure.query(({ ctx }) => getSupportWhatsAppProviderReadiness(ctx.req)),
+    createTicket: protectedProcedure.input(z.object({
+      subject: z.string().trim().min(2).max(240),
+      customer: z.string().trim().min(1).max(240),
+      category: z.string().trim().max(100).optional(),
+      priority: z.enum(["Low", "Medium", "High", "Urgent"]).optional(),
+      sourceChannel: z.enum(["manual", "web", "email", "whatsapp", "phone"]).optional(),
+      customerReference: z.string().trim().max(160).optional(),
+      initialMessage: z.string().trim().max(8_000).optional(),
+      teamId: z.string().uuid().optional(),
+      dueAt: z.string().datetime().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const result = await createSupportTicket(ctx.req, input);
+      await recordAuditLog(ctx.user, { companyId: result.profile.company_id, action: "Support ticket created", module: "Customer Support", details: `Confirmed ticket ${result.ticket.doc_number || result.ticket.id}.` });
+      return result;
+    }),
+    updateTicket: protectedProcedure.input(z.object({
+      ticketId: z.string().uuid(),
+      status: z.enum(["Open", "In Progress", "Waiting", "Resolved", "Closed"]).optional(),
+      priority: z.enum(["Low", "Medium", "High", "Urgent"]).optional(),
+      assignedProfileId: z.string().uuid().nullable().optional(),
+      teamId: z.string().uuid().nullable().optional(),
+      dueAt: z.string().datetime().nullable().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const result = await updateSupportTicket(ctx.req, input);
+      await recordAuditLog(ctx.user, { companyId: result.profile.company_id, action: "Support ticket updated", module: "Customer Support", details: `Confirmed ticket ${result.ticket.doc_number || result.ticket.id} update.` });
+      return result;
+    }),
+    addInternalNote: protectedProcedure.input(z.object({ ticketId: z.string().uuid(), body: z.string().trim().min(1).max(8_000) })).mutation(async ({ ctx, input }) => {
+      const result = await addSupportInternalNote(ctx.req, input);
+      await recordAuditLog(ctx.user, { companyId: result.profile.company_id, action: "Support internal note created", module: "Customer Support", details: "Confirmed internal note; it is excluded from outbound channel delivery." });
+      return result;
+    }),
+    ticketTimeline: protectedProcedure.input(z.object({ ticketId: z.string().uuid() })).query(({ ctx, input }) => listSupportTicketTimeline(ctx.req, input.ticketId)),
   }),
 
   reportSchedules: router({

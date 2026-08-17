@@ -523,6 +523,16 @@
 - [x] Scope browser-local quarterly review completion to the authenticated user and active workspace so one browser user or tenant cannot suppress another tenant’s reminder.
 - [x] Optimize verified security reminder usability or reliability issues without treating browser-local completion as durable compliance evidence or enabling email delivery.
 - [x] Add focused reminder regression coverage, validate the optimized flow, publish the improvement, and document the unchanged email-delivery limitation.
+- [x] Inspect current support, WhatsApp, CRM, workflow, role, notification, and provider-configuration surfaces; map reusable infrastructure and gaps.
+- [x] Design tenant-scoped support data contracts and safe migrations without duplicating existing support or customer tables.
+- [x] Define and validate support authorization, RLS, audit, retention, attachment, and provider-secret boundaries.
+- [x] Implement server-confirmed support tickets, conversations, internal notes, assignment, customer context, and activity history.
+- [x] Build a responsive omnichannel inbox with clear customer-message versus internal-note boundaries and truthful message delivery states.
+- [x] Replace the active ticket interface's direct browser Supabase mutations with the verified support tRPC service and preserve unsaved form input on failure.
+- [x] Prepare a server-only Bird WhatsApp provider adapter, templates, and outbound message contracts; leave real delivery disabled until provider credentials and an approved channel are configured.
+- [ ] Implement idempotent, signature-verified Bird inbound webhook handling only after provider credentials and webhook requirements are configured.
+- [ ] Add permission-aware support workflows, configurable SLA policy/state logic, AI suggestions requiring review before send, and real-data support analytics/search.
+- [ ] Validate mobile support workflows, security, tenant isolation, provider failures, idempotency, full regression, production build, and publish only verified capabilities.
 - [x] Map every requirement in pasted_content_3.txt to the current Smart Manager implementation, verified evidence, known limitation, or remediation task.
 - [x] Re-audit the architecture, Supabase database contracts, authentication, tenant authorization, RLS, and sensitive data boundaries against the enterprise transformation requirements.
 - [x] Reconcile the legacy Scheduled Reports client UI with the existing tenant-safe server scheduling service and truthful disabled email-delivery boundary.
