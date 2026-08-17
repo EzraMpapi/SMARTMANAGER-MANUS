@@ -287,6 +287,18 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).not.toContain("useWebSocket('/api/activities'");
   });
 
+  it("adapts pasted-content-4 activity usability to the tenant audit stream without fabricated events or browser-only audit records", () => {
+    expect(dashboardSource).toContain('function ActivityStream({ currentUser })');
+    expect(dashboardSource).toContain('useCompanyTable("audit_log", [], {');
+    expect(dashboardSource).toContain('aria-label="Filter confirmed activity by module"');
+    expect(dashboardSource).toContain('aria-pressed={filter === m}');
+    expect(dashboardSource).toContain('onClick={() => setFilter("All")}');
+    expect(dashboardSource).toContain('Source: tenant audit log');
+    expect(dashboardSource).toContain('Recorded actions across permitted modules appear here. No sample events are generated.');
+    expect(dashboardSource).not.toContain("generateSampleActivities");
+    expect(dashboardSource).not.toContain("useWebSocket('/api/activities'");
+  });
+
   it("turns empty customer, inventory, and pipeline analytics into accessible source-aware actions rather than fabricated chart data", () => {
     expect(dashboardSource).toContain('title="No billed customers yet"');
     expect(dashboardSource).toContain('actionLabel="Open CRM"');

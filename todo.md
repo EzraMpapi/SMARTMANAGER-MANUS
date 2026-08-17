@@ -609,3 +609,7 @@
 - [x] Implement the safe confirmed-data dashboard enhancements identified from pasted_content_3.txt without sample data, fake telemetry, or unverified provider claims.
 - [x] Add regression coverage and documentation for the pasted_content_3.txt implementation decisions and remaining external or architectural gates.
 - [ ] Complete authenticated visual validation for the pasted_content_3.txt dashboard enhancements when a workspace session is available.
+- [x] Map the complete pasted_content_4.txt plan to existing dashboard capabilities, confirmed data sources, safe implementation opportunities, or truthful deferred/rejected status.
+- [x] Implement the safe confirmed-data dashboard improvements identified from pasted_content_4.txt without sample data, fake real-time events, or browser-only audit records.
+- [x] Add regression coverage and documentation for pasted_content_4.txt implementation decisions and any durable event-storage or transport prerequisites.
+- [ ] Complete authenticated visual validation for the pasted_content_4.txt activity-stream enhancement when a workspace session is available.
