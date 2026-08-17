@@ -641,4 +641,4 @@
 - [x] Repair Settings controls that do not await confirmed backend responses or provide clear authorization, validation, offline, and database error feedback.
 - [x] Add Settings persistence and interaction regression coverage, then run non-destructive validation without changing operational records.
 - [x] Repair Settings administrator recognition for the deployed `owner` role so authenticated workspace owners retain authorized company-settings access.
-- [ ] Complete authenticated non-destructive Settings acceptance for representative saved preferences and denied-action recovery when a workspace session is available.
+- [x] Complete authenticated non-destructive Settings acceptance for representative saved preferences and denied-action recovery when a workspace session is available.
