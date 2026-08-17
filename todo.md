@@ -631,6 +631,8 @@
 - [x] Add regression coverage and documentation for pasted_content_8.txt offline boundaries, rejected broad local persistence, and remaining architecture decisions.
 - [ ] Complete authenticated offline/online acceptance for the write-pause notice and a server-confirmed POS pending-sync retry when a workspace session is available.
 - [x] Complete authenticated non-writing acceptance for the offline write-pause notice and restored-online workspace state.
+- [x] Execute the user-approved dedicated temporary POS staging sale, verify confirmed persistence and retry safeguards, then remove all temporary POS records.
+- [x] Use only the user-confirmed KMKM staging workspace, existing Ezra Income shift, and QA POS Acceptance Item 20260816 for the controlled temporary POS acceptance test.
 - [x] Inventory active dashboard buttons, menus, shortcuts, and role-gated controls against their real handlers or availability feedback.
 - [x] Repair controls that lack a safe supported response while preserving tenant scope, non-destructive behavior, and existing module access rules.
 - [x] Add interaction-contract regression coverage and non-destructive public browser evidence for the repaired control set.
