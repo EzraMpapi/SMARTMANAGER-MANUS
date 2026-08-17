@@ -22,4 +22,10 @@ describe("POS UX Enhancements", () => {
     expect(source).toContain("inspectingQueueItem");
     expect(source).toContain("Cart Items");
   });
+
+  it("includes CSV export and print-friendly report options for offline queued transactions", () => {
+    expect(source).toContain("exportPendingSalesCsv");
+    expect(source).toContain("printPendingSalesQueue");
+    expect(source).toContain("POS Offline Pending-Sync Queue Report");
+  });
 });

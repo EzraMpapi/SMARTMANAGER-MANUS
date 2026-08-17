@@ -37647,10 +37647,82 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
     notify(`Resumed ${order.id}. Complete the payment to finalize the sale.`, "success");
   }
 
+  function exportPendingSalesCsv() {
+    if (pendingSales.length === 0) { notify("No queued transactions to export.", "error"); return; }
+    downloadCSV("pos-pending-sync-queue", pendingSales.map((p) => ({
+      ReceiptNumber: p.docNumber,
+      Status: p.status,
+      Customer: p.customerName || "Guest",
+      ItemsCount: (p.items || []).reduce((s, i) => s + i.qty, 0),
+      Total_TZSk: p.total || 0,
+      Attempts: p.attempts || 0,
+      LastError: p.lastError || "",
+      IdempotencyKey: p.idempotencyKey,
+    })), [
+      { key: "ReceiptNumber", label: "Receipt Number" },
+      { key: "Status", label: "Status" },
+      { key: "Customer", label: "Customer" },
+      { key: "ItemsCount", label: "Items Count" },
+      { key: "Total_TZSk", label: "Total (TZS k)" },
+      { key: "Attempts", label: "Sync Attempts" },
+      { key: "LastError", label: "Last Error" },
+      { key: "IdempotencyKey", label: "Idempotency Key" },
+    ]);
+    notify(`Exported ${pendingSales.length} queued transaction records.`);
+  }
+
+  function printPendingSalesQueue() {
+    if (pendingSales.length === 0) { notify("No queued transactions to print.", "error"); return; }
+    const win = window.open("", "_blank", "width=700,height=600");
+    if (!win) { notify("Pop-up blocked — allow pop-ups to print queue report.", "error"); return; }
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
+    const rows = pendingSales.map((p, i) => `
+      <tr style="background:${i % 2 === 0 ? "#fff" : "#F8FAFB"}">
+        <td><strong>${escapeHtml(p.docNumber)}</strong></td>
+        <td>${escapeHtml(p.status)}</td>
+        <td>${escapeHtml(p.customerName || "Guest")}</td>
+        <td class="numeric">${(p.items || []).reduce((s, it) => s + it.qty, 0)}</td>
+        <td class="numeric">TZS ${money(p.total || 0)}k</td>
+        <td>${escapeHtml(p.lastError || "None")}</td>
+      </tr>
+    `).join("");
+    const totalQueuedAmount = pendingSales.reduce((s, p) => s + (p.total || 0), 0);
+    win.document.write(`
+      <html><head><title>POS Offline Queue Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; color: #111827; padding: 20px; font-size: 12px; }
+        h1 { font-size: 18px; margin-bottom: 4px; }
+        p.subtitle { color: #64748B; margin-top: 0; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { border-bottom: 2px solid #CBD5E1; color: #475569; text-align: left; padding: 8px 6px; font-size: 11px; text-transform: uppercase; }
+        td { border-bottom: 1px solid #E2E8F0; padding: 8px 6px; vertical-align: top; }
+        .numeric { text-align: right; white-space: nowrap; }
+        .summary-box { margin-top: 16px; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; }
+        footer { margin-top: 24px; text-align: center; color: #94A3B8; font-size: 11px; border-top: 1px dashed #CBD5E1; padding-top: 10px; }
+      </style></head>
+      <body>
+        <h1>POS Offline Pending-Sync Queue Report</h1>
+        <p class="subtitle">Generated on ${new Date().toLocaleString()} · Workspace: ${escapeHtml(company?.name || "Smart Manager ERP")}</p>
+        <table>
+          <thead><tr><th>Receipt</th><th>Status</th><th>Customer</th><th class="numeric">Items</th><th class="numeric">Total</th><th>Last Error / Note</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="summary-box">
+          <div><strong>Total Queued Transactions:</strong> ${pendingSales.length}</div>
+          <div><strong>Total Queued Value:</strong> TZS ${money(totalQueuedAmount)}k</div>
+        </div>
+        <footer>End-of-day offline queue report. These transactions are pending server confirmation and have not affected live revenue or inventory.</footer>
+      </body></html>
+    `);
+    win.document.close();
+    win.focus();
+    window.setTimeout(() => win.print(), 250);
+  }
+
   function queueCurrentSale(attempt, error) {
     const record = createPendingPosSale({
       attempt,
-      items: cart.map((line) => ({ sku: line.sku, name: line.name, qty: line.qty, price: line.price })),
+      cart,
       payments,
       subtotal,
       tax,
@@ -38000,7 +38072,11 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
           <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50/70 p-2.5">
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <p className="text-[11px] font-semibold text-sky-900">Pending sync ({pendingSales.length})</p>
-              <span className="text-[10px] text-sky-700">Offline queue</span>
+              <div className="flex items-center gap-1.5">
+                <button type="button" onClick={exportPendingSalesCsv} className="text-[10px] font-medium text-sky-700 hover:underline">Export CSV</button>
+                <span className="text-sky-300">·</span>
+                <button type="button" onClick={printPendingSalesQueue} className="text-[10px] font-medium text-sky-700 hover:underline">Print Report</button>
+              </div>
             </div>
             <p className="mb-2 text-[10px] leading-relaxed text-sky-800">These sales require server confirmation before inventory, revenue, receipt output, or customer balances change. Click any queue item to inspect details.</p>
             <div className="space-y-1.5 max-h-28 overflow-y-auto">
