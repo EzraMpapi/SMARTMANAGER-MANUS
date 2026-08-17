@@ -35,4 +35,15 @@ describe("Finance persistence boundaries", () => {
     expect(expenseForm).toContain('disabled={submitting}');
     expect(expenseForm).toContain('{submitting ? "Saving…" : "Save Expense"}');
   });
+
+  it("derives cash-flow visualization and KPI context from confirmed financial records", () => {
+    expect(finance).toContain('delta: `${allInvoices.length} confirmed invoices`');
+    expect(finance).toContain('delta: `${expenses.length} confirmed expenses`');
+    expect(finance).toContain('delta: "Confirmed record total"');
+    expect(finance).toContain('<FinanceOverview invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} />');
+    expect(source).not.toContain("const CASHFLOW_TREND = [");
+    expect(source).toContain("const cashflowTrend = useMemo(() => {");
+    expect(source).toContain("buildLedger(invoices, expenses, posTransactions)");
+    expect(source).toContain("No confirmed cash movement yet");
+  });
 });

@@ -4196,13 +4196,6 @@ const expensesSeed = [
   { id: "EX-4494", vendor: "Zuridata Cloud Hosting", category: "Supplies", date: "2026-06-12", dueDate: "2026-07-12", amount: 740, status: "Paid", method: "Card", department: "Operations", costCenter: "CC-OPS-03" },
 ];
 
-const CASHFLOW_TREND = [
-  { m: "Jan", inflow: 52, outflow: 38 }, { m: "Feb", inflow: 58, outflow: 41 },
-  { m: "Mar", inflow: 49, outflow: 39 }, { m: "Apr", inflow: 67, outflow: 44 },
-  { m: "May", inflow: 63, outflow: 47 }, { m: "Jun", inflow: 79, outflow: 52 },
-  { m: "Jul", inflow: 61, outflow: 33 },
-];
-
 /* ---------------------------------- HR DATA ---------------------------------- */
 
 const DEPARTMENTS = ["Sales", "Operations", "Finance", "Warehouse", "Admin"];
@@ -13778,10 +13771,10 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
   const netCash = revenueCollected - expensesTotal;
 
   const FIN_KPIS = [
-    { label: "Revenue Collected", value: `TZS ${money(revenueCollected)}k`, delta: "MTD", up: true, icon: CircleDollarSign },
+    { label: "Revenue Collected", value: `TZS ${money(revenueCollected)}k`, delta: `${allInvoices.length} confirmed invoices`, up: true, icon: CircleDollarSign },
     { label: "Outstanding Receivables", value: `TZS ${money(Math.round(receivablesTotal))}k`, delta: `${outstanding.length} invoices`, up: false, icon: Landmark },
-    { label: "Total Expenses", value: `TZS ${money(expensesTotal)}k`, delta: "MTD", up: false, icon: Wallet },
-    { label: "Net Cash Position", value: `TZS ${money(netCash)}k`, delta: netCash >= 0 ? "Positive" : "Negative", up: netCash >= 0, icon: netCash >= 0 ? TrendingUp : TrendingDown },
+    { label: "Total Expenses", value: `TZS ${money(expensesTotal)}k`, delta: `${expenses.length} confirmed expenses`, up: false, icon: Wallet },
+    { label: "Net Cash Position", value: `TZS ${money(netCash)}k`, delta: "Confirmed record total", up: netCash >= 0, icon: netCash >= 0 ? TrendingUp : TrendingDown },
   ];
 
   return (
@@ -13818,7 +13811,7 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
         {FIN_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "overview" && <FinanceOverview expenses={expenses} />}
+      {tab === "overview" && <FinanceOverview invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} />}
       {tab === "receivables" && (
         <Receivables
           outstanding={outstanding}
@@ -13847,13 +13840,26 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
   );
 }
 
-function FinanceOverview({ expenses }) {
+function FinanceOverview({ invoices, expenses, posTransactions }) {
   const catTotals = useMemo(() => {
     const map = {};
     expenses.forEach((e) => { map[e.category] = (map[e.category] || 0) + e.amount; });
     const max = Math.max(...Object.values(map), 1);
     return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([category, amount]) => ({ category, amount, pct: (amount / max) * 100 }));
   }, [expenses]);
+  const cashflowTrend = useMemo(() => {
+    const periods = new Map();
+    buildLedger(invoices, expenses, posTransactions).forEach((entry) => {
+      const date = entry.date ? new Date(entry.date) : null;
+      if (!date || Number.isNaN(date.getTime())) return;
+      const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+      const period = periods.get(key) || { key, m: date.toLocaleDateString(undefined, { month: "short", year: "2-digit", timeZone: "UTC" }), inflow: 0, outflow: 0 };
+      period.inflow += Number(entry.credit) || 0;
+      period.outflow += Number(entry.debit) || 0;
+      periods.set(key, period);
+    });
+    return [...periods.values()].sort((a, b) => a.key.localeCompare(b.key)).slice(-12);
+  }, [invoices, expenses, posTransactions]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -13863,13 +13869,13 @@ function FinanceOverview({ expenses }) {
             <h3 className="text-[14px] font-semibold text-[#111827]">Cash Flow</h3>
             <p className="text-[12px] text-slate-400">Inflow vs. outflow, TZS millions</p>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-slate-500">
+          {cashflowTrend.length > 0 && <div className="flex items-center gap-3 text-[11px] text-slate-500">
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#16A34A]" /> Inflow</span>
             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#F59E0B]" /> Outflow</span>
-          </div>
+          </div>}
         </div>
-        <ResponsiveContainer width="100%" height={240}>
-          <AreaChart data={CASHFLOW_TREND} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+        {cashflowTrend.length > 0 ? <ResponsiveContainer width="100%" height={240}>
+          <AreaChart data={cashflowTrend} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="inflow" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#16A34A" stopOpacity={0.25} />
@@ -13887,7 +13893,7 @@ function FinanceOverview({ expenses }) {
             <Area type="monotone" dataKey="inflow" stroke="#16A34A" strokeWidth={2} fill="url(#inflow)" />
             <Area type="monotone" dataKey="outflow" stroke="#F59E0B" strokeWidth={2} fill="url(#outflow)" />
           </AreaChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer> : <EmptyState icon={CircleDollarSign} title="No confirmed cash movement yet" hint="Cash flow appears after confirmed invoice payments, POS sales, or paid expenses are recorded." />}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
