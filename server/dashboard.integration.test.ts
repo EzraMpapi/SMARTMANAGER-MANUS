@@ -510,8 +510,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(product).not.toHaveProperty("company_id");
     expect(lead).toMatchObject({ name: "Amina", status: "Qualified", amount: 920000, data: { company_name: "Tanga Trade", email: "amina@example.test" } });
     expect(employee).toMatchObject({ name: "Juma Mtei", amount: 700000, data: { role: "Storekeeper", department: "Operations" } });
-    expect(invoice).toMatchObject({ name: "Moshi Retail", status: "Draft", amount: 350000, data: { doc_number: "INV-QA-1", due_date: "2026-09-01" } });
-    expect(payment).toMatchObject({ status: "Active", amount: 350000, data: { invoice_id: "invoice-1", method: "Cash", reference: "RCPT-QA-1" } });
+    expect(invoice).toMatchObject({ name: "Moshi Retail", status: "Draft", amount: 350000, doc_number: "INV-QA-1", customer: "Moshi Retail", due_date: "2026-09-01", data: {} });
+    expect(payment).toMatchObject({ status: "Active", amount: 350000, invoice_id: "invoice-1", method: "Cash", reference: "RCPT-QA-1", data: {} });
     expect(supplier).toMatchObject({ name: "Arusha Supplies", data: { contact_person: "Neema", lead_time_days: 5 } });
     expect(transaction).toMatchObject({ name: "Asha", status: "Completed", amount: 125000, data: { cashier: "Asha", transaction_ref: "POS-QA-1" } });
   });

@@ -452,8 +452,26 @@ const GENERIC_STANDARD_COLUMNS = new Set([
   "id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at",
 ]);
 
+// Sales document tables started as generic envelopes, then received additive
+// typed document contracts. Keep those verified contract fields out of the
+// JSON envelope so PostgREST filters, joins, dates, and financial reporting
+// read the same canonical values the UI writes.
+const GENERIC_TYPED_COLUMNS = {
+  sales_quotations: new Set(["doc_number", "customer", "issue_date", "valid_until", "owner_id"]),
+  sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"]),
+  sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"]),
+  sales_payments: new Set(["invoice_id", "method", "payment_date", "reference"]),
+  sales_subscriptions: new Set(["doc_number", "customer", "plan", "cycle", "start_date", "next_billing_date"]),
+  sales_order_returns: new Set(["order_id", "reason"]),
+  sales_order_return_items: new Set(["return_id", "item_name", "item_sku", "qty", "rate"]),
+};
+
+function genericAllowedColumns(table) {
+  return new Set([...GENERIC_STANDARD_COLUMNS, ...(GENERIC_TYPED_COLUMNS[table] || [])]);
+}
+
 function genericFilterColumn(table, column) {
-  return GENERIC_COMPANY_TABLES.has(table) && !GENERIC_STANDARD_COLUMNS.has(column)
+  return GENERIC_COMPANY_TABLES.has(table) && !genericAllowedColumns(table).has(column)
     ? `data->>${column}`
     : column;
 }
@@ -476,10 +494,14 @@ export function normalizeGenericCompanyPayload(table, record, existing = null) {
   if (!GENERIC_COMPANY_TABLES.has(table) || !record || typeof record !== "object" || Array.isArray(record)) return record;
   const existingData = existing?.data && typeof existing.data === "object" ? existing.data : {};
   const suppliedData = record.data && typeof record.data === "object" ? record.data : {};
+  const allowedColumns = genericAllowedColumns(table);
+  const typedColumns = GENERIC_TYPED_COLUMNS[table] || new Set();
+  const typedFields = Object.fromEntries(Object.entries(record).filter(([key]) => typedColumns.has(key)));
   const businessFields = { ...record };
-  ["id", "company_id", "name", "status", "amount", "notes", "data", "created_at", "updated_at"].forEach((key) => delete businessFields[key]);
+  [...allowedColumns, "data"].forEach((key) => delete businessFields[key]);
   const data = { ...existingData, ...businessFields, ...suppliedData };
   return {
+    ...typedFields,
     name: genericRecordName(table, record, data, existing),
     status: firstDefined(record.status, record.stage, record.kind, data.status, data.stage, data.kind, existing?.status, "Active"),
     amount: firstDefined(record.amount, record.value_amount, record.value, record.unit_cost, record.salary, data.amount, data.value_amount, data.value, data.unit_cost, data.salary, existing?.amount, null),

@@ -67,4 +67,11 @@ describe("Sales interaction and persistence contracts", () => {
     expect(salesSource).toContain('if (tab === "invoices" && crm?.rows)');
     expect(dashboardSource).toContain('quotationsHook={quotations} crm={crm} currentUser={currentUser}');
   });
+
+  it("keeps the repaired typed Invoice contract out of generic JSON normalization", () => {
+    expect(dashboardSource).toContain('sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"])');
+    expect(dashboardSource).toContain('sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"])');
+    expect(dashboardSource).toContain('return GENERIC_COMPANY_TABLES.has(table) && !genericAllowedColumns(table).has(column)');
+    expect(dashboardSource).toContain("const typedFields = Object.fromEntries(Object.entries(record).filter(([key]) => typedColumns.has(key)));");
+  });
 });
