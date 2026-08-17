@@ -5926,16 +5926,42 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             </div>
           </div>
 
-          <div className="mb-4 flex flex-wrap items-center gap-2 text-[10.5px]">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/70"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live workspace data</span>
-            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{PERIOD_LABELS[period]} reporting view</span>
-            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{alerts.length} operational alert{alerts.length === 1 ? "" : "s"}</span>
-          </div>
+	          <div className="mb-4 flex flex-wrap items-center gap-2 text-[10.5px]">
+	            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/70"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live workspace data</span>
+	            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{PERIOD_LABELS[period]} reporting view</span>
+	            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{alerts.length} operational alert{alerts.length === 1 ? "" : "s"}</span>
+	          </div>
 
-          {/* 8-KPI strip */}
-          {(() => {
-            const invRows = invoices.rows;
-            const expRows = expenses.rows;
+	          <div className="mb-4 flex flex-wrap items-center gap-2.5" aria-label="Reporting period controls">
+	            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">Reporting period</span>
+	            <div role="group" aria-label="Dashboard reporting period" className="inline-flex rounded-xl border border-white/10 bg-black/15 p-1">
+	              {[
+	                ["day", "Day"],
+	                ["week", "Week"],
+	                ["month", "Month"],
+	                ["year", "Year"],
+	              ].map(([value, label]) => {
+	                const selected = period === value;
+	                return (
+	                  <button
+	                    key={value}
+	                    type="button"
+	                    onClick={() => setPeriod(value)}
+	                    aria-pressed={selected}
+	                    className={`rounded-lg px-2.5 py-1.5 text-[10.5px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${selected ? "bg-white text-[#0D2214] shadow-sm" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
+	                  >
+	                    {label}
+	                  </button>
+	                );
+	              })}
+	            </div>
+	            <span className="text-[10.5px] text-white/45">Updates billed, collected, expenses, and profit from confirmed invoice and expense rows.</span>
+	          </div>
+
+	          {/* 8-KPI strip */}
+	          {(() => {
+	            const invRows = invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart);
+	            const expRows = expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart);
             const totalBilled   = invRows.reduce((s,i)=>s+lineTotal(i.items||[]).total,0);
             const totalCollected= invRows.reduce((s,i)=>s+(i.amountPaid||0),0);
             const totalExpenses = expRows.reduce((s,e)=>s+(e.amount||0),0);

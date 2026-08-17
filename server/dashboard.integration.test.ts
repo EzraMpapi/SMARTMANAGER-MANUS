@@ -199,6 +199,18 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("no record is created automatically");
   });
 
+  it("exposes an accessible reporting-period selector and filters only confirmed invoice and expense rows for the executive KPIs", () => {
+    expect(dashboardSource).toContain('aria-label="Dashboard reporting period"');
+    expect(dashboardSource).toContain('onClick={() => setPeriod(value)}');
+    expect(dashboardSource).toContain('aria-pressed={selected}');
+    expect(dashboardSource).toContain('["day", "Day"]');
+    expect(dashboardSource).toContain('["week", "Week"]');
+    expect(dashboardSource).toContain('["month", "Month"]');
+    expect(dashboardSource).toContain('["year", "Year"]');
+    expect(dashboardSource).toContain('invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart)');
+    expect(dashboardSource).toContain('expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart)');
+  });
+
   it("turns empty dashboard analytics into accessible next actions rather than fabricated chart data", () => {
     expect(dashboardSource).toContain('title="No invoice data yet"');
     expect(dashboardSource).toContain('actionLabel="Create invoice"');

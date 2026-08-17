@@ -586,3 +586,5 @@
 - [x] Refine dashboard navigation affordances and keyboard clarity for the guidance panel while preserving existing role-aware module access.
 - [x] Add focused regression coverage for the executive guidance confirmed-data and navigation contract.
 - [ ] Complete authenticated visual validation for the executive guidance improvement.
+- [x] Expose the existing Day, Week, Month, and Year reporting-period control in the executive command strip without changing the source data or creating records.
+- [x] Add accessible responsive interaction states and regression coverage for the executive reporting-period selector.
