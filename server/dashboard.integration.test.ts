@@ -173,6 +173,15 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("workspaceJoinErrorMessage(err");
   });
 
+  it("resolves an authenticated workspace through sequential profile and company reads so relationship expansion cannot strand a valid session", () => {
+    expect(dashboardSource).toContain('const loadVerifiedWorkspaceProfile = async () =>');
+    expect(dashboardSource).toContain('sb("profiles").select("*").eq("id", user.id).run()');
+    expect(dashboardSource).toContain('sb("companies").select("*").eq("id", profile.company_id).run()');
+    expect(dashboardSource).not.toContain('sb("profiles").select("*,companies(*)").eq("id", user.id).run()');
+    expect(dashboardSource).toContain('&& !authenticatedUser)');
+    expect(dashboardSource).toContain('The assigned workspace is not available to this verified account.');
+  });
+
   it("retains the professional executive command hierarchy and operational context without adding fabricated metrics", () => {
     expect(dashboardSource).toContain(">Workspace overview<");
     expect(dashboardSource).toContain("Live workspace data");
@@ -192,7 +201,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("const [workspaceResolutionError, setWorkspaceResolutionError]");
     expect(dashboardSource).toContain("Workspace resolution failed");
     expect(dashboardSource).toContain("Retry workspace loading");
-    expect(dashboardSource).toContain("if (bootstrapError?.status === 401 || bootstrapError?.status === 403)");
+    expect(dashboardSource).toContain("if ((bootstrapError?.status === 401 || bootstrapError?.status === 403) && !authenticatedUser)");
     expect(workspaceAuthMigrationSource).toContain("INSERT INTO public.profiles");
     expect(workspaceAuthMigrationSource).toContain("ON CONFLICT (id) DO UPDATE");
     expect(workspaceAuthMigrationSource).toContain("v_user_id uuid := auth.uid()");

@@ -47202,16 +47202,27 @@ function SmartManager() {
           user = await authGetUser(token);
         }
         authenticatedUser = user;
-        let profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
-        let profile = profileRows?.[0];
+        const loadVerifiedWorkspaceProfile = async () => {
+          const profileRows = await sb("profiles").select("*").eq("id", user.id).run();
+          const profile = profileRows?.[0];
+          if (!profile?.company_id) return profile;
+          const companyRows = await sb("companies").select("*").eq("id", profile.company_id).run();
+          const company = companyRows?.[0];
+          if (!company?.id) {
+            const error = new Error("The assigned workspace is not available to this verified account.");
+            error.status = 403;
+            throw error;
+          }
+          return { ...profile, companies: company };
+        };
+        let profile = await loadVerifiedWorkspaceProfile();
         if (invitationTokenRef.current && (!profile || !profile.company_id)) {
           await acceptInvitationMutation.mutateAsync({ token: invitationTokenRef.current });
           invitationTokenRef.current = "";
           const inviteUrl = new URL(window.location.href);
           inviteUrl.searchParams.delete("invite");
           window.history.replaceState(null, "", `${inviteUrl.pathname}${inviteUrl.search}`);
-          profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
-          profile = profileRows?.[0];
+          profile = await loadVerifiedWorkspaceProfile();
         }
         // A pre-existing authenticated profile with no company can only be
         // auto-provisioned when this is the first tenant in the deployment.
@@ -47220,8 +47231,7 @@ function SmartManager() {
         if (profile && !profile.company_id) {
           try {
             await callRpc("ensure_current_company", {}, token);
-            profileRows = await sb("profiles").select("*,companies(*)").eq("id", user.id).run();
-            profile = profileRows?.[0];
+            profile = await loadVerifiedWorkspaceProfile();
           } catch (_bootstrapError) {
             // The normal explicit company setup / join flow below provides a
             // safe resolution whenever an existing tenant prevents bootstrap.
@@ -47241,7 +47251,7 @@ function SmartManager() {
         rememberConfirmedOrganizationIndustryFocus(confirmedIndustryFocus);
         setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, industry: confirmedIndustryFocus, industryFocus: confirmedIndustryFocus, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
       } catch (bootstrapError) {
-        if (bootstrapError?.status === 401 || bootstrapError?.status === 403) {
+        if ((bootstrapError?.status === 401 || bootstrapError?.status === 403) && !authenticatedUser) {
           clearStoredAuthSession();
         } else {
           authDebug("Workspace resolution failed", { message: bootstrapError?.message || "unknown", authenticated: Boolean(authenticatedUser) });

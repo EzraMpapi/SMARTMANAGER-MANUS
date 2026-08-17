@@ -539,6 +539,7 @@
 - [x] Define and implement tenant-scoped SLA policy management with server-confirmed policy state and no fabricated breach or escalation events.
 - [x] Add support-management controls and focused regression coverage for workflow and SLA contracts before activating any AI suggestions or provider automation.
 - [ ] Validate mobile support workflows, security, tenant isolation, provider failures, idempotency, full regression, production build, and publish only verified capabilities.
+- [x] Diagnose and repair the authenticated production workspace-load failure observed during support validation, without bypassing verified profile or tenant resolution.
 - [x] Map every requirement in pasted_content_3.txt to the current Smart Manager implementation, verified evidence, known limitation, or remediation task.
 - [x] Re-audit the architecture, Supabase database contracts, authentication, tenant authorization, RLS, and sensitive data boundaries against the enterprise transformation requirements.
 - [x] Reconcile the legacy Scheduled Reports client UI with the existing tenant-safe server scheduling service and truthful disabled email-delivery boundary.
