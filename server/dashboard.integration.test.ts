@@ -231,6 +231,20 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("intentionally does not show company-wide metrics or create records");
   });
 
+  it("turns Workspace Overview metrics into responsive confirmed-data action cards without fabricating targets or trends", () => {
+    expect(dashboardSource).toContain('aria-label="Workspace overview metrics"');
+    expect(dashboardSource).toContain('grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-8');
+    expect(dashboardSource).toContain('No invoices in ${periodText}');
+    expect(dashboardSource).toContain('No invoices to collect in ${periodText}');
+    expect(dashboardSource).toContain('No overdue invoices');
+    expect(dashboardSource).toContain('No stock items recorded');
+    expect(dashboardSource).toContain('No active subscriptions');
+    expect(dashboardSource).toContain('no target, trend, or progress is shown unless it exists in the workspace data');
+    expect(dashboardSource).toContain('onQuickAction("finance", { tab: "receivables" })');
+    expect(dashboardSource).toContain('onNavigate("inventory")');
+    expect(dashboardSource).toContain('onNavigate("crm")');
+  });
+
   it("turns empty dashboard analytics into accessible next actions rather than fabricated chart data", () => {
     expect(dashboardSource).toContain('title="No invoice data yet"');
     expect(dashboardSource).toContain('actionLabel="Create invoice"');

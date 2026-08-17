@@ -592,3 +592,7 @@
 - [x] Add focused regression coverage for the role-safe dashboard side-panel empty-state refinement.
 - [x] Add role-aware actionable guidance to focused and minimal home views without surfacing company-wide data or creating records.
 - [x] Add focused regression coverage for restricted-view module navigation and access-scope preservation.
+- [x] Transform the Workspace Overview KPI strip into responsive actionable cards using only confirmed workspace metrics and safe existing-module routes.
+- [x] Replace zero-value KPI presentation with honest per-metric context rather than fabricated targets, percentages, trends, or progress.
+- [x] Add regression coverage for the responsive Workspace Overview KPI-card refinement.
+- [ ] Complete authenticated visual validation for the responsive Workspace Overview KPI-card refinement when a workspace session is available.

@@ -5979,40 +5979,51 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 	            <span className="text-[10.5px] text-white/45">Updates billed, collected, expenses, and profit from confirmed invoice and expense rows.</span>
 	          </div>
 
-	          {/* 8-KPI strip */}
+	          {/* Confirmed-data KPI cards — navigation only; no target, trend, or progress is shown unless it exists in the workspace data. */}
 	          {(() => {
 	            const invRows = invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart);
 	            const expRows = expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart);
-            const totalBilled   = invRows.reduce((s,i)=>s+lineTotal(i.items||[]).total,0);
-            const totalCollected= invRows.reduce((s,i)=>s+(i.amountPaid||0),0);
-            const totalExpenses = expRows.reduce((s,e)=>s+(e.amount||0),0);
-            const grossProfit   = totalCollected - totalExpenses;
-            const overdueInvs   = invRows.filter(i=>i.status!=="Paid"&&i.dueDate<TODAY.toISOString().slice(0,10));
-            const overdueAmt    = overdueInvs.reduce((s,i)=>s+lineTotal(i.items||[]).total-(i.amountPaid||0),0);
-            const lowStock      = inventory.rows.filter(it=>it.qty<=it.reorder&&it.reorder>0).length;
-            const openLeads     = crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).length;
-            const pendingApproval = leaveRequests.rows.filter(l=>l.status==="Pending").length;
-            const activeEmployees = (employees?.rows||employees||[]).filter(e=>e.status==="Active").length;
-            const activeSubs    = subscriptions.rows.filter(s=>s.status==="Active");
-            const MRR = activeSubs.reduce((s,sub)=>{const mo={Monthly:1,Quarterly:3,Annual:12}[sub.cycle]||1;return s+(sub.amount/mo);},0);
+            const totalBilled = invRows.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total, 0);
+            const totalCollected = invRows.reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+            const totalExpenses = expRows.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+            const grossProfit = totalCollected - totalExpenses;
+            const overdueInvs = invRows.filter((invoice) => invoice.status !== "Paid" && invoice.dueDate < TODAY.toISOString().slice(0, 10));
+            const overdueAmt = overdueInvs.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0);
+            const inventoryValue = inventory.rows.reduce((sum, item) => sum + (item.qty || 0) * (item.unitCost || 0), 0);
+            const lowStock = inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0).length;
+            const stockOut = inventory.rows.filter((item) => item.qty <= 0).length;
+            const openLeads = crm.rows.filter((lead) => !["Won", "Lost"].includes(lead.stage));
+            const pipelineValue = openLeads.reduce((sum, lead) => sum + (lead.value || 0), 0);
+            const activeSubs = subscriptions.rows.filter((subscription) => subscription.status === "Active");
+            const monthlyRecurringRevenue = activeSubs.reduce((sum, subscription) => {
+              const months = { Monthly: 1, Quarterly: 3, Annual: 12 }[subscription.cycle] || 1;
+              return sum + (subscription.amount / months);
+            }, 0);
+            const hasFinanceData = invRows.length > 0 || expRows.length > 0;
+            const periodText = PERIOD_LABELS[period].toLowerCase();
+            const cards = [
+              { label: "AR Billed", value: formatMoney(totalBilled), color: "#4ADE80", context: invRows.length ? `${invRows.length} invoice${invRows.length === 1 ? "" : "s"} in ${periodText}` : `No invoices in ${periodText}`, action: "Open receivables", onClick: () => onQuickAction("finance", { tab: "receivables" }) },
+              { label: "Collected", value: formatMoney(totalCollected), color: "#60A5FA", context: totalBilled > 0 ? `${Math.round((totalCollected / totalBilled) * 100)}% of billed value collected` : `No invoices to collect in ${periodText}`, action: "Open receivables", onClick: () => onQuickAction("finance", { tab: "receivables" }) },
+              { label: "Overdue AR", value: formatMoney(overdueAmt), color: overdueAmt > 0 ? "#F87171" : "#4ADE80", context: overdueInvs.length ? `${overdueInvs.length} invoice${overdueInvs.length === 1 ? "" : "s"} overdue` : "No overdue invoices", action: "Review receivables", onClick: () => onQuickAction("finance", { tab: "receivables" }) },
+              { label: "Gross P&L", value: `${grossProfit >= 0 ? "+" : "−"}${formatMoney(Math.abs(grossProfit))}`, color: grossProfit >= 0 ? "#4ADE80" : "#F87171", context: hasFinanceData ? "Collected less expenses" : `No invoice or expense entries in ${periodText}`, action: "Open finance", onClick: () => onNavigate("finance") },
+              { label: "Inventory", value: formatMoney(inventoryValue), color: "#C4B5FD", context: inventory.rows.length ? `${inventory.rows.length} stocked SKU${inventory.rows.length === 1 ? "" : "s"}` : "No stock items recorded", action: "Open inventory", onClick: () => onNavigate("inventory") },
+              { label: "Low Stock", value: String(lowStock), color: lowStock > 0 ? "#F87171" : "#4ADE80", context: lowStock ? `${stockOut} out of stock · ${lowStock} need review` : "No stock needs attention", action: "Review inventory", onClick: () => onNavigate("inventory") },
+              { label: "Pipeline", value: formatMoney(pipelineValue), color: "#F9A8D4", context: openLeads.length ? `${openLeads.length} open deal${openLeads.length === 1 ? "" : "s"}` : "No open deals recorded", action: "Open CRM", onClick: () => onNavigate("crm") },
+              { label: "MRR", value: formatMoney(monthlyRecurringRevenue), color: "#34D399", context: activeSubs.length ? `${activeSubs.length} active subscription${activeSubs.length === 1 ? "" : "s"}` : "No active subscriptions", action: "Open sales", onClick: () => onNavigate("sales") },
+            ];
 
             return (
-              <div className="grid grid-cols-4 lg:grid-cols-8 gap-px bg-[rgba(255,255,255,.06)] rounded-xl overflow-hidden">
-                {[
-                  {l:"AR Billed",   v:formatMoney(totalBilled),  col:"#4ADE80",  sub:invRows.length+" invoices"},
-                  {l:"Collected",   v:formatMoney(totalCollected),col:"#60A5FA",  sub:Math.round(totalBilled>0?totalCollected/totalBilled*100:0)+"% rate"},
-                  {l:"Overdue AR",  v:formatMoney(overdueAmt),   col:overdueAmt>0?"#F87171":"#4ADE80", sub:overdueInvs.length+" invoices"},
-                  {l:"Gross P&L",   v:(grossProfit>=0?"+":"")+formatMoney(Math.abs(grossProfit)),col:grossProfit>=0?"#4ADE80":"#F87171",sub:"Collected − Exp"},
-                  {l:"Inventory",   v:formatMoney(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)),col:"#C4B5FD",sub:inventory.rows.length+" SKUs"},
-                  {l:"Low Stock",   v:String(lowStock),col:lowStock>0?"#F87171":"#4ADE80",sub:inventory.rows.filter(it=>it.qty<=0).length+" out"},
-                  {l:"Pipeline",    v:formatMoney(crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).reduce((s,l)=>s+(l.value||0),0)),col:"#F9A8D4",sub:openLeads+" open deals"},
-                  {l:"MRR",         v:formatMoney(MRR),col:"#34D399",sub:activeSubs.length+" active subs"},
-                ].map(({l,v,col,sub})=>(
-                  <div key={l} className="bg-[rgba(0,0,0,.25)] px-3 py-3 text-center transition-colors hover:bg-[rgba(255,255,255,.07)]">
-                    <p className="text-[9.5px] font-bold uppercase tracking-wide text-[rgba(255,255,255,.45)] mb-1">{l}</p>
-                    <p className="text-[14px] font-black leading-tight" style={{color:col}}>{v}</p>
-                    <p className="text-[9.5px] text-[rgba(255,255,255,.35)] mt-0.5">{sub}</p>
-                  </div>
+              <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-8" aria-label="Workspace overview metrics">
+                {cards.map((card) => (
+                  <button key={card.label} type="button" onClick={card.onClick} aria-label={`${card.label}: ${card.context}. ${card.action}.`} className="group min-h-[116px] rounded-xl border border-white/10 bg-black/20 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[9.5px] font-bold uppercase tracking-wide text-white/50">{card.label}</p>
+                      <ChevronRight size={13} className="mt-0.5 shrink-0 text-white/30 transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" />
+                    </div>
+                    <p className="mt-2 text-[16px] font-black leading-tight" style={{ color: card.color }}>{card.value}</p>
+                    <p className="mt-1.5 min-h-[28px] text-[10px] leading-snug text-white/45">{card.context}</p>
+                    <p className="mt-1 text-[10px] font-semibold text-white/70">{card.action}</p>
+                  </button>
                 ))}
               </div>
             );
