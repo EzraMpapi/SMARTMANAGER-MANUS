@@ -299,6 +299,17 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).not.toContain("useWebSocket('/api/activities'");
   });
 
+  it("adapts pasted-content-5 analytical guidance to confirmed records without presenting fabricated forecasts or anomaly scores", () => {
+    expect(dashboardSource).toContain("<AnalyticsReadiness invoices={invoices} crm={crm} inventory={inventory} expenses={expenses} onNavigate={onNavigate} />");
+    expect(dashboardSource).toContain("function AnalyticsReadiness({ invoices, crm, inventory, expenses, onNavigate })");
+    expect(dashboardSource).toContain('aria-label="Analytics readiness"');
+    expect(dashboardSource).toContain("Record-based guidance");
+    expect(dashboardSource).toContain("Available for current reporting");
+    expect(dashboardSource).toContain("Forecasts and anomaly scores are not shown until an approved analytical model and a defined historical baseline are configured.");
+    expect(dashboardSource).not.toContain("samplePredictions");
+    expect(dashboardSource).not.toContain("generateSampleAnomalies");
+  });
+
   it("turns empty customer, inventory, and pipeline analytics into accessible source-aware actions rather than fabricated chart data", () => {
     expect(dashboardSource).toContain('title="No billed customers yet"');
     expect(dashboardSource).toContain('actionLabel="Open CRM"');
