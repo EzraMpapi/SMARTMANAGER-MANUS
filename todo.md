@@ -637,3 +637,7 @@
 - [x] Repair Sales controls and convert authorization or database denials into clear recoverable feedback without weakening database protections.
 - [x] Add regression coverage and non-destructive validation for Sales module interactions, server-confirmation, and denial/error paths.
 - [ ] Complete authenticated non-destructive Sales acceptance for document creation, lifecycle controls, invoice printing, payment, subscription, and server-denial recovery when a workspace session is available.
+- [x] Inventory every Settings section, control, tenant-scoped loader, backend mutation, role gate, and current failure state.
+- [x] Repair Settings controls that do not await confirmed backend responses or provide clear authorization, validation, offline, and database error feedback.
+- [x] Add Settings persistence and interaction regression coverage, then run non-destructive validation without changing operational records.
+- [ ] Complete authenticated non-destructive Settings acceptance for representative saved preferences and denied-action recovery when a workspace session is available.

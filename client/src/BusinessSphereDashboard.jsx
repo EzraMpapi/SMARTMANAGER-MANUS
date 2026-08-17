@@ -32803,10 +32803,12 @@ function BusinessCardDesigner({ company }) {
 }
 
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
-  const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
+  const workspaceSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: IS_CONFIGURED });
+  const workspaceSettingsMutation = trpc.workspaceSettings.save.useMutation();
+  const canManageCompanySettings = ["Organization Owner", "CEO", "Super Administrator", "System Administrator"].includes(currentUser.role);
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 
@@ -32814,41 +32816,57 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
     setDraft(company);
   }, [company]);
 
+  useEffect(() => {
+    if (!workspaceSettingsQuery.data || !IS_CONFIGURED) return;
+    const serverCompany = workspaceSettingsQuery.data.company || {};
+    const profileData = workspaceSettingsQuery.data.profileData || {};
+    const confirmed = {
+      ...company, ...profileData,
+      id: serverCompany.id || company.id, name: serverCompany.name || company.name, industry: serverCompany.category || company.industry || "general",
+      country: serverCompany.country || company.country, currency: serverCompany.currency || company.currency,
+      taxRate: Number(serverCompany.tax_rate ?? company.taxRate ?? 0), timezone: serverCompany.timezone || company.timezone, businessScale: serverCompany.business_scale || company.businessScale,
+      receiptWidth: serverCompany.receipt_width || company.receiptWidth, receiptFooter: serverCompany.receipt_footer || "", receiptShowLogo: serverCompany.receipt_show_logo !== false,
+      logo: serverCompany.logo || null, brandColor: serverCompany.brand_primary_color || "#0B5D3B", brandAccentColor: serverCompany.brand_accent_color || "#16A34A",
+      tin: serverCompany.tin || "", phone: serverCompany.phone || "", email: serverCompany.email || "", address: serverCompany.address || "", city: serverCompany.city || "", website: serverCompany.website || "",
+    };
+    setCompany(confirmed);
+    setDraft(confirmed);
+  }, [workspaceSettingsQuery.data]);
+
   function setField(key, val) {
     setDraft((d) => ({ ...d, [key]: val }));
   }
 
   async function saveProfile() {
     const previousIndustryFocus = normalizeOrganizationIndustryFocus(company.industry);
-    let confirmedDraft = draft;
     if (IS_CONFIGURED) {
       try {
-        await sb("companies").eq("id", draft.id).update({
-          name: draft.name, country: draft.country, currency: draft.currency,
-          tax_rate: draft.taxRate, timezone: draft.timezone, business_scale: draft.businessScale,
-          receipt_width: draft.receiptWidth, receipt_footer: draft.receiptFooter, receipt_show_logo: draft.receiptShowLogo,
-        }).run();
-        const branding = await workspaceBrandingMutation.mutateAsync({
-          primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A", industryFocus: normalizeOrganizationIndustryFocus(draft.industry),
-          logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
+        const saved = await workspaceSettingsMutation.mutateAsync({
+          name: draft.name, country: draft.country, currency: draft.currency, tin: draft.tin || "", phone: draft.phone || "", email: draft.email || "", address: draft.address || "", city: draft.city || "", website: draft.website || "",
+          taxRate: Number(draft.taxRate) || 0, timezone: draft.timezone, businessScale: draft.businessScale, receiptWidth: draft.receiptWidth, receiptFooter: draft.receiptFooter || "", receiptShowLogo: draft.receiptShowLogo !== false,
+          primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A", industryFocus: normalizeOrganizationIndustryFocus(draft.industry), logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
+          cover: workspaceCoverPayload(draft.coverPhoto), removeCover: !draft.coverPhoto,
+          profileData: { tagline: draft.tagline || "", description: draft.description || "", businessType: draft.businessType || "", foundedYear: String(draft.foundedYear || ""), regNumber: draft.regNumber || "", postalCode: draft.postalCode || "", facebook: draft.facebook || "", instagram: draft.instagram || "", twitter: draft.twitter || "", linkedin: draft.linkedin || "", tiktok: draft.tiktok || "", whatsappBusiness: draft.whatsappBusiness || "", bankName: draft.bankName || "", bankAccountName: draft.bankAccountName || "", bankAccountNo: draft.bankAccountNo || "", bankBranch: draft.bankBranch || "", bankSwift: draft.bankSwift || "", businessHours: draft.businessHours || {}, ...(typeof draft.coverPhoto === "string" && !draft.coverPhoto.startsWith("data:") ? { coverPhoto: draft.coverPhoto } : {}) },
         });
-        confirmedDraft = { ...draft, logo: branding.logo, brandColor: branding.primaryColor, brandAccentColor: branding.accentColor, industry: branding.industryFocus };
-        rememberConfirmedOrganizationIndustryFocus(branding.industryFocus);
+        const serverCompany = saved.company || {};
+        const confirmedDraft = { ...draft, ...(saved.profileData || {}), name: serverCompany.name || draft.name, industry: serverCompany.category || draft.industry, country: serverCompany.country || draft.country, currency: serverCompany.currency || draft.currency, taxRate: Number(serverCompany.tax_rate ?? draft.taxRate), timezone: serverCompany.timezone || draft.timezone, businessScale: serverCompany.business_scale || draft.businessScale, receiptWidth: serverCompany.receipt_width || draft.receiptWidth, receiptFooter: serverCompany.receipt_footer || "", receiptShowLogo: serverCompany.receipt_show_logo !== false, logo: serverCompany.logo || null, brandColor: serverCompany.brand_primary_color || draft.brandColor, brandAccentColor: serverCompany.brand_accent_color || draft.brandAccentColor, tin: serverCompany.tin || "", phone: serverCompany.phone || "", email: serverCompany.email || "", address: serverCompany.address || "", city: serverCompany.city || "", website: serverCompany.website || "" };
+        rememberConfirmedOrganizationIndustryFocus(confirmedDraft.industry);
+        setCompany(confirmedDraft);
+        setDraft(confirmedDraft);
+        window.__smartManagerCompany = confirmedDraft;
         try {
-          await recordConfirmedIndustryFocusAudit(previousIndustryFocus, branding.industryFocus, currentUser.name);
+          await recordConfirmedIndustryFocusAudit(previousIndustryFocus, confirmedDraft.industry, currentUser.name);
         } catch (auditError) {
-          notify("Industry focus was saved, but its audit event could not be persisted. Please retry the change from Settings.", "error");
+          notify("Company settings were saved, but the industry audit event could not be persisted. Review the audit log after retrying this change.", "error");
         }
       } catch (e) {
-        notify("Profile changes were not saved to the server. Please try again.", "error");
+        notify(persistenceFailureMessage("Saving company settings", e), "error");
         return;
       }
+    } else {
+      setCompany(draft);
+      setDraft(draft);
     }
-    const savedCompany = IS_CONFIGURED ? { ...confirmedDraft } : draft;
-    setCompany(savedCompany);
-    setDraft(savedCompany);
-    window.__smartManagerCompany = savedCompany;
-    try { localStorage.setItem("bs_company_profile", JSON.stringify(savedCompany)); } catch(_e){}
     notify("Company profile saved ✓");
   }
 
@@ -32892,7 +32910,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
           <p className="text-[12.5px] text-slate-600 leading-relaxed mb-2">{currentRole.description}</p>
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`text-[10.5px] font-medium px-2 py-0.5 rounded-full ${canManage ? "bg-[#16A34A]/10 text-[#16A34A]" : "bg-slate-100 text-slate-500"}`}>
-              {canManage ? "Full write access" : "Read-only"}
+              {canManageCompanySettings ? "Settings administrator" : "Read-only Settings access"}
             </span>
             <span className="text-[10.5px] text-slate-400">{currentRole.allowedModules.length} of {MODULES.length} modules visible</span>
             {currentRole.primaryModules.length > 0 && currentRole.primaryModules.length < currentRole.allowedModules.length && (
@@ -32913,17 +32931,17 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
       <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(currentUser.role)} />
       {PASSKEY_READINESS_ROLES.has(currentUser.role) && <QuarterlySecurityReviewChecklist companyName={company.name} companyId={company.id} userId={currentUser.id} />}
 
-      {!canManage && (
+      {!canManageCompanySettings && (
         <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
           <EmptyState
             icon={Lock}
             title="Restricted to full-write roles"
-            hint={`You are viewing as ${currentUser.role} (${canManage ? "full write access" : "read-only"}). Company profile and module entitlements need a role with full write access — switch roles above to see them.`}
+            hint={`You are viewing as ${currentUser.role}. Company profile settings require an Organization Owner, CEO, Super Administrator, or System Administrator. Your active access remains unchanged.`}
           />
         </section>
       )}
 
-      {canManage && (
+      {canManageCompanySettings && (
         <>
           {/* ══════ COMPANY PROFILE ══════ */}
           <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -33414,17 +33432,17 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
 
                     {/* Save button — always visible */}
                     <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-                      <button onClick={saveProfile}
-                        disabled={!dirty}
-                        className={`flex items-center gap-2 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl transition-all ${dirty?"bg-[#16A34A] hover:bg-[#15803D] shadow-sm":"bg-slate-200 cursor-not-allowed"}`}>
-                        <Save size={14}/> Save Profile
+                      <button type="button" onClick={saveProfile}
+                        disabled={!dirty || workspaceSettingsMutation.isPending}
+                        className={`flex items-center gap-2 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl transition-all ${dirty && !workspaceSettingsMutation.isPending?"bg-[#16A34A] hover:bg-[#15803D] shadow-sm":"bg-slate-200 cursor-not-allowed"}`}>
+                        <Save size={14}/> {workspaceSettingsMutation.isPending ? "Saving…" : "Save Profile"}
                       </button>
                       {dirty && (
                         <button onClick={()=>setDraft(company)} className="text-[12.5px] font-medium text-slate-500 hover:text-slate-700">
                           Discard changes
                         </button>
                       )}
-                      {!dirty && <p className="text-[12px] text-[#16A34A] font-semibold">✓ Profile is up to date</p>}
+                      {!dirty && !workspaceSettingsMutation.isPending && <p className="text-[12px] text-[#16A34A] font-semibold">✓ Profile is up to date</p>}
                     </div>
                   </div>
                 </div>
@@ -33594,7 +33612,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, cur
                     </p>
                   </div>
                 </div>
-                <ToggleSwitch on={on} disabled={isCore} onChange={() => onToggleModule(m.id)} label={`${on ? "Disable" : "Enable"} ${m.label} module`} />
+                <ToggleSwitch on={on} disabled={isCore || moduleSettingPending} onChange={() => onToggleModule(m.id)} label={`${on ? "Disable" : "Enable"} ${m.label} module`} />
               </div>
             );
           })}
@@ -34056,37 +34074,48 @@ function BranchesManager() {
   ], { mapRow: (r) => ({ id: r.id, dbId: r.id, name: r.name, address: r.address || "", city: r.city || "", isHeadquarters: r.is_headquarters }) });
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", address: "", city: "" });
+  const [saving, setSaving] = useState(false);
 
   async function addBranch(e) {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    if (!form.name.trim() || saving) return;
     const draft = { id: docId("BR"), name: form.name.trim(), address: form.address, city: form.city, isHeadquarters: false };
-    branches.setRows((prev) => [...prev, draft]);
-    setForm({ name: "", address: "", city: "" });
-    setShowForm(false);
-    notify(`Branch added: ${draft.name}`);
-    if (IS_CONFIGURED) {
-      try {
+    setSaving(true);
+    try {
+      if (requiresConfirmedPersistence()) {
         const header = await sb("branches").insert({ name: draft.name, address: draft.address, city: draft.city }).single().run();
-        if (header?.id) branches.setRows((prev) => prev.map((b) => (b.id === draft.id ? { ...b, dbId: header.id } : b)));
-      } catch (_e) { notify("Branch added locally, but saving to the server failed.", "error"); }
+        if (!header?.id) throw buildConfirmedMutationError({ table: "branches", method: "POST", status: 200 });
+        branches.setRows((prev) => [...prev, { ...draft, dbId: header.id }]);
+      } else {
+        branches.setRows((prev) => [...prev, draft]);
+      }
+      setForm({ name: "", address: "", city: "" });
+      setShowForm(false);
+      notify(`Branch added: ${draft.name}`);
+    } catch (error) {
+      notify(persistenceFailureMessage("Adding the branch", error), "error");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function deleteBranch(id) {
     const b = branches.rows.find((x) => x.id === id);
     if (b?.isHeadquarters) { notify("The headquarters branch can't be removed.", "error"); return; }
-    branches.setRows((prev) => prev.filter((x) => x.id !== id));
-    if (IS_CONFIGURED && b?.dbId) {
-      try { await sb("branches").eq("id", b.dbId).delete().run(); } catch (_e) { notify("Couldn't delete the branch on the server.", "error"); }
+    if (!b) return;
+    if (requiresConfirmedPersistence()) {
+      if (!b.dbId) { notify("This branch is not linked to a confirmed server record. Refresh Settings before deleting it.", "error"); return; }
+      try { await sb("branches").eq("id", b.dbId).delete().single().run(); } catch (error) { notify(persistenceFailureMessage("Deleting the branch", error), "error"); return; }
     }
+    branches.setRows((prev) => prev.filter((x) => x.id !== id));
+    notify(`Branch deleted: ${b.name}`);
   }
 
   return (
     <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-[14.5px] font-semibold text-[#111827]">Branches</h2>
-        <button onClick={() => setShowForm((s) => !s)} className="btn-secondary text-[12px] font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5"><Plus size={13} /> New Branch</button>
+        <button type="button" disabled={saving} onClick={() => setShowForm((s) => !s)} className="btn-secondary text-[12px] font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 disabled:opacity-50"><Plus size={13} /> New Branch</button>
       </div>
       <p className="text-[12.5px] text-slate-500 mb-4">
         A real registry of your company physical locations. Honest scope: only POS transactions currently record which branch a sale happened at (a real, working column) — Sales, HR, and Finance do not yet filter or report by branch. Extending that everywhere is a genuine, larger follow-up, not done here.
@@ -34097,7 +34126,7 @@ function BranchesManager() {
           <input className={inputClass} value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="City" />
           <div className="flex gap-2">
             <input className={inputClass} value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} placeholder="Address (optional)" />
-            <button type="submit" className="btn-primary text-white text-[12px] font-medium px-3 rounded-lg shrink-0">Add</button>
+            <button type="submit" disabled={saving} className="btn-primary text-white text-[12px] font-medium px-3 rounded-lg shrink-0 disabled:opacity-50">{saving ? "Saving…" : "Add"}</button>
           </div>
         </form>
       )}
@@ -34151,22 +34180,28 @@ function DepartmentsManager({ employeesHook }) {
   const departments = useCompanyTable("departments", [], { order: { col: "name", ascending: true }, mapRow: (r) => ({ id: r.id, dbId: r.id, name: r.name }) });
   const [draft, setDraft] = useState("");
   const [kit, setKit] = useState("");
+  const [saving, setSaving] = useState(false);
 
   async function installKit() {
     const names = INDUSTRY_DEPT_KITS[kit];
-    if (!names) return;
+    if (!names || saving) return;
     const missing = names.filter((n) => !departments.rows.some((d) => d.name.toLowerCase() === n.toLowerCase()));
     if (missing.length === 0) { notify(`${kit} departments already exist — nothing to add.`); return; }
     const rows = missing.map((n, i) => ({ id: `DEP-KIT-${Date.now()}-${i}`, name: n }));
-    departments.setRows((prev) => [...prev, ...rows].sort((a, b) => a.name.localeCompare(b.name)));
-    notify(`${kit} starter kit installed — ${missing.length} department(s) created, existing ones untouched.`);
-    if (IS_CONFIGURED) {
-      for (const row of rows) {
-        try {
-          const header = await sb("departments").insert({ name: row.name }).single().run();
-          if (header?.id) departments.setRows((prev) => prev.map((d) => (d.id === row.id ? { ...d, dbId: header.id } : d)));
-        } catch (_e) { notify(`"${row.name}" saved locally, but the server update failed.`, "error"); }
+    setSaving(true);
+    try {
+      if (requiresConfirmedPersistence()) {
+        const savedRows = await sb("departments").insert(rows.map((row) => ({ name: row.name }))).run();
+        if (!Array.isArray(savedRows) || savedRows.length !== rows.length || savedRows.some((row) => !row?.id)) throw buildConfirmedMutationError({ table: "departments", method: "POST", status: 200 });
+        departments.setRows((prev) => [...prev, ...rows.map((row, index) => ({ ...row, dbId: savedRows[index].id }))].sort((a, b) => a.name.localeCompare(b.name)));
+      } else {
+        departments.setRows((prev) => [...prev, ...rows].sort((a, b) => a.name.localeCompare(b.name)));
       }
+      notify(`${kit} starter kit installed — ${missing.length} department(s) created, existing ones untouched.`);
+    } catch (error) {
+      notify(persistenceFailureMessage(`Installing the ${kit} department kit`, error), "error");
+    } finally {
+      setSaving(false);
     }
   }
   const headcount = (name) => employeesHook.rows.filter((e) => (e.department || "").toLowerCase() === name.toLowerCase()).length;
@@ -34175,16 +34210,23 @@ function DepartmentsManager({ employeesHook }) {
   async function addDept(e) {
     e.preventDefault();
     const name = draft.trim();
-    if (!name || departments.rows.some((d) => d.name.toLowerCase() === name.toLowerCase())) return;
+    if (!name || saving || departments.rows.some((d) => d.name.toLowerCase() === name.toLowerCase())) return;
     const row = { id: `DEP-${Date.now()}`, name };
-    departments.setRows((prev) => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)));
-    setDraft("");
-    notify(`Department added: ${name}`);
-    if (IS_CONFIGURED) {
-      try {
+    setSaving(true);
+    try {
+      if (requiresConfirmedPersistence()) {
         const header = await sb("departments").insert({ name }).single().run();
-        if (header?.id) departments.setRows((prev) => prev.map((d) => (d.id === row.id ? { ...d, dbId: header.id } : d)));
-      } catch (_e) { notify("Saved locally, but the server update failed.", "error"); }
+        if (!header?.id) throw buildConfirmedMutationError({ table: "departments", method: "POST", status: 200 });
+        departments.setRows((prev) => [...prev, { ...row, dbId: header.id }].sort((a, b) => a.name.localeCompare(b.name)));
+      } else {
+        departments.setRows((prev) => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)));
+      }
+      setDraft("");
+      notify(`Department added: ${name}`);
+    } catch (error) {
+      notify(persistenceFailureMessage("Adding the department", error), "error");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -34194,14 +34236,14 @@ function DepartmentsManager({ employeesHook }) {
       <p className="text-[12.5px] text-slate-500 mt-1 mb-4">A real managed list — with each department's real live headcount. Creating one here does not rewrite existing free-text values on employees; it gives new records a list to converge on.</p>
       <form onSubmit={addDept} className="flex gap-2 mb-4 max-w-sm">
         <input className={inputClass} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="e.g. Logistics" />
-        <button type="submit" disabled={!draft.trim()} className="btn-primary text-white text-[12px] font-medium rounded-lg px-3.5 shrink-0 disabled:opacity-40">Add</button>
+        <button type="submit" disabled={!draft.trim() || saving} className="btn-primary text-white text-[12px] font-medium rounded-lg px-3.5 shrink-0 disabled:opacity-40">{saving ? "Saving…" : "Add"}</button>
       </form>
       <div className="flex gap-2 mb-4 max-w-md items-center">
         <select className={inputClass} value={kit} onChange={(e) => setKit(e.target.value)}>
           <option value="">Industry starter kit…</option>
           {Object.keys(INDUSTRY_DEPT_KITS).map((k) => <option key={k} value={k}>{k} — {INDUSTRY_DEPT_KITS[k].length} departments</option>)}
         </select>
-        <button onClick={installKit} disabled={!kit} className="text-[12px] font-medium border border-[#16A34A]/40 text-[#16A34A] rounded-lg px-3.5 py-2 shrink-0 hover:bg-[#16A34A]/5 disabled:opacity-40">Install kit</button>
+        <button type="button" onClick={installKit} disabled={!kit || saving} className="text-[12px] font-medium border border-[#16A34A]/40 text-[#16A34A] rounded-lg px-3.5 py-2 shrink-0 hover:bg-[#16A34A]/5 disabled:opacity-40">{saving ? "Saving…" : "Install kit"}</button>
       </div>
       <div className="flex flex-wrap gap-2">
         {departments.rows.map((d) => (
@@ -39427,6 +39469,12 @@ function workspaceLogoPayload(dataUrl) {
   const match = /^data:(image\/(?:png|jpeg|webp)|image\/svg\+xml);base64,([A-Za-z0-9+/]+={0,2})$/.exec(dataUrl);
   if (!match) throw new Error("Choose a PNG, JPEG, WebP, or SVG logo under 2 MB.");
   return { mimeType: match[1], base64: match[2] };
+}
+
+function workspaceCoverPayload(dataUrl) {
+  const payload = workspaceLogoPayload(dataUrl);
+  if (payload?.mimeType === "image/svg+xml") throw new Error("Choose a PNG, JPEG, or WebP cover image under 5 MB.");
+  return payload;
 }
 
 function WorkspaceBrandingControls({ logo, primaryColor, accentColor, onLogoChange, onPrimaryColorChange, onAccentColorChange }) {
@@ -47856,31 +47904,32 @@ function SmartManager() {
       .catch(() => { /* keep the "everything enabled" default rather than block on a failed fetch */ });
   }, [company.id]);
 
+  const [moduleSettingPending, setModuleSettingPending] = useState(false);
   async function toggleModule(id) {
-    if (id === "dashboard") return;
+    if (id === "dashboard" || moduleSettingPending) return;
     const next = new Set(enabledModules);
     const turningOff = next.has(id);
     if (turningOff) next.delete(id); else next.add(id);
-    setEnabledModules(next);
-
-    // Don't strand the user inside a module they just disabled.
-    if (turningOff && active === id) setActive("dashboard");
-
-    if (IS_CONFIGURED && company.id) {
-      // The connected project keeps tenant setup data in the generic
-      // name/status/data schema. The nested fields preserve the dashboard's
-      // module key and enabled flag without altering the one-file design.
-      try {
+    setModuleSettingPending(true);
+    try {
+      if (requiresConfirmedPersistence()) {
         const existing = await sb("company_modules").select("id").eq("company_id", company.id).eq("name", id).run();
         const record = { company_id: company.id, name: id, status: !turningOff ? "active" : "disabled", data: { module_key: id, enabled: !turningOff } };
         if (existing?.[0]?.id) {
-          await sb("company_modules").eq("id", existing[0].id).update(record).run();
+          const saved = await sb("company_modules").eq("id", existing[0].id).update(record).single().run();
+          if (!saved?.id) throw buildConfirmedMutationError({ table: "company_modules", method: "PATCH", status: 200 });
         } else {
-          await sb("company_modules").insert(record).run();
+          const saved = await sb("company_modules").insert(record).single().run();
+          if (!saved?.id) throw buildConfirmedMutationError({ table: "company_modules", method: "POST", status: 200 });
         }
-      } catch (e) {
-        notify("Couldn't save the module setting to the server.", "error");
       }
+      setEnabledModules(next);
+      if (turningOff && active === id) setActive("dashboard");
+      notify(`${MODULES.find((module) => module.id === id)?.label || "Module"} ${turningOff ? "disabled" : "enabled"}.`);
+    } catch (error) {
+      notify(persistenceFailureMessage("Updating the module setting", error), "error");
+    } finally {
+      setModuleSettingPending(false);
     }
   }
 
@@ -48431,6 +48480,7 @@ function SmartManager() {
               setCompany={setCompany}
               enabledModules={enabledModules}
               onToggleModule={toggleModule}
+              moduleSettingPending={moduleSettingPending}
               currentUser={currentUser}
               setCurrentUser={setCurrentUser}
               canManage={canManage}
