@@ -969,7 +969,7 @@ export function mapLeadRow(r) {
     currency: r.currency || data.currency || "TZS",
     owner: r.owner_id || data.owner_id || r.owner || data.owner || "Unassigned",
     email: r.email || data.email || "", phone: r.phone || data.phone || "",
-    industry: r.industry || data.industry || "General", score: r.score ?? data.score ?? 50,
+    industry: r.industry || data.industry || "General", score: r.score ?? data.score ?? null,
     lastActivity: r.last_activity_at || data.last_activity_at ? new Date(r.last_activity_at || data.last_activity_at).toLocaleDateString() : "—",
     expectedCloseDate: r.expected_close_date || data.expected_close_date || r.expectedDate || null,
     createdAt: r.created_at || null,
@@ -6993,7 +6993,7 @@ function CRM({ crm, invoices, expenses, suppliers }) {
       name: String(r.contact_name).trim(), company: String(r.company_name || "").trim(),
       stage: "New", value: 0, currency: "TZS000", owner: "Unassigned",
       email: String(r.email || "").trim(), phone: String(r.phone || "").trim(),
-      industry: "General", score: 50, lastActivity: "—", expectedCloseDate: null,
+      industry: "General", score: null, lastActivity: "—", expectedCloseDate: null,
     }));
     if (IS_CONFIGURED) {
       try {
@@ -7059,7 +7059,7 @@ function CRM({ crm, invoices, expenses, suppliers }) {
       phone: form.phone,
       industry: form.industry || "General",
       lastActivity: "Just now",
-      score: 50,
+      score: null,
       expectedCloseDate: form.expectedCloseDate || null,
     };
 
@@ -7220,7 +7220,7 @@ function CRM({ crm, invoices, expenses, suppliers }) {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-[13px] font-medium text-[#111827] leading-snug">{lead.company}</p>
-                      <span className="text-[10px] font-mono text-slate-400 shrink-0">{lead.score}</span>
+                      <span className="text-[10px] font-mono text-slate-400 shrink-0" title={lead.score === null ? "No confirmed lead score" : `Confirmed lead score: ${lead.score}`}>{lead.score ?? "—"}</span>
                     </div>
                     <p className="text-[11px] text-slate-500 mt-0.5">{lead.name}</p>
                     <div className="flex items-center justify-between mt-2.5">
