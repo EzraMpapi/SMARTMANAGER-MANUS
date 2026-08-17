@@ -621,3 +621,7 @@
 - [x] Improve the POS receipt layout and print path using only confirmed sale, payment, item, tax, and company data.
 - [x] Add regression coverage and documentation for POS receipt integrity, printer limits, and deferred verification or delivery features.
 - [ ] Complete authenticated on-device receipt acceptance for 58 mm, 80 mm, and configured A4 printer profiles when supported printer access is available.
+- [x] Map the complete pasted_content_7.txt file-management plan to browser download capabilities, confirmed generated documents, durable server storage, or truthful deferred/rejected status.
+- [x] Implement safe browser-download naming and user-visible guidance for confirmed Smart Manager documents without claiming direct filesystem access or local-only durability.
+- [x] Add regression coverage and documentation for pasted_content_7.txt browser, consent, cache, and storage boundaries.
+- [ ] Complete authenticated browser acceptance for a confirmed CSV export and a POS receipt Save-as-PDF flow when a workspace session and user download dialog are available.

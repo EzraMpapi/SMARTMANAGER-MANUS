@@ -5327,19 +5327,32 @@ export function createDashboardPdfDocument({ companyName = "BusinessSphere ERP",
 
 function downloadDashboardCsv(sections, filename) {
   if (typeof document === "undefined") return;
+  const suggestedFilename = filename || buildBrowserDownloadFilename("report", "dashboard", "csv");
   const blob = new Blob([serializeDashboardSectionsToCsv(sections)], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = filename;
+  link.download = suggestedFilename;
   document.body.appendChild(link);
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  notify(`Browser download requested: ${suggestedFilename}. Your browser controls the save location.`);
 }
 
 function safeExportFilePart(value) {
   return String(value || "businesssphere").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "businesssphere";
+}
+
+// A web application can suggest a filename but cannot silently choose a
+// person's Downloads folder or create directories on their device. Keep the
+// suggested names predictable for manual organization without claiming a
+// filesystem path that the browser has not granted.
+function buildBrowserDownloadFilename(category, reference, extension) {
+  const safeCategory = safeExportFilePart(category || "document");
+  const safeReference = safeExportFilePart(reference || "record");
+  const safeExtension = String(extension || "txt").replace(/[^a-z0-9]/gi, "").toLowerCase() || "txt";
+  return `smart-manager-${safeCategory}-${safeReference}-${TODAY.toISOString().slice(0, 10)}.${safeExtension}`;
 }
 
 function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClose, onSaved }) {
@@ -37505,6 +37518,7 @@ function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company, de
     const returnRows = (returns || []).map((returnRecord) => `<div class="return-row"><span>${escapeHtml(returnRecord.reason || "Return")} · ${escapeHtml(returnRecord.date || "Date not recorded")}</span><strong>−${currencyCode} ${money(Number(returnRecord.refundTotal || 0))}k</strong></div>`).join("");
     const businessContact = [company?.address, company?.phone, company?.email, company?.tin ? `TIN: ${company.tin}` : ""].filter(Boolean).map(escapeHtml).join("<br/>");
     const brandLogo = showLogo && company?.logo ? `<img class="brand-logo" src="${escapeHtml(company.logo)}" alt="${escapeHtml(company.name || "Company")} logo"/>` : "";
+    const suggestedFilename = buildBrowserDownloadFilename("receipt", receipt.id || "sale", "pdf");
     const receiptCopy = (copyNumber) => `
       <section class="receipt-copy">
         <header class="receipt-header">${brandLogo}<h1>${escapeHtml(company?.name || "Smart Manager")}</h1>${company?.tagline ? `<p class="tagline">${escapeHtml(company.tagline)}</p>` : ""}${businessContact ? `<p class="business-contact">${businessContact}</p>` : ""}</header>
@@ -37520,7 +37534,7 @@ function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company, de
         <footer>${escapeHtml(footer)}${copyCount > 1 ? `<br/>Copy ${copyNumber} of ${copyCount}` : ""}</footer>
       </section>`;
     win.document.write(`
-      <html><head><title>Receipt ${receipt.id}</title>
+      <html><head><title>${escapeHtml(suggestedFilename.replace(/\.pdf$/i, ""))}</title>
       <style>
         @page { size: ${width === "A4" ? "A4" : `${width} auto`}; margin: ${width === "A4" ? "12mm" : "4mm"}; }
         * { box-sizing: border-box; } body { font-family: Arial, Helvetica, sans-serif; color:#111827; padding: ${width === "A4" ? "18px" : "0"}; max-width: ${width === "A4" ? "190mm" : width}; margin: 0 auto; font-size: ${width === "58mm" ? "9px" : "11px"}; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -37533,6 +37547,7 @@ function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company, de
     win.document.close();
     win.focus();
     if (deviceProfile?.printerMode === "pdf_only") notify("Choose “Save as PDF” in the system print dialog to complete this receipt export.");
+    else notify(`Print dialog opened for ${receipt.id}. Your browser or printer controls the save location.`);
     win.print();
   }
 
@@ -37620,6 +37635,7 @@ function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company, de
           <button onClick={printReceipt} className="flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             <Printer size={13} /> Print Receipt
           </button>
+          <p className="px-1 text-center text-[10.5px] leading-relaxed text-slate-400">Printing opens your browser or system dialog. You choose the printer or save location; Smart Manager cannot create device folders automatically.</p>
           {allowReturn && !fullyReturned && (
             <button
               onClick={onOpenReturn}
