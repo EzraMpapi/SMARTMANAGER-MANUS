@@ -713,5 +713,6 @@
 - [x] Add configurable ESC/POS thermal receipt templates in TRA Portal settings.
 - [x] Add gateway degraded-status webhook alerts.
 - [x] Add multi-branch fiscal summary comparison chart for regional operations.
-- [ ] Add PDF and Excel export options for the multi-branch fiscal summary comparison chart in the TRA Portal.
-- [ ] Fix the undefined `lang` reference crash in TraPortalModule.jsx.
+- [x] Add PDF and Excel export options for the multi-branch fiscal summary comparison chart in the TRA Portal.
+- [x] Fix the undefined `lang` reference crash in TraPortalModule.jsx.
+- [ ] Integrate reference screen TRA Portal features: automated VAT calculation & monthly return pre-fill view, invoice-to-TRA processing pipeline status cards, permanent cryptographic audit trail view, sequential counter allocation monitor, and VFD direct-connection diagnostics.
