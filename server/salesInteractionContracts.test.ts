@@ -61,4 +61,10 @@ describe("Sales interaction and persistence contracts", () => {
     expect(dashboardSource).toContain("r.quotation_reference || (r.quotation_id ? \"linked\" : \"—\")");
     expect(dashboardSource).toContain("r.owner_name || r.owner_id || \"Unassigned\"");
   });
+
+  it("receives the CRM hook before evaluating an Invoice credit limit, so the guarded check cannot throw before persistence", () => {
+    expect(salesSource).toContain("quotationsHook, crm, currentUser");
+    expect(salesSource).toContain('if (tab === "invoices" && crm?.rows)');
+    expect(dashboardSource).toContain('quotationsHook={quotations} crm={crm} currentUser={currentUser}');
+  });
 });

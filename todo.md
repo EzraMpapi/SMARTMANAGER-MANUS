@@ -647,3 +647,4 @@
 - [x] Add Settings persistence and interaction regression coverage, then run non-destructive validation without changing operational records.
 - [x] Repair Settings administrator recognition for the deployed `owner` role so authenticated workspace owners retain authorized company-settings access.
 - [x] Complete authenticated non-destructive Settings acceptance for representative saved preferences and denied-action recovery when a workspace session is available.
+- [x] Repair the authenticated Sales Invoice creation handler so its optional CRM credit-limit check cannot throw before a confirmed server write or meaningful retry-safe error.

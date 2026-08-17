@@ -9132,7 +9132,7 @@ function ContactFormPanel({ onClose, onSubmit }) {
 
 /* --------------------------------- SALES ------------------------------------ */
 
-function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, currentUser, intent, clearIntent }) {
+function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, currentUser, intent, clearIntent }) {
   const [tab, setTab] = useState("quotations");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
@@ -48422,7 +48422,7 @@ function SmartManager() {
             />
           )}
           {active === "crm" && <CRM crm={crm} invoices={invoices} expenses={expenses} suppliers={suppliers} />}
-          {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} currentUser={currentUser} intent={intent} clearIntent={clearIntent} />}
+          {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} crm={crm} currentUser={currentUser} intent={intent} clearIntent={clearIntent} />}
           {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
