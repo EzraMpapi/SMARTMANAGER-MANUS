@@ -689,3 +689,4 @@
 - [x] Add a truthful Settings workspace-connection status panel with loading, last-confirmed, unavailable, and retry states sourced from the protected backend query.
 - [x] Harden Collaboration Hub channel creation and message sending with server-confirmed state, retry-safe drafts, and duplicate-send protection.
 - [x] Harden Collaboration Hub calendar event and team workspace mutations with server-confirmed state and recoverable loading/error UI.
+- [x] Replace the Dashboard's simulated six-month trend with a truthful live-data trend or explicit empty state, preserving accurate KPI calculations and drill-down navigation.

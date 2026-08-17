@@ -28467,18 +28467,22 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
   const overdueInvs   = invoices.rows.filter(inv => inv.status !== "Paid" && inv.dueDate && new Date(inv.dueDate) < TODAY);
   const overdueValue  = overdueInvs.reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid||0)), 0);
 
-  // ── Simulated 6-month trend (based on live data as baseline) ─────────
-  const months = ["Feb","Mar","Apr","May","Jun","Jul"];
-  const trendData = months.map((m, i) => {
-    const factor = 0.7 + i * 0.06 + (Math.sin(i) * 0.05);
-    return {
-      month: m,
-      revenue:  Math.round(revenue  * factor / 1000),
-      expenses: Math.round(expenseTotal * factor / 1000),
-      profit:   Math.round(profit * factor / 1000),
-    };
-  });
-  trendData[5] = { month:"Jul", revenue: Math.round(revenue/1000), expenses: Math.round(expenseTotal/1000), profit: Math.round(profit/1000) };
+  // ── Confirmed six-month trend ────────────────────────────────────────
+  // Only dated invoice and expense rows contribute. When a tenant has no
+  // confirmed dated activity, the UI shows an explicit empty state instead
+  // of inventing historical movement from the current totals.
+  const trendMonths = useMemo(() => Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(TODAY.getFullYear(), TODAY.getMonth() - (5 - index), 1);
+    return { key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`, label: date.toLocaleDateString(undefined, { month: "short" }) };
+  }), []);
+  const trendData = useMemo(() => trendMonths.map(({ key, label }) => {
+    const monthInvoices = invoices.rows.filter((inv) => String(inv.date || "").startsWith(key));
+    const monthExpenses = expenses.rows.filter((expense) => String(expense.date || "").startsWith(key));
+    const monthRevenue = monthInvoices.reduce((sum, inv) => sum + (inv.status === "Paid" ? lineTotal(inv.items || []).total : (inv.amountPaid || 0)), 0);
+    const monthExpenseTotal = monthExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    return { month: label, revenue: Math.round(monthRevenue / 1000), expenses: Math.round(monthExpenseTotal / 1000), profit: Math.round((monthRevenue - monthExpenseTotal) / 1000) };
+  }), [expenses.rows, invoices.rows, trendMonths]);
+  const hasTrendData = trendData.some((entry) => entry.revenue > 0 || entry.expenses > 0);
 
   // ── System health score ──────────────────────────────────────────────
   const healthScore = Math.min(100, Math.max(0, Math.round(
@@ -28571,7 +28575,7 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
             <h3 className="text-[14px] font-semibold text-[#111827]">Revenue vs Expenses vs Profit Trend</h3>
-            <p className="text-[12px] text-slate-400">6-month simulated trend · TZS thousands</p>
+            <p className="text-[12px] text-slate-400">Confirmed invoice and expense activity · TZS thousands</p>
           </div>
           <div className="flex gap-4 text-[12px]">
             {[["Revenue","#2563EB"],["Expenses","#F59E0B"],["Profit","#16A34A"]].map(([l,col])=>(
@@ -28579,17 +28583,26 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
             ))}
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={200}>
-          <ComposedChart data={trendData} margin={{left:-10,right:4,top:0,bottom:0}}>
-            <CartesianGrid vertical={false} stroke="#F3F4F6"/>
-            <XAxis dataKey="month" tick={{fontSize:11}} axisLine={false} tickLine={false}/>
-            <YAxis tick={{fontSize:11}} axisLine={false} tickLine={false}/>
-            <Tooltip formatter={(v,name)=>["TZS "+money(v)+"k",name.charAt(0).toUpperCase()+name.slice(1)]}/>
-            <Area type="monotone" dataKey="revenue"  fill="#2563EB18" stroke="#2563EB" strokeWidth={2.5} dot={false}/>
-            <Area type="monotone" dataKey="expenses" fill="#F59E0B18" stroke="#F59E0B" strokeWidth={2}   dot={false}/>
-            <Line type="monotone" dataKey="profit"   stroke="#16A34A" strokeWidth={2.5} dot={{r:4,fill:"#16A34A"}} strokeDasharray="5 3"/>
-          </ComposedChart>
-        </ResponsiveContainer>
+        {hasTrendData ? (
+          <ResponsiveContainer width="100%" height={200}>
+            <ComposedChart data={trendData} margin={{left:-10,right:4,top:0,bottom:0}}>
+              <CartesianGrid vertical={false} stroke="#F3F4F6"/>
+              <XAxis dataKey="month" tick={{fontSize:11}} axisLine={false} tickLine={false}/>
+              <YAxis tick={{fontSize:11}} axisLine={false} tickLine={false}/>
+              <Tooltip formatter={(v,name)=>["TZS "+money(v)+"k",name.charAt(0).toUpperCase()+name.slice(1)]}/>
+              <Area type="monotone" dataKey="revenue"  fill="#2563EB18" stroke="#2563EB" strokeWidth={2.5} dot={false}/>
+              <Area type="monotone" dataKey="expenses" fill="#F59E0B18" stroke="#F59E0B" strokeWidth={2} dot={false}/>
+              <Line type="monotone" dataKey="profit" stroke="#16A34A" strokeWidth={2.5} dot={{r:4,fill:"#16A34A"}} strokeDasharray="5 3"/>
+            </ComposedChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex min-h-[200px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-5 text-center">
+            <div>
+              <p className="text-[13px] font-medium text-slate-600">No confirmed dated activity yet</p>
+              <p className="mt-1 text-[11.5px] text-slate-400">The six-month trend will appear after dated invoice or expense records are confirmed by the server.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quick module links */}
