@@ -632,7 +632,7 @@
 - [x] Inventory active dashboard buttons, menus, shortcuts, and role-gated controls against their real handlers or availability feedback.
 - [x] Repair controls that lack a safe supported response while preserving tenant scope, non-destructive behavior, and existing module access rules.
 - [x] Add interaction-contract regression coverage and non-destructive public browser evidence for the repaired control set.
-- [ ] Complete authenticated representative-module button and menu acceptance without creating, changing, or deleting operational records.
+- [x] Complete authenticated representative-module button and menu acceptance without creating, changing, or deleting operational records.
 - [x] Inventory Sales module buttons, menus, mutations, authorization gates, and denial/error feedback against their supported handlers.
 - [x] Repair Sales controls and convert authorization or database denials into clear recoverable feedback without weakening database protections.
 - [x] Add regression coverage and non-destructive validation for Sales module interactions, server-confirmation, and denial/error paths.
@@ -649,4 +649,4 @@
 - [x] Complete authenticated non-destructive Settings acceptance for representative saved preferences and denied-action recovery when a workspace session is available.
 - [x] Repair the authenticated Sales Invoice creation handler so its optional CRM credit-limit check cannot throw before a confirmed server write or meaningful retry-safe error.
 - [x] Preserve typed Sales Invoice document, customer, issue-date, and due-date fields through generic-table normalization so server storage matches the repaired schema contract.
-- [ ] Repair the authenticated Finance General Ledger view so it does not reference an undefined `entries` collection and safely displays confirmed ledger data or an empty state.
+- [x] Repair the authenticated Finance General Ledger view so it does not reference an undefined `entries` collection and safely displays confirmed ledger data or an empty state.
