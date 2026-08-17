@@ -41,3 +41,7 @@ The CRM New Lead drawer also now prevents duplicate submissions while the confir
 | Bounded-heap production build | Passed; 2,653 modules transformed |
 
 No CRM records, user records, credentials, provider settings, Resend configuration, RLS policy, or tenant boundary were changed during this workspace upgrade.
+
+## Published Live Acceptance
+
+After the published release, an authenticated KMKM owner session loaded the CRM pipeline without changing any record. The same **QA Tenant A Confirmation / QA Acceptance Lead A2** card that previously displayed `50` now displays **`—`**, matching the independent read-only database result of no stored score. This confirms the public deployment is now serving the repaired client bundle rather than the earlier cached implementation.
