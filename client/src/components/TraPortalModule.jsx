@@ -773,6 +773,19 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                       </td>
                     </tr>
                   ))}
+                  {sortedVatReceipts.length > 0 && (
+                    <tr className="bg-slate-50/80 border-t-2 border-slate-200 font-bold dark:bg-slate-800/80 dark:border-slate-700">
+                      <td colSpan={2} className="px-6 py-3.5 text-slate-800 dark:text-slate-200">
+                        Total for Filtered Results ({sortedVatReceipts.length} receipts):
+                      </td>
+                      <td className="px-6 py-3.5 font-mono text-slate-900 dark:text-white">
+                        TZS {vatTotalGross.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-3.5 font-mono text-emerald-600" colSpan={3}>
+                        VAT: TZS {vatTotalVat.toLocaleString()}
+                      </td>
+                    </tr>
+                  )}
                   {sortedVatReceipts.length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-slate-400">No fiscal receipts found for the selected month range and search query.</td>
