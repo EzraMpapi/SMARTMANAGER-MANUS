@@ -24,7 +24,7 @@ This record covers the first focused upgrade under the attached enterprise-trans
 | Server parse | `server/routers.ts` parsed successfully through esbuild after the managed server restart, confirming the prior browser-console transform entry was historical/stale. |
 | Tenant and permission boundary | The live policy inspection found tenant predicates based on `current_company_id()`; service reads and writes continue to derive identity and company from `resolveVerifiedProfile`. |
 | Browser/runtime inspection | The authenticated workspace loaded normally after restart with confirmed-data dashboard states and no client-console output. Direct first-area visual validation will be repeated against the newly published version. |
-| Full production bundle | The Vite production build transformed 2,653 modules but was terminated by the constrained sandbox during chunk rendering on three attempts. This is recorded as an environment-resource constraint, not a claimed successful build. |
+| Full production bundle | Initial unbounded Vite renders were terminated by the constrained sandbox during chunk rendering. Retrying with a bounded Node heap completed successfully: 2,653 modules transformed; client and server bundles were written. The output retains a 6.24 MB uncompressed dashboard chunk warning, so further safe code-splitting remains a measured follow-up rather than a hidden issue. |
 
 ## Security and data integrity position
 
