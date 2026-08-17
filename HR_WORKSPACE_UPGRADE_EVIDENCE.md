@@ -20,3 +20,7 @@ Human Resources was selected after Procurement because employee status, team ros
 Focused Human Resources persistence contracts passed with **1 file / 2 tests**, covering confirmed mutation ordering, failure preservation, and duplicate-submit prevention. Static TypeScript validation also passed. The complete suite passed with **94 files / 306 tests**, alongside 5 intentionally gated files and 8 skips. The bounded-heap production build passed with 2,653 modules transformed. Authenticated non-destructive browser acceptance remains in the final validation phase.
 
 No employee, leave request, attendance row, candidate, performance review, training assignment, benefit enrollment, payroll record, RLS policy, credential, provider configuration, or Resend setting changed during this repair.
+
+## Published Acceptance Observation
+
+The authenticated KMKM owner workspace opened the Human Resources module and rendered the truthful zero-record employee and leave state without a runtime error. However, the public origin initially served an older dashboard asset that still contained the previous `This period` label rather than the repaired `Current status` label. The deployed source was therefore treated as stale and not recorded as final acceptance of the label correction. No people, leave, attendance, payroll, or access record was changed during this non-destructive review.
