@@ -37519,6 +37519,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   const [customerId, setCustomerId] = useState("guest");
   const [receipt, setReceipt] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [inspectingQueueItem, setInspectingQueueItem] = useState(null);
   const scannerLastAcceptedRef = useRef(0);
   const queueScope = useMemo(() => ({ companyId: company?.id || "workspace", userId: currentUser?.id || "session" }), [company?.id, currentUser?.id]);
   const [pendingSales, setPendingSales] = useState([]);
@@ -37998,18 +37999,17 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
         {pendingSales.length > 0 && (
           <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50/70 p-2.5">
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <p className="text-[11px] font-semibold text-sky-900">Pending sync</p>
-              <span className="text-[10px] text-sky-700">Not completed or counted in revenue</span>
+              <p className="text-[11px] font-semibold text-sky-900">Pending sync ({pendingSales.length})</p>
+              <span className="text-[10px] text-sky-700">Offline queue</span>
             </div>
-            <p className="mb-2 text-[10px] leading-relaxed text-sky-800">These sales require server confirmation before inventory, revenue, receipt output, or customer balances change. Retry after the connection is restored.</p>
+            <p className="mb-2 text-[10px] leading-relaxed text-sky-800">These sales require server confirmation before inventory, revenue, receipt output, or customer balances change. Click any queue item to inspect details.</p>
             <div className="space-y-1.5 max-h-28 overflow-y-auto">
               {pendingSales.map((record) => (
-                <div key={record.idempotencyKey} className="rounded-md bg-white px-2 py-2 text-[11px]">
-                  <div className="flex items-center justify-between gap-2"><span className="font-mono text-slate-700 truncate">{record.docNumber}</span><span className={record.status === "needs_attention" ? "text-[#EF4444] shrink-0" : "text-sky-700 shrink-0"}>{record.status === "needs_attention" ? "Needs attention" : record.status === "syncing" ? "Syncing…" : "Waiting"}</span></div>
-                  {record.lastError && record.status === "needs_attention" && <p className="mt-1 text-[10px] text-[#EF4444] line-clamp-2">{record.lastError}</p>}
-                  <div className="sm-mobile-action-group flex gap-1.5 mt-1.5">
-                    <button type="button" disabled={record.status === "syncing" || busy} onClick={() => { void synchronizePendingSale(record); }} className="flex-1 rounded border border-sky-200 py-1 text-sky-800 hover:bg-sky-100 disabled:opacity-40">Retry sync</button>
-                    <button type="button" disabled={record.status === "syncing"} onClick={() => persistPendingSales(pendingSales.filter((pending) => pending.idempotencyKey !== record.idempotencyKey))} className="rounded border border-slate-200 px-2 py-1 text-slate-500 hover:text-[#EF4444] disabled:opacity-40">Discard</button>
+                <div key={record.idempotencyKey} onClick={() => setInspectingQueueItem(record)} className="rounded-md bg-white px-2.5 py-2 text-[11px] cursor-pointer hover:border-sky-300 border border-slate-200/80 transition-colors">
+                  <div className="flex items-center justify-between gap-2"><span className="font-mono font-medium text-slate-800 truncate">{record.docNumber}</span><span className={record.status === "needs_attention" ? "text-[#EF4444] font-semibold shrink-0" : "text-sky-700 shrink-0"}>{record.status === "needs_attention" ? "Needs attention" : record.status === "syncing" ? "Syncing…" : "Waiting"}</span></div>
+                  <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500">
+                    <span>{record.items?.length || 0} items · TZS {money(record.total || 0)}k</span>
+                    <span className="text-sky-600 hover:underline">Inspect details →</span>
                   </div>
                 </div>
               ))}
@@ -38084,6 +38084,86 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
       </div>
 
       {receipt && <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} company={company} deviceProfile={deviceProfile} />}
+
+      {inspectingQueueItem && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/75">
+              <div>
+                <p className="text-[11px] text-slate-400 uppercase tracking-wide font-mono">Offline Queue Inspection</p>
+                <h3 className="text-[16px] font-bold text-[#111827] mt-0.5">{inspectingQueueItem.docNumber}</h3>
+              </div>
+              <button type="button" onClick={() => setInspectingQueueItem(null)} className="text-slate-400 hover:text-slate-600 p-1" aria-label="Close inspection"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto text-[13px]">
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/70 text-[12px]">
+                <div><span className="text-slate-400 block text-[10.5px]">Queue Status</span><strong className={inspectingQueueItem.status === "needs_attention" ? "text-[#EF4444]" : "text-sky-700"}>{inspectingQueueItem.status === "needs_attention" ? "Needs attention" : inspectingQueueItem.status === "syncing" ? "Syncing…" : "Waiting for connection"}</strong></div>
+                <div><span className="text-slate-400 block text-[10.5px]">Total Amount</span><strong className="font-mono">TZS {money(inspectingQueueItem.total || 0)}k</strong></div>
+                <div><span className="text-slate-400 block text-[10.5px]">Customer</span><strong>{inspectingQueueItem.customerName || "Guest sale"}</strong></div>
+                <div><span className="text-slate-400 block text-[10.5px]">Attempts</span><strong className="font-mono">{inspectingQueueItem.attempts || 0}</strong></div>
+              </div>
+
+              {inspectingQueueItem.lastError && (
+                <div className="rounded-xl border border-[#EF4444]/20 bg-[#EF4444]/5 p-3 text-[12px] text-[#EF4444]">
+                  <strong>Last Sync Error:</strong> {inspectingQueueItem.lastError}
+                </div>
+              )}
+
+              <div>
+                <h4 className="text-[12px] font-semibold text-slate-700 uppercase tracking-wide mb-2">Cart Items</h4>
+                <div className="space-y-1.5 border border-slate-200 rounded-xl p-2 bg-white">
+                  {(inspectingQueueItem.items || []).map((item, index) => (
+                    <div key={index} className="flex justify-between items-center py-1.5 border-b border-slate-100 last:border-0 text-[12.5px]">
+                      <div>
+                        <span className="font-medium text-[#111827]">{item.name}</span>
+                        <span className="text-[11px] text-slate-400 block font-mono">SKU: {item.sku} · {item.qty} × TZS {money(item.price)}k</span>
+                      </div>
+                      <span className="font-mono font-semibold">TZS {money(item.qty * item.price)}k</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[12px] font-semibold text-slate-700 uppercase tracking-wide mb-2">Payment Allocation</h4>
+                <div className="space-y-1.5 border border-slate-200 rounded-xl p-2 bg-white">
+                  {(inspectingQueueItem.payments || []).map((pay, index) => (
+                    <div key={index} className="flex justify-between items-center py-1 text-[12.5px]">
+                      <span className="text-slate-700">{pay.method}</span>
+                      <span className="font-mono font-semibold">TZS {money(pay.amount || 0)}k</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-400 bg-amber-50 border border-amber-200/70 p-2.5 rounded-xl">
+                This transaction is stored locally until connection is restored. Inspecting it does not alter inventory or revenue records.
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex gap-2">
+              <button
+                type="button"
+                disabled={inspectingQueueItem.status === "syncing"}
+                onClick={async () => {
+                  const item = inspectingQueueItem;
+                  setInspectingQueueItem(null);
+                  await synchronizePendingSale(item);
+                }}
+                className="flex-1 rounded-xl bg-[#16A34A] py-2 text-[12px] font-semibold text-white hover:bg-[#15803D] shadow-sm disabled:opacity-40"
+              >
+                Sync now
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectingQueueItem(null)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-[12px] font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </div>
   );

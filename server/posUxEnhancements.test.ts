@@ -16,4 +16,10 @@ describe("POS UX Enhancements", () => {
     expect(source).toContain("Processing transaction...");
     expect(source).toContain("animate-spin");
   });
+
+  it("includes offline queue inspection modal for viewing queued transactions", () => {
+    expect(source).toContain("Offline Queue Inspection");
+    expect(source).toContain("inspectingQueueItem");
+    expect(source).toContain("Cart Items");
+  });
 });
