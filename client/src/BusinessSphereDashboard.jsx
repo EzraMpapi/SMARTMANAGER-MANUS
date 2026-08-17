@@ -37845,8 +37845,38 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
     }
   }
 
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
+    <div className="space-y-4">
+      {!isOnline && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-[12.5px] text-amber-900 flex items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+            <span><strong>Network connection interrupted.</strong> POS counter is operating in offline pending-sync queue mode. Sales will queue securely until reconnection.</span>
+          </div>
+          <span className="text-[11px] font-mono text-amber-700">{pendingSales.length} queued</span>
+        </div>
+      )}
+      {busy && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12.5px] text-emerald-900 flex items-center gap-2.5 shadow-sm">
+          <span className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin shrink-0" />
+          <span><strong>Processing transaction...</strong> Communicating with server and updating inventory records.</span>
+        </div>
+      )}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
       {/* Product picker */}
       <div className="space-y-4 min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -38035,6 +38065,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
       </div>
 
       {receipt && <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} company={company} deviceProfile={deviceProfile} />}
+    </div>
     </div>
   );
 }
