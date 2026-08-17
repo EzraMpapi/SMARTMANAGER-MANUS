@@ -675,3 +675,4 @@
 - [x] Select and fully upgrade the Human Resources workspace as the next verified high-priority people-operations area, covering confirmed employee and leave truthfulness, server-confirmed workflows, error recovery, accessibility, responsive behavior, and regression evidence.
 - [x] Select and fully upgrade the Manufacturing workspace as the next verified high-priority operational area, covering confirmed production and work-order truthfulness, server-confirmed workflows, error recovery, accessibility, responsive behavior, and regression evidence.
 - [x] Select, fully upgrade, and verify the Projects & Collaboration workspace alongside POS offline queue hardening and regression tests, confirming zero syntax errors, 100% passing tests, and successful bounded production builds.
+- [x] Add an accessible pending-transaction count badge to the POS offline queue editing modal and verify it without changing queue persistence behavior.

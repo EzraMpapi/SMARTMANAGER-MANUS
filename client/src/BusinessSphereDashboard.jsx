@@ -38307,9 +38307,21 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
       {editingQueueItem && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/75">
-              <h3 className="text-[15px] font-bold text-[#111827]">Edit Queued Sale ({editingQueueItem.docNumber})</h3>
-              <button type="button" onClick={() => setEditingQueueItem(null)} className="text-slate-400 hover:text-slate-600 p-1"><X size={18} /></button>
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50/75">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-[15px] font-bold text-[#111827]">Edit Queued Sale ({editingQueueItem.docNumber})</h3>
+                  <span
+                    role="status"
+                    aria-label={`${pendingSales.length} pending offline transactions`}
+                    className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700"
+                  >
+                    {pendingSales.length} pending
+                  </span>
+                </div>
+                <p className="mt-1 text-[10.5px] text-slate-500">Pending offline transactions in this counter queue</p>
+              </div>
+              <button type="button" onClick={() => setEditingQueueItem(null)} className="shrink-0 text-slate-400 hover:text-slate-600 p-1" aria-label="Close edit queued sale"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4 text-[13px]">
               <div>

@@ -45,4 +45,10 @@ describe("POS UX Enhancements", () => {
     expect(source).toContain("Edit Queued Sale");
     expect(source).toContain("Save changes");
   });
+
+  it("shows an accessible badge with the current pending offline transaction count in the edit modal", () => {
+    expect(source).toContain("pending offline transactions");
+    expect(source).toContain("aria-label={`${pendingSales.length} pending offline transactions`}");
+    expect(source).toContain("{pendingSales.length} pending");
+  });
 });
