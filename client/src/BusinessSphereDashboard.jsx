@@ -38095,15 +38095,37 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
             </div>
             <p className="mb-2 text-[10px] leading-relaxed text-sky-800">These sales require server confirmation before inventory, revenue, receipt output, or customer balances change. Click any queue item to inspect details.</p>
             <div className="space-y-1.5 max-h-28 overflow-y-auto">
-              {pendingSales.map((record) => (
-                <div key={record.idempotencyKey} onClick={() => setInspectingQueueItem(record)} className="rounded-md bg-white px-2.5 py-2 text-[11px] cursor-pointer hover:border-sky-300 border border-slate-200/80 transition-colors">
-                  <div className="flex items-center justify-between gap-2"><span className="font-mono font-medium text-slate-800 truncate">{record.docNumber}</span><span className={record.status === "needs_attention" ? "text-[#EF4444] font-semibold shrink-0" : "text-sky-700 shrink-0"}>{record.status === "needs_attention" ? "Needs attention" : record.status === "syncing" ? "Syncing…" : "Waiting"}</span></div>
-                  <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500">
-                    <span>{record.items?.length || 0} items · TZS {money(record.total || 0)}k</span>
-                    <span className="text-sky-600 hover:underline">Inspect details →</span>
+              {pendingSales.map((record) => {
+                const hasFailed = record.status === "needs_attention" || Boolean(record.lastError);
+                return (
+                  <div
+                    key={record.idempotencyKey}
+                    onClick={() => setInspectingQueueItem(record)}
+                    title={record.lastError ? `Sync Error: ${record.lastError}` : "Click to inspect queued transaction details"}
+                    className={`rounded-md px-2.5 py-2 text-[11px] cursor-pointer border transition-colors ${
+                      hasFailed
+                        ? "bg-red-50/90 border-red-300 hover:border-red-400 text-red-900"
+                        : "bg-white border-slate-200/80 hover:border-sky-300 text-slate-800"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono font-medium truncate">{record.docNumber}</span>
+                      <span className={hasFailed ? "text-[#EF4444] font-bold shrink-0" : "text-sky-700 shrink-0"}>
+                        {hasFailed ? "Needs attention" : record.status === "syncing" ? "Syncing…" : "Waiting"}
+                      </span>
+                    </div>
+                    {record.lastError && (
+                      <p className="mt-1 text-[10px] text-[#EF4444] font-medium line-clamp-1">
+                        Reason: {record.lastError}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500">
+                      <span>{record.items?.length || 0} items · TZS {money(record.total || 0)}k</span>
+                      <span className={hasFailed ? "text-red-600 hover:underline" : "text-sky-600 hover:underline"}>Inspect details →</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

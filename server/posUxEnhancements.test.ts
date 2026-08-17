@@ -33,4 +33,10 @@ describe("POS UX Enhancements", () => {
     expect(source).toContain("synchronized successfully. Inventory deducted and revenue recorded");
     expect(source).toContain("AudioContext");
   });
+
+  it("highlights failed sync attempts in red and provides accessible tooltips with error reasons", () => {
+    expect(source).toContain("bg-red-50/90");
+    expect(source).toContain("Sync Error:");
+    expect(source).toContain("Reason:");
+  });
 });
