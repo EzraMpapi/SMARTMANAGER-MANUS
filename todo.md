@@ -716,4 +716,5 @@
 - [x] Add PDF and Excel export options for the multi-branch fiscal summary comparison chart in the TRA Portal.
 - [x] Fix the undefined `lang` reference crash in TraPortalModule.jsx.
 - [x] Integrate reference screen TRA Portal features: automated VAT calculation & monthly return pre-fill view, invoice-to-TRA processing pipeline status cards, permanent cryptographic audit trail view, sequential counter allocation monitor, and VFD direct-connection diagnostics.
-- [ ] Add PDF and CSV export download buttons to the Pre-Filled Monthly VAT Returns view in the TRA Portal.
+- [x] Add PDF and CSV export download buttons to the Pre-Filled Monthly VAT Returns view in the TRA Portal.
+- [ ] Add month-based date range filter to the Pre-Filled Monthly VAT Returns view and apply to PDF and CSV exports.

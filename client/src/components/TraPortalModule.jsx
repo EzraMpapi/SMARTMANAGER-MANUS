@@ -60,6 +60,8 @@ export function TraPortalModule({ companyId, lang = "en" }) {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [vatMonthStart, setVatMonthStart] = useState("2026-01");
+  const [vatMonthEnd, setVatMonthEnd] = useState("2026-12");
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -202,8 +204,17 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     setNotice("Branch fiscal comparison exported to PDF successfully.");
   };
 
+  const filteredVatReceipts = receipts.filter(r => {
+    const d = new Date(r.createdAt || Date.now());
+    const yyyyMm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return yyyyMm >= vatMonthStart && yyyyMm <= vatMonthEnd;
+  });
+
+  const vatTotalGross = filteredVatReceipts.reduce((acc, r) => acc + Number(r.grossAmount), 0);
+  const vatTotalVat = filteredVatReceipts.reduce((acc, r) => acc + Number(r.vatAmount), 0);
+
   const exportVatCsv = () => {
-    const wsData = receipts.map(r => ({
+    const wsData = filteredVatReceipts.map(r => ({
       "Receipt Number": r.receiptNumber,
       "Source Type": r.sourceType,
       "Source ID": r.sourceId,
@@ -217,8 +228,8 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(wsData);
     XLSX.utils.book_append_sheet(wb, ws, "VAT Return");
-    XLSX.writeFile(wb, `TRA_VAT_Return_PreFilled_${Date.now()}.csv`);
-    setNotice("Pre-filled VAT Return exported to CSV successfully.");
+    XLSX.writeFile(wb, `TRA_VAT_Return_${vatMonthStart}_to_${vatMonthEnd}_${Date.now()}.csv`);
+    setNotice(`Pre-filled VAT Return (${vatMonthStart} to ${vatMonthEnd}) exported to CSV successfully.`);
   };
 
   const exportVatPdf = () => {
@@ -229,12 +240,12 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-    doc.text(`TIN: ${tin} | VRN: ${vrn || "N/A"} | Business: ${businessName}`, 14, 34);
+    doc.text(`Period: ${vatMonthStart} to ${vatMonthEnd} | TIN: ${tin} | VRN: ${vrn || "N/A"}`, 14, 34);
 
     doc.setFont("helvetica", "bold");
-    doc.text(`Total Taxable Turnover: TZS ${totalGross.toLocaleString()}`, 14, 46);
-    doc.text(`Total Output VAT (18%): TZS ${totalVat.toLocaleString()}`, 14, 54);
-    doc.text(`Total Fiscal Receipts: ${receipts.length}`, 14, 62);
+    doc.text(`Total Taxable Turnover: TZS ${vatTotalGross.toLocaleString()}`, 14, 46);
+    doc.text(`Total Output VAT (18%): TZS ${vatTotalVat.toLocaleString()}`, 14, 54);
+    doc.text(`Total Fiscal Receipts in Period: ${filteredVatReceipts.length}`, 14, 62);
 
     let y = 76;
     doc.setFont("helvetica", "bold");
@@ -244,7 +255,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     doc.text("VAT (TZS)", 155, y);
 
     doc.setFont("helvetica", "normal");
-    receipts.slice(0, 20).forEach(r => {
+    filteredVatReceipts.slice(0, 25).forEach(r => {
       y += 8;
       if (y > 280) {
         doc.addPage();
@@ -256,8 +267,8 @@ export function TraPortalModule({ companyId, lang = "en" }) {
       doc.text(Number(r.vatAmount).toLocaleString(), 155, y);
     });
 
-    doc.save(`TRA_VAT_Return_PreFilled_${Date.now()}.pdf`);
-    setNotice("Pre-filled VAT Return exported to PDF successfully.");
+    doc.save(`TRA_VAT_Return_${vatMonthStart}_to_${vatMonthEnd}_${Date.now()}.pdf`);
+    setNotice(`Pre-filled VAT Return (${vatMonthStart} to ${vatMonthEnd}) exported to PDF successfully.`);
   };
 
   const totalGross = receipts.reduce((acc, r) => acc + Number(r.grossAmount), 0);
@@ -596,27 +607,53 @@ export function TraPortalModule({ companyId, lang = "en" }) {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
               <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">Monthly VAT Return — Pre-Filled & Ready</h3>
-              <p className="text-[12.5px] text-slate-500">Every fiscal receipt feeds into your VAT calculation automatically. No spreadsheet reconciliation needed.</p>
+              <p className="text-[12.5px] text-slate-500">Every fiscal receipt feeds into your VAT calculation automatically. Select month range below.</p>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={exportVatCsv} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                <FileSpreadsheet size={15} className="text-emerald-600" /> Export CSV
+                <FileSpreadsheet size={15} className="text-emerald-600" /> Export CSV ({filteredVatReceipts.length})
               </button>
               <button onClick={exportVatPdf} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-emerald-500">
-                <Download size={15} /> Export PDF
+                <Download size={15} /> Export PDF ({filteredVatReceipts.length})
               </button>
             </div>
           </div>
+
+          {/* Month Range Filter Bar */}
+          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
+            <div className="flex items-center gap-2">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">From Month:</label>
+              <input
+                type="month"
+                value={vatMonthStart}
+                onChange={e => setVatMonthStart(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">To Month:</label>
+              <input
+                type="month"
+                value={vatMonthEnd}
+                onChange={e => setVatMonthEnd(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </div>
+            <div className="text-[12px] text-slate-500 font-medium">
+              Showing <span className="font-bold text-slate-800 dark:text-slate-200">{filteredVatReceipts.length}</span> receipts for selected period
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40 space-y-1">
-              <p className="text-xs font-bold text-slate-500 uppercase">Total Taxable Turnover</p>
-              <p className="text-2xl font-extrabold font-mono">TZS {totalGross.toLocaleString()}</p>
-              <p className="text-xs text-slate-500">Sum of all fiscalized gross sales</p>
+              <p className="text-xs font-bold text-slate-500 uppercase">Total Taxable Turnover ({vatMonthStart} to {vatMonthEnd})</p>
+              <p className="text-2xl font-extrabold font-mono">TZS {vatTotalGross.toLocaleString()}</p>
+              <p className="text-xs text-slate-500">Sum of fiscalized gross sales in period</p>
             </div>
             <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40 space-y-1">
               <p className="text-xs font-bold text-slate-500 uppercase">Output VAT (18%)</p>
-              <p className="text-2xl font-extrabold font-mono text-emerald-600">TZS {totalVat.toLocaleString()}</p>
-              <p className="text-xs text-slate-500">Automatic 18% calculation</p>
+              <p className="text-2xl font-extrabold font-mono text-emerald-600">TZS {vatTotalVat.toLocaleString()}</p>
+              <p className="text-xs text-slate-500">Automatic 18% calculation for period</p>
             </div>
             <div className="p-5 rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40 space-y-1">
               <p className="text-xs font-bold text-slate-500 uppercase">Reconciliation Status</p>
