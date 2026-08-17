@@ -12945,60 +12945,99 @@ function PurchaseOrders({ orders, inventory, suppliersHook }) {
       orderDate: TODAY.toISOString().slice(0, 10), expectedDate: form.expectedDate || null,
       requestedBy: form.requestedBy || "You", items,
     };
-    setRows((prev) => [draft, ...prev]);
-    setShowForm(false);
-    notify(status === "Pending Approval"
-      ? `${draft.id} created — TZS ${money(total)}k needs approval before it can proceed`
-      : `${draft.id} created and auto-approved (under TZS ${money(PO_APPROVAL_THRESHOLD)}k)`);
-
     if (IS_CONFIGURED) {
       try {
         const header = await sb("procurement_purchase_orders").insert({
           doc_number: draft.id, supplier: draft.supplier, status, order_date: draft.orderDate,
           expected_date: draft.expectedDate, requested_by: draft.requestedBy,
         }).single().run();
-        if (header?.id) {
-          await sb("purchase_order_items").insert(
+        try {
+          const savedItems = await sb("purchase_order_items").insert(
             items.map((it) => ({ purchase_order_id: header.id, item_sku: it.sku, item_name: it.name, qty: it.qty, cost: it.cost }))
           ).run();
-          setRows((prev) => prev.map((o) => (o.id === draft.id ? { ...o, dbId: header.id } : o)));
+          const confirmed = mapPurchaseOrderRow({ ...header, purchase_order_items: savedItems });
+          setRows((prev) => [confirmed, ...prev]);
+          notify(status === "Pending Approval"
+            ? `${confirmed.id} created — TZS ${money(total)}k needs approval before it can proceed`
+            : `${confirmed.id} created and auto-approved (under TZS ${money(PO_APPROVAL_THRESHOLD)}k)`);
+          return confirmed;
+        } catch (lineError) {
+          try {
+            await sb("procurement_purchase_orders").eq("id", header.id).delete().single().run();
+          } catch (_cleanupError) {
+            notify(`PO ${draft.id} may have a server header without all line items. Reconcile it before creating another order.`, "error");
+            return false;
+          }
+          throw lineError;
         }
-      } catch (_e) { notify("PO created locally, but saving to the server failed.", "error"); }
+      } catch (_e) {
+        notify("Purchase order could not be saved to the server. Review the details and try again.", "error");
+        return false;
+      }
     }
+    setRows((prev) => [draft, ...prev]);
+    notify(status === "Pending Approval"
+      ? `${draft.id} created — TZS ${money(total)}k needs approval before it can proceed`
+      : `${draft.id} created and auto-approved (under TZS ${money(PO_APPROVAL_THRESHOLD)}k)`);
+    return draft;
   }
 
   async function receiveOrder(order) {
     // Receiving a PO is a real inventory event — the same shared table
     // Sales fulfillment and Manufacturing already write to, just adding
     // stock instead of consuming it.
+    if (IS_CONFIGURED) {
+      try {
+        const inventoryUpdates = [];
+        for (const it of order.items) {
+          const item = inventory.rows.find((i) => i.sku === it.sku);
+          if (!item) throw new Error(`Inventory item ${it.sku} is unavailable for receipt.`);
+          const newQty = (item?.qty || 0) + it.qty;
+          const savedItem = await sb("inventory_items").eq("sku", it.sku).update({ qty_on_hand: newQty }).single().run();
+          inventoryUpdates.push(mapInventoryRow(savedItem));
+          await sb("inventory_stock_movements").insert({ item_id: it.sku, movement: "In", qty: it.qty, reference: `${order.id} received` }).run();
+        }
+        const savedOrder = await sb("procurement_purchase_orders").eq("id", order.dbId ?? order.id).update({ status: "Received" }).single().run();
+        const confirmedOrder = mapPurchaseOrderRow({ ...savedOrder, purchase_order_items: order.items.map((it) => ({ item_sku: it.sku, item_name: it.name, qty: it.qty, cost: it.cost })) });
+        inventory.setRows((prev) => prev.map((item) => inventoryUpdates.find((updated) => updated.sku === item.sku) || item));
+        setRows((prev) => prev.map((existing) => (existing.id === order.id ? confirmedOrder : existing)));
+        setSelected((selectedOrder) => (selectedOrder && selectedOrder.id === order.id ? confirmedOrder : selectedOrder));
+        notify(`${order.id} received — server-confirmed stock updated`);
+        return confirmedOrder;
+      } catch (_e) {
+        notify("Receipt could not be fully confirmed. The screen has not changed; reconcile this PO and stock before retrying because a server-side step may have completed.", "error");
+        return false;
+      }
+    }
     inventory.setRows((prev) => prev.map((it) => {
       const line = order.items.find((oi) => oi.sku === it.sku);
       return line ? { ...it, qty: it.qty + line.qty } : it;
     }));
-    setRows((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: "Received" } : o)));
-    setSelected((s) => (s && s.id === order.id ? { ...s, status: "Received" } : s));
+    const received = { ...order, status: "Received" };
+    setRows((prev) => prev.map((existing) => (existing.id === order.id ? received : existing)));
+    setSelected((selectedOrder) => (selectedOrder && selectedOrder.id === order.id ? received : selectedOrder));
     notify(`${order.id} received — stock updated`);
-
-    if (IS_CONFIGURED) {
-      try {
-        await sb("procurement_purchase_orders").eq("id", order.dbId ?? order.id).update({ status: "Received" }).run();
-        for (const it of order.items) {
-          const item = inventory.rows.find((i) => i.sku === it.sku);
-          const newQty = (item?.qty || 0) + it.qty;
-          await sb("inventory_items").eq("sku", it.sku).update({ qty_on_hand: newQty }).run();
-          await sb("inventory_stock_movements").insert({ item_id: it.sku, movement: "In", qty: it.qty, reference: `${order.id} received` }).run();
-        }
-      } catch (_e) { notify("Received locally, but the server update failed.", "error"); }
-    }
+    return received;
   }
 
   async function cancelOrder(id) {
     const o = rows.find((x) => x.id === id);
-    setRows((prev) => prev.map((x) => (x.id === id ? { ...x, status: "Cancelled" } : x)));
-    setSelected(null);
     if (IS_CONFIGURED && o?.dbId) {
-      try { await sb("procurement_purchase_orders").eq("id", o.dbId).update({ status: "Cancelled" }).run(); } catch (_e) { notify("Couldn't save the cancellation to the server.", "error"); }
+      try {
+        const saved = await sb("procurement_purchase_orders").eq("id", o.dbId).update({ status: "Cancelled" }).single().run();
+        const confirmed = mapPurchaseOrderRow({ ...saved, purchase_order_items: o.items.map((it) => ({ item_sku: it.sku, item_name: it.name, qty: it.qty, cost: it.cost })) });
+        setRows((prev) => prev.map((existing) => (existing.id === id ? confirmed : existing)));
+        setSelected((selectedOrder) => (selectedOrder && selectedOrder.id === id ? confirmed : selectedOrder));
+        return confirmed;
+      } catch (_e) {
+        notify("Cancellation could not be saved to the server. The purchase order remains active here.", "error");
+        return false;
+      }
     }
+    const cancelled = { ...o, status: "Cancelled" };
+    setRows((prev) => prev.map((existing) => (existing.id === id ? cancelled : existing)));
+    setSelected((selectedOrder) => (selectedOrder && selectedOrder.id === id ? cancelled : selectedOrder));
+    return cancelled;
   }
 
   return (
@@ -13120,13 +13159,38 @@ function PurchaseOrders({ orders, inventory, suppliersHook }) {
           onCancel={() => cancelOrder(selected.id)}
         />
       )}
-      {showForm && <PurchaseOrderFormPanel inventory={inventory} suppliersHook={suppliersHook} onClose={() => setShowForm(false)} onSubmit={addOrder} />}
+      {showForm && <PurchaseOrderFormPanel inventory={inventory} suppliersHook={suppliersHook} onClose={() => setShowForm(false)} onSubmit={async (form) => {
+        const created = await addOrder(form);
+        if (created) setShowForm(false);
+        return created;
+      }} />}
     </div>
   );
 }
 
 function PurchaseOrderPanel({ order, onClose, onReceive, onCancel }) {
   const total = poTotal(order.items);
+  const [saving, setSaving] = useState(false);
+
+  async function receiveOrder() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onReceive();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function cancelOrder() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onCancel();
+    } finally {
+      setSaving(false);
+    }
+  }
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
@@ -13163,10 +13227,10 @@ function PurchaseOrderPanel({ order, onClose, onReceive, onCancel }) {
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex flex-col gap-2">
           {order.status === "Approved" && (
-            <button onClick={onReceive} className="btn-primary text-white text-[13px] font-semibold rounded-lg py-2.5">Mark Received</button>
+            <button onClick={receiveOrder} disabled={saving} className="btn-primary text-white text-[13px] font-semibold rounded-lg py-2.5 disabled:opacity-50">{saving ? "Saving…" : "Mark Received"}</button>
           )}
-          {!["Received", "Paid", "Cancelled"].includes(order.status) && (
-            <button onClick={onCancel} className="text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2 hover:bg-[#EF4444]/5">Cancel Order</button>
+          {!['Received', 'Paid', 'Cancelled'].includes(order.status) && (
+            <button onClick={cancelOrder} disabled={saving} className="text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2 hover:bg-[#EF4444]/5 disabled:opacity-50">{saving ? "Saving…" : "Cancel Order"}</button>
           )}
         </div>
       </div>
@@ -13180,6 +13244,7 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
   const [expectedDate, setExpectedDate] = useState("");
   const [requestedBy, setRequestedBy] = useState("");
   const [items, setItems] = useState([{ sku: inventory.rows[0]?.sku || "", qty: "", cost: "" }]);
+  const [submitting, setSubmitting] = useState(false);
 
   function updateItem(i, key, val) {
     setItems((prev) => prev.map((it, idx) => {
@@ -13199,13 +13264,18 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
   const total = validItems.reduce((s, it) => s + Number(it.qty) * Number(it.cost || 0), 0);
   const valid = supplier && validItems.length > 0;
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!valid) return;
-    onSubmit({
-      supplier, expectedDate, requestedBy,
-      items: validItems.map((it) => ({ sku: it.sku, name: inventory.rows.find((x) => x.sku === it.sku)?.name || it.sku, qty: Number(it.qty), cost: Number(it.cost) || 0 })),
-    });
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit({
+        supplier, expectedDate, requestedBy,
+        items: validItems.map((it) => ({ sku: it.sku, name: inventory.rows.find((x) => x.sku === it.sku)?.name || it.sku, qty: Number(it.qty), cost: Number(it.cost) || 0 })),
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -13258,7 +13328,7 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
-          <button type="submit" disabled={!valid} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed">Create PO</button>
+          <button type="submit" disabled={!valid || submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed">{submitting ? "Saving…" : "Create PO"}</button>
         </div>
       </form>
     </div>

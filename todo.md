@@ -671,3 +671,4 @@
 - [x] Remove arbitrary default lead scores in the next customer-relationship upgrade and render an explicit unavailable state until a confirmed scoring model provides a value.
 - [x] Select and fully upgrade the Finance workspace as the next verified high-priority functional area, covering confirmed-data truthfulness, server-confirmed workflows, error recovery, accessibility, responsive behavior, and regression evidence.
 - [x] Select and fully upgrade the Inventory workspace as the next verified high-priority operational area, covering confirmed stock truthfulness, server-confirmed workflows, error recovery, accessibility, responsive behavior, and regression evidence.
+- [ ] Select and fully upgrade the Procurement workspace as the next verified high-priority operational area, covering confirmed purchase-order truthfulness, server-confirmed workflows, error recovery, accessibility, responsive behavior, and regression evidence.
