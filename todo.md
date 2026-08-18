@@ -843,3 +843,4 @@
 - [x] Configure automated cloud storage archival for quick-filtered security audit chart exports.
 - [x] Add custom date-range presets for quarterly and fiscal-year security audits.
 - [x] Integrate push notification alerts for significant shifts in 7-day vs 30-day failure trends.
+- [x] Include a tooltip on the security audit chart that displays the exact number of successful and failed emails when hovering over data points.
