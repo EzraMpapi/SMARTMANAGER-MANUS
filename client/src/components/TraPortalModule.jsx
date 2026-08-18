@@ -67,6 +67,8 @@ export function TraPortalModule({ companyId, lang = "en" }) {
   const [vatSortOrder, setVatSortOrder] = useState("desc"); // asc, desc
   const [groupByBuyer, setGroupByBuyer] = useState(false);
   const [collapsedBuyers, setCollapsedBuyers] = useState({});
+  const [vatPage, setVatPage] = useState(1);
+  const [vatPageSize, setVatPageSize] = useState(10);
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -237,6 +239,9 @@ export function TraPortalModule({ companyId, lang = "en" }) {
 
   const vatTotalGross = sortedVatReceipts.reduce((acc, r) => acc + Number(r.grossAmount), 0);
   const vatTotalVat = sortedVatReceipts.reduce((acc, r) => acc + Number(r.vatAmount), 0);
+
+  const totalPages = Math.ceil(sortedVatReceipts.length / vatPageSize) || 1;
+  const paginatedVatReceipts = sortedVatReceipts.slice((vatPage - 1) * vatPageSize, vatPage * vatPageSize);
 
   const exportVatCsv = () => {
     const wsData = sortedVatReceipts.map(r => ({
@@ -787,7 +792,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {!groupByBuyer && sortedVatReceipts.map(r => (
+                  {!groupByBuyer && paginatedVatReceipts.map(r => (
                     <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                       <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200">{r.receiptNumber}</td>
                       <td className="px-6 py-3 text-xs text-slate-600 dark:text-slate-400">
@@ -805,7 +810,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                     </tr>
                   ))}
                   {groupByBuyer && Object.entries(
-                    sortedVatReceipts.reduce((acc, r) => {
+                    paginatedVatReceipts.reduce((acc, r) => {
                       const buyer = (r.buyerName || "Buyer Not Provided").trim();
                       if (!acc[buyer]) acc[buyer] = [];
                       acc[buyer].push(r);
@@ -872,6 +877,43 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Pagination Toolbar */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 dark:bg-slate-800/60 dark:border-slate-800">
+              <div className="flex items-center gap-2 text-[12.5px] text-slate-600 dark:text-slate-400">
+                <span>Show</span>
+                <select
+                  value={vatPageSize}
+                  onChange={e => { setVatPageSize(Number(e.target.value)); setVatPage(1); }}
+                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>per page (Showing {sortedVatReceipts.length > 0 ? (vatPage - 1) * vatPageSize + 1 : 0}–{Math.min(vatPage * vatPageSize, sortedVatReceipts.length)} of {sortedVatReceipts.length})</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setVatPage(p => Math.max(p - 1, 1))}
+                  disabled={vatPage === 1}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition"
+                >
+                  Previous
+                </button>
+                <span className="text-[12.5px] font-medium text-slate-700 dark:text-slate-300 px-2">
+                  Page {vatPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setVatPage(p => Math.min(p + 1, totalPages))}
+                  disabled={vatPage >= totalPages}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>
