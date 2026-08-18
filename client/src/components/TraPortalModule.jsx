@@ -62,6 +62,8 @@ export function TraPortalModule({ companyId, lang = "en" }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [vatMonthStart, setVatMonthStart] = useState("2026-01");
   const [vatMonthEnd, setVatMonthEnd] = useState("2026-12");
+  const [vatDateFrom, setVatDateFrom] = useState("");
+  const [vatDateTo, setVatDateTo] = useState("");
   const [vatSearch, setVatSearch] = useState("");
   const [vatSortField, setVatSortField] = useState("date"); // date, amount, receipt
   const [vatSortOrder, setVatSortOrder] = useState("desc"); // asc, desc
@@ -76,7 +78,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     setIsFiltering(true);
     const t = setTimeout(() => setIsFiltering(false), 250);
     return () => clearTimeout(t);
-  }, [vatMonthStart, vatMonthEnd, vatSearch, vatSortField, vatSortOrder, groupByBuyer]);
+  }, [vatMonthStart, vatMonthEnd, vatDateFrom, vatDateTo, vatSearch, vatSortField, vatSortOrder, groupByBuyer]);
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -222,10 +224,21 @@ export function TraPortalModule({ companyId, lang = "en" }) {
   const filteredVatReceipts = receipts.filter(r => {
     const d = new Date(r.createdAt || Date.now());
     const yyyyMm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const inRange = yyyyMm >= vatMonthStart && yyyyMm <= vatMonthEnd;
+    const inMonthRange = yyyyMm >= vatMonthStart && yyyyMm <= vatMonthEnd;
+    
+    let inDateRange = true;
+    if (vatDateFrom) {
+      inDateRange = inDateRange && d >= new Date(vatDateFrom);
+    }
+    if (vatDateTo) {
+      const endOfDay = new Date(vatDateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      inDateRange = inDateRange && d <= endOfDay;
+    }
+
     const q = vatSearch.toLowerCase().trim();
     const matchSearch = !q || r.receiptNumber.toLowerCase().includes(q) || r.sourceId.toLowerCase().includes(q) || (r.buyerName && r.buyerName.toLowerCase().includes(q));
-    return inRange && matchSearch;
+    return inMonthRange && inDateRange && matchSearch;
   });
 
   const sortedVatReceipts = [...filteredVatReceipts].sort((a, b) => {
@@ -657,10 +670,10 @@ export function TraPortalModule({ companyId, lang = "en" }) {
             </div>
           </div>
 
-          {/* Month Range & Search Filter Bar */}
+          {/* Month Range, Date Range & Search Filter Bar */}
           <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
             <div className="flex items-center gap-2">
-              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">From:</label>
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Month From:</label>
               <input
                 type="month"
                 value={vatMonthStart}
@@ -669,11 +682,29 @@ export function TraPortalModule({ companyId, lang = "en" }) {
               />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">To:</label>
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Month To:</label>
               <input
                 type="month"
                 value={vatMonthEnd}
                 onChange={e => setVatMonthEnd(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Date From:</label>
+              <input
+                type="date"
+                value={vatDateFrom}
+                onChange={e => setVatDateFrom(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Date To:</label>
+              <input
+                type="date"
+                value={vatDateTo}
+                onChange={e => setVatDateTo(e.target.value)}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
             </div>
@@ -695,6 +726,8 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                 onClick={() => {
                   setVatMonthStart("2026-01");
                   setVatMonthEnd("2026-12");
+                  setVatDateFrom("");
+                  setVatDateTo("");
                   setVatSearch("");
                   setNotice("VAT filters reset to default successfully.");
                 }}

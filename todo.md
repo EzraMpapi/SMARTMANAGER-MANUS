@@ -730,4 +730,5 @@
 - [x] Add an 'Export to CSV' button to allow downloading the currently filtered and sorted VAT returns.
 - [x] Fix any remaining undefined `lang` reference crash when entering the TRA Portal.
 - [x] Add a search highlight feature that bolds the matching text in the table when using the receipt search.
-- [ ] Definitively eliminate the remaining bare `lang` reference in TraPortalModule.jsx.
+- [x] Definitively eliminate the remaining bare `lang` reference in TraPortalModule.jsx.
+- [ ] Add a date range picker to allow filtering the VAT returns by specific time periods.
