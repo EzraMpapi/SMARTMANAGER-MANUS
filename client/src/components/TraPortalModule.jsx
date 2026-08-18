@@ -66,6 +66,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
   const [vatSortField, setVatSortField] = useState("date"); // date, amount, receipt
   const [vatSortOrder, setVatSortOrder] = useState("desc"); // asc, desc
   const [groupByBuyer, setGroupByBuyer] = useState(false);
+  const [collapsedBuyers, setCollapsedBuyers] = useState({});
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -790,11 +791,17 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                   ).map(([buyer, groupReceipts]) => {
                     const groupGross = groupReceipts.reduce((sum, r) => sum + Number(r.grossAmount || 0), 0);
                     const groupVat = groupReceipts.reduce((sum, r) => sum + Number(r.vatAmount || 0), 0);
+                    const isCollapsed = Boolean(collapsedBuyers[buyer]);
                     return (
                       <React.Fragment key={buyer}>
-                        <tr className="bg-emerald-50/75 dark:bg-emerald-950/30 border-y border-emerald-200 dark:border-emerald-900 font-semibold text-xs">
-                          <td colSpan={2} className="px-6 py-2.5 text-emerald-900 dark:text-emerald-300">
+                        <tr
+                          onClick={() => setCollapsedBuyers(prev => ({ ...prev, [buyer]: !prev[buyer] }))}
+                          className="bg-emerald-50/75 dark:bg-emerald-950/30 border-y border-emerald-200 dark:border-emerald-900 font-semibold text-xs cursor-pointer hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 transition"
+                        >
+                          <td colSpan={2} className="px-6 py-2.5 text-emerald-900 dark:text-emerald-300 flex items-center gap-2">
+                            <span className="text-emerald-600 font-bold">{isCollapsed ? '▶' : '▼'}</span>
                             🏢 Buyer: <span className="font-bold">{buyer}</span> ({groupReceipts.length} receipts)
+                            <span className="text-[10px] text-emerald-600 font-normal ml-2">({isCollapsed ? 'Click to expand' : 'Click to collapse'})</span>
                           </td>
                           <td className="px-6 py-2.5 font-mono text-emerald-900 dark:text-emerald-200">
                             Subtotal: TZS {groupGross.toLocaleString()}
@@ -803,7 +810,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                             VAT Subtotal: TZS {groupVat.toLocaleString()}
                           </td>
                         </tr>
-                        {groupReceipts.map(r => (
+                        {!isCollapsed && groupReceipts.map(r => (
                           <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 pl-4">
                             <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200 pl-8">{r.receiptNumber}</td>
                             <td className="px-6 py-3 text-xs text-slate-600 dark:text-slate-400">
