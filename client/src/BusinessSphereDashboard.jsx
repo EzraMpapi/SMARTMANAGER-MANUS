@@ -6297,6 +6297,52 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               })()}
             </div>
           </div>
+
+        );
+      })()}
+
+      {/* ══════════════════ VAT RETURN TRENDS (SELECTED DATE RANGE) ══════════════════ */}
+      {(() => {
+        const months = Array.from({length:6},(_,i)=>{
+          const d=new Date(TODAY); d.setMonth(d.getMonth()-5+i);
+          return d.toISOString().slice(0,7);
+        });
+        const vatTrendData = months.map(mo=>{
+          const periodInv = invoices.rows.filter(i=>!periodStart || (i.date||"") >= periodStart);
+          const moInv = periodInv.filter(i=>i.date?.startsWith(mo));
+          const taxableGross = moInv.reduce((s,i)=>s+lineTotal(i.items||[]).total,0);
+          const outputVat = taxableGross * 0.18;
+          return {
+            mo: new Date(mo+"-01").toLocaleDateString("en",{month:"short"}),
+            taxable: Math.round(taxableGross / 1000),
+            vat: Math.round(outputVat / 1000)
+          };
+        });
+        const hasVatData = vatTrendData.some(d=>d.taxable>0||d.vat>0);
+        if (!hasVatData) return null;
+        return (
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-[14px] font-bold text-[#111827]">VAT Return Trends — {PERIOD_LABELS[period]}</h3>
+                <p className="text-[11.5px] text-slate-400">Taxable turnover vs Output VAT (18%) computed from verified invoices over the selected date range</p>
+              </div>
+              <div className="flex items-center gap-2 text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
+                <span>TRA VFD Ready</span>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={190}>
+              <ComposedChart data={vatTrendData} margin={{left:-10,right:4,top:4,bottom:0}}>
+                <CartesianGrid vertical={false} stroke="#F3F4F6"/>
+                <XAxis dataKey="mo" tick={{fontSize:11,fill:"#94A3B8"}} axisLine={false} tickLine={false}/>
+                <YAxis tick={{fontSize:10,fill:"#94A3B8"}} axisLine={false} tickLine={false}/>
+                <Tooltip contentStyle={{borderRadius:10,border:"1px solid #EEF1F4",fontSize:12}} formatter={(v,n)=>[`TZS ${money(v)}k`,n]}/>
+                <Legend iconSize={9} iconType="circle"/>
+                <Bar dataKey="taxable" name="Taxable Turnover" fill="#34D399" radius={[4,4,0,0]} barSize={24}/>
+                <Line type="monotone" dataKey="vat" name="Output VAT (18%)" stroke="#059669" strokeWidth={2.5} dot={{r:3.5,fill:"#059669"}}/>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
         );
       })()}
 

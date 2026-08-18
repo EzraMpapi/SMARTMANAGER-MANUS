@@ -736,3 +736,4 @@
 - [x] Implement a minimum and maximum amount filter to easily find high-value VAT returns within the selected date range.
 - [x] Make the dashboard date display track the current day of the day.
 - [x] Redesign the Module Health section arrangement to be simple and professionally organized.
+- [x] Add a visual chart or graph to the dashboard to display VAT return trends over the selected date range.
