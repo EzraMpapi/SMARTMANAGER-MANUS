@@ -5948,6 +5948,42 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       <GettingStartedChecklist inventory={inventory} crm={crm} invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
       <AnalyticsReadiness invoices={invoices} crm={crm} inventory={inventory} expenses={expenses} onNavigate={onNavigate} />
 
+      {/* ══════════════════ COMPLIANCE DIGEST STATUS BADGE ══════════════════ */}
+      {(() => {
+        const schedulesQuery = trpc.reportSchedules.list.useQuery(undefined, { enabled: Boolean(company?.id) });
+        const list = schedulesQuery.data || [];
+        const activeCount = list.filter(s => s.isActive).length;
+        const lastSent = list.map(s => s.lastSentAt).filter(Boolean).sort().pop();
+        const hasActive = activeCount > 0;
+        return (
+          <div className="rounded-2xl border border-slate-200/80 bg-white dark:bg-slate-900 p-4 shadow-sm flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold ${hasActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                {hasActive ? '🛡️' : '⏸️'}
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-white">Automated Weekly Compliance Digest</h4>
+                  <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-bold ${hasActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+                    {schedulesQuery.isLoading ? 'Checking...' : hasActive ? `Active (${activeCount} schedule${activeCount > 1 ? 's' : ''})` : 'Paused / Unconfigured'}
+                  </span>
+                </div>
+                <p className="text-[11.5px] text-slate-500 mt-0.5">
+                  {lastSent ? `Last email digest delivered successfully on ${new Date(lastSent).toLocaleString()}` : hasActive ? 'Scheduled weekly email dispatches are active and monitoring tenant tax records.' : 'Configure automated report schedules in the Reports module to enable weekly compliance email dispatches.'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate("reports")}
+              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2 text-[12px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm shrink-0"
+            >
+              Manage Schedules →
+            </button>
+          </div>
+        );
+      })()}
+
       {/* ══════════════════ COMMAND STRIP ══════════════════ */}
       <div className="rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 55%,#16A34A 130%)"}}>
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
