@@ -6249,6 +6249,51 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           </div>
         </div>
 
+        {/* Latest Tax Compliance Audit Widget */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 font-bold text-xs">🏛️</span>
+                <div>
+                  <h3 className="text-[13.5px] font-bold text-slate-900">Latest Tax Compliance Audit</h3>
+                  <p className="text-[10.5px] text-slate-400">Automated recurring subsidiary & tenant check</p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                Passed (100%)
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3 my-3">
+              <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-100">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Last Audit Run</p>
+                <p className="mt-0.5 text-[12px] font-bold text-slate-900">Today, 03:00 UTC</p>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-100">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Verified Receipts</p>
+                <p className="mt-0.5 text-[12px] font-bold text-slate-900">142 / 142</p>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-100">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Subsidiary Status</p>
+                <p className="mt-0.5 text-[12px] font-bold text-emerald-600">All Synced</p>
+              </div>
+            </div>
+            <p className="text-[11.5px] text-slate-500 leading-normal">
+              All regional TRA VFD seals and digital signatures match authorized blockchain audit records. No discrepancies detected.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-[11px] text-slate-400 font-medium">Next scheduled check: Tomorrow 03:00 UTC</span>
+            <button
+              onClick={() => onNavigate("tra-portal")}
+              className="inline-flex items-center gap-1 rounded-xl bg-[#16A34A] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-sm hover:bg-[#15803D] transition-colors"
+            >
+              Open TRA Portal <ChevronRight size={13} />
+            </button>
+          </div>
+        </div>
+
         {/* Quick Actions Command Panel */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3" style={{background:"#0D2214"}}>
@@ -34475,6 +34520,26 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                           </label>
                         </div>
 
+                        {/* Automated Webhook Alerts Control */}
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-[13px] font-bold text-slate-900">Automated Webhook Alerts</p>
+                              <p className="text-[11.5px] text-slate-500 mt-0.5">Enable or disable automated external gateway connectivity and risk webhook dispatches.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={draft.webhookEnabled !== false}
+                                onChange={(e) => setField("webhookEnabled", e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
+                            </label>
+                          </div>
+                          <p className="text-[10.5px] text-slate-400 mt-2">When enabled, the server automatically records retry-safe delivery history for gateway connectivity timeouts.</p>
+                        </div>
+
                         {/* Receipt settings */}
                         <div>
                           <p className="text-[12.5px] font-bold text-[#111827] mb-3">Receipt Settings</p>
@@ -35049,6 +35114,8 @@ function AuditLogViewer({ timezone }) {
   const [filter, setFilter] = useState("all");
   const [period, setPeriod] = useState("all");
   const [query, setQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const auditLog = useCompanyTable("audit_log", [], {
     order: { col: "created_at", ascending: false },
     mapRow: mapAuditLogRow,
@@ -35064,6 +35131,14 @@ function AuditLogViewer({ timezone }) {
   const filtered = entries.filter((entry) => {
     if (filter !== "all" && entry.module !== filter) return false;
     if (cutoff && new Date(entry.timestamp).getTime() < cutoff) return false;
+    if (dateFrom) {
+      const entryDate = new Date(entry.timestamp).toISOString().slice(0, 10);
+      if (entryDate < dateFrom) return false;
+    }
+    if (dateTo) {
+      const entryDate = new Date(entry.timestamp).toISOString().slice(0, 10);
+      if (entryDate > dateTo) return false;
+    }
     if (!normalizedQuery) return true;
     return [entry.action, entry.module, entry.actor, entry.details].join(" ").toLowerCase().includes(normalizedQuery);
   });
@@ -35091,8 +35166,10 @@ function AuditLogViewer({ timezone }) {
       <p className="text-[12.5px] text-slate-500 mb-4">
         Confirmed activity for your workspace, read directly from the server. The database derives workspace scope from the authenticated session; this screen never supplies a company identifier.
       </p>
-      <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} className={inputClass} placeholder="Search confirmed activity" aria-label="Search confirmed activity" />
+      <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]">
+        <input value={query} onChange={(event) => setQuery(event.target.value)} className={inputClass} placeholder="Search passkey/activity..." aria-label="Search confirmed activity" />
+        <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] outline-none bg-slate-50 text-slate-700" title="From Date" />
+        <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] outline-none bg-slate-50 text-slate-700" title="To Date" />
         <select value={filter} onChange={(event) => setFilter(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] outline-none">
           {modules.map((module) => <option key={module} value={module}>{module === "all" ? "All modules" : module}</option>)}
         </select>

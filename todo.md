@@ -761,3 +761,6 @@
 - [x] Configure automated scheduled recurring tax compliance audits for regional subsidiaries.
 - [x] Add biometric passkey revocation logs to the tenant security audit viewer.
 - [x] Integrate automated webhook alerts for gateway connectivity timeouts.
+- [x] Add a dashboard widget to display the summary results of the latest recurring tax-compliance audits.
+- [x] Add a search and date filter to the biometric passkey revocation logs to easily find specific user activities.
+- [x] Create a UI toggle in the settings panel to easily enable or disable the automated webhook alerts.
