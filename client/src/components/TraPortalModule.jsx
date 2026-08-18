@@ -708,6 +708,64 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                 className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
             </div>
+            {/* Quick Date Range Presets */}
+            <div className="flex items-center gap-1.5 border-l border-slate-200 dark:border-slate-700 pl-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  const y = now.getFullYear();
+                  const m = String(now.getMonth() + 1).padStart(2, '0');
+                  const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+                  setVatMonthStart(`${y}-${m}`);
+                  setVatMonthEnd(`${y}-${m}`);
+                  setVatDateFrom(`${y}-${m}-01`);
+                  setVatDateTo(`${y}-${m}-${lastDay}`);
+                  setNotice("Applied 'This Month' filter preset.");
+                }}
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              >
+                This Month
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  let y = now.getFullYear();
+                  let m = now.getMonth(); // 0-indexed, so previous month
+                  if (m === 0) { m = 12; y -= 1; }
+                  const mStr = String(m).padStart(2, '0');
+                  const lastDay = new Date(y, m, 0).getDate();
+                  setVatMonthStart(`${y}-${mStr}`);
+                  setVatMonthEnd(`${y}-${mStr}`);
+                  setVatDateFrom(`${y}-${mStr}-01`);
+                  setVatDateTo(`${y}-${mStr}-${lastDay}`);
+                  setNotice("Applied 'Last Month' filter preset.");
+                }}
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              >
+                Last Month
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  const y = now.getFullYear();
+                  const q = Math.floor(now.getMonth() / 3); // 0, 1, 2, 3
+                  const startMonth = String(q * 3 + 1).padStart(2, '0');
+                  const endMonth = String(q * 3 + 3).padStart(2, '0');
+                  const lastDay = new Date(y, q * 3 + 3, 0).getDate();
+                  setVatMonthStart(`${y}-${startMonth}`);
+                  setVatMonthEnd(`${y}-${endMonth}`);
+                  setVatDateFrom(`${y}-${startMonth}-01`);
+                  setVatDateTo(`${y}-${endMonth}-${lastDay}`);
+                  setNotice("Applied 'This Quarter' filter preset.");
+                }}
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              >
+                This Quarter
+              </button>
+            </div>
             <div className="relative flex-1 min-w-[200px]">
               <Search size={15} className="absolute left-3 top-2.5 text-slate-400" />
               <input
