@@ -725,4 +725,5 @@
 - [x] Implement a feature to group filtered VAT returns by buyer name and show subtotals for each buyer.
 - [x] Add an expand and collapse toggle for each buyer group in the VAT Returns receipt table to make navigation easier.
 - [x] Add "Expand All" and "Collapse All" buttons above the table to quickly toggle all buyer groups at once.
-- [ ] Implement pagination for the VAT Returns table to ensure smooth scrolling and performance when dealing with a large number of records.
+- [x] Implement pagination for the VAT Returns table to ensure smooth scrolling and performance when dealing with a large number of records.
+- [ ] Implement a loading skeleton animation that displays while the table data is being fetched or filtered.

@@ -69,6 +69,14 @@ export function TraPortalModule({ companyId, lang = "en" }) {
   const [collapsedBuyers, setCollapsedBuyers] = useState({});
   const [vatPage, setVatPage] = useState(1);
   const [vatPageSize, setVatPageSize] = useState(10);
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  // Trigger brief filtering skeleton on filter/search change
+  React.useEffect(() => {
+    setIsFiltering(true);
+    const t = setTimeout(() => setIsFiltering(false), 250);
+    return () => clearTimeout(t);
+  }, [vatMonthStart, vatMonthEnd, vatSearch, vatSortField, vatSortOrder, groupByBuyer]);
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -792,7 +800,30 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {!groupByBuyer && paginatedVatReceipts.map(r => (
+                  {(isLoadingReceipts || isFiltering) && Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={`skeleton-${i}`} className="animate-pulse bg-slate-50/50 dark:bg-slate-800/30">
+                      <td className="px-6 py-4">
+                        <div className="h-4 w-28 bg-slate-200 dark:bg-slate-700 rounded" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-3 w-36 bg-slate-200 dark:bg-slate-700 rounded mb-1" />
+                        <div className="h-2.5 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-3 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="h-5 w-16 bg-slate-200 dark:bg-slate-700 rounded-full ml-auto" />
+                      </td>
+                    </tr>
+                  ))}
+                  {!isLoadingReceipts && !isFiltering && !groupByBuyer && paginatedVatReceipts.map(r => (
                     <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                       <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200">{r.receiptNumber}</td>
                       <td className="px-6 py-3 text-xs text-slate-600 dark:text-slate-400">
@@ -809,7 +840,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                       </td>
                     </tr>
                   ))}
-                  {groupByBuyer && Object.entries(
+                  {!isLoadingReceipts && !isFiltering && groupByBuyer && Object.entries(
                     paginatedVatReceipts.reduce((acc, r) => {
                       const buyer = (r.buyerName || "Buyer Not Provided").trim();
                       if (!acc[buyer]) acc[buyer] = [];
@@ -857,7 +888,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                       </React.Fragment>
                     );
                   })}
-                  {sortedVatReceipts.length > 0 && (
+                  {!isLoadingReceipts && !isFiltering && sortedVatReceipts.length > 0 && (
                     <tr className="bg-slate-100/90 border-t-2 border-slate-300 font-bold dark:bg-slate-800 dark:border-slate-700">
                       <td colSpan={2} className="px-6 py-3.5 text-slate-900 dark:text-white">
                         Grand Total for Filtered Results ({sortedVatReceipts.length} receipts):
@@ -870,7 +901,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                       </td>
                     </tr>
                   )}
-                  {sortedVatReceipts.length === 0 && (
+                  {!isLoadingReceipts && !isFiltering && sortedVatReceipts.length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-slate-400">No fiscal receipts found for the selected month range and search query.</td>
                     </tr>
