@@ -801,3 +801,6 @@
 - [x] Add zoom controls, pagination navigation, and a direct download button inside the newly created in-browser PDF preview modal.
 - [x] Implement a live preview pane next to the Slack message template editor to show exactly how dynamic variables will render.
 - [x] Build a user interface in the settings panel to configure and manage WhatsApp numbers for urgent FX variance alerts.
+- [x] Add a "Send Test Alert" button in the WhatsApp settings UI to verify the configured numbers receive the FX variance alerts.
+- [x] Implement a visual toggle in the Slack template editor to preview how the message looks in both light and dark modes.
+- [x] Add a search and filter bar to the audit history table to easily find specific quarterly statutory audit packets by date or status.
