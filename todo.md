@@ -836,3 +836,6 @@
 - [x] Include a retry button next to failed email delivery logs in the audit trail to quickly resend the report.
 - [x] Add a delivery status summary chart in the security audit dashboard to visualize email success and failure rates.
 - [x] Include an export button next to the delivery status chart to allow downloading the visualization as a PNG or PDF.
+- [x] Configure automated cloud storage archival for downloaded security audit chart exports.
+- [x] Add a date range filter selector specifically for the delivery status summary chart.
+- [x] Integrate push notification alerts for significant daily shifts in email delivery failure rates.
