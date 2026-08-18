@@ -717,7 +717,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                 <h4 className="text-[14px] font-bold text-slate-900 dark:text-white">Itemized Fiscal Register</h4>
                 <p className="text-[12px] text-slate-500">Click column headers below to sort by date, amount, or receipt number.</p>
               </div>
-              <div className="flex items-center gap-4 text-[12px]">
+              <div className="flex flex-wrap items-center gap-3 text-[12px]">
                 <span className="text-slate-500">Sorting by: <strong className="text-emerald-600 uppercase">{vatSortField} ({vatSortOrder})</strong></span>
                 <button
                   onClick={() => setGroupByBuyer(!groupByBuyer)}
@@ -725,6 +725,29 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                 >
                   {groupByBuyer ? 'Ungroup Buyer Subtotals' : 'Group by Buyer'}
                 </button>
+                {groupByBuyer && (
+                  <div className="flex items-center gap-1.5 border-l border-slate-300 dark:border-slate-700 pl-3">
+                    <button
+                      onClick={() => setCollapsedBuyers({})}
+                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition"
+                    >
+                      Expand All
+                    </button>
+                    <button
+                      onClick={() => {
+                        const allBuyers = {};
+                        sortedVatReceipts.forEach(r => {
+                          const buyer = (r.buyerName || "Buyer Not Provided").trim();
+                          allBuyers[buyer] = true;
+                        });
+                        setCollapsedBuyers(allBuyers);
+                      }}
+                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition"
+                    >
+                      Collapse All
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             <div className="overflow-x-auto">
