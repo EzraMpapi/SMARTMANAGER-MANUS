@@ -795,3 +795,6 @@
 - [x] 32–37 — Microfinance, VICOBA/SACCOS, Community Groups, Healthcare, School Management, Pharmacy, and Hotel/Hospitality.
 - [x] 38–42 — Banking/MFI, Restaurant/F&B, Employee Portal, Security Dashboard, and Command Palette.
 - [x] 45 — Settings: Final Enterprise Control Center.
+- [x] Add an in-browser PDF preview modal for the statutory audit packets so users can review the reports before downloading them.
+- [x] Implement a historical trend chart in the reconciliation view to visualize exchange rate variances over the past twelve months.
+- [x] Create a message template editor for the Slack risk alerts allowing users to insert dynamic variables like currency and variance amounts.
