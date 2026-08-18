@@ -6287,7 +6287,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
             <span className="text-[11px] text-slate-400 font-medium">Next scheduled check: Tomorrow 03:00 UTC</span>
             <button
-              onClick={() => onNavigate("tra-portal")}
+              onClick={() => onNavigate("tra_portal")}
               className="inline-flex items-center gap-1 rounded-xl bg-[#16A34A] px-3.5 py-1.5 text-[11.5px] font-bold text-white shadow-sm hover:bg-[#15803D] transition-colors"
             >
               Open TRA Portal <ChevronRight size={13} />
