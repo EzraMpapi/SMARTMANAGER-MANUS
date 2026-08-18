@@ -5,6 +5,20 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 pdf_path = "/home/ubuntu/businesssphere-erp/client/public/Smart_Manager_ERP_Executive_Presentation_Inventory.pdf"
+def add_watermark(canvas, doc):
+    canvas.saveState()
+    canvas.setFont("Helvetica-Bold", 40)
+    canvas.setFillColor(colors.HexColor('#E2E8F0'), alpha=0.35)
+    canvas.rotate(45)
+    canvas.drawString(180, 50, "CONFIDENTIAL - SMART MANAGER ENTERPRISE AUDIT")
+    canvas.restoreState()
+    canvas.saveState()
+    canvas.setFont("Helvetica", 8)
+    canvas.setFillColor(colors.HexColor('#64748B'))
+    canvas.drawString(54, 30, "Smart Manager Enterprise Compliance Engine | Traceable Watermark ID: SMT-AUDIT-2026-V1")
+    canvas.drawRightString(612 - 54, 30, f"Page {doc.page}")
+    canvas.restoreState()
+
 doc = SimpleDocTemplate(pdf_path, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
 
 styles = getSampleStyleSheet()
@@ -97,5 +111,5 @@ t.setStyle(TableStyle([
 
 story.append(t)
 
-doc.build(story)
+doc.build(story, onFirstPage=add_watermark, onLaterPages=add_watermark)
 print("PDF generated successfully at:", pdf_path)

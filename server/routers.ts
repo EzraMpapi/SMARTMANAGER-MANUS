@@ -115,6 +115,32 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err.message || "Failed to dispatch email summary." });
         }
       }),
+    triggerNoteWebhook: protectedProcedure
+      .input(z.object({ moduleId: z.string(), moduleName: z.string(), note: z.string(), webhookUrl: z.string().url() }))
+      .mutation(async ({ input }) => {
+        try {
+          const payload = {
+            event: "presentation_module_note_updated",
+            timestamp: new Date().toISOString(),
+            module: { id: input.moduleId, name: input.moduleName },
+            note: input.note,
+          };
+          const response = await fetch(input.webhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-SmartManager-Signature": "sha256-verified-enterprise-hook",
+            },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) {
+            throw new Error(`Webhook endpoint returned status ${response.status}`);
+          }
+          return { success: true };
+        } catch (err: any) {
+          throw new TRPCError({ code: "BAD_GATEWAY", message: `Webhook dispatch failed: ${err.message}` });
+        }
+      }),
     assist: protectedProcedure
       .input(z.object({
         task: z.enum(["chat", "document", "meeting"]).default("chat"),

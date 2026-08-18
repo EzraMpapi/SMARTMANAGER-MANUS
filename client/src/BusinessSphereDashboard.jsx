@@ -38366,6 +38366,7 @@ function POS({ inventory, transactionsHook, transactionItemsHook, company, curre
 function PosReconciliationDashboard({ currentUser }) {
   const reconciliation = useCompanyTable("pos_sync_events", [], { order: { col: "updated_at", ascending: false } });
   const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const rows = useMemo(() => reconciliation.rows.filter((row) => statusFilter === "all" || row.status === statusFilter), [reconciliation.rows, statusFilter]);
   const syncedCount = reconciliation.rows.filter((row) => row.status === "synced").length;
   const attentionCount = reconciliation.rows.filter((row) => row.status === "needs_attention").length;
@@ -50592,6 +50593,7 @@ function SmartManager() {
 function PresentationProgressView() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState("id");
   const [sortAsc, setSortAsc] = useState(true);
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -50667,46 +50669,46 @@ function PresentationProgressView() {
   });
 
   const rawModules = [
-    { id: "01", name: "Public Brand & Marketing Entry", source: "Home.tsx", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
-    { id: "02", name: "Authentication & Secure Onboarding", source: "LoginModuleEcosystem.jsx", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80" },
-    { id: "03", name: "Master Application Shell & Navigation", source: "DashboardLayout.tsx", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&q=80" },
-    { id: "04", name: "Executive Dashboard", source: "Dashboard Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80" },
-    { id: "05", name: "Daily Business Briefing", source: "Executive Briefing", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=400&q=80" },
-    { id: "06", name: "CRM & Customer Pipeline", source: "CRM Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=400&q=80" },
-    { id: "07", name: "Sales & Billing", source: "Sales Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80" },
-    { id: "08", name: "Point of Sale (POS)", source: "POS Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1556742049-0a67d554c2e5?auto=format&fit=crop&w=400&q=80" },
-    { id: "09", name: "Inventory & Warehouse Management", source: "Inventory Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80" },
-    { id: "10", name: "Procurement & Vendor Management", source: "Procurement Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=400&q=80" },
-    { id: "11", name: "Finance & Accounting", source: "Finance Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80" },
-    { id: "12", name: "Reports & Scheduled Reporting", source: "Reports Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
-    { id: "13", name: "Human Resources & Payroll", source: "HR Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80" },
-    { id: "14", name: "Manufacturing & Work Orders", source: "Manufacturing Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=400&q=80" },
-    { id: "15", name: "Supply Chain & Fleet", source: "Supply Chain Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1586528116493-a02732554090?auto=format&fit=crop&w=400&q=80" },
-    { id: "16", name: "Marketing Campaigns", source: "Marketing Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&q=80" },
-    { id: "17", name: "E-Commerce Storefront", source: "E-Commerce Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=400&q=80" },
-    { id: "18", name: "Documents & Secure Files", source: "Documents Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80" },
-    { id: "19", name: "Projects & Task Management", source: "Projects Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=400&q=80" },
-    { id: "20", name: "Customer Support & Helpdesk", source: "Support Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80" },
-    { id: "21", name: "Enterprise Analytics & BI", source: "Analytics Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
-    { id: "22", name: "Notifications & Alerting", source: "Notifications Service", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=400&q=80" },
-    { id: "23", name: "Activity Stream & Audit Evidence", source: "Compliance Audit Logs", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80" },
-    { id: "24", name: "Integration Hub", source: "Integrations Service", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80" },
-    { id: "25", name: "Workflow Studio & Marketplace", source: "Workflows Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=400&q=80" },
-    { id: "26", name: "Collaboration Hub", source: "Collaboration Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=400&q=80" },
-    { id: "27", name: "TRA VFD Fiscalization Portal", source: "TraPortalModule.jsx", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80" },
-    { id: "28", name: "AI Assistant & Smart Intelligence", source: "AI Assistant Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80" },
-    { id: "29", name: "Microfinance", source: "Microfinance Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
-    { id: "30", name: "VICOBA / SACCOS", source: "VICOBA Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=400&q=80" },
-    { id: "31", name: "Community Groups", source: "Community Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80" },
-    { id: "32", name: "Healthcare / Clinic", source: "Industry Workspace", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=400&q=80" },
-    { id: "33", name: "School Management", source: "Industry Workspace", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=400&q=80" },
-    { id: "34", name: "Pharmacy Management", source: "Industry Workspace", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80" },
-    { id: "35", name: "Hotel & Hospitality", source: "Industry Workspace", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=400&q=80" },
-    { id: "36", name: "Fleet Management", source: "Industry Workspace", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=400&q=80" },
-    { id: "37", name: "Banking & MFI", source: "Industry Workspace", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?auto=format&fit=crop&w=400&q=80" },
-    { id: "38", name: "Restaurant & F&B", source: "Industry Workspace", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80" },
-    { id: "39", name: "Employee Portal", source: "Employee Portal", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80" },
-    { id: "40", name: "Enterprise Settings & Security Control Center", source: "Settings Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80" }
+    { id: "01", name: "Public Brand & Marketing Entry", source: "Home.tsx", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
+    { id: "02", name: "Authentication & Secure Onboarding", source: "LoginModuleEcosystem.jsx", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80" },
+    { id: "03", name: "Master Application Shell & Navigation", source: "DashboardLayout.tsx", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&q=80" },
+    { id: "04", name: "Executive Dashboard", source: "Dashboard Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80" },
+    { id: "05", name: "Daily Business Briefing", source: "Executive Briefing", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=400&q=80" },
+    { id: "06", name: "CRM & Customer Pipeline", source: "CRM Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=400&q=80" },
+    { id: "07", name: "Sales & Billing", source: "Sales Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80" },
+    { id: "08", name: "Point of Sale (POS)", source: "POS Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1556742049-0a67d554c2e5?auto=format&fit=crop&w=400&q=80" },
+    { id: "09", name: "Inventory & Warehouse Management", source: "Inventory Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80" },
+    { id: "10", name: "Procurement & Vendor Management", source: "Procurement Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=400&q=80" },
+    { id: "11", name: "Finance & Accounting", source: "Finance Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80" },
+    { id: "12", name: "Reports & Scheduled Reporting", source: "Reports Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
+    { id: "13", name: "Human Resources & Payroll", source: "HR Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80" },
+    { id: "14", name: "Manufacturing & Work Orders", source: "Manufacturing Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=400&q=80" },
+    { id: "15", name: "Supply Chain & Fleet", source: "Supply Chain Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1586528116493-a02732554090?auto=format&fit=crop&w=400&q=80" },
+    { id: "16", name: "Marketing Campaigns", source: "Marketing Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&q=80" },
+    { id: "17", name: "E-Commerce Storefront", source: "E-Commerce Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=400&q=80" },
+    { id: "18", name: "Documents & Secure Files", source: "Documents Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80" },
+    { id: "19", name: "Projects & Task Management", source: "Projects Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=400&q=80" },
+    { id: "20", name: "Customer Support & Helpdesk", source: "Support Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80" },
+    { id: "21", name: "Enterprise Analytics & BI", source: "Analytics Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
+    { id: "22", name: "Notifications & Alerting", source: "Notifications Service", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=400&q=80" },
+    { id: "23", name: "Activity Stream & Audit Evidence", source: "Compliance Audit Logs", status: "Pending Quota", category: "Compliance", thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80" },
+    { id: "24", name: "Integration Hub", source: "Integrations Service", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80" },
+    { id: "25", name: "Workflow Studio & Marketplace", source: "Workflows Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=400&q=80" },
+    { id: "26", name: "Collaboration Hub", source: "Collaboration Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=400&q=80" },
+    { id: "27", name: "TRA VFD Fiscalization Portal", source: "TraPortalModule.jsx", status: "Pending Quota", category: "Compliance", thumbnail: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80" },
+    { id: "28", name: "AI Assistant & Smart Intelligence", source: "AI Assistant Module", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80" },
+    { id: "29", name: "Microfinance", source: "Microfinance Module", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
+    { id: "30", name: "VICOBA / SACCOS", source: "VICOBA Module", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=400&q=80" },
+    { id: "31", name: "Community Groups", source: "Community Module", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80" },
+    { id: "32", name: "Healthcare / Clinic", source: "Industry Workspace", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=400&q=80" },
+    { id: "33", name: "School Management", source: "Industry Workspace", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=400&q=80" },
+    { id: "34", name: "Pharmacy Management", source: "Industry Workspace", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80" },
+    { id: "35", name: "Hotel & Hospitality", source: "Industry Workspace", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=400&q=80" },
+    { id: "36", name: "Fleet Management", source: "Industry Workspace", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=400&q=80" },
+    { id: "37", name: "Banking & MFI", source: "Industry Workspace", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?auto=format&fit=crop&w=400&q=80" },
+    { id: "38", name: "Restaurant & F&B", source: "Industry Workspace", status: "Pending Quota", category: "Industry Workspaces", thumbnail: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80" },
+    { id: "39", name: "Employee Portal", source: "Employee Portal", status: "Pending Quota", category: "Core ERP", thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80" },
+    { id: "40", name: "Enterprise Settings & Security Control Center", source: "Settings Module", status: "Pending Quota", category: "Compliance", thumbnail: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80" }
   ];
 
   const modules = rawModules.map(m => ({
@@ -50723,8 +50725,9 @@ function PresentationProgressView() {
     } else if (statusFilter !== "all") {
       matchesStatus = m.status.toLowerCase().includes(statusFilter.toLowerCase());
     }
+    const matchesCategory = categoryFilter === "all" || m.category === categoryFilter;
     const matchesNoteKeyword = !noteKeywordSearch || (m.note && m.note.toLowerCase().includes(noteKeywordSearch.toLowerCase()));
-    return matchesSearch && matchesStatus && matchesNoteKeyword;
+    return matchesSearch && matchesStatus && matchesCategory && matchesNoteKeyword;
   }).sort((a, b) => {
     let valA = a[sortBy];
     let valB = b[sortBy];
@@ -50981,6 +50984,16 @@ function PresentationProgressView() {
               <option value="completed">Completed</option>
             </select>
             <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="text-[13px] border border-slate-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#059669]"
+            >
+              <option value="all">All Categories</option>
+              <option value="Core ERP">Core ERP</option>
+              <option value="Industry Workspaces">Industry Workspaces</option>
+              <option value="Compliance">Compliance</option>
+            </select>
+            <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="text-[13px] border border-slate-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#059669]"
@@ -51004,6 +51017,7 @@ function PresentationProgressView() {
                 <th className="py-3 px-6">ID</th>
                 <th className="py-3 px-6">Asset Thumbnail</th>
                 <th className="py-3 px-6">Module / Enterprise Surface</th>
+                <th className="py-3 px-6">Category</th>
                 <th className="py-3 px-6">Source Reference</th>
                 <th className="py-3 px-6">Presentation Status</th>
                 <th className="py-3 px-6 text-right">Action</th>
@@ -51030,6 +51044,11 @@ function PresentationProgressView() {
                         </span>
                       )}
                     </div>
+                  </td>
+                  <td className="py-3 px-6">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                      {m.category}
+                    </span>
                   </td>
                   <td className="py-3 px-6 text-slate-500 font-mono text-[12px]">{m.source}</td>
                   <td className="py-3 px-6">
