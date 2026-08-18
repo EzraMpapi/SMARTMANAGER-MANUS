@@ -5485,6 +5485,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [exportEndDate, setExportEndDate] = useState("");
   const [exportModules, setExportModules] = useState({ finance: true, sales: true, crm: true, inventory: true, operations: true });
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [digestSettingsOpen, setDigestSettingsOpen] = useState(false);
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
   const [drillDownMonth, setDrillDownMonth] = useState(null);
   const [drillDownSearch, setDrillDownSearch] = useState("");
@@ -5980,13 +5981,34 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => onNavigate("reports")}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2 text-[12px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm shrink-0"
-            >
-              Manage Schedules →
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setDigestSettingsOpen(true)}
+                className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 px-3.5 py-2 text-[12px] font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition shadow-sm"
+              >
+                ⚙️ Configure Digest
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate("reports")}
+                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2 text-[12px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm"
+              >
+                Manage Schedules →
+              </button>
+            </div>
+            {digestSettingsOpen && (
+              <ComplianceDigestSettingsModal
+                company={company}
+                currentUser={currentUser}
+                onClose={() => setDigestSettingsOpen(false)}
+                onSaved={() => {
+                  setDigestSettingsOpen(false);
+                  schedulesQuery.refetch();
+                  notify("Compliance digest settings updated successfully.");
+                }}
+              />
+            )}
           </div>
         );
       })()}
@@ -50955,6 +50977,134 @@ function AppLock({ children }) {
             <Fingerprint size={15} /> Unlock with fingerprint / Face ID
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved }) {
+  const schedulesQuery = trpc.reportSchedules.list.useQuery(undefined, { enabled: Boolean(company?.id) });
+  const createSchedule = trpc.reportSchedules.create.useMutation({ onSuccess: onSaved });
+  const updateSchedule = trpc.reportSchedules.update.useMutation({ onSuccess: onSaved });
+  const removeSchedule = trpc.reportSchedules.remove.useMutation({ onSuccess: () => schedulesQuery.refetch() });
+
+  const existing = schedulesQuery.data?.[0];
+  const [name, setName] = useState(existing?.name || "Weekly Compliance Digest");
+  const [recipientEmail, setRecipientEmail] = useState(existing?.recipientEmail || currentUser?.email || "admin@businesssphere.co.tz");
+  const [frequency, setFrequency] = useState(existing?.frequency || "weekly");
+  const [format, setFormat] = useState(existing?.format || "pdf");
+
+  useEffect(() => {
+    if (existing) {
+      setName(existing.name);
+      setRecipientEmail(existing.recipientEmail);
+      setFrequency(existing.frequency);
+      setFormat(existing.format);
+    }
+  }, [existing]);
+
+  function handleSave(e) {
+    e.preventDefault();
+    if (!recipientEmail || !recipientEmail.includes("@")) {
+      alert("Please provide a valid recipient email address.");
+      return;
+    }
+    const modules = { finance: true, sales: true, crm: true, inventory: true, operations: true };
+    const dateRange = { start: "", end: "" };
+    if (existing) {
+      updateSchedule.mutate({
+        id: existing.id,
+        name,
+        recipientEmail,
+        frequency,
+        format,
+        modules,
+        dateRange,
+      });
+    } else {
+      createSchedule.mutate({
+        companyId: company?.id || "default",
+        name,
+        recipientEmail,
+        frequency,
+        format,
+        modules,
+        dateRange,
+      });
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">Configure Compliance Digest</h3>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700">✕</button>
+        </div>
+        <p className="text-[12.5px] text-slate-500 mb-5">Customize email recipients and delivery frequency for automated weekly tenant compliance digests.</p>
+        <form onSubmit={handleSave} className="space-y-4">
+          <div>
+            <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Digest Title</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-[13px] text-slate-900 dark:text-white outline-none focus:border-[#16A34A]"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Recipient Email Address</label>
+            <input
+              type="email"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-[13px] text-slate-900 dark:text-white outline-none focus:border-[#16A34A]"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Frequency</label>
+              <select
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-[13px] text-slate-900 dark:text-white outline-none focus:border-[#16A34A]"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly (Every Monday)</option>
+                <option value="monthly">Monthly (1st of Month)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Report Format</label>
+              <select
+                value={format}
+                onChange={(e) => setFormat(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-[13px] text-slate-900 dark:text-white outline-none focus:border-[#16A34A]"
+              >
+                <option value="pdf">PDF Attachment</option>
+                <option value="csv">CSV Spreadsheet</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={createSchedule.isPending || updateSchedule.isPending}
+              className="rounded-xl bg-[#16A34A] px-5 py-2.5 text-[12.5px] font-semibold text-white shadow-sm hover:bg-[#15803D] disabled:opacity-50"
+            >
+              {createSchedule.isPending || updateSchedule.isPending ? "Saving..." : "Save Configuration"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
