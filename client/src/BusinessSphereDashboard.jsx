@@ -50630,6 +50630,10 @@ function PresentationProgressView() {
   const [chartHovered, setChartHovered] = useState(false);
   const [aiSummary, setAiSummary] = useState(null);
   const [aiSummarizing, setAiSummarizing] = useState(false);
+  const [noteKeywordSearch, setNoteKeywordSearch] = useState("");
+  const [emailRecipient, setEmailRecipient] = useState("supervisors@smartmanager.co.tz");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState(false);
 
   useEffect(() => {
     try {
@@ -50647,6 +50651,18 @@ function PresentationProgressView() {
     onError: (err) => {
       setAiSummary("Failed to generate summary: " + err.message);
       setAiSummarizing(false);
+    }
+  });
+
+  const sendEmailMutation = trpc.ai.sendSummaryEmail.useMutation({
+    onSuccess: () => {
+      setEmailSending(false);
+      setEmailSuccess(true);
+      setTimeout(() => setEmailSuccess(false), 4000);
+    },
+    onError: (err) => {
+      setEmailSending(false);
+      alert("Failed to send email: " + err.message);
     }
   });
 
@@ -50707,7 +50723,8 @@ function PresentationProgressView() {
     } else if (statusFilter !== "all") {
       matchesStatus = m.status.toLowerCase().includes(statusFilter.toLowerCase());
     }
-    return matchesSearch && matchesStatus;
+    const matchesNoteKeyword = !noteKeywordSearch || (m.note && m.note.toLowerCase().includes(noteKeywordSearch.toLowerCase()));
+    return matchesSearch && matchesStatus && matchesNoteKeyword;
   }).sort((a, b) => {
     let valA = a[sortBy];
     let valB = b[sortBy];
@@ -50793,9 +50810,32 @@ function PresentationProgressView() {
       {/* AI Summary Banner if present */}
       {aiSummary && (
         <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-xl space-y-3 relative">
-          <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-emerald-200/60 pb-3 gap-3">
             <span className="text-[12px] font-bold text-emerald-800 uppercase tracking-wider">AI Categorized Executive Summary</span>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-white border border-emerald-300 rounded-lg px-2 py-1">
+                <input
+                  type="text"
+                  value={emailRecipient}
+                  onChange={(e) => setEmailRecipient(e.target.value)}
+                  placeholder="Recipient email..."
+                  className="text-[12px] border-none focus:outline-none w-44"
+                />
+                <button
+                  onClick={() => {
+                    if (!emailRecipient || !emailRecipient.includes("@")) {
+                      alert("Please enter a valid recipient email address.");
+                      return;
+                    }
+                    setEmailSending(true);
+                    sendEmailMutation.mutate({ recipient: emailRecipient, summary: aiSummary });
+                  }}
+                  disabled={emailSending}
+                  className="bg-[#059669] hover:bg-emerald-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded transition-colors disabled:opacity-50"
+                >
+                  {emailSending ? "Sending..." : "Email Report"}
+                </button>
+              </div>
               <button
                 onClick={() => {
                   const blob = new Blob([`Smart Manager ERP - AI Categorized Review Summary\nGenerated: ${new Date().toLocaleString()}\n\n${aiSummary}`], { type: 'text/plain;charset=utf-8' });
@@ -50806,13 +50846,18 @@ function PresentationProgressView() {
                   a.click();
                   URL.revokeObjectURL(url);
                 }}
-                className="text-[12px] font-semibold text-emerald-700 hover:text-emerald-900 underline"
+                className="text-[12px] font-semibold text-emerald-700 hover:text-emerald-900 underline px-2 py-1"
               >
-                Download Summary TXT/PDF Report
+                Download Report
               </button>
-              <button onClick={() => setAiSummary(null)} className="text-emerald-600 hover:text-emerald-800 text-xs font-bold">✕</button>
+              <button onClick={() => setAiSummary(null)} className="text-emerald-600 hover:text-emerald-800 text-xs font-bold px-1">✕</button>
             </div>
           </div>
+          {emailSuccess && (
+            <div className="bg-emerald-100 text-emerald-800 text-[12px] px-3 py-1.5 rounded font-medium">
+              Summary report successfully dispatched to {emailRecipient}!
+            </div>
+          )}
           <p className="text-[13px] text-emerald-900 leading-relaxed whitespace-pre-line">{aiSummary}</p>
         </div>
       )}
@@ -50916,7 +50961,14 @@ function PresentationProgressView() {
               placeholder="Search module or source..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="text-[13px] border border-slate-300 rounded-lg px-3 py-1.5 w-48 focus:outline-none focus:ring-2 focus:ring-[#059669]"
+              className="text-[13px] border border-slate-300 rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:ring-2 focus:ring-[#059669]"
+            />
+            <input
+              type="text"
+              placeholder="Filter notes by keyword..."
+              value={noteKeywordSearch}
+              onChange={(e) => setNoteKeywordSearch(e.target.value)}
+              className="text-[13px] border border-slate-300 rounded-lg px-3 py-1.5 w-44 focus:outline-none focus:ring-2 focus:ring-[#059669]"
             />
             <select
               value={statusFilter}
@@ -51034,7 +51086,11 @@ function PresentationProgressView() {
                         >
                           <span className="block text-[11px] text-slate-600 italic bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded">
                             {m.note}
-                            {m.updatedAt && <span className="block text-[9px] text-slate-400 mt-0.5">Updated: {m.updatedAt}</span>}
+                            {m.updatedAt && (
+                              <span className="block text-[9px] mt-0.5 font-medium text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded inline-block">
+                                Updated: {m.updatedAt} (Recents &lt;24h)
+                              </span>
+                            )}
                             <span className="text-[10px] text-emerald-600 opacity-0 group-hover:opacity-100 ml-1">Edit</span>
                           </span>
                         </div>

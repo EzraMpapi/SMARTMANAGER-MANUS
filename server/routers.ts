@@ -101,6 +101,20 @@ export const appRouter = router({
         });
         return { summary: res.choices[0]?.message?.content || "No summary generated." };
       }),
+    sendSummaryEmail: protectedProcedure
+      .input(z.object({ recipient: z.string().email(), summary: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        try {
+          await sendWorkspaceEmail({
+            to: input.recipient,
+            subject: "Smart Manager ERP - AI Categorized Review Summary Report",
+            html: `<div style="font-family:sans-serif;padding:20px;color:#111827;"><h2>Smart Manager ERP</h2><h3>AI Categorized Review Summary Report</h3><pre style="white-space:pre-wrap;background:#f8fafc;padding:16px;border-radius:8px;border:1px solid #e2e8f0;">${input.summary}</pre><p style="color:#64748b;font-size:12px;margin-top:20px;">Dispatched securely via Smart Manager Enterprise Compliance Engine.</p></div>`,
+          });
+          return { success: true };
+        } catch (err: any) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err.message || "Failed to dispatch email summary." });
+        }
+      }),
     assist: protectedProcedure
       .input(z.object({
         task: z.enum(["chat", "document", "meeting"]).default("chat"),
