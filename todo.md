@@ -764,3 +764,6 @@
 - [x] Add a dashboard widget to display the summary results of the latest recurring tax-compliance audits.
 - [x] Add a search and date filter to the biometric passkey revocation logs to easily find specific user activities.
 - [x] Create a UI toggle in the settings panel to easily enable or disable the automated webhook alerts.
+- [x] Configure automated monthly PDF executive summaries for multi-branch directors.
+- [x] Add custom webhooks for real-time ERP inventory low-stock alerts.
+- [x] Integrate automated multi-currency exchange rate feeds from central banking APIs.
