@@ -798,3 +798,6 @@
 - [x] Add an in-browser PDF preview modal for the statutory audit packets so users can review the reports before downloading them.
 - [x] Implement a historical trend chart in the reconciliation view to visualize exchange rate variances over the past twelve months.
 - [x] Create a message template editor for the Slack risk alerts allowing users to insert dynamic variables like currency and variance amounts.
+- [x] Add zoom controls, pagination navigation, and a direct download button inside the newly created in-browser PDF preview modal.
+- [x] Implement a live preview pane next to the Slack message template editor to show exactly how dynamic variables will render.
+- [x] Build a user interface in the settings panel to configure and manage WhatsApp numbers for urgent FX variance alerts.
