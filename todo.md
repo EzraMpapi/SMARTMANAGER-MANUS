@@ -822,3 +822,6 @@
 - [x] Add a quick-swap button to the currency conversion calculator and include a copy-to-clipboard feature for the final converted amount.
 - [x] Enhance the currency volatility widget by adding a small 7-day historical sparkline chart next to the green and red directional arrows.
 - [x] Upgrade the bank lending rate search bar to include auto-complete suggestions and highlight the matching text within the bank names.
+- [x] Add a feature to save favorite currency pairs in the conversion calculator for quick access.
+- [x] Add hover tooltips to the 7-day volatility sparklines to display the exact exchange rate for each day.
+- [x] Implement a filtering option in the bank search autocomplete to only show banks offering specific loan types.
