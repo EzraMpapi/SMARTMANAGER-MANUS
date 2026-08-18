@@ -1,4 +1,4 @@
-import { boolean, index, int, json, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, index, int, json, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -150,3 +150,80 @@ export const schemaDriftRuns = mysqlTable("schema_drift_runs", {
 }));
 
 export type SchemaDriftRun = typeof schemaDriftRuns.$inferSelect;
+
+export const traZReportArchiveSchedules = mysqlTable("tra_z_report_archive_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerUserId: int("ownerUserId").notNull(),
+  ownerOpenId: varchar("ownerOpenId", { length: 64 }).notNull(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  branchId: varchar("branchId", { length: 64 }).notNull().default("MAIN"),
+  cronExpression: varchar("cronExpression", { length: 64 }).notNull(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  lastRunAt: timestamp("lastRunAt"),
+  lastRunStatus: varchar("lastRunStatus", { length: 24 }),
+  lastArchiveId: int("lastArchiveId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  ownerOpenIdIdx: index("tra_z_archive_schedule_owner_idx").on(table.ownerOpenId),
+  companyBranchUnique: uniqueIndex("tra_z_archive_schedule_company_branch_unique").on(table.companyId, table.branchId),
+  taskUidIdx: index("tra_z_archive_schedule_task_uid_idx").on(table.scheduleCronTaskUid),
+}));
+
+export type TraZReportArchiveSchedule = typeof traZReportArchiveSchedules.$inferSelect;
+
+export const traZReportArchives = mysqlTable("tra_z_report_archives", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  branchId: varchar("branchId", { length: 64 }).notNull().default("MAIN"),
+  businessDate: varchar("businessDate", { length: 32 }).notNull(),
+  zReportId: int("zReportId"),
+  zNumber: varchar("zNumber", { length: 64 }),
+  status: varchar("status", { length: 24 }).notNull(),
+  storageKey: varchar("storageKey", { length: 500 }),
+  storageUrl: varchar("storageUrl", { length: 500 }),
+  contentType: varchar("contentType", { length: 120 }).notNull().default("application/json"),
+  archiveBytes: int("archiveBytes").notNull().default(0),
+  summary: json("summary").notNull(),
+  error: text("error"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  companyDateBranchUnique: uniqueIndex("tra_z_archive_company_branch_date_unique").on(table.companyId, table.branchId, table.businessDate),
+  companyCreatedAtIdx: index("tra_z_archive_company_created_idx").on(table.companyId, table.createdAt),
+}));
+
+export type TraZReportArchive = typeof traZReportArchives.$inferSelect;
+
+export const traGatewayAlertSettings = mysqlTable("tra_gateway_alert_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull().unique(),
+  enabled: boolean("enabled").default(false).notNull(),
+  timeoutThresholdMs: int("timeoutThresholdMs").default(1500).notNull(),
+  cooldownMinutes: int("cooldownMinutes").default(30).notNull(),
+  lastAlertAt: timestamp("lastAlertAt"),
+  lastDeliveryStatus: varchar("lastDeliveryStatus", { length: 24 }),
+  lastMessage: text("lastMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  companyIdx: index("tra_gateway_alert_company_idx").on(table.companyId),
+}));
+
+export type TraGatewayAlertSettings = typeof traGatewayAlertSettings.$inferSelect;
+
+export const traGatewayAlertEvents = mysqlTable("tra_gateway_alert_events", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  branchId: varchar("branchId", { length: 64 }),
+  providerStatus: varchar("providerStatus", { length: 24 }).notNull(),
+  latencyMs: int("latencyMs").notNull(),
+  thresholdMs: int("thresholdMs").notNull(),
+  deliveryStatus: varchar("deliveryStatus", { length: 24 }).notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  companyCreatedAtIdx: index("tra_gateway_alert_event_company_created_idx").on(table.companyId, table.createdAt),
+}));
+
+export type TraGatewayAlertEvent = typeof traGatewayAlertEvents.$inferSelect;

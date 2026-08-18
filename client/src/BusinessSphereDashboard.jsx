@@ -46,6 +46,7 @@ import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { TraPortalModule } from "./components/TraPortalModule";
+import { getTraPortalLanguage } from "./lib/traPortalRoute";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -50532,7 +50533,7 @@ function SmartManager() {
             <CollaborationHub currentUser={currentUser} filesHook={files} employees={employees} invoices={invoices} crm={crm} workOrders={workOrders} leaveRequests={leaveRequests} onNavigate={go} />
           )}
           {active === "tra_portal" && (
-            <TraPortalModule companyId={company?.id || company?.companyId || "default-company"} lang={lang} />
+            <TraPortalModule companyId={company?.id || company?.companyId || "default-company"} lang={getTraPortalLanguage()} onNavigate={go} />
           )}
           {active === "marketing" && <Marketing crm={crm} />}
           {active === "hr" && <HR employeesHook={employees} leaveRequestsHook={leaveRequests} expensesHook={expenses} intent={intent} clearIntent={clearIntent} currentUser={currentUser} canManage={canManage} />}
