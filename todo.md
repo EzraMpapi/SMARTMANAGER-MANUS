@@ -831,3 +831,4 @@
 - [x] Add a PDF export action specifically formatted for buyer-subtotaled VAT schedules.
 - [x] Add a print preview modal for the subtotaled VAT schedule before the final PDF download.
 - [x] Add a company logo and custom watermark option to the VAT print preview modal.
+- [x] Add a direct email sharing button in the print preview modal to send the watermarked PDF to stakeholders.
