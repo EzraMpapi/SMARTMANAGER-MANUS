@@ -5486,6 +5486,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [exportModules, setExportModules] = useState({ finance: true, sales: true, crm: true, inventory: true, operations: true });
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
+  const [drillDownMonth, setDrillDownMonth] = useState(null);
 
 
   const financials = useMemo(() => {
@@ -6303,16 +6304,17 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
       {/* ══════════════════ VAT RETURN TRENDS (SELECTED DATE RANGE) ══════════════════ */}
       {(() => {
-        const months = Array.from({length:6},(_,i)=>{
+        const rawMonths = Array.from({length:6},(_,i)=>{
           const d=new Date(TODAY); d.setMonth(d.getMonth()-5+i);
           return d.toISOString().slice(0,7);
         });
-        const vatTrendData = months.map(mo=>{
+        const vatTrendData = rawMonths.map(mo=>{
           const periodInv = invoices.rows.filter(i=>!periodStart || (i.date||"") >= periodStart);
           const moInv = periodInv.filter(i=>i.date?.startsWith(mo));
           const taxableGross = moInv.reduce((s,i)=>s+lineTotal(i.items||[]).total,0);
           const outputVat = taxableGross * 0.18;
           return {
+            rawMo: mo,
             mo: new Date(mo+"-01").toLocaleDateString("en",{month:"short"}),
             taxable: Math.round(taxableGross / 1000),
             vat: Math.round(outputVat / 1000)
@@ -6325,26 +6327,137 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-[14px] font-bold text-[#111827]">VAT Return Trends — {PERIOD_LABELS[period]}</h3>
-                <p className="text-[11.5px] text-slate-400">Taxable turnover vs Output VAT (18%) computed from verified invoices over the selected date range</p>
+                <p className="text-[11.5px] text-slate-400">Taxable turnover vs Output VAT (18%) computed from verified invoices over the selected date range. Click any month bar or point to inspect itemized fiscal receipts.</p>
               </div>
               <div className="flex items-center gap-2 text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
                 <span>TRA VFD Ready</span>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={190}>
-              <ComposedChart data={vatTrendData} margin={{left:-10,right:4,top:4,bottom:0}}>
+              <ComposedChart data={vatTrendData} margin={{left:-10,right:4,top:4,bottom:0}} onClick={(e)=>{
+                if (e && e.activePayload && e.activePayload[0]) {
+                  const clickedMo = e.activePayload[0].payload.rawMo;
+                  setDrillDownMonth(clickedMo);
+                }
+              }}>
                 <CartesianGrid vertical={false} stroke="#F3F4F6"/>
                 <XAxis dataKey="mo" tick={{fontSize:11,fill:"#94A3B8"}} axisLine={false} tickLine={false}/>
                 <YAxis tick={{fontSize:10,fill:"#94A3B8"}} axisLine={false} tickLine={false}/>
                 <Tooltip contentStyle={{borderRadius:10,border:"1px solid #EEF1F4",fontSize:12}} formatter={(v,n)=>[`TZS ${money(v)}k`,n]}/>
                 <Legend iconSize={9} iconType="circle"/>
-                <Bar dataKey="taxable" name="Taxable Turnover" fill="#34D399" radius={[4,4,0,0]} barSize={24}/>
-                <Line type="monotone" dataKey="vat" name="Output VAT (18%)" stroke="#059669" strokeWidth={2.5} dot={{r:3.5,fill:"#059669"}}/>
+                <Bar dataKey="taxable" name="Taxable Turnover" fill="#34D399" radius={[4,4,0,0]} barSize={24} cursor="pointer" onClick={(d)=>{ if (d && d.rawMo) setDrillDownMonth(d.rawMo); }}/>
+                <Line type="monotone" dataKey="vat" name="Output VAT (18%)" stroke="#059669" strokeWidth={2.5} dot={{r:4,fill:"#059669",cursor:"pointer"}} activeDot={{r:6,onClick:(e,payload)=>{ if (payload && payload.payload && payload.payload.rawMo) setDrillDownMonth(payload.payload.rawMo); }}}/>
               </ComposedChart>
             </ResponsiveContainer>
+            <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+              <span>💡 Tip: Click any bar or data point on the chart to instantly open the itemized VAT receipt audit modal for that month.</span>
+            </div>
           </div>
         );
       })()}
+
+      {/* Drill-Down Modal for Itemized Monthly Fiscal Receipts */}
+      {drillDownMonth && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">Itemized Fiscal Receipts — {drillDownMonth}</h3>
+                  <span className="rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[11px] font-bold uppercase">TRA VFD Audited</span>
+                </div>
+                <p className="text-[12px] text-slate-500">Verified invoices and taxable turnover records contributing to the monthly VAT return for {drillDownMonth}.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDrillDownMonth(null)}
+                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition shadow-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              {(() => {
+                const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
+                const totalGross = monthInvoices.reduce((s, i) => s + lineTotal(i.items || []).total, 0);
+                const totalVat = totalGross * 0.18;
+                return (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+                        <p className="text-[11px] font-bold uppercase text-slate-500">Total Taxable Turnover</p>
+                        <p className="text-xl font-extrabold font-mono text-slate-900 dark:text-white">TZS {totalGross.toLocaleString()}</p>
+                      </div>
+                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+                        <p className="text-[11px] font-bold uppercase text-slate-500">Output VAT (18%)</p>
+                        <p className="text-xl font-extrabold font-mono text-emerald-600">TZS {totalVat.toLocaleString()}</p>
+                      </div>
+                      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+                        <p className="text-[11px] font-bold uppercase text-slate-500">Total Fiscal Invoices</p>
+                        <p className="text-xl font-extrabold font-mono text-slate-900 dark:text-white">{monthInvoices.length} Verified</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                      <table className="w-full text-left text-[12.5px]">
+                        <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
+                          <tr>
+                            <th className="px-4 py-3">Invoice #</th>
+                            <th className="px-4 py-3">Customer / Buyer</th>
+                            <th className="px-4 py-3">Date</th>
+                            <th className="px-4 py-3">Gross Amount</th>
+                            <th className="px-4 py-3">Output VAT (18%)</th>
+                            <th className="px-4 py-3">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200">
+                          {monthInvoices.map(inv => {
+                            const { total } = lineTotal(inv.items || []);
+                            const vat = total * 0.18;
+                            return (
+                              <tr key={inv.id || inv.invoiceNumber} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                                <td className="px-4 py-3 font-mono font-medium text-slate-900 dark:text-white">{inv.invoiceNumber || inv.id}</td>
+                                <td className="px-4 py-3">{inv.customerName || inv.clientName || "Walk-in Customer"}</td>
+                                <td className="px-4 py-3 font-mono text-slate-500">{inv.date || "N/A"}</td>
+                                <td className="px-4 py-3 font-mono font-bold">TZS {total.toLocaleString()}</td>
+                                <td className="px-4 py-3 font-mono font-semibold text-emerald-600">TZS {vat.toLocaleString()}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:text-amber-300'}`}>
+                                    {inv.status || 'Issued'}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {monthInvoices.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="py-12 text-center text-slate-400">
+                                No verified fiscal receipts found for {drillDownMonth}.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+              <span className="text-[12px] text-slate-500">Press Esc or click Close to return to dashboard.</span>
+              <button
+                type="button"
+                onClick={() => setDrillDownMonth(null)}
+                className="rounded-xl bg-[#16A34A] px-4 py-2 text-[12.5px] font-semibold text-white shadow-sm hover:bg-[#15803D] transition"
+              >
+                Close Audit View
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════ MODULE HEALTH GRID ══════════════════ */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
