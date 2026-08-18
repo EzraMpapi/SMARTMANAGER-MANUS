@@ -746,3 +746,9 @@
 - [x] Configure automated compliance alerts for months where output VAT deviates significantly from historical averages.
 - [x] Integrate multi-currency conversion toggles within the drill-down modal for international branch reporting.
 - [x] Include a dedicated "Print View" button in the drill-down modal to format the itemized receipts cleanly for physical printing.
+- [ ] Configure automated scheduled weekly compliance email digests for tenant administrators.
+- [ ] Add branch-level geographic filtering to the VAT return trend analytics.
+- [ ] Integrate push notification alerts for high-value tax return submissions.
+- [x] Configure automated scheduled weekly compliance email digests for tenant administrators.
+- [x] Add branch-level geographic filtering to the VAT return trend analytics.
+- [x] Integrate push notification alerts for high-value tax return submissions.
