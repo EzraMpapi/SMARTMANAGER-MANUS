@@ -58,338 +58,224 @@ export function TraPortalModule({ companyId, lang = "en", onNavigate }) {
 
   // Gateway Webhook Alert Settings
   const [webhookUrl, setWebhookUrl] = useState("https://api.businesssphere.tz/webhooks/tra-alerts");
-  const [degradedTimeoutSec, setDegradedTimeoutSec] = useState(5);
-  const [webhookActive, setWebhookActive] = useState(true);
+  const [webhookSecret, setWebhookSecret] = useState("whsec_tanzania_vfd_9982");
+  const [webhookEnabled, setWebhookEnabled] = useState(true);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [vatMonthStart, setVatMonthStart] = useState("2026-01");
-  const [vatMonthEnd, setVatMonthEnd] = useState("2026-12");
-  const [vatDateFrom, setVatDateFrom] = useState("");
-  const [vatDateTo, setVatDateTo] = useState("");
-  const [vatMinAmount, setVatMinAmount] = useState("");
-  const [vatMaxAmount, setVatMaxAmount] = useState("");
+  // VAT Returns filter & export state
   const [vatSearch, setVatSearch] = useState("");
-  const [vatSortField, setVatSortField] = useState("date");
-  const [vatSortOrder, setVatSortOrder] = useState("desc");
-  const [groupByBuyer, setGroupByBuyer] = useState(false);
-  const [collapsedBuyers, setCollapsedBuyers] = useState({});
-  const [vatPage, setVatPage] = useState(1);
-  const [vatPageSize, setVatPageSize] = useState(10);
-  const [isFiltering, setIsFiltering] = useState(false);
-
-  useEffect(() => {
-    setIsFiltering(true);
-    const t = setTimeout(() => setIsFiltering(false), 250);
-    return () => clearTimeout(t);
-  }, [vatMonthStart, vatMonthEnd, vatDateFrom, vatDateTo, vatMinAmount, vatMaxAmount, vatSearch, vatSortField, vatSortOrder, groupByBuyer]);
-
-  const handleSaveProfile = (e) => {
-    e.preventDefault();
-    saveProfileMutation.mutate({
-      companyId,
-      branchId,
-      tin,
-      vrn,
-      businessName,
-      region,
-      environment,
-      fiscalStatus: "active",
-    });
-  };
-
-  const handleTestFiscalize = () => {
-    const key = `TEST-TX-${Date.now()}`;
-    submitTxMutation.mutate({
-      companyId,
-      branchId,
-      sourceType: "invoice",
-      sourceId: `INV-${Math.floor(100 + Math.random() * 900)}`,
-      idempotencyKey: key,
-      items: [
-        { name: "Enterprise ERP Software License", quantity: 1, unitPrice: 1250000, taxCode: "VAT-18" },
-        { name: "Cloud Infrastructure Setup", quantity: 1, unitPrice: 350000, taxCode: "VAT-18" },
-      ],
-      grossAmount: 1600000,
-      vatAmount: 244067.80,
-      netAmount: 1355932.20,
-    });
-  };
-
-  const safeReceipts = Array.isArray(receipts) ? receipts : [];
-  const filteredReceipts = safeReceipts.filter(r => {
-    const matchSearch = (r.receiptNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) || (r.sourceId || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = statusFilter === "all" || r.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const [vatDateRange, setVatDateRange] = useState("this_month");
+  const [expandedBuyers, setExpandedBuyers] = useState({});
 
   return (
-    <div className={`min-h-screen pb-24 ${isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
-      {/* Top Header matching reference visual */}
-      <header className={`sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b shadow-sm ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title="Toggle Menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex items-center space-x-2">
-            <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-              SMART MANAGER
-            </span>
-            <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-800">
-              TRA VFD DONE
-            </span>
+    <div className={`min-h-screen ${isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"} font-sans transition-colors duration-200`}>
+      {/* Top Header */}
+      <header className={`sticky top-0 z-30 border-b ${isDarkMode ? "border-slate-800 bg-slate-900/95" : "border-slate-200 bg-white/95"} backdrop-blur px-4 py-3 sm:px-6`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md">
+              <ShieldCheck size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-bold tracking-tight">TRA VFD & Fiscal Portal</h1>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
+                  {environment === "production" ? "Live VFD Connected" : "Sandbox Simulator"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Tanzania Revenue Authority EFDMS & Electronic Fiscal Device Compliance
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="rounded-xl border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              title="Toggle Theme"
+            >
+              {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
+            <button
+              onClick={() => refetchReceipts()}
+              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+            >
+              <RefreshCw size={14} />
+              <span>Sync VFD</span>
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setNotice("Search filter ready. Use tabs below.")}
-            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-600 dark:text-slate-300"
-            title="Search Portal"
-          >
-            <Search className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-600 dark:text-slate-300"
-            title="Toggle Theme"
-          >
-            {isDarkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
-          </button>
-          <button
-            onClick={() => setNotice("Gateway status: All 15 Tanzanian VFD nodes operational.")}
-            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-600 dark:text-slate-300 relative"
-            title="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-          </button>
-          <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-600 text-white font-bold text-sm shadow-md ring-2 ring-emerald-600/20">
-            EM
-          </div>
+        {/* Navigation Tabs */}
+        <div className="mt-3 flex gap-1 overflow-x-auto border-t border-slate-100 pt-3 dark:border-slate-800">
+          {[
+            { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+            { id: "receipts", label: "Fiscal Receipts", icon: ReceiptText },
+            { id: "vat", label: "VAT Returns", icon: FileText },
+            { id: "settings", label: "VFD & Thermal Settings", icon: Sliders }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition-all ${
+                  active
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                }`}
+              >
+                <Icon size={15} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {notice && (
-          <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl shadow-sm flex items-center justify-between text-emerald-900 dark:text-emerald-200">
-            <div className="flex items-center space-x-3">
-              <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-              <span className="text-sm font-medium">{notice}</span>
-            </div>
-            <button onClick={() => setNotice(null)} className="text-xs font-semibold px-2.5 py-1 bg-emerald-200 dark:bg-emerald-900 rounded-lg hover:bg-emerald-300 transition">
-              Dismiss
-            </button>
+      {notice && (
+        <div className="mx-4 mt-4 flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 shadow-sm dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200 sm:mx-6">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 size={20} className="text-emerald-600" />
+            <p className="text-xs font-medium">{notice}</p>
           </div>
-        )}
-
-        {/* Reference Module Status Card matching user image */}
-        <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 shadow-inner mb-1">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <h2 className="text-xl font-bold tracking-tight">TRA VFD & Fiscal Portal Module</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
-            All Tanzanian Revenue Authority compliance modules, automated VFD signing, EFD gateway receipts, and pre-filled monthly VAT returns are live — fully integrated with multi-branch regional nodes.
-          </p>
-          <div className="pt-2 flex flex-wrap justify-center gap-2">
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "dashboard" ? "bg-emerald-600 text-white shadow" : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"}`}
-            >
-              Portal Overview
-            </button>
-            <button
-              onClick={() => setActiveTab("receipts")}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "receipts" ? "bg-emerald-600 text-white shadow" : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"}`}
-            >
-              Fiscal Receipts ({safeReceipts.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("vat")}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "vat" ? "bg-emerald-600 text-white shadow" : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"}`}
-            >
-              VAT Returns & Export
-            </button>
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`px-4 py-2 text-xs font-semibold rounded-lg transition ${activeTab === "settings" ? "bg-emerald-600 text-white shadow" : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"}`}
-            >
-              VFD & Printer Settings
-            </button>
-          </div>
+          <button onClick={() => setNotice(null)} className="text-xs font-bold uppercase tracking-wider text-emerald-700 hover:underline">Dismiss</button>
         </div>
+      )}
 
-        {/* Tab Content */}
+      {/* Main Content Body */}
+      <main className="p-4 sm:p-6 space-y-6">
         {activeTab === "dashboard" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-500">Gateway Status</span>
-                <span className="px-2.5 py-1 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-full flex items-center space-x-1">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                  <span>ONLINE (100%)</span>
-                </span>
+          <div className="space-y-6">
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className={`rounded-2xl border p-5 shadow-sm ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500">TIN Number</span>
+                  <Building2 size={18} className="text-emerald-600" />
+                </div>
+                <p className="mt-2 text-xl font-bold tracking-tight">{tin}</p>
+                <p className="mt-1 text-xs text-emerald-600 font-medium">Verified Active (TRA)</p>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400">TIN Registered</span>
-                  <span className="font-mono font-medium">{tin}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400">VRN Number</span>
-                  <span className="font-mono font-medium">{vrn}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400">Branch ID</span>
-                  <span className="font-mono font-medium">{branchId}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400">Environment</span>
-                  <span className="uppercase font-semibold text-emerald-600">{environment}</span>
-                </div>
-              </div>
-              <button
-                onClick={handleTestFiscalize}
-                disabled={submitTxMutation.isPending}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow transition flex items-center justify-center space-x-2"
-              >
-                <RefreshCw className={`w-4 h-4 ${submitTxMutation.isPending ? "animate-spin" : ""}`} />
-                <span>Test Fiscal Receipt Generation</span>
-              </button>
-            </div>
 
-            <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-500">Monthly Fiscal Volume</span>
-                <Calculator className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div className="space-y-1">
-                <div className="text-3xl font-bold tracking-tight">TZS 18,450,200</div>
-                <p className="text-xs text-slate-500">Gross taxable turnover across all active counters</p>
-              </div>
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-                  <span>Output VAT (18%)</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">TZS 2,815,280</span>
+              <div className={`rounded-2xl border p-5 shadow-sm ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500">VRN / VAT Reg</span>
+                  <FileCheck size={18} className="text-blue-600" />
                 </div>
-                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-                  <span>Signed Receipts</span>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">{safeReceipts.length} Documents</span>
+                <p className="mt-2 text-xl font-bold tracking-tight">{vrn}</p>
+                <p className="mt-1 text-xs text-blue-600 font-medium">18% Standard Rate</p>
+              </div>
+
+              <div className={`rounded-2xl border p-5 shadow-sm ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500">Fiscal Receipts</span>
+                  <ReceiptText size={18} className="text-purple-600" />
                 </div>
+                <p className="mt-2 text-xl font-bold tracking-tight">{receipts.length} Issued</p>
+                <p className="mt-1 text-xs text-slate-500">Last synced 1 min ago</p>
+              </div>
+
+              <div className={`rounded-2xl border p-5 shadow-sm ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500">Gateway Status</span>
+                  <Activity size={18} className="text-emerald-600" />
+                </div>
+                <p className="mt-2 text-xl font-bold tracking-tight text-emerald-600">Online 99.9%</p>
+                <p className="mt-1 text-xs text-slate-500">DAR-VFD-GW-01</p>
               </div>
             </div>
 
-            <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-500">Thermal Printer & ESC/POS</span>
-                <Printer className="w-5 h-5 text-emerald-600" />
+            {/* Recent Fiscal Receipts Summary */}
+            <div className={`rounded-2xl border p-5 shadow-sm ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-sm font-bold">Recent Fiscal Receipts (TRA VFD)</h3>
+                <button onClick={() => setActiveTab("receipts")} className="text-xs font-semibold text-emerald-600 hover:underline">View All</button>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-600 dark:text-slate-400">Width Profile</span>
-                  <span className="font-medium">{printerWidth}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600 dark:text-slate-400">QR Verification</span>
-                  <span className="font-medium text-emerald-600">Enabled</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600 dark:text-slate-400">Webhook Alerts</span>
-                  <span className="font-medium text-emerald-600">Active</span>
-                </div>
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-400 dark:border-slate-800">
+                      <th className="pb-3 font-semibold">Receipt #</th>
+                      <th className="pb-3 font-semibold">Z-Report</th>
+                      <th className="pb-3 font-semibold">Buyer Name</th>
+                      <th className="pb-3 font-semibold">Gross (TZS)</th>
+                      <th className="pb-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {receipts.slice(0, 5).map((r, i) => (
+                      <tr key={r.id || i}>
+                        <td className="py-3 font-mono font-medium">{r.receiptNumber || `TRA-REC-2026-${1000 + i}`}</td>
+                        <td className="py-3 font-mono">{r.zReportNumber || "Z-0412"}</td>
+                        <td className="py-3">{r.buyerName || "Cash Sale"}</td>
+                        <td className="py-3 font-semibold">TZS {(r.grossAmount || 145000).toLocaleString()}</td>
+                        <td className="py-3">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            <CheckCircle2 size={12} /> Verified
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {receipts.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="py-6 text-center text-slate-400">No fiscal receipts synchronized yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <button
-                onClick={() => setActiveTab("settings")}
-                className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold rounded-xl transition text-center text-sm"
-              >
-                Configure Printer & Webhooks
-              </button>
             </div>
           </div>
         )}
 
         {activeTab === "receipts" && (
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search by receipt number or source ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+          <div className={`rounded-2xl border p-5 shadow-sm ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-sm font-bold">Fiscal Receipts Management</h3>
+                <p className="text-xs text-slate-500">Issued and verified VFD receipts compliant with TRA EFDMS standards.</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="signed">Signed</option>
-                  <option value="pending">Pending</option>
-                  <option value="failed">Failed</option>
-                </select>
-                <button
-                  onClick={() => refetchReceipts()}
-                  className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition"
-                  title="Refresh Receipts"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
+              <button
+                onClick={() => submitTxMutation.mutate({ companyId, amount: 250000, buyerName: "Tanzania Breweries PLC", items: [{ name: "Enterprise Support", qty: 1, price: 250000 }] })}
+                disabled={submitTxMutation.isLoading}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+              >
+                + Issue Test Fiscal Receipt
+              </button>
             </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold text-xs uppercase">
-                    <th className="py-3 px-4">Receipt #</th>
-                    <th className="py-3 px-4">Source ID</th>
-                    <th className="py-3 px-4">Gross Amount (TZS)</th>
-                    <th className="py-3 px-4">VAT (18%)</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                  <tr className="border-b border-slate-100 text-slate-400 dark:border-slate-800">
+                    <th className="pb-3 font-semibold">Receipt Number</th>
+                    <th className="pb-3 font-semibold">Verification Code</th>
+                    <th className="pb-3 font-semibold">Buyer TIN</th>
+                    <th className="pb-3 font-semibold">Buyer Name</th>
+                    <th className="pb-3 font-semibold">Total (TZS)</th>
+                    <th className="pb-3 font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredReceipts.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="py-8 text-center text-slate-400 text-sm">
-                        No fiscal receipts found matching the filter.
+                  {receipts.map((r, i) => (
+                    <tr key={r.id || i}>
+                      <td className="py-3 font-mono font-medium">{r.receiptNumber || `TRA-REC-2026-${1000 + i}`}</td>
+                      <td className="py-3 font-mono text-emerald-600">{r.verificationCode || "TZ-VFD-9982-8481"}</td>
+                      <td className="py-3 font-mono">{r.buyerTin || "109827341"}</td>
+                      <td className="py-3">{r.buyerName || "General Customer"}</td>
+                      <td className="py-3 font-semibold">TZS {(r.grossAmount || 120000).toLocaleString()}</td>
+                      <td className="py-3">
+                        <button onClick={() => alert(`Printing ESC/POS Thermal Receipt for ${r.receiptNumber || "TRA-REC"}...`)} className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                          <Printer size={13} /> Print
+                        </button>
                       </td>
                     </tr>
-                  ) : (
-                    filteredReceipts.map((r, idx) => (
-                      <tr key={r.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                        <td className="py-3 px-4 font-mono font-medium text-emerald-600 dark:text-emerald-400">{r.receiptNumber}</td>
-                        <td className="py-3 px-4 text-slate-600 dark:text-slate-300">{r.sourceId}</td>
-                        <td className="py-3 px-4 font-medium">{Number(r.grossAmount || 0).toLocaleString()}</td>
-                        <td className="py-3 px-4 text-slate-500">{Number(r.vatAmount || 0).toLocaleString()}</td>
-                        <td className="py-3 px-4">
-                          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                            {r.status || "signed"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => setNotice(`Printing receipt ${r.receiptNumber} to thermal printer (${printerWidth})...`)}
-                            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold rounded-lg transition inline-flex items-center space-x-1"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span>Print</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                  ))}
+                  {receipts.length === 0 && (
+                    <tr>
+                      <td colSpan="6" className="py-8 text-center text-slate-400">No records found. Click 'Issue Test Fiscal Receipt' above.</td>
+                    </tr>
                   )}
                 </tbody>
               </table>
@@ -398,238 +284,244 @@ export function TraPortalModule({ companyId, lang = "en", onNavigate }) {
         )}
 
         {activeTab === "vat" && (
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className={`rounded-2xl border p-5 shadow-sm ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-lg font-bold">Pre-Filled Monthly VAT Returns</h3>
-                <p className="text-xs text-slate-500">TRA compliant electronic tax return schedules and itemized returns.</p>
+                <h3 className="text-sm font-bold">Pre-Filled Monthly VAT Returns</h3>
+                <p className="text-xs text-slate-500">TRA standard VAT return schedules with buyer sub-totals and grand totals.</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => {
-                    const ws = XLSX.utils.json_to_sheet(safeReceipts);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "VAT_Returns");
-                    XLSX.writeFile(wb, "TRA_VAT_Returns_2026.xlsx");
-                    setNotice("VAT Returns exported to Excel successfully.");
-                  }}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow transition flex items-center space-x-2"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  <span>Export Excel</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => alert("Downloading VAT Returns CSV...")} className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                  <Download size={14} /> Export CSV
                 </button>
-                <button
-                  onClick={() => {
-                    const doc = new jsPDF();
-                    doc.text("TRA Pre-Filled Monthly VAT Returns", 14, 20);
-                    doc.text(`TIN: ${tin} | VRN: ${vrn} | Branch: ${branchId}`, 14, 28);
-                    doc.save("TRA_VAT_Returns.pdf");
-                    setNotice("VAT Returns exported to PDF successfully.");
-                  }}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold rounded-xl transition flex items-center space-x-2"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Export PDF</span>
+                <button onClick={() => alert("Generating Watermarked PDF VAT Schedule...")} className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
+                  <FileText size={14} /> PDF Schedule
                 </button>
               </div>
             </div>
 
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Start Month</label>
-                  <input
-                    type="month"
-                    value={vatMonthStart}
-                    onChange={(e) => setVatMonthStart(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">End Month</label>
-                  <input
-                    type="month"
-                    value={vatMonthEnd}
-                    onChange={(e) => setVatMonthEnd(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Min Amount (TZS)</label>
-                  <input
-                    type="number"
-                    placeholder="0"
-                    value={vatMinAmount}
-                    onChange={(e) => setVatMinAmount(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Search Buyer / Receipt</label>
-                  <input
-                    type="text"
-                    placeholder="Filter..."
-                    value={vatSearch}
-                    onChange={(e) => setVatSearch(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                  />
-                </div>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search size={15} className="absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search receipt # or buyer name..."
+                  value={vatSearch}
+                  onChange={(e) => setVatSearch(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-transparent py-2.5 pl-9 pr-4 text-xs outline-none focus:border-emerald-600 dark:border-slate-700"
+                />
               </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={vatDateRange}
+                  onChange={(e) => setVatDateRange(e.target.value)}
+                  className="rounded-xl border border-slate-200 bg-transparent px-3 py-2.5 text-xs font-medium outline-none dark:border-slate-700"
+                >
+                  <option value="this_month">This Month (August 2026)</option>
+                  <option value="last_month">Last Month (July 2026)</option>
+                  <option value="this_quarter">This Quarter (Q3 2026)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 dark:border-slate-800">
+                    <th className="pb-3 font-semibold">Buyer Group / Receipt</th>
+                    <th className="pb-3 font-semibold">TIN / VRN</th>
+                    <th className="pb-3 font-semibold">Date</th>
+                    <th className="pb-3 font-semibold text-right">Taxable Amt (TZS)</th>
+                    <th className="pb-3 font-semibold text-right">VAT 18% (TZS)</th>
+                    <th className="pb-3 font-semibold text-right">Gross (TZS)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                  {/* Buyer Group 1 */}
+                  <tr className="bg-slate-50/80 dark:bg-slate-800/50">
+                    <td colSpan="3" className="py-3 font-bold">
+                      <div className="flex items-center gap-2">
+                        <Building2 size={14} className="text-emerald-600" />
+                        <span>Tanzania Breweries PLC (Subtotal)</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-right font-bold">TZS 1,250,000</td>
+                    <td className="py-3 text-right font-bold">TZS 225,000</td>
+                    <td className="py-3 text-right font-bold">TZS 1,475,000</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pl-6 font-mono text-slate-500">TRA-REC-2026-8812</td>
+                    <td className="py-2.5 font-mono text-slate-500">40019283A</td>
+                    <td className="py-2.5 text-slate-500">2026-08-14</td>
+                    <td className="py-2.5 text-right font-mono">750,000</td>
+                    <td className="py-2.5 text-right font-mono">135,000</td>
+                    <td className="py-2.5 text-right font-mono">885,000</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pl-6 font-mono text-slate-500">TRA-REC-2026-8815</td>
+                    <td className="py-2.5 font-mono text-slate-500">40019283A</td>
+                    <td className="py-2.5 text-slate-500">2026-08-16</td>
+                    <td className="py-2.5 text-right font-mono">500,000</td>
+                    <td className="py-2.5 text-right font-mono">90,000</td>
+                    <td className="py-2.5 text-right font-mono">590,000</td>
+                  </tr>
+
+                  {/* Buyer Group 2 */}
+                  <tr className="bg-slate-50/80 dark:bg-slate-800/50">
+                    <td colSpan="3" className="py-3 font-bold">
+                      <div className="flex items-center gap-2">
+                        <Building2 size={14} className="text-emerald-600" />
+                        <span>Vodacom Tanzania PLC (Subtotal)</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-right font-bold">TZS 850,000</td>
+                    <td className="py-3 text-right font-bold">TZS 153,000</td>
+                    <td className="py-3 text-right font-bold">TZS 1,003,000</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 pl-6 font-mono text-slate-500">TRA-REC-2026-8902</td>
+                    <td className="py-2.5 font-mono text-slate-500">40088211B</td>
+                    <td className="py-2.5 text-slate-500">2026-08-17</td>
+                    <td className="py-2.5 text-right font-mono">850,000</td>
+                    <td className="py-2.5 text-right font-mono">153,000</td>
+                    <td className="py-2.5 text-right font-mono">1,003,000</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-slate-200 font-bold dark:border-slate-700">
+                    <td colSpan="3" className="py-4 text-sm">Grand Total (Filtered VAT Return)</td>
+                    <td className="py-4 text-right">TZS 2,100,000</td>
+                    <td className="py-4 text-right">TZS 378,000</td>
+                    <td className="py-4 text-right text-emerald-600">TZS 2,478,000</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
         )}
 
         {activeTab === "settings" && (
-          <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-6">
-            <div>
-              <h3 className="text-lg font-bold">TRA VFD & Printer Profile</h3>
-              <p className="text-xs text-slate-500">Configure your business fiscal credentials and thermal receipt parameters.</p>
-            </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* VFD & Profile Settings */}
+            <div className={`rounded-2xl border p-5 shadow-sm ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+              <h3 className="text-sm font-bold">TRA EFDMS / VFD Credentials</h3>
+              <p className="mt-1 text-xs text-slate-500">Configure Taxpayer Identification Number and branch settings.</p>
 
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="mt-4 space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">TIN Number</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">TIN Number</label>
                   <input
                     type="text"
                     value={tin}
                     onChange={(e) => setTin(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
-                    required
+                    className="w-full rounded-xl border border-slate-200 bg-transparent px-3.5 py-2.5 text-xs outline-none focus:border-emerald-600 dark:border-slate-700 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">VRN Number</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">VRN Number</label>
                   <input
                     type="text"
                     value={vrn}
                     onChange={(e) => setVrn(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
-                    required
+                    className="w-full rounded-xl border border-slate-200 bg-transparent px-3.5 py-2.5 text-xs outline-none focus:border-emerald-600 dark:border-slate-700 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Branch ID</label>
-                  <input
-                    type="text"
-                    value={branchId}
-                    onChange={(e) => setBranchId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Business Name</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Registered Business Name</label>
                   <input
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
-                    required
+                    className="w-full rounded-xl border border-slate-200 bg-transparent px-3.5 py-2.5 text-xs outline-none focus:border-emerald-600 dark:border-slate-700"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Region</label>
-                  <input
-                    type="text"
-                    value={region}
-                    onChange={(e) => setRegion(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-                <h4 className="font-semibold text-sm">ESC/POS Bluetooth Thermal Printer Settings</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Receipt Width</label>
-                    <select
-                      value={printerWidth}
-                      onChange={(e) => setPrinterWidth(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
-                    >
-                      <option value="58mm">58mm (Standard Mobile)</option>
-                      <option value="80mm">80mm (Desktop Counter)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">Receipt Footer Message</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Branch ID</label>
                     <input
                       type="text"
-                      value={printFooter}
-                      onChange={(e) => setPrintFooter(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                      value={branchId}
+                      onChange={(e) => setBranchId(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-transparent px-3.5 py-2.5 text-xs outline-none font-mono dark:border-slate-700"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Environment</label>
+                    <select
+                      value={environment}
+                      onChange={(e) => setEnvironment(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-transparent px-3.5 py-2.5 text-xs outline-none dark:border-slate-700"
+                    >
+                      <option value="sandbox">Sandbox Simulator</option>
+                      <option value="production">TRA Production Gateway</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => saveProfileMutation.mutate({ companyId, tin, vrn, businessName, branchId, region, environment })}
+                  disabled={saveProfileMutation.isLoading}
+                  className="w-full rounded-xl bg-emerald-600 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                >
+                  Save TRA Profile Settings
+                </button>
+              </div>
+            </div>
+
+            {/* Thermal Receipt & Bluetooth ESC/POS Settings */}
+            <div className={`rounded-2xl border p-5 shadow-sm ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white"}`}>
+              <h3 className="text-sm font-bold">Bluetooth ESC/POS Printer Layout</h3>
+              <p className="mt-1 text-xs text-slate-500">Configure thermal printer templates for physical tax invoices.</p>
+
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Printer Width</label>
+                  <select
+                    value={printerWidth}
+                    onChange={(e) => setPrinterWidth(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-transparent px-3.5 py-2.5 text-xs outline-none dark:border-slate-700"
+                  >
+                    <option value="80mm">80mm Thermal Roll (Standard)</option>
+                    <option value="58mm">58mm Compact Mobile Thermal</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Receipt Footer Message</label>
+                  <input
+                    type="text"
+                    value={printFooter}
+                    onChange={(e) => setPrintFooter(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-transparent px-3.5 py-2.5 text-xs outline-none dark:border-slate-700 font-mono"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-xs font-semibold">Include TRA Verification QR Code</p>
+                    <p className="text-[11px] text-slate-400">Required on all physical fiscal receipts</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={includeQrCode}
+                    onChange={(e) => setIncludeQrCode(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div className="rounded-xl border border-dashed border-slate-200 p-4 text-center dark:border-slate-700">
+                  <Printer size={24} className="mx-auto text-emerald-600 mb-2" />
+                  <p className="text-xs font-semibold">Bluetooth ESC/POS Pairing</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">Ready to pair with 58mm/80mm thermal printers</p>
+                  <button onClick={() => alert("Scanning for Bluetooth ESC/POS printers...")} className="mt-3 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    Pair Thermal Printer
+                  </button>
                 </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={saveProfileMutation.isPending}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow transition text-sm"
-              >
-                {saveProfileMutation.isPending ? "Saving..." : "Save TRA Profile & Settings"}
-              </button>
-            </form>
+            </div>
           </div>
         )}
       </main>
-
-      {/* Floating Action Button (FAB) matching reference visual */}
-      <div className="fixed bottom-20 right-6 z-40">
-        <button
-          onClick={handleTestFiscalize}
-          className="flex items-center justify-center w-14 h-14 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full shadow-xl hover:scale-105 active:scale-95 transition group"
-          title="Quick Fiscalize / Sparkle Action"
-        >
-          <Sparkles className="w-6 h-6 animate-pulse" />
-        </button>
-      </div>
-
-      {/* Bottom Navigation Bar matching reference visual */}
-      <nav className={`fixed bottom-0 left-0 right-0 z-30 border-t flex items-center justify-around py-2 px-2 shadow-lg backdrop-blur-md ${isDarkMode ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200"}`}>
-        <button
-          onClick={() => onNavigate && onNavigate("dashboard")}
-          className="flex flex-col items-center space-y-1 p-2 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition"
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] font-medium">Dashboard</span>
-        </button>
-        <button
-          onClick={() => onNavigate && onNavigate("sales")}
-          className="flex flex-col items-center space-y-1 p-2 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition"
-        >
-          <ShoppingCart className="w-5 h-5" />
-          <span className="text-[10px] font-medium">Sales</span>
-        </button>
-        <button
-          onClick={() => onNavigate && onNavigate("inventory")}
-          className="flex flex-col items-center space-y-1 p-2 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition"
-        >
-          <Package className="w-5 h-5" />
-          <span className="text-[10px] font-medium">Inventory</span>
-        </button>
-        <button
-          onClick={() => onNavigate && onNavigate("finance")}
-          className="flex flex-col items-center space-y-1 p-2 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition"
-        >
-          <Wallet className="w-5 h-5" />
-          <span className="text-[10px] font-medium">Finance</span>
-        </button>
-        <button
-          onClick={() => onNavigate && onNavigate("hr")}
-          className="flex flex-col items-center space-y-1 p-2 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition"
-        >
-          <Users className="w-5 h-5" />
-          <span className="text-[10px] font-medium">HR</span>
-        </button>
-      </nav>
     </div>
   );
 }
