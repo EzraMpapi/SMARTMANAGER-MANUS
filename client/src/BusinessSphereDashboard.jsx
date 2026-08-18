@@ -5964,8 +5964,15 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               <div>
                 <div className="flex items-center gap-2">
                   <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-white">Automated Weekly Compliance Digest</h4>
-                  <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-bold ${hasActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+                  <span
+                    tabIndex={0}
+                    className={`group/badge relative inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-bold cursor-help ${hasActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+                    title={lastSent ? `Last successful email delivery: ${new Date(lastSent).toLocaleString()}` : 'No successful email deliveries recorded yet'}
+                  >
                     {schedulesQuery.isLoading ? 'Checking...' : hasActive ? `Active (${activeCount} schedule${activeCount > 1 ? 's' : ''})` : 'Paused / Unconfigured'}
+                    <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/badge:block group-focus/badge:block w-56 rounded-lg bg-slate-900 dark:bg-slate-800 px-3 py-1.5 text-[11px] font-normal text-white shadow-xl z-30 text-center leading-snug">
+                      {lastSent ? `Last successful email delivery:\n${new Date(lastSent).toLocaleString()}` : 'No successful email deliveries recorded yet'}
+                    </span>
                   </span>
                 </div>
                 <p className="text-[11.5px] text-slate-500 mt-0.5">

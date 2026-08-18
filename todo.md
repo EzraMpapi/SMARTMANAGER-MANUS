@@ -750,3 +750,4 @@
 - [x] Add branch-level geographic filtering to the VAT return trend analytics.
 - [x] Integrate push notification alerts for high-value tax return submissions.
 - [x] Add a visual status badge on the dashboard to show whether the automated weekly compliance digest emails were sent successfully.
+- [x] Add a hover tooltip to the status badge that displays the exact date and time of the last successful email delivery.
