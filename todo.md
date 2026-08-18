@@ -755,3 +755,6 @@
 - [x] Add multi-recipient CC support in the compliance digest settings modal for regional supervisors.
 - [x] Configure automated audit log recording whenever compliance schedule settings are modified.
 - [x] Integrate push notification delivery for immediate schedule execution confirmations.
+- [x] Configure tenant-level digital seal signing keys for automated TRA VFD electronic tax registers.
+- [x] Add multi-currency ledger consolidation views for cross-border East African tax filings.
+- [x] Integrate push notification delivery history logs directly into the security settings panel.
