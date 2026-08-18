@@ -779,3 +779,6 @@
 - [x] Add a summary widget above the reconciliation view that calculates the total financial impact of the highlighted exchange rate variances.
 - [x] Implement a bulk selection and download feature in the audit packet history table to easily export multiple past reports at once.
 - [x] Add a "Test Alert" button next to the Slack configuration panel so users can instantly verify their notification settings are working.
+- [x] Add a visual breakdown chart inside the FX Variance Financial Impact Widget to show the variances categorized by specific currency pairs.
+- [x] Implement a progress bar and success notification toast when users are bulk downloading multiple audit packets from the history table.
+- [x] Create a configuration UI allowing users to set custom threshold values that will trigger the urgent cross-border FX variance alerts.
