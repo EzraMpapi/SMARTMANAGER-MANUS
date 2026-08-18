@@ -839,3 +839,4 @@
 - [x] Configure automated cloud storage archival for downloaded security audit chart exports.
 - [x] Add a date range filter selector specifically for the delivery status summary chart.
 - [x] Integrate push notification alerts for significant daily shifts in email delivery failure rates.
+- [x] Add quick filter buttons to instantly view the delivery status summary chart for the last 7 or 30 days.
