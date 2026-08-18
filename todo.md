@@ -847,14 +847,14 @@
 - [x] Configure automated Slack webhook routing for hover-triggered security audit threshold alerts.
 - [x] Add a comparative weekly success-rate trend overlay on the security audit chart.
 - [x] Integrate scheduled email distribution for exported security audit chart snapshots.
-- [ ] Add automated daily Z-report reconciliation archives with S3/cloud storage references and audit history.
-- [ ] Add multi-branch regional tax-liability comparison summaries with tenant-scoped branch filters.
-- [ ] Add gateway-connectivity timeout push-alert configuration, delivery state, and audit logging.
-- [ ] Add Vitest coverage for TRA archival, branch comparison, and gateway-alert procedures.
-- [ ] Validate TRA enhancements on desktop and mobile layouts before publishing.
-- [ ] Complete a final TRA Portal regression audit after the three enhancements.
+- [x] Add automated daily Z-report reconciliation archives with S3/cloud storage references and audit history.
+- [x] Add multi-branch regional tax-liability comparison summaries with tenant-scoped branch filters.
+- [x] Add gateway-connectivity timeout push-alert configuration, delivery state, and audit logging.
+- [x] Add Vitest coverage for TRA archival, branch comparison, and gateway-alert procedures.
+- [x] Validate TRA enhancements on desktop and mobile layouts before publishing.
+- [x] Complete a final TRA Portal regression audit after the three enhancements.
 
 **Implementation note:** Deterministic recurring execution will use the project Heartbeat endpoint, not in-process timers. Archive files will use the existing S3 storage helper; alert delivery will use the existing notification abstraction and remain disabled until a tenant enables it or required credentials are available.
-- [ ] Reproduce and remove the remaining live TRA Portal `lang is not defined` runtime error on mobile.
-- [ ] Verify the TRA route renders the actual TraPortalModule and not a stale or placeholder component.
-- [ ] Add regression coverage for TRA Portal route localization safety and run desktop/mobile validation.
+- [x] Reproduce and remove the remaining live TRA Portal `lang is not defined` runtime error on mobile.
+- [x] Verify the TRA route renders the actual TraPortalModule and not a stale or placeholder component.
+- [x] Add regression coverage for TRA Portal route localization safety and run desktop/mobile validation.
