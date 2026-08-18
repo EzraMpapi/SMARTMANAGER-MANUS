@@ -804,3 +804,6 @@
 - [x] Add a "Send Test Alert" button in the WhatsApp settings UI to verify the configured numbers receive the FX variance alerts.
 - [x] Implement a visual toggle in the Slack template editor to preview how the message looks in both light and dark modes.
 - [x] Add a search and filter bar to the audit history table to easily find specific quarterly statutory audit packets by date or status.
+- [x] Add visual loading states and success or error toast notifications to the "Send Test Alert" button in the WhatsApp settings.
+- [x] Implement an "Export to CSV" button next to the audit history search bar to allow downloading the filtered audit records.
+- [x] Enhance the Slack message template editor by adding a character counter and a rich text formatting toolbar for better customization.
