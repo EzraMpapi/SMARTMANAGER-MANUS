@@ -835,3 +835,4 @@
 - [x] Include a text input field in the email sharing modal so users can add a custom message alongside the PDF.
 - [x] Include a retry button next to failed email delivery logs in the audit trail to quickly resend the report.
 - [x] Add a delivery status summary chart in the security audit dashboard to visualize email success and failure rates.
+- [x] Include an export button next to the delivery status chart to allow downloading the visualization as a PNG or PDF.
