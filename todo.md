@@ -813,3 +813,6 @@
 - [x] Configure automated webhook alert dispatches to notify regional supervisors when favorited modules transition to critical error states.
 - [x] Add a custom date-range picker for exporting filtered module telemetry and AI diagnostic reports.
 - [x] Integrate multi-currency support in the comparative branch summary analytics.
+- [x] Add a comparison feature to the trend chart allowing users to select and compare two specific banks side-by-side.
+- [x] Implement hover tooltips on the currency volatility widget to display the exact percentage change over the last 24 hours.
+- [x] Add an export button to the bank lending rate widget to download the sorted list of rates as a CSV file.
