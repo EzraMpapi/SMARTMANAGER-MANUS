@@ -782,3 +782,6 @@
 - [x] Add a visual breakdown chart inside the FX Variance Financial Impact Widget to show the variances categorized by specific currency pairs.
 - [x] Implement a progress bar and success notification toast when users are bulk downloading multiple audit packets from the history table.
 - [x] Create a configuration UI allowing users to set custom threshold values that will trigger the urgent cross-border FX variance alerts.
+- [x] Create a configuration panel in the settings to link WhatsApp numbers for receiving urgent FX variance alerts.
+- [x] Add a visual status indicator in the audit history table to show which past reports have been securely archived.
+- [x] Build a settings interface allowing administrators to generate, view, and rotate secret keys for webhook signature verification.
