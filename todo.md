@@ -828,3 +828,4 @@
 - [x] Add a history log interface in the dashboard to review past Slack webhook alerts and their delivery status.
 - [x] Add an export button in the TRA Portal to allow users to download compliance reports as CSV files.
 - [x] Add summary totals and buyer-group subtotals directly inside the TRA VAT Returns table to improve data visibility.
+- [x] Add a PDF export action specifically formatted for buyer-subtotaled VAT schedules.
