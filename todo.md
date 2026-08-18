@@ -758,3 +758,6 @@
 - [x] Configure tenant-level digital seal signing keys for automated TRA VFD electronic tax registers.
 - [x] Add multi-currency ledger consolidation views for cross-border East African tax filings.
 - [x] Integrate push notification delivery history logs directly into the security settings panel.
+- [ ] Configure automated scheduled recurring tax compliance audits for regional subsidiaries.
+- [ ] Add biometric passkey revocation logs to the tenant security audit viewer.
+- [ ] Integrate automated webhook alerts for gateway connectivity timeouts.
