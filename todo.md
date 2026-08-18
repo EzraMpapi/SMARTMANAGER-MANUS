@@ -727,4 +727,5 @@
 - [x] Add "Expand All" and "Collapse All" buttons above the table to quickly toggle all buyer groups at once.
 - [x] Implement pagination for the VAT Returns table to ensure smooth scrolling and performance when dealing with a large number of records.
 - [x] Implement a loading skeleton animation that displays while the table data is being fetched or filtered.
-- [ ] Add an 'Export to CSV' button to allow downloading the currently filtered and sorted VAT returns.
+- [x] Add an 'Export to CSV' button to allow downloading the currently filtered and sorted VAT returns.
+- [ ] Fix any remaining undefined `lang` reference crash when entering the TRA Portal.
