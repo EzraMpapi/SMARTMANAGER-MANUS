@@ -829,3 +829,4 @@
 - [x] Add an export button in the TRA Portal to allow users to download compliance reports as CSV files.
 - [x] Add summary totals and buyer-group subtotals directly inside the TRA VAT Returns table to improve data visibility.
 - [x] Add a PDF export action specifically formatted for buyer-subtotaled VAT schedules.
+- [x] Add a print preview modal for the subtotaled VAT schedule before the final PDF download.
