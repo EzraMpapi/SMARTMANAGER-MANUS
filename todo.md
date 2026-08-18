@@ -819,3 +819,6 @@
 - [x] Add a cross-currency conversion calculator widget that utilizes the live exchange-rate volatility feed.
 - [x] Implement visual indicators like green and red arrows next to the currency volatility tooltips to show rate direction.
 - [x] Add a search bar to the bank lending rate widget to allow users to quickly find specific banks.
+- [x] Add a quick-swap button to the currency conversion calculator and include a copy-to-clipboard feature for the final converted amount.
+- [x] Enhance the currency volatility widget by adding a small 7-day historical sparkline chart next to the green and red directional arrows.
+- [x] Upgrade the bank lending rate search bar to include auto-complete suggestions and highlight the matching text within the bank names.
