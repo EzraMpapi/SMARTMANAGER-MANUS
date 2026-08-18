@@ -773,3 +773,6 @@
 - [x] Configure automated multi-currency invoice payment reconciliation views for cross-border settlements.
 - [x] Integrate automated quarterly PDF audit packet generation for external statutory reviews.
 - [x] Add automated Slack notification channels for real-time risk alert dispatches.
+- [x] Add a visual filter in the reconciliation view to easily highlight invoices with significant exchange rate variances.
+- [x] Create a history table for the quarterly PDF audit packets so users can download or regenerate past reports.
+- [x] Build a configuration panel allowing users to select exactly which risk alert types trigger the Slack notifications.
