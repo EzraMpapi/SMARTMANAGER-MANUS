@@ -5490,6 +5490,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [drillDownSearch, setDrillDownSearch] = useState("");
   const [drillDownMinAmount, setDrillDownMinAmount] = useState("");
   const [drillDownMaxAmount, setDrillDownMaxAmount] = useState("");
+  const [drillDownCurrency, setDrillDownCurrency] = useState("TZS");
   const [selectedDrillDownInvoice, setSelectedDrillDownInvoice] = useState(null);
   const [drillDownLoading, setDrillDownLoading] = useState(false);
 
@@ -6365,7 +6366,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       {drillDownMonth && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 flex-wrap gap-3">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-[16px] font-bold text-slate-900 dark:text-white">Itemized Fiscal Receipts — {drillDownMonth}</h3>
@@ -6373,13 +6374,66 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                 </div>
                 <p className="text-[12px] text-slate-500">Verified invoices and taxable turnover records contributing to the monthly VAT return for {drillDownMonth}.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setDrillDownMonth(null)}
-                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition shadow-sm"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <select
+                  value={drillDownCurrency}
+                  onChange={e => setDrillDownCurrency(e.target.value)}
+                  className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-[12px] font-semibold text-slate-700 dark:text-slate-200 shadow-sm"
+                  title="Select display currency"
+                >
+                  <option value="TZS">TZS (Shillings)</option>
+                  <option value="USD">USD ($ 1:2600)</option>
+                  <option value="EUR">EUR (€ 1:2800)</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
+                    const filtered = monthInvoices.filter(inv => {
+                      const { total } = lineTotal(inv.items || []);
+                      const q = drillDownSearch.toLowerCase().trim();
+                      const vendor = (inv.customerName || inv.clientName || "").toLowerCase();
+                      const invNum = String(inv.invoiceNumber || inv.id || "").toLowerCase();
+                      const matchesSearch = !q || vendor.includes(q) || invNum.includes(q);
+                      const minOk = drillDownMinAmount === "" || isNaN(Number(drillDownMinAmount)) || total >= Number(drillDownMinAmount);
+                      const maxOk = drillDownMaxAmount === "" || isNaN(Number(drillDownMaxAmount)) || total <= Number(drillDownMaxAmount);
+                      return matchesSearch && minOk && maxOk;
+                    });
+                    const csvRows = [
+                      ["Invoice Number", "Customer / Vendor", "Date", "Gross Amount (TZS)", "Output VAT 18% (TZS)", "Status"],
+                      ...filtered.map(i => {
+                        const { total } = lineTotal(i.items || []);
+                        return [
+                          `"${i.invoiceNumber || i.id}"`,
+                          `"${i.customerName || i.clientName || "Walk-in"}"`,
+                          `"${i.date || "N/A"}"`,
+                          total,
+                          (total * 0.18).toFixed(2),
+                          `"${i.status || "Issued"}"`
+                        ];
+                      })
+                    ].map(r => r.join(",")).join("\n");
+                    const blob = new Blob([csvRows], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `VAT_DrillDown_${drillDownMonth}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
+                >
+                  <Download size={13} /> Export Filtered CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDrillDownMonth(null)}
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition shadow-sm"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
@@ -6397,8 +6451,36 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                 });
                 const totalGross = filteredInvoices.reduce((s, i) => s + lineTotal(i.items || []).total, 0);
                 const totalVat = totalGross * 0.18;
+                const fxRate = drillDownCurrency === "USD" ? 2600 : drillDownCurrency === "EUR" ? 2800 : 1;
+                const fmtCur = (val) => {
+                  const converted = val / fxRate;
+                  if (drillDownCurrency === "USD") return `$ ${converted.toLocaleString(undefined, {maximumFractionDigits:2})}`;
+                  if (drillDownCurrency === "EUR") return `€ ${converted.toLocaleString(undefined, {maximumFractionDigits:2})}`;
+                  return `TZS ${converted.toLocaleString()}`;
+                };
                 return (
                   <>
+                    {/* Compliance Variance Alert Banner */}
+                    {(() => {
+                      const allMonths = Array.from({length:6},(_,i)=>{
+                        const d=new Date(drillDownMonth+"-01"); d.setMonth(d.getMonth()-5+i);
+                        return d.toISOString().slice(0,7);
+                      });
+                      const historicalTotals = allMonths.map(m => invoices.rows.filter(i=>(i.date||"").startsWith(m)).reduce((s,i)=>s+lineTotal(i.items||[]).total*0.18,0));
+                      const avgVat = historicalTotals.reduce((a,b)=>a+b,0) / (historicalTotals.length || 1);
+                      const hasSpike = totalVat > avgVat * 1.5 && avgVat > 0;
+                      if (!hasSpike) return null;
+                      return (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/40 p-3.5 text-[12.5px] text-amber-800 dark:text-amber-300 flex items-start gap-3">
+                          <span className="text-base">⚠️</span>
+                          <div>
+                            <p className="font-bold">Compliance Variance Alert — Significant Output VAT Spike</p>
+                            <p className="text-[11.5px] mt-0.5">Output VAT for {drillDownMonth} (TZS {totalVat.toLocaleString()}) exceeds the 6-month historical average (TZS {Math.round(avgVat).toLocaleString()}) by over 50%. Ensure all high-value B2B transactions are supported by TRA VFD electronic tax stamps and digital Z-reports.</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Search & Amount Filter Bar */}
                     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3.5">
                       <div className="relative flex-1 min-w-[200px]">
@@ -6491,8 +6573,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                                 </td>
                                 <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{inv.customerName || inv.clientName || "Walk-in Customer"}</td>
                                 <td className="px-4 py-3 font-mono text-slate-500">{inv.date || "N/A"}</td>
-                                <td className="px-4 py-3 font-mono font-bold">TZS {total.toLocaleString()}</td>
-                                <td className="px-4 py-3 font-mono font-semibold text-emerald-600">TZS {vat.toLocaleString()}</td>
+                                <td className="px-4 py-3 font-mono font-bold">{fmtCur(total)}</td>
+                                <td className="px-4 py-3 font-mono font-semibold text-emerald-600">{fmtCur(vat)}</td>
                                 <td className="px-4 py-3">
                                   <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:text-amber-300'}`}>
                                     {inv.status || 'Issued'}

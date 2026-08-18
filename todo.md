@@ -742,3 +742,6 @@
 - [x] Integrate customer and vendor detail popovers that appear when clicking rows inside the drill-down table for quick context.
 - [x] Add a loading skeleton animation when fetching the customer and vendor details for the popovers to improve perceived performance.
 - [x] Make the workspace overview header date display track the current live date instead of outdated static constants.
+- [x] Add an 'Export to CSV' action directly inside the monthly drill-down modal for instant offline filing archives.
+- [x] Configure automated compliance alerts for months where output VAT deviates significantly from historical averages.
+- [x] Integrate multi-currency conversion toggles within the drill-down modal for international branch reporting.
