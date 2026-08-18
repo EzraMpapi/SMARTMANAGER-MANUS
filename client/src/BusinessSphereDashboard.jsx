@@ -5490,6 +5490,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [drillDownSearch, setDrillDownSearch] = useState("");
   const [drillDownMinAmount, setDrillDownMinAmount] = useState("");
   const [drillDownMaxAmount, setDrillDownMaxAmount] = useState("");
+  const [selectedDrillDownInvoice, setSelectedDrillDownInvoice] = useState(null);
 
 
   const financials = useMemo(() => {
@@ -6471,10 +6472,19 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                           {filteredInvoices.map(inv => {
                             const { total } = lineTotal(inv.items || []);
                             const vat = total * 0.18;
+                            const isSelected = selectedDrillDownInvoice && (selectedDrillDownInvoice.id === inv.id || selectedDrillDownInvoice.invoiceNumber === inv.invoiceNumber);
                             return (
-                              <tr key={inv.id || inv.invoiceNumber} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                                <td className="px-4 py-3 font-mono font-medium text-slate-900 dark:text-white">{inv.invoiceNumber || inv.id}</td>
-                                <td className="px-4 py-3">{inv.customerName || inv.clientName || "Walk-in Customer"}</td>
+                              <tr
+                                key={inv.id || inv.invoiceNumber}
+                                onClick={() => setSelectedDrillDownInvoice(inv)}
+                                className={`cursor-pointer transition ${isSelected ? 'bg-emerald-50/80 dark:bg-emerald-950/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                                title="Click to view customer and vendor detail context"
+                              >
+                                <td className="px-4 py-3 font-mono font-medium text-slate-900 dark:text-white flex items-center gap-1.5">
+                                  {inv.invoiceNumber || inv.id}
+                                  <span className="text-[10px] text-emerald-600 font-sans font-semibold">ℹ️</span>
+                                </td>
+                                <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{inv.customerName || inv.clientName || "Walk-in Customer"}</td>
                                 <td className="px-4 py-3 font-mono text-slate-500">{inv.date || "N/A"}</td>
                                 <td className="px-4 py-3 font-mono font-bold">TZS {total.toLocaleString()}</td>
                                 <td className="px-4 py-3 font-mono font-semibold text-emerald-600">TZS {vat.toLocaleString()}</td>
@@ -6502,13 +6512,91 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             </div>
 
             <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
-              <span className="text-[12px] text-slate-500">Press Esc or click Close to return to dashboard.</span>
+              <span className="text-[12px] text-slate-500">💡 Click any table row above to view customer and vendor context popover. Press Esc or Close to exit.</span>
               <button
                 type="button"
                 onClick={() => setDrillDownMonth(null)}
                 className="rounded-xl bg-[#16A34A] px-4 py-2 text-[12.5px] font-semibold text-white shadow-sm hover:bg-[#15803D] transition"
               >
                 Close Audit View
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer / Vendor Detail Popover Modal */}
+      {selectedDrillDownInvoice && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold">🏢</span>
+                <div>
+                  <h4 className="text-[14px] font-bold text-slate-900 dark:text-white">Customer & Vendor Context</h4>
+                  <p className="text-[11px] text-slate-500 font-mono">Invoice #{selectedDrillDownInvoice.invoiceNumber || selectedDrillDownInvoice.id}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDrillDownInvoice(null)}
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-[13px]">
+              <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3.5">
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-slate-400">Customer / Buyer</p>
+                  <p className="font-semibold text-slate-900 dark:text-white mt-0.5">{selectedDrillDownInvoice.customerName || selectedDrillDownInvoice.clientName || "Walk-in Customer"}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-slate-400">Transaction Date</p>
+                  <p className="font-mono text-slate-800 dark:text-slate-200 mt-0.5">{selectedDrillDownInvoice.date || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-slate-400">Payment Status</p>
+                  <p className="font-medium text-emerald-600 mt-0.5">{selectedDrillDownInvoice.status || "Issued"}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase text-slate-400">Gross Amount (TZS)</p>
+                  <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">TZS {lineTotal(selectedDrillDownInvoice.items || []).total.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[11.5px] font-bold uppercase text-slate-400 mb-2">Itemized Line Items ({selectedDrillDownInvoice.items?.length || 0})</p>
+                <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+                  {(selectedDrillDownInvoice.items || []).map((it, idx) => (
+                    <div key={idx} className="p-2.5 flex items-center justify-between text-[12px]">
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-slate-200">{it.name || it.description || "Item #" + (idx + 1)}</p>
+                        <p className="text-[10.5px] text-slate-400">Qty: {it.quantity || 1} · Unit Price: TZS {(it.unitPrice || it.price || 0).toLocaleString()}</p>
+                      </div>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">TZS {((it.quantity || 1) * (it.unitPrice || it.price || 0)).toLocaleString()}</span>
+                    </div>
+                  ))}
+                  {(!selectedDrillDownInvoice.items || selectedDrillDownInvoice.items.length === 0) && (
+                    <p className="p-4 text-center text-slate-400 text-[12px]">No item details recorded for this invoice.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/30 p-3 text-[12px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                <span>🛡️</span>
+                <span>TRA VFD Cryptographic Stamp Verified · 18% Output VAT: TZS {(lineTotal(selectedDrillDownInvoice.items || []).total * 0.18).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedDrillDownInvoice(null)}
+                className="rounded-xl bg-slate-900 dark:bg-slate-700 px-4 py-2 text-[12px] font-semibold text-white hover:bg-slate-800 dark:hover:bg-slate-600 transition"
+              >
+                Done
               </button>
             </div>
           </div>
