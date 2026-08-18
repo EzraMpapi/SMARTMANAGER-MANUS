@@ -88,14 +88,14 @@ export const appRouter = router({
         };
       }),
     summarizeNotes: protectedProcedure
-      .input(z.object({ notes: z.array(z.object({ id: z.string(), name: z.string(), note: z.string() })) }))
+      .input(z.object({ notes: z.array(z.object({ id: z.string(), name: z.string(), note: z.string(), status: z.string().optional() })) }))
       .mutation(async ({ input }) => {
         const { invokeLLM } = await import("./_core/llm");
-        const prompt = `Summarize the following review notes and custom comments recorded across pending Smart Manager ERP presentation modules into a concise executive briefing paragraph highlighting key action items and status:\n\n${input.notes.map(n => `Module #${n.id} (${n.name}): ${n.note}`).join("\n")}`;
+        const prompt = `Analyze and categorize the following review notes recorded across Smart Manager ERP presentation modules. Group the overview by completion status (e.g., Pending Quota, Completed) and highlight key executive action items:\n\n${input.notes.map(n => `Module #${n.id} (${n.name}) [Status: ${n.status || 'Pending'}]: ${n.note}`).join("\n")}`;
         const res = await invokeLLM({
           model: "gpt-5-mini",
           messages: [
-            { role: "system", content: "You are an executive enterprise ERP program manager. Provide a concise, professional summary of module review notes." },
+            { role: "system", content: "You are an executive enterprise ERP program manager. Provide a categorized, structured summary of module review notes grouped by completion status." },
             { role: "user", content: prompt }
           ],
         });

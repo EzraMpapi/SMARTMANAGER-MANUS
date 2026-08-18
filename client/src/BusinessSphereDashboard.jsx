@@ -50622,6 +50622,8 @@ function PresentationProgressView() {
     } catch {}
   }, [moduleNotes]);
 
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
   const summarizeMutation = trpc.ai.summarizeNotes.useMutation({
     onSuccess: (data) => {
       setAiSummary(data.summary);
@@ -50703,10 +50705,17 @@ function PresentationProgressView() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setShowClearConfirm(true)}
+            disabled={Object.keys(moduleNotes).length === 0}
+            className="border border-rose-300 text-rose-700 bg-white hover:bg-rose-50 text-[13px] font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Clear All Notes
+          </button>
+          <button
             onClick={() => {
               const notesArr = Object.entries(moduleNotes).filter(([_, v]) => v.trim().length > 0).map(([id, note]) => {
                 const found = rawModules.find(m => m.id === id);
-                return { id, name: found ? found.name : `Module #${id}`, note };
+                return { id, name: found ? found.name : `Module #${id}`, note, status: found ? found.status : "Pending Quota" };
               });
               if (notesArr.length === 0) {
                 alert("Please add notes to at least one module before generating an AI summary.");
@@ -50719,7 +50728,7 @@ function PresentationProgressView() {
             disabled={aiSummarizing}
             className="border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-[13px] font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
           >
-            {aiSummarizing ? "Generating AI Summary..." : "AI Notes Summary"}
+            {aiSummarizing ? "Categorizing & Summarizing..." : "AI Categorized Summary"}
           </button>
           <button
             onClick={() => setSelectedAsset({ isBulkExport: true })}
@@ -50922,7 +50931,16 @@ function PresentationProgressView() {
                       onClick={() => setSelectedAsset(m)}
                     />
                   </td>
-                  <td className="py-3 px-6 font-semibold text-[#111827]">{m.name}</td>
+                  <td className="py-3 px-6 font-semibold text-[#111827]">
+                    <div className="flex items-center gap-2">
+                      <span>{m.name}</span>
+                      {m.note && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          Note
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="py-3 px-6 text-slate-500 font-mono text-[12px]">{m.source}</td>
                   <td className="py-3 px-6">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
@@ -51012,6 +51030,31 @@ function PresentationProgressView() {
           </table>
         </div>
       </div>
+
+      {/* Clear All Notes Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <h3 className="text-base font-bold text-[#111827]">Clear All Module Notes?</h3>
+            <p className="text-[13px] text-slate-600">
+              This action will permanently remove all custom review comments stored in local storage for this session. Are you sure?
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button onClick={() => setShowClearConfirm(false)} className="border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-slate-50">Cancel</button>
+              <button
+                onClick={() => {
+                  setModuleNotes({});
+                  localStorage.removeItem("bserp_presentation_module_notes");
+                  setShowClearConfirm(false);
+                }}
+                className="bg-rose-600 hover:bg-rose-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg"
+              >
+                Yes, Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Note Editing Modal */}
       {editingNoteId && (
