@@ -65,6 +65,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
   const [vatSearch, setVatSearch] = useState("");
   const [vatSortField, setVatSortField] = useState("date"); // date, amount, receipt
   const [vatSortOrder, setVatSortOrder] = useState("desc"); // asc, desc
+  const [groupByBuyer, setGroupByBuyer] = useState(false);
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -708,15 +709,21 @@ export function TraPortalModule({ companyId, lang = "en" }) {
             </div>
           </div>
 
-          {/* Itemized Fiscal Receipts Table with Column Sorting */}
+          {/* Itemized Fiscal Receipts Table with Column Sorting & Buyer Grouping */}
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900 mt-6">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <h4 className="text-[14px] font-bold text-slate-900 dark:text-white">Itemized Fiscal Register</h4>
                 <p className="text-[12px] text-slate-500">Click column headers below to sort by date, amount, or receipt number.</p>
               </div>
-              <div className="flex items-center gap-2 text-[12px] text-slate-500">
-                <span>Sorting by: <strong className="text-emerald-600 uppercase">{vatSortField} ({vatSortOrder})</strong></span>
+              <div className="flex items-center gap-4 text-[12px]">
+                <span className="text-slate-500">Sorting by: <strong className="text-emerald-600 uppercase">{vatSortField} ({vatSortOrder})</strong></span>
+                <button
+                  onClick={() => setGroupByBuyer(!groupByBuyer)}
+                  className={`rounded-lg px-3 py-1.5 font-semibold transition border ${groupByBuyer ? 'bg-emerald-600 text-white border-emerald-600 shadow' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'}`}
+                >
+                  {groupByBuyer ? 'Ungroup Buyer Subtotals' : 'Group by Buyer'}
+                </button>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -756,7 +763,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {sortedVatReceipts.map(r => (
+                  {!groupByBuyer && sortedVatReceipts.map(r => (
                     <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                       <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200">{r.receiptNumber}</td>
                       <td className="px-6 py-3 text-xs text-slate-600 dark:text-slate-400">
@@ -773,16 +780,58 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                       </td>
                     </tr>
                   ))}
+                  {groupByBuyer && Object.entries(
+                    sortedVatReceipts.reduce((acc, r) => {
+                      const buyer = (r.buyerName || "Buyer Not Provided").trim();
+                      if (!acc[buyer]) acc[buyer] = [];
+                      acc[buyer].push(r);
+                      return acc;
+                    }, {})
+                  ).map(([buyer, groupReceipts]) => {
+                    const groupGross = groupReceipts.reduce((sum, r) => sum + Number(r.grossAmount || 0), 0);
+                    const groupVat = groupReceipts.reduce((sum, r) => sum + Number(r.vatAmount || 0), 0);
+                    return (
+                      <React.Fragment key={buyer}>
+                        <tr className="bg-emerald-50/75 dark:bg-emerald-950/30 border-y border-emerald-200 dark:border-emerald-900 font-semibold text-xs">
+                          <td colSpan={2} className="px-6 py-2.5 text-emerald-900 dark:text-emerald-300">
+                            🏢 Buyer: <span className="font-bold">{buyer}</span> ({groupReceipts.length} receipts)
+                          </td>
+                          <td className="px-6 py-2.5 font-mono text-emerald-900 dark:text-emerald-200">
+                            Subtotal: TZS {groupGross.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-2.5 font-mono text-emerald-700 dark:text-emerald-400" colSpan={3}>
+                            VAT Subtotal: TZS {groupVat.toLocaleString()}
+                          </td>
+                        </tr>
+                        {groupReceipts.map(r => (
+                          <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 pl-4">
+                            <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200 pl-8">{r.receiptNumber}</td>
+                            <td className="px-6 py-3 text-xs text-slate-600 dark:text-slate-400">
+                              <span className="font-semibold uppercase">{r.sourceType}</span>: {r.sourceId}
+                            </td>
+                            <td className="px-6 py-3 font-mono font-bold">TZS {Number(r.grossAmount).toLocaleString()}</td>
+                            <td className="px-6 py-3 font-mono text-emerald-600">TZS {Number(r.vatAmount).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-xs text-slate-500 font-mono">{new Date(r.createdAt || Date.now()).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-right">
+                              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${r.status === 'VERIFIED' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                                {r.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
                   {sortedVatReceipts.length > 0 && (
-                    <tr className="bg-slate-50/80 border-t-2 border-slate-200 font-bold dark:bg-slate-800/80 dark:border-slate-700">
-                      <td colSpan={2} className="px-6 py-3.5 text-slate-800 dark:text-slate-200">
-                        Total for Filtered Results ({sortedVatReceipts.length} receipts):
+                    <tr className="bg-slate-100/90 border-t-2 border-slate-300 font-bold dark:bg-slate-800 dark:border-slate-700">
+                      <td colSpan={2} className="px-6 py-3.5 text-slate-900 dark:text-white">
+                        Grand Total for Filtered Results ({sortedVatReceipts.length} receipts):
                       </td>
                       <td className="px-6 py-3.5 font-mono text-slate-900 dark:text-white">
                         TZS {vatTotalGross.toLocaleString()}
                       </td>
                       <td className="px-6 py-3.5 font-mono text-emerald-600" colSpan={3}>
-                        VAT: TZS {vatTotalVat.toLocaleString()}
+                        Grand VAT: TZS {vatTotalVat.toLocaleString()}
                       </td>
                     </tr>
                   )}

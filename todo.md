@@ -721,4 +721,5 @@
 - [x] Add receipt number and buyer search filter to the Pre-Filled Monthly VAT Returns view and apply to summaries and exports.
 - [x] Add a "Clear Filters" button to reset the VAT Returns month range and search query to their default states.
 - [x] Implement sorting feature on the VAT Returns receipt table columns (date, amount, receipt number) with ascending/descending toggles and export integration.
-- [ ] Implement a summary row at the bottom of the table to display the total gross amount for the currently filtered results.
+- [x] Implement a summary row at the bottom of the table to display the total gross amount for the currently filtered results.
+- [ ] Implement a feature to group filtered VAT returns by buyer name and show subtotals for each buyer.
