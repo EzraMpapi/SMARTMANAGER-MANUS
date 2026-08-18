@@ -50608,6 +50608,21 @@ function PresentationProgressView() {
       return {};
     }
   });
+  const [noteTimestamps, setNoteTimestamps] = useState(() => {
+    try {
+      const saved = localStorage.getItem("bserp_presentation_module_timestamps");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("bserp_presentation_module_notes", JSON.stringify(moduleNotes));
+      localStorage.setItem("bserp_presentation_module_timestamps", JSON.stringify(noteTimestamps));
+    } catch {}
+  }, [moduleNotes, noteTimestamps]);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [inlineEditingId, setInlineEditingId] = useState(null);
   const [inlineNoteText, setInlineNoteText] = useState("");
@@ -50680,12 +50695,18 @@ function PresentationProgressView() {
 
   const modules = rawModules.map(m => ({
     ...m,
-    note: moduleNotes[m.id] || ""
+    note: moduleNotes[m.id] || "",
+    updatedAt: noteTimestamps[m.id] || null
   }));
 
   const filteredModules = modules.filter((m) => {
     const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.source.toLowerCase().includes(search.toLowerCase()) || m.id.includes(search);
-    const matchesStatus = statusFilter === "all" || m.status.toLowerCase().includes(statusFilter.toLowerCase());
+    let matchesStatus = true;
+    if (statusFilter === "notes_only") {
+      matchesStatus = Boolean(m.note && m.note.trim().length > 0);
+    } else if (statusFilter !== "all") {
+      matchesStatus = m.status.toLowerCase().includes(statusFilter.toLowerCase());
+    }
     return matchesSearch && matchesStatus;
   }).sort((a, b) => {
     let valA = a[sortBy];
@@ -50771,12 +50792,28 @@ function PresentationProgressView() {
 
       {/* AI Summary Banner if present */}
       {aiSummary && (
-        <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-xl space-y-2 relative">
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] font-bold text-emerald-800 uppercase tracking-wider">AI Executive Notes Summary</span>
-            <button onClick={() => setAiSummary(null)} className="text-emerald-600 hover:text-emerald-800 text-xs">Dismiss</button>
+        <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-xl space-y-3 relative">
+          <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2">
+            <span className="text-[12px] font-bold text-emerald-800 uppercase tracking-wider">AI Categorized Executive Summary</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  const blob = new Blob([`Smart Manager ERP - AI Categorized Review Summary\nGenerated: ${new Date().toLocaleString()}\n\n${aiSummary}`], { type: 'text/plain;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'Smart_Manager_AI_Notes_Summary.txt';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="text-[12px] font-semibold text-emerald-700 hover:text-emerald-900 underline"
+              >
+                Download Summary TXT/PDF Report
+              </button>
+              <button onClick={() => setAiSummary(null)} className="text-emerald-600 hover:text-emerald-800 text-xs font-bold">✕</button>
+            </div>
           </div>
-          <p className="text-[13px] text-emerald-900 leading-relaxed">{aiSummary}</p>
+          <p className="text-[13px] text-emerald-900 leading-relaxed whitespace-pre-line">{aiSummary}</p>
         </div>
       )}
 
@@ -50887,6 +50924,7 @@ function PresentationProgressView() {
               className="text-[13px] border border-slate-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#059669]"
             >
               <option value="all">All Statuses</option>
+              <option value="notes_only">Notes Attached Only</option>
               <option value="pending">Pending Quota</option>
               <option value="completed">Completed</option>
             </select>
@@ -50957,7 +50995,9 @@ function PresentationProgressView() {
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
+                              const ts = new Date().toLocaleString();
                               setModuleNotes(prev => ({ ...prev, [m.id]: inlineNoteText }));
+                              setNoteTimestamps(prev => ({ ...prev, [m.id]: ts }));
                               setInlineEditingId(null);
                             } else if (e.key === "Escape") {
                               setInlineEditingId(null);
@@ -50966,7 +51006,9 @@ function PresentationProgressView() {
                         />
                         <button
                           onClick={() => {
+                            const ts = new Date().toLocaleString();
                             setModuleNotes(prev => ({ ...prev, [m.id]: inlineNoteText }));
+                            setNoteTimestamps(prev => ({ ...prev, [m.id]: ts }));
                             setInlineEditingId(null);
                           }}
                           className="text-xs bg-[#059669] text-white px-2 py-1 rounded"
@@ -50990,8 +51032,10 @@ function PresentationProgressView() {
                           }}
                           title="Click to inline edit note"
                         >
-                          <span className="block text-[11px] text-slate-600 italic bg-slate-50 border border-slate-200/80 px-2 py-0.5 rounded">
-                            {m.note} <span className="text-[10px] text-emerald-600 opacity-0 group-hover:opacity-150 ml-1">Edit</span>
+                          <span className="block text-[11px] text-slate-600 italic bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded">
+                            {m.note}
+                            {m.updatedAt && <span className="block text-[9px] text-slate-400 mt-0.5">Updated: {m.updatedAt}</span>}
+                            <span className="text-[10px] text-emerald-600 opacity-0 group-hover:opacity-100 ml-1">Edit</span>
                           </span>
                         </div>
                       ) : (
@@ -51044,7 +51088,9 @@ function PresentationProgressView() {
               <button
                 onClick={() => {
                   setModuleNotes({});
+                  setNoteTimestamps({});
                   localStorage.removeItem("bserp_presentation_module_notes");
+                  localStorage.removeItem("bserp_presentation_module_timestamps");
                   setShowClearConfirm(false);
                 }}
                 className="bg-rose-600 hover:bg-rose-700 text-white text-[13px] font-semibold px-4 py-2 rounded-lg"
