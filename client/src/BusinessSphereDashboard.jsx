@@ -5960,7 +5960,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-[0.16em]">Workspace overview</span>
                 <span className="text-[rgba(255,255,255,.3)]">·</span>
-                <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{TODAY.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span>
+                <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span>
               </div>
               <h1 className="text-white text-[22px] font-black tracking-tight leading-none">
                 {(()=>{const h=new Date().getHours();return h<12?"Habari za asubuhi":h<17?"Habari za mchana":"Habari za jioni";})()}, {(company.owner||"Welcome").split(" ")[0]} 👋

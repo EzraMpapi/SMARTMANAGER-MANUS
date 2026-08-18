@@ -741,3 +741,4 @@
 - [x] Implement a search and filter bar within the drill-down modal to easily find specific invoices by vendor name or amount.
 - [x] Integrate customer and vendor detail popovers that appear when clicking rows inside the drill-down table for quick context.
 - [x] Add a loading skeleton animation when fetching the customer and vendor details for the popovers to improve perceived performance.
+- [x] Make the workspace overview header date display track the current live date instead of outdated static constants.
