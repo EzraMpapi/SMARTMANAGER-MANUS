@@ -807,3 +807,6 @@
 - [x] Add visual loading states and success or error toast notifications to the "Send Test Alert" button in the WhatsApp settings.
 - [x] Implement an "Export to CSV" button next to the audit history search bar to allow downloading the filtered audit records.
 - [x] Enhance the Slack message template editor by adding a character counter and a rich text formatting toolbar for better customization.
+- [x] Configure automated webhook signature verification header inspection middleware for enhanced enterprise security compliance.
+- [x] Add automated S3 bucket archival policies for generated quarterly statutory audit packets.
+- [x] Integrate custom WhatsApp delivery status logs inside the tenant security audit viewer.
