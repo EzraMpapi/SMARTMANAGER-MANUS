@@ -729,4 +729,5 @@
 - [x] Implement a loading skeleton animation that displays while the table data is being fetched or filtered.
 - [x] Add an 'Export to CSV' button to allow downloading the currently filtered and sorted VAT returns.
 - [x] Fix any remaining undefined `lang` reference crash when entering the TRA Portal.
-- [ ] Add a search highlight feature that bolds the matching text in the table when using the receipt search.
+- [x] Add a search highlight feature that bolds the matching text in the table when using the receipt search.
+- [ ] Definitively eliminate the remaining bare `lang` reference in TraPortalModule.jsx.

@@ -11,7 +11,7 @@ import { jsPDF } from "jspdf";
 import { trpc } from "../lib/trpc";
 
 export function TraPortalModule({ companyId, lang = "en" }) {
-  const currentLang = lang || "en";
+  const currentLang = typeof lang !== "undefined" && lang ? lang : "en";
   const [activeTab, setActiveTab] = useState("dashboard");
   const [notice, setNotice] = useState(null);
 
