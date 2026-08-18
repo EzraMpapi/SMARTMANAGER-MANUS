@@ -776,3 +776,6 @@
 - [x] Add a visual filter in the reconciliation view to easily highlight invoices with significant exchange rate variances.
 - [x] Create a history table for the quarterly PDF audit packets so users can download or regenerate past reports.
 - [x] Build a configuration panel allowing users to select exactly which risk alert types trigger the Slack notifications.
+- [x] Add a summary widget above the reconciliation view that calculates the total financial impact of the highlighted exchange rate variances.
+- [x] Implement a bulk selection and download feature in the audit packet history table to easily export multiple past reports at once.
+- [x] Add a "Test Alert" button next to the Slack configuration panel so users can instantly verify their notification settings are working.
