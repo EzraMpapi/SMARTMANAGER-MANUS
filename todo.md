@@ -728,4 +728,5 @@
 - [x] Implement pagination for the VAT Returns table to ensure smooth scrolling and performance when dealing with a large number of records.
 - [x] Implement a loading skeleton animation that displays while the table data is being fetched or filtered.
 - [x] Add an 'Export to CSV' button to allow downloading the currently filtered and sorted VAT returns.
-- [ ] Fix any remaining undefined `lang` reference crash when entering the TRA Portal.
+- [x] Fix any remaining undefined `lang` reference crash when entering the TRA Portal.
+- [ ] Add a search highlight feature that bolds the matching text in the table when using the receipt search.

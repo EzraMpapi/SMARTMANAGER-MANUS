@@ -831,12 +831,30 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                       </td>
                     </tr>
                   ))}
+                  {/* Helper for rendering highlighted text matches */}
+                  {(() => {
+                    const highlightMatch = (text, query) => {
+                      if (!query || !text) return text;
+                      const parts = String(text).split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+                      return parts.map((part, i) => 
+                        part.toLowerCase() === query.toLowerCase() ? (
+                          <mark key={i} className="bg-amber-200 text-slate-950 font-extrabold px-0.5 rounded">{part}</mark>
+                        ) : part
+                      );
+                    };
+
+                    window._highlightMatch = highlightMatch;
+                    return null;
+                  })()}
+
                   {!isLoadingReceipts && !isFiltering && !groupByBuyer && paginatedVatReceipts.map(r => (
                     <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200">{r.receiptNumber}</td>
+                      <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                        {window._highlightMatch ? window._highlightMatch(r.receiptNumber, vatSearch) : r.receiptNumber}
+                      </td>
                       <td className="px-6 py-3 text-xs text-slate-600 dark:text-slate-400">
                         <span className="font-semibold uppercase">{r.sourceType}</span>: {r.sourceId}
-                        {r.buyerName && <span className="block text-slate-400">Buyer: {r.buyerName}</span>}
+                        {r.buyerName && <span className="block text-slate-400">Buyer: {window._highlightMatch ? window._highlightMatch(r.buyerName, vatSearch) : r.buyerName}</span>}
                       </td>
                       <td className="px-6 py-3 font-mono font-bold">TZS {Number(r.grossAmount).toLocaleString()}</td>
                       <td className="px-6 py-3 font-mono text-emerald-600">TZS {Number(r.vatAmount).toLocaleString()}</td>
@@ -867,7 +885,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                         >
                           <td colSpan={2} className="px-6 py-2.5 text-emerald-900 dark:text-emerald-300 flex items-center gap-2">
                             <span className="text-emerald-600 font-bold">{isCollapsed ? '▶' : '▼'}</span>
-                            🏢 Buyer: <span className="font-bold">{buyer}</span> ({groupReceipts.length} receipts)
+                            🏢 Buyer: <span className="font-bold">{window._highlightMatch ? window._highlightMatch(buyer, vatSearch) : buyer}</span> ({groupReceipts.length} receipts)
                             <span className="text-[10px] text-emerald-600 font-normal ml-2">({isCollapsed ? 'Click to expand' : 'Click to collapse'})</span>
                           </td>
                           <td className="px-6 py-2.5 font-mono text-emerald-900 dark:text-emerald-200">
@@ -879,9 +897,12 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                         </tr>
                         {!isCollapsed && groupReceipts.map(r => (
                           <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 pl-4">
-                            <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200 pl-8">{r.receiptNumber}</td>
+                            <td className="px-6 py-3 font-mono font-bold text-slate-800 dark:text-slate-200 pl-8">
+                              {window._highlightMatch ? window._highlightMatch(r.receiptNumber, vatSearch) : r.receiptNumber}
+                            </td>
                             <td className="px-6 py-3 text-xs text-slate-600 dark:text-slate-400">
                               <span className="font-semibold uppercase">{r.sourceType}</span>: {r.sourceId}
+                              {r.buyerName && <span className="block text-slate-400">Buyer: {window._highlightMatch ? window._highlightMatch(r.buyerName, vatSearch) : r.buyerName}</span>}
                             </td>
                             <td className="px-6 py-3 font-mono font-bold">TZS {Number(r.grossAmount).toLocaleString()}</td>
                             <td className="px-6 py-3 font-mono text-emerald-600">TZS {Number(r.vatAmount).toLocaleString()}</td>
