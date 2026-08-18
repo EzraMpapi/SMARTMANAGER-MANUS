@@ -740,3 +740,4 @@
 - [x] Add interactive drill-down modals to the VAT Return trend chart to allow inspecting itemized fiscal receipts for specific months.
 - [x] Implement a search and filter bar within the drill-down modal to easily find specific invoices by vendor name or amount.
 - [x] Integrate customer and vendor detail popovers that appear when clicking rows inside the drill-down table for quick context.
+- [x] Add a loading skeleton animation when fetching the customer and vendor details for the popovers to improve perceived performance.

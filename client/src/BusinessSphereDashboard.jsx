@@ -5491,6 +5491,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [drillDownMinAmount, setDrillDownMinAmount] = useState("");
   const [drillDownMaxAmount, setDrillDownMaxAmount] = useState("");
   const [selectedDrillDownInvoice, setSelectedDrillDownInvoice] = useState(null);
+  const [drillDownLoading, setDrillDownLoading] = useState(false);
 
 
   const financials = useMemo(() => {
@@ -6476,7 +6477,11 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                             return (
                               <tr
                                 key={inv.id || inv.invoiceNumber}
-                                onClick={() => setSelectedDrillDownInvoice(inv)}
+                                onClick={() => {
+                                  setSelectedDrillDownInvoice(inv);
+                                  setDrillDownLoading(true);
+                                  setTimeout(() => setDrillDownLoading(false), 280);
+                                }}
                                 className={`cursor-pointer transition ${isSelected ? 'bg-emerald-50/80 dark:bg-emerald-950/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                                 title="Click to view customer and vendor detail context"
                               >
@@ -6547,47 +6552,69 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             </div>
 
             <div className="p-5 space-y-4 text-[13px]">
-              <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3.5">
-                <div>
-                  <p className="text-[11px] font-bold uppercase text-slate-400">Customer / Buyer</p>
-                  <p className="font-semibold text-slate-900 dark:text-white mt-0.5">{selectedDrillDownInvoice.customerName || selectedDrillDownInvoice.clientName || "Walk-in Customer"}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase text-slate-400">Transaction Date</p>
-                  <p className="font-mono text-slate-800 dark:text-slate-200 mt-0.5">{selectedDrillDownInvoice.date || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase text-slate-400">Payment Status</p>
-                  <p className="font-medium text-emerald-600 mt-0.5">{selectedDrillDownInvoice.status || "Issued"}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase text-slate-400">Gross Amount (TZS)</p>
-                  <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">TZS {lineTotal(selectedDrillDownInvoice.items || []).total.toLocaleString()}</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-[11.5px] font-bold uppercase text-slate-400 mb-2">Itemized Line Items ({selectedDrillDownInvoice.items?.length || 0})</p>
-                <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
-                  {(selectedDrillDownInvoice.items || []).map((it, idx) => (
-                    <div key={idx} className="p-2.5 flex items-center justify-between text-[12px]">
-                      <div>
-                        <p className="font-medium text-slate-800 dark:text-slate-200">{it.name || it.description || "Item #" + (idx + 1)}</p>
-                        <p className="text-[10.5px] text-slate-400">Qty: {it.quantity || 1} · Unit Price: TZS {(it.unitPrice || it.price || 0).toLocaleString()}</p>
-                      </div>
-                      <span className="font-mono font-bold text-slate-900 dark:text-white">TZS {((it.quantity || 1) * (it.unitPrice || it.price || 0)).toLocaleString()}</span>
+              {drillDownLoading ? (
+                <div className="space-y-4 animate-pulse py-4">
+                  <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/40 p-3.5">
+                    <div className="space-y-2">
+                      <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+                      <div className="h-4 w-32 bg-slate-300 dark:bg-slate-600 rounded" />
                     </div>
-                  ))}
-                  {(!selectedDrillDownInvoice.items || selectedDrillDownInvoice.items.length === 0) && (
-                    <p className="p-4 text-center text-slate-400 text-[12px]">No item details recorded for this invoice.</p>
-                  )}
+                    <div className="space-y-2">
+                      <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+                      <div className="h-4 w-24 bg-slate-300 dark:bg-slate-600 rounded" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 w-36 bg-slate-200 dark:bg-slate-700 rounded" />
+                    <div className="h-24 w-full bg-slate-100 dark:bg-slate-800/50 rounded-xl" />
+                  </div>
+                  <div className="h-10 w-full bg-slate-100 dark:bg-slate-800/50 rounded-xl" />
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3.5">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase text-slate-400">Customer / Buyer</p>
+                      <p className="font-semibold text-slate-900 dark:text-white mt-0.5">{selectedDrillDownInvoice.customerName || selectedDrillDownInvoice.clientName || "Walk-in Customer"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold uppercase text-slate-400">Transaction Date</p>
+                      <p className="font-mono text-slate-800 dark:text-slate-200 mt-0.5">{selectedDrillDownInvoice.date || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold uppercase text-slate-400">Payment Status</p>
+                      <p className="font-medium text-emerald-600 mt-0.5">{selectedDrillDownInvoice.status || "Issued"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold uppercase text-slate-400">Gross Amount (TZS)</p>
+                      <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">TZS {lineTotal(selectedDrillDownInvoice.items || []).total.toLocaleString()}</p>
+                    </div>
+                  </div>
 
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/30 p-3 text-[12px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                <span>🛡️</span>
-                <span>TRA VFD Cryptographic Stamp Verified · 18% Output VAT: TZS {(lineTotal(selectedDrillDownInvoice.items || []).total * 0.18).toLocaleString()}</span>
-              </div>
+                  <div>
+                    <p className="text-[11.5px] font-bold uppercase text-slate-400 mb-2">Itemized Line Items ({selectedDrillDownInvoice.items?.length || 0})</p>
+                    <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+                      {(selectedDrillDownInvoice.items || []).map((it, idx) => (
+                        <div key={idx} className="p-2.5 flex items-center justify-between text-[12px]">
+                          <div>
+                            <p className="font-medium text-slate-800 dark:text-slate-200">{it.name || it.description || "Item #" + (idx + 1)}</p>
+                            <p className="text-[10.5px] text-slate-400">Qty: {it.quantity || 1} · Unit Price: TZS {(it.unitPrice || it.price || 0).toLocaleString()}</p>
+                          </div>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">TZS {((it.quantity || 1) * (it.unitPrice || it.price || 0)).toLocaleString()}</span>
+                        </div>
+                      ))}
+                      {(!selectedDrillDownInvoice.items || selectedDrillDownInvoice.items.length === 0) && (
+                        <p className="p-4 text-center text-slate-400 text-[12px]">No item details recorded for this invoice.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/30 p-3 text-[12px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                    <span>🛡️</span>
+                    <span>TRA VFD Cryptographic Stamp Verified · 18% Output VAT: TZS {(lineTotal(selectedDrillDownInvoice.items || []).total * 0.18).toLocaleString()}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end">
