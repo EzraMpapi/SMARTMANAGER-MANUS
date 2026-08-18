@@ -816,3 +816,6 @@
 - [x] Add a comparison feature to the trend chart allowing users to select and compare two specific banks side-by-side.
 - [x] Implement hover tooltips on the currency volatility widget to display the exact percentage change over the last 24 hours.
 - [x] Add an export button to the bank lending rate widget to download the sorted list of rates as a CSV file.
+- [x] Add a cross-currency conversion calculator widget that utilizes the live exchange-rate volatility feed.
+- [x] Implement visual indicators like green and red arrows next to the currency volatility tooltips to show rate direction.
+- [x] Add a search bar to the bank lending rate widget to allow users to quickly find specific banks.
