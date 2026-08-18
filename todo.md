@@ -745,3 +745,4 @@
 - [x] Add an 'Export to CSV' action directly inside the monthly drill-down modal for instant offline filing archives.
 - [x] Configure automated compliance alerts for months where output VAT deviates significantly from historical averages.
 - [x] Integrate multi-currency conversion toggles within the drill-down modal for international branch reporting.
+- [x] Include a dedicated "Print View" button in the drill-down modal to format the itemized receipts cleanly for physical printing.

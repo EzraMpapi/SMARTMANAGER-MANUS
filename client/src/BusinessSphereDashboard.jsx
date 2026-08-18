@@ -6387,6 +6387,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                 </select>
                 <button
                   type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-[12px] font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-100 transition"
+                  title="Print formatted itemized receipt register"
+                >
+                  🖨️ Print View
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
                     const filtered = monthInvoices.filter(inv => {
