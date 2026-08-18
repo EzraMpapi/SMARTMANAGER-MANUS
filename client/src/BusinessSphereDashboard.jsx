@@ -50991,6 +50991,7 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
   const existing = schedulesQuery.data?.[0];
   const [name, setName] = useState(existing?.name || "Weekly Compliance Digest");
   const [recipientEmail, setRecipientEmail] = useState(existing?.recipientEmail || currentUser?.email || "admin@businesssphere.co.tz");
+  const [ccEmails, setCcEmails] = useState(existing?.ccEmails || "");
   const [frequency, setFrequency] = useState(existing?.frequency || "weekly");
   const [format, setFormat] = useState(existing?.format || "pdf");
 
@@ -50998,6 +50999,7 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
     if (existing) {
       setName(existing.name);
       setRecipientEmail(existing.recipientEmail);
+      setCcEmails(existing.ccEmails || "");
       setFrequency(existing.frequency);
       setFormat(existing.format);
     }
@@ -51016,6 +51018,7 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
         id: existing.id,
         name,
         recipientEmail,
+        ccEmails,
         frequency,
         format,
         modules,
@@ -51026,6 +51029,7 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
         companyId: company?.id || "default",
         name,
         recipientEmail,
+        ccEmails,
         frequency,
         format,
         modules,
@@ -51054,13 +51058,23 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
             />
           </div>
           <div>
-            <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Recipient Email Address</label>
+            <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Primary Recipient Email Address</label>
             <input
               type="email"
               value={recipientEmail}
               onChange={(e) => setRecipientEmail(e.target.value)}
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-[13px] text-slate-900 dark:text-white outline-none focus:border-[#16A34A]"
               required
+            />
+          </div>
+          <div>
+            <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">CC Recipients (Regional Supervisors, comma-separated)</label>
+            <input
+              type="text"
+              value={ccEmails}
+              onChange={(e) => setCcEmails(e.target.value)}
+              placeholder="supervisor1@businesssphere.co.tz, supervisor2@businesssphere.co.tz"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-[13px] text-slate-900 dark:text-white outline-none focus:border-[#16A34A]"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">

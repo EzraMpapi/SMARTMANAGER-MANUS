@@ -752,3 +752,6 @@
 - [x] Add a visual status badge on the dashboard to show whether the automated weekly compliance digest emails were sent successfully.
 - [x] Add a hover tooltip to the status badge that displays the exact date and time of the last successful email delivery.
 - [x] Implement a settings modal to allow users to customize the recipients and frequency of the compliance digest emails.
+- [x] Add multi-recipient CC support in the compliance digest settings modal for regional supervisors.
+- [x] Configure automated audit log recording whenever compliance schedule settings are modified.
+- [x] Integrate push notification delivery for immediate schedule execution confirmations.
