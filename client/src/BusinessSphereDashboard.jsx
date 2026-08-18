@@ -50600,7 +50600,12 @@ function PresentationProgressView() {
   const [scheduleEnabled, setScheduleEnabled] = useState(true);
   const [scheduleSaved, setScheduleSaved] = useState(false);
 
-  const modules = [
+  const [moduleNotes, setModuleNotes] = useState({});
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [noteText, setNoteText] = useState("");
+  const [chartHovered, setChartHovered] = useState(false);
+
+  const rawModules = [
     { id: "01", name: "Public Brand & Marketing Entry", source: "Home.tsx", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
     { id: "02", name: "Authentication & Secure Onboarding", source: "LoginModuleEcosystem.jsx", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80" },
     { id: "03", name: "Master Application Shell & Navigation", source: "DashboardLayout.tsx", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&q=80" },
@@ -50642,6 +50647,11 @@ function PresentationProgressView() {
     { id: "39", name: "Employee Portal", source: "Employee Portal", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&q=80" },
     { id: "40", name: "Enterprise Settings & Security Control Center", source: "Settings Module", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80" }
   ];
+
+  const modules = rawModules.map(m => ({
+    ...m,
+    note: moduleNotes[m.id] || ""
+  }));
 
   const filteredModules = modules.filter((m) => {
     const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.source.toLowerCase().includes(search.toLowerCase()) || m.id.includes(search);
@@ -50703,25 +50713,34 @@ function PresentationProgressView() {
         </div>
       </div>
 
-      {/* Visual Completion Progress Bar Chart Widget */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+      {/* Visual Completion Progress Bar Chart Widget with Hover Exact Counts */}
+      <div 
+        className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 relative cursor-pointer"
+        onMouseEnter={() => setChartHovered(true)}
+        onMouseLeave={() => setChartHovered(false)}
+      >
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-[15px] font-semibold text-[#111827]">Overall Presentation Asset Completion</h3>
-            <p className="text-[13px] text-slate-500">Tracking verified codebase inventory against generated enterprise wireframes.</p>
+            <p className="text-[13px] text-slate-500">Hover chart for exact counts. Tracking verified codebase inventory against generated enterprise wireframes.</p>
           </div>
           <div className="text-right">
             <span className="text-[20px] font-bold text-[#059669]">100%</span>
             <span className="text-[12px] text-slate-400 block">Inventory Verified (40/40)</span>
           </div>
         </div>
-        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden relative">
           <div className="bg-emerald-600 h-3 rounded-full transition-all duration-500" style={{ width: '100%' }} />
         </div>
         <div className="flex items-center justify-between text-[12px] text-slate-500 pt-1">
-          <span>Codebase Inventory: 40 Modules (Fully Mapped)</span>
-          <span>Asset Generation: 40/40 (Pending Quota Refresh)</span>
+          <span>Codebase Mapped: 40 Modules</span>
+          <span>Completed: 0 | Pending Quota: 40</span>
         </div>
+        {chartHovered && (
+          <div className="absolute top-2 right-6 bg-slate-900 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-lg border border-slate-700 animate-fadeIn z-10">
+            Exact Summary: 40 Codebase Mapped | 0 Rendered | 40 Pending Quota Reset
+          </div>
+        )}
       </div>
 
       {/* Scheduled PDF Distribution Settings */}
@@ -50793,8 +50812,17 @@ function PresentationProgressView() {
               placeholder="Search module or source..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="text-[13px] border border-slate-300 rounded-lg px-3 py-1.5 w-60 focus:outline-none focus:ring-2 focus:ring-[#059669]"
+              className="text-[13px] border border-slate-300 rounded-lg px-3 py-1.5 w-48 focus:outline-none focus:ring-2 focus:ring-[#059669]"
             />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-[13px] border border-slate-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#059669]"
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending Quota</option>
+              <option value="completed">Completed</option>
+            </select>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -50842,13 +50870,27 @@ function PresentationProgressView() {
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
                       {m.status}
                     </span>
+                    {m.note && (
+                      <span className="block text-[11px] text-slate-500 italic mt-0.5 max-w-xs truncate" title={m.note}>
+                        Note: {m.note}
+                      </span>
+                    )}
                   </td>
-                  <td className="py-3 px-6 text-right">
+                  <td className="py-3 px-6 text-right space-x-2">
+                    <button
+                      onClick={() => {
+                        setEditingNoteId(m.id);
+                        setNoteText(m.note || "");
+                      }}
+                      className="text-[12px] font-medium text-slate-600 hover:text-[#059669]"
+                    >
+                      {m.note ? "Edit Note" : "+ Add Note"}
+                    </button>
                     <button
                       onClick={() => setSelectedAsset(m)}
                       className="text-[12px] font-medium text-[#059669] hover:underline"
                     >
-                      Preview Wireframe
+                      Preview
                     </button>
                   </td>
                 </tr>
@@ -50857,6 +50899,40 @@ function PresentationProgressView() {
           </table>
         </div>
       </div>
+
+      {/* Note Editing Modal */}
+      {editingNoteId && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-[#111827]">Edit Module Note #{editingNoteId}</h3>
+              <button onClick={() => setEditingNoteId(null)} className="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-slate-700 mb-1">Custom Note / Review Comment</label>
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                rows={3}
+                placeholder="Enter review notes, verification status, or change requests..."
+                className="w-full text-[13px] border border-slate-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#059669]"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button onClick={() => setEditingNoteId(null)} className="border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-slate-50">Cancel</button>
+              <button
+                onClick={() => {
+                  setModuleNotes(prev => ({ ...prev, [editingNoteId]: noteText }));
+                  setEditingNoteId(null);
+                }}
+                className="btn-primary text-white text-[13px] font-semibold px-4 py-2 rounded-lg"
+              >
+                Save Note
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Asset Preview Modal or Bulk Export Preview Modal */}
       {selectedAsset && (
