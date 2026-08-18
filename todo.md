@@ -733,4 +733,6 @@
 - [x] Definitively eliminate the remaining bare `lang` reference in TraPortalModule.jsx.
 - [x] Add a date range picker to allow filtering the VAT returns by specific time periods.
 - [x] Add quick selection buttons for common date ranges like 'This Month', 'Last Month', and 'This Quarter' next to the date picker.
-- [ ] Implement a minimum and maximum amount filter to easily find high-value VAT returns within the selected date range.
+- [x] Implement a minimum and maximum amount filter to easily find high-value VAT returns within the selected date range.
+- [x] Make the dashboard date display track the current day of the day.
+- [x] Redesign the Module Health section arrangement to be simple and professionally organized.
