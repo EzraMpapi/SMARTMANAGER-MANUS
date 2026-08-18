@@ -785,3 +785,13 @@
 - [x] Create a configuration panel in the settings to link WhatsApp numbers for receiving urgent FX variance alerts.
 - [x] Add a visual status indicator in the audit history table to show which past reports have been securely archived.
 - [x] Build a settings interface allowing administrators to generate, view, and rotate secret keys for webhook signature verification.
+- [ ] 01 — Login: Redesign and generate high-fidelity UI/UX mockup for desktop & mobile.
+- [ ] 02–06 — Sign Up, Company Registration, Join Company, Email Confirmation, and Password Recovery.
+- [ ] 07–09 — Main App Shell, Dashboard, and Daily Business Brief.
+- [ ] 10–15 — CRM, Sales, Inventory, Procurement, Finance, and Reports.
+- [ ] 16–20 — HR, Manufacturing, Supply Chain, Marketing, and E-Commerce.
+- [x] 21–25 — Point of Sale, Documents, Projects, Customer Support, and Analytics.
+- [x] 26–31 — Notifications, Activity Stream, Integration Hub, Workflow Studio, Collaboration Hub, and AI Assistant.
+- [x] 32–37 — Microfinance, VICOBA/SACCOS, Community Groups, Healthcare, School Management, Pharmacy, and Hotel/Hospitality.
+- [x] 38–42 — Banking/MFI, Restaurant/F&B, Employee Portal, Security Dashboard, and Command Palette.
+- [x] 45 — Settings: Final Enterprise Control Center.
