@@ -50600,10 +50600,38 @@ function PresentationProgressView() {
   const [scheduleEnabled, setScheduleEnabled] = useState(true);
   const [scheduleSaved, setScheduleSaved] = useState(false);
 
-  const [moduleNotes, setModuleNotes] = useState({});
+  const [moduleNotes, setModuleNotes] = useState(() => {
+    try {
+      const saved = localStorage.getItem("bserp_presentation_module_notes");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
   const [editingNoteId, setEditingNoteId] = useState(null);
+  const [inlineEditingId, setInlineEditingId] = useState(null);
+  const [inlineNoteText, setInlineNoteText] = useState("");
   const [noteText, setNoteText] = useState("");
   const [chartHovered, setChartHovered] = useState(false);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [aiSummarizing, setAiSummarizing] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("bserp_presentation_module_notes", JSON.stringify(moduleNotes));
+    } catch {}
+  }, [moduleNotes]);
+
+  const summarizeMutation = trpc.ai.summarizeNotes.useMutation({
+    onSuccess: (data) => {
+      setAiSummary(data.summary);
+      setAiSummarizing(false);
+    },
+    onError: (err) => {
+      setAiSummary("Failed to generate summary: " + err.message);
+      setAiSummarizing(false);
+    }
+  });
 
   const rawModules = [
     { id: "01", name: "Public Brand & Marketing Entry", source: "Home.tsx", status: "Pending Quota", thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" },
@@ -50675,6 +50703,25 @@ function PresentationProgressView() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => {
+              const notesArr = Object.entries(moduleNotes).filter(([_, v]) => v.trim().length > 0).map(([id, note]) => {
+                const found = rawModules.find(m => m.id === id);
+                return { id, name: found ? found.name : `Module #${id}`, note };
+              });
+              if (notesArr.length === 0) {
+                alert("Please add notes to at least one module before generating an AI summary.");
+                return;
+              }
+              setAiSummarizing(true);
+              setAiSummary(null);
+              summarizeMutation.mutate({ notes: notesArr });
+            }}
+            disabled={aiSummarizing}
+            className="border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-[13px] font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {aiSummarizing ? "Generating AI Summary..." : "AI Notes Summary"}
+          </button>
+          <button
             onClick={() => setSelectedAsset({ isBulkExport: true })}
             className="border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 text-[13px] font-medium px-4 py-2 rounded-lg transition-colors"
           >
@@ -50712,6 +50759,17 @@ function PresentationProgressView() {
           <span className="text-[11px] text-amber-600 font-medium mt-1 inline-block">Free Quota Reached (Pending Reset)</span>
         </div>
       </div>
+
+      {/* AI Summary Banner if present */}
+      {aiSummary && (
+        <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-xl space-y-2 relative">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-bold text-emerald-800 uppercase tracking-wider">AI Executive Notes Summary</span>
+            <button onClick={() => setAiSummary(null)} className="text-emerald-600 hover:text-emerald-800 text-xs">Dismiss</button>
+          </div>
+          <p className="text-[13px] text-emerald-900 leading-relaxed">{aiSummary}</p>
+        </div>
+      )}
 
       {/* Visual Completion Progress Bar Chart Widget with Hover Exact Counts */}
       <div 
@@ -50870,10 +50928,65 @@ function PresentationProgressView() {
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60">
                       {m.status}
                     </span>
-                    {m.note && (
-                      <span className="block text-[11px] text-slate-500 italic mt-0.5 max-w-xs truncate" title={m.note}>
-                        Note: {m.note}
-                      </span>
+                    {inlineEditingId === m.id ? (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={inlineNoteText}
+                          onChange={(e) => setInlineNoteText(e.target.value)}
+                          placeholder="Type inline note..."
+                          className="text-[12px] border border-slate-300 rounded px-2 py-1 w-full focus:outline-none focus:ring-1 focus:ring-[#059669]"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              setModuleNotes(prev => ({ ...prev, [m.id]: inlineNoteText }));
+                              setInlineEditingId(null);
+                            } else if (e.key === "Escape") {
+                              setInlineEditingId(null);
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            setModuleNotes(prev => ({ ...prev, [m.id]: inlineNoteText }));
+                            setInlineEditingId(null);
+                          }}
+                          className="text-xs bg-[#059669] text-white px-2 py-1 rounded"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setInlineEditingId(null)}
+                          className="text-xs text-slate-500 px-1"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      m.note ? (
+                        <div 
+                          className="group cursor-pointer mt-1"
+                          onClick={() => {
+                            setInlineEditingId(m.id);
+                            setInlineNoteText(m.note);
+                          }}
+                          title="Click to inline edit note"
+                        >
+                          <span className="block text-[11px] text-slate-600 italic bg-slate-50 border border-slate-200/80 px-2 py-0.5 rounded">
+                            {m.note} <span className="text-[10px] text-emerald-600 opacity-0 group-hover:opacity-150 ml-1">Edit</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setInlineEditingId(m.id);
+                            setInlineNoteText("");
+                          }}
+                          className="block text-[11px] text-slate-400 hover:text-[#059669] mt-1 italic"
+                        >
+                          + Add inline note
+                        </button>
+                      )
                     )}
                   </td>
                   <td className="py-3 px-6 text-right space-x-2">
@@ -50884,7 +50997,7 @@ function PresentationProgressView() {
                       }}
                       className="text-[12px] font-medium text-slate-600 hover:text-[#059669]"
                     >
-                      {m.note ? "Edit Note" : "+ Add Note"}
+                      Modal Note
                     </button>
                     <button
                       onClick={() => setSelectedAsset(m)}

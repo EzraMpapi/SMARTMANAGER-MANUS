@@ -87,6 +87,20 @@ export const appRouter = router({
           model: res.model || input.model || "default",
         };
       }),
+    summarizeNotes: protectedProcedure
+      .input(z.object({ notes: z.array(z.object({ id: z.string(), name: z.string(), note: z.string() })) }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const prompt = `Summarize the following review notes and custom comments recorded across pending Smart Manager ERP presentation modules into a concise executive briefing paragraph highlighting key action items and status:\n\n${input.notes.map(n => `Module #${n.id} (${n.name}): ${n.note}`).join("\n")}`;
+        const res = await invokeLLM({
+          model: "gpt-5-mini",
+          messages: [
+            { role: "system", content: "You are an executive enterprise ERP program manager. Provide a concise, professional summary of module review notes." },
+            { role: "user", content: prompt }
+          ],
+        });
+        return { summary: res.choices[0]?.message?.content || "No summary generated." };
+      }),
     assist: protectedProcedure
       .input(z.object({
         task: z.enum(["chat", "document", "meeting"]).default("chat"),
