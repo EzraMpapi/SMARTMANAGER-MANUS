@@ -826,3 +826,4 @@
 - [x] Add hover tooltips to the 7-day volatility sparklines to display the exact exchange rate for each day.
 - [x] Implement a filtering option in the bank search autocomplete to only show banks offering specific loan types.
 - [x] Add a history log interface in the dashboard to review past Slack webhook alerts and their delivery status.
+- [x] Add an export button in the TRA Portal to allow users to download compliance reports as CSV files.
