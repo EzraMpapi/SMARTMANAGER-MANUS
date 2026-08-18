@@ -738,3 +738,4 @@
 - [x] Redesign the Module Health section arrangement to be simple and professionally organized.
 - [x] Add a visual chart or graph to the dashboard to display VAT return trends over the selected date range.
 - [x] Add interactive drill-down modals to the VAT Return trend chart to allow inspecting itemized fiscal receipts for specific months.
+- [x] Implement a search and filter bar within the drill-down modal to easily find specific invoices by vendor name or amount.

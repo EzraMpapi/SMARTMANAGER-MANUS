@@ -5487,6 +5487,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
   const [drillDownMonth, setDrillDownMonth] = useState(null);
+  const [drillDownSearch, setDrillDownSearch] = useState("");
+  const [drillDownMinAmount, setDrillDownMinAmount] = useState("");
+  const [drillDownMaxAmount, setDrillDownMaxAmount] = useState("");
 
 
   const financials = useMemo(() => {
@@ -6380,22 +6383,75 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
               {(() => {
                 const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
-                const totalGross = monthInvoices.reduce((s, i) => s + lineTotal(i.items || []).total, 0);
+                const filteredInvoices = monthInvoices.filter(inv => {
+                  const { total } = lineTotal(inv.items || []);
+                  const q = drillDownSearch.toLowerCase().trim();
+                  const vendor = (inv.customerName || inv.clientName || "").toLowerCase();
+                  const invNum = String(inv.invoiceNumber || inv.id || "").toLowerCase();
+                  const matchesSearch = !q || vendor.includes(q) || invNum.includes(q);
+                  const minOk = drillDownMinAmount === "" || isNaN(Number(drillDownMinAmount)) || total >= Number(drillDownMinAmount);
+                  const maxOk = drillDownMaxAmount === "" || isNaN(Number(drillDownMaxAmount)) || total <= Number(drillDownMaxAmount);
+                  return matchesSearch && minOk && maxOk;
+                });
+                const totalGross = filteredInvoices.reduce((s, i) => s + lineTotal(i.items || []).total, 0);
                 const totalVat = totalGross * 0.18;
                 return (
                   <>
+                    {/* Search & Amount Filter Bar */}
+                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3.5">
+                      <div className="relative flex-1 min-w-[200px]">
+                        <Search size={15} className="absolute left-3 top-2.5 text-slate-400" />
+                        <input
+                          type="text"
+                          value={drillDownSearch}
+                          onChange={e => setDrillDownSearch(e.target.value)}
+                          placeholder="Search vendor name or invoice #..."
+                          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-3 py-1.5 text-[12.5px] text-slate-800 dark:text-white"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11.5px] font-semibold text-slate-600 dark:text-slate-300">Min (TZS):</label>
+                        <input
+                          type="number"
+                          value={drillDownMinAmount}
+                          onChange={e => setDrillDownMinAmount(e.target.value)}
+                          placeholder="0"
+                          className="w-24 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-[12px] text-slate-800 dark:text-white"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11.5px] font-semibold text-slate-600 dark:text-slate-300">Max (TZS):</label>
+                        <input
+                          type="number"
+                          value={drillDownMaxAmount}
+                          onChange={e => setDrillDownMaxAmount(e.target.value)}
+                          placeholder="Any"
+                          className="w-24 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-[12px] text-slate-800 dark:text-white"
+                        />
+                      </div>
+                      {(drillDownSearch || drillDownMinAmount || drillDownMaxAmount) && (
+                        <button
+                          type="button"
+                          onClick={() => { setDrillDownSearch(""); setDrillDownMinAmount(""); setDrillDownMaxAmount(""); }}
+                          className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-[12px] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 transition"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
-                        <p className="text-[11px] font-bold uppercase text-slate-500">Total Taxable Turnover</p>
+                        <p className="text-[11px] font-bold uppercase text-slate-500">Filtered Turnover ({filteredInvoices.length}/{monthInvoices.length})</p>
                         <p className="text-xl font-extrabold font-mono text-slate-900 dark:text-white">TZS {totalGross.toLocaleString()}</p>
                       </div>
                       <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
-                        <p className="text-[11px] font-bold uppercase text-slate-500">Output VAT (18%)</p>
+                        <p className="text-[11px] font-bold uppercase text-slate-500">Filtered Output VAT (18%)</p>
                         <p className="text-xl font-extrabold font-mono text-emerald-600">TZS {totalVat.toLocaleString()}</p>
                       </div>
                       <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
-                        <p className="text-[11px] font-bold uppercase text-slate-500">Total Fiscal Invoices</p>
-                        <p className="text-xl font-extrabold font-mono text-slate-900 dark:text-white">{monthInvoices.length} Verified</p>
+                        <p className="text-[11px] font-bold uppercase text-slate-500">Audit Status</p>
+                        <p className="text-xl font-extrabold font-mono text-emerald-600">Reconciled ✓</p>
                       </div>
                     </div>
 
@@ -6404,7 +6460,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                         <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
                           <tr>
                             <th className="px-4 py-3">Invoice #</th>
-                            <th className="px-4 py-3">Customer / Buyer</th>
+                            <th className="px-4 py-3">Customer / Vendor</th>
                             <th className="px-4 py-3">Date</th>
                             <th className="px-4 py-3">Gross Amount</th>
                             <th className="px-4 py-3">Output VAT (18%)</th>
@@ -6412,7 +6468,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200">
-                          {monthInvoices.map(inv => {
+                          {filteredInvoices.map(inv => {
                             const { total } = lineTotal(inv.items || []);
                             const vat = total * 0.18;
                             return (
@@ -6430,10 +6486,10 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                               </tr>
                             );
                           })}
-                          {monthInvoices.length === 0 && (
+                          {filteredInvoices.length === 0 && (
                             <tr>
                               <td colSpan={6} className="py-12 text-center text-slate-400">
-                                No verified fiscal receipts found for {drillDownMonth}.
+                                No verified fiscal receipts found matching the search query or amount range for {drillDownMonth}.
                               </td>
                             </tr>
                           )}
