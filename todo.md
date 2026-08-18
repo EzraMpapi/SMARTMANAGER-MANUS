@@ -810,3 +810,6 @@
 - [x] Configure automated webhook signature verification header inspection middleware for enhanced enterprise security compliance.
 - [x] Add automated S3 bucket archival policies for generated quarterly statutory audit packets.
 - [x] Integrate custom WhatsApp delivery status logs inside the tenant security audit viewer.
+- [ ] Configure automated webhook alert dispatches to notify regional supervisors when favorited modules transition to critical error states.
+- [ ] Add a custom date-range picker for exporting filtered module telemetry and AI diagnostic reports.
+- [ ] Integrate multi-currency support in the comparative branch summary analytics.
