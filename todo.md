@@ -832,3 +832,4 @@
 - [x] Add a print preview modal for the subtotaled VAT schedule before the final PDF download.
 - [x] Add a company logo and custom watermark option to the VAT print preview modal.
 - [x] Add a direct email sharing button in the print preview modal to send the watermarked PDF to stakeholders.
+- [x] Include a text input field in the email sharing modal so users can add a custom message alongside the PDF.
