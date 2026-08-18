@@ -727,7 +727,15 @@ export function TraPortalModule({ companyId, lang = "en" }) {
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900 mt-6">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h4 className="text-[14px] font-bold text-slate-900 dark:text-white">Itemized Fiscal Register</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-[14px] font-bold text-slate-900 dark:text-white">Itemized Fiscal Register</h4>
+                  <button
+                    onClick={exportVatCsv}
+                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 transition dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 ml-2"
+                  >
+                    <FileSpreadsheet size={13} /> Export Filtered CSV ({sortedVatReceipts.length})
+                  </button>
+                </div>
                 <p className="text-[12px] text-slate-500">Click column headers below to sort by date, amount, or receipt number.</p>
               </div>
               <div className="flex flex-wrap items-center gap-3 text-[12px]">
