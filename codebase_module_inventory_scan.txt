@@ -1,0 +1,380 @@
+1684:const ACTIVITY_MODULE_COLORS = {
+1747:          const color = ACTIVITY_MODULE_COLORS[e.module] || "#94A3B8";
+3023:const ALL_MODULE_IDS = [
+3136:const MODULES = [
+3137:  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, live: true },
+3138:  { id: "crm", label: "CRM", icon: Users, live: true },
+3139:  { id: "sales", label: "Sales", icon: ShoppingCart, live: true },
+3140:  { id: "inventory", label: "Inventory", icon: Package, live: true },
+3141:  { id: "procurement", label: "Procurement", icon: ClipboardCheck, live: true },
+3142:  { id: "finance", label: "Finance", icon: Wallet, live: true },
+3144:  { id: "hr", label: "HR", icon: Briefcase, live: true },
+3145:  { id: "manufacturing", label: "Manufacturing", icon: Factory, live: true },
+3147:  { id: "marketing", label: "Marketing", icon: Megaphone, live: true },
+3148:  { id: "ecommerce", label: "E-Commerce", icon: Store, live: true },
+3149:  { id: "pos", label: "Point of Sale", icon: ShoppingBag, live: true },
+3150:  { id: "documents", label: "Documents", icon: FileText, live: true },
+3151:  { id: "projects", label: "Projects", icon: Kanban, live: true },
+3152:  { id: "support", label: "Customer Support", icon: Headphones, live: true },
+3153:  { id: "analytics", label: "Analytics", icon: Gauge, live: true },
+3158:  { id: "collaboration", label: "Collaboration Hub", icon: MessageSquare, live: true },
+5900:    const targetLabel = MODULES.find((module) => module.id === target)?.label || "your workspace";
+5922:    const primaryModuleLabel = MODULES.find((module) => module.id === primaryModuleId)?.label || "your permitted workspace";
+6850:              { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, status: "available", metric: "Workspace overview available", detail: "Uses confirmed dashboard data" },
+6851:              { id: "crm", label: "CRM", icon: Users, status: crm.rows.length ? "tracking" : "noData", metric: crm.rows.length ? `${crm.rows.length} confirmed lead${crm.rows.length === 1 ? "" : "s"}` : "No confirmed leads", detail: crm.rows.length ? "Review pipeline records" : "Open CRM to add or review leads" },
+6852:              { id: "sales", label: "Sales", icon: ReceiptText, status: overdueInvoices.length ? "attention" : (invoices.rows.length ? "tracking" : "noData"), metric: overdueInvoices.length ? `${overdueInvoices.length} overdue invoice${overdueInvoices.length === 1 ? "" : "s"}` : (invoices.rows.length ? `${invoices.rows.length} invoice${invoices.rows.length === 1 ? "" : "s"} tracked` : "No confirmed invoices"), detail: overdueInvoices.length ? "Review receivables" : "Open sales records" },
+6853:              { id: "inventory", label: "Inventory", icon: Package, status: lowStockItems.length ? "attention" : (inventory.rows.length ? "tracking" : "noData"), metric: lowStockItems.length ? `${lowStockItems.length} item${lowStockItems.length === 1 ? "" : "s"} need review` : (inventory.rows.length ? `${inventory.rows.length} stocked SKU${inventory.rows.length === 1 ? "" : "s"}` : "No confirmed stock items"), detail: lowStockItems.length ? "Review stock levels" : "Open inventory records" },
+6854:              { id: "procurement", label: "Procurement", icon: ShoppingBag, status: "unavailable", metric: "No root-level signal", detail: "Open procurement to review records" },
+6855:              { id: "finance", label: "Finance", icon: CircleDollarSign, status: (invoices.rows.length || expenses.rows.length) ? "tracking" : "noData", metric: (invoices.rows.length || expenses.rows.length) ? `${invoices.rows.length} invoice${invoices.rows.length === 1 ? "" : "s"} · ${expenses.rows.length} expense${expenses.rows.length === 1 ? "" : "s"}` : "No confirmed finance entries", detail: "Open finance records" },
+6856:              { id: "hr", label: "Human Resources", icon: UserCheck, status: pendingLeaves.length ? "attention" : (activeEmployees.length ? "tracking" : "noData"), metric: pendingLeaves.length ? `${pendingLeaves.length} leave request${pendingLeaves.length === 1 ? "" : "s"} pending` : (activeEmployees.length ? `${activeEmployees.length} active employee${activeEmployees.length === 1 ? "" : "s"}` : "No confirmed HR records"), detail: pendingLeaves.length ? "Review leave requests" : "Open HR records" },
+6857:              { id: "manufacturing", label: "Manufacturing", icon: Factory, status: overdueWorkOrders.length ? "attention" : (workOrders.rows.length ? "tracking" : "noData"), metric: overdueWorkOrders.length ? `${overdueWorkOrders.length} work order${overdueWorkOrders.length === 1 ? "" : "s"} overdue` : (workOrders.rows.length ? `${workOrders.rows.length} work order${workOrders.rows.length === 1 ? "" : "s"} tracked` : "No confirmed work orders"), detail: overdueWorkOrders.length ? "Review production schedule" : "Open manufacturing records" },
+6858:              { id: "projects", label: "Projects", icon: FolderKanban, status: "unavailable", metric: "No root-level signal", detail: "Open projects to review work" },
+6859:              { id: "support", label: "Customer Support", icon: Headphones, status: "unavailable", metric: "Ticket data stays in Support", detail: "Open the support inbox" },
+6860:              { id: "analytics", label: "Analytics", icon: BarChart3, status: "available", metric: "Uses confirmed source modules", detail: "Open analytics views" },
+6862:              { id: "pos", label: "Point of Sale", icon: ScanLine, status: posTransactions.rows.length ? "tracking" : "noData", metric: posTransactions.rows.length ? `${posTransactions.rows.length} confirmed transaction${posTransactions.rows.length === 1 ? "" : "s"}` : "No confirmed POS transactions", detail: "Open point of sale" },
+6863:              { id: "marketing", label: "Marketing", icon: Megaphone, status: "unavailable", metric: "No root-level signal", detail: "Open marketing workspace" },
+6864:              { id: "ecommerce", label: "Ecommerce", icon: Store, status: "unavailable", metric: "No root-level signal", detail: "Open ecommerce workspace" },
+6865:              { id: "collaboration", label: "Collaboration", icon: MessageCircle, status: "unavailable", metric: "No root-level signal", detail: "Open collaboration workspace" },
+7151:    { id: "finance", label: "Finance records", detail: `${invoices.rows.length} confirmed invoice${invoices.rows.length === 1 ? "" : "s"} and ${expenses.rows.length} expense${expenses.rows.length === 1 ? "" : "s"}`, ready: invoices.rows.length + expenses.rows.length > 0, module: "finance" },
+7153:    { id: "inventory", label: "Inventory records", detail: `${inventory.rows.length} confirmed item${inventory.rows.length === 1 ? "" : "s"}`, ready: inventory.rows.length > 0, module: "inventory" },
+11540:  { id: "dashboard", label: "Dashboard",    icon: LayoutDashboard },
+22781:  { id: "sales",          label: "Sales & Revenue",    icon: TrendingUp },
+28162:  { type: "nav",    id: "dashboard",    label: "Go to Dashboard",          icon: "LayoutDashboard", mod: "dashboard" },
+28163:  { type: "nav",    id: "sales",        label: "Go to Sales",              icon: "ShoppingCart",    mod: "sales" },
+28164:  { type: "nav",    id: "pos",          label: "Go to Point of Sale",      icon: "Store",           mod: "pos" },
+28165:  { type: "nav",    id: "crm",          label: "Go to CRM",                icon: "Users",           mod: "crm" },
+28166:  { type: "nav",    id: "inventory",    label: "Go to Inventory",          icon: "Package",         mod: "inventory" },
+28167:  { type: "nav",    id: "procurement",  label: "Go to Procurement",        icon: "Truck",           mod: "procurement" },
+28168:  { type: "nav",    id: "finance",      label: "Go to Finance",            icon: "Wallet",          mod: "finance" },
+28169:  { type: "nav",    id: "hr",           label: "Go to HR",                 icon: "Users",           mod: "hr" },
+28170:  { type: "nav",    id: "manufacturing",label: "Go to Manufacturing",      icon: "Factory",         mod: "manufacturing" },
+28171:  { type: "nav",    id: "projects",     label: "Go to Projects",           icon: "Kanban",          mod: "projects" },
+28172:  { type: "nav",    id: "analytics",    label: "Go to Analytics",          icon: "BarChart3",       mod: "analytics" },
+28173:  { type: "nav",    id: "ai",           label: "Go to AI Assistant",       icon: "Brain",           mod: "ai" },
+28174:  { type: "nav",    id: "settings",     label: "Go to Settings",           icon: "Settings",        mod: "settings" },
+28176:  { type: "action", id: "new-invoice",  label: "New Invoice",              icon: "Plus",    tab: "invoices",  mod: "sales" },
+28177:  { type: "action", id: "new-quote",    label: "New Quotation",            icon: "Plus",    tab: "quotations",mod: "sales" },
+28178:  { type: "action", id: "new-expense",  label: "New Expense",              icon: "Plus",    tab: "expenses",  mod: "finance" },
+28179:  { type: "action", id: "new-customer", label: "Add Customer",             icon: "UserPlus",tab: "customers", mod: "crm" },
+28180:  { type: "action", id: "new-employee", label: "Add Employee",             icon: "UserPlus",tab: null,        mod: "hr" },
+28181:  { type: "action", id: "new-po",       label: "New Purchase Order",       icon: "Plus",    tab: "pos-orders",mod: "procurement" },
+28182:  { type: "action", id: "new-product",  label: "Add Product to Inventory", icon: "Plus",    tab: "stock",     mod: "inventory" },
+28183:  { type: "action", id: "journal-entry",label: "Post Journal Entry",       icon: "BookOpen",tab: "journal",   mod: "finance" },
+28184:  { type: "action", id: "run-payroll",  label: "Run Payroll",              icon: "Wallet",  tab: "payroll",   mod: "hr" },
+28186:  { type: "nav",    id: "receivables",  label: "Finance &#8250; Receivables",icon: "Landmark",mod: "finance", tab: "receivables" },
+28187:  { type: "nav",    id: "ledger",       label: "Finance &#8250; General Ledger",icon: "FileText",mod: "finance", tab: "ledger" },
+28188:  { type: "nav",    id: "tax",          label: "Finance &#8250; Tax Center",icon: "Percent",mod: "finance",   tab: "tax" },
+28189:  { type: "nav",    id: "banking",      label: "Finance &#8250; Banking",   icon: "Banknote",mod: "finance",  tab: "banking" },
+28190:  { type: "nav",    id: "budgets",      label: "Finance &#8250; Budgets",   icon: "Target",  mod: "finance",  tab: "budgets" },
+28191:  { type: "nav",    id: "period-closes",label: "Finance &#8250; Period Closes",icon: "Lock",mod: "finance",  tab: "periods" },
+28192:  { type: "nav",    id: "recon",        label: "Finance &#8250; Bank Recon",icon: "GitBranch",mod: "finance", tab: "reconcile" },
+28973:  { id: "hr", label: "HR", icon: Users },
+28974:  { id: "sales", label: "Sales", icon: TrendingUp },
+32306:  { id: "sales", label: "Sales Activities", color: "#22C55E" },
+35827:  { id: "manufacturing", label: "Manufacturing Module", icon: Layers, modules: ["manufacturing", "inventory", "procurement", "finance"], blurb: "BOMs, work orders, QC, machine maintenance — the real Manufacturing module plus its supply chain." },
+36925:                            {approved && <div className="mt-2.5 flex flex-wrap items-center gap-2"><span className="rounded-full bg-[#16A34A]/15 px-2 py-1 text-[10.5px] font-semibold text-[#166534]">Authorized by verified {state.decidedBy || "approver"}</span><button onClick={() => onNavigate?.({ create_lead: "crm", adjust_stock: "inventory", mark_invoice_paid: "finance", record_expense: "finance", approve_leave: "hr", create_invoice: "sales", create_quotation: "sales", create_workflow: "workflows" }[proposal.operation] || "dashboard")} className="inline-flex items-center gap-1 rounded-lg border border-[#16A34A]/30 bg-white px-2.5 py-1.5 text-[10.5px] font-semibold text-[#166534]"><ArrowRight size={11} /> Open reviewed module</button></div>}
+39924:  { id: "settings", label: "Open Settings", module: "settings", intent: null },
+40114:    { id: "documents", label: "Documents", icon: FileText },
+40115:    { id: "support", label: "Support", icon: Headphones },
+40875:const ONBOARDING_MODULES = [
+40876:  { id: "finance", label: "Finance", icon: Wallet },
+40877:  { id: "hr", label: "HR & Payroll", icon: Users },
+40878:  { id: "crm", label: "CRM", icon: Building2 },
+40879:  { id: "inventory", label: "Inventory", icon: Package },
+40880:  { id: "procurement", label: "Procurement", icon: ClipboardList },
+40881:  { id: "sales", label: "Sales & POS", icon: ReceiptText },
+40882:  { id: "projects", label: "Projects", icon: FileText },
+40883:  { id: "manufacturing", label: "Manufacturing", icon: Factory },
+40884:  { id: "analytics", label: "Analytics", icon: TrendingUp },
+40896:const SCALE_MODULE_PRESETS = {
+41221:  const [selectedModules, setSelectedModules] = useState(() => new Set(ONBOARDING_MODULES.map((m) => m.id)));
+41546:  const [selectedModules, setSelectedModules] = useState(() => new Set(ONBOARDING_MODULES.map((m) => m.id)));
+45700:  const BNK_NAVY  = "#0F2D5E";
+46066:                    {app.status==="Approved" && <button onClick={()=>{applications.setRows(p=>p.map(x=>x.id===app.id?{...x,status:"Disbursed"}:x));const newLoan={id:docId("LN"),memberId:app.memberId,member:app.member,product:app.product,principal:Number(app.amount),rate:BNK_LOAN_PRODUCTS.find(p=>p.name===app.product)?.rate||15,term:Number(app.term),disbursed:TODAY.toISOString().slice(0,10),maturity:"",balance:Number(app.amount),status:"Active",collateral:app.collateral,emi:calcEMI(Number(app.amount),BNK_LOAN_PRODUCTS.find(p=>p.name===app.product)?.rate||15,Number(app.term)),paid:0,dpd:0};loans.setRows(p=>[newLoan,...p]);notify("Loan disbursed to "+app.member+" — TZS "+money(app.amount)+"k");}} className="text-[11.5px] font-semibold text-white px-3 py-1.5 rounded-lg" style={{background:BNK_NAVY}}>Disburse</button>}
+49253:    id: "dashboard",
+49267:    id: "sales",
+49281:    id: "pos",
+49295:    id: "inventory",
+49309:    id: "finance",
+49323:    id: "collaboration",
+49962:  const [enabledModules, setEnabledModules] = useState(() => new Set(MODULES.map((m) => m.id)));
+50084:  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id));
+
+--- component/source files ---
+client/src/App.tsx
+client/src/BusinessSphereDashboard.jsx
+client/src/_core/hooks/useAuth.ts
+client/src/components/AIChatBox.tsx
+client/src/components/AdminUserDirectoryView.tsx
+client/src/components/AnimatedGoldMesh.tsx
+client/src/components/BrandLogo.tsx
+client/src/components/ComplianceAuditLogView.tsx
+client/src/components/DashboardLayout.tsx
+client/src/components/DashboardLayoutSkeleton.tsx
+client/src/components/DashboardPreferencesDrawer.tsx
+client/src/components/EnterpriseAuthViews.jsx
+client/src/components/EnterpriseColumnCustomizer.tsx
+client/src/components/EnterpriseLayout.tsx
+client/src/components/ErrorBoundary.tsx
+client/src/components/LoginModuleEcosystem.jsx
+client/src/components/ManusDialog.tsx
+client/src/components/Map.tsx
+client/src/components/PredictiveAnalyticsWorkspace.jsx
+client/src/components/PublicAuthGateway.jsx
+client/src/components/SalesDetailWorkspace.jsx
+client/src/components/TraPortalModule.jsx
+client/src/components/WorkspacePresenceBadge.tsx
+client/src/components/ui/accordion.tsx
+client/src/components/ui/alert-dialog.tsx
+client/src/components/ui/alert.tsx
+client/src/components/ui/aspect-ratio.tsx
+client/src/components/ui/avatar.tsx
+client/src/components/ui/badge.tsx
+client/src/components/ui/breadcrumb.tsx
+client/src/components/ui/button-group.tsx
+client/src/components/ui/button.tsx
+client/src/components/ui/calendar.tsx
+client/src/components/ui/card.tsx
+client/src/components/ui/carousel.tsx
+client/src/components/ui/chart.tsx
+client/src/components/ui/checkbox.tsx
+client/src/components/ui/collapsible.tsx
+client/src/components/ui/command.tsx
+client/src/components/ui/context-menu.tsx
+client/src/components/ui/dialog.tsx
+client/src/components/ui/drawer.tsx
+client/src/components/ui/dropdown-menu.tsx
+client/src/components/ui/empty.tsx
+client/src/components/ui/field.tsx
+client/src/components/ui/form.tsx
+client/src/components/ui/hover-card.tsx
+client/src/components/ui/input-group.tsx
+client/src/components/ui/input-otp.tsx
+client/src/components/ui/input.tsx
+client/src/components/ui/item.tsx
+client/src/components/ui/kbd.tsx
+client/src/components/ui/label.tsx
+client/src/components/ui/menubar.tsx
+client/src/components/ui/navigation-menu.tsx
+client/src/components/ui/pagination.tsx
+client/src/components/ui/popover.tsx
+client/src/components/ui/progress.tsx
+client/src/components/ui/radio-group.tsx
+client/src/components/ui/resizable.tsx
+client/src/components/ui/scroll-area.tsx
+client/src/components/ui/select.tsx
+client/src/components/ui/separator.tsx
+client/src/components/ui/sheet.tsx
+client/src/components/ui/sidebar.tsx
+client/src/components/ui/skeleton.tsx
+client/src/components/ui/slider.tsx
+client/src/components/ui/sonner.tsx
+client/src/components/ui/spinner.tsx
+client/src/components/ui/switch.tsx
+client/src/components/ui/table.tsx
+client/src/components/ui/tabs.tsx
+client/src/components/ui/textarea.tsx
+client/src/components/ui/toggle-group.tsx
+client/src/components/ui/toggle.tsx
+client/src/components/ui/tooltip.tsx
+client/src/const.ts
+client/src/contexts/DashboardPreferencesContext.tsx
+client/src/contexts/LanguageContext.tsx
+client/src/contexts/ThemeContext.tsx
+client/src/hooks/useComposition.ts
+client/src/hooks/useMobile.tsx
+client/src/hooks/usePersistFn.ts
+client/src/hooks/useSupabaseRealtime.ts
+client/src/index.css
+client/src/lib/accountPasskeys.d.ts
+client/src/lib/accountPasskeys.js
+client/src/lib/auditEvidenceExport.js
+client/src/lib/authErrors.ts
+client/src/lib/authOnboarding.ts
+client/src/lib/authSessionStorage.d.ts
+client/src/lib/authSessionStorage.js
+client/src/lib/complianceApprovalExport.ts
+client/src/lib/organizationIndustryFocus.js
+client/src/lib/posDeviceProfiles.js
+client/src/lib/posPendingQueue.js
+client/src/lib/posReconciliationExport.js
+client/src/lib/posTransactionEngine.js
+client/src/lib/proactiveSessionRenewal.js
+client/src/lib/supportMetrics.js
+client/src/lib/trpc.ts
+client/src/lib/utils.ts
+client/src/main.tsx
+client/src/pages/ComponentShowcase.tsx
+client/src/pages/Home.tsx
+client/src/pages/NotFound.tsx
+drizzle/0000_nosy_bloodstorm.sql
+drizzle/0001_nasty_senator_kelly.sql
+drizzle/0002_tiresome_spot.sql
+drizzle/0003_dazzling_vindicator.sql
+drizzle/0004_productive_carlie_cooper.sql
+drizzle/meta/0000_snapshot.json
+drizzle/meta/0001_snapshot.json
+drizzle/meta/0002_snapshot.json
+drizzle/meta/0003_snapshot.json
+drizzle/meta/0004_snapshot.json
+drizzle/meta/_journal.json
+drizzle/migrations/.gitkeep
+drizzle/relations.ts
+drizzle/schema.ts
+server/_core/context.ts
+server/_core/cookies.ts
+server/_core/dataApi.ts
+server/_core/env.ts
+server/_core/heartbeat.ts
+server/_core/imageGeneration.ts
+server/_core/index.ts
+server/_core/llm.ts
+server/_core/map.ts
+server/_core/notification.ts
+server/_core/oauth.ts
+server/_core/sdk.ts
+server/_core/storageProxy.ts
+server/_core/systemRouter.ts
+server/_core/trpc.ts
+server/_core/types/cookie.d.ts
+server/_core/types/manusTypes.ts
+server/_core/vite.ts
+server/_core/voiceTranscription.ts
+server/accountPasskeys.test.ts
+server/accountPasskeysUi.test.ts
+server/adminSecurityFollowup.test.ts
+server/ai.router.test.ts
+server/aiApprovals.test.ts
+server/aiApprovals.ts
+server/aiConfirmedMutation.test.ts
+server/androidPackaging.test.ts
+server/auditEvidenceExport.test.ts
+server/auditLogs.test.ts
+server/auditLogs.ts
+server/auth.errors.test.ts
+server/auth.logout.test.ts
+server/authBrandLocalization.test.ts
+server/authExperience.test.ts
+server/authOnboarding.test.ts
+server/backupVerification.ts
+server/backupWebhook.ts
+server/campaignIntegrity.test.ts
+server/collaborationPersistenceBoundaries.test.ts
+server/commandPaletteKeyboard.test.ts
+server/complianceApprovalExport.test.ts
+server/complianceApprovalRoute.test.ts
+server/crmLeadTruthfulness.test.ts
+server/crmPersistenceBoundaries.test.ts
+server/dashboard.callback.test.ts
+server/dashboard.httpHandler.test.ts
+server/dashboard.integration.test.ts
+server/dashboard.persistence.test.ts
+server/dashboard.reportFlow.test.ts
+server/dashboard.scheduled.test.ts
+server/dashboardReports.ts
+server/dashboardTruthfulness.test.ts
+server/db.ts
+server/documentDownloadBoundaries.test.ts
+server/documentsNotebookPersistence.test.ts
+server/enterpriseTableControls.test.ts
+server/financeLedgerContracts.test.ts
+server/financePersistenceBoundaries.test.ts
+server/hrPersistenceBoundaries.test.ts
+server/industryFocusOnboardingAudit.test.ts
+server/inventoryPersistenceBoundaries.test.ts
+server/loginModuleEcosystem.test.ts
+server/maintenancePersistenceBoundaries.test.ts
+server/manufacturingPersistenceBoundaries.test.ts
+server/mobileAuthEvidence.test.ts
+server/mobileAuthMatrix.test.ts
+server/notificationChannelPersistence.test.ts
+server/offlineBoundaryUi.test.ts
+server/onboardingTour.test.ts
+server/organizationIndustryFocus.test.ts
+server/passkeyLogin.test.ts
+server/passkeyLoginUi.test.ts
+server/passkeyReadinessUi.test.ts
+server/passwordAccountProvisioning.test.ts
+server/passwordAccountProvisioning.ts
+server/posCashierAcceptance.test.ts
+server/posCheckoutIntegration.test.ts
+server/posCustomerCreditMigration.test.ts
+server/posDeviceProfiles.test.ts
+server/posHistoryFallback.test.ts
+server/posOperationalTools.test.ts
+server/posOperationalToolsUi.test.ts
+server/posPendingQueue.test.ts
+server/posPostConfirmationFallback.test.ts
+server/posReceiptRefresh.test.ts
+server/posReconciliationDashboard.test.ts
+server/posReturnAuditFormatMigration.test.ts
+server/posReturnMigration.test.ts
+server/posRpcPrivilegeHardeningMigration.test.ts
+server/posSaleAuditFormatMigration.test.ts
+server/posStagingAcceptanceScript.test.ts
+server/posSyncReconciliationMigration.test.ts
+server/posTransactionEngine.test.ts
+server/posTransactionMigration.test.ts
+server/posUxEnhancements.test.ts
+server/proactiveSessionRenewal.test.ts
+server/procurementPersistenceBoundaries.test.ts
+server/projectsPersistenceBoundaries.test.ts
+server/publicInteractionContracts.test.ts
+server/publicPasskeyEntry.test.ts
+server/quarterlySecurityReminderScope.test.ts
+server/reportDeliveryAvailability.test.ts
+server/reportScheduleSessionToken.test.ts
+server/reportSchedules.sendNow.test.ts
+server/reportSchedules.service.test.ts
+server/reportSchedules.ts
+server/resendSenderConfiguration.test.ts
+server/roleChangeApprovals.test.ts
+server/roleChangeApprovals.ts
+server/routers.ts
+server/runMigrations.mjs
+server/salesInteractionContracts.test.ts
+server/scheduledDashboardReport.ts
+server/scheduledSchemaDriftMonitor.ts
+server/schemaDriftMonitor.test.ts
+server/schemaDriftMonitor.ts
+server/sessionRefreshTableReload.test.ts
+server/settingsBackendContracts.test.ts
+server/smartAssistant.live.test.ts
+server/smartAssistant.test.ts
+server/smartAssistant.ts
+server/staticHtmlCacheControl.test.ts
+server/storage.ts
+server/supabase.authRls.test.ts
+server/supabase.config.test.ts
+server/supabase.credentials.test.ts
+server/supabase.schemaContract.test.ts
+server/supplyChainPersistenceBoundaries.test.ts
+server/supportInboxClient.test.ts
+server/supportMetrics.test.ts
+server/supportOperations.test.ts
+server/supportOperations.ts
+server/supportPersistenceBoundaries.test.ts
+server/supportPolicyAuthenticatedRoles.test.ts
+server/supportTicketPersistence.test.ts
+server/supportWorkspaceContracts.test.ts
+server/teamInvitations.test.ts
+server/teamInvitations.ts
+server/tenantAuditViewer.test.ts
+server/traFiscal.ts
+server/traFiscalRouter.ts
+server/transactionalEmail.test.ts
+server/transactionalEmail.ts
+server/vatReportTaxRate.test.ts
+server/verifySupabaseSchema.mjs
+server/vite.hmr.test.ts
+server/webhooks.test.ts
+server/webhooks.ts
+server/whatsAppSecurity.test.ts
+server/whatsappProvider.test.ts
+server/whatsappProvider.ts
+server/workspaceBranding.test.ts
+server/workspaceBranding.ts
+server/workspaceSettings.ts
+shared/_core/errors.ts
+shared/const.ts
+shared/types.ts
