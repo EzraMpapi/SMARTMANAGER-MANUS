@@ -732,4 +732,5 @@
 - [x] Add a search highlight feature that bolds the matching text in the table when using the receipt search.
 - [x] Definitively eliminate the remaining bare `lang` reference in TraPortalModule.jsx.
 - [x] Add a date range picker to allow filtering the VAT returns by specific time periods.
-- [ ] Add quick selection buttons for common date ranges like 'This Month', 'Last Month', and 'This Quarter' next to the date picker.
+- [x] Add quick selection buttons for common date ranges like 'This Month', 'Last Month', and 'This Quarter' next to the date picker.
+- [ ] Implement a minimum and maximum amount filter to easily find high-value VAT returns within the selected date range.

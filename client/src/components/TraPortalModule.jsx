@@ -64,6 +64,8 @@ export function TraPortalModule({ companyId, lang = "en" }) {
   const [vatMonthEnd, setVatMonthEnd] = useState("2026-12");
   const [vatDateFrom, setVatDateFrom] = useState("");
   const [vatDateTo, setVatDateTo] = useState("");
+  const [vatMinAmount, setVatMinAmount] = useState("");
+  const [vatMaxAmount, setVatMaxAmount] = useState("");
   const [vatSearch, setVatSearch] = useState("");
   const [vatSortField, setVatSortField] = useState("date"); // date, amount, receipt
   const [vatSortOrder, setVatSortOrder] = useState("desc"); // asc, desc
@@ -78,7 +80,7 @@ export function TraPortalModule({ companyId, lang = "en" }) {
     setIsFiltering(true);
     const t = setTimeout(() => setIsFiltering(false), 250);
     return () => clearTimeout(t);
-  }, [vatMonthStart, vatMonthEnd, vatDateFrom, vatDateTo, vatSearch, vatSortField, vatSortOrder, groupByBuyer]);
+  }, [vatMonthStart, vatMonthEnd, vatDateFrom, vatDateTo, vatMinAmount, vatMaxAmount, vatSearch, vatSortField, vatSortOrder, groupByBuyer]);
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -236,9 +238,18 @@ export function TraPortalModule({ companyId, lang = "en" }) {
       inDateRange = inDateRange && d <= endOfDay;
     }
 
+    let inAmountRange = true;
+    const gross = Number(r.grossAmount || 0);
+    if (vatMinAmount !== "" && !isNaN(Number(vatMinAmount))) {
+      inAmountRange = inAmountRange && gross >= Number(vatMinAmount);
+    }
+    if (vatMaxAmount !== "" && !isNaN(Number(vatMaxAmount))) {
+      inAmountRange = inAmountRange && gross <= Number(vatMaxAmount);
+    }
+
     const q = vatSearch.toLowerCase().trim();
     const matchSearch = !q || r.receiptNumber.toLowerCase().includes(q) || r.sourceId.toLowerCase().includes(q) || (r.buyerName && r.buyerName.toLowerCase().includes(q));
-    return inMonthRange && inDateRange && matchSearch;
+    return inMonthRange && inDateRange && inAmountRange && matchSearch;
   });
 
   const sortedVatReceipts = [...filteredVatReceipts].sort((a, b) => {
@@ -708,6 +719,26 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                 className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
             </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Min Amt (TZS):</label>
+              <input
+                type="number"
+                value={vatMinAmount}
+                onChange={e => setVatMinAmount(e.target.value)}
+                placeholder="0"
+                className="w-28 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Max Amt (TZS):</label>
+              <input
+                type="number"
+                value={vatMaxAmount}
+                onChange={e => setVatMaxAmount(e.target.value)}
+                placeholder="Any"
+                className="w-28 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[12.5px] dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+            </div>
             {/* Quick Date Range Presets */}
             <div className="flex items-center gap-1.5 border-l border-slate-200 dark:border-slate-700 pl-3">
               <button
@@ -786,6 +817,8 @@ export function TraPortalModule({ companyId, lang = "en" }) {
                   setVatMonthEnd("2026-12");
                   setVatDateFrom("");
                   setVatDateTo("");
+                  setVatMinAmount("");
+                  setVatMaxAmount("");
                   setVatSearch("");
                   setNotice("VAT filters reset to default successfully.");
                 }}
