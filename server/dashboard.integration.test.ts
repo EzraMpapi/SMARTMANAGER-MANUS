@@ -502,6 +502,10 @@ describe("BusinessSphere launch and live-data integration", () => {
     const supplier = normalizeGenericCompanyPayload("inventory_suppliers", {
       name: "Arusha Supplies", contact_person: "Neema", lead_time_days: 5, status: "Active",
     });
+    const expense = normalizeGenericCompanyPayload("finance_expenses", {
+      vendor: "Tanesco", category: "Rent & Utilities", expense_date: "2026-08-19", due_date: "2026-09-19",
+      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations", cost_center: "CC-OPS-01",
+    });
     const transaction = normalizeGenericCompanyPayload("pos_transactions", {
       cashier: "Asha", amount: 125000, status: "Completed", transaction_ref: "POS-QA-1",
     });
@@ -513,6 +517,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(invoice).toMatchObject({ name: "Moshi Retail", status: "Draft", amount: 350000, doc_number: "INV-QA-1", customer: "Moshi Retail", due_date: "2026-09-01", data: {} });
     expect(payment).toMatchObject({ status: "Active", amount: 350000, invoice_id: "invoice-1", method: "Cash", reference: "RCPT-QA-1", data: {} });
     expect(supplier).toMatchObject({ name: "Arusha Supplies", data: { contact_person: "Neema", lead_time_days: 5 } });
+    expect(expense).toMatchObject({ amount: 2000000, status: "Paid", vendor: "Tanesco", data: { cost_center: "CC-OPS-01" } });
+    expect(expense).not.toHaveProperty("cost_center");
     expect(transaction).toMatchObject({ name: "Asha", status: "Completed", amount: 125000, data: { cashier: "Asha", transaction_ref: "POS-QA-1" } });
   });
 
@@ -561,6 +567,30 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(result.error).toBeNull();
     expect(result.data).toMatchObject({ id: "loan-uuid-99" });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("persists finance expenses without requiring the unavailable cost_center column", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({
+      id: "expense-1", vendor: "Tanesco", category: "Rent & Utilities", expense_date: "2026-08-19",
+      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations", data: { cost_center: "CC-OPS-01" },
+    }, 201));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCompanyTableMutation("finance_expenses", "insert", {
+      vendor: "Tanesco", category: "Rent & Utilities", expense_date: "2026-08-19", due_date: "2026-09-19",
+      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations", cost_center: "CC-OPS-01",
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.data).toMatchObject({ id: "expense-1", data: { cost_center: "CC-OPS-01" } });
+    const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(requestBody).not.toHaveProperty("cost_center");
+    expect(requestBody.data).toMatchObject({ cost_center: "CC-OPS-01" });
+  });
+
+  it("keeps expense creation on the shared confirmed persistence boundary", () => {
+    expect(dashboardSource).toContain('runCompanyTableMutation("finance_expenses", "insert"');
+    expect(dashboardSource).toContain("cost_center: form.costCenter");
   });
 
   it("returns every confirmed row for a bulk inventory insert and normalizes each row", async () => {

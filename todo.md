@@ -8050,3 +8050,12 @@
 - [x] Add regression tests for successful import, validation failure, tenant isolation, and retry-safe error handling.
 - [x] Validate TypeScript, full tests, production build, and the browser import flow.
 - [x] Save a checkpoint and push the verified inventory import fix to SMARTMANAGER-MANUS.
+
+## Expense save schema compatibility error
+
+- [x] Trace the expense form payload, mapper, shared mutation helper, and live finance_expenses schema contract.
+- [x] Fix the missing cost_center-column failure without losing cost-center information.
+- [x] Preserve server-confirmed persistence, tenant isolation, validation, retry behavior, and mobile form state.
+- [x] Add regression coverage for legacy schema compatibility, cost-center preservation, and error handling.
+- [x] Validate TypeScript, full tests, production build, and mobile-sized expense form behavior.
+- [x] Save a checkpoint and push the verified expense fix to SMARTMANAGER-MANUS.

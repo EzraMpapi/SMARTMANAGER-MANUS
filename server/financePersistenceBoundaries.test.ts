@@ -11,7 +11,7 @@ describe("Finance persistence boundaries", () => {
   it("waits for confirmed server responses before mutating configured invoice and expense UI state", () => {
     const paidMutationAt = finance.indexOf('await sb("sales_invoices").eq("id", inv.dbId).update');
     const paidStateAt = finance.indexOf('setAllInvoices((prev) => prev.map((item)');
-    const expenseInsertAt = finance.indexOf('await sb("finance_expenses").insert');
+    const expenseInsertAt = finance.indexOf('await runCompanyTableMutation("finance_expenses", "insert"');
     const expenseStateAt = finance.indexOf('setExpenses((prev) => [mapExpenseRow(header), ...prev]);');
     const expenseDeleteAt = finance.indexOf('await sb("finance_expenses").eq("id", exp.dbId ?? exp.id).delete');
     const expenseRemovalAt = finance.indexOf('setExpenses((prev) => prev.filter((item) => item.id !== id));');

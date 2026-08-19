@@ -436,8 +436,8 @@ export const GENERIC_COMPANY_TABLES = new Set(`
 approval_signatures bank_accounts bank_fixed_deposits bank_loans bank_standing_orders bank_transactions
 branches business_loans collab_messages community_contributions community_groups company_modules
 crm_contacts crm_interactions crm_leads customer_feedback departments digital_signatures documents
-ecommerce_orders ecommerce_products emails expense_budgets flt_maintenance flt_trips flt_vehicles
-hc_appointments hc_doctors hc_invoices hc_lab_orders hc_patients hc_prescriptions hc_radiology hc_reports hc_visits hc_vitals
+ecommerce_orders ecommerce_products emails expense_budgets   flt_maintenance flt_trips flt_vehicles finance_expenses
+  hc_appointments hc_doctors hc_invoices hc_lab_orders hc_patients hc_prescriptions hc_radiology hc_reports hc_visits hc_vitals
 hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_invite_codes hr_leave_requests hr_payroll_runs hr_performance_reviews
 htl_bookings htl_rooms integration_connections inventory_batches inventory_items inventory_stock_movements inventory_suppliers inventory_transfers inventory_warehouses
 journal_entries kb_articles loan_repayments manufacturing_bom_components manufacturing_boms manufacturing_qc_inspections manufacturing_work_orders
@@ -465,6 +465,7 @@ const GENERIC_TYPED_COLUMNS = {
   sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"]),
   sales_payments: new Set(["invoice_id", "method", "payment_date", "reference"]),
   sales_subscriptions: new Set(["doc_number", "customer", "plan", "cycle", "start_date", "next_billing_date"]),
+  finance_expenses: new Set(["vendor", "category", "expense_date", "due_date", "method", "department"]),
   sales_order_returns: new Set(["order_id", "reason"]),
   sales_order_return_items: new Set(["return_id", "item_name", "item_sku", "qty", "rate"]),
 };
@@ -1080,15 +1081,15 @@ function mapProcurementContractRow(r) {
 export function mapExpenseRow(r) {
   return {
     id: r.id, dbId: r.id,
-    vendor: r.vendor || r.payee || r.supplier || "Vendor",
-    category: r.category || "General",
-    date: r.expense_date || r.date || r.created_at?.slice(0, 10) || "",
-    dueDate: r.due_date || r.expense_date || r.date || "",
-    amount: Number(r.amount || r.cost || r.value) || 0,
-    status: r.status || "Paid",
-    method: r.method || "Bank Transfer",
-    department: r.department || r.dept || "Operations",
-    costCenter: r.cost_center || r.costCenter || r.cost_code || "CC-GENERAL",
+    vendor: r.vendor || r.payee || r.supplier || r.data?.vendor || r.data?.payee || "Vendor",
+    category: r.category || r.data?.category || "General",
+    date: r.expense_date || r.date || r.data?.expense_date || r.created_at?.slice(0, 10) || "",
+    dueDate: r.due_date || r.expense_date || r.date || r.data?.due_date || "",
+    amount: Number(r.amount ?? r.cost ?? r.value ?? r.data?.amount ?? r.data?.cost ?? r.data?.value) || 0,
+    status: r.status || r.data?.status || "Paid",
+    method: r.method || r.data?.method || "Bank Transfer",
+    department: r.department || r.dept || r.data?.department || r.data?.dept || "Operations",
+    costCenter: r.cost_center || r.costCenter || r.cost_code || r.data?.cost_center || r.data?.costCenter || r.data?.cost_code || "CC-GENERAL",
   };
 }
 
@@ -14594,7 +14595,7 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
 
     if (IS_CONFIGURED) {
       try {
-        const header = await sb("finance_expenses").insert({
+        const result = await runCompanyTableMutation("finance_expenses", "insert", {
           vendor: form.vendor,
           category: form.category,
           expense_date: expenseDate,
@@ -14604,7 +14605,9 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
           method: form.method,
           department: form.department || "Operations",
           cost_center: form.costCenter || "CC-OPS-01",
-        }).single().run();
+        });
+        if (result.error) throw result.error;
+        const header = result.data;
         if (!header?.id) throw buildConfirmedMutationError({ table: "finance_expenses", method: "POST", status: 200 });
         setExpenses((prev) => [mapExpenseRow(header), ...prev]);
         notify(`Expense recorded: ${draft.vendor}`);
