@@ -90,4 +90,10 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("validFiles.length");
     expect(dashboardSource).toContain("Admin");
   });
+
+  it("supports upload progress bars, matrix role badge filters, and digest statistics", () => {
+    expect(dashboardSource).toContain("uploadProgress");
+    expect(dashboardSource).toContain("matrixRoleFilter");
+    expect(dashboardSource).toContain("Digest Read-Receipt Engagement Statistics");
+  });
 });

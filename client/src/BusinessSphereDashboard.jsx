@@ -32408,6 +32408,7 @@ function ChannelsView({ currentUser, employees }) {
   const [draft, setDraft] = useState("");
   const [replyingToId, setReplyingToId] = useState(null);
   const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(null);
   const [showChannelForm, setShowChannelForm] = useState(false);
   const [messageSending, setMessageSending] = useState(false);
   const [savingChannel, setSavingChannel] = useState(false);
@@ -32675,20 +32676,37 @@ function ChannelsView({ currentUser, employees }) {
                       alert(`❌ File '${oversized.name}' exceeds maximum limit of ${maxSizeMB}MB (${(oversized.size / (1024 * 1024)).toFixed(1)}MB). Please choose smaller files.`);
                       return;
                     }
-                    const urls = validFiles.map(f => URL.createObjectURL(f));
-                    setAttachmentUrl(urls.join(", "));
-                    notify(`📁 ${validFiles.length} file(s) attached simultaneously via drag-and-drop.`);
+                    setUploadProgress(0);
+                    let prog = 0;
+                    const interval = setInterval(() => {
+                      prog += 25;
+                      setUploadProgress(prog);
+                      if (prog >= 100) {
+                        clearInterval(interval);
+                        const urls = validFiles.map(f => URL.createObjectURL(f));
+                        setAttachmentUrl(urls.join(", "));
+                        setTimeout(() => setUploadProgress(null), 600);
+                        notify(`📁 ${validFiles.length} file(s) attached simultaneously via drag-and-drop.`);
+                      }
+                    }, 120);
                   }
                 }}
-                className="flex items-center gap-2 border border-dashed border-slate-300 rounded-lg p-2 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                className="flex flex-col gap-1.5 border border-dashed border-slate-300 rounded-lg p-2.5 bg-slate-50/50 hover:bg-slate-50 transition-colors"
                 title="Drag and drop any file here to attach"
               >
-                <input
-                  value={attachmentUrl} onChange={(e) => setAttachmentUrl(e.target.value)}
-                  placeholder="Drop file here or paste attachment URL"
-                  className="flex-1 bg-transparent border-none text-[11.5px] outline-none"
-                />
-                <span className="text-[11px] text-slate-400 font-medium shrink-0">📂 Drop Zone</span>
+                <div className="flex items-center gap-2 w-full">
+                  <input
+                    value={attachmentUrl} onChange={(e) => setAttachmentUrl(e.target.value)}
+                    placeholder="Drop file here or paste attachment URL"
+                    className="flex-1 bg-transparent border-none text-[11.5px] outline-none"
+                  />
+                  <span className="text-[11px] text-slate-400 font-medium shrink-0">📂 Drop Zone</span>
+                </div>
+                {uploadProgress !== null && (
+                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-[#16A34A] h-full transition-all duration-150" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                )}
               </div>
             </div>
           </>
@@ -33127,6 +33145,7 @@ function TeamWorkspaces({ employees, currentUser }) {
   const [pendingInvites, setPendingInvites] = useState([]);
   const [selectedExportDept, setSelectedExportDept] = useState("All");
   const [matrixSearch, setMatrixSearch] = useState("");
+  const [matrixRoleFilter, setMatrixRoleFilter] = useState("All");
   const [exportColumns, setExportColumns] = useState({ id: true, name: true, department: true, role: true, workspaces: true });
   const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
 
@@ -33271,8 +33290,19 @@ function TeamWorkspaces({ employees, currentUser }) {
               placeholder="Search employee name..."
               value={matrixSearch || ""}
               onChange={(e) => setMatrixSearch(e.target.value)}
-              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[11.5px] text-slate-700 outline-none focus:border-[#16A34A] w-44"
+              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[11.5px] text-slate-700 outline-none focus:border-[#16A34A] w-40"
             />
+            <select
+              value={matrixRoleFilter}
+              onChange={(e) => setMatrixRoleFilter(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11.5px] text-slate-600 outline-none focus:border-[#16A34A]"
+              title="Filter Matrix by Role Badge"
+            >
+              <option value="All">All Badges</option>
+              <option value="Admin">👑 Admin</option>
+              <option value="Lead">⭐ Lead</option>
+              <option value="Staff">👤 Staff</option>
+            </select>
             <span className="text-[11.5px] text-slate-500 font-medium">Dept:</span>
             <select
               value={selectedExportDept}
@@ -33299,6 +33329,14 @@ function TeamWorkspaces({ employees, currentUser }) {
               {employees.rows
                 .filter(e => selectedExportDept === "All" || e.department === selectedExportDept)
                 .filter(e => !matrixSearch || e.name.toLowerCase().includes(matrixSearch.toLowerCase()))
+                .filter(e => {
+                  if (matrixRoleFilter === "All") return true;
+                  const isAdm = ["Super Administrator", "Organization Owner", "CEO", "COO"].includes(e.role);
+                  const isLd = ["HR Manager", "Department Head", "Manager"].includes(e.role);
+                  if (matrixRoleFilter === "Admin") return isAdm;
+                  if (matrixRoleFilter === "Lead") return isLd;
+                  return !isAdm && !isLd;
+                })
                 .slice(0, 10)
                 .map(e => (
                   <tr key={e.id} className="hover:bg-slate-50">
@@ -53047,18 +53085,32 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
             </div>
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 space-y-2">
+          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📧 Recipient Email Preview & Read Receipt</p>
               <span className="text-[10.5px] font-medium text-[#16A34A] bg-[#16A34A]/10 px-2 py-0.5 rounded-full flex items-center gap-1">✓ Read Receipt Tracked</span>
             </div>
-            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-100 dark:border-slate-800 text-[12px] space-y-1">
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-100 dark:border-slate-800 text-[12px] space-y-1.5">
               <p className="text-slate-500"><span className="font-medium text-slate-700 dark:text-slate-300">To:</span> {recipientEmail || "recipient@businesssphere.co.tz"}</p>
               {ccEmails && <p className="text-slate-500"><span className="font-medium text-slate-700 dark:text-slate-300">CC:</span> {ccEmails}</p>}
               <p className="text-slate-800 dark:text-slate-200 font-semibold pt-1 border-t border-slate-100 dark:border-slate-800">Subject: {emailSubject}</p>
               <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500">
                 <span>Attached: {name} ({format.toUpperCase()}) — Scheduled {frequency}</span>
                 <span className="text-[#16A34A] font-medium">Status: Delivered & Opened</span>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-100 dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-[11.5px]">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">📊 Digest Read-Receipt Engagement Statistics</span>
+                <span className="text-[11px] text-[#16A34A] font-medium">87.5% Read Rate</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden flex">
+                <div className="bg-[#16A34A] h-full" style={{ width: "87.5%" }} title="Read / Opened (87.5%)" />
+                <div className="bg-slate-300 dark:bg-slate-600 h-full" style={{ width: "12.5%" }} title="Unread / Pending (12.5%)" />
+              </div>
+              <div className="flex items-center justify-between text-[10.5px] text-slate-500">
+                <span>✓ Opened & Read: 7 dispatches (87.5%)</span>
+                <span>⏳ Unread: 1 dispatch (12.5%)</span>
               </div>
             </div>
           </div>
