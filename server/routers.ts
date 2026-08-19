@@ -524,6 +524,23 @@ export const appRouter = router({
     searchTickets: protectedProcedure.input(z.object({ query: z.string().trim().min(2).max(120) })).query(({ ctx, input }) => searchSupportTickets(ctx.req, input.query)),
     draftTicketReply: protectedProcedure.input(z.object({ ticketId: z.string().uuid(), tone: z.enum(["professional", "empathetic", "concise"]).default("professional") })).mutation(({ ctx, input }) => draftSupportTicketReply(ctx.req, input)),
     whatsappProviderReadiness: protectedProcedure.query(({ ctx }) => getSupportWhatsAppProviderReadiness(ctx.req)),
+    updateWhatsappProviderConfig: protectedProcedure.input(z.object({
+      apiKey: z.string().optional(),
+      signingSecret: z.string().optional(),
+      workspaceId: z.string().optional(),
+      channelId: z.string().optional(),
+      deliveryEnabled: z.boolean().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      // Securely store or persist configuration in runtime environment or company settings
+      if (input.apiKey) process.env.BIRD_API_KEY = input.apiKey;
+      if (input.signingSecret) process.env.BIRD_WEBHOOK_SIGNING_SECRET = input.signingSecret;
+      if (input.workspaceId) process.env.BIRD_WORKSPACE_ID = input.workspaceId;
+      if (input.channelId) process.env.BIRD_WHATSAPP_CHANNEL_ID = input.channelId;
+      if (typeof input.deliveryEnabled === "boolean") {
+        process.env.BIRD_WHATSAPP_DELIVERY_ENABLED = input.deliveryEnabled ? "true" : "false";
+      }
+      return getSupportWhatsAppProviderReadiness(ctx.req);
+    }),
     listWorkflowPolicies: protectedProcedure.query(({ ctx }) => listSupportWorkflowPolicies(ctx.req)),
     saveWorkflowPolicy: protectedProcedure.input(z.object({
       workflowId: z.string().uuid().optional(),
