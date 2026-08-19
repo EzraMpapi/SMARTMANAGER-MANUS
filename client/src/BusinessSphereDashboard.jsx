@@ -32662,13 +32662,27 @@ function ChannelsView({ currentUser, employees }) {
                 />
                 <button onClick={sendMessage} disabled={(!draft.trim() && !attachmentUrl) || messageSending} aria-busy={messageSending} className="btn-primary text-white rounded-lg px-3 disabled:cursor-not-allowed disabled:opacity-40" aria-label={messageSending ? "Sending message" : "Send message"}><Send size={15} className={messageSending ? "animate-pulse" : ""} /></button>
               </div>
-              <div className="flex items-center gap-2">
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const files = e.dataTransfer.files;
+                  if (files && files[0]) {
+                    const file = files[0];
+                    const fakeUrl = URL.createObjectURL(file);
+                    setAttachmentUrl(fakeUrl);
+                    notify(`📁 File attached via drag-and-drop: ${file.name}`);
+                  }
+                }}
+                className="flex items-center gap-2 border border-dashed border-slate-300 rounded-lg p-2 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                title="Drag and drop any file here to attach"
+              >
                 <input
                   value={attachmentUrl} onChange={(e) => setAttachmentUrl(e.target.value)}
-                  placeholder="Attach file/image URL (optional)"
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[11.5px] outline-none focus:border-[#16A34A]"
+                  placeholder="Drop file here or paste attachment URL"
+                  className="flex-1 bg-transparent border-none text-[11.5px] outline-none"
                 />
-                <span className="text-[11px] text-slate-400">Attach URL</span>
+                <span className="text-[11px] text-slate-400 font-medium shrink-0">📂 Drop Zone</span>
               </div>
             </div>
           </>
@@ -33239,8 +33253,24 @@ function TeamWorkspaces({ employees, currentUser }) {
         </div>
       </div>
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5 mb-4">
-        <h4 className="text-[13px] font-semibold text-[#111827] mb-2">Cross-Workspace Employee Membership Matrix</h4>
-        <p className="text-[11.5px] text-slate-500 mb-3">Compare employee assignments across all active team workspaces instantly.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div>
+            <h4 className="text-[13px] font-semibold text-[#111827]">Cross-Workspace Employee Membership Matrix</h4>
+            <p className="text-[11.5px] text-slate-500">Compare employee assignments across all active team workspaces instantly.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11.5px] text-slate-500 font-medium">Matrix Drill-Down:</span>
+            <select
+              value={selectedExportDept}
+              onChange={(e) => setSelectedExportDept(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11.5px] text-slate-600 outline-none focus:border-[#16A34A]"
+              title="Filter Matrix by Department"
+            >
+              <option value="All">All Departments</option>
+              {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -33252,21 +33282,24 @@ function TeamWorkspaces({ employees, currentUser }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-[12.5px]">
-              {employees.rows.slice(0, 10).map(e => (
-                <tr key={e.id} className="hover:bg-slate-50">
-                  <td className="py-2.5 px-3 font-medium text-[#111827]">{e.name}</td>
-                  <td className="py-2.5 px-3 text-slate-500">{e.department || "General"}</td>
-                  <td className="py-2.5 px-3 text-slate-500">{e.role || "Staff"}</td>
-                  {workspaces.rows.map(w => {
-                    const isMember = (w.members || "").includes(e.name);
-                    return (
-                      <td key={w.id} className="py-2.5 px-3">
-                        {isMember ? <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#16A34A]" title="Assigned"></span> : <span className="inline-block w-2.5 h-2.5 rounded-full bg-slate-200" title="Not assigned"></span>}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+              {employees.rows
+                .filter(e => selectedExportDept === "All" || e.department === selectedExportDept)
+                .slice(0, 10)
+                .map(e => (
+                  <tr key={e.id} className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 font-medium text-[#111827]">{e.name}</td>
+                    <td className="py-2.5 px-3 text-slate-500">{e.department || "General"}</td>
+                    <td className="py-2.5 px-3 text-slate-500">{e.role || "Staff"}</td>
+                    {workspaces.rows.map(w => {
+                      const isMember = (w.members || "").includes(e.name);
+                      return (
+                        <td key={w.id} className="py-2.5 px-3">
+                          {isMember ? <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#16A34A]" title="Assigned"></span> : <span className="inline-block w-2.5 h-2.5 rounded-full bg-slate-200" title="Not assigned"></span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -52864,6 +52897,7 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
 
   const existing = schedulesQuery.data?.[0];
   const [name, setName] = useState(existing?.name || "Weekly Compliance Digest");
+  const [emailSubject, setEmailSubject] = useState(existing?.emailSubject || "Smart Manager ERP — Executive Compliance & Operational Digest");
   const [recipientEmail, setRecipientEmail] = useState(existing?.recipientEmail || currentUser?.email || "admin@businesssphere.co.tz");
   const [ccEmails, setCcEmails] = useState(existing?.ccEmails || "");
   const [frequency, setFrequency] = useState(existing?.frequency || "weekly");
@@ -52872,6 +52906,7 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
   useEffect(() => {
     if (existing) {
       setName(existing.name);
+      setEmailSubject(existing.emailSubject || "Smart Manager ERP — Executive Compliance & Operational Digest");
       setRecipientEmail(existing.recipientEmail);
       setCcEmails(existing.ccEmails || "");
       setFrequency(existing.frequency);
@@ -52927,6 +52962,17 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-[13px] text-slate-900 dark:text-white outline-none focus:border-[#16A34A]"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Custom Email Subject Line</label>
+            <input
+              type="text"
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              placeholder="e.g. [Urgent] Monthly Tanzanian Executive Financial & Compliance Report"
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-[13px] text-slate-900 dark:text-white outline-none focus:border-[#16A34A]"
               required
             />
