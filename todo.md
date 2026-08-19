@@ -8033,3 +8033,10 @@
 - [x] Add regression coverage for chart aggregation and no-data behavior.
 - [x] Validate TypeScript, tests, production build, and desktop/mobile rendering.
 - [x] Save a checkpoint and push the verified chart update to SMARTMANAGER-MANUS.
+
+## VAT Return Trends command-area refinement
+
+- [x] Reposition the VAT Return Trends — This month visualization beside the VAT command actions on the right side of the VAT preparation header.
+- [x] Preserve the existing trend data, tenant scoping, filters, exports, loading, empty, and error states.
+- [x] Validate the new hierarchy at desktop and mobile widths.
+- [x] Save a checkpoint and push the verified layout refinement to SMARTMANAGER-MANUS.
