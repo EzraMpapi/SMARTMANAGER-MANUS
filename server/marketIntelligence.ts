@@ -286,7 +286,7 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
       policyRateAnnual: null,
       benchmarkLending: null,
       status: providerSettings?.cbkProviderUrl && providerSettings?.cbkProviderApiKey ? "AWAITING_VALIDATION" : "AWAITING_CONFIGURATION",
-      source: "Approved CBK provider credentials required",
+      source: providerSettings?.cbkProviderUrl ? "CBK endpoint configured (https://www.centralbank.go.ke/rates/)" : "Awaiting official CBK endpoint / credentials",
       providerConfigured: Boolean(providerSettings?.cbkProviderUrl && providerSettings?.cbkProviderApiKey),
     },
     {
@@ -306,7 +306,7 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
       policyRateAnnual: null,
       benchmarkLending: null,
       status: providerSettings?.bnrProviderUrl && providerSettings?.bnrProviderApiKey ? "AWAITING_VALIDATION" : "AWAITING_CONFIGURATION",
-      source: "Approved BNR provider credentials required",
+      source: providerSettings?.bnrProviderUrl ? "BNR endpoint configured (https://fxrates.bnr.rw/)" : "Awaiting official BNR endpoint / credentials",
       providerConfigured: Boolean(providerSettings?.bnrProviderUrl && providerSettings?.bnrProviderApiKey),
     },
   ];

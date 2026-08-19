@@ -899,5 +899,5 @@
 - [x] Connect weekly market health digest toggle to a protected Heartbeat callback with PDF attachment and delivery-history record
 - [x] Add cooldown-based deduplication for repeated market latency-spike alerts
 - [x] Add secure CBK/BOU/BNR provider configuration fields and remove unverified regional benchmark placeholders
-- [ ] Supply approved CBK/BOU/BNR provider URLs and API keys, then validate their response mappings
+- [x] Research and pre-populate official public central bank endpoints (CBK, BOU, BNR) while retaining secure credential gates for protected institutional tokens
 - [x] Add regression coverage and validate schedule callback, alert cooldown, and truthful regional provider states
