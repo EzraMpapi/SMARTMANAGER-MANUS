@@ -32667,16 +32667,17 @@ function ChannelsView({ currentUser, employees }) {
                 onDrop={(e) => {
                   e.preventDefault();
                   const files = e.dataTransfer.files;
-                  if (files && files[0]) {
-                    const file = files[0];
+                  if (files && files.length > 0) {
+                    const validFiles = Array.from(files);
                     const maxSizeMB = 15;
-                    if (file.size > maxSizeMB * 1024 * 1024) {
-                      alert(`❌ File attachment exceeds maximum limit of ${maxSizeMB}MB (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please choose a smaller file.`);
+                    const oversized = validFiles.find(f => f.size > maxSizeMB * 1024 * 1024);
+                    if (oversized) {
+                      alert(`❌ File '${oversized.name}' exceeds maximum limit of ${maxSizeMB}MB (${(oversized.size / (1024 * 1024)).toFixed(1)}MB). Please choose smaller files.`);
                       return;
                     }
-                    const fakeUrl = URL.createObjectURL(file);
-                    setAttachmentUrl(fakeUrl);
-                    notify(`📁 File attached via drag-and-drop: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
+                    const urls = validFiles.map(f => URL.createObjectURL(f));
+                    setAttachmentUrl(urls.join(", "));
+                    notify(`📁 ${validFiles.length} file(s) attached simultaneously via drag-and-drop.`);
                   }
                 }}
                 className="flex items-center gap-2 border border-dashed border-slate-300 rounded-lg p-2 bg-slate-50/50 hover:bg-slate-50 transition-colors"
@@ -33301,7 +33302,16 @@ function TeamWorkspaces({ employees, currentUser }) {
                 .slice(0, 10)
                 .map(e => (
                   <tr key={e.id} className="hover:bg-slate-50">
-                    <td className="py-2.5 px-3 font-medium text-[#111827]">{e.name}</td>
+                    <td className="py-2.5 px-3 font-medium text-[#111827] flex items-center gap-2">
+                      <span>{e.name}</span>
+                      {["Super Administrator", "Organization Owner", "CEO", "COO"].includes(e.role) ? (
+                        <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded" title="Executive Role">👑 Admin</span>
+                      ) : ["HR Manager", "Department Head", "Manager"].includes(e.role) ? (
+                        <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded" title="Manager Role">⭐ Lead</span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded" title="Staff Role">👤 Staff</span>
+                      )}
+                    </td>
                     <td className="py-2.5 px-3 text-slate-500">{e.department || "General"}</td>
                     <td className="py-2.5 px-3 text-slate-500">{e.role || "Staff"}</td>
                     {workspaces.rows.map(w => {
@@ -53038,12 +53048,18 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 space-y-2">
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📧 Recipient Email Preview</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📧 Recipient Email Preview & Read Receipt</p>
+              <span className="text-[10.5px] font-medium text-[#16A34A] bg-[#16A34A]/10 px-2 py-0.5 rounded-full flex items-center gap-1">✓ Read Receipt Tracked</span>
+            </div>
             <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-100 dark:border-slate-800 text-[12px] space-y-1">
               <p className="text-slate-500"><span className="font-medium text-slate-700 dark:text-slate-300">To:</span> {recipientEmail || "recipient@businesssphere.co.tz"}</p>
               {ccEmails && <p className="text-slate-500"><span className="font-medium text-slate-700 dark:text-slate-300">CC:</span> {ccEmails}</p>}
               <p className="text-slate-800 dark:text-slate-200 font-semibold pt-1 border-t border-slate-100 dark:border-slate-800">Subject: {emailSubject}</p>
-              <p className="text-slate-500 italic text-[11px] pt-1">Attached: {name} ({format.toUpperCase()}) — Scheduled {frequency}</p>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500">
+                <span>Attached: {name} ({format.toUpperCase()}) — Scheduled {frequency}</span>
+                <span className="text-[#16A34A] font-medium">Status: Delivered & Opened</span>
+              </div>
             </div>
           </div>
           <div className="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">

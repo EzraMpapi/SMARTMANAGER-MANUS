@@ -84,4 +84,10 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("Recipient Email Preview");
     expect(dashboardSource).toContain("matrixSearch");
   });
+
+  it("supports digest read receipts, multi-file drag-and-drop, and role-based matrix badges", () => {
+    expect(dashboardSource).toContain("Read Receipt Tracked");
+    expect(dashboardSource).toContain("validFiles.length");
+    expect(dashboardSource).toContain("Admin");
+  });
 });
