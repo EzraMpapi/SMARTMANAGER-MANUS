@@ -327,6 +327,19 @@ export async function getSupportWhatsAppProviderReadiness(req: CreateExpressCont
   return { ...getBirdWhatsAppProviderReadiness(), profile };
 }
 
+export async function testSupportWhatsAppProviderConfig(req: CreateExpressContextOptions["req"], input: { apiKey?: string; signingSecret?: string; workspaceId?: string; channelId?: string; deliveryEnabled?: boolean }) {
+  const { profile } = await resolveVerifiedProfile(req);
+  requireSupportRole(profile);
+  const readiness = getBirdWhatsAppProviderReadiness({
+    BIRD_API_KEY: input.apiKey?.trim(),
+    BIRD_WEBHOOK_SIGNING_SECRET: input.signingSecret?.trim(),
+    BIRD_WORKSPACE_ID: input.workspaceId?.trim(),
+    BIRD_WHATSAPP_CHANNEL_ID: input.channelId?.trim(),
+    BIRD_WHATSAPP_DELIVERY_ENABLED: input.deliveryEnabled ? "true" : "false",
+  });
+  return { ...readiness, checkedAt: new Date().toISOString(), message: readiness.configured ? "Server-side provider credentials are structurally valid. No outbound message was sent." : readiness.message, profile };
+}
+
 export async function createSupportTicket(req: CreateExpressContextOptions["req"], input: { subject: string; customer: string; category?: string; priority?: string; sourceChannel?: string; customerReference?: string; initialMessage?: string; teamId?: string; dueAt?: string }) {
   const { profile, token } = await resolveVerifiedProfile(req);
   requireSupportRole(profile);

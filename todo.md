@@ -8103,3 +8103,9 @@
 - [x] Restore or harden the existing configuration modal event/state chain without duplicating modal logic or weakening permissions.
 - [x] Validate open, cancel, save, loading/error feedback, refresh, keyboard/mobile behavior, and related Collaboration Hub references.
 - [x] Run unresolved-reference search, focused/full tests, production build, console/runtime checks, and save a synchronized checkpoint.
+
+## WhatsApp Provider Modal Enhancements
+- [x] Add Test Connection action with real-time status indicator inside the modal.
+- [x] Implement loading spinner and success/error toast notifications on save.
+- [x] Add inline validation error messages for missing or malformed credential fields.
+- [x] Add automated regression assertions, run test suite, verify build, and checkpoint.

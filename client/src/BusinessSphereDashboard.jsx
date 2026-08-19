@@ -32203,14 +32203,19 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
   const [birdWorkspaceId, setBirdWorkspaceId] = useState("");
   const [birdChannelId, setBirdChannelId] = useState("");
   const [birdDeliveryEnabled, setBirdDeliveryEnabled] = useState(false);
+  const [credentialErrors, setCredentialErrors] = useState({});
+  const [connectionTestStatus, setConnectionTestStatus] = useState({ state: "idle", message: "" });
+  const [saveStatus, setSaveStatus] = useState("idle");
   const utils = trpc.useUtils();
   const updateBirdMutation = trpc.support.updateWhatsappProviderConfig.useMutation({
     onSuccess: () => {
-      notify("Bird WhatsApp provider configuration updated securely.");
+      setSaveStatus("success");
+      notify("Bird WhatsApp provider configuration saved successfully.");
       setShowConfigModal(false);
       providerReadiness.refetch();
     },
     onError: (err) => {
+      setSaveStatus("error");
       notify("Failed to update WhatsApp provider config: " + err.message, "error");
     }
   });
@@ -32223,6 +32228,65 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, [showConfigModal, updateBirdMutation.isPending]);
+  const testBirdMutation = trpc.support.testWhatsappProviderConfig.useMutation({
+    onSuccess: (result) => {
+      if (result.configured) {
+        setConnectionTestStatus({ state: "success", message: "Server validated all provider credentials and workspace identifiers." });
+        notify("WhatsApp provider connection test passed.");
+      } else {
+        setConnectionTestStatus({ state: "error", message: result.message });
+        notify("Connection test could not validate the provider configuration.", "error");
+      }
+    },
+    onError: (error) => {
+      setConnectionTestStatus({ state: "error", message: error.message || "The server could not validate these provider credentials." });
+      notify("WhatsApp provider connection test failed.", "error");
+    },
+  });
+
+  const buildBirdProviderConfig = () => ({
+    apiKey: birdApiKey.trim(),
+    signingSecret: birdSigningSecret.trim(),
+    workspaceId: birdWorkspaceId.trim(),
+    channelId: birdChannelId.trim(),
+    deliveryEnabled: birdDeliveryEnabled,
+  });
+  const validateBirdProviderConfig = (requireComplete = false) => {
+    const values = buildBirdProviderConfig();
+    const errors = {};
+    if ((requireComplete || values.apiKey) && !values.apiKey) errors.apiKey = "Enter the server-only Bird API key.";
+    if ((requireComplete || values.signingSecret) && !values.signingSecret) errors.signingSecret = "Enter the webhook signing secret.";
+    if ((requireComplete || values.workspaceId) && !values.workspaceId) errors.workspaceId = "Enter the Bird workspace ID.";
+    if ((requireComplete || values.channelId) && !values.channelId) errors.channelId = "Enter the WhatsApp channel ID.";
+    setCredentialErrors(errors);
+    return { values, errors };
+  };
+  const clearCredentialError = (field) => setCredentialErrors((previous) => {
+    if (!previous[field]) return previous;
+    const next = { ...previous };
+    delete next[field];
+    return next;
+  });
+  const testBirdProviderConnection = () => {
+    const { values, errors } = validateBirdProviderConfig(true);
+    if (Object.keys(errors).length) {
+      setConnectionTestStatus({ state: "error", message: "Complete the highlighted credential fields before testing." });
+      notify("Complete the highlighted provider fields before testing.", "error");
+      return;
+    }
+    setConnectionTestStatus({ state: "checking", message: "Checking credentials at the secure server boundary…" });
+    testBirdMutation.mutate(values);
+  };
+  const saveBirdProviderConfig = () => {
+    const { values, errors } = validateBirdProviderConfig(birdDeliveryEnabled);
+    if (Object.keys(errors).length) {
+      setSaveStatus("error");
+      notify("Complete the highlighted provider fields before saving.", "error");
+      return;
+    }
+    setSaveStatus("saving");
+    updateBirdMutation.mutate(values);
+  };
   // Build contact list: CRM won leads + employees
   const contacts = useMemo(() => {
     const wonLeads = (crm?.rows||[]).filter(l=>l.phone||l.email).map(l=>({
@@ -32525,45 +32589,65 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
             </div>
             <div className="space-y-4 text-[13px]">
               <div>
-                <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Bird API Key (Server-only)</label>
+                <label htmlFor="bird-api-key" className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Bird API Key (Server-only)</label>
                 <input
+                  id="bird-api-key"
                   type="password"
                   value={birdApiKey}
-                  onChange={(e) => setBirdApiKey(e.target.value)}
+                  onChange={(e) => { setBirdApiKey(e.target.value); clearCredentialError("apiKey"); }}
+                  onBlur={() => validateBirdProviderConfig(false)}
+                  aria-invalid={Boolean(credentialErrors.apiKey)}
+                  aria-describedby={credentialErrors.apiKey ? "bird-api-key-error" : undefined}
                   placeholder="live_key_..."
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
                 />
+                {credentialErrors.apiKey && <p id="bird-api-key-error" className="mt-1 text-[10.5px] font-medium text-red-600">{credentialErrors.apiKey}</p>}
               </div>
               <div>
-                <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Webhook Signing Secret</label>
+                <label htmlFor="bird-signing-secret" className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Webhook Signing Secret</label>
                 <input
+                  id="bird-signing-secret"
                   type="password"
                   value={birdSigningSecret}
-                  onChange={(e) => setBirdSigningSecret(e.target.value)}
+                  onChange={(e) => { setBirdSigningSecret(e.target.value); clearCredentialError("signingSecret"); }}
+                  onBlur={() => validateBirdProviderConfig(false)}
+                  aria-invalid={Boolean(credentialErrors.signingSecret)}
+                  aria-describedby={credentialErrors.signingSecret ? "bird-signing-secret-error" : undefined}
                   placeholder="whsec_..."
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
                 />
+                {credentialErrors.signingSecret && <p id="bird-signing-secret-error" className="mt-1 text-[10.5px] font-medium text-red-600">{credentialErrors.signingSecret}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Workspace ID</label>
+                  <label htmlFor="bird-workspace-id" className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Workspace ID</label>
                   <input
+                    id="bird-workspace-id"
                     type="text"
                     value={birdWorkspaceId}
-                    onChange={(e) => setBirdWorkspaceId(e.target.value)}
+                    onChange={(e) => { setBirdWorkspaceId(e.target.value); clearCredentialError("workspaceId"); }}
+                    onBlur={() => validateBirdProviderConfig(false)}
+                    aria-invalid={Boolean(credentialErrors.workspaceId)}
+                    aria-describedby={credentialErrors.workspaceId ? "bird-workspace-id-error" : undefined}
                     placeholder="ws_..."
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
                   />
+                  {credentialErrors.workspaceId && <p id="bird-workspace-id-error" className="mt-1 text-[10.5px] font-medium text-red-600">{credentialErrors.workspaceId}</p>}
                 </div>
                 <div>
-                  <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">WhatsApp Channel ID</label>
+                  <label htmlFor="bird-channel-id" className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">WhatsApp Channel ID</label>
                   <input
+                    id="bird-channel-id"
                     type="text"
                     value={birdChannelId}
-                    onChange={(e) => setBirdChannelId(e.target.value)}
+                    onChange={(e) => { setBirdChannelId(e.target.value); clearCredentialError("channelId"); }}
+                    onBlur={() => validateBirdProviderConfig(false)}
+                    aria-invalid={Boolean(credentialErrors.channelId)}
+                    aria-describedby={credentialErrors.channelId ? "bird-channel-id-error" : undefined}
                     placeholder="ch_..."
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
                   />
+                  {credentialErrors.channelId && <p id="bird-channel-id-error" className="mt-1 text-[10.5px] font-medium text-red-600">{credentialErrors.channelId}</p>}
                 </div>
               </div>
               <div className="flex items-center gap-3 pt-2">
@@ -32571,7 +32655,7 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
                   type="checkbox"
                   id="birdDeliveryToggle"
                   checked={birdDeliveryEnabled}
-                  onChange={(e) => setBirdDeliveryEnabled(e.target.checked)}
+                  onChange={(e) => { setBirdDeliveryEnabled(e.target.checked); setSaveStatus("idle"); }}
                   className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
                 <label htmlFor="birdDeliveryToggle" className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
@@ -32579,6 +32663,12 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
                 </label>
               </div>
             </div>
+            {connectionTestStatus.state !== "idle" && (
+              <div role="status" className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-[11px] ${connectionTestStatus.state === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : connectionTestStatus.state === "error" ? "border-red-200 bg-red-50 text-red-700" : "border-blue-200 bg-blue-50 text-blue-700"}`}>
+                <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${connectionTestStatus.state === "success" ? "bg-emerald-500" : connectionTestStatus.state === "error" ? "bg-red-500" : "bg-blue-500 animate-pulse"}`} />
+                <span>{connectionTestStatus.message}</span>
+              </div>
+            )}
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
@@ -32589,24 +32679,22 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
               </button>
               <button
                 type="button"
-                disabled={updateBirdMutation.isPending}
-                aria-busy={updateBirdMutation.isPending}
-                onClick={() => {
-                  const config = {
-                    apiKey: birdApiKey.trim(),
-                    signingSecret: birdSigningSecret.trim(),
-                    workspaceId: birdWorkspaceId.trim(),
-                    channelId: birdChannelId.trim(),
-                    deliveryEnabled: birdDeliveryEnabled,
-                  };
-                  if (birdDeliveryEnabled && Object.values(config).slice(0, 4).some((value) => !value)) {
-                    notify("Enter all Bird provider credentials before enabling automated delivery.", "error");
-                    return;
-                  }
-                  updateBirdMutation.mutate(config);
-                }}
-                className="rounded-xl bg-emerald-700 px-5 py-2 text-[12.5px] font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:opacity-50"
+                onClick={testBirdProviderConnection}
+                disabled={testBirdMutation.isPending || updateBirdMutation.isPending}
+                aria-busy={testBirdMutation.isPending}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 px-4 py-2 text-[12.5px] font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
+                {testBirdMutation.isPending ? <LoaderCircle size={14} className="animate-spin" /> : <Wifi size={14} />}
+                {testBirdMutation.isPending ? "Testing…" : "Test Connection"}
+              </button>
+              <button
+                type="button"
+                disabled={updateBirdMutation.isPending || testBirdMutation.isPending}
+                aria-busy={updateBirdMutation.isPending}
+                onClick={saveBirdProviderConfig}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-5 py-2 text-[12.5px] font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {updateBirdMutation.isPending ? <LoaderCircle size={14} className="animate-spin" /> : null}
                 {updateBirdMutation.isPending ? "Saving securely…" : "Save & Activate Provider"}
               </button>
             </div>

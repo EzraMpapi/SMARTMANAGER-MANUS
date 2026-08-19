@@ -30,6 +30,15 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("workspace-membership-audit");
   });
 
+  it("supports instant provider testing, save feedback, and inline credential validation", () => {
+    expect(dashboardSource).toContain("testWhatsappProviderConfig");
+    expect(dashboardSource).toContain("Test Connection");
+    expect(dashboardSource).toContain("connectionTestStatus");
+    expect(dashboardSource).toContain("LoaderCircle");
+    expect(dashboardSource).toContain("credentialErrors");
+    expect(dashboardSource).toContain("aria-invalid");
+    expect(dashboardSource).toContain("saved successfully");
+  });
   it("keeps the WhatsApp provider configuration modal inside WhatsAppCenter", () => {
     const whatsappStart = dashboardSource.indexOf("function WhatsAppCenter(");
     const collaborationStart = dashboardSource.indexOf("function CollaborationHub(");

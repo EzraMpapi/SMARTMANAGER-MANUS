@@ -1,0 +1,3 @@
+# WhatsApp provider modal enhancement verification
+
+The authenticated entry surface rendered successfully at the desktop 1280×720 viewport and the mobile 390×844 viewport. The public landing page preserves the dark Smart Manager enterprise composition on desktop and collapses cleanly to a single-column mobile layout with readable copy and full-width actions. The `/app` entry surface rendered the secure sign-in view without runtime or error-boundary output in the captured preview. The provider modal itself is role-gated and was validated through source contracts, direct JSX parsing, focused regression tests, and the running preview service; an authenticated browser session is still required to click the modal controls manually.
