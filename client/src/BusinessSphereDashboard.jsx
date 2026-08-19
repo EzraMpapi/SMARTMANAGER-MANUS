@@ -31901,8 +31901,16 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
           <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{background:"#128C7E"}}>
             <MessageCircle size={36} className="text-white"/>
           </div>
-          <p className="text-[16px] font-semibold text-[#111827]">BusinessSphere WhatsApp</p>
-          <p className="text-[13px] text-slate-500 text-center max-w-xs">Select a contact to start a message. Smart Manager opens WhatsApp Web with the text pre-filled; automated provider delivery is inactive until its server-side boundary is approved and enabled.</p>
+          <p className="text-[16px] font-bold text-[#111827]">BusinessSphere WhatsApp Center</p>
+          <p className="text-[13px] text-slate-500 text-center max-w-sm mt-1 leading-relaxed">Select a CRM lead or employee from the left panel to instantly compose a pre-filled professional message and launch WhatsApp Web with one click.</p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {contacts.slice(0, 3).map(c => (
+              <button key={c.id} onClick={() => setSel(c.id)} className="rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-[12px] font-semibold text-emerald-900 transition hover:bg-emerald-100 flex items-center gap-1.5 shadow-sm">
+                <span className="w-5 h-5 rounded-full bg-emerald-700 text-white text-[10px] grid place-items-center font-bold">{c.name.charAt(0)}</span>
+                <span>{c.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="flex-1 flex flex-col" style={{background:"#ECE5DD"}}>
