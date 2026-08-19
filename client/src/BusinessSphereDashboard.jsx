@@ -5465,6 +5465,10 @@ function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClos
 
 function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, onQuickAction, onNavigate }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
+  const vatAnomalySettingsQuery = trpc.traFiscal.getVatAnomalySettings.useQuery(
+    { companyId: company?.id || "" },
+    { enabled: Boolean(company?.id) },
+  );
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
   // Time period filter — Day/Week/Month/Year. The filter cuts both invoice
@@ -6588,14 +6592,16 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                       });
                       const historicalTotals = allMonths.map(m => invoices.rows.filter(i=>(i.date||"").startsWith(m)).reduce((s,i)=>s+lineTotal(i.items||[]).total*0.18,0));
                       const avgVat = historicalTotals.reduce((a,b)=>a+b,0) / (historicalTotals.length || 1);
-                      const hasSpike = totalVat > avgVat * 1.5 && avgVat > 0;
+                      const thresholdPercent = vatAnomalySettingsQuery.data?.thresholdPercent ?? 50;
+                      const alertsEnabled = vatAnomalySettingsQuery.data?.enabled !== false;
+                      const hasSpike = alertsEnabled && totalVat >= avgVat * (1 + thresholdPercent / 100) && avgVat > 0;
                       if (!hasSpike) return null;
                       return (
                         <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/40 p-3.5 text-[12.5px] text-amber-800 dark:text-amber-300 flex items-start gap-3">
                           <span className="text-base">⚠️</span>
                           <div>
                             <p className="font-bold">Compliance Variance Alert — Significant Output VAT Spike</p>
-                            <p className="text-[11.5px] mt-0.5">Output VAT for {drillDownMonth} (TZS {totalVat.toLocaleString()}) exceeds the 6-month historical average (TZS {Math.round(avgVat).toLocaleString()}) by over 50%. Ensure all high-value B2B transactions are supported by TRA VFD electronic tax stamps and digital Z-reports.</p>
+                            <p className="text-[11.5px] mt-0.5">Output VAT for {drillDownMonth} (TZS {totalVat.toLocaleString()}) exceeds the 6-month historical average (TZS {Math.round(avgVat).toLocaleString()}) by at least {thresholdPercent}%. Ensure all high-value B2B transactions are supported by TRA VFD electronic tax stamps and digital Z-reports.</p>
                           </div>
                         </div>
                       );
@@ -34059,6 +34065,67 @@ function BusinessCardDesigner({ company }) {
 }
 
 
+function VatAnomalySettingsPanel({ companyId, canManage }) {
+  const settingsQuery = trpc.traFiscal.getVatAnomalySettings.useQuery({ companyId: companyId || "" }, { enabled: Boolean(companyId && canManage) });
+  const eventsQuery = trpc.traFiscal.listVatAnomalyEvents.useQuery({ companyId: companyId || "", limit: 5 }, { enabled: Boolean(companyId && canManage) });
+  const saveSettings = trpc.traFiscal.saveVatAnomalySettings.useMutation({ onSuccess: () => { settingsQuery.refetch(); eventsQuery.refetch(); notify("VAT anomaly alert settings saved."); } });
+  const [enabled, setEnabled] = useState(true);
+  const [thresholdPercent, setThresholdPercent] = useState(50);
+  const [cooldownMinutes, setCooldownMinutes] = useState(1440);
+
+  useEffect(() => {
+    if (!settingsQuery.data) return;
+    setEnabled(settingsQuery.data.enabled);
+    setThresholdPercent(settingsQuery.data.thresholdPercent);
+    setCooldownMinutes(settingsQuery.data.cooldownMinutes);
+  }, [settingsQuery.data]);
+
+  if (!canManage) return null;
+  const lastStatus = settingsQuery.data?.lastDeliveryStatus;
+  return (
+    <section className="rounded-2xl border border-amber-200/80 bg-white p-5 shadow-sm dark:border-amber-900/60 dark:bg-slate-900 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600">TRA compliance governance</p>
+          <h2 className="mt-1 text-[15px] font-bold text-slate-900 dark:text-white">VAT anomaly alert threshold</h2>
+          <p className="mt-1 max-w-2xl text-[12px] leading-5 text-slate-500">Daily Heartbeat evaluation compares the previous complete month with the available six-month history. Alerts are sent only when the configured variance threshold is reached and the cooldown has expired.</p>
+        </div>
+        <span className={`w-fit rounded-full px-2.5 py-1 text-[10.5px] font-bold ${enabled ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>{enabled ? "Automated · Active" : "Paused"}</span>
+      </div>
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
+          <div className="flex items-center justify-between gap-3">
+            <label htmlFor="vat-anomaly-threshold" className="text-[12px] font-semibold text-slate-700 dark:text-slate-200">Trigger threshold</label>
+            <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-[13px] font-black text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">{thresholdPercent}%</span>
+          </div>
+          <input id="vat-anomaly-threshold" type="range" min="5" max="500" step="5" value={thresholdPercent} onChange={(event) => setThresholdPercent(Number(event.target.value))} className="mt-4 w-full accent-amber-600" aria-describedby="vat-anomaly-threshold-help" />
+          <div className="mt-1 flex justify-between text-[10px] text-slate-400"><span>5% · sensitive</span><span>500% · conservative</span></div>
+          <p id="vat-anomaly-threshold-help" className="mt-3 text-[11px] leading-5 text-slate-500">A notification is considered only when output VAT is at least this percentage above the historical average. The dashboard drill-down uses the same setting.</p>
+        </div>
+        <div className="space-y-3">
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-3.5 py-3 dark:border-slate-800"><span><span className="block text-[12px] font-semibold text-slate-700 dark:text-slate-200">Daily automation</span><span className="block text-[10.5px] text-slate-400">06:00 UTC · Heartbeat</span></span><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" /></label>
+          <label className="block rounded-xl border border-slate-200 px-3.5 py-3 dark:border-slate-800"><span className="block text-[12px] font-semibold text-slate-700 dark:text-slate-200">Cooldown</span><select value={cooldownMinutes} onChange={(event) => setCooldownMinutes(Number(event.target.value))} className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[11.5px] text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"><option value={15}>15 minutes</option><option value={60}>1 hour</option><option value={360}>6 hours</option><option value={1440}>24 hours</option><option value={10080}>7 days</option></select></label>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between"><p className="text-[11px] text-slate-500">{lastStatus ? `Last push delivery: ${lastStatus}${settingsQuery.data?.lastAlertAt ? ` · ${new Date(settingsQuery.data.lastAlertAt).toLocaleString()}` : ""}` : "No VAT anomaly push delivery has been recorded."}</p><button type="button" onClick={() => saveSettings.mutate({ companyId, enabled, thresholdPercent, cooldownMinutes })} disabled={saveSettings.isPending || settingsQuery.isLoading} className="rounded-xl bg-amber-600 px-4 py-2.5 text-[11.5px] font-bold text-white shadow-sm transition hover:bg-amber-700 disabled:cursor-wait disabled:opacity-50">{saveSettings.isPending ? "Saving…" : "Save threshold"}</button></div>
+      {saveSettings.error && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[11px] text-red-700 dark:bg-red-950/40 dark:text-red-300">{saveSettings.error.message}</p>}
+      {eventsQuery.data?.length ? <div className="mt-4 space-y-2"><p className="text-[10.5px] font-bold uppercase tracking-wide text-slate-400">Recent anomaly evaluations</p>{eventsQuery.data.map((event) => <div key={event.id} className="flex flex-col gap-1 rounded-lg border border-slate-100 px-3 py-2.5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between"><span className="text-[11px] text-slate-600 dark:text-slate-300">{event.period} · {event.variancePercent}% variance · {event.deliveryStatus}</span><span className="text-[10px] text-slate-400">{new Date(event.createdAt).toLocaleString()}</span></div>)}</div> : null}
+    </section>
+  );
+}
+
+function PushDeliveryHistoryPanel({ companyId, canManage }) {
+  const historyQuery = trpc.security.pushDeliveryHistory.useQuery({ companyId: companyId || "", limit: 30 }, { enabled: Boolean(companyId && canManage) });
+  if (!canManage) return null;
+  const statusStyles = { success: "bg-emerald-100 text-emerald-700", failed: "bg-red-100 text-red-700", suppressed: "bg-amber-100 text-amber-700", retrying: "bg-blue-100 text-blue-700" };
+  return (
+    <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Security settings</p><h2 className="mt-1 text-[15px] font-bold text-slate-900 dark:text-white">Push notification delivery history</h2><p className="mt-1 text-[12px] leading-5 text-slate-500">Tenant-scoped webhook, TRA gateway, and VAT anomaly delivery records. This view reports actual delivery outcomes; skipped or suppressed alerts are not shown as successes.</p></div><button type="button" onClick={() => historyQuery.refetch()} disabled={historyQuery.isFetching} className="rounded-xl border border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">{historyQuery.isFetching ? "Refreshing…" : "Refresh history"}</button></div>
+      <div className="mt-4 overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800"><table className="min-w-[680px] w-full text-left"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400 dark:bg-slate-800/60"><tr><th className="px-3 py-2.5">Time</th><th className="px-3 py-2.5">Channel</th><th className="px-3 py-2.5">Event</th><th className="px-3 py-2.5">Status</th><th className="px-3 py-2.5">Attempts</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{historyQuery.isLoading ? <tr><td colSpan="5" className="px-3 py-6 text-center text-[11px] text-slate-400">Loading tenant delivery history…</td></tr> : historyQuery.isError ? <tr><td colSpan="5" className="px-3 py-6 text-center text-[11px] text-red-600">{historyQuery.error.message}</td></tr> : historyQuery.data?.length ? historyQuery.data.map((item) => <tr key={item.id} className="text-[11px] text-slate-600 dark:text-slate-300"><td className="whitespace-nowrap px-3 py-2.5">{new Date(item.timestamp).toLocaleString()}</td><td className="px-3 py-2.5">{item.channel === "owner_push" ? "Owner push" : "Webhook"}</td><td className="max-w-[300px] truncate px-3 py-2.5" title={item.details}>{item.event}</td><td className="px-3 py-2.5"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${statusStyles[item.status] || "bg-slate-100 text-slate-600"}`}>{item.status}</span></td><td className="px-3 py-2.5">{item.attempts}</td></tr>) : <tr><td colSpan="5" className="px-3 py-6 text-center text-[11px] text-slate-400">No tenant push-delivery records yet.</td></tr>}</tbody></table></div>
+    </section>
+  );
+}
+
 function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
@@ -34202,6 +34269,8 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
       </section>
 
       <AuditLogViewer timezone={company.timezone} />
+      <VatAnomalySettingsPanel companyId={company.id} canManage={canManageCompanySettings} />
+      <PushDeliveryHistoryPanel companyId={company.id} canManage={canManageCompanySettings} />
       <RoleChangeApprovalPanel currentUser={currentUser} />
 
       <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(currentUser.role)} />

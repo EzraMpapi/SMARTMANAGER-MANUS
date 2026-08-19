@@ -5,7 +5,7 @@ import { getDb } from "./db";
 import { runScheduledDashboardReport } from "./dashboardReports";
 import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { ENV } from "./_core/env";
-import { assertTransactionalEmailDeliveryEnabled } from "./transactionalEmail";
+import { assertTransactionalEmailDeliveryEnabled, parseEmailRecipients } from "./transactionalEmail";
 
 export type ReportFormat = "csv" | "pdf";
 export type ReportFrequency = "daily" | "weekly" | "monthly";
@@ -21,6 +21,7 @@ export type ReportScheduleInput = {
   companyId: string;
   name: string;
   recipientEmail: string;
+  ccEmails?: string;
   frequency: ReportFrequency;
   format: ReportFormat;
   modules: ReportModules;
@@ -37,6 +38,7 @@ function assertValidScheduleInput(input: ReportScheduleInput): void {
   if (!input.companyId || input.companyId.length > 100) throw new TRPCError({ code: "BAD_REQUEST", message: "A valid company is required." });
   if (!input.name.trim() || input.name.length > 120) throw new TRPCError({ code: "BAD_REQUEST", message: "Report name must be 1–120 characters." });
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.recipientEmail)) throw new TRPCError({ code: "BAD_REQUEST", message: "A valid recipient email is required." });
+  parseEmailRecipients(input.ccEmails, "CC");
   if (!Object.keys(CRON_BY_FREQUENCY).includes(input.frequency)) throw new TRPCError({ code: "BAD_REQUEST", message: "Unsupported report frequency." });
   if (!(["csv", "pdf"] as string[]).includes(input.format)) throw new TRPCError({ code: "BAD_REQUEST", message: "Unsupported report format." });
   if (input.dateRange.start && input.dateRange.end && input.dateRange.start > input.dateRange.end) throw new TRPCError({ code: "BAD_REQUEST", message: "Report start date must be on or before the end date." });
@@ -48,6 +50,7 @@ function serializeSchedule(row: DashboardReportSchedule) {
     companyId: row.companyId,
     name: row.name,
     recipientEmail: row.recipientEmail,
+    ccEmails: row.ccEmails || "",
     frequency: row.frequency as ReportFrequency,
     format: row.format as ReportFormat,
     modules: row.modules as ReportModules,
@@ -110,6 +113,7 @@ export async function createReportSchedule(owner: { id: number; openId: string }
     companyId: input.companyId,
     name: input.name.trim(),
     recipientEmail: input.recipientEmail.trim().toLowerCase(),
+    ccEmails: parseEmailRecipients(input.ccEmails, "CC").join(","),
     cronExpression: CRON_BY_FREQUENCY[input.frequency],
     frequency: input.frequency,
     format: input.format,
@@ -144,6 +148,7 @@ export async function updateReportSchedule(ownerOpenId: string, sessionToken: st
     companyId: patch.companyId ?? row.companyId,
     name: patch.name ?? row.name,
     recipientEmail: patch.recipientEmail ?? row.recipientEmail,
+    ccEmails: patch.ccEmails ?? row.ccEmails ?? "",
     frequency: patch.frequency ?? row.frequency as ReportFrequency,
     format: patch.format ?? row.format as ReportFormat,
     modules: patch.modules ?? row.modules as ReportModules,
@@ -163,6 +168,7 @@ export async function updateReportSchedule(ownerOpenId: string, sessionToken: st
     companyId: next.companyId,
     name: next.name.trim(),
     recipientEmail: next.recipientEmail.trim().toLowerCase(),
+    ccEmails: parseEmailRecipients(next.ccEmails, "CC").join(","),
     cronExpression: CRON_BY_FREQUENCY[next.frequency],
     frequency: next.frequency,
     format: next.format,

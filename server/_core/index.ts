@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { scheduledDashboardReportHandler } from "../scheduledDashboardReport";
 import { scheduledSchemaDriftMonitorHandler } from "../scheduledSchemaDriftMonitor";
+import { scheduledTraVatAnomalyHandler } from "../scheduledTraVatAnomaly";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +41,7 @@ async function startServer() {
   registerOAuthRoutes(app);
   app.post("/api/scheduled/dashboardReport", scheduledDashboardReportHandler);
   app.post("/api/scheduled/schemaDriftMonitor", scheduledSchemaDriftMonitorHandler);
+  app.post("/api/scheduled/traVatAnomaly", scheduledTraVatAnomalyHandler);
   app.post("/api/webhooks/backup-complete", async (req, res) => {
     try {
       const { handleBackupCompletionWebhook } = await import("../backupWebhook");

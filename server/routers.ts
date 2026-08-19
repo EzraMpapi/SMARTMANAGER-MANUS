@@ -23,6 +23,7 @@ import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
 import { traFiscalRouter } from "./traFiscalRouter";
+import { canReadTenantPushDeliveryHistory, listTenantPushDeliveryHistory } from "./notificationHistory";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -103,12 +104,12 @@ export const appRouter = router({
       }),
     sendSummaryEmail: protectedProcedure
       .input(z.object({ recipient: z.string().email(), summary: z.string().min(1) }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         try {
-          await sendWorkspaceEmail({
+          await sendWorkspaceEmail(ctx.req, {
             to: input.recipient,
             subject: "Smart Manager ERP - AI Categorized Review Summary Report",
-            html: `<div style="font-family:sans-serif;padding:20px;color:#111827;"><h2>Smart Manager ERP</h2><h3>AI Categorized Review Summary Report</h3><pre style="white-space:pre-wrap;background:#f8fafc;padding:16px;border-radius:8px;border:1px solid #e2e8f0;">${input.summary}</pre><p style="color:#64748b;font-size:12px;margin-top:20px;">Dispatched securely via Smart Manager Enterprise Compliance Engine.</p></div>`,
+            body: input.summary,
           });
           return { success: true };
         } catch (err: any) {
@@ -526,6 +527,7 @@ export const appRouter = router({
       companyId: z.string().min(1).max(100),
       name: z.string().min(1).max(120),
       recipientEmail: z.string().email(),
+      ccEmails: z.string().max(2000).optional(),
       frequency: z.enum(["daily", "weekly", "monthly"]),
       format: z.enum(["csv", "pdf"]),
       modules: z.object({ finance: z.boolean(), sales: z.boolean(), crm: z.boolean(), inventory: z.boolean(), operations: z.boolean() }),
@@ -536,6 +538,7 @@ export const appRouter = router({
       companyId: z.string().min(1).max(100).optional(),
       name: z.string().min(1).max(120).optional(),
       recipientEmail: z.string().email().optional(),
+      ccEmails: z.string().max(2000).optional(),
       frequency: z.enum(["daily", "weekly", "monthly"]).optional(),
       format: z.enum(["csv", "pdf"]).optional(),
       modules: z.object({ finance: z.boolean(), sales: z.boolean(), crm: z.boolean(), inventory: z.boolean(), operations: z.boolean() }).optional(),
@@ -548,6 +551,17 @@ export const appRouter = router({
     remove: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => deleteReportSchedule(ctx.user.openId, getSessionToken(ctx.req), input.id)),
     toggleActive: protectedProcedure.input(z.object({ id: z.number().int().positive(), isActive: z.boolean() })).mutation(({ ctx, input }) => updateReportSchedule(ctx.user.openId, getSessionToken(ctx.req), input.id, { isActive: input.isActive })),
     sendNow: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => sendReportScheduleNow(ctx.user.openId, input.id)),
+  }),
+
+  security: router({
+    pushDeliveryHistory: protectedProcedure
+      .input(z.object({ companyId: z.string().min(1), limit: z.number().int().min(1).max(100).optional() }))
+      .query(async ({ ctx, input }) => {
+        const profile = await requireVerifiedAuditCompany(ctx.req, input.companyId);
+        const canReadSecurity = canReadTenantPushDeliveryHistory(profile.role);
+        if (!canReadSecurity) throw new TRPCError({ code: "FORBIDDEN", message: "Only tenant security administrators can view push delivery history." });
+        return listTenantPushDeliveryHistory(input.companyId, input.limit);
+      }),
   }),
 
   auditLogs: router({

@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { ENV } from "./_core/env";
 import { getReportScheduleByTaskUid, markReportSent, type ReportDateRange, type ReportFormat, type ReportModules } from "./reportSchedules";
-import { isTransactionalEmailDeliveryEnabled, sendTransactionalEmail, workspaceEmailHtml } from "./transactionalEmail";
+import { isTransactionalEmailDeliveryEnabled, parseEmailRecipients, sendTransactionalEmail, workspaceEmailHtml } from "./transactionalEmail";
 
 const STAGES = ["New", "Contacted", "Qualified", "Proposal", "Negotiation", "Won", "Lost"];
 const STATUS_BUCKETS = ["Planned", "In Progress", "Completed", "Cancelled"];
@@ -185,8 +185,8 @@ export async function buildScheduledReportData({ companyId, modules, dateRange }
   };
 }
 
-async function sendViaConfiguredProvider({ to, subject, filename, content, contentType }: { to: string; subject: string; filename: string; content: Buffer; contentType: string }) {
-  await sendTransactionalEmail({ to: [to], subject, text: "Your scheduled Smart Manager dashboard report is attached. It was generated from live tenant data using the filters saved with your schedule.", html: workspaceEmailHtml({ title: "Your scheduled dashboard report", preheader: "A Smart Manager report is attached", body: "Your scheduled Smart Manager dashboard report is attached. It was generated from live tenant data using the filters saved with your schedule." }), attachments: [{ filename, content, contentType }], category: "report" });
+async function sendViaConfiguredProvider({ to, cc, subject, filename, content, contentType }: { to: string; cc?: string; subject: string; filename: string; content: Buffer; contentType: string }) {
+  await sendTransactionalEmail({ to: [to], cc: parseEmailRecipients(cc, "CC"), subject, text: "Your scheduled Smart Manager dashboard report is attached. It was generated from live tenant data using the filters saved with your schedule.", html: workspaceEmailHtml({ title: "Your scheduled dashboard report", preheader: "A Smart Manager report is attached", body: "Your scheduled Smart Manager dashboard report is attached. It was generated from live tenant data using the filters saved with your schedule." }), attachments: [{ filename, content, contentType }], category: "report" });
 }
 
 export async function runScheduledDashboardReport(taskUid: string) {
@@ -200,7 +200,7 @@ export async function runScheduledDashboardReport(taskUid: string) {
   const bytes = schedule.format === "pdf"
     ? Buffer.from(createScheduledReportPdf({ companyName: data.companyName, periodLabel, filterSummary: data.filterSummary, sections: data.sections }))
     : Buffer.from(serializeReportSectionsToCsv(data.sections), "utf8");
-  await sendViaConfiguredProvider({ to: schedule.recipientEmail, subject: `${data.companyName} dashboard report · ${periodLabel}`, filename, content: bytes, contentType: schedule.format === "pdf" ? "application/pdf" : "text/csv" });
+  await sendViaConfiguredProvider({ to: schedule.recipientEmail, cc: schedule.ccEmails || "", subject: `${data.companyName} dashboard report · ${periodLabel}`, filename, content: bytes, contentType: schedule.format === "pdf" ? "application/pdf" : "text/csv" });
   await markReportSent(schedule.id);
   return { ok: true as const, scheduleId: schedule.id, format: schedule.format };
 }

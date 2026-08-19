@@ -858,3 +858,9 @@
 - [x] Reproduce and remove the remaining live TRA Portal `lang is not defined` runtime error on mobile.
 - [x] Verify the TRA route renders the actual TraPortalModule and not a stale or placeholder component.
 - [x] Add regression coverage for TRA Portal route localization safety and run desktop/mobile validation.
+- [x] Add multi-recipient CC support to scheduled tax-compliance export email settings and delivery contracts.
+- [x] Add an administrator-configurable VAT anomaly threshold slider with persisted tenant settings and deterministic evaluation.
+- [x] Expose tenant-scoped push-notification delivery history in the Security Settings panel.
+- [x] Add Vitest coverage for CC validation, VAT anomaly evaluation, and delivery-history authorization.
+- [x] Validate the new governance controls on desktop and mobile layouts.
+- [x] Complete a final compliance-governance regression audit and publish.

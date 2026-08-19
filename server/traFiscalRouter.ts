@@ -1,11 +1,21 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { parse as parseCookie } from "cookie";
+import { COOKIE_NAME } from "@shared/const";
 import { router, protectedProcedure } from "./_core/trpc";
 import { getDb } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { fiscalProfiles, fiscalReceipts, fiscalRetryQueue, zReports, taxConfigurations, getFiscalProvider, FiscalSubmissionPayload } from "./traFiscal";
 import { recordAuditLog } from "./auditLogs";
 import { resolveVerifiedProfile } from "./aiApprovals";
+import { evaluateVatAnomaly, getVatAnomalySettings, listVatAnomalyEvents, saveVatAnomalySettings } from "./traVatAnomaly";
+
+function getSessionToken(req: { headers: { cookie?: string; authorization?: string } }) {
+  const cookieToken = parseCookie(req.headers.cookie ?? "")[COOKIE_NAME];
+  if (cookieToken) return cookieToken;
+  const authorization = req.headers.authorization;
+  return authorization?.startsWith("Bearer ") ? authorization.slice(7) : "";
+}
 
 export const traFiscalRouter = router({
   getProfile: protectedProcedure
@@ -240,5 +250,42 @@ export const traFiscalRouter = router({
         connection: conn,
         stats: stats[0] || { total: 0, verified: 0, failed: 0, pending: 0 },
       };
+    }),
+
+  getVatAnomalySettings: protectedProcedure
+    .input(z.object({ companyId: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const { profile } = await resolveVerifiedProfile(ctx.req);
+      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
+      return getVatAnomalySettings(input.companyId);
+    }),
+
+  saveVatAnomalySettings: protectedProcedure
+    .input(z.object({ companyId: z.string().min(1), enabled: z.boolean(), thresholdPercent: z.number().int().min(5).max(500), cooldownMinutes: z.number().int().min(15).max(10080) }))
+    .mutation(async ({ ctx, input }) => {
+      const { profile } = await resolveVerifiedProfile(ctx.req);
+      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
+      const allowedRoles = ["admin", "owner", "manager", "Organization Owner", "CEO", "Super Administrator", "System Administrator", "Finance Manager", "CFO"];
+      if (!allowedRoles.some((role) => profile.role.toLowerCase().includes(role.toLowerCase()))) throw new TRPCError({ code: "FORBIDDEN", message: "Insufficient permissions to configure VAT anomaly alerts." });
+      const settings = await saveVatAnomalySettings(ctx.user, getSessionToken(ctx.req), input);
+      await recordAuditLog(ctx.user, { companyId: input.companyId, action: "SAVE_TRA_VAT_ANOMALY_SETTINGS", module: "TRA_PORTAL", details: `VAT anomaly alerts ${input.enabled ? "enabled" : "disabled"}; threshold ${input.thresholdPercent}%; cooldown ${input.cooldownMinutes} minutes.` });
+      return settings;
+    }),
+
+  listVatAnomalyEvents: protectedProcedure
+    .input(z.object({ companyId: z.string().min(1), limit: z.number().int().min(1).max(100).optional() }))
+    .query(async ({ ctx, input }) => {
+      const { profile } = await resolveVerifiedProfile(ctx.req);
+      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
+      return listVatAnomalyEvents(input.companyId, input.limit);
+    }),
+
+  evaluateVatAnomaly: protectedProcedure
+    .input(z.object({ companyId: z.string().min(1), period: z.string().regex(/^\\d{4}-\\d{2}$/).optional(), branchId: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      const { profile } = await resolveVerifiedProfile(ctx.req);
+      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
+      const settings = await getVatAnomalySettings(input.companyId);
+      return evaluateVatAnomaly(input.companyId, settings, input.period, input.branchId);
     }),
 });

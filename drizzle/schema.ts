@@ -32,6 +32,7 @@ export const dashboardReportSchedules = mysqlTable("dashboard_report_schedules",
   companyId: varchar("companyId", { length: 64 }).notNull(),
   name: varchar("name", { length: 120 }).notNull(),
   recipientEmail: varchar("recipientEmail", { length: 320 }).notNull(),
+  ccEmails: varchar("ccEmails", { length: 2000 }).notNull().default(""),
   cronExpression: varchar("cronExpression", { length: 64 }).notNull(),
   frequency: varchar("frequency", { length: 24 }).notNull(),
   format: varchar("format", { length: 8 }).notNull(),
@@ -227,3 +228,43 @@ export const traGatewayAlertEvents = mysqlTable("tra_gateway_alert_events", {
 }));
 
 export type TraGatewayAlertEvent = typeof traGatewayAlertEvents.$inferSelect;
+
+export const traVatAnomalySettings = mysqlTable("tra_vat_anomaly_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull().unique(),
+  enabled: boolean("enabled").default(true).notNull(),
+  thresholdPercent: int("thresholdPercent").default(50).notNull(),
+  cooldownMinutes: int("cooldownMinutes").default(1440).notNull(),
+  cronExpression: varchar("cronExpression", { length: 64 }).default("0 0 6 * * *").notNull(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  lastEvaluatedAt: timestamp("lastEvaluatedAt"),
+  lastAlertAt: timestamp("lastAlertAt"),
+  lastDeliveryStatus: varchar("lastDeliveryStatus", { length: 24 }),
+  lastMessage: text("lastMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  companyIdx: index("tra_vat_anomaly_company_idx").on(table.companyId),
+  taskUidIdx: index("tra_vat_anomaly_task_uid_idx").on(table.scheduleCronTaskUid),
+}));
+
+export type TraVatAnomalySettings = typeof traVatAnomalySettings.$inferSelect;
+
+export const traVatAnomalyEvents = mysqlTable("tra_vat_anomaly_events", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  branchId: varchar("branchId", { length: 64 }),
+  period: varchar("period", { length: 32 }).notNull(),
+  currentVat: varchar("currentVat", { length: 40 }).notNull(),
+  historicalAverageVat: varchar("historicalAverageVat", { length: 40 }).notNull(),
+  variancePercent: varchar("variancePercent", { length: 40 }).notNull(),
+  thresholdPercent: int("thresholdPercent").notNull(),
+  status: varchar("status", { length: 24 }).notNull(),
+  deliveryStatus: varchar("deliveryStatus", { length: 24 }).notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  companyCreatedAtIdx: index("tra_vat_anomaly_event_company_created_idx").on(table.companyId, table.createdAt),
+}));
+
+export type TraVatAnomalyEvent = typeof traVatAnomalyEvents.$inferSelect;
