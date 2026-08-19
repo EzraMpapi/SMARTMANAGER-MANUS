@@ -1,0 +1,2 @@
+ALTER TABLE `market_provider_settings` ADD `scheduleWeeklyEmail` boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE `market_provider_settings` ADD `latencyThresholdMs` int DEFAULT 1500 NOT NULL;

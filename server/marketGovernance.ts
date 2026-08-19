@@ -19,10 +19,13 @@ export async function upsertMarketProviderSettings(companyId: string, input: {
   outageEmailRecipients?: string;
   alertOnOutage?: boolean;
   refreshIntervalSeconds?: number;
+  scheduleWeeklyEmail?: boolean;
+  latencyThresholdMs?: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable.");
   const refreshInterval = Math.max(15, Math.min(3600, input.refreshIntervalSeconds ?? 60));
+  const threshold = Math.max(200, Math.min(30000, input.latencyThresholdMs ?? 1500));
   const existing = await getMarketProviderSettings(companyId);
   if (existing) {
     await db.update(marketProviderSettings).set({
@@ -34,6 +37,8 @@ export async function upsertMarketProviderSettings(companyId: string, input: {
       outageEmailRecipients: input.outageEmailRecipients ?? existing.outageEmailRecipients,
       alertOnOutage: input.alertOnOutage ?? existing.alertOnOutage,
       refreshIntervalSeconds: input.refreshIntervalSeconds !== undefined ? refreshInterval : existing.refreshIntervalSeconds,
+      scheduleWeeklyEmail: input.scheduleWeeklyEmail ?? existing.scheduleWeeklyEmail,
+      latencyThresholdMs: input.latencyThresholdMs !== undefined ? threshold : existing.latencyThresholdMs,
       updatedAt: new Date(),
     }).where(eq(marketProviderSettings.companyId, companyId));
   } else {
@@ -47,6 +52,8 @@ export async function upsertMarketProviderSettings(companyId: string, input: {
       outageEmailRecipients: input.outageEmailRecipients || null,
       alertOnOutage: input.alertOnOutage ?? true,
       refreshIntervalSeconds: refreshInterval,
+      scheduleWeeklyEmail: input.scheduleWeeklyEmail ?? false,
+      latencyThresholdMs: threshold,
     });
   }
   return getMarketProviderSettings(companyId);
@@ -65,7 +72,10 @@ export async function recordMarketUptimeAndIncidents(companyId: string, provider
     checkedAt: new Date(),
   });
 
+  const settings = await getMarketProviderSettings(companyId);
+  const threshold = settings?.latencyThresholdMs ?? 1500;
   const isOutage = status === "OUTAGE" || status === "UNAVAILABLE";
+  const isSpike = !isOutage && latencyMs >= threshold;
   const openIncidents = await db.select().from(marketProviderIncidents).where(and(eq(marketProviderIncidents.companyId, companyId), eq(marketProviderIncidents.providerType, providerType), eq(marketProviderIncidents.status, "OPEN"))).limit(1);
 
   if (isOutage) {
@@ -81,6 +91,9 @@ export async function recordMarketUptimeAndIncidents(companyId: string, provider
       });
       await dispatchMarketOutageNotification(companyId, providerType, summary);
     }
+  } else if (isSpike) {
+    const spikeSummary = `${providerType.toUpperCase()} latency spike detected: ${latencyMs}ms (threshold: ${threshold}ms)`;
+    await dispatchMarketOutageNotification(companyId, providerType, spikeSummary);
   } else if (openIncidents.length) {
     await db.update(marketProviderIncidents).set({
       status: "RESOLVED",

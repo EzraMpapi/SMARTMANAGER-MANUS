@@ -61,4 +61,11 @@ describe("market intelligence response validation", () => {
     expect(dashboardSource).toContain("refreshIntervalSeconds");
     expect(dashboardSource).toContain("Export Health CSV");
   });
+
+  it("supports regional East African peer comparison, weekly email digests, and latency threshold spike alerts", () => {
+    expect(marketSource).toContain("regionalPeers");
+    expect(marketSource).toContain("scheduleWeeklyEmail");
+    expect(marketSource).toContain("latencyThresholdMs");
+    expect(dashboardSource).toContain("Regional East African Central Bank Comparison");
+  });
 });
