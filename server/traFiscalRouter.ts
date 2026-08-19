@@ -9,7 +9,7 @@ import { fiscalProfiles, fiscalReceipts, fiscalRetryQueue, zReports, taxConfigur
 import { listAuditLogs, recordAuditLog } from "./auditLogs";
 import { listTraArchives } from "./traZReportArchive";
 import { resolveVerifiedProfile } from "./aiApprovals";
-import { evaluateVatAnomaly, getVatAnomalySettings, listVatAnomalyEvents, saveVatAnomalySettings } from "./traVatAnomaly";
+import { evaluateVatAnomaly, getVatAnomalySettings, getVatTrendSummary, listVatAnomalyEvents, saveVatAnomalySettings } from "./traVatAnomaly";
 
 function getSessionToken(req: { headers: { cookie?: string; authorization?: string } }) {
   const cookieToken = parseCookie(req.headers.cookie ?? "")[COOKIE_NAME];
@@ -316,6 +316,14 @@ export const traFiscalRouter = router({
         taxConfigurations: taxConfigStats[0] || { total: 0, active: 0 },
         anomaly,
       };
+    }),
+
+  getVatTrendSummary: protectedProcedure
+    .input(z.object({ companyId: z.string().min(1), periods: z.number().int().min(3).max(24).optional() }))
+    .query(async ({ ctx, input }) => {
+      const { profile } = await resolveVerifiedProfile(ctx.req);
+      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
+      return getVatTrendSummary(input.companyId, input.periods);
     }),
 
   getVatAnomalySettings: protectedProcedure

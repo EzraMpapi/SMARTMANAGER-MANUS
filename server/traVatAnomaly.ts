@@ -153,6 +153,79 @@ export async function listVatAnomalyEvents(companyId: string, limit = 30) {
   return db.select().from(traVatAnomalyEvents).where(eq(traVatAnomalyEvents.companyId, companyId)).orderBy(desc(traVatAnomalyEvents.createdAt)).limit(Math.min(Math.max(limit, 1), 100));
 }
 
+export type VatTrendPoint = {
+  period: string;
+  vat: number;
+  verifiedReceipts: number;
+  failedReceipts: number;
+  totalReceipts: number;
+  serverConfirmedRate: number | null;
+  anomalyEvents: number;
+  triggeredAnomalies: number;
+  suppressedAnomalies: number;
+};
+
+type VatTrendReceiptRow = { period: string; vat: string | number | null; verifiedReceipts: string | number | null; failedReceipts: string | number | null; totalReceipts: string | number | null };
+type VatTrendAnomalyRow = { period: string; anomalyEvents: string | number | null; triggeredAnomalies: string | number | null; suppressedAnomalies: string | number | null };
+
+export function buildVatTrendPoints(endPeriod: string, requestedPeriods = 12, receiptRows: VatTrendReceiptRow[] = [], anomalyRows: VatTrendAnomalyRow[] = []): VatTrendPoint[] {
+  const periods = Math.min(Math.max(Math.trunc(requestedPeriods), 3), 24);
+  const startPeriod = shiftPeriod(endPeriod, -(periods - 1));
+  const receiptsByPeriod = new Map(receiptRows.map((row) => [row.period, row]));
+  const anomaliesByPeriod = new Map(anomalyRows.map((row) => [row.period, row]));
+  return Array.from({ length: periods }, (_, index) => {
+    const period = shiftPeriod(startPeriod, index);
+    const receipts = receiptsByPeriod.get(period);
+    const anomalies = anomaliesByPeriod.get(period);
+    const verifiedReceipts = Number(receipts?.verifiedReceipts || 0);
+    const totalReceipts = Number(receipts?.totalReceipts || 0);
+    return {
+      period,
+      vat: Number(Number(receipts?.vat || 0).toFixed(2)),
+      verifiedReceipts,
+      failedReceipts: Number(receipts?.failedReceipts || 0),
+      totalReceipts,
+      serverConfirmedRate: totalReceipts ? Number(((verifiedReceipts / totalReceipts) * 100).toFixed(1)) : null,
+      anomalyEvents: Number(anomalies?.anomalyEvents || 0),
+      triggeredAnomalies: Number(anomalies?.triggeredAnomalies || 0),
+      suppressedAnomalies: Number(anomalies?.suppressedAnomalies || 0),
+    };
+  });
+}
+
+export async function getVatTrendSummary(companyId: string, requestedPeriods = 12): Promise<VatTrendPoint[]> {
+  const db = await requireDb();
+  const periods = Math.min(Math.max(Math.trunc(requestedPeriods), 3), 24);
+  const endPeriod = previousCompleteMonth();
+  const startPeriod = shiftPeriod(endPeriod, -(periods - 1));
+  const start = monthStart(startPeriod);
+  const end = new Date(monthStart(endPeriod));
+  end.setUTCMonth(end.getUTCMonth() + 1);
+  const receiptPeriod = sql<string>`DATE_FORMAT(${fiscalReceipts.receiptTimestamp}, '%Y-%m')`;
+  const receiptRows = await db.select({
+    period: receiptPeriod,
+    vat: sql<string>`COALESCE(SUM(CASE WHEN ${fiscalReceipts.status} IN ('VERIFIED', 'SUBMITTED') THEN CAST(${fiscalReceipts.vatAmount} AS DECIMAL(14,2)) ELSE 0 END), 0)`,
+    verifiedReceipts: sql<number>`COALESCE(SUM(CASE WHEN ${fiscalReceipts.status} IN ('VERIFIED', 'SUBMITTED') THEN 1 ELSE 0 END), 0)`,
+    failedReceipts: sql<number>`COALESCE(SUM(CASE WHEN ${fiscalReceipts.status} IN ('FAILED', 'REJECTED') THEN 1 ELSE 0 END), 0)`,
+    totalReceipts: sql<number>`COUNT(*)`,
+  }).from(fiscalReceipts).where(and(
+    eq(fiscalReceipts.companyId, companyId),
+    gte(fiscalReceipts.receiptTimestamp, start),
+    lt(fiscalReceipts.receiptTimestamp, end),
+  )).groupBy(receiptPeriod);
+  const anomalyRows = await db.select({
+    period: traVatAnomalyEvents.period,
+    anomalyEvents: sql<number>`COUNT(*)`,
+    triggeredAnomalies: sql<number>`SUM(CASE WHEN ${traVatAnomalyEvents.status} = 'triggered' THEN 1 ELSE 0 END)`,
+    suppressedAnomalies: sql<number>`SUM(CASE WHEN ${traVatAnomalyEvents.status} = 'suppressed' THEN 1 ELSE 0 END)`,
+  }).from(traVatAnomalyEvents).where(and(
+    eq(traVatAnomalyEvents.companyId, companyId),
+    gte(traVatAnomalyEvents.createdAt, start),
+    lt(traVatAnomalyEvents.createdAt, end),
+  )).groupBy(traVatAnomalyEvents.period);
+  return buildVatTrendPoints(endPeriod, periods, receiptRows, anomalyRows);
+}
+
 export async function runScheduledVatAnomalyCheck(taskUid: string) {
   const db = await requireDb();
   const rows = await db.select().from(traVatAnomalySettings).where(and(eq(traVatAnomalySettings.scheduleCronTaskUid, taskUid), eq(traVatAnomalySettings.enabled, true))).limit(1);

@@ -8025,3 +8025,11 @@
 
 ## TRA final completion marker 1566
 
+
+## VAT preparation trend chart
+
+- [x] Add a truthful monthly VAT anomaly and compliance-trend chart to the existing VAT preparation schedules section.
+- [x] Preserve tenant scoping, current month/search filters, CSV/PDF/print exports, loading/empty states, and responsive layout.
+- [x] Add regression coverage for chart aggregation and no-data behavior.
+- [x] Validate TypeScript, tests, production build, and desktop/mobile rendering.
+- [x] Save a checkpoint and push the verified chart update to SMARTMANAGER-MANUS.
