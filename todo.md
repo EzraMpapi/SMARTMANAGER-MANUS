@@ -903,3 +903,8 @@
 - [x] Add regression coverage and validate schedule callback, alert cooldown, and truthful regional provider states
 - [x] Replace BOT/DSE configuration dead-end with validated official public feed adapters (BOT HTML and DSE official JSON)
 - [x] Preserve truthful unavailable fields and add regression/live-feed validation for BOT and DSE data
+
+- [x] Inspect GitHub repository, remotes, branch, and working-tree safety
+- [x] Review changed files for secrets, generated artifacts, and commit readiness
+- [ ] Commit and push all verified project changes to GitHub
+- [ ] Document the future push workflow and report the GitHub result
