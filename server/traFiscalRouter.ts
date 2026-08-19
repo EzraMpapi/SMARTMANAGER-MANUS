@@ -5,8 +5,9 @@ import { COOKIE_NAME } from "@shared/const";
 import { router, protectedProcedure } from "./_core/trpc";
 import { getDb } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { fiscalProfiles, fiscalReceipts, fiscalRetryQueue, zReports, taxConfigurations, getFiscalProvider, FiscalSubmissionPayload } from "./traFiscal";
-import { recordAuditLog } from "./auditLogs";
+import { fiscalProfiles, fiscalReceipts, fiscalRetryQueue, zReports, taxConfigurations, getFiscalProvider, getFiscalProviderReadiness, FiscalSubmissionPayload, officialTraLinks } from "./traFiscal";
+import { listAuditLogs, recordAuditLog } from "./auditLogs";
+import { listTraArchives } from "./traZReportArchive";
 import { resolveVerifiedProfile } from "./aiApprovals";
 import { evaluateVatAnomaly, getVatAnomalySettings, listVatAnomalyEvents, saveVatAnomalySettings } from "./traVatAnomaly";
 
@@ -48,7 +49,7 @@ export const traFiscalRouter = router({
       businessActivity: z.string().max(200).optional(),
       deviceSerial: z.string().max(100).optional(),
       environment: z.enum(["sandbox", "production"]).default("sandbox"),
-      fiscalStatus: z.enum(["active", "suspended", "misconfigured", "offline"]).default("active"),
+      fiscalStatus: z.enum(["active", "suspended", "misconfigured", "offline"]).default("misconfigured"),
     }))
     .mutation(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
@@ -81,7 +82,7 @@ export const traFiscalRouter = router({
             businessActivity: input.businessActivity || null,
             deviceSerial: input.deviceSerial || null,
             environment: input.environment,
-            fiscalStatus: input.fiscalStatus,
+            fiscalStatus: input.fiscalStatus === "active" ? "misconfigured" : input.fiscalStatus,
             updatedAt: new Date(),
           })
           .where(eq(fiscalProfiles.companyId, input.companyId));
@@ -102,7 +103,7 @@ export const traFiscalRouter = router({
           businessActivity: input.businessActivity || null,
           deviceSerial: input.deviceSerial || null,
           environment: input.environment,
-          fiscalStatus: input.fiscalStatus,
+          fiscalStatus: input.fiscalStatus === "active" ? "misconfigured" : input.fiscalStatus,
         });
       }
 
@@ -134,7 +135,7 @@ export const traFiscalRouter = router({
         .where(eq(fiscalReceipts.companyId, input.companyId))
         .orderBy(desc(fiscalReceipts.createdAt))
         .limit(input.limit);
-      return rows;
+      return rows.map(({ traResponse: _traResponse, qrInformation: _qrInformation, ...receipt }) => receipt);
     }),
 
   submitTransaction: protectedProcedure
@@ -174,6 +175,16 @@ export const traFiscalRouter = router({
       const profileRec = profRows[0];
 
       const provider = getFiscalProvider(profileRec.environment);
+      const readiness = provider.getReadiness();
+      if (!readiness.canSubmit) {
+        await recordAuditLog(ctx.user, {
+          companyId: input.companyId,
+          action: "BLOCK_TRA_RECEIPT_SUBMISSION",
+          module: "TRA_PORTAL",
+          details: `Fiscalization blocked: ${readiness.reason}`,
+        });
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: `TRA fiscalization is not available: ${readiness.reason}` });
+      }
       const submissionPayload: FiscalSubmissionPayload = {
         companyId: input.companyId,
         branchId: input.branchId,
@@ -237,6 +248,7 @@ export const traFiscalRouter = router({
       const profRows = await db.select().from(fiscalProfiles).where(eq(fiscalProfiles.companyId, input.companyId)).limit(1);
       const env = profRows[0]?.environment || "sandbox";
       const provider = getFiscalProvider(env);
+      const readiness = getFiscalProviderReadiness(env);
       const conn = await provider.checkConnection();
 
       const stats = await db.select({
@@ -247,8 +259,62 @@ export const traFiscalRouter = router({
       }).from(fiscalReceipts).where(eq(fiscalReceipts.companyId, input.companyId));
 
       return {
-        connection: conn,
+        connection: { ...conn, readiness },
+        officialLinks: officialTraLinks,
+        profileConfigured: Boolean(profRows[0]),
         stats: stats[0] || { total: 0, verified: 0, failed: 0, pending: 0 },
+      };
+    }),
+
+  listDocumentEvidence: protectedProcedure
+    .input(z.object({ companyId: z.string().min(1), limit: z.number().int().min(1).max(100).optional() }))
+    .query(async ({ ctx, input }) => {
+      const { profile } = await resolveVerifiedProfile(ctx.req);
+      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
+      const allowedRoles = ["admin", "owner", "manager", "organization owner", "ceo", "super administrator", "system administrator", "finance manager", "cfo"];
+      if (!allowedRoles.some((role) => profile.role.toLowerCase().includes(role))) throw new TRPCError({ code: "FORBIDDEN", message: "Only authorized tenant administrators can view TRA evidence documents." });
+      const [archives, audit] = await Promise.all([listTraArchives(input.companyId), listAuditLogs(input.companyId, input.limit || 50)]);
+      return { archives, audit: audit.filter((log) => log.module === "TRA_PORTAL" || log.action.toLowerCase().includes("tra")) };
+    }),
+
+  getOperationsSummary: protectedProcedure
+    .input(z.object({ companyId: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const { profile } = await resolveVerifiedProfile(ctx.req);
+      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "TRA operations database is unavailable." });
+      const profileRows = await db.select({ environment: fiscalProfiles.environment }).from(fiscalProfiles).where(eq(fiscalProfiles.companyId, input.companyId)).limit(1);
+      const environment = profileRows[0]?.environment || "sandbox";
+      const provider = getFiscalProvider(environment);
+      const [connection, receiptStats, retryStats, zReportStats, taxConfigStats] = await Promise.all([
+        provider.checkConnection(),
+        db.select({
+          total: sql<number>`count(*)`,
+          verified: sql<number>`sum(case when ${fiscalReceipts.status} in ('VERIFIED', 'SUBMITTED') then 1 else 0 end)`,
+          failed: sql<number>`sum(case when ${fiscalReceipts.status} in ('FAILED', 'REJECTED') then 1 else 0 end)`,
+          pending: sql<number>`sum(case when ${fiscalReceipts.status} in ('PENDING', 'SUBMITTING', 'RETRYING') then 1 else 0 end)`,
+        }).from(fiscalReceipts).where(eq(fiscalReceipts.companyId, input.companyId)),
+        db.select({ pending: sql<number>`sum(case when ${fiscalRetryQueue.status} = 'pending' then 1 else 0 end)`, processing: sql<number>`sum(case when ${fiscalRetryQueue.status} = 'processing' then 1 else 0 end)`, exhausted: sql<number>`sum(case when ${fiscalRetryQueue.status} = 'exhausted' then 1 else 0 end)` }).from(fiscalRetryQueue).where(eq(fiscalRetryQueue.companyId, input.companyId)),
+        db.select({ total: sql<number>`count(*)`, latestBusinessDate: sql<string>`max(${zReports.businessDate})` }).from(zReports).where(eq(zReports.companyId, input.companyId)),
+        db.select({ total: sql<number>`count(*)`, active: sql<number>`sum(case when ${taxConfigurations.isActive} = true then 1 else 0 end)` }).from(taxConfigurations).where(eq(taxConfigurations.companyId, input.companyId)),
+      ]);
+      let anomaly: unknown = { status: "unavailable", reason: "VAT anomaly service could not be read." };
+      try {
+        const settings = await getVatAnomalySettings(input.companyId);
+        const events = await listVatAnomalyEvents(input.companyId, 10);
+        anomaly = { status: "available", settings, recentEvents: events };
+      } catch {
+        // Keep the operations center usable when optional anomaly tables are not migrated.
+      }
+      return {
+        provider: { ...connection, readiness: provider.getReadiness() },
+        officialLinks: officialTraLinks,
+        fiscalReceipts: receiptStats[0] || { total: 0, verified: 0, failed: 0, pending: 0 },
+        retryQueue: retryStats[0] || { pending: 0, processing: 0, exhausted: 0 },
+        zReports: zReportStats[0] || { total: 0, latestBusinessDate: null },
+        taxConfigurations: taxConfigStats[0] || { total: 0, active: 0 },
+        anomaly,
       };
     }),
 

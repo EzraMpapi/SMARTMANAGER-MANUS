@@ -1,9 +1,4 @@
-import { z } from "zod";
-import { TRPCError } from "@trpc/server";
-import { getDb } from "./db";
 import { mysqlTable, int, varchar, text, timestamp, mysqlEnum, json, decimal, boolean, index, uniqueIndex } from "drizzle-orm/mysql-core";
-import { eq, and, desc, sql } from "drizzle-orm";
-import { recordAuditLog } from "./auditLogs";
 
 export const fiscalProfiles = mysqlTable("fiscal_profiles", {
   id: int("id").autoincrement().primaryKey(),
@@ -23,7 +18,7 @@ export const fiscalProfiles = mysqlTable("fiscal_profiles", {
   deviceSerial: varchar("deviceSerial", { length: 100 }),
   environment: mysqlEnum("environment", ["sandbox", "production"]).notNull().default("sandbox"),
   taxConfiguration: json("taxConfiguration"),
-  fiscalStatus: mysqlEnum("fiscalStatus", ["active", "suspended", "misconfigured", "offline"]).notNull().default("active"),
+  fiscalStatus: mysqlEnum("fiscalStatus", ["active", "suspended", "misconfigured", "offline"]).notNull().default("misconfigured"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
@@ -84,7 +79,7 @@ export const zReports = mysqlTable("z_reports", {
   id: int("id").autoincrement().primaryKey(),
   companyId: varchar("companyId", { length: 64 }).notNull(),
   branchId: varchar("branchId", { length: 64 }).notNull().default("MAIN"),
-  businessDate: varchar("businessDate", { length: 32 }).notNull(), // YYYY-MM-DD
+  businessDate: varchar("businessDate", { length: 32 }).notNull(),
   zNumber: varchar("zNumber", { length: 64 }).notNull().unique(),
   status: mysqlEnum("status", ["preview", "validated", "generated", "submitted", "archived"]).notNull().default("preview"),
   openingReceiptNumber: varchar("openingReceiptNumber", { length: 100 }),
@@ -103,7 +98,7 @@ export const zReports = mysqlTable("z_reports", {
 export const taxConfigurations = mysqlTable("tax_configurations", {
   id: int("id").autoincrement().primaryKey(),
   companyId: varchar("companyId", { length: 64 }).notNull(),
-  code: varchar("code", { length: 32 }).notNull(), // e.g. "VAT-18", "EXEMPT", "ZERO"
+  code: varchar("code", { length: 32 }).notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   ratePercent: decimal("ratePercent", { precision: 5, scale: 2 }).notNull().default("18.00"),
   isInclusive: boolean("isInclusive").notNull().default(false),
@@ -136,45 +131,92 @@ export interface FiscalSubmissionResult {
   responseCode: string;
   responseMessage: string;
   qrInformation: string;
-  rawResponse: Record<string, any>;
+  rawResponse: Record<string, unknown>;
+}
+
+export type FiscalConnectionStatus = "connected" | "degraded" | "unavailable";
+
+export interface FiscalProviderReadiness {
+  status: "READY" | "AWAITING_CONFIGURATION" | "UNAVAILABLE";
+  environment: "sandbox" | "production";
+  canSubmit: boolean;
+  canVerify: boolean;
+  reason: string;
+  officialPortalUrl: string;
+  receiptVerificationUrl: string;
 }
 
 export abstract class FiscalProviderAdapter {
+  abstract readonly capability: "OFFICIAL" | "UNAVAILABLE";
+  abstract getReadiness(): FiscalProviderReadiness;
   abstract submitReceipt(payload: FiscalSubmissionPayload): Promise<FiscalSubmissionResult>;
-  abstract checkConnection(): Promise<{ status: "connected" | "degraded" | "unavailable"; latencyMs: number }>;
+  abstract checkConnection(): Promise<{ status: FiscalConnectionStatus; latencyMs: number | null; reason: string }>;
 }
 
-export class MockFiscalProvider extends FiscalProviderAdapter {
-  async submitReceipt(payload: FiscalSubmissionPayload): Promise<FiscalSubmissionResult> {
-    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const receiptNumber = `FR-TZ-${new Date().getFullYear()}-${randomSuffix}`;
-    const verificationNumber = `VERIFY-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-    const fiscalSerial = `TRA-EFD-${payload.tin || "100000000"}-DEV`;
-    
+const OFFICIAL_PORTAL_URL = "https://taxpayerportal.tra.go.tz/";
+const RECEIPT_VERIFICATION_URL = "https://verify.tra.go.tz/";
+
+export class UnavailableFiscalProvider extends FiscalProviderAdapter {
+  readonly capability = "UNAVAILABLE" as const;
+  private readonly environment: "sandbox" | "production";
+  private readonly reason: string;
+
+  constructor(environment: "sandbox" | "production", reason = "An approved TRA production adapter, endpoint, credentials, and certificate are not configured.") {
+    super();
+    this.environment = environment;
+    this.reason = reason;
+  }
+
+  getReadiness(): FiscalProviderReadiness {
     return {
-      success: true,
-      receiptNumber,
-      fiscalSerial,
-      verificationNumber,
-      responseCode: "00",
-      responseMessage: "Verified successfully by TRA Mock VFD Adapter",
-      qrInformation: `TRA-VERIFY|${receiptNumber}|${payload.tin}|${payload.grossAmount}|${verificationNumber}`,
+      status: "AWAITING_CONFIGURATION",
+      environment: this.environment,
+      canSubmit: false,
+      canVerify: false,
+      reason: this.reason,
+      officialPortalUrl: OFFICIAL_PORTAL_URL,
+      receiptVerificationUrl: RECEIPT_VERIFICATION_URL,
+    };
+  }
+
+  async submitReceipt(_payload: FiscalSubmissionPayload): Promise<FiscalSubmissionResult> {
+    return {
+      success: false,
+      receiptNumber: "",
+      responseCode: "OFFICIAL_ADAPTER_NOT_CONFIGURED",
+      responseMessage: this.reason,
+      qrInformation: "",
       rawResponse: {
-        mockProcessedAt: new Date().toISOString(),
-        gateway: "TRA-MOCK-SANDBOX",
-        status: "VERIFIED",
+        capability: this.capability,
+        environment: this.environment,
+        reason: this.reason,
       },
     };
   }
 
-  async checkConnection(): Promise<{ status: "connected" | "degraded" | "unavailable"; latencyMs: number }> {
-    return { status: "connected", latencyMs: 42 };
+  async checkConnection() {
+    return {
+      status: "unavailable" as const,
+      latencyMs: null,
+      reason: this.reason,
+    };
   }
 }
 
+/**
+ * The adapter intentionally fails closed until TRA supplies an approved production
+ * interface and the tenant has server-side credentials. A generic HTTP client is
+ * not used because an undocumented endpoint could create false fiscalization claims.
+ */
 export function getFiscalProvider(environment: "sandbox" | "production"): FiscalProviderAdapter {
-  if (environment === "production") {
-    return new MockFiscalProvider();
-  }
-  return new MockFiscalProvider();
+  return new UnavailableFiscalProvider(environment);
 }
+
+export function getFiscalProviderReadiness(environment: "sandbox" | "production"): FiscalProviderReadiness {
+  return getFiscalProvider(environment).getReadiness();
+}
+
+export const officialTraLinks = {
+  taxpayerPortalUrl: OFFICIAL_PORTAL_URL,
+  receiptVerificationUrl: RECEIPT_VERIFICATION_URL,
+} as const;
