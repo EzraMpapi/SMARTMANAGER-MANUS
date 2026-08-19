@@ -25,6 +25,7 @@ import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, g
 import { traFiscalRouter } from "./traFiscalRouter";
 import { canReadTenantPushDeliveryHistory, listTenantPushDeliveryHistory } from "./notificationHistory";
 import { getMarketIntelligenceSnapshot, marketIntelligenceConfig } from "./marketIntelligence";
+import { getMarketGovernanceData, upsertMarketProviderSettings } from "./marketGovernance";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -70,6 +71,37 @@ export const appRouter = router({
         if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "You cannot access market intelligence for another workspace." });
         const snapshot = await getMarketIntelligenceSnapshot(input.companyId);
         return { ...snapshot, configuration: marketIntelligenceConfig };
+      }),
+    governance: protectedProcedure
+      .input(z.object({ companyId: z.string().min(1).max(100) }))
+      .query(async ({ ctx, input }) => {
+        const profile = await resolveVerifiedProfile(ctx.req);
+        if (profile.profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized workspace governance query." });
+        return getMarketGovernanceData(input.companyId);
+      }),
+    saveGovernanceSettings: protectedProcedure
+      .input(z.object({
+        companyId: z.string().min(1).max(100),
+        bankProviderUrl: z.string().url().max(500).or(z.literal("")).optional(),
+        bankProviderApiKey: z.string().max(300).optional(),
+        dseProviderUrl: z.string().url().max(500).or(z.literal("")).optional(),
+        dseProviderApiKey: z.string().max(300).optional(),
+        slackWebhookUrl: z.string().url().max(500).or(z.literal("")).optional(),
+        outageEmailRecipients: z.string().max(500).optional(),
+        alertOnOutage: z.boolean(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const profile = await resolveVerifiedProfile(ctx.req);
+        if (profile.profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized workspace governance update." });
+        const { companyId, ...settings } = input;
+        const updated = await upsertMarketProviderSettings(companyId, settings);
+        await recordAuditLog(profile.profile, {
+          companyId,
+          action: "Market provider governance settings saved",
+          module: "Market Intelligence",
+          details: `Updated provider configuration and Slack/email outage routing for ${companyId}`,
+        });
+        return updated;
       }),
   }),
   accountRegistration: router({

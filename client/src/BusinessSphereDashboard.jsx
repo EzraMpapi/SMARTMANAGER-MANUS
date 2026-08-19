@@ -34314,27 +34314,211 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm" aria-label="Market data provider status">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-[12.5px] font-semibold text-slate-800">Market intelligence providers</p>
-            <p className="mt-1 max-w-2xl text-[11.5px] leading-relaxed text-slate-500">Bank-rate and DSE widgets use server-side provider credentials only. This screen reports connection readiness; it never exposes credentials or invents market values.</p>
-          </div>
-          <span className="shrink-0 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700">Admin configuration</span>
-        </div>
-        {canManageCompanySettings ? (
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {[{ label: "Bank rates", configured: marketProviderConfigQuery.data?.bankProviderConfigured, source: marketProviderConfigQuery.data?.bankSource }, { label: "DSE market data", configured: marketProviderConfigQuery.data?.dseProviderConfigured, source: marketProviderConfigQuery.data?.dseSource }].map((provider) => (
-              <div key={provider.label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <div className="flex items-center justify-between gap-2"><p className="text-[11.5px] font-semibold text-slate-700">{provider.label}</p><span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${provider.configured ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{provider.configured ? "Configured" : "Awaiting provider"}</span></div>
-                <p className="mt-1 text-[10.5px] leading-relaxed text-slate-500">{provider.source || "Approved provider source"}</p>
+      {(() => {
+        const marketGovQuery = trpc.marketIntelligence.governance.useQuery(
+          { companyId: company?.id || "" },
+          { enabled: Boolean(company?.id) && canManageCompanySettings }
+        );
+        const saveMarketGov = trpc.marketIntelligence.saveGovernanceSettings.useMutation({
+          onSuccess: () => {
+            marketGovQuery.refetch();
+            notify("Market provider governance and alert routing saved successfully ✓");
+          },
+          onError: (err) => notify(err.message || "Failed to save market governance settings", "error"),
+        });
+        const [marketGovForm, setMarketGovForm] = useState({
+          bankProviderUrl: "",
+          bankProviderApiKey: "",
+          dseProviderUrl: "",
+          dseProviderApiKey: "",
+          slackWebhookUrl: "",
+          outageEmailRecipients: "",
+          alertOnOutage: true,
+        });
+        useEffect(() => {
+          if (marketGovQuery.data?.settings) {
+            setMarketGovForm({
+              bankProviderUrl: marketGovQuery.data.settings.bankProviderUrl || "",
+              bankProviderApiKey: marketGovQuery.data.settings.bankProviderApiKey || "",
+              dseProviderUrl: marketGovQuery.data.settings.dseProviderUrl || "",
+              dseProviderApiKey: marketGovQuery.data.settings.dseProviderApiKey || "",
+              slackWebhookUrl: marketGovQuery.data.settings.slackWebhookUrl || "",
+              outageEmailRecipients: marketGovQuery.data.settings.outageEmailRecipients || "",
+              alertOnOutage: marketGovQuery.data.settings.alertOnOutage ?? true,
+            });
+          }
+        }, [marketGovQuery.data]);
+
+        return (
+          <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-4" aria-label="Market provider governance and alerts">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-[12.5px] font-semibold text-slate-800">Market Intelligence & Outage Routing</p>
+                <p className="mt-1 max-w-2xl text-[11.5px] leading-relaxed text-slate-500">Configure official Bank of Tanzania (BOT) and Dar es Salaam Stock Exchange (DSE) provider URLs and API credentials securely. Set administrator Slack webhooks and email recipients for real-time market outage alerts.</p>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-[11px] text-slate-500">Provider readiness is visible only to authorized settings administrators.</p>
-        )}
-      </section>
+              <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Secure Tenant Governance</span>
+            </div>
+
+            {canManageCompanySettings ? (
+              <div className="space-y-4 pt-2 border-t border-slate-100">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">Bank Rates Provider URL (BOT/API)</label>
+                    <input
+                      type="url"
+                      value={marketGovForm.bankProviderUrl}
+                      onChange={e => setMarketGovForm(f => ({ ...f, bankProviderUrl: e.target.value }))}
+                      placeholder="https://api.bot.go.tz/rates or custom endpoint"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px] text-slate-800 focus:border-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">Bank Provider API Key / Token</label>
+                    <input
+                      type="password"
+                      value={marketGovForm.bankProviderApiKey}
+                      onChange={e => setMarketGovForm(f => ({ ...f, bankProviderApiKey: e.target.value }))}
+                      placeholder="•••••••• (leave blank to keep existing)"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px] text-slate-800 focus:border-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">DSE Market Ticker Provider URL</label>
+                    <input
+                      type="url"
+                      value={marketGovForm.dseProviderUrl}
+                      onChange={e => setMarketGovForm(f => ({ ...f, dseProviderUrl: e.target.value }))}
+                      placeholder="https://api.dse.co.tz/tickers or custom endpoint"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px] text-slate-800 focus:border-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">DSE Provider API Key / Token</label>
+                    <input
+                      type="password"
+                      value={marketGovForm.dseProviderApiKey}
+                      onChange={e => setMarketGovForm(f => ({ ...f, dseProviderApiKey: e.target.value }))}
+                      placeholder="•••••••• (leave blank to keep existing)"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px] text-slate-800 focus:border-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">Slack Outage Webhook URL</label>
+                    <input
+                      type="url"
+                      value={marketGovForm.slackWebhookUrl}
+                      onChange={e => setMarketGovForm(f => ({ ...f, slackWebhookUrl: e.target.value }))}
+                      placeholder="https://hooks.slack.com/services/T00/B00/XXX"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px] text-slate-800 focus:border-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">Outage Email Recipients (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={marketGovForm.outageEmailRecipients}
+                      onChange={e => setMarketGovForm(f => ({ ...f, outageEmailRecipients: e.target.value }))}
+                      placeholder="admin@company.co.tz, cfo@company.co.tz"
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px] text-slate-800 focus:border-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={marketGovForm.alertOnOutage}
+                      onChange={e => setMarketGovForm(f => ({ ...f, alertOnOutage: e.target.checked }))}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                    />
+                    <span className="text-[12px] font-semibold text-slate-700">Enable automatic Slack & email dispatch on market feed outages</span>
+                  </label>
+                  <button
+                    type="button"
+                    disabled={saveMarketGov.isPending}
+                    onClick={() => saveMarketGov.mutate({ companyId: company?.id || "", ...marketGovForm })}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 shadow-sm"
+                  >
+                    {saveMarketGov.isPending ? "Saving..." : "Save Market Governance"}
+                  </button>
+                </div>
+
+                {/* Uptime and Incident History Viewer */}
+                <div className="mt-6 pt-5 border-t border-slate-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-[13px] font-bold text-slate-900">Provider Uptime History & Incident Resolution</h4>
+                      <p className="text-[11px] text-slate-500">Live telemetry logs and incident resolution timelines for BOT and DSE feeds.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => marketGovQuery.refetch()}
+                      className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800"
+                    >
+                      Refresh telemetry
+                    </button>
+                  </div>
+
+                  {marketGovQuery.isLoading ? (
+                    <p className="text-[11px] text-slate-400 py-4 text-center">Loading provider uptime and incident records...</p>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600 mb-2">Recent Uptime Logs ({marketGovQuery.data?.uptimeLogs?.length || 0})</p>
+                        <div className="max-h-[200px] overflow-y-auto space-y-1.5">
+                          {marketGovQuery.data?.uptimeLogs?.length === 0 ? (
+                            <p className="text-[11px] text-slate-400">No uptime telemetry recorded yet.</p>
+                          ) : (
+                            marketGovQuery.data?.uptimeLogs?.map(log => (
+                              <div key={log.id} className="flex items-center justify-between bg-white rounded-lg p-2 border border-slate-100 text-[11px]">
+                                <div className="flex items-center gap-2">
+                                  <span className={`h-2 w-2 rounded-full ${log.status === "LIVE" ? "bg-emerald-500" : log.status === "DELAYED" ? "bg-amber-500" : "bg-rose-500"}`} />
+                                  <span className="font-bold uppercase text-slate-700">{log.providerType}</span>
+                                  <span className="text-slate-500">{log.status}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-slate-400">
+                                  <span>{log.latencyMs}ms</span>
+                                  <span>{new Date(log.checkedAt).toLocaleTimeString()}</span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600 mb-2">Incident Timeline ({marketGovQuery.data?.incidents?.length || 0})</p>
+                        <div className="max-h-[200px] overflow-y-auto space-y-1.5">
+                          {marketGovQuery.data?.incidents?.length === 0 ? (
+                            <p className="text-[11px] text-slate-400">No market incidents recorded.</p>
+                          ) : (
+                            marketGovQuery.data?.incidents?.map(inc => (
+                              <div key={inc.id} className="bg-white rounded-lg p-2.5 border border-slate-100 text-[11px] space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${inc.status === "OPEN" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{inc.status} · {inc.providerType.toUpperCase()}</span>
+                                  <span className="text-slate-400 text-[10px]">{new Date(inc.openedAt).toLocaleString()}</span>
+                                </div>
+                                <p className="text-slate-700 font-medium">{inc.issueSummary}</p>
+                                {inc.resolutionNotes && <p className="text-[10.5px] text-emerald-600">Resolution: {inc.resolutionNotes}</p>}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-[11px] text-slate-500">Market governance settings and credential configuration are restricted to authorized company administrators.</p>
+            )}
+          </section>
+        );
+      })()}
 
       {/* Role — demo switcher */}
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">

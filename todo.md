@@ -887,3 +887,8 @@
 - [x] Add an actionable outage banner for administrators when active feeds experience connection failures.
 - [x] Add Vitest regression tests covering market provider status evaluation and outage triggering.
 - [x] Validate responsive layout on desktop and mobile, build, test, and publish checkpoint.
+- [ ] Add approved BOT/DSE provider credential configuration in tenant settings.
+- [ ] Add administrator-controlled Slack and email outage notification routing.
+- [ ] Add tenant-scoped provider uptime history and incident-resolution timelines.
+- [ ] Add Vitest regression tests for provider credentials, alert routing, and uptime logging.
+- [ ] Validate responsive desktop/mobile UI, test suite, build, and publish checkpoint.

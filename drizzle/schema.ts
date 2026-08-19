@@ -304,3 +304,52 @@ export const dseMarketTickers = mysqlTable("dse_market_tickers", {
 }));
 
 export type DseMarketTicker = typeof dseMarketTickers.$inferSelect;
+
+export const marketProviderSettings = mysqlTable("market_provider_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull().unique(),
+  bankProviderUrl: text("bankProviderUrl"),
+  bankProviderApiKey: text("bankProviderApiKey"),
+  dseProviderUrl: text("dseProviderUrl"),
+  dseProviderApiKey: text("dseProviderApiKey"),
+  slackWebhookUrl: text("slackWebhookUrl"),
+  outageEmailRecipients: text("outageEmailRecipients"),
+  alertOnOutage: boolean("alertOnOutage").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  companyIdx: index("market_provider_settings_company_idx").on(table.companyId),
+}));
+
+export type MarketProviderSettings = typeof marketProviderSettings.$inferSelect;
+
+export const marketProviderUptimeLogs = mysqlTable("market_provider_uptime_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  providerType: varchar("providerType", { length: 32 }).notNull(), // 'bank' | 'dse'
+  status: varchar("status", { length: 32 }).notNull(), // 'LIVE' | 'STALE' | 'OUTAGE' | 'AWAITING_CONFIGURATION'
+  latencyMs: int("latencyMs").notNull().default(0),
+  statusCode: int("statusCode"),
+  errorMessage: text("errorMessage"),
+  checkedAt: timestamp("checkedAt").defaultNow().notNull(),
+}, (table) => ({
+  companyCheckedIdx: index("market_uptime_company_checked_idx").on(table.companyId, table.checkedAt),
+}));
+
+export type MarketProviderUptimeLog = typeof marketProviderUptimeLogs.$inferSelect;
+
+export const marketProviderIncidents = mysqlTable("market_provider_incidents", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  providerType: varchar("providerType", { length: 32 }).notNull(),
+  issueSummary: varchar("issueSummary", { length: 255 }).notNull(),
+  severity: varchar("severity", { length: 24 }).notNull().default("OUTAGE"),
+  status: varchar("status", { length: 24 }).notNull().default("OPEN"), // 'OPEN' | 'RESOLVED'
+  resolutionNotes: text("resolutionNotes"),
+  openedAt: timestamp("openedAt").defaultNow().notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+}, (table) => ({
+  companyStatusIdx: index("market_incident_company_status_idx").on(table.companyId, table.status),
+}));
+
+export type MarketProviderIncident = typeof marketProviderIncidents.$inferSelect;

@@ -143,14 +143,22 @@ function statusMessage(status: MarketDataStatus, providerConfigured: boolean, la
   return `${label} provider is unavailable or returned no valid records.`;
 }
 
+import { getMarketProviderSettings, recordMarketUptimeAndIncidents } from "./marketGovernance";
+
 export async function getMarketIntelligenceSnapshot(companyId: string) {
   const db = await getDb();
   if (!db) throw new Error("Market intelligence database is unavailable.");
 
-  const [storedBankRows, storedDseRows] = await Promise.all([
+  const [storedBankRows, storedDseRows, providerSettings] = await Promise.all([
     db.select().from(bankMarketRates).where(eq(bankMarketRates.companyId, companyId)).orderBy(desc(bankMarketRates.updatedAt)).limit(500),
     db.select().from(dseMarketTickers).where(eq(dseMarketTickers.companyId, companyId)).orderBy(desc(dseMarketTickers.updatedAt)).limit(500),
+    getMarketProviderSettings(companyId),
   ]);
+
+  const bankUrl = providerSettings?.bankProviderUrl?.trim() || process.env.MARKET_BANK_RATES_API_URL?.trim() || "";
+  const bankKey = providerSettings?.bankProviderApiKey?.trim() || process.env.MARKET_BANK_RATES_API_KEY?.trim() || "";
+  const dseUrl = providerSettings?.dseProviderUrl?.trim() || process.env.MARKET_DSE_API_URL?.trim() || "";
+  const dseKey = providerSettings?.dseProviderApiKey?.trim() || process.env.MARKET_DSE_API_KEY?.trim() || "";
 
   const cachedBankRows = latestUnique(storedBankRows.map((row) => ({
     bankName: row.bankName,
@@ -178,51 +186,63 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
   let dseRows: DseTickerRow[] = cachedDseRows;
   let bankStatus: MarketDataStatus = cachedBankRows.length ? "CACHED" : "UNAVAILABLE";
   let dseStatus: MarketDataStatus = cachedDseRows.length ? "CACHED" : "UNAVAILABLE";
-  let bankMessage = statusMessage(bankStatus, Boolean(providerConfig.bankUrl), "Bank rates");
-  let dseMessage = statusMessage(dseStatus, Boolean(providerConfig.dseUrl), "DSE market");
+  let bankMessage = statusMessage(bankStatus, Boolean(bankUrl), "Bank rates");
+  let dseMessage = statusMessage(dseStatus, Boolean(dseUrl), "DSE market");
   let bankOutage: string | null = null;
   let dseOutage: string | null = null;
+  const t0Bank = Date.now();
 
-  if (providerConfig.bankUrl) {
+  if (bankUrl) {
     try {
-      const normalized = normalizeBankRows(await fetchProviderJson(providerConfig.bankUrl, providerConfig.bankKey), providerConfig.bankUrl);
+      const normalized = normalizeBankRows(await fetchProviderJson(bankUrl, bankKey), bankUrl);
+      const latencyBank = Date.now() - t0Bank;
       if (normalized.length) {
         await db.insert(bankMarketRates).values(normalized.map((row) => ({ companyId, bankName: row.bankName, currencyPair: row.currencyPair, buyRate: String(row.buyRate), sellRate: String(row.sellRate), lendingRateAnnual: String(row.lendingRateAnnual), status: row.status, source: row.source, updatedAt: row.updatedAt })));
         bankRows = latestUnique(normalized, (row) => `${row.bankName}:${row.currencyPair}`);
         bankStatus = normalized.some((row) => row.status === "DELAYED") ? "DELAYED" : "LIVE";
         bankMessage = statusMessage(bankStatus, true, "Bank rates");
+        await recordMarketUptimeAndIncidents(companyId, "bank", bankStatus, latencyBank, 200);
       } else {
         bankOutage = "The configured bank-rate provider returned no validated records.";
         bankStatus = "UNAVAILABLE";
         bankMessage = `${statusMessage(bankStatus, true, "Bank rates")} Provider response was empty or invalid.`;
+        await recordMarketUptimeAndIncidents(companyId, "bank", "OUTAGE", latencyBank, 200, "Empty or invalid response");
       }
     } catch (error) {
+      const latencyBank = Date.now() - t0Bank;
       bankOutage = error instanceof Error ? error.message : "The configured bank-rate provider could not be reached.";
       bankStatus = "UNAVAILABLE";
       bankMessage = `${statusMessage(bankStatus, true, "Bank rates")} Provider request failed safely.`;
+      await recordMarketUptimeAndIncidents(companyId, "bank", "OUTAGE", latencyBank, 502, bankOutage);
     }
   } else if (!cachedBankRows.length) {
     bankStatus = "AWAITING_CONFIGURATION";
     bankMessage = statusMessage(bankStatus, false, "Bank rates");
   }
 
-  if (providerConfig.dseUrl) {
+  const t0Dse = Date.now();
+  if (dseUrl) {
     try {
-      const normalized = normalizeDseRows(await fetchProviderJson(providerConfig.dseUrl, providerConfig.dseKey), providerConfig.dseUrl);
+      const normalized = normalizeDseRows(await fetchProviderJson(dseUrl, dseKey), dseUrl);
+      const latencyDse = Date.now() - t0Dse;
       if (normalized.length) {
         await db.insert(dseMarketTickers).values(normalized.map((row) => ({ companyId, symbol: row.symbol, companyName: row.companyName, priceTzs: String(row.priceTzs), changeTzs: String(row.changeTzs), changePercent: String(row.changePercent), volume: row.volume, status: row.status, updatedAt: row.updatedAt })));
         dseRows = latestUnique(normalized, (row) => row.symbol);
         dseStatus = normalized.some((row) => row.status === "DELAYED") ? "DELAYED" : "LIVE";
         dseMessage = statusMessage(dseStatus, true, "DSE market");
+        await recordMarketUptimeAndIncidents(companyId, "dse", dseStatus, latencyDse, 200);
       } else {
         dseOutage = "The configured DSE provider returned no validated records.";
         dseStatus = "UNAVAILABLE";
         dseMessage = `${statusMessage(dseStatus, true, "DSE market")} Provider response was empty or invalid.`;
+        await recordMarketUptimeAndIncidents(companyId, "dse", "OUTAGE", latencyDse, 200, "Empty or invalid response");
       }
     } catch (error) {
+      const latencyDse = Date.now() - t0Dse;
       dseOutage = error instanceof Error ? error.message : "The configured DSE provider could not be reached.";
       dseStatus = "UNAVAILABLE";
       dseMessage = `${statusMessage(dseStatus, true, "DSE market")} Provider request failed safely.`;
+      await recordMarketUptimeAndIncidents(companyId, "dse", "OUTAGE", latencyDse, 502, dseOutage);
     }
   } else if (!cachedDseRows.length) {
     dseStatus = "AWAITING_CONFIGURATION";
