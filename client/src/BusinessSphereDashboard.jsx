@@ -6165,13 +6165,17 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   }
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-5">
       {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
       <DashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
 
-      <GettingStartedChecklist inventory={inventory} crm={crm} invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
-      <AnalyticsReadiness invoices={invoices} crm={crm} inventory={inventory} expenses={expenses} onNavigate={onNavigate} />
-      {canViewMarketIntelligence && <MarketIntelligencePanel snapshotQuery={marketSnapshotQuery} onNavigate={onNavigate} />}
+      <section className="order-8 grid grid-cols-1 gap-5" aria-label="Workspace setup and analytics readiness">
+        <GettingStartedChecklist inventory={inventory} crm={crm} invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
+        <AnalyticsReadiness invoices={invoices} crm={crm} inventory={inventory} expenses={expenses} onNavigate={onNavigate} />
+      </section>
+
+      <section className="order-5 space-y-5" aria-label="Workspace intelligence and compliance">
+        {canViewMarketIntelligence && <MarketIntelligencePanel snapshotQuery={marketSnapshotQuery} onNavigate={onNavigate} />}
 
       {/* ══════════════════ COMPLIANCE DIGEST STATUS BADGE ══════════════════ */}
       {(() => {
@@ -6237,8 +6241,10 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         );
       })()}
 
+      </section>
+
       {/* ══════════════════ COMMAND STRIP ══════════════════ */}
-      <div className="rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 55%,#16A34A 130%)"}}>
+      <div className="order-1 rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 55%,#16A34A 130%)"}}>
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute w-64 h-64 rounded-full opacity-10" style={{background:"radial-gradient(circle,#4ADE80,transparent)",right:"-4rem",top:"-4rem"}}/>
           <div className="absolute w-32 h-32 rounded-full opacity-10" style={{background:"radial-gradient(circle,#86EFAC,transparent)",left:"30%",bottom:"-2rem"}}/>
@@ -6412,7 +6418,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       </div>
 
       {/* ══════════════════ ALERTS + QUICK ACTIONS ══════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="order-2 grid grid-cols-1 lg:grid-cols-4 gap-4">
 
         {/* Executive Guidance — recommendation only; it opens an existing module and never creates data. */}
         {(() => {
@@ -6575,7 +6581,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         const hasData = data.some(d=>d.rev>0||d.exp>0);
         if (!hasData) return null;
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="order-3 grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
@@ -6663,7 +6669,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         const hasVatData = vatTrendData.some(d=>d.taxable>0||d.vat>0);
         if (!hasVatData) return null;
         return (
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 mt-4">
+          <div className="order-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 mt-4">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-[14px] font-bold text-[#111827]">VAT Return Trends — {PERIOD_LABELS[period]}</h3>
@@ -7057,7 +7063,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       )}
 
       {/* ══════════════════ MODULE HEALTH GRID ══════════════════ */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="order-6 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="text-[14px] font-bold text-[#111827]">Module Health</h3>
@@ -7130,7 +7136,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       </div>
 
       {/* ══════════════════ BUSINESS ANALYTICS ROW ══════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="order-7 grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Top Customers BarChart */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
@@ -7231,7 +7237,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       </div>
 
       {/* ══════════════════ APPROVALS + ACTIVITY ══════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="order-9 grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Pending Approvals */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">

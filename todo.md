@@ -8059,3 +8059,13 @@
 - [x] Add regression coverage for legacy schema compatibility, cost-center preservation, and error handling.
 - [x] Validate TypeScript, full tests, production build, and mobile-sized expense form behavior.
 - [x] Save a checkpoint and push the verified expense fix to SMARTMANAGER-MANUS.
+
+## Executive dashboard hierarchy redesign
+
+- [x] Audit the current dashboard shell, Workspace Overview, command actions, health modules, market intelligence, VAT trends, and module sections.
+- [x] Keep Workspace Overview anchored at the top and establish a clear executive-first information hierarchy below it.
+- [x] Rearrange dashboard cards and action groups without removing existing data, role gates, routes, filters, exports, or server-backed behavior.
+- [x] Improve desktop, tablet, and mobile layout behavior for the redesigned dashboard.
+- [x] Add or update regression coverage for the dashboard structure and preserved actions.
+- [x] Validate TypeScript, full tests, production build, and desktop/tablet/mobile screenshots.
+- [x] Save a checkpoint and push the verified dashboard redesign to SMARTMANAGER-MANUS.

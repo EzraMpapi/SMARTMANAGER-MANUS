@@ -189,6 +189,18 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("{PERIOD_LABELS[period]} reporting view");
   });
 
+  it("keeps Workspace Overview at the top and orders the remaining dashboard sections by executive priority", () => {
+    expect(dashboardSource).toContain('<div className="flex flex-col gap-5">');
+    expect(dashboardSource).toContain('<div className="order-1 rounded-2xl overflow-hidden relative"');
+    expect(dashboardSource).toContain('<div className="order-2 grid grid-cols-1 lg:grid-cols-4 gap-4">');
+    expect(dashboardSource).toContain('<div className="order-3 grid grid-cols-1 lg:grid-cols-3 gap-4">');
+    expect(dashboardSource).toContain('<div className="order-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 mt-4">');
+    expect(dashboardSource).toContain('<div className="order-6 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">');
+    expect(dashboardSource).toContain('<div className="order-7 grid grid-cols-1 lg:grid-cols-3 gap-4">');
+    expect(dashboardSource).toContain('<div className="order-9 grid grid-cols-1 lg:grid-cols-3 gap-4">');
+    expect(dashboardSource).toContain('aria-label="Workspace setup and analytics readiness"');
+  });
+
   it("derives executive guidance from confirmed workspace rows and opens an existing module without creating a record", () => {
     expect(dashboardSource).toContain("const executiveGuidance = useMemo(() =>");
     expect(dashboardSource).toContain("No confirmed invoice data is available for this workspace yet.");
