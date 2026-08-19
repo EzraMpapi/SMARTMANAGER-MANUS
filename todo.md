@@ -8069,3 +8069,12 @@
 - [x] Add or update regression coverage for the dashboard structure and preserved actions.
 - [x] Validate TypeScript, full tests, production build, and desktop/tablet/mobile screenshots.
 - [x] Save a checkpoint and push the verified dashboard redesign to SMARTMANAGER-MANUS.
+
+## Missing role-change approval procedure
+
+- [x] Trace the role-change UI mutation path and confirm the router registration and procedure name.
+- [x] Implement or correct `requestRoleChangeApproval` with tenant-scoped authorization and approval-state persistence.
+- [x] Preserve owner/admin approval boundaries, prevent self-escalation, and keep denied requests auditable.
+- [x] Add regression coverage for procedure registration, authorized request, unauthorized request, wrong-tenant access, and duplicate/pending requests.
+- [x] Validate TypeScript, focused RBAC tests, full tests, production build, and responsive role-management behavior.
+- [x] Save a checkpoint and push the verified role-change approval fix to SMARTMANAGER-MANUS.

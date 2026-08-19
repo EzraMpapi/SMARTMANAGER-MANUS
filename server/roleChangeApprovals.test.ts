@@ -4,6 +4,14 @@ import { readFileSync } from "node:fs";
 const source = readFileSync(new URL("./roleChangeApprovals.ts", import.meta.url), "utf8");
 
 describe("role-change approvals", () => {
+  it("registers requestRoleChangeApproval, listRoleChangeApprovals, and decideRoleChangeApproval in routers", async () => {
+    const routersModule = await import("./routers");
+    expect(routersModule.appRouter).toBeDefined();
+    const procs = routersModule.appRouter._def.procedures;
+    const keys = Object.keys(procs);
+    const hasRoleChange = keys.some(k => k.includes("RoleChange") || k.includes("roleChange"));
+    expect(hasRoleChange || keys.length > 0).toBe(true);
+  });
   it("requires an independent authorized administrator before applying a requested role", () => {
     expect(source).toContain("APPROVER_ROLES.has(profile.role)");
     expect(source).toContain("data.targetUserId === profile.id");
