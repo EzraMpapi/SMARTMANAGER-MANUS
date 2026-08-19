@@ -5533,7 +5533,39 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
                       <div className="flex min-w-0 items-center gap-2"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700"><FeedIcon size={15} /></span><div className="min-w-0"><p className="truncate text-[11.5px] font-bold text-slate-800">{label}</p><p className="truncate text-[10px] text-slate-400">{source}</p></div></div>
                       <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[9.5px] font-bold text-slate-600"><span className={`h-1.5 w-1.5 rounded-full ${statusDot(status)} ${status === "LIVE" && !snapshotQuery.isFetching ? "animate-pulse" : ""}`} />{statusText(status, feed?.providerConfigured)}</span>
                     </div>
-                    <div className="mt-3 flex items-end justify-between gap-3"><div><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Provider latency</p><p className={`mt-0.5 font-mono text-[17px] font-black ${latencyClass(feed)}`}>{latencyText(feed)}</p></div><p className="max-w-[180px] text-right text-[10px] leading-relaxed text-slate-400">{feed?.message || "Waiting for a validated provider response."}</p></div>
+                    <div className="mt-3 flex items-end justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Provider latency</p>
+                            <p className={`mt-0.5 font-mono text-[17px] font-black ${latencyClass(feed)}`}>{latencyText(feed)}</p>
+                          </div>
+                          <div className="pl-3 border-l border-slate-100">
+                            <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">24h Uptime</p>
+                            <p className="mt-0.5 font-mono text-[13px] font-bold text-slate-700">{feed?.providerConfigured ? `${feed?.uptimePercent ?? 100}%` : "—"}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="max-w-[160px] text-right text-[10px] leading-relaxed text-slate-400">{feed?.message || "Waiting for a validated provider response."}</p>
+                    </div>
+                    {feed?.providerConfigured && feed?.latencySparkline?.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-slate-100">
+                        <div className="flex items-center justify-between text-[9.5px] text-slate-400 mb-1">
+                          <span>24h Latency Trend ({feed.latencySparkline.length} checks)</span>
+                          <span className="font-mono">{feed.latencySparkline[feed.latencySparkline.length - 1]?.latency}ms latest</span>
+                        </div>
+                        <div className="h-8 w-full flex items-end gap-0.5 bg-slate-50 rounded p-1">
+                          {feed.latencySparkline.slice(-20).map((pt, idx) => {
+                            const maxLat = Math.max(...feed.latencySparkline.map(p => p.latency), 500);
+                            const heightPct = Math.max(15, Math.min(100, Math.round((pt.latency / maxLat) * 100)));
+                            const barColor = pt.status === "OUTAGE" || pt.status === "UNAVAILABLE" ? "bg-rose-500" : pt.status === "DELAYED" || pt.status === "CACHED" ? "bg-amber-400" : "bg-emerald-500";
+                            return (
+                              <div key={idx} className={`flex-1 rounded-t transition-all ${barColor}`} style={{ height: `${heightPct}%` }} title={`${pt.time}: ${pt.latency}ms (${pt.status})`} />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full transition-all duration-300 ${latencyClass(feed).replace("text-", "bg-")}`} style={{ width: `${latencyWidth(feed)}%` }} /></div>
                   </div>
                 );
@@ -34381,6 +34413,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
           slackWebhookUrl: "",
           outageEmailRecipients: "",
           alertOnOutage: true,
+          refreshIntervalSeconds: 60,
         });
         useEffect(() => {
           if (marketGovQuery.data?.settings) {
@@ -34392,6 +34425,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
               slackWebhookUrl: marketGovQuery.data.settings.slackWebhookUrl || "",
               outageEmailRecipients: marketGovQuery.data.settings.outageEmailRecipients || "",
               alertOnOutage: marketGovQuery.data.settings.alertOnOutage ?? true,
+              refreshIntervalSeconds: marketGovQuery.data.settings.refreshIntervalSeconds ?? 60,
             });
           }
         }, [marketGovQuery.data]);
@@ -34451,7 +34485,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">Slack Outage Webhook URL</label>
                     <input
@@ -34471,6 +34505,22 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                       placeholder="admin@company.co.tz, cfo@company.co.tz"
                       className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px] text-slate-800 focus:border-emerald-600 focus:outline-none"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">Auto-Refresh Interval (15s – 3600s)</label>
+                    <select
+                      value={marketGovForm.refreshIntervalSeconds}
+                      onChange={e => setMarketGovForm(f => ({ ...f, refreshIntervalSeconds: Number(e.target.value) }))}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-800 focus:border-emerald-600 focus:outline-none"
+                    >
+                      <option value={15}>15 seconds (High frequency)</option>
+                      <option value={30}>30 seconds</option>
+                      <option value={60}>60 seconds (Standard)</option>
+                      <option value={120}>2 minutes</option>
+                      <option value={300}>5 minutes</option>
+                      <option value={900}>15 minutes</option>
+                      <option value={3600}>1 hour</option>
+                    </select>
                   </div>
                 </div>
 
@@ -34501,13 +34551,28 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                       <h4 className="text-[13px] font-bold text-slate-900">Provider Uptime History & Incident Resolution</h4>
                       <p className="text-[11px] text-slate-500">Live telemetry logs and incident resolution timelines for BOT and DSE feeds.</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => marketGovQuery.refetch()}
-                      className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800"
-                    >
-                      Refresh telemetry
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const logs = marketGovQuery.data?.uptimeLogs || [];
+                          const incs = marketGovQuery.data?.incidents || [];
+                          const headers = ["Provider", "Status", "Latency (ms)", "Status Code", "Error", "Checked At"];
+                          const rows = logs.map(l => [l.providerType.toUpperCase(), l.status, l.latencyMs, l.statusCode || 200, l.errorMessage || "", new Date(l.checkedAt).toISOString()]);
+                          exportCSV(`market-provider-uptime-report-${company?.slug || "workspace"}.csv`, headers, rows);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 shadow-sm"
+                      >
+                        <Download size={12} /> Export Health CSV
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => marketGovQuery.refetch()}
+                        className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800"
+                      >
+                        Refresh telemetry
+                      </button>
+                    </div>
                   </div>
 
                   {marketGovQuery.isLoading ? (

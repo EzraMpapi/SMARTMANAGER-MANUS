@@ -315,6 +315,7 @@ export const marketProviderSettings = mysqlTable("market_provider_settings", {
   slackWebhookUrl: text("slackWebhookUrl"),
   outageEmailRecipients: text("outageEmailRecipients"),
   alertOnOutage: boolean("alertOnOutage").default(true).notNull(),
+  refreshIntervalSeconds: int("refreshIntervalSeconds").default(60).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({

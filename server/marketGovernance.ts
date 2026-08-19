@@ -18,9 +18,11 @@ export async function upsertMarketProviderSettings(companyId: string, input: {
   slackWebhookUrl?: string;
   outageEmailRecipients?: string;
   alertOnOutage?: boolean;
+  refreshIntervalSeconds?: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable.");
+  const refreshInterval = Math.max(15, Math.min(3600, input.refreshIntervalSeconds ?? 60));
   const existing = await getMarketProviderSettings(companyId);
   if (existing) {
     await db.update(marketProviderSettings).set({
@@ -31,6 +33,7 @@ export async function upsertMarketProviderSettings(companyId: string, input: {
       slackWebhookUrl: input.slackWebhookUrl ?? existing.slackWebhookUrl,
       outageEmailRecipients: input.outageEmailRecipients ?? existing.outageEmailRecipients,
       alertOnOutage: input.alertOnOutage ?? existing.alertOnOutage,
+      refreshIntervalSeconds: input.refreshIntervalSeconds !== undefined ? refreshInterval : existing.refreshIntervalSeconds,
       updatedAt: new Date(),
     }).where(eq(marketProviderSettings.companyId, companyId));
   } else {
@@ -43,6 +46,7 @@ export async function upsertMarketProviderSettings(companyId: string, input: {
       slackWebhookUrl: input.slackWebhookUrl || null,
       outageEmailRecipients: input.outageEmailRecipients || null,
       alertOnOutage: input.alertOnOutage ?? true,
+      refreshIntervalSeconds: refreshInterval,
     });
   }
   return getMarketProviderSettings(companyId);

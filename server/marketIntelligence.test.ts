@@ -52,4 +52,13 @@ describe("market intelligence response validation", () => {
     expect(dashboardSource).toContain("Provider latency");
     expect(dashboardSource).toContain("Auto-check every 60s");
   });
+
+  it("supports 24-hour latency sparklines, uptime percentages, safe refresh interval bounds, and compliance health exports", () => {
+    expect(marketSource).toContain("latencySparkline");
+    expect(marketSource).toContain("uptimePercent");
+    expect(dashboardSource).toContain("24h Uptime");
+    expect(dashboardSource).toContain("24h Latency Trend");
+    expect(dashboardSource).toContain("refreshIntervalSeconds");
+    expect(dashboardSource).toContain("Export Health CSV");
+  });
 });

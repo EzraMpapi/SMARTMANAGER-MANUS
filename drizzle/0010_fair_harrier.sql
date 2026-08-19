@@ -1,0 +1,1 @@
+ALTER TABLE `market_provider_settings` ADD `refreshIntervalSeconds` int DEFAULT 60 NOT NULL;

@@ -89,6 +89,7 @@ export const appRouter = router({
         slackWebhookUrl: z.string().url().max(500).or(z.literal("")).optional(),
         outageEmailRecipients: z.string().max(500).optional(),
         alertOnOutage: z.boolean(),
+        refreshIntervalSeconds: z.number().int().min(15).max(3600).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const profile = await resolveVerifiedProfile(ctx.req);

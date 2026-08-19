@@ -252,14 +252,33 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
   const latencyBank = Date.now() - t0Bank;
   const latencyDse = Date.now() - t0Dse;
 
+  const now = Date.now();
+  const dayAgo = new Date(now - 24 * 3600_000);
+  const recentLogs = await db.select().from(marketProviderUptimeLogs).where(and(eq(marketProviderUptimeLogs.companyId, companyId), gte(marketProviderUptimeLogs.checkedAt, dayAgo))).orderBy(asc(marketProviderUptimeLogs.checkedAt));
+
+  const bankLogs = recentLogs.filter((l) => l.providerType === "bank");
+  const dseLogs = recentLogs.filter((l) => l.providerType === "dse");
+
+  const calcUptime = (logs: typeof recentLogs) => {
+    if (!logs.length) return 100;
+    const successes = logs.filter((l) => l.status === "LIVE" || l.status === "CACHED" || l.status === "DELAYED");
+    return Math.round((successes.length / logs.length) * 100);
+  };
+
+  const bankSparkline = bankLogs.map((l) => ({ time: new Date(l.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), latency: l.latencyMs, status: l.status }));
+  const dseSparkline = dseLogs.map((l) => ({ time: new Date(l.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), latency: l.latencyMs, status: l.status }));
+
   return {
     asOf: new Date().toISOString(),
+    refreshIntervalSeconds: providerSettings?.refreshIntervalSeconds ?? 60,
     bankRates: {
       status: bankStatus,
       uiStatus: deriveMarketProviderUiStatus({ status: bankStatus, providerConfigured: Boolean(bankUrl), hasRows: bankRows.length > 0, hasOutage: Boolean(bankOutage) }),
       message: bankMessage,
       providerConfigured: Boolean(bankUrl),
       latencyMs: latencyBank,
+      uptimePercent: calcUptime(bankLogs),
+      latencySparkline: bankSparkline,
       outage: bankOutage ? { severity: "OUTAGE" as const, message: bankOutage } : null,
       rows: bankRows,
     },
@@ -269,6 +288,8 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
       message: dseMessage,
       providerConfigured: Boolean(dseUrl),
       latencyMs: latencyDse,
+      uptimePercent: calcUptime(dseLogs),
+      latencySparkline: dseSparkline,
       outage: dseOutage ? { severity: "OUTAGE" as const, message: dseOutage } : null,
       rows: dseRows,
     },
