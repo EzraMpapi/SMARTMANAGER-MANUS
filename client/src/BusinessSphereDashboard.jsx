@@ -31720,21 +31720,29 @@ function WhatsAppWebIntegration() {
   const [linked, setLinked] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all"); // all, unread, read
+  const [statusFilter, setStatusFilter] = useState("all");
   const [messages, setMessages] = useState([
-    { id: 1, sender: "Juma Kassam", phone: "+255 715 234 567", text: "Hello, checking on our wholesale invoice payment status for Dar es Salaam branch.", time: "10:42 AM", unread: true },
-    { id: 2, sender: "Aisha Mohamed", phone: "+255 784 987 654", text: "Can we schedule a product delivery for Arusha warehouse tomorrow?", time: "09:15 AM", unread: false },
-    { id: 3, sender: "Baraka Enterprise", phone: "+255 754 112 233", text: "Sent bank deposit slip for the recent bulk order. Please confirm receipt.", time: "Yesterday", unread: true },
+    { id: 1, sender: "Juma Kassam", phone: "+255 715 234 567", text: "Hello, checking on our wholesale invoice payment status for Dar es Salaam branch.", time: "10:42 AM", unread: true, readReceipt: true },
+    { id: 2, sender: "Aisha Mohamed", phone: "+255 784 987 654", text: "Can we schedule a product delivery for Arusha warehouse tomorrow?", time: "09:15 AM", unread: false, readReceipt: true },
+    { id: 3, sender: "Baraka Enterprise", phone: "+255 754 112 233", text: "Sent bank deposit slip for the recent bulk order. Please confirm receipt.", time: "Yesterday", unread: true, readReceipt: false },
   ]);
   const [replyText, setReplyText] = useState("");
   const [selectedMsg, setSelectedMsg] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  
+  // Categorized Quick Replies
+  const [templateCategory, setTemplateCategory] = useState("all");
+  const [templateSearch, setTemplateSearch] = useState("");
   const [templates, setTemplates] = useState([
-    "Hello! We have received your payment confirmation and your order is now being processed for dispatch.",
-    "Thank you for reaching out to Smart Manager ERP. Your invoice balance has been verified and updated.",
-    "We can schedule your warehouse delivery for tomorrow morning. Please confirm your preferred delivery time slot."
+    { id: 1, category: "Billing", text: "Hello! We have received your payment confirmation and your invoice is marked as paid." },
+    { id: 2, category: "Billing", text: "Thank you for reaching out. Your invoice balance verification is currently in progress." },
+    { id: 3, category: "Logistics", text: "We can schedule your warehouse delivery for tomorrow morning. Please confirm your delivery slot." },
+    { id: 4, category: "Logistics", text: "Your shipment has been dispatched to regional transit. Tracking number is attached." },
+    { id: 5, category: "General", text: "Thank you for contacting Smart Manager ERP support. How may we assist your operations today?" },
   ]);
   const [showNewTemplateInput, setShowNewTemplateInput] = useState(false);
   const [newTemplateText, setNewTemplateText] = useState("");
+  const [newTemplateCategory, setNewTemplateCategory] = useState("General");
 
   const simulateScan = () => {
     setScanning(true);
@@ -31742,14 +31750,69 @@ function WhatsAppWebIntegration() {
       setScanning(false);
       setLinked(true);
       notify("WhatsApp account linked successfully via QR session.");
-    }, 2200);
+    }, 2000);
   };
 
   const handleReply = () => {
     if (!replyText.trim() || !selectedMsg) return;
-    notify(`Reply sent to ${selectedMsg.sender} via WhatsApp Web session.`);
-    setMessages(messages.map(m => m.id === selectedMsg.id ? { ...m, unread: false } : m));
-    setReplyText("");
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      notify(`Reply sent to ${selectedMsg.sender} via WhatsApp Web session.`);
+      setMessages(messages.map(m => m.id === selectedMsg.id ? { ...m, unread: false, readReceipt: true } : m));
+      setReplyText("");
+    }, 1000);
+  };
+
+  const exportConversation = (format) => {
+    if (!selectedMsg) {
+      notify("Please select a customer conversation first.", "error");
+      return;
+    }
+    if (format === "csv") {
+      const csvContent = "data:text/csv;charset=utf-8," + [
+        ["Sender", "Phone", "Time", "Message", "Read Receipt"],
+        [selectedMsg.sender, selectedMsg.phone, selectedMsg.time, `"${selectedMsg.text}"`, selectedMsg.readReceipt ? "Read" : "Unread"]
+      ].map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `whatsapp_chat_${selectedMsg.sender.replace(/\s+/g, "_")}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      notify("Conversation exported as CSV successfully.");
+    } else {
+      // PDF Mock / Print format
+      const printWindow = window.open("", "_blank");
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>WhatsApp Conversation — ${selectedMsg.sender}</title>
+            <style>
+              body { font-family: sans-serif; padding: 24px; color: #111; }
+              h2 { color: #075E54; border-bottom: 2px solid #25D366; padding-bottom: 8px; }
+              .meta { margin-bottom: 16px; color: #555; font-size: 13px; }
+              .bubble { background: #DCF8C6; padding: 12px; border-radius: 8px; margin-top: 12px; }
+            </style>
+          </head>
+          <body>
+            <h2>Smart Manager ERP — WhatsApp Transcript</h2>
+            <div class="meta">
+              <p><strong>Customer:</strong> ${selectedMsg.sender} (${selectedMsg.phone})</p>
+              <p><strong>Time:</strong> ${selectedMsg.time}</p>
+              <p><strong>Status:</strong> ${selectedMsg.readReceipt ? "Read ✓✓" : "Delivered ✓"}</p>
+            </div>
+            <div class="bubble">
+              <p>${selectedMsg.text}</p>
+            </div>
+            <script>window.print();</script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      notify("Conversation PDF export formatted for printing.");
+    }
   };
 
   const filteredMessages = messages.filter(m => {
@@ -31759,6 +31822,12 @@ function WhatsAppWebIntegration() {
     if (statusFilter === "unread") return matchesSearch && m.unread;
     if (statusFilter === "read") return matchesSearch && !m.unread;
     return matchesSearch;
+  });
+
+  const filteredTemplates = templates.filter(t => {
+    const matchesCat = templateCategory === "all" || t.category.toLowerCase() === templateCategory.toLowerCase();
+    const matchesSearch = t.text.toLowerCase().includes(templateSearch.toLowerCase());
+    return matchesCat && matchesSearch;
   });
 
   return (
@@ -31844,7 +31913,7 @@ function WhatsAppWebIntegration() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-1 border-r border-slate-100 dark:border-slate-800 pr-3 space-y-2">
               <p className="text-[11.5px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Conversations ({filteredMessages.length})</p>
-              <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
                 {filteredMessages.length > 0 ? filteredMessages.map(m => (
                   <div
                     key={m.id}
@@ -31856,13 +31925,17 @@ function WhatsAppWebIntegration() {
                       {m.unread && <span className="w-2 h-2 rounded-full bg-emerald-600"></span>}
                     </div>
                     <p className="text-[11px] text-slate-500 truncate mt-0.5">{m.text}</p>
+                    <div className="flex items-center justify-between mt-1 text-[9.5px] text-slate-400 font-mono">
+                      <span>{m.time}</span>
+                      <span>{m.readReceipt ? "✓✓ Read" : "✓ Delivered"}</span>
+                    </div>
                   </div>
                 )) : (
                   <p className="text-[11.5px] text-slate-400 py-6 text-center">No matching conversations found.</p>
                 )}
               </div>
             </div>
-            <div className="md:col-span-2 flex flex-col justify-between bg-slate-50 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800 min-h-[260px]">
+            <div className="md:col-span-2 flex flex-col justify-between bg-slate-50 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800 min-h-[300px]">
               {selectedMsg ? (
                 <div className="flex flex-col h-full justify-between space-y-3">
                   <div className="space-y-2">
@@ -31871,13 +31944,57 @@ function WhatsAppWebIntegration() {
                         <h5 className="text-[13px] font-bold text-slate-900 dark:text-white">{selectedMsg.sender}</h5>
                         <p className="text-[11px] font-mono text-slate-500">{selectedMsg.phone}</p>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-mono">{selectedMsg.time}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => exportConversation("csv")}
+                          className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10.5px] font-semibold hover:bg-slate-300 transition"
+                          title="Export CSV"
+                        >
+                          📥 CSV
+                        </button>
+                        <button
+                          onClick={() => exportConversation("pdf")}
+                          className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10.5px] font-semibold hover:bg-slate-300 transition"
+                          title="Print / PDF"
+                        >
+                          🖨️ PDF
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[12px] text-slate-700 dark:text-slate-300 shadow-sm">
-                      {selectedMsg.text}
+                    <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[12px] text-slate-700 dark:text-slate-300 shadow-sm space-y-1">
+                      <p>{selectedMsg.text}</p>
+                      <div className="flex items-center justify-end gap-1 text-[10px] text-slate-400 font-mono">
+                        <span>{selectedMsg.time}</span>
+                        <span className="text-emerald-600 font-bold">{selectedMsg.readReceipt ? "✓✓" : "✓"}</span>
+                      </div>
                     </div>
 
-                    <div className="space-y-1 pt-1">
+                    {/* Quick Replies with Search & Categories */}
+                    <div className="space-y-2 pt-1">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+                        <div className="flex items-center gap-1">
+                          {["all", "billing", "logistics", "general"].map(cat => (
+                            <button
+                              key={cat}
+                              onClick={() => setTemplateCategory(cat)}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition ${templateCategory === cat ? "bg-emerald-600 text-white" : "bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300"}`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="relative w-full sm:w-44">
+                          <input
+                            type="text"
+                            value={templateSearch}
+                            onChange={(e) => setTemplateSearch(e.target.value)}
+                            placeholder="Filter templates..."
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-7 pr-2 py-1 text-[11px] text-slate-900 dark:text-white outline-none"
+                          />
+                          <span className="absolute left-2.5 top-1.5 text-slate-400 text-[10px]">🔍</span>
+                        </div>
+                      </div>
+
                       <div className="flex items-center justify-between">
                         <span className="text-[10.5px] font-bold text-slate-500 uppercase">Quick Reply Templates</span>
                         <button
@@ -31887,63 +32004,85 @@ function WhatsAppWebIntegration() {
                           {showNewTemplateInput ? "Cancel" : "+ Add Template"}
                         </button>
                       </div>
+
                       {showNewTemplateInput && (
-                        <div className="flex items-center gap-1.5 pt-1">
+                        <div className="flex flex-col sm:flex-row items-center gap-1.5 pt-1">
+                          <select
+                            value={newTemplateCategory}
+                            onChange={(e) => setNewTemplateCategory(e.target.value)}
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-white outline-none"
+                          >
+                            <option value="Billing">Billing</option>
+                            <option value="Logistics">Logistics</option>
+                            <option value="General">General</option>
+                          </select>
                           <input
                             type="text"
                             value={newTemplateText}
                             onChange={(e) => setNewTemplateText(e.target.value)}
                             placeholder="Enter custom quick reply template..."
-                            className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-[11px] text-slate-900 dark:text-white outline-none"
+                            className="flex-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-[11px] text-slate-900 dark:text-white outline-none"
                           />
                           <button
                             onClick={() => {
                               if (newTemplateText.trim()) {
-                                setTemplates([...templates, newTemplateText.trim()]);
+                                setTemplates([...templates, { id: Date.now(), category: newTemplateCategory, text: newTemplateText.trim() }]);
                                 setNewTemplateText("");
                                 setShowNewTemplateInput(false);
                                 notify("Quick reply template added.");
                               }
                             }}
-                            className="bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold"
+                            className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[11px] font-semibold shrink-0"
                           >
                             Save
                           </button>
                         </div>
                       )}
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {templates.map((tpl, i) => (
+
+                      <div className="flex flex-wrap gap-1.5 pt-1 max-h-24 overflow-y-auto">
+                        {filteredTemplates.length > 0 ? filteredTemplates.map((tpl) => (
                           <button
-                            key={i}
-                            onClick={() => setReplyText(tpl)}
-                            className="text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-slate-700 dark:text-slate-300 hover:border-emerald-500 text-left truncate max-w-[240px]"
-                            title={tpl}
+                            key={tpl.id}
+                            onClick={() => setReplyText(tpl.text)}
+                            className="text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-slate-700 dark:text-slate-300 hover:border-emerald-500 text-left truncate max-w-[260px]"
+                            title={`[${tpl.category}] ${tpl.text}`}
                           >
-                            ⚡ {tpl}
+                            ⚡ [{tpl.category}] {tpl.text}
                           </button>
-                        ))}
+                        )) : (
+                          <p className="text-[11px] text-slate-400">No matching templates found.</p>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                    <input
-                      type="text"
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="Type WhatsApp reply..."
-                      className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-[12px] text-slate-900 dark:text-white outline-none focus:border-emerald-600"
-                    />
-                    <button
-                      onClick={handleReply}
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 transition shrink-0"
-                    >
-                      Send
-                    </button>
+                  <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-700">
+                    {isTyping && (
+                      <div className="flex items-center gap-1.5 text-[10.5px] text-emerald-600 italic font-medium px-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping"></span>
+                        <span>Sending message via WhatsApp Web...</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Type WhatsApp reply..."
+                        className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-[12px] text-slate-900 dark:text-white outline-none focus:border-emerald-600"
+                      />
+                      <button
+                        onClick={handleReply}
+                        disabled={isTyping}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 transition shrink-0 disabled:opacity-50"
+                      >
+                        {isTyping ? "Sending..." : "Send"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center py-12 text-slate-400 space-y-1">
+                <div className="flex flex-col items-center justify-center h-full text-center py-16 text-slate-400 space-y-1">
                   <span className="text-2xl">💬</span>
                   <p className="text-[12px] font-medium">Select a customer conversation to view and respond.</p>
                 </div>
