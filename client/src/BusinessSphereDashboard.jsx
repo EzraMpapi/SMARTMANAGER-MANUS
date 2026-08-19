@@ -33283,7 +33283,7 @@ function TeamWorkspaces({ employees, currentUser }) {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <div>
             <h4 className="text-[13px] font-semibold text-[#111827]">Cross-Workspace Employee Membership Matrix</h4>
-            <p className="text-[11.5px] text-slate-500">Compare employee assignments across all active team workspaces instantly.</p>
+            <p className="text-[11.5px] text-slate-500">Compare employee assignments across all active team workspaces instantly. Filter by department or role badge below.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <input
