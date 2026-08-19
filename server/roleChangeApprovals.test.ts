@@ -48,6 +48,15 @@ describe("role-change approvals", () => {
     expect(dashboardSource).toContain('roleChangeApprovalsQuery={roleChangeApprovalsQuery}');
   });
 
+  it("includes dismiss and markRead server procedures and gated optional email/Slack escalation", () => {
+    expect(source).toContain("markNotificationRead");
+    expect(source).toContain("dismissNotification");
+    expect(source).toContain("RESEND_API_KEY");
+    expect(source).toContain("SLACK_WEBHOOK_URL");
+    expect(dashboardSource).toContain("markReadMutation");
+    expect(dashboardSource).toContain("dismissMutation");
+  });
+
   it("keeps approval-list visibility tenant-scoped and role-aware", () => {
     expect(source).toContain('const canReview = APPROVER_ROLES.has(String(profile.role || ""));');
     expect(source).toContain('approvals.filter((approval) => approval.data.targetUserId === profile.id)');

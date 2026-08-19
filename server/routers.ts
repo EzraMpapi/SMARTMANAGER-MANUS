@@ -15,7 +15,7 @@ import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
 import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
-import { decideRoleChangeApproval, listRoleChangeApprovals, requestRoleChangeApproval } from "./roleChangeApprovals";
+import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { getWorkspaceSettings, saveWorkspaceSettings } from "./workspaceSettings";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
@@ -584,6 +584,14 @@ export const appRouter = router({
       return result;
     }),
     ticketTimeline: protectedProcedure.input(z.object({ ticketId: z.string().uuid() })).query(({ ctx, input }) => listSupportTicketTimeline(ctx.req, input.ticketId)),
+  }),
+
+  roleChangeApprovals: router({
+    list: protectedProcedure.query(({ ctx }) => listRoleChangeApprovals(ctx.req)),
+    request: protectedProcedure.input(z.object({ requestedRole: z.string().min(1).max(80), reason: z.string().max(500).optional() })).mutation(({ ctx, input }) => requestRoleChangeApproval(ctx.req, input)),
+    decide: protectedProcedure.input(z.object({ approvalId: z.string().min(1), decision: z.enum(["approve", "reject"]), note: z.string().max(500).optional() })).mutation(({ ctx, input }) => decideRoleChangeApproval(ctx.req, input)),
+    markRead: protectedProcedure.input(z.object({ notificationId: z.string().min(1) })).mutation(({ ctx, input }) => markNotificationRead(ctx.req, input)),
+    dismiss: protectedProcedure.input(z.object({ notificationId: z.string().min(1) })).mutation(({ ctx, input }) => dismissNotification(ctx.req, input)),
   }),
 
   reportSchedules: router({
