@@ -872,3 +872,11 @@
 - [x] Phase 6: Complete build, test, responsive mobile/desktop layout, and production deployment verification.
 - [x] Phase 7: Publish comprehensive change report covering all 7 audit dimensions.
 - [x] Complete yesterday's update recovery, forensic diff tracing, and live production verification.
+- [x] Phase 1: Audit architecture and requirements for bank rates and DSE market intelligence.
+- [x] Phase 2: Define database schema, provider contracts, caching, and tenant-safe API boundaries.
+- [x] Phase 3: Implement secure backend market-intelligence services and tRPC procedures.
+- [x] Phase 4: Integrate bank-rate and DSE widgets into the dashboard with truthful status states.
+- [x] Phase 5: Run database migration, unit tests, build, and responsive checks.
+- [ ] Phase 6: Publish the verified production checkpoint and deliver the final report.
+- [x] Fix report-schedule regression mock to include the shared CC recipient parser and restore the full suite to green.
+- [ ] Perform post-publish authenticated live verification of the market-intelligence widgets on desktop and mobile.

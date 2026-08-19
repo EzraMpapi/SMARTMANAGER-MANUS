@@ -8,6 +8,7 @@ vi.mock("./_core/heartbeat", () => ({
 }));
 vi.mock("./transactionalEmail", () => ({
   assertTransactionalEmailDeliveryEnabled: vi.fn(),
+  parseEmailRecipients: (value: string | undefined) => value?.trim() ? value.split(/[;,]/).map((entry) => entry.trim()).filter(Boolean) : [],
 }));
 
 import { getDb } from "./db";

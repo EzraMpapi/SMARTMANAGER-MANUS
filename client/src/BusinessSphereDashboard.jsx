@@ -5463,14 +5463,86 @@ function ScheduleReportDialog({ company, currentUser, modules, dateRange, onClos
   );
 }
 
+function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
+  const snapshot = snapshotQuery.data;
+  const statusStyles = {
+    LIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    DELAYED: "bg-amber-50 text-amber-700 border-amber-200",
+    CACHED: "bg-slate-100 text-slate-600 border-slate-200",
+    UNAVAILABLE: "bg-rose-50 text-rose-700 border-rose-200",
+    AWAITING_CONFIGURATION: "bg-blue-50 text-blue-700 border-blue-200",
+  };
+  const statusLabel = (status) => status === "AWAITING_CONFIGURATION" ? "Awaiting configuration" : (status || "UNAVAILABLE");
+  const formatTime = (value) => value ? new Date(value).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Not available";
+  const bankRates = snapshot?.bankRates?.rows || [];
+  const dseRows = snapshot?.dse?.rows || [];
+  const bankStatus = snapshot?.bankRates?.status || "AWAITING_CONFIGURATION";
+  const dseStatus = snapshot?.dse?.status || "AWAITING_CONFIGURATION";
+  return (
+    <section className="space-y-3" aria-label="Market intelligence">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#16A34A]">Market intelligence</p>
+          <h2 className="mt-1 text-[17px] font-semibold tracking-tight text-[#111827]">Rates and market signals</h2>
+          <p className="mt-1 text-[12px] text-slate-500">Only provider-validated records are shown. No synthetic market values are used.</p>
+        </div>
+        <button type="button" onClick={() => snapshotQuery.refetch()} disabled={snapshotQuery.isFetching} className="inline-flex items-center justify-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 shadow-sm transition hover:border-[#16A34A]/50 hover:text-[#15803D] disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/30">
+          <RefreshCw size={13} className={snapshotQuery.isFetching ? "animate-spin" : ""} />
+          {snapshotQuery.isFetching ? "Refreshing" : "Refresh feeds"}
+        </button>
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF7E6] text-[#B7791F]"><Landmark size={17} /></div>
+              <div className="min-w-0"><h3 className="text-[13px] font-semibold text-[#111827]">Bank rates</h3><p className="truncate text-[11px] text-slate-400">BOT / approved provider feed</p></div>
+            </div>
+            <span className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-bold tracking-wide ${statusStyles[bankStatus] || statusStyles.UNAVAILABLE}`}>{statusLabel(bankStatus)}</span>
+          </div>
+          {snapshotQuery.isLoading ? (
+            <div className="mt-4 space-y-2" aria-label="Loading bank rates"><div className="h-9 animate-pulse rounded-lg bg-slate-100" /><div className="h-9 animate-pulse rounded-lg bg-slate-100" /></div>
+          ) : bankRates.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4"><p className="text-[12px] font-semibold text-slate-700">No validated bank-rate records</p><p className="mt-1 text-[11px] leading-relaxed text-slate-500">{snapshot?.bankRates?.message || "Configure a server-side data provider to activate this feed."}</p><button type="button" onClick={() => onNavigate("settings")} className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-[#15803D]">Open integration settings <ChevronRight size={13} /></button></div>
+          ) : (
+            <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[430px] text-left"><thead><tr className="border-b border-slate-100 text-[9px] font-semibold uppercase tracking-wider text-slate-400"><th className="pb-2">Bank</th><th className="pb-2">Pair</th><th className="pb-2 text-right">Buy</th><th className="pb-2 text-right">Sell</th><th className="pb-2 text-right">Lending</th></tr></thead><tbody>{bankRates.slice(0, 6).map((rate) => <tr key={`${rate.bankName}-${rate.currencyPair}`} className="border-b border-slate-50 last:border-0"><td className="py-2 text-[11px] font-semibold text-slate-700">{rate.bankName}</td><td className="py-2 text-[11px] text-slate-500">{rate.currencyPair}</td><td className="py-2 text-right font-mono text-[11px] text-slate-600">{rate.buyRate}</td><td className="py-2 text-right font-mono text-[11px] text-slate-600">{rate.sellRate}</td><td className="py-2 text-right font-mono text-[11px] text-slate-600">{rate.lendingRateAnnual}%</td></tr>)}</tbody></table></div>
+          )}
+          <p className="mt-3 text-[10px] text-slate-400">Source status: {bankStatus}. Checked {formatTime(snapshot?.asOf)}</p>
+        </article>
+        <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4F46E5]"><BarChart3 size={17} /></div><div className="min-w-0"><h3 className="text-[13px] font-semibold text-[#111827]">DSE market</h3><p className="truncate text-[11px] text-slate-400">Dar es Salaam Stock Exchange feed</p></div></div>
+            <span className={`shrink-0 rounded-full border px-2 py-1 text-[9px] font-bold tracking-wide ${statusStyles[dseStatus] || statusStyles.UNAVAILABLE}`}>{statusLabel(dseStatus)}</span>
+          </div>
+          {snapshotQuery.isLoading ? (
+            <div className="mt-4 space-y-2" aria-label="Loading DSE market"><div className="h-9 animate-pulse rounded-lg bg-slate-100" /><div className="h-9 animate-pulse rounded-lg bg-slate-100" /></div>
+          ) : dseRows.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4"><p className="text-[12px] font-semibold text-slate-700">No validated DSE records</p><p className="mt-1 text-[11px] leading-relaxed text-slate-500">{snapshot?.dse?.message || "Configure an approved DSE data provider to activate this feed."}</p><button type="button" onClick={() => onNavigate("settings")} className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-[#4F46E5]">Open integration settings <ChevronRight size={13} /></button></div>
+          ) : (
+            <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[380px] text-left"><thead><tr className="border-b border-slate-100 text-[9px] font-semibold uppercase tracking-wider text-slate-400"><th className="pb-2">Symbol</th><th className="pb-2">Company</th><th className="pb-2 text-right">LTP (TZS)</th><th className="pb-2 text-right">Change</th></tr></thead><tbody>{dseRows.slice(0, 6).map((ticker) => <tr key={ticker.symbol} className="border-b border-slate-50 last:border-0"><td className="py-2 text-[11px] font-bold text-slate-700">{ticker.symbol}</td><td className="max-w-[150px] truncate py-2 text-[11px] text-slate-500">{ticker.companyName}</td><td className="py-2 text-right font-mono text-[11px] text-slate-600">{ticker.priceTzs}</td><td className={`py-2 text-right font-mono text-[11px] ${ticker.changePercent >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{ticker.changePercent >= 0 ? "+" : ""}{ticker.changePercent}%</td></tr>)}</tbody></table></div>
+          )}
+          <p className="mt-3 text-[10px] text-slate-400">Source status: {dseStatus}. Checked {formatTime(snapshot?.asOf)}</p>
+        </article>
+      </div>
+    </section>
+  );
+}
+
 function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, onQuickAction, onNavigate }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
+  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
+  const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
+  const canViewMarketIntelligence = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager"].includes(currentUser.role);
   const vatAnomalySettingsQuery = trpc.traFiscal.getVatAnomalySettings.useQuery(
     { companyId: company?.id || "" },
     { enabled: Boolean(company?.id) },
   );
-  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
-  const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
+  const marketSnapshotInput = useMemo(() => ({ companyId: company?.id || "" }), [company?.id]);
+  const marketSnapshotQuery = trpc.marketIntelligence.snapshot.useQuery(marketSnapshotInput, {
+    enabled: Boolean(company?.id) && canViewMarketIntelligence,
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
   // Time period filter — Day/Week/Month/Year. The filter cuts both invoice
   // and expense rows by their date field, so every KPI on the dashboard
   // reflects the same window. "This session" is replaced by a real label.
@@ -5954,6 +6026,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
       <GettingStartedChecklist inventory={inventory} crm={crm} invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
       <AnalyticsReadiness invoices={invoices} crm={crm} inventory={inventory} expenses={expenses} onNavigate={onNavigate} />
+      {canViewMarketIntelligence && <MarketIntelligencePanel snapshotQuery={marketSnapshotQuery} onNavigate={onNavigate} />}
 
       {/* ══════════════════ COMPLIANCE DIGEST STATUS BADGE ══════════════════ */}
       {(() => {
@@ -34132,6 +34205,10 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
   const workspaceSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: IS_CONFIGURED });
   const workspaceSettingsMutation = trpc.workspaceSettings.save.useMutation();
   const canManageCompanySettings = ["owner", "Owner", "Organization Owner", "CEO", "Super Administrator", "System Administrator"].includes(currentUser.role);
+  const marketProviderConfigQuery = trpc.marketIntelligence.configuration.useQuery(
+    { companyId: company?.id || "" },
+    { enabled: Boolean(company?.id) && canManageCompanySettings },
+  );
   const dirty = JSON.stringify(draft) !== JSON.stringify(company);
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 
@@ -34218,6 +34295,28 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
             </button>
           )}
         </div>
+      </section>
+
+      <section className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm" aria-label="Market data provider status">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[12.5px] font-semibold text-slate-800">Market intelligence providers</p>
+            <p className="mt-1 max-w-2xl text-[11.5px] leading-relaxed text-slate-500">Bank-rate and DSE widgets use server-side provider credentials only. This screen reports connection readiness; it never exposes credentials or invents market values.</p>
+          </div>
+          <span className="shrink-0 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700">Admin configuration</span>
+        </div>
+        {canManageCompanySettings ? (
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {[{ label: "Bank rates", configured: marketProviderConfigQuery.data?.bankProviderConfigured, source: marketProviderConfigQuery.data?.bankSource }, { label: "DSE market data", configured: marketProviderConfigQuery.data?.dseProviderConfigured, source: marketProviderConfigQuery.data?.dseSource }].map((provider) => (
+              <div key={provider.label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div className="flex items-center justify-between gap-2"><p className="text-[11.5px] font-semibold text-slate-700">{provider.label}</p><span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${provider.configured ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{provider.configured ? "Configured" : "Awaiting provider"}</span></div>
+                <p className="mt-1 text-[10.5px] leading-relaxed text-slate-500">{provider.source || "Approved provider source"}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-3 text-[11px] text-slate-500">Provider readiness is visible only to authorized settings administrators.</p>
+        )}
       </section>
 
       {/* Role — demo switcher */}

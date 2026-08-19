@@ -24,6 +24,7 @@ import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
 import { traFiscalRouter } from "./traFiscalRouter";
 import { canReadTenantPushDeliveryHistory, listTenantPushDeliveryHistory } from "./notificationHistory";
+import { getMarketIntelligenceSnapshot, marketIntelligenceConfig } from "./marketIntelligence";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -50,6 +51,27 @@ export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   traFiscal: traFiscalRouter,
+  marketIntelligence: router({
+    configuration: protectedProcedure
+      .input(z.object({ companyId: z.string().min(1).max(100) }))
+      .query(async ({ ctx, input }) => {
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "You cannot access market-intelligence configuration for another workspace." });
+        return {
+          ...marketIntelligenceConfig,
+          bankSource: "Bank of Tanzania or an approved bank-rate provider",
+          dseSource: "Dar es Salaam Stock Exchange or an approved DSE distributor",
+        };
+      }),
+    snapshot: protectedProcedure
+      .input(z.object({ companyId: z.string().min(1).max(100) }))
+      .query(async ({ ctx, input }) => {
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "You cannot access market intelligence for another workspace." });
+        const snapshot = await getMarketIntelligenceSnapshot(input.companyId);
+        return { ...snapshot, configuration: marketIntelligenceConfig };
+      }),
+  }),
   accountRegistration: router({
     createConfirmedPasswordAccount: publicProcedure
       .input(z.object({ email: z.string().email().max(320), password: z.string().min(1).max(256) }))

@@ -268,3 +268,39 @@ export const traVatAnomalyEvents = mysqlTable("tra_vat_anomaly_events", {
 }));
 
 export type TraVatAnomalyEvent = typeof traVatAnomalyEvents.$inferSelect;
+
+export const bankMarketRates = mysqlTable("bank_market_rates", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  bankName: varchar("bankName", { length: 160 }).notNull(),
+  currencyPair: varchar("currencyPair", { length: 32 }).notNull().default("USD/TZS"),
+  buyRate: varchar("buyRate", { length: 32 }).notNull(),
+  sellRate: varchar("sellRate", { length: 32 }).notNull(),
+  lendingRateAnnual: varchar("lendingRateAnnual", { length: 32 }).notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("UNAVAILABLE"),
+  source: varchar("source", { length: 160 }).notNull().default("Bank of Tanzania (BOT) Feed"),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  companyBankIdx: index("bank_market_rates_company_bank_idx").on(table.companyId, table.bankName),
+  bankNameIdx: index("bank_market_rates_bank_name_idx").on(table.bankName),
+}));
+
+export type BankMarketRate = typeof bankMarketRates.$inferSelect;
+
+export const dseMarketTickers = mysqlTable("dse_market_tickers", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: varchar("companyId", { length: 64 }).notNull(),
+  symbol: varchar("symbol", { length: 32 }).notNull(),
+  companyName: varchar("companyName", { length: 160 }).notNull(),
+  priceTzs: varchar("priceTzs", { length: 32 }).notNull(),
+  changeTzs: varchar("changeTzs", { length: 32 }).notNull(),
+  changePercent: varchar("changePercent", { length: 32 }).notNull(),
+  volume: int("volume").notNull().default(0),
+  status: varchar("status", { length: 32 }).notNull().default("UNAVAILABLE"),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  companySymbolIdx: index("dse_market_tickers_company_symbol_idx").on(table.companyId, table.symbol),
+  symbolIdx: index("dse_market_tickers_symbol_idx").on(table.symbol),
+}));
+
+export type DseMarketTicker = typeof dseMarketTickers.$inferSelect;
