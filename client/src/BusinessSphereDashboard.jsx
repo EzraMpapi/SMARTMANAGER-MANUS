@@ -847,7 +847,8 @@ export async function runCompanyTableMutation(table, operation, payload, { match
       let query = sb(table);
       let res = null;
       if (operation === "insert") {
-        res = await query.insert(payload).single().run();
+        const insertQuery = query.insert(payload);
+        res = Array.isArray(payload) ? await insertQuery.run() : await insertQuery.single().run();
       } else if (operation === "update") {
         res = await query.eq(matchCol, matchVal).update(payload).single().run();
       } else if (operation === "delete") {
@@ -8296,8 +8297,11 @@ function DataImportPanel({ type, onClose, onImport }) {
     if (!rows?.data?.length) return;
     setBusy(true);
     try {
-      await onImport(rows.data);
-      setImported(rows.data.length);
+      const result = await onImport(rows.data);
+      if (result === false) throw new Error("The server did not confirm this import.");
+      const importedCount = Array.isArray(result) ? result.length : rows.data.length;
+      if (importedCount === 0) throw new Error("The server did not confirm any imported rows.");
+      setImported(importedCount);
     } catch (e) {
       setError(e.message || "Import failed partway through — some rows may not have been added.");
     } finally {
@@ -11946,27 +11950,34 @@ function Inventory({ inventory, suppliersHook }) {
   // same table and shape the manual "Add Item" form writes to. A missing
   // SKU gets a real generated one rather than being skipped, since a
   // spreadsheet of existing products often tracks items by name only.
-  async function importProducts(rows) {
+    async function importProducts(rows) {
     const validRows = rows.filter((r) => String(r.name || "").trim());
+    if (validRows.length === 0) throw new Error("No inventory rows contain an item name. Add a name column and retry.");
+    const importStamp = Date.now();
     const drafts = validRows.map((r, i) => ({
-      id: `ITM-${Date.now()}-${i}`,
-      sku: String(r.sku || "").trim() || `IMP-${Date.now().toString(36).toUpperCase()}-${i}`,
+      id: `ITM-${importStamp}-${i}`,
+      sku: String(r.sku || "").trim() || `IMP-${importStamp.toString(36).toUpperCase()}-${i}`,
       name: String(r.name).trim(), category: String(r.category || "General").trim() || "General",
-      warehouse: warehouses[0]?.id || "", qty: Number(r.qty_on_hand) || 0, reorder: 10,
+      warehouse: warehouses[0]?.id || null, qty: Number(r.qty_on_hand) || 0, reorder: 10,
       unitCost: Number(r.unit_cost) || 0, unit: "pcs", barcode: "", expiryDate: null,
     }));
     if (IS_CONFIGURED) {
       try {
-        const savedRows = await sb("inventory_items").insert(drafts.map((d) => ({
-          sku: d.sku, name: d.name, category: d.category, qty_on_hand: d.qty, reorder_level: d.reorder, unit_cost: d.unitCost, unit: d.unit,
-        }))).run();
-        const confirmed = (Array.isArray(savedRows) ? savedRows : [savedRows]).map(mapInventoryRow);
+        const payload = drafts.map((d) => ({
+          sku: d.sku, name: d.name, category: d.category, warehouse_id: d.warehouse,
+          qty_on_hand: d.qty, reorder_level: d.reorder, unit_cost: d.unitCost, unit: d.unit,
+          barcode: d.barcode, expiry_date: d.expiryDate,
+        }));
+        const result = await runCompanyTableMutation("inventory_items", "insert", payload);
+        if (result.error) throw result.error;
+        const savedRows = Array.isArray(result.data) ? result.data : result.data ? [result.data] : [];
+        if (savedRows.length !== payload.length) throw new Error(`The server confirmed ${savedRows.length} of ${payload.length} inventory rows.`);
+        const confirmed = savedRows.map(mapInventoryRow);
         setItems((prev) => [...confirmed, ...prev]);
         notify(`Imported ${confirmed.length} item${confirmed.length === 1 ? "" : "s"}.`);
         return confirmed;
       } catch (e) {
-        notify("Inventory import could not be saved to the server. Your selected rows are still available to retry.", "error");
-        return false;
+        throw new Error(persistenceFailureMessage("Importing inventory", e));
       }
     }
     setItems((prev) => [...drafts, ...prev]);

@@ -8040,3 +8040,13 @@
 - [x] Preserve the existing trend data, tenant scoping, filters, exports, loading, empty, and error states.
 - [x] Validate the new hierarchy at desktop and mobile widths.
 - [x] Save a checkpoint and push the verified layout refinement to SMARTMANAGER-MANUS.
+
+## Inventory import save error
+
+- [x] Trace the inventory import selection, save mutation, server procedure, database write, and error mapping.
+- [x] Reproduce or isolate the root cause of `Inventory import could not be saved to the server` using safe non-destructive tests.
+- [x] Fix the underlying import persistence or validation defect without fabricating inventory records.
+- [x] Preserve selected import rows and their validation context when a save fails so retry remains possible.
+- [x] Add regression tests for successful import, validation failure, tenant isolation, and retry-safe error handling.
+- [x] Validate TypeScript, full tests, production build, and the browser import flow.
+- [x] Save a checkpoint and push the verified inventory import fix to SMARTMANAGER-MANUS.

@@ -563,6 +563,33 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("returns every confirmed row for a bulk inventory insert and normalizes each row", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse([
+      { id: "item-1", name: "Solar inverter", amount: 380000, data: { sku: "SKU-001", qty_on_hand: 8, unit: "each" } },
+      { id: "item-2", name: "Battery pack", amount: 125000, data: { sku: "SKU-002", qty_on_hand: 4, unit: "each" } },
+    ], 201));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runCompanyTableMutation("inventory_items", "insert", [
+      { sku: "SKU-001", name: "Solar inverter", qty_on_hand: 8, unit_cost: 380000, unit: "each" },
+      { sku: "SKU-002", name: "Battery pack", qty_on_hand: 4, unit_cost: 125000, unit: "each" },
+    ]);
+
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(2);
+    expect(result.data?.map((row) => row.id)).toEqual(["item-1", "item-2"]);
+    const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(requestBody).toHaveLength(2);
+    expect(requestBody[0]).toMatchObject({ name: "Solar inverter", amount: 380000, data: { sku: "SKU-001", qty_on_hand: 8 } });
+    expect(requestBody[0]).not.toHaveProperty("company_id");
+  });
+
+  it("keeps the inventory import on the shared confirmed persistence boundary", () => {
+    expect(dashboardSource).toContain('runCompanyTableMutation("inventory_items", "insert"');
+    expect(dashboardSource).toContain("The server confirmed");
+    expect(dashboardSource).toContain("persistenceFailureMessage(\"Importing inventory\"");
+  });
+
   it("requires confirmed Supabase rows for CREATE, UPDATE, and DELETE mutations", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse([], 201));
     vi.stubGlobal("fetch", fetchMock);
