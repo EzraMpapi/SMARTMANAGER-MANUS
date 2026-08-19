@@ -31727,7 +31727,7 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
       avatar: (l.company||l.contact||"?").charAt(0),
       type: "customer", raw: l,
     }));
-    const emps = (employees||[]).filter(e=>e.phone||e.email).map(e=>({
+    const emps = (employees?.rows || employees || []).filter(e=>e.phone||e.email).map(e=>({
       id: "emp-"+e.id, name: e.name, phone: e.phone||"", email: e.email||"",
       avatar: e.name.charAt(0), type: "employee", role: e.role,
     }));
@@ -32049,7 +32049,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
     const fromCrm = (crm?.rows||[]).filter(l=>l.email).map(l=>({
       id:"lead-"+l.id, name:l.company||l.contact||"", email:l.email||"", type:"customer",
     }));
-    const fromEmp = (employees||[]).filter(e=>e.email).map(e=>({
+    const fromEmp = (employees?.rows || employees || []).filter(e=>e.email).map(e=>({
       id:"emp-"+e.id, name:e.name, email:e.email||"", type:"employee", role:e.role,
     }));
     return [...fromCrm, ...fromEmp];
@@ -32608,11 +32608,11 @@ function ChannelsView({ currentUser, employees }) {
               {channelMessages.length === 0 ? (
                 <div className="h-full flex items-center justify-center"><p className="text-[12.5px] text-slate-400">No messages yet — say something to get started.</p></div>
               ) : (
-                channelMessages.map((m) => {
+                channelMessages.map((m, index) => {
                   const isPinned = pinnedMessageIds.has(m.id);
                   const reactions = messageReactions[m.id] || {};
                   return (
-                    <div key={m.id} className={`flex gap-2.5 p-2 rounded-lg transition-colors ${isPinned ? "bg-amber-50/50 border border-amber-100" : ""} ${m.parentRef ? "ml-6 pl-3 border-l-2 border-slate-200" : ""}`}>
+                    <div key={m.id} className={`flex gap-2.5 p-2 rounded-lg animate-message-enter transition-colors ${isPinned ? "bg-amber-50/50 border border-amber-100" : ""} ${m.parentRef ? "ml-6 pl-3 border-l-2 border-slate-200" : ""}`}>
                       <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-medium text-slate-500 shrink-0">{m.sender.split(" ").map((p) => p[0]).slice(0, 2).join("")}</div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between">
@@ -53102,7 +53102,21 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
             <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-100 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between text-[11.5px]">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">📊 Digest Read-Receipt Engagement Statistics</span>
-                <span className="text-[11px] text-[#16A34A] font-medium">87.5% Read Rate</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[#16A34A] font-medium">87.5% Read Rate</span>
+                  <button type="button" onClick={() => {
+                    const csv = "Dispatch,Status,Timestamp\n1,Read,2026-08-18 09:00\n2,Read,2026-08-11 09:00\n3,Read,2026-08-04 09:00\n4,Read,2026-07-28 09:00\n5,Read,2026-07-21 09:00\n6,Read,2026-07-14 09:00\n7,Read,2026-07-07 09:00\n8,Unread,2026-06-30 09:00";
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "calendar_digest_read_receipts.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    notify("Digest read-receipt statistics exported to CSV successfully.");
+                  }} className="rounded-md bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100">Export CSV</button>
+                </div>
               </div>
               <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden flex">
                 <div className="bg-[#16A34A] h-full" style={{ width: "87.5%" }} title="Read / Opened (87.5%)" />

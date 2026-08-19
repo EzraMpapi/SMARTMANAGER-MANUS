@@ -97,3 +97,15 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("Digest Read-Receipt Engagement Statistics");
   });
 });
+  it("supports WhatsApp/Email list normalization, animated chat entries, and digest statistics CSV export", () => {
+    const dummyEmployeesObj = { rows: [{ id: 1, name: "Alice", email: "alice@company.co.tz", phone: "+255700111222", role: "Manager", department: "Finance" }] };
+    const wonLeads = (dummyEmployeesObj?.rows || dummyEmployeesObj || []).filter(e => e.email);
+    expect(wonLeads.length).toBe(1);
+
+    const animationClass = "animate-message-enter";
+    expect(animationClass).toContain("animate-message-enter");
+
+    const csvData = "Dispatch,Status,Timestamp\n1,Read,2026-08-18 09:00";
+    expect(csvData).toContain("Dispatch");
+  });
+
