@@ -8159,8 +8159,8 @@
 
 ## CI/CD, Coverage, and E2E Journey Automation
 - [x] Audit package scripts, dependency list, and GitHub actions structure.
-- [ ] Add test-coverage script and CI workflow with Vitest coverage reporting.
-- [ ] Add automated dependency security audit step (`pnpm audit` or equivalent) to CI.
-- [ ] Add automated browser journey simulation test spec covering login, onboarding, and module navigation.
-- [ ] Run local CI test suite, coverage export, dependency audit, and browser journey simulation.
-- [ ] Document CI automation usage and save published checkpoint.
+- [x] Add test-coverage script and CI workflow with Vitest coverage reporting.
+- [x] Add automated dependency security audit step (`pnpm audit` or equivalent) to CI.
+- [x] Add automated browser journey simulation test spec covering login, onboarding, and module navigation.
+- [x] Run local CI test suite, coverage export, dependency audit, and browser journey simulation.
+- [x] Document CI automation usage and save published checkpoint.
