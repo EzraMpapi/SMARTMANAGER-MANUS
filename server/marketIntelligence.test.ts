@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeBankRows, normalizeDseRows } from "./marketIntelligence";
+import { deriveMarketProviderUiStatus, normalizeBankRows, normalizeDseRows } from "./marketIntelligence";
 
 describe("market intelligence response validation", () => {
   it("normalizes validated bank-rate records and rejects incomplete rows", () => {
@@ -25,5 +25,12 @@ describe("market intelligence response validation", () => {
   it("does not turn missing arrays into synthetic financial records", () => {
     expect(normalizeBankRows({ message: "not configured" }, "provider")).toEqual([]);
     expect(normalizeDseRows({ message: "not configured" }, "provider")).toEqual([]);
+  });
+
+  it("derives truthful provider UI states without treating configuration gaps as outages", () => {
+    expect(deriveMarketProviderUiStatus({ status: "LIVE", providerConfigured: true, hasRows: true, hasOutage: false })).toBe("LIVE");
+    expect(deriveMarketProviderUiStatus({ status: "CACHED", providerConfigured: true, hasRows: true, hasOutage: false })).toBe("STALE");
+    expect(deriveMarketProviderUiStatus({ status: "UNAVAILABLE", providerConfigured: true, hasRows: true, hasOutage: true })).toBe("OUTAGE");
+    expect(deriveMarketProviderUiStatus({ status: "AWAITING_CONFIGURATION", providerConfigured: false, hasRows: false, hasOutage: false })).toBe("AWAITING_CONFIGURATION");
   });
 });

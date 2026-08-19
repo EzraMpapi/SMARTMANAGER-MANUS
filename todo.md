@@ -882,3 +882,8 @@
 - [x] Perform post-publish authenticated live verification of the market-intelligence widgets on desktop and mobile.
 - [x] Fix production market-intelligence role gate to recognize the authenticated lowercase `owner` role used by the live workspace.
 - [x] Re-publish and verify the market-intelligence section for owner on desktop and mobile after the role-gate fix.
+- [x] Add market-data provider status indicators and outage alerts to the executive dashboard.
+- [x] Implement severity-based status badges (LIVE, STALE, OUTAGE, AWAITING_CONFIGURATION) and freshness countdowns.
+- [x] Add an actionable outage banner for administrators when active feeds experience connection failures.
+- [x] Add Vitest regression tests covering market provider status evaluation and outage triggering.
+- [ ] Validate responsive layout on desktop and mobile, build, test, and publish checkpoint.

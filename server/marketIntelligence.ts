@@ -3,6 +3,14 @@ import { bankMarketRates, dseMarketTickers } from "../drizzle/schema";
 import { getDb } from "./db";
 
 export type MarketDataStatus = "LIVE" | "CACHED" | "DELAYED" | "UNAVAILABLE" | "AWAITING_CONFIGURATION";
+export type MarketProviderUiStatus = "LIVE" | "STALE" | "OUTAGE" | "AWAITING_CONFIGURATION";
+
+export function deriveMarketProviderUiStatus(input: { status: MarketDataStatus; providerConfigured: boolean; hasRows: boolean; hasOutage: boolean }): MarketProviderUiStatus {
+  if (!input.providerConfigured) return "AWAITING_CONFIGURATION";
+  if (input.hasOutage || input.status === "UNAVAILABLE") return "OUTAGE";
+  if (input.status === "DELAYED" || input.status === "CACHED") return "STALE";
+  return input.hasRows ? "LIVE" : "OUTAGE";
+}
 
 type BankRateRow = {
   bankName: string;
@@ -172,6 +180,8 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
   let dseStatus: MarketDataStatus = cachedDseRows.length ? "CACHED" : "UNAVAILABLE";
   let bankMessage = statusMessage(bankStatus, Boolean(providerConfig.bankUrl), "Bank rates");
   let dseMessage = statusMessage(dseStatus, Boolean(providerConfig.dseUrl), "DSE market");
+  let bankOutage: string | null = null;
+  let dseOutage: string | null = null;
 
   if (providerConfig.bankUrl) {
     try {
@@ -181,8 +191,14 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
         bankRows = latestUnique(normalized, (row) => `${row.bankName}:${row.currencyPair}`);
         bankStatus = normalized.some((row) => row.status === "DELAYED") ? "DELAYED" : "LIVE";
         bankMessage = statusMessage(bankStatus, true, "Bank rates");
+      } else {
+        bankOutage = "The configured bank-rate provider returned no validated records.";
+        bankStatus = "UNAVAILABLE";
+        bankMessage = `${statusMessage(bankStatus, true, "Bank rates")} Provider response was empty or invalid.`;
       }
     } catch (error) {
+      bankOutage = error instanceof Error ? error.message : "The configured bank-rate provider could not be reached.";
+      bankStatus = "UNAVAILABLE";
       bankMessage = `${statusMessage(bankStatus, true, "Bank rates")} Provider request failed safely.`;
     }
   } else if (!cachedBankRows.length) {
@@ -198,8 +214,14 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
         dseRows = latestUnique(normalized, (row) => row.symbol);
         dseStatus = normalized.some((row) => row.status === "DELAYED") ? "DELAYED" : "LIVE";
         dseMessage = statusMessage(dseStatus, true, "DSE market");
+      } else {
+        dseOutage = "The configured DSE provider returned no validated records.";
+        dseStatus = "UNAVAILABLE";
+        dseMessage = `${statusMessage(dseStatus, true, "DSE market")} Provider response was empty or invalid.`;
       }
     } catch (error) {
+      dseOutage = error instanceof Error ? error.message : "The configured DSE provider could not be reached.";
+      dseStatus = "UNAVAILABLE";
       dseMessage = `${statusMessage(dseStatus, true, "DSE market")} Provider request failed safely.`;
     }
   } else if (!cachedDseRows.length) {
@@ -209,8 +231,22 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
 
   return {
     asOf: new Date().toISOString(),
-    bankRates: { status: bankStatus, message: bankMessage, providerConfigured: Boolean(providerConfig.bankUrl), rows: bankRows },
-    dse: { status: dseStatus, message: dseMessage, providerConfigured: Boolean(providerConfig.dseUrl), rows: dseRows },
+    bankRates: {
+      status: bankStatus,
+      uiStatus: deriveMarketProviderUiStatus({ status: bankStatus, providerConfigured: Boolean(providerConfig.bankUrl), hasRows: bankRows.length > 0, hasOutage: Boolean(bankOutage) }),
+      message: bankMessage,
+      providerConfigured: Boolean(providerConfig.bankUrl),
+      outage: bankOutage ? { severity: "OUTAGE" as const, message: bankOutage } : null,
+      rows: bankRows,
+    },
+    dse: {
+      status: dseStatus,
+      uiStatus: deriveMarketProviderUiStatus({ status: dseStatus, providerConfigured: Boolean(providerConfig.dseUrl), hasRows: dseRows.length > 0, hasOutage: Boolean(dseOutage) }),
+      message: dseMessage,
+      providerConfigured: Boolean(providerConfig.dseUrl),
+      outage: dseOutage ? { severity: "OUTAGE" as const, message: dseOutage } : null,
+      rows: dseRows,
+    },
   };
 }
 

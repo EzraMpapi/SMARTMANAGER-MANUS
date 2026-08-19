@@ -4,7 +4,7 @@ import {
   Factory, Truck, Megaphone, Store, FileText, Brain, Settings,
   Search, Bell, ChevronDown, Plus, Phone, Mail, Building2, TrendingUp,
   TrendingDown, MoreHorizontal, ArrowUpRight, ArrowDownRight, Filter, X, Star,
-  CircleDollarSign, Clock, CheckCircle2, AlertCircle, Link, Trophy, Medal, Inbox, AtSign, CheckCheck, Lock, Send,
+  CircleDollarSign, Clock, CheckCircle2, AlertCircle, AlertTriangle, Link, Trophy, Medal, Inbox, AtSign, CheckCheck, Lock, Send,
   Printer, Download, ChevronRight, Ban, ReceiptText, ClipboardList,
   FileCheck, Trash2, Copy, Landmark, BarChart3, Grid3x3, List,
   FileSpreadsheet, FileImage, File, Folder, FolderOpen, UploadCloud,
@@ -5470,14 +5470,20 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
     DELAYED: "bg-amber-50 text-amber-700 border-amber-200",
     CACHED: "bg-slate-100 text-slate-600 border-slate-200",
     UNAVAILABLE: "bg-rose-50 text-rose-700 border-rose-200",
+    OUTAGE: "bg-rose-50 text-rose-700 border-rose-200",
+    STALE: "bg-amber-50 text-amber-700 border-amber-200",
     AWAITING_CONFIGURATION: "bg-blue-50 text-blue-700 border-blue-200",
   };
-  const statusLabel = (status) => status === "AWAITING_CONFIGURATION" ? "Awaiting configuration" : (status || "UNAVAILABLE");
+  const statusLabel = (status) => ({ AWAITING_CONFIGURATION: "Awaiting configuration", OUTAGE: "Outage", STALE: "Stale", LIVE: "Live", CACHED: "Cached", DELAYED: "Delayed", UNAVAILABLE: "Unavailable" }[status] || "Unavailable");
   const formatTime = (value) => value ? new Date(value).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Not available";
   const bankRates = snapshot?.bankRates?.rows || [];
   const dseRows = snapshot?.dse?.rows || [];
-  const bankStatus = snapshot?.bankRates?.status || "AWAITING_CONFIGURATION";
-  const dseStatus = snapshot?.dse?.status || "AWAITING_CONFIGURATION";
+  const bankStatus = snapshot?.bankRates?.uiStatus || snapshot?.bankRates?.status || "AWAITING_CONFIGURATION";
+  const dseStatus = snapshot?.dse?.uiStatus || snapshot?.dse?.status || "AWAITING_CONFIGURATION";
+  const providerAlerts = [
+    snapshot?.bankRates?.outage ? { label: "Bank rates", ...snapshot.bankRates.outage } : null,
+    snapshot?.dse?.outage ? { label: "DSE market", ...snapshot.dse.outage } : null,
+  ].filter(Boolean);
   return (
     <section className="space-y-3" aria-label="Market intelligence">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
@@ -5491,6 +5497,17 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
           {snapshotQuery.isFetching ? "Refreshing" : "Refresh feeds"}
         </button>
       </div>
+      {providerAlerts.length > 0 && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3.5 shadow-sm" role="alert" aria-live="assertive">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-700"><AlertTriangle size={16} /></div>
+              <div className="min-w-0"><p className="text-[12px] font-bold text-rose-800">Market-data outage detected</p><p className="mt-1 text-[11px] leading-relaxed text-rose-700">{providerAlerts.map((alert) => `${alert.label}: ${alert.message}`).join(" ")}</p><p className="mt-1 text-[10px] text-rose-600">Cached values remain clearly labelled when available. No new market values are shown until provider validation succeeds.</p></div>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2"><button type="button" onClick={() => snapshotQuery.refetch()} disabled={snapshotQuery.isFetching} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-60"><RefreshCw size={12} className={snapshotQuery.isFetching ? "animate-spin" : ""} />{snapshotQuery.isFetching ? "Checking…" : "Check again"}</button><button type="button" onClick={() => onNavigate("settings")} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-rose-700 hover:bg-rose-100">Provider settings <ChevronRight size={12} /></button></div>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
