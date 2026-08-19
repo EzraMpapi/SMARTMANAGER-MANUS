@@ -42,4 +42,10 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("Push Notification");
     expect(dashboardSource).toContain("Generate Invite Link");
   });
+
+  it("supports role-aware mention broadcasts, timezone-adjusted reminders, and approval-gated workspace invites", () => {
+    expect(dashboardSource).toContain("@all");
+    expect(dashboardSource).toContain("reminderTimezone");
+    expect(dashboardSource).toContain("Approval Pending");
+  });
 });

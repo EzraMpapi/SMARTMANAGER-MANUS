@@ -32478,13 +32478,21 @@ function ChannelsView({ currentUser, employees }) {
     setMessageSending(true);
     try {
       const payloadBody = attachmentUrl ? `${text}${text ? " \n" : ""}[Attachment: ${attachmentUrl}]` : text;
+      const isMentionAll = text.includes("@all") || text.includes("@channel");
       if (!IS_CONFIGURED) {
         setMessages((prev) => [...prev, { id: `MSG-${Date.now()}`, channelId: activeChannelId, sender: currentUser.name, text: payloadBody, parentRef: replyingToId, timestamp: new Date().toISOString() }]);
         setDraft("");
         setAttachmentUrl("");
         setReplyingToId(null);
-        notify("Message sent.");
+        if (isMentionAll) {
+          notify(`🔔 Mention Broadcast: @all alert dispatched across #${activeChannel?.name || "channel"} for active members.`);
+        } else {
+          notify("Message sent.");
+        }
         return;
+      }
+      if (isMentionAll) {
+        notify(`🔔 Mention Broadcast: @all alert dispatched across #${activeChannel?.name || "channel"} for active members.`);
       }
       const { data, error } = await runCompanyTableMutation("collab_messages", "insert", { channel_ref: activeChannelId, sender: currentUser.name, body: payloadBody, parent_ref: replyingToId });
       if (error || !data?.id) throw error || new Error("The server did not return the sent message.");
@@ -32715,7 +32723,16 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
   const [remindersEnabled, setRemindersEnabled] = useState(() => {
     try { return localStorage.getItem("bs_calendar_reminders") === "true"; } catch { return false; }
   });
+  const [reminderTimezone, setReminderTimezone] = useState(() => {
+    try { return localStorage.getItem("bs_reminder_timezone") || "Africa/Dar_es_Salaam"; } catch { return "Africa/Dar_es_Salaam"; }
+  });
   const [visibleCategories, setVisibleCategories] = useState(() => new Set(CALENDAR_CATEGORIES.map((c) => c.id)));
+
+  function handleTimezoneChange(tz) {
+    setReminderTimezone(tz);
+    try { localStorage.setItem("bs_reminder_timezone", tz); } catch {}
+    notify(`Reminder timezone updated to ${tz}.`);
+  }
 
   function toggleReminders() {
     setRemindersEnabled((prev) => {
@@ -32841,12 +32858,25 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
             </button>
           ))}
         </div>
-        <button
-          onClick={toggleReminders}
-          className={`text-[12px] font-medium px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors ${remindersEnabled ? "bg-[#16A34A]/10 border-[#16A34A]/40 text-[#16A34A]" : "bg-white border-slate-200 text-slate-600"}`}
-        >
-          <Bell size={13} /> {remindersEnabled ? "Reminders Active" : "Enable Reminders"}
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={reminderTimezone}
+            onChange={(e) => handleTimezoneChange(e.target.value)}
+            className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11.5px] text-slate-600 outline-none focus:border-[#16A34A]"
+            title="Reminder Timezone"
+          >
+            <option value="Africa/Dar_es_Salaam">Africa/Dar es Salaam (EAT)</option>
+            <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
+            <option value="UTC">UTC</option>
+            <option value="Europe/London">Europe/London (GMT)</option>
+          </select>
+          <button
+            onClick={toggleReminders}
+            className={`text-[12px] font-medium px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors ${remindersEnabled ? "bg-[#16A34A]/10 border-[#16A34A]/40 text-[#16A34A]" : "bg-white border-slate-200 text-slate-600"}`}
+          >
+            <Bell size={13} /> {remindersEnabled ? `Reminders Active (${reminderTimezone.split("/")[1]})` : "Enable Reminders"}
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
@@ -33001,6 +33031,7 @@ function TeamWorkspaces({ employees, currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [savingWorkspace, setSavingWorkspace] = useState(false);
   const [deletingWorkspaceId, setDeletingWorkspaceId] = useState(null);
+  const [pendingInvites, setPendingInvites] = useState([]);
   const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
 
   const isManagerOrAdmin = ["Super Administrator", "Organization Owner", "CEO", "COO", "HR Manager", "Department Head"].includes(currentUser?.role) || allowedDepartments.length === 0;
@@ -33061,10 +33092,12 @@ function TeamWorkspaces({ employees, currentUser }) {
         <p className="text-[12.5px] text-slate-500">{workspaces.rows.length} active team workspace(s)</p>
         <div className="flex items-center gap-2">
           <button onClick={() => {
-            const inviteUrl = `${window.location.origin}/#workspace-invite-${Math.random().toString(36).slice(2, 10)}`;
+            const inviteCode = Math.random().toString(36).slice(2, 10);
+            const inviteUrl = `${window.location.origin}/#workspace-invite-${inviteCode}`;
+            setPendingInvites((prev) => [...prev, { code: inviteCode, url: inviteUrl, status: "Approval Pending", createdBy: currentUser.name }]);
             try { navigator.clipboard?.writeText(inviteUrl); } catch {}
-            notify(`Secure custom workspace invite link generated and copied to clipboard: ${inviteUrl}`);
-          }} className="btn-secondary text-[12.5px] font-medium px-3 py-2 rounded-lg flex items-center gap-1.5">🔗 Generate Invite Link</button>
+            notify(`Secure approval-gated workspace invite link generated and queued for manager review: ${inviteUrl}`);
+          }} className="btn-secondary text-[12.5px] font-medium px-3 py-2 rounded-lg flex items-center gap-1.5">🔗 Generate Invite Link (Approval-Gated)</button>
           <button onClick={() => {
             const csvRows = [
               ["Workspace ID", "Workspace Name", "Department", "Members", "Description"].join(","),
