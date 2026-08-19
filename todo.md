@@ -8140,3 +8140,10 @@
 - [x] Add regression coverage for timeout persistence, branded background persistence, and passkey-registration email dispatch.
 - [x] Run the full test suite, TypeScript/build checks, and responsive verification.
 - [x] Save and publish the completed checkpoint.
+
+## Animated Logo & Loading Experience Integration
+- [x] Upload supplied logo animation video (`1000411291.mp4`) via `manus-upload-file --webdev`.
+- [x] Upgrade `BrandLogo.tsx` to support the video animation with robust fallback and accessibility handling.
+- [x] Integrate the animated branding into the project loading screen and authentication gateway startup states.
+- [x] Verify responsive behavior, reduced-motion preferences, test suite, and production build.
+- [x] Save published checkpoint with the animated branding integration.

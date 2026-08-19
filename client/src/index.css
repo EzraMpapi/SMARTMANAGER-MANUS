@@ -362,7 +362,20 @@
   }
 }
 
+.sm-animated-logo-fallback,
+.sm-animated-logo-video {
+  backface-visibility: hidden;
+}
+
+.sm-animated-logo-video {
+  z-index: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .sm-animated-logo-video {
+    display: none;
+  }
+
   main > section:has(> div.mb-8.flex.items-center.justify-between)::before,
   main > section:has(> div.mb-8.flex.items-center.justify-between)::after {
     animation: none;
