@@ -7,6 +7,9 @@ import { decodeLogoBase64, isRecognizedLogo, normalizeBrandColor, normalizeOrgan
 
 const MANAGE_SETTINGS_ROLES = new Set(["owner", "Owner", "Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
+const MIN_IDLE_TIMEOUT_MINUTES = 5;
+const MAX_IDLE_TIMEOUT_MINUTES = 120;
+const DEFAULT_IDLE_TIMEOUT_MINUTES = 30;
 
 type ImagePayload = { mimeType: "image/png" | "image/jpeg" | "image/webp"; base64: string };
 type ProfileData = {
@@ -15,23 +18,36 @@ type ProfileData = {
   bankName?: string; bankAccountName?: string; bankAccountNo?: string; bankBranch?: string; bankSwift?: string;
   businessHours?: Record<string, { open?: string; close?: string; closed?: boolean }>;
   coverPhoto?: string | null;
+  idleTimeoutMinutes?: number;
+  loginBackgroundImage?: string | null;
+  onboardingBackgroundImage?: string | null;
 };
 type SettingsInput = {
   name: string; country: string; currency: string; tin?: string; phone?: string; email?: string; address?: string; city?: string; website?: string;
   taxRate: number; timezone: string; businessScale: string; receiptWidth: string; receiptFooter?: string; receiptShowLogo: boolean;
   primaryColor: string; accentColor: string; industryFocus?: string; logo?: { mimeType: "image/png" | "image/jpeg" | "image/webp" | "image/svg+xml"; base64: string } | null; removeLogo?: boolean;
-  cover?: ImagePayload | null; removeCover?: boolean; profileData: ProfileData;
+  cover?: ImagePayload | null; removeCover?: boolean;
+  loginBackground?: ImagePayload | null; removeLoginBackground?: boolean;
+  onboardingBackground?: ImagePayload | null; removeOnboardingBackground?: boolean;
+  idleTimeoutMinutes?: number;
+  profileData: ProfileData;
 };
 
-function decodeCoverBase64(cover: ImagePayload) {
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(cover.base64)) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "Upload a PNG, JPEG, or WebP cover image." });
+function decodeImageBase64(image: ImagePayload, label: string) {
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(image.base64)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: `Upload a PNG, JPEG, or WebP ${label} image.` });
   }
-  const bytes = Buffer.from(cover.base64, "base64");
+  const bytes = Buffer.from(image.base64, "base64");
   if (!bytes.length || bytes.length > MAX_COVER_BYTES) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "Your cover image must be a non-empty image under 5 MB." });
+    throw new TRPCError({ code: "BAD_REQUEST", message: `Your ${label} image must be a non-empty image under 5 MB.` });
   }
-  return { bytes, ext: cover.mimeType === "image/png" ? "png" : cover.mimeType === "image/jpeg" ? "jpg" : "webp" };
+  return { bytes, ext: image.mimeType === "image/png" ? "png" : image.mimeType === "image/jpeg" ? "jpg" : "webp" };
+}
+
+function normalizeIdleTimeoutMinutes(value: unknown) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return DEFAULT_IDLE_TIMEOUT_MINUTES;
+  return Math.min(MAX_IDLE_TIMEOUT_MINUTES, Math.max(MIN_IDLE_TIMEOUT_MINUTES, Math.round(parsed)));
 }
 
 function requireSettingsManager(role: string) {
@@ -96,6 +112,9 @@ function cleanProfileData(data: ProfileData): ProfileData {
     facebook: data.facebook || "", instagram: data.instagram || "", twitter: data.twitter || "", linkedin: data.linkedin || "", tiktok: data.tiktok || "", whatsappBusiness: data.whatsappBusiness || "",
     bankName: data.bankName || "", bankAccountName: data.bankAccountName || "", bankAccountNo: data.bankAccountNo || "", bankBranch: data.bankBranch || "", bankSwift: data.bankSwift || "",
     businessHours: data.businessHours || {}, ...(data.coverPhoto ? { coverPhoto: data.coverPhoto } : {}),
+    idleTimeoutMinutes: normalizeIdleTimeoutMinutes(data.idleTimeoutMinutes),
+    ...(data.loginBackgroundImage ? { loginBackgroundImage: data.loginBackgroundImage } : {}),
+    ...(data.onboardingBackgroundImage ? { onboardingBackgroundImage: data.onboardingBackgroundImage } : {}),
   };
 }
 
@@ -115,6 +134,8 @@ export async function saveWorkspaceSettings(req: CreateExpressContextOptions["re
   const industryFocus = normalizeOrganizationIndustryFocus(input.industryFocus);
   let logoUrl: string | undefined;
   let coverUrl: string | undefined;
+  let loginBackgroundUrl: string | undefined;
+  let onboardingBackgroundUrl: string | undefined;
 
   if (input.logo) {
     const { bytes, ext } = decodeLogoBase64(input.logo);
@@ -122,9 +143,19 @@ export async function saveWorkspaceSettings(req: CreateExpressContextOptions["re
     logoUrl = (await storagePut(`workspace-branding/${profile.company_id}/logo.${ext}`, bytes, input.logo.mimeType)).url;
   }
   if (input.cover) {
-    const { bytes, ext } = decodeCoverBase64(input.cover);
+    const { bytes, ext } = decodeImageBase64(input.cover, "cover");
     if (!isRecognizedLogo(bytes, input.cover.mimeType)) throw new TRPCError({ code: "BAD_REQUEST", message: "The selected cover image does not match its declared image type." });
     coverUrl = (await storagePut(`workspace-branding/${profile.company_id}/cover.${ext}`, bytes, input.cover.mimeType)).url;
+  }
+  if (input.loginBackground) {
+    const { bytes, ext } = decodeImageBase64(input.loginBackground, "login background");
+    if (!isRecognizedLogo(bytes, input.loginBackground.mimeType)) throw new TRPCError({ code: "BAD_REQUEST", message: "The selected login background does not match its declared image type." });
+    loginBackgroundUrl = (await storagePut(`workspace-branding/${profile.company_id}/auth-login-background.${ext}`, bytes, input.loginBackground.mimeType)).url;
+  }
+  if (input.onboardingBackground) {
+    const { bytes, ext } = decodeImageBase64(input.onboardingBackground, "onboarding background");
+    if (!isRecognizedLogo(bytes, input.onboardingBackground.mimeType)) throw new TRPCError({ code: "BAD_REQUEST", message: "The selected onboarding background does not match its declared image type." });
+    onboardingBackgroundUrl = (await storagePut(`workspace-branding/${profile.company_id}/auth-onboarding-background.${ext}`, bytes, input.onboardingBackground.mimeType)).url;
   }
 
   const companyPatch = {
@@ -134,7 +165,13 @@ export async function saveWorkspaceSettings(req: CreateExpressContextOptions["re
     receipt_show_logo: input.receiptShowLogo, brand_primary_color: primaryColor, brand_accent_color: accentColor,
     ...(industryFocus ? { category: industryFocus } : {}), ...(logoUrl ? { logo: logoUrl } : input.removeLogo ? { logo: null } : {}),
   };
-  const profileData = cleanProfileData({ ...input.profileData, ...(coverUrl ? { coverPhoto: coverUrl } : input.removeCover ? { coverPhoto: null } : {}) });
+  const profileData = cleanProfileData({
+    ...input.profileData,
+    ...(coverUrl ? { coverPhoto: coverUrl } : input.removeCover ? { coverPhoto: null } : {}),
+    idleTimeoutMinutes: normalizeIdleTimeoutMinutes(input.idleTimeoutMinutes ?? input.profileData.idleTimeoutMinutes),
+    ...(loginBackgroundUrl ? { loginBackgroundImage: loginBackgroundUrl } : input.removeLoginBackground ? { loginBackgroundImage: null } : {}),
+    ...(onboardingBackgroundUrl ? { onboardingBackgroundImage: onboardingBackgroundUrl } : input.removeOnboardingBackground ? { onboardingBackgroundImage: null } : {}),
+  });
 
   try {
     const company = await patchCompany(profile.company_id, token, companyPatch);

@@ -75,14 +75,37 @@ function AuthInput({ label, icon, children }) {
   return <label className="block text-[13px] font-semibold text-slate-700"><span>{label}</span><span className="mt-2 flex h-[58px] items-center rounded-2xl border border-slate-200 bg-white px-2.5 transition focus-within:border-emerald-600 focus-within:ring-4 focus-within:ring-emerald-500/10 hover:border-emerald-200"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700">{icon}</span>{children}</span></label>;
 }
 
-export function EnterpriseAuthShell({ title, subtitle, children, asideTitle = "Your business, in command.", asideCopy = "Bring finance, sales, people, inventory, and insight together in one secure workspace.", motion = false }) {
+export function readAuthBranding() {
+  if (typeof window === "undefined") return {};
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem("bs_auth_branding") || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function writeAuthBranding(branding) {
+  if (typeof window === "undefined") return;
+  const safe = {
+    loginBackgroundImage: typeof branding?.loginBackgroundImage === "string" ? branding.loginBackgroundImage : null,
+    onboardingBackgroundImage: typeof branding?.onboardingBackgroundImage === "string" ? branding.onboardingBackgroundImage : null,
+  };
+  window.localStorage.setItem("bs_auth_branding", JSON.stringify(safe));
+}
+
+export function EnterpriseAuthShell({ title, subtitle, children, asideTitle = "Your business, in command.", asideCopy = "Bring finance, sales, people, inventory, and insight together in one secure workspace.", motion = false, authSurface = "login" }) {
   const { lang, setLang } = useLanguage();
   const ui = copy[lang];
   const [industry, setIndustry] = useState(readRememberedOrganizationIndustryFocus);
+  const [authBranding] = useState(readAuthBranding);
+  const backgroundImage = authSurface === "onboarding" ? authBranding.onboardingBackgroundImage : authBranding.loginBackgroundImage;
+  const sceneStyle = { fontFamily: "'Inter', system-ui, sans-serif", ...(backgroundImage ? { backgroundImage: `linear-gradient(120deg, rgba(247,251,248,.97), rgba(247,251,248,.88)), url("${backgroundImage}")`, backgroundPosition: "center", backgroundSize: "cover" } : {}) };
+  const asideStyle = backgroundImage ? { backgroundImage: `linear-gradient(145deg, rgba(7,28,21,.96), rgba(7,28,21,.78)), url("${backgroundImage}")`, backgroundPosition: "center", backgroundSize: "cover" } : undefined;
 
-  return <div className={`sm-auth-scene min-h-screen overflow-x-hidden bg-[#f7fbf8] text-slate-950 ${motion ? "auth-screen-motion" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+  return <div className={`sm-auth-scene min-h-screen overflow-x-hidden bg-[#f7fbf8] text-slate-950 ${motion ? "auth-screen-motion" : ""}`} style={sceneStyle}>
     <div className="mx-auto flex min-h-screen max-w-[1680px]">
-      <aside className="relative hidden w-[45%] overflow-hidden bg-[#071c15] px-12 py-10 lg:flex lg:flex-col lg:justify-between xl:px-16">
+      <aside className="relative hidden w-[45%] overflow-hidden bg-[#071c15] px-12 py-10 lg:flex lg:flex-col lg:justify-between xl:px-16" style={asideStyle}>
         <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "radial-gradient(circle at 18% 22%, rgba(0,166,81,.38), transparent 27%), radial-gradient(circle at 92% 78%, rgba(31,117,254,.2), transparent 27%), linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)", backgroundSize: "auto,auto,54px 54px,54px 54px" }} />
         <LoginModuleEcosystem variant="desktop" industry={industry} />
         <div className="relative z-10"><BrandLogo variant="full" priority className="w-[min(25rem,95%)] rounded-[1.7rem]" /></div>

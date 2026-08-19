@@ -8131,3 +8131,12 @@
 - [x] Add automated session timeout warning with a visible countdown timer for idle administrative sessions.
 - [x] Verify all tests, TypeScript contracts, and responsive layouts.
 - [x] Save published checkpoint for the security and branding enhancements.
+
+## Tenant Security and Branding Enhancements
+- [x] Add a tenant-wide inactivity timeout configuration slider in administrative security settings and persist the selected idle limit per company.
+- [x] Wire the persisted tenant idle limit into the administrator session warning and countdown without changing the frozen login page.
+- [x] Add custom background image upload controls for the enterprise login and onboarding split screens with tenant-safe storage and preview states.
+- [x] Dispatch an automated email notification after an administrator successfully registers a biometric passkey, through the server-side transactional email boundary.
+- [x] Add regression coverage for timeout persistence, branded background persistence, and passkey-registration email dispatch.
+- [x] Run the full test suite, TypeScript/build checks, and responsive verification.
+- [x] Save and publish the completed checkpoint.

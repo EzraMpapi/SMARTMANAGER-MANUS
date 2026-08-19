@@ -26,6 +26,7 @@ import { traFiscalRouter } from "./traFiscalRouter";
 import { canReadTenantPushDeliveryHistory, listTenantPushDeliveryHistory } from "./notificationHistory";
 import { getMarketIntelligenceSnapshot, marketIntelligenceConfig } from "./marketIntelligence";
 import { getMarketGovernanceData, upsertMarketProviderSettings } from "./marketGovernance";
+import { notifyPasskeyRegistration } from "./passkeyRegistrationNotification";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -119,6 +120,11 @@ export const appRouter = router({
     createConfirmedPasswordAccount: publicProcedure
       .input(z.object({ email: z.string().email().max(320), password: z.string().min(1).max(256) }))
       .mutation(async ({ ctx, input }) => provisionConfirmedPasswordAccount(input, ctx.req.ip || ctx.req.socket.remoteAddress || "unknown")),
+  }),
+  passkeySecurity: router({
+    notifyRegistered: protectedProcedure
+      .input(z.object({ friendlyName: z.string().trim().max(120).optional() }))
+      .mutation(({ ctx, input }) => notifyPasskeyRegistration(ctx.req, input)),
   }),
   ai: router({
     listModels: protectedProcedure.query(async () => {
@@ -498,11 +504,15 @@ export const appRouter = router({
       primaryColor: z.string().min(7).max(7), accentColor: z.string().min(7).max(7), industryFocus: z.enum(["general", "retail", "manufacturing", "services", "healthcare", "education", "hospitality"]).optional(),
       logo: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]), base64: z.string().min(1).max(2_800_000) }).nullable().optional(), removeLogo: z.boolean().optional(),
       cover: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]), base64: z.string().min(1).max(7_000_000) }).nullable().optional(), removeCover: z.boolean().optional(),
+      loginBackground: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]), base64: z.string().min(1).max(7_000_000) }).nullable().optional(), removeLoginBackground: z.boolean().optional(),
+      onboardingBackground: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]), base64: z.string().min(1).max(7_000_000) }).nullable().optional(), removeOnboardingBackground: z.boolean().optional(),
+      idleTimeoutMinutes: z.number().int().min(5).max(120).optional(),
       profileData: z.object({
         tagline: z.string().max(200).optional(), description: z.string().max(2_000).optional(), businessType: z.string().max(120).optional(), foundedYear: z.string().max(4).optional(), regNumber: z.string().max(160).optional(), postalCode: z.string().max(40).optional(),
         facebook: z.string().max(200).optional(), instagram: z.string().max(200).optional(), twitter: z.string().max(200).optional(), linkedin: z.string().max(200).optional(), tiktok: z.string().max(200).optional(), whatsappBusiness: z.string().max(80).optional(),
         bankName: z.string().max(160).optional(), bankAccountName: z.string().max(200).optional(), bankAccountNo: z.string().max(120).optional(), bankBranch: z.string().max(200).optional(), bankSwift: z.string().max(80).optional(),
         businessHours: z.record(z.string(), z.object({ open: z.string().max(10).optional(), close: z.string().max(10).optional(), closed: z.boolean().optional() })).optional(), coverPhoto: z.string().url().max(2_000).nullable().optional(),
+        idleTimeoutMinutes: z.number().int().min(5).max(120).optional(), loginBackgroundImage: z.string().url().max(2_000).nullable().optional(), onboardingBackgroundImage: z.string().url().max(2_000).nullable().optional(),
       }),
     })).mutation(({ ctx, input }) => saveWorkspaceSettings(ctx.req, input)),
   }),
