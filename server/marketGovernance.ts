@@ -15,30 +15,73 @@ export async function upsertMarketProviderSettings(companyId: string, input: {
   bankProviderApiKey?: string;
   dseProviderUrl?: string;
   dseProviderApiKey?: string;
+  cbkProviderUrl?: string;
+  cbkProviderApiKey?: string;
+  bouProviderUrl?: string;
+  bouProviderApiKey?: string;
+  bnrProviderUrl?: string;
+  bnrProviderApiKey?: string;
   slackWebhookUrl?: string;
   outageEmailRecipients?: string;
   alertOnOutage?: boolean;
   refreshIntervalSeconds?: number;
   scheduleWeeklyEmail?: boolean;
   latencyThresholdMs?: number;
-}) {
+  alertCooldownMinutes?: number;
+}, userSession?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable.");
   const refreshInterval = Math.max(15, Math.min(3600, input.refreshIntervalSeconds ?? 60));
   const threshold = Math.max(200, Math.min(30000, input.latencyThresholdMs ?? 1500));
+  const cooldownMinutes = Math.max(5, Math.min(1440, input.alertCooldownMinutes ?? 15));
   const existing = await getMarketProviderSettings(companyId);
+  const nextWeeklyEmail = input.scheduleWeeklyEmail ?? existing?.scheduleWeeklyEmail ?? false;
+  let taskUid = existing?.scheduleCronTaskUid;
+
+  // Manage Heartbeat cron job for weekly digest if requested
+  try {
+    const { createHeartbeatJob, deleteHeartbeatJob } = await import("./_core/heartbeat");
+    if (nextWeeklyEmail && !taskUid) {
+      if (!userSession) throw new Error("Authenticated session required to create the weekly digest schedule.");
+      const job = await createHeartbeatJob({
+        name: `market-health-digest-${companyId}`,
+        cron: "0 0 8 * * 1", // Every Monday at 08:00 UTC
+        path: "/api/scheduled/marketHealthDigest",
+        payload: { companyId },
+        description: `Weekly market health email digest for ${companyId}`,
+      }, userSession);
+      taskUid = job.taskUid;
+    } else if (!nextWeeklyEmail && taskUid) {
+      if (userSession) {
+        await deleteHeartbeatJob(taskUid, userSession).catch(() => {});
+        taskUid = null;
+      }
+    }
+  } catch (err) {
+    // Enabling a digest without a durable callback would be misleading; fail closed.
+    if (nextWeeklyEmail && !taskUid) throw err;
+  }
+
   if (existing) {
     await db.update(marketProviderSettings).set({
       bankProviderUrl: input.bankProviderUrl ?? existing.bankProviderUrl,
       bankProviderApiKey: input.bankProviderApiKey ?? existing.bankProviderApiKey,
       dseProviderUrl: input.dseProviderUrl ?? existing.dseProviderUrl,
       dseProviderApiKey: input.dseProviderApiKey ?? existing.dseProviderApiKey,
+      cbkProviderUrl: input.cbkProviderUrl ?? existing.cbkProviderUrl,
+      cbkProviderApiKey: input.cbkProviderApiKey ?? existing.cbkProviderApiKey,
+      bouProviderUrl: input.bouProviderUrl ?? existing.bouProviderUrl,
+      bouProviderApiKey: input.bouProviderApiKey ?? existing.bouProviderApiKey,
+      bnrProviderUrl: input.bnrProviderUrl ?? existing.bnrProviderUrl,
+      bnrProviderApiKey: input.bnrProviderApiKey ?? existing.bnrProviderApiKey,
       slackWebhookUrl: input.slackWebhookUrl ?? existing.slackWebhookUrl,
       outageEmailRecipients: input.outageEmailRecipients ?? existing.outageEmailRecipients,
       alertOnOutage: input.alertOnOutage ?? existing.alertOnOutage,
       refreshIntervalSeconds: input.refreshIntervalSeconds !== undefined ? refreshInterval : existing.refreshIntervalSeconds,
-      scheduleWeeklyEmail: input.scheduleWeeklyEmail ?? existing.scheduleWeeklyEmail,
+      scheduleWeeklyEmail: nextWeeklyEmail,
       latencyThresholdMs: input.latencyThresholdMs !== undefined ? threshold : existing.latencyThresholdMs,
+      alertCooldownMinutes: input.alertCooldownMinutes !== undefined ? cooldownMinutes : existing.alertCooldownMinutes,
+      scheduleCronTaskUid: taskUid,
       updatedAt: new Date(),
     }).where(eq(marketProviderSettings.companyId, companyId));
   } else {
@@ -48,12 +91,20 @@ export async function upsertMarketProviderSettings(companyId: string, input: {
       bankProviderApiKey: input.bankProviderApiKey || null,
       dseProviderUrl: input.dseProviderUrl || null,
       dseProviderApiKey: input.dseProviderApiKey || null,
+      cbkProviderUrl: input.cbkProviderUrl || null,
+      cbkProviderApiKey: input.cbkProviderApiKey || null,
+      bouProviderUrl: input.bouProviderUrl || null,
+      bouProviderApiKey: input.bouProviderApiKey || null,
+      bnrProviderUrl: input.bnrProviderUrl || null,
+      bnrProviderApiKey: input.bnrProviderApiKey || null,
       slackWebhookUrl: input.slackWebhookUrl || null,
       outageEmailRecipients: input.outageEmailRecipients || null,
       alertOnOutage: input.alertOnOutage ?? true,
       refreshIntervalSeconds: refreshInterval,
-      scheduleWeeklyEmail: input.scheduleWeeklyEmail ?? false,
+      scheduleWeeklyEmail: nextWeeklyEmail,
       latencyThresholdMs: threshold,
+      alertCooldownMinutes: cooldownMinutes,
+      scheduleCronTaskUid: taskUid || null,
     });
   }
   return getMarketProviderSettings(companyId);
@@ -108,6 +159,20 @@ async function dispatchMarketOutageNotification(companyId: string, providerType:
     const settings = await getMarketProviderSettings(companyId);
     if (!settings || !settings.alertOnOutage) return;
 
+    // Cooldown check: prevent duplicate alerts within 15 minutes
+    const now = Date.now();
+    const cooldownMs = Math.max(5, Math.min(1440, settings.alertCooldownMinutes ?? 15)) * 60 * 1000;
+    if (settings.lastAlertDispatchedAt && now - new Date(settings.lastAlertDispatchedAt).getTime() < cooldownMs) {
+      return;
+    }
+
+    const db = await getDb();
+    if (db) {
+      await db.update(marketProviderSettings).set({
+        lastAlertDispatchedAt: new Date(),
+      }).where(eq(marketProviderSettings.companyId, companyId));
+    }
+
     if (settings.slackWebhookUrl) {
       await fetch(settings.slackWebhookUrl, {
         method: "POST",
@@ -148,6 +213,9 @@ export async function getMarketGovernanceData(companyId: string) {
       ...settingsRows[0],
       bankProviderApiKey: settingsRows[0].bankProviderApiKey ? "••••••••" : "",
       dseProviderApiKey: settingsRows[0].dseProviderApiKey ? "••••••••" : "",
+      cbkProviderApiKey: settingsRows[0].cbkProviderApiKey ? "••••••••" : "",
+      bouProviderApiKey: settingsRows[0].bouProviderApiKey ? "••••••••" : "",
+      bnrProviderApiKey: settingsRows[0].bnrProviderApiKey ? "••••••••" : "",
     } : null,
     uptimeLogs,
     incidents,

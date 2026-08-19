@@ -895,3 +895,9 @@
 
 - [x] Add real-time BOT/DSE feed health widget with truthful status, latency, last-check time, and responsive polling controls
 - [x] Add regression coverage and complete desktop/mobile validation for the live feed health widget
+
+- [x] Connect weekly market health digest toggle to a protected Heartbeat callback with PDF attachment and delivery-history record
+- [x] Add cooldown-based deduplication for repeated market latency-spike alerts
+- [x] Add secure CBK/BOU/BNR provider configuration fields and remove unverified regional benchmark placeholders
+- [ ] Supply approved CBK/BOU/BNR provider URLs and API keys, then validate their response mappings
+- [x] Add regression coverage and validate schedule callback, alert cooldown, and truthful regional provider states

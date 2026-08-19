@@ -11,6 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { scheduledDashboardReportHandler } from "../scheduledDashboardReport";
 import { scheduledSchemaDriftMonitorHandler } from "../scheduledSchemaDriftMonitor";
 import { scheduledTraVatAnomalyHandler } from "../scheduledTraVatAnomaly";
+import { scheduledMarketHealthDigestHandler } from "../scheduledMarketHealthDigest";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +43,7 @@ async function startServer() {
   app.post("/api/scheduled/dashboardReport", scheduledDashboardReportHandler);
   app.post("/api/scheduled/schemaDriftMonitor", scheduledSchemaDriftMonitorHandler);
   app.post("/api/scheduled/traVatAnomaly", scheduledTraVatAnomalyHandler);
+  app.post("/api/scheduled/marketHealthDigest", scheduledMarketHealthDigestHandler);
   app.post("/api/webhooks/backup-complete", async (req, res) => {
     try {
       const { handleBackupCompletionWebhook } = await import("../backupWebhook");

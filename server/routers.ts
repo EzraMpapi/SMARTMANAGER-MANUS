@@ -86,16 +86,26 @@ export const appRouter = router({
         bankProviderApiKey: z.string().max(300).optional(),
         dseProviderUrl: z.string().url().max(500).or(z.literal("")).optional(),
         dseProviderApiKey: z.string().max(300).optional(),
+        cbkProviderUrl: z.string().url().max(500).or(z.literal("")).optional(),
+        cbkProviderApiKey: z.string().max(300).optional(),
+        bouProviderUrl: z.string().url().max(500).or(z.literal("")).optional(),
+        bouProviderApiKey: z.string().max(300).optional(),
+        bnrProviderUrl: z.string().url().max(500).or(z.literal("")).optional(),
+        bnrProviderApiKey: z.string().max(300).optional(),
         slackWebhookUrl: z.string().url().max(500).or(z.literal("")).optional(),
         outageEmailRecipients: z.string().max(500).optional(),
         alertOnOutage: z.boolean(),
         refreshIntervalSeconds: z.number().int().min(15).max(3600).optional(),
+        scheduleWeeklyEmail: z.boolean().optional(),
+        latencyThresholdMs: z.number().int().min(200).max(30000).optional(),
+        alertCooldownMinutes: z.number().int().min(5).max(1440).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const profile = await resolveVerifiedProfile(ctx.req);
         if (profile.profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Unauthorized workspace governance update." });
         const { companyId, ...settings } = input;
-        const updated = await upsertMarketProviderSettings(companyId, settings);
+        const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+        const updated = await upsertMarketProviderSettings(companyId, settings, sessionToken);
         await recordAuditLog(profile.profile, {
           companyId,
           action: "Market provider governance settings saved",

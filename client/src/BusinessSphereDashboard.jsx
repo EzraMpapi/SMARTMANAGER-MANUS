@@ -5595,25 +5595,24 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {(snapshot?.regionalPeers || [
-                        { country: "Tanzania", centralBank: "Bank of Tanzania (BOT)", currencyPair: "USD/TZS", policyRateAnnual: 6.0, benchmarkLending: 15.8, status: "LIVE", source: "BOT Feed" },
-                        { country: "Kenya", centralBank: "Central Bank of Kenya (CBK)", currencyPair: "USD/KES", policyRateAnnual: 12.5, benchmarkLending: 16.5, status: "LIVE", source: "CBK Feed" },
-                        { country: "Uganda", centralBank: "Bank of Uganda (BOU)", currencyPair: "USD/UGX", policyRateAnnual: 10.2, benchmarkLending: 17.1, status: "LIVE", source: "BOU Feed" },
-                        { country: "Rwanda", centralBank: "National Bank of Rwanda (BNR)", currencyPair: "USD/RWF", policyRateAnnual: 7.5, benchmarkLending: 16.2, status: "LIVE", source: "BNR Feed" },
-                      ]).map((peer, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/60 transition">
-                          <td className="px-3 py-2 font-semibold text-slate-800">{peer.country}</td>
-                          <td className="px-3 py-2 text-slate-600">{peer.centralBank}</td>
-                          <td className="px-3 py-2 font-mono text-slate-600">{peer.currencyPair}</td>
-                          <td className="px-3 py-2 font-mono font-bold text-right text-slate-800">{peer.policyRateAnnual}%</td>
-                          <td className="px-3 py-2 font-mono font-bold text-right text-emerald-700">{peer.benchmarkLending}%</td>
-                          <td className="px-3 py-2 text-center">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> {peer.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {(snapshot?.regionalPeers || []).map((peer, idx) => {
+                        const isLive = peer.status === "LIVE";
+                        const isConfigured = peer.providerConfigured;
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50/60 transition">
+                            <td className="px-3 py-2 font-semibold text-slate-800">{peer.country}</td>
+                            <td className="px-3 py-2 text-slate-600"><span>{peer.centralBank}</span><span className="block text-[9px] text-slate-400">{peer.source}</span></td>
+                            <td className="px-3 py-2 font-mono text-slate-600">{peer.currencyPair}</td>
+                            <td className="px-3 py-2 font-mono font-bold text-right text-slate-800">{peer.policyRateAnnual != null ? `${peer.policyRateAnnual}%` : "—"}</td>
+                            <td className="px-3 py-2 font-mono font-bold text-right text-emerald-700">{peer.benchmarkLending != null ? `${peer.benchmarkLending}%` : "—"}</td>
+                            <td className="px-3 py-2 text-center">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold ${isLive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : isConfigured ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-blue-50 text-blue-700 border-blue-200"} border`}>
+                                <span className={`h-1.5 w-1.5 rounded-full ${isLive ? "bg-emerald-500 animate-pulse" : isConfigured ? "bg-amber-500" : "bg-blue-500"}`} /> {peer.status.replaceAll("_", " ")}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -34458,12 +34457,19 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
           bankProviderApiKey: "",
           dseProviderUrl: "",
           dseProviderApiKey: "",
+          cbkProviderUrl: "",
+          cbkProviderApiKey: "",
+          bouProviderUrl: "",
+          bouProviderApiKey: "",
+          bnrProviderUrl: "",
+          bnrProviderApiKey: "",
           slackWebhookUrl: "",
           outageEmailRecipients: "",
           alertOnOutage: true,
           refreshIntervalSeconds: 60,
           scheduleWeeklyEmail: false,
           latencyThresholdMs: 1500,
+          alertCooldownMinutes: 15,
         });
         useEffect(() => {
           if (marketGovQuery.data?.settings) {
@@ -34472,12 +34478,19 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
               bankProviderApiKey: marketGovQuery.data.settings.bankProviderApiKey || "",
               dseProviderUrl: marketGovQuery.data.settings.dseProviderUrl || "",
               dseProviderApiKey: marketGovQuery.data.settings.dseProviderApiKey || "",
+              cbkProviderUrl: marketGovQuery.data.settings.cbkProviderUrl || "",
+              cbkProviderApiKey: marketGovQuery.data.settings.cbkProviderApiKey || "",
+              bouProviderUrl: marketGovQuery.data.settings.bouProviderUrl || "",
+              bouProviderApiKey: marketGovQuery.data.settings.bouProviderApiKey || "",
+              bnrProviderUrl: marketGovQuery.data.settings.bnrProviderUrl || "",
+              bnrProviderApiKey: marketGovQuery.data.settings.bnrProviderApiKey || "",
               slackWebhookUrl: marketGovQuery.data.settings.slackWebhookUrl || "",
               outageEmailRecipients: marketGovQuery.data.settings.outageEmailRecipients || "",
               alertOnOutage: marketGovQuery.data.settings.alertOnOutage ?? true,
               refreshIntervalSeconds: marketGovQuery.data.settings.refreshIntervalSeconds ?? 60,
               scheduleWeeklyEmail: marketGovQuery.data.settings.scheduleWeeklyEmail ?? false,
               latencyThresholdMs: marketGovQuery.data.settings.latencyThresholdMs ?? 1500,
+              alertCooldownMinutes: marketGovQuery.data.settings.alertCooldownMinutes ?? 15,
             });
           }
         }, [marketGovQuery.data]);
@@ -34537,6 +34550,22 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                   </div>
                 </div>
 
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-3">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-700">Regional provider credentials</p>
+                    <p className="mt-1 text-[10.5px] leading-relaxed text-slate-500">Add approved official endpoints and server-side API keys for CBK, BOU, and BNR. Until credentials and response mappings are validated, regional rows remain clearly marked as awaiting configuration.</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {[{ key: "cbk", label: "CBK / Kenya", url: "cbkProviderUrl", api: "cbkProviderApiKey", placeholder: "https://api.centralbank.go.ke/..." }, { key: "bou", label: "BOU / Uganda", url: "bouProviderUrl", api: "bouProviderApiKey", placeholder: "https://api.bou.or.ug/..." }, { key: "bnr", label: "BNR / Rwanda", url: "bnrProviderUrl", api: "bnrProviderApiKey", placeholder: "https://api.bnr.rw/..." }].map((provider) => (
+                      <div key={provider.key} className="rounded-lg border border-white bg-white p-2.5">
+                        <p className="text-[10.5px] font-bold text-slate-700">{provider.label}</p>
+                        <input type="url" value={marketGovForm[provider.url]} onChange={e => setMarketGovForm(f => ({ ...f, [provider.url]: e.target.value }))} placeholder={provider.placeholder} className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10.5px] text-slate-800 focus:border-emerald-600 focus:outline-none" aria-label={`${provider.label} official provider URL`} />
+                        <input type="password" value={marketGovForm[provider.api]} onChange={e => setMarketGovForm(f => ({ ...f, [provider.api]: e.target.value }))} placeholder="API key / token" className="mt-1.5 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10.5px] text-slate-800 focus:border-emerald-600 focus:outline-none" aria-label={`${provider.label} API key`} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">Slack Outage Webhook URL</label>
@@ -34576,7 +34605,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">Latency Spike Alert Threshold (ms)</label>
                     <select
@@ -34590,17 +34619,34 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                       <option value={5000}>5,000 ms (High tolerance)</option>
                     </select>
                   </div>
-                  <div className="flex flex-col justify-end">
-                    <label className="flex items-center gap-2 cursor-pointer pb-2">
-                      <input
-                        type="checkbox"
-                        checked={marketGovForm.scheduleWeeklyEmail}
-                        onChange={e => setMarketGovForm(f => ({ ...f, scheduleWeeklyEmail: e.target.checked }))}
-                        className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
-                      />
-                      <span className="text-[12px] font-semibold text-slate-700">Schedule weekly executive email PDF health digests</span>
-                    </label>
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600">Alert cooldown</label>
+                    <select
+                      value={marketGovForm.alertCooldownMinutes}
+                      onChange={e => setMarketGovForm(f => ({ ...f, alertCooldownMinutes: Number(e.target.value) }))}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-800 focus:border-emerald-600 focus:outline-none"
+                      aria-describedby="market-alert-cooldown-help"
+                    >
+                      <option value={5}>5 minutes</option>
+                      <option value={15}>15 minutes (Recommended)</option>
+                      <option value={60}>1 hour</option>
+                      <option value={360}>6 hours</option>
+                      <option value={1440}>24 hours</option>
+                    </select>
+                    <p id="market-alert-cooldown-help" className="mt-1 text-[10px] text-slate-400">Suppresses repeated alerts for the same tenant during the cooldown window.</p>
                   </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-100">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={marketGovForm.scheduleWeeklyEmail}
+                      onChange={e => setMarketGovForm(f => ({ ...f, scheduleWeeklyEmail: e.target.checked }))}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                    />
+                    <span className="text-[12px] font-semibold text-slate-700">Schedule weekly executive email PDF health digests</span>
+                  </label>
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100">

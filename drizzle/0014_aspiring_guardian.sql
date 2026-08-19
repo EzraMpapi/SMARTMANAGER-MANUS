@@ -1,0 +1,1 @@
+ALTER TABLE `market_provider_settings` ADD `alertCooldownMinutes` int DEFAULT 15 NOT NULL;

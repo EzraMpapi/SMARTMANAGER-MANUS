@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { deriveMarketProviderUiStatus, normalizeBankRows, normalizeDseRows } from "./marketIntelligence";
 
 const marketSource = readFileSync(new URL("./marketIntelligence.ts", import.meta.url), "utf8");
+const governanceSource = readFileSync(new URL("./marketGovernance.ts", import.meta.url), "utf8");
+const scheduledDigestSource = readFileSync(new URL("./scheduledMarketHealthDigest.ts", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 
 describe("market intelligence response validation", () => {
@@ -66,6 +68,29 @@ describe("market intelligence response validation", () => {
     expect(marketSource).toContain("regionalPeers");
     expect(marketSource).toContain("scheduleWeeklyEmail");
     expect(marketSource).toContain("latencyThresholdMs");
+    expect(marketSource).toContain("AWAITING_VALIDATION");
     expect(dashboardSource).toContain("Regional East African Central Bank Comparison");
+    expect(dashboardSource).toContain("cbkProviderUrl");
+    expect(dashboardSource).toContain("bouProviderUrl");
+    expect(dashboardSource).toContain("bnrProviderUrl");
+  });
+
+  it("connects weekly digest scheduling and delivery telemetry without exposing provider secrets", () => {
+    expect(governanceSource).toContain("createHeartbeatJob");
+    expect(governanceSource).toContain("/api/scheduled/marketHealthDigest");
+    expect(governanceSource).toContain("scheduleCronTaskUid");
+    expect(governanceSource).toContain("lastAlertDispatchedAt");
+    expect(governanceSource).toContain("alertCooldownMinutes");
+    expect(governanceSource).toContain("Math.max(5, Math.min(1440");
+    expect(governanceSource).toContain("cooldownMs");
+    expect(scheduledDigestSource).toContain("sdk.authenticateRequest");
+    expect(scheduledDigestSource).toContain("user.taskUid");
+    expect(scheduledDigestSource).toContain("scheduleCronTaskUid");
+    expect(scheduledDigestSource).toContain("market-provider-health-digest.pdf");
+    expect(scheduledDigestSource).toContain("webhookDeliveries");
+    expect(scheduledDigestSource).toContain("sendTransactionalEmail");
+    expect(governanceSource).toContain("cbkProviderApiKey: settingsRows[0].cbkProviderApiKey ? \"••••••••\" : \"\"");
+    expect(dashboardSource).toContain("alertCooldownMinutes");
+    expect(dashboardSource).toContain("Suppresses repeated alerts");
   });
 });
