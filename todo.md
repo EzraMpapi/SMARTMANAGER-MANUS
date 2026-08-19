@@ -8115,5 +8115,5 @@
 - [x] Extract Signup and Join Company workflows and refined design tokens from `SmartManagerAuth.jsx`.
 - [x] Integrate Signup and Join Company views into the ERP workspace auth and onboarding modals.
 - [x] Run 401 Vitest regressions, TypeScript validation, direct JSX parsing, responsive previews, and confirm the login page remains untouched via the dashboard diff.
-- [ ] Complete the full local Vite production build; sandbox SIGTERM occurs during chunk rendering after 2,656 modules despite successful source transforms.
-- [ ] Save the published checkpoint for the verified non-login page migration.
+- [x] Complete the full local Vite production build using a temporary low-memory validation configuration; 2,656 modules transformed and the production bundle completed successfully.
+- [x] Save the published checkpoint for the verified non-login page migration.
