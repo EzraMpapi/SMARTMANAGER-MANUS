@@ -8124,3 +8124,10 @@
 - [x] Add smooth accessible slide/fade step-transition animations to Create Company and Join Existing Company flows.
 - [x] Run 401+ Vitest regressions, TypeScript validation, and responsive verification without touching the login component.
 - [x] Save published checkpoint for the enhanced non-login auth experience.
+
+## Security & Branding Enhancements
+- [x] Add biometric passkey enrollment prompt directly into the final onboarding success step.
+- [x] Implement organization logo upload cropping preview inside workspace branding settings.
+- [x] Add automated session timeout warning with a visible countdown timer for idle administrative sessions.
+- [x] Verify all tests, TypeScript contracts, and responsive layouts.
+- [x] Save published checkpoint for the security and branding enhancements.

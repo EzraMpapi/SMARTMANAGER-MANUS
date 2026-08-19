@@ -43078,6 +43078,9 @@ function workspaceCoverPayload(dataUrl) {
 function WorkspaceBrandingControls({ logo, primaryColor, accentColor, onLogoChange, onPrimaryColorChange, onAccentColorChange }) {
   const fileRef = useRef(null);
   const [fileError, setFileError] = useState(null);
+  const [cropSource, setCropSource] = useState(null);
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropPosition, setCropPosition] = useState({ x: 50, y: 50 });
 
   function selectLogo(event) {
     const file = event.target.files?.[0];
@@ -43088,9 +43091,29 @@ function WorkspaceBrandingControls({ logo, primaryColor, accentColor, onLogoChan
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => { setFileError(null); onLogoChange(String(reader.result || "")); };
+    reader.onload = () => { setFileError(null); setCropSource(String(reader.result || "")); setCropZoom(1); setCropPosition({ x: 50, y: 50 }); };
     reader.onerror = () => setFileError("The logo could not be read. Please choose another file.");
     reader.readAsDataURL(file);
+  }
+
+  function applyCrop() {
+    if (!cropSource) return;
+    const image = new Image();
+    image.onload = () => {
+      const cropSize = Math.min(image.naturalWidth, image.naturalHeight) / cropZoom;
+      const maxX = Math.max(0, image.naturalWidth - cropSize);
+      const maxY = Math.max(0, image.naturalHeight - cropSize);
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.height = 640;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      context.drawImage(image, maxX * (cropPosition.x / 100), maxY * (cropPosition.y / 100), cropSize, cropSize, 0, 0, canvas.width, canvas.height);
+      onLogoChange(canvas.toDataURL("image/png"));
+      setCropSource(null);
+    };
+    image.onerror = () => setFileError("The logo preview could not be cropped. Please choose another image.");
+    image.src = cropSource;
   }
 
   return <fieldset className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
@@ -43105,6 +43128,7 @@ function WorkspaceBrandingControls({ logo, primaryColor, accentColor, onLogoChan
       <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={selectLogo} className="sr-only" />
     </div>
     {fileError && <p role="alert" className="mt-3 text-[11px] font-medium text-red-700">{fileError}</p>}
+    {cropSource && <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-3" aria-label="Logo crop preview"><div className="flex flex-col gap-3 sm:flex-row"><div className="grid h-32 w-32 shrink-0 place-items-center overflow-hidden rounded-2xl border border-sky-200 bg-white"><img src={cropSource} alt="Crop preview" className="h-full w-full object-cover" style={{ objectPosition: `${cropPosition.x}% ${cropPosition.y}%`, transform: `scale(${cropZoom})` }} /></div><div className="min-w-0 flex-1"><p className="text-[11.5px] font-bold text-sky-950">Adjust logo crop</p><p className="mt-1 text-[10.5px] leading-4 text-slate-600">Center the mark before it is saved to the workspace.</p><label className="mt-3 block text-[10.5px] font-semibold text-slate-700">Zoom <input type="range" min="1" max="2.5" step="0.1" value={cropZoom} onChange={(event) => setCropZoom(Number(event.target.value))} className="mt-1 w-full accent-emerald-600" /></label><label className="mt-2 block text-[10.5px] font-semibold text-slate-700">Horizontal position <input type="range" min="0" max="100" value={cropPosition.x} onChange={(event) => setCropPosition((current) => ({ ...current, x: Number(event.target.value) }))} className="mt-1 w-full accent-emerald-600" /></label><label className="mt-2 block text-[10.5px] font-semibold text-slate-700">Vertical position <input type="range" min="0" max="100" value={cropPosition.y} onChange={(event) => setCropPosition((current) => ({ ...current, y: Number(event.target.value) }))} className="mt-1 w-full accent-emerald-600" /></label></div></div><div className="mt-3 flex flex-wrap justify-end gap-2"><button type="button" onClick={() => setCropSource(null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10.5px] font-semibold text-slate-600 transition hover:border-slate-300">Cancel crop</button><button type="button" onClick={applyCrop} className="rounded-xl bg-emerald-700 px-3 py-2 text-[10.5px] font-bold text-white transition hover:bg-emerald-800">Apply crop</button></div></div>}
     <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label className="block text-[11px] font-semibold text-slate-700">Primary color
         <span className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"><input type="color" value={primaryColor} onChange={(event) => onPrimaryColorChange(event.target.value.toUpperCase())} className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0" aria-label="Choose primary brand color" /><span className="font-mono text-[11px] text-slate-600">{primaryColor}</span></span>
@@ -43131,6 +43155,9 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [completedWorkspace, setCompletedWorkspace] = useState(null);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeyStatus, setPasskeyStatus] = useState("idle");
+  const [passkeyError, setPasskeyError] = useState(null);
 
   const [account, setAccount] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [company, setCompany] = useState({
@@ -43163,6 +43190,24 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const isPortalRole = joinRole === "External Client" || joinRole === "Supplier";
   const joinAccountValid = account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword;
   const step2Valid = mode === "create" ? company.name.trim().length > 1 : joinAccountValid && joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
+
+  async function enrollPasskey() {
+    const passkeySession = completedWorkspace?.passkeySession;
+    if (!passkeySession || passkeyBusy || passkeyStatus === "enrolled") return;
+    setPasskeyBusy(true);
+    setPasskeyError(null);
+    try {
+      const client = await createAccountPasskeyClient({ supabaseUrl: SUPABASE_URL, supabaseAnonKey: SUPABASE_ANON_KEY, session: passkeySession });
+      await registerAccountPasskey(client);
+      setPasskeyStatus("enrolled");
+      setCompletedWorkspace((current) => current ? { ...current, passkeySession: null } : current);
+    } catch (passkeyRegistrationError) {
+      setPasskeyStatus("error");
+      setPasskeyError(passkeyUserMessage(passkeyRegistrationError));
+    } finally {
+      setPasskeyBusy(false);
+    }
+  }
 
   async function handleFinalSubmit(e) {
     e.preventDefault();
@@ -43230,7 +43275,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
       authDebug("Workspace setup confirmed", { mode, companyId: rpcResult.id });
       clearStoredAuthSession();
-      setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning });
+      setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning, passkeySession: { accessToken: signUpResult.access_token, refreshToken: signUpResult.refresh_token } });
     } catch (err) {
       clearStoredAuthSession();
       setError(accountCreated ? workspaceJoinErrorMessage(err, "Your account was created, but workspace setup could not complete. Please sign in to continue setup.") : workspaceJoinErrorMessage(err, "Couldn't complete sign up. Please try again."));
@@ -43249,7 +43294,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const gradientBg = "linear-gradient(160deg, #052614 0%, #0F4D26 35%, #16A34A 70%, #22C55E 100%)";
 
   if (completedWorkspace) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p><p className="mt-1 text-[11px] font-semibold tracking-[.08em] text-[#008A45]">Simamia Biashara Yako. Popote, Wakati Wote.</p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Congratulations — you’re ready.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your Smart Manager account and {completedWorkspace.mode === "create" ? `${completedWorkspace.name} workspace` : "workspace access"} are ready. Sign in with {completedWorkspace.email} to continue.</p>{completedWorkspace.workspaceWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{completedWorkspace.workspaceWarning}</p>}{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p><p className="mt-1 text-[11px] font-semibold tracking-[.08em] text-[#008A45]">Simamia Biashara Yako. Popote, Wakati Wote.</p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Congratulations — you’re ready.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your Smart Manager account and {completedWorkspace.mode === "create" ? `${completedWorkspace.name} workspace` : "workspace access"} are ready. Sign in with {completedWorkspace.email} to continue.</p>{completedWorkspace.passkeySession && <section className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-left" aria-labelledby="onboarding-passkey-title"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><Fingerprint size={20} aria-hidden="true" /></span><div className="min-w-0"><h2 id="onboarding-passkey-title" className="text-[12.5px] font-bold text-emerald-950">Secure this account with a passkey</h2><p className="mt-1 text-[11px] leading-5 text-emerald-900/75">Use this device or password manager for faster, phishing-resistant sign-in. Your password remains available as a fallback.</p></div></div>{passkeyError && <p role="alert" className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-[11px] leading-5 text-red-700">{passkeyError}</p>}<button type="button" onClick={enrollPasskey} disabled={passkeyBusy} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-[11.5px] font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">{passkeyBusy ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : <Fingerprint size={15} aria-hidden="true" />}{passkeyBusy ? "Waiting for device confirmation…" : "Create passkey now"}</button></section>}{passkeyStatus === "enrolled" && <div role="status" className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-left text-[11.5px] font-semibold text-emerald-800"><CheckCircle2 size={16} aria-hidden="true" />Passkey created. This account is ready for secure sign-in.</div>}{completedWorkspace.workspaceWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{completedWorkspace.workspaceWarning}</p>}{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
   }
 
   return (
@@ -51461,6 +51506,11 @@ function SmartManager() {
   const invitationTokenRef = useRef(typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "");
   const acceptInvitationMutation = trpc.teamInvitations.accept.useMutation();
   const [session, setSession] = useState(() => (IS_CONFIGURED ? null : { demo: true }));
+  const [idleWarningOpen, setIdleWarningOpen] = useState(false);
+  const [idleSecondsRemaining, setIdleSecondsRemaining] = useState(0);
+  const lastActivityAtRef = useRef(Date.now());
+  const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+  const IDLE_WARNING_MS = 2 * 60 * 1000;
   // Always starts true now, in both modes — previously demo mode skipped
   // this state entirely, which meant the branded loading screen below
   // (and its real logo animation) would never actually be seen outside a
@@ -51610,14 +51660,52 @@ function SmartManager() {
     window.history.replaceState(null, "", `${url.pathname}${url.search}`);
   }
 
-  function handleSignOut() {
+    const handleSignOut = useCallback(() => {
     clearStoredAuthSession();
     if (session?.accessToken) authSignOut(session.accessToken);
     DEMO_OVERRIDE = false;
+    setIdleWarningOpen(false);
+    setIdleSecondsRemaining(0);
     setSession(IS_CONFIGURED ? null : { demo: true });
     navigateAuthView("login");
-  }
+  }, [session]);
 
+  const isAdministrativeSession = Boolean(session?.accessToken && !session?.demo && PASSKEY_READINESS_ROLES.has(currentUser.role));
+  useEffect(() => {
+    if (!isAdministrativeSession) {
+      setIdleWarningOpen(false);
+      setIdleSecondsRemaining(0);
+      return undefined;
+    }
+    lastActivityAtRef.current = Date.now();
+    const activityEvents = ["pointerdown", "keydown", "touchstart", "scroll"];
+    const markActivity = () => { lastActivityAtRef.current = Date.now(); };
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, markActivity, { passive: true }));
+    const tick = () => {
+      const remaining = Math.max(0, IDLE_TIMEOUT_MS - (Date.now() - lastActivityAtRef.current));
+      if (remaining <= 0) {
+        notify("Your administrative session was signed out after 30 minutes of inactivity.", "error");
+        handleSignOut();
+        return;
+      }
+      if (remaining <= IDLE_WARNING_MS) {
+        setIdleWarningOpen(true);
+        setIdleSecondsRemaining(Math.ceil(remaining / 1000));
+      } else {
+        setIdleSecondsRemaining(0);
+      }
+    };
+    const timer = window.setInterval(tick, 1000);
+    return () => {
+      window.clearInterval(timer);
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, markActivity));
+    };
+  }, [handleSignOut, isAdministrativeSession]);
+  function keepAdministrativeSessionActive() {
+    lastActivityAtRef.current = Date.now();
+    setIdleWarningOpen(false);
+    setIdleSecondsRemaining(0);
+  }
   const [active, setActive] = useState("dashboard");
   // CmdK handled by paletteOpen state (see topbar)
 
@@ -52045,6 +52133,7 @@ function SmartManager() {
 
   return (
     <>
+      {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
     <div className={`h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#F8FAFC]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Ambient background wash — subtle depth behind the content, the way
