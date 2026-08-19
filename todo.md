@@ -924,8 +924,8 @@
 - [ ] Add tenant-scoped TRA synchronization, error classification, retry/idempotency, submission history, and reconciliation foundations.
 - [ ] Connect supported tax workflows to ERP sales, POS, invoicing, accounting, and receipt records without claiming unverified TRA submission.
 - [x] Add truthful TRA Integration Center overview, tax profile, connection health, obligations, calendar, fiscalization, returns, payments, documents, reports, logs, and official-service actions.
-- [ ] Add secure TRA document metadata and storage references with tenant and role permissions.
-- [ ] Add granular TRA permission checks and audit coverage for configuration, testing, submission, retry, sensitive responses, documents, and logs.
+- [x] Add secure TRA document metadata and storage references with tenant and role permissions.
+- [x] Add granular TRA permission checks and audit coverage for configuration, testing, submission, retry, sensitive responses, documents, and logs.
 - [x] Add scheduled compliance operations only through the approved deployed Heartbeat callback architecture, with idempotency and delivery history.
 - [x] Add regression tests for official-adapter boundaries, no-fake-data rules, tenant isolation, RBAC, retries, errors, reconciliation, and environment separation.
 - [ ] Validate TypeScript, tests, production build, desktop/mobile responsive UI, live deployment, and final documentation.
@@ -933,18 +933,18 @@
 
 ## TRA delivery artifacts
 
-- [ ] Update TRA_INTEGRATION_AUDIT.md with verified implemented capabilities, blocked official dependencies, database/API/security changes, test evidence, and production status.
+- [x] Update TRA_INTEGRATION_AUDIT.md with verified implemented capabilities, blocked official dependencies, database/API/security changes, test evidence, and production status.
 - [ ] Update GITHUB_WORKFLOW.md with the canonical SMARTMANAGER-MANUS repository destination if needed.
 - [ ] Save a final project checkpoint only after all completed items are marked [x].
 
 ## TRA implementation notes and audit history
 
-- [ ] Preserve any existing TRA functionality that is already server-confirmed and tenant-scoped.
-- [ ] Keep direct TRA credentials, certificates, private keys, and API secrets out of frontend state, browser bundles, logs, and committed files.
-- [ ] Never fabricate TINs, receipts, payment confirmations, returns, compliance statuses, tax rates, API responses, or production market/tax data.
-- [ ] Never scrape protected TRA pages, imitate TRA authentication, embed the TRA portal in an iframe, or claim an undocumented endpoint is official.
-- [ ] Clearly label demo/test records and prevent them from appearing as production TRA data.
-- [ ] Keep TRA portal redirection as an explicit user-action workflow where an approved direct API is unavailable.
+- [x] Preserve any existing TRA functionality that is already server-confirmed and tenant-scoped.
+- [x] Keep direct TRA credentials, certificates, private keys, and API secrets out of frontend state, browser bundles, logs, and committed files.
+- [x] Never fabricate TINs, receipts, payment confirmations, returns, compliance statuses, tax rates, API responses, or production market/tax data.
+- [x] Never scrape protected TRA pages, imitate TRA authentication, embed the TRA portal in an iframe, or claim an undocumented endpoint is official.
+- [x] Clearly label demo/test records and prevent them from appearing as production TRA data.
+- [x] Keep TRA portal redirection as an explicit user-action workflow where an approved direct API is unavailable.
 
 ## TRA final acceptance
 
@@ -980,12 +980,12 @@
 
 ## TRA architecture boundary record
 
-- [ ] Distinguish official TRA-supported services from internal ERP preparation and portal redirection.
-- [ ] Require official endpoint, authentication, environment, certificate, payload, response, error-code, rate-limit, and onboarding evidence before enabling direct submission.
-- [ ] Keep the official TRA service action explicit and tenant-aware.
-- [ ] Do not present a sandbox simulator as a live production integration.
-- [ ] Do not present unavailable direct return/payment APIs as implemented.
-- [ ] Do not expose secrets or private credentials to the browser.
+- [x] Distinguish official TRA-supported services from internal ERP preparation and portal redirection.
+- [x] Require official endpoint, authentication, environment, certificate, payload, response, error-code, rate-limit, and onboarding evidence before enabling direct submission.
+- [x] Keep the official TRA service action explicit and tenant-aware.
+- [x] Do not present a sandbox simulator as a live production integration.
+- [x] Do not present unavailable direct return/payment APIs as implemented.
+- [x] Do not expose secrets or private credentials to the browser.
 
 ## TRA backend foundations
 
@@ -998,26 +998,26 @@
 
 ## TRA user experience
 
-- [ ] Build the TRA Integration Center around real query states, not seeded values.
-- [ ] Show status hierarchy for connection, environment, device, submissions, obligations, alerts, and synchronization.
-- [ ] Provide mobile/tablet/desktop-friendly receipt, retry, calendar, alert, and official-service actions.
-- [ ] Provide meaningful loading, empty, unavailable, failed, and permission-denied states.
-- [ ] Preserve existing ERP navigation and role-gated access.
+- [x] Build the TRA Integration Center around real query states, not seeded values.
+- [x] Show status hierarchy for connection, environment, device, submissions, obligations, alerts, and synchronization.
+- [x] Provide mobile/tablet/desktop-friendly receipt, retry, calendar, alert, and official-service actions.
+- [x] Provide meaningful loading, empty, unavailable, failed, and permission-denied states.
+- [x] Preserve existing ERP navigation and role-gated access.
 
 ## TRA documentation and reporting
 
 - [x] Write a final TRA implementation report with references, evidence, and blocked items.
-- [ ] Include database, API, security, testing, deployment, and production verification sections.
-- [ ] Document every direct official integration separately from portal-based workflows and future adapter work.
-- [ ] Keep the report truthful about all unavailable credentials, certificates, approvals, and official documentation.
+- [x] Include database, API, security, testing, deployment, and production verification sections.
+- [x] Document every direct official integration separately from portal-based workflows and future adapter work.
+- [x] Keep the report truthful about all unavailable credentials, certificates, approvals, and official documentation.
 
 ## TRA stepwise completion log
 
-- [ ] Phase 1 — complete the codebase and requirement audit.
-- [ ] Phase 2 — finalize the official integration boundary and domain model.
+- [x] Phase 1 — complete the codebase and requirement audit.
+- [x] Phase 2 — finalize the official integration boundary and domain model.
 - [x] Phase 3 — implement secure tenant-scoped TRA backend foundations.
 - [x] Phase 4 — build the TRA Integration Center and truthful workflows.
-- [ ] Phase 5 — add scheduled compliance operations, documents, and audit controls.
+- [x] Phase 5 — add scheduled compliance operations, documents, and audit controls.
 - [ ] Phase 6 — validate security, functionality, responsiveness, and delivery.
 
 ## TRA final delivery evidence

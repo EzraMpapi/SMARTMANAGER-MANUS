@@ -63,6 +63,10 @@ See [`TRA_OFFICIAL_SOURCE_EVIDENCE.md`](./TRA_OFFICIAL_SOURCE_EVIDENCE.md) for t
 - No fabricated TIN, VRN, receipt number, verification code, QR information, tax payment confirmation, or TRA acknowledgement is generated.
 - Test and sandbox capability is not presented as a live TRA production integration.
 
+## Scheduled operations and document evidence
+
+The existing tenant-scoped VAT anomaly scheduler continues to use the Heartbeat callback at `/api/scheduled/traVatAnomaly`. A matching cron-only callback is now mounted for existing Z-report archive schedules at `/api/scheduled/traZReportArchive`; both callbacks authenticate the Heartbeat task UID and fail safely for orphaned or paused schedules. The Integration Center exposes anomaly settings, archive counts, internal retry counts, document metadata, and restricted TRA audit evidence. Schedule creation or activation remains an explicit administrator action and was not executed during this validation pass.
+
 ## Remaining prerequisites for direct integration
 
 Direct fiscalization remains intentionally unavailable until the following are supplied and validated on the server:
@@ -77,7 +81,11 @@ Until then, the supported path is **Prepare → Validate → Export → Open Off
 
 ## Validation status
 
-The focused TRA provider regression tests pass, and TypeScript compilation passes after the current implementation. A full-suite and production-build validation must still be completed after the remaining project documentation and UI verification work.
+The current implementation has passed TypeScript compilation with `pnpm exec tsc --noEmit --pretty false`. The complete Vitest suite passed with **369 tests passed and 8 skipped across 108 test files** using one worker. The production frontend and server bundle also pass with `pnpm exec vite build --minify=false` followed by the existing esbuild server command; the build produced the existing large dashboard bundle without a code error.
+
+Checkpoint `2530fe33` is published to the managed project and the live domain remains `https://bserp-dashbo-xgm6fauw.manus.space`. The canonical GitHub repository is `https://github.com/EzraMpapi/SMARTMANAGER-MANUS`; the latest documentation push is commit `4942952` on `main`.
+
+The authenticated TRA screen still requires a user-authenticated browser session for final visual inspection. The unauthenticated desktop preview renders the expected authentication gateway rather than exposing protected ERP data. No login, portal action, tax submission, payment, receipt verification, or external notification was attempted during validation.
 
 ## Non-fabrication policy
 
