@@ -30,6 +30,17 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("workspace-membership-audit");
   });
 
+  it("keeps the WhatsApp provider configuration modal inside WhatsAppCenter", () => {
+    const whatsappStart = dashboardSource.indexOf("function WhatsAppCenter(");
+    const collaborationStart = dashboardSource.indexOf("function CollaborationHub(");
+    const whatsappSource = dashboardSource.slice(whatsappStart, collaborationStart);
+    const collaborationSource = dashboardSource.slice(collaborationStart);
+    expect(whatsappSource).toContain("const [showConfigModal, setShowConfigModal] = useState(false)");
+    expect(whatsappSource).toContain("Save & Activate Provider");
+    expect(whatsappSource).toContain("aria-modal=\"true\"");
+    expect(whatsappSource).toContain("handleEscape");
+    expect(collaborationSource).not.toContain("showConfigModal");
+  });
   it("supports threaded reaction summaries, HR department headcount, and WhatsApp feed filters", () => {
     expect(dashboardSource).toContain("threadReactionSummaries");
     expect(dashboardSource).toContain("Thread reaction summary");

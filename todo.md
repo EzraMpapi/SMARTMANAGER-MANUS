@@ -8097,3 +8097,9 @@
 - [x] Add threaded reaction summaries to Team Chat channels for richer collaboration context
 - [x] Implement department headcount summary chart in the HR management module
 - [x] Enhance WhatsApp feed widget with date and sender filtering options
+
+## Collaboration Hub showConfigModal runtime-fix audit
+- [x] Trace every Collaboration Hub configuration-modal reference and verify the owning component scope.
+- [x] Restore or harden the existing configuration modal event/state chain without duplicating modal logic or weakening permissions.
+- [x] Validate open, cancel, save, loading/error feedback, refresh, keyboard/mobile behavior, and related Collaboration Hub references.
+- [x] Run unresolved-reference search, focused/full tests, production build, console/runtime checks, and save a synchronized checkpoint.
