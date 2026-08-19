@@ -138,14 +138,15 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("keeps enterprise onboarding progressive and writes selected module intent through the shared company-module contract", () => {
-    expect(dashboardSource).toContain('? ["Account", "Workspace", "Modules"]');
-    expect(dashboardSource).toContain('mode === "create" && step === 3');
-    expect(dashboardSource).toContain("<PasswordStrengthMeter password={account.password} />");
+    expect(dashboardSource).toContain('const stepLabels = mode === "create"');
+    expect(dashboardSource).toContain('["Account", "Workspace", "Modules"]');
+    expect(dashboardSource).toContain('["Join"]');
+    expect(dashboardSource).toContain("isEnterprisePassword(account.password)");
     expect(dashboardSource).toContain("companyDefaultsForCountry(val)");
     expect(dashboardSource).toContain("Account created");
     expect(dashboardSource).toContain("Congratulations — you’re ready.");
     expect(dashboardSource).toContain("Continue to sign in");
-    expect(dashboardSource).toContain("Step 1 of 3 — personal details");
+    expect(dashboardSource).toContain("Your account becomes the initial organisation owner.");
     expect(dashboardSource).toContain("const joinAccountValid");
     expect(dashboardSource).toContain("disabled={busy || !step2Valid}");
     expect(dashboardSource).not.toContain('placeholder="Min. 6 characters"');

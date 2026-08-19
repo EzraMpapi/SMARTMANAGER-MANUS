@@ -8109,3 +8109,11 @@
 - [x] Implement loading spinner and success/error toast notifications on save.
 - [x] Add inline validation error messages for missing or malformed credential fields.
 - [x] Add automated regression assertions, run test suite, verify build, and checkpoint.
+
+## SmartManagerAuth Attachment Non-Login Page Migration
+- [x] Freeze the active login page completely (no edits to login components or login flows).
+- [x] Extract Signup and Join Company workflows and refined design tokens from `SmartManagerAuth.jsx`.
+- [x] Integrate Signup and Join Company views into the ERP workspace auth and onboarding modals.
+- [x] Run 401 Vitest regressions, TypeScript validation, direct JSX parsing, responsive previews, and confirm the login page remains untouched via the dashboard diff.
+- [ ] Complete the full local Vite production build; sandbox SIGTERM occurs during chunk rendering after 2,656 modules despite successful source transforms.
+- [ ] Save the published checkpoint for the verified non-login page migration.

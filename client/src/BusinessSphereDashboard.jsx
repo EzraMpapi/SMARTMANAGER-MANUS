@@ -43253,197 +43253,78 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   }
 
   return (
-    <div className="min-h-screen w-full flex" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
-      {/* Left brand panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-12" style={{ background: gradientBg }}>
+    <div className="min-h-screen w-full flex bg-[#F8FAFC]" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
+      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden flex-col justify-between p-12" style={{ background: gradientBg }}>
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-96 h-96 rounded-full opacity-20" style={{ background: "radial-gradient(circle,#4ADE80 0%,transparent 70%)", top: "-100px", right: "-80px", filter: "blur(70px)" }} />
-          <div className="absolute w-64 h-64 rounded-full opacity-15" style={{ background: "radial-gradient(circle,#BBF7D0 0%,transparent 70%)", bottom: "5%", left: "10%", filter: "blur(50px)" }} />
-          <svg className="absolute opacity-8" style={{ bottom: "15%", right: "5%", width: 180, height: 208 }} viewBox="0 0 120 140">
-            <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="none" stroke="#4ADE80" strokeWidth="1.5" />
-          </svg>
+          <div className="absolute -right-20 -top-24 h-96 w-96 rounded-full opacity-20 blur-[70px]" style={{ background: "radial-gradient(circle,#4ADE80 0%,transparent 70%)" }} />
+          <div className="absolute bottom-[5%] left-[10%] h-64 w-64 rounded-full opacity-15 blur-[50px]" style={{ background: "radial-gradient(circle,#BBF7D0 0%,transparent 70%)" }} />
+          <svg className="absolute bottom-[15%] right-[5%] opacity-10" width="180" height="208" viewBox="0 0 120 140" aria-hidden="true"><polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="none" stroke="#4ADE80" strokeWidth="1.5" /></svg>
         </div>
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
+          <div className="mb-16 flex items-center gap-3">
             <BrandLogo variant="compact" priority className="h-12 w-12 ring-1 ring-white/15 shadow-lg" />
-            <div>
-              <p className="text-white font-bold text-[18px] leading-tight" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
-              <p className="text-white/50 text-[11px] tracking-wide uppercase">Enterprise Edition</p>
-            </div>
+            <div><p className="text-[18px] font-bold leading-tight text-white" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p><p className="mt-0.5 text-[11px] text-emerald-100/70">Simamia. Manage. Grow.</p></div>
           </div>
-          <h2 className="text-[34px] font-bold text-white leading-tight mb-4" style={{ fontFamily: "Poppins,sans-serif" }}>Start managing your business the smart way</h2>
-          <p className="text-white/65 text-[14px] leading-relaxed mb-8">Set up in minutes. Everything from sales to tax, payroll, and AI insights — ready on day one.</p>
-          <div className="space-y-3">
-            {["Free to get started","No credit card required","Tanzania-first, Africa-ready","AI-powered from day one"].map((f) => (
-              <div key={f} className="flex items-center gap-2.5">
-                <div className="w-5 h-5 rounded-full bg-[#4ADE80]/20 flex items-center justify-center shrink-0"><CheckCircle2 size={12} className="text-[#4ADE80]" /></div>
-                <p className="text-white/80 text-[13px]">{f}</p>
-              </div>
-            ))}
-          </div>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[.18em] text-emerald-200">{mode === "join" ? "Secure company access" : "Your business command center"}</p>
+          <h1 className="max-w-md text-[44px] font-bold leading-[1.08] tracking-[-.04em] text-white">{mode === "join" ? "Join the workspace your team already trusts." : "Build the workspace your business deserves."}</h1>
+          <p className="mt-6 max-w-sm text-[14px] leading-7 text-emerald-50/75">{mode === "join" ? "Use the secure join code shared by your company administrator. Access remains scoped to the workspace and role you are assigned." : "Create a focused operating system for finance, people, sales, inventory, and the decisions that move your company forward."}</p>
         </div>
-        <p className="relative z-10 text-white/30 text-[11px]">© {new Date().getFullYear()} Smart Manager · Enterprise Business Ecosystem</p>
+        <div className="relative z-10 space-y-3 text-[11.5px] text-emerald-50/80"><p className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> Tenant-scoped from the first record</p><p className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> Role-aware access for every teammate</p><p className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> Designed for accountable execution</p></div>
       </div>
 
-      {/* Right — the stepped form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-[#F8FAFC] overflow-y-auto">
-        <div className="w-full max-w-md py-6">
+      <div className="flex min-h-screen w-full flex-1 items-center justify-center px-4 py-8 sm:px-8 lg:w-[55%] lg:px-14">
+        <div className="w-full max-w-[560px]">
+          <div className="mb-7 flex items-center gap-3 lg:hidden"><BrandLogo variant="compact" priority className="h-12 w-12 shadow-md" /><div><p className="text-[18px] font-bold text-slate-950" style={{ fontFamily: "Poppins,sans-serif" }}>SMART <span className="text-[#16A34A]">MANAGER</span></p><p className="text-[10.5px] text-slate-400">Simamia Biashara Yako.</p></div></div>
+          <div className="mb-5 flex items-center justify-between"><div><p className="text-[10.5px] font-bold uppercase tracking-[.18em] text-[#16A34A]">Smart Manager onboarding</p><h2 className="mt-1 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>{mode === "join" ? "Join your company" : "Create your workspace"}</h2><p className="mt-1 text-[13px] leading-5 text-slate-500">{mode === "join" ? "Enter the details approved by your workspace administrator." : "A guided setup for your account, company, and starting modules."}</p></div><button type="button" onClick={onSwitchToLogin} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-800">Back to sign in</button></div>
 
-          {/* Mobile brand */}
-          <div className="flex lg:hidden flex-col items-center mb-7">
-            <BrandLogo variant="compact" priority className="mb-2 h-12 w-12 shadow-sm" />
-            <p className="font-bold text-[#111827] text-[18px]" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
-          </div>
+          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm"><button type="button" onClick={() => { setMode("create"); setStep(1); setError(null); }} className={`flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${mode === "create" ? "bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>Create a company</button><button type="button" onClick={() => { setMode("join"); setStep(1); setError(null); }} className={`flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${mode === "join" ? "bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>Join existing company</button></div>
 
-          {/* Mode switcher */}
-          <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 mb-6">
-            {["create","join"].map((m) => (
-              <button key={m} onClick={() => { setMode(m); setStep(1); setError(null); }}
-                className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-all ${mode === m ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>
-                {m === "create" ? "🏢 Create company" : "🔑 Join with code"}
-              </button>
-            ))}
-          </div>
+          <div className="mb-5 flex items-center gap-2">{stepLabels.map((label, index) => { const number = index + 1; const active = mode === "join" ? number === 1 : step === number; const done = mode === "join" ? false : step > number; return <React.Fragment key={label}><div className="flex shrink-0 items-center gap-2"><span className={`grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold ${active || done ? "bg-[#16A34A] text-white" : "bg-slate-200 text-slate-400"}`}>{done ? <Check size={13} /> : number}</span><span className={`text-[11px] font-semibold ${active ? "text-slate-800" : "text-slate-400"}`}>{label}</span></div>{index < stepLabels.length - 1 && <div className={`h-px flex-1 ${done ? "bg-[#16A34A]" : "bg-slate-200"}`} />}</React.Fragment>; })}</div>
 
-          {/* Progress */}
-          {totalSteps > 1 && (
-            <div className="flex items-center gap-2 mb-6">
-              {Array.from({length: totalSteps}, (_, i) => (
-                <div key={i} className="flex items-center gap-2 flex-1">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold shrink-0"
-                    style={{ backgroundColor: (step > i + 1) ? "#16A34A" : step === i + 1 ? "#16A34A" : "#E5E7EB", color: (step >= i + 1) ? "white" : "#9CA3AF" }}>
-                    {(step > i + 1) ? <CheckCircle2 size={12}/> : i + 1}
-                  </div>
-                  <p className={`text-[11.5px] font-medium ${step === i + 1 ? "text-[#111827]" : "text-slate-400"}`}>{stepLabels[i]}</p>
-                  {i < totalSteps - 1 && <div className="flex-1 h-px" style={{ backgroundColor: (step > i + 1) ? "#16A34A" : "#E5E7EB" }} />}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200/60 p-6 sm:p-8">
-            {error && <div className="mb-5 flex items-start gap-2 px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-[12.5px] text-red-700"><AlertCircle size={13} className="shrink-0 mt-0.5"/><span>{error}</span></div>}
-
-            {/* JOIN mode */}
-            {mode === "join" && (
-              <div className="space-y-4">
-                <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Join your company</h2><p className="text-[13px] text-slate-500 mt-0.5">Enter the code your admin shared with you</p></div>
-                <AuthTextField label="Full name" icon={User} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" />
-                <AuthTextField label="Email address" icon={Mail} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" />
-                <AuthTextField label="Password" icon={Lock} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="8+ characters with upper, lower, number, and symbol" />
-                <AuthTextField label="Confirm password" icon={Lock} type="password" value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" />
-                <PasswordStrengthMeter password={account.password} />
-                {account.password && account.confirmPassword && account.password !== account.confirmPassword && (
-                  <p className="text-[11.5px] text-red-500 flex items-center gap-1"><AlertCircle size={11}/> Passwords do not match</p>
-                )}
-                <AuthTextField label="Join code" icon={Lock} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="e.g. A3F9B2" />
-                <div>
-                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Your role</label>
-                  <select className={inputClass} value={joinRole} onChange={(e) => setJoinRole(e.target.value)}>
-                    {JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{role.label}</option>)}
-                  </select>
-                  <p className="mt-1 text-[10.5px] leading-4 text-slate-400">Company administrators assign elevated roles after your workspace access is confirmed.</p>
-                </div>
-                {isPortalRole && <AuthTextField label="Customer or supplier reference" icon={Building2} value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} placeholder="As it appears in the system" />}
-                <button onClick={handleFinalSubmit} disabled={busy || !step2Valid}
-                  className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
-                  style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
-                  {busy ? "Joining…" : "Join company"}
-                </button>
-              </div>
-            )}
-
-            {/* CREATE mode — Step 1: Account */}
-            {mode === "create" && step === 1 && (
-              <div className="space-y-4">
-                <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Create your account</h2><p className="text-[13px] text-slate-500 mt-0.5">Step 1 of 3 — personal details</p></div>
-                <AuthTextField label="Full name" icon={User} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" />
-                <AuthTextField label="Email address" icon={Mail} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" />
-                <div>
-                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Password</label>
-                  <div className="relative">
-                    <input type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="8+ characters with upper, lower, number, and symbol"
-                      className="w-full border border-slate-200 rounded-xl px-4 py-3 pr-11 text-[13.5px] text-[#111827] placeholder-slate-300 outline-none focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 transition-all" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                      {showPassword ? <EyeOff size={14}/> : <Eye size={14}/>}
-                    </button>
-                  </div>
-                </div>
-                <AuthTextField label="Confirm password" icon={Lock} type="password" value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" />
-                <PasswordStrengthMeter password={account.password} />
-                {account.password && account.confirmPassword && account.password !== account.confirmPassword && (
-                  <p className="text-[11.5px] text-red-500 flex items-center gap-1"><AlertCircle size={11}/> Passwords do not match</p>
-                )}
-                <button onClick={() => { if (step1Valid) setStep(2); }} disabled={!step1Valid}
-                  className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
-                  style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
-                  Continue →
-                </button>
-              </div>
-            )}
-
-            {/* CREATE mode — Step 2: Company */}
-            {mode === "create" && step === 2 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <button onClick={() => setStep(1)} className="text-slate-400 hover:text-slate-600"><ChevronLeft size={18}/></button>
-                  <div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Set up your workspace</h2><p className="text-[13px] text-slate-500">Step 2 of 3 — the essentials only</p></div>
-                </div>
-                <AuthTextField label="Company name *" icon={Building2} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder="e.g. Kilimanjaro Traders Ltd" />
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Country</label>
-                    <select className={inputClass} value={company.country} onChange={(e) => setCompanyField("country", e.target.value)}>
-                      {SIGNUP_COUNTRIES.map((c) => <option key={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Currency</label>
-                    <select className={inputClass} value={company.currency} onChange={(e) => setCompanyField("currency", e.target.value)}>
-                      {SIGNUP_CURRENCIES.map((c) => <option key={c}>{c}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Organization industry focus</label>
-                  <select className={inputClass} value={company.category} onChange={(e) => setCompanyField("category", e.target.value)}>
-                    {ORGANIZATION_INDUSTRY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-                  </select>
-                  <p className="mt-1 text-[10.5px] leading-4 text-slate-400">This securely tailors the login module constellation. You can change it later in Settings.</p>
-                </div>
-                <div>
-                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Time zone</label>
-                  <input className={inputClass} value={company.timezone} onChange={(e) => setCompanyField("timezone", e.target.value)} placeholder="Africa/Dar_es_Salaam" />
-                </div>
-                <AuthTextField label="First branch name" icon={Building2} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="Head Office" />
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,.08)] sm:p-7">
+            {error && <div role="alert" className="mb-4 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-[12px] leading-5 text-red-700">{error}</div>}
+            {mode === "join" ? (
+              <form onSubmit={handleFinalSubmit} className="space-y-4">
+                <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Join an existing workspace</h3><p className="mt-1 text-[12.5px] text-slate-500">Your administrator should provide the company join code.</p></div>
+                <FormField label="Full name" required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" autoComplete="name" /></div></FormField>
+                <FormField label="Email address" required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" autoComplete="email" /></div></FormField>
+                <div className="grid gap-3 sm:grid-cols-2"><FormField label="Password" required><div className="relative"><Lock size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9 pr-10`} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="Create a password" autoComplete="new-password" /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-3 top-3 text-slate-400" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></FormField><FormField label="Confirm password" required><input className={inputClass} type="password" value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" autoComplete="new-password" /></FormField></div>
+                {account.password && <p className="text-[11px] text-slate-500">Use at least 8 characters with uppercase, lowercase, number, and symbol.</p>}
+                <FormField label="Company join code" required><div className="relative"><Key size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9 uppercase tracking-[.16em]`} value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="A1B2C3D4" /></div></FormField>
+                <FormField label="Your role"><select className={inputClass} value={joinRole} onChange={(e) => setJoinRole(e.target.value)}>{JOIN_COMPANY_ROLE_OPTIONS.map((role) => <option key={role.id} value={role.id}>{role.label}</option>)}</select><p className="mt-1 text-[10.5px] leading-4 text-slate-400">Administrators approve elevated access after your workspace membership is confirmed.</p></FormField>
+                {isPortalRole && <FormField label="Company name on your records" required><input className={inputClass} value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} placeholder="e.g. Kilimanjaro Traders Ltd" /></FormField>}
+                <button type="submit" disabled={!step2Valid || busy} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Request secure access →"}</button>
+              </form>
+            ) : step === 1 ? (
+              <form onSubmit={(e) => { e.preventDefault(); if (step1Valid) setStep(2); }} className="space-y-4">
+                <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Create your account</h3><p className="mt-1 text-[12.5px] text-slate-500">Your account becomes the initial organisation owner.</p></div>
+                <FormField label="Full name" required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" autoComplete="name" /></div></FormField>
+                <FormField label="Email address" required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" autoComplete="email" /></div></FormField>
+                <div className="grid gap-3 sm:grid-cols-2"><FormField label="Phone number"><div className="relative"><Phone size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={account.phone} onChange={(e) => setAccountField("phone", e.target.value)} placeholder="700 123 456" autoComplete="tel" /></div></FormField><FormField label="Password" required><div className="relative"><Lock size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9 pr-10`} type={showPassword ? "text" : "password"} value={account.password} onChange={(e) => setAccountField("password", e.target.value)} placeholder="Create a password" autoComplete="new-password" /><button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-3 top-3 text-slate-400" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></FormField></div>
+                <FormField label="Confirm password" required><input className={inputClass} type="password" value={account.confirmPassword} onChange={(e) => setAccountField("confirmPassword", e.target.value)} placeholder="Repeat password" autoComplete="new-password" /></FormField>
+                {account.password && <p className="text-[11px] text-slate-500">Use at least 8 characters with uppercase, lowercase, number, and symbol.</p>}
+                {account.password && account.confirmPassword && account.password !== account.confirmPassword && <p className="flex items-center gap-1 text-[11.5px] text-red-500"><AlertCircle size={12} /> Passwords do not match.</p>}
+                <label className="flex items-start gap-2 pt-1 text-[11px] text-slate-500"><input type="checkbox" required className="mt-0.5 accent-[#16A34A]" /><span>I agree to the Terms of Service and Privacy Policy.</span></label>
+                <button type="submit" disabled={!step1Valid} className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>Continue to company setup →</button>
+              </form>
+            ) : step === 2 ? (
+              <form onSubmit={(e) => { e.preventDefault(); if (step2Valid) setStep(3); }} className="space-y-4">
+                <div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(1)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to account details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Register your company</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Configure the first workspace essentials.</p></div></div>
+                <FormField label="Company name" required><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder="e.g. Kilimanjaro Traders Ltd" /></div></FormField>
+                <div className="grid gap-3 sm:grid-cols-2"><FormField label="Country" required><select className={inputClass} value={company.country} onChange={(e) => setCompanyField("country", e.target.value)}>{SIGNUP_COUNTRIES.map((country) => <option key={country}>{country}</option>)}</select></FormField><FormField label="Currency" required><select className={inputClass} value={company.currency} onChange={(e) => setCompanyField("currency", e.target.value)}>{SIGNUP_CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}</select></FormField></div>
+                <FormField label="Industry" required><select className={inputClass} value={company.category} onChange={(e) => setCompanyField("category", e.target.value)}>{SIGNUP_INDUSTRY_OPTIONS.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}</select></FormField>
+                <div className="grid gap-3 sm:grid-cols-2"><FormField label="Website"><div className="relative"><Globe2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} type="url" value={company.website} onChange={(e) => setCompanyField("website", e.target.value)} placeholder="https://yourcompany.com" /></div></FormField><FormField label="Tax ID / TIN"><div className="relative"><FileText size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={company.taxId} onChange={(e) => setCompanyField("taxId", e.target.value)} placeholder="123-456-789" /></div></FormField></div>
+                <div><label className="mb-1.5 block text-[12px] font-semibold text-slate-600">Business scale</label><div className="grid grid-cols-2 gap-2">{[["small", "Small business", "Essential modules"], ["large", "Growing / Enterprise", "Full initial suite"]].map(([value, label, copy]) => <button key={value} type="button" onClick={() => { setBusinessScale(value); setSelectedModules(new Set(value === "small" ? ONBOARDING_MODULES.slice(0, 5).map((m) => m.id) : ONBOARDING_MODULES.map((m) => m.id))); }} className={`rounded-xl border px-3 py-2.5 text-left transition ${businessScale === value ? "border-[#16A34A] bg-emerald-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><p className="text-[12px] font-semibold text-slate-800">{label}</p><p className="mt-0.5 text-[10.5px] text-slate-400">{copy}</p></button>)}</div></div>
+                <FormField label="First branch / location"><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="Head Office" /></div></FormField>
                 <WorkspaceBrandingControls logo={company.logo} primaryColor={company.brandColor} accentColor={company.brandAccentColor} onLogoChange={(value) => setCompanyField("logo", value)} onPrimaryColorChange={(value) => setCompanyField("brandColor", value)} onAccentColorChange={(value) => setCompanyField("brandAccentColor", value)} />
-                <button onClick={() => { if (step2Valid) setStep(3); }} disabled={!step2Valid}
-                  className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
-                  style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
-                  Continue to modules →
-                </button>
-              </div>
-            )}
-
-            {mode === "create" && step === 3 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2"><button onClick={() => setStep(2)} className="text-slate-400 hover:text-slate-600" aria-label="Back to workspace details"><ChevronLeft size={18}/></button><div><h2 className="text-[20px] font-bold text-[#111827]" style={{ fontFamily: "Poppins,sans-serif" }}>Choose your starting modules</h2><p className="text-[13px] text-slate-500">Step 3 of 3 — you can add more later.</p></div></div>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" onClick={() => toggleModule(module.id)} className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition ${activeModule ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14}/></span><span><span className="block text-[12px] font-semibold text-slate-800">{module.label}</span><span className="mt-0.5 block text-[10px] text-slate-500">{activeModule ? "Enabled" : "Not enabled"}</span></span></button>; })}
-                </div>
-                <p className="text-[11.5px] leading-5 text-slate-500">Module choices are saved to your workspace and can be changed by authorised administrators later.</p>
-                <button onClick={handleFinalSubmit} disabled={busy || !company.name.trim()}
-                  className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-50 transition-all"
-                  style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.3)" }}>
-                  {busy ? "Creating your workspace…" : "Finish setup"}
-                </button>
-              </div>
+                <button type="submit" disabled={!step2Valid} className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>Continue to modules →</button>
+              </form>
+            ) : (
+              <div className="space-y-4"><div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to company details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Choose your starting modules</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Enable the workflows you need first. You can change these later.</p></div></div><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">{ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" onClick={() => toggleModule(module.id)} className={`flex items-start gap-2 rounded-xl border p-3 text-left transition ${activeModule ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14} /></span><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{module.label}</span><span className="mt-0.5 block text-[10px]">{activeModule ? "Enabled" : "Not enabled"}</span></span>{activeModule && <Check size={12} className="ml-auto shrink-0" />}</button>; })}</div><p className="text-[11.5px] leading-5 text-slate-500">Module choices are saved to your workspace and can be changed by authorised administrators later.</p><button type="button" onClick={handleFinalSubmit} disabled={busy || !step2Valid} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Launch Smart Manager →"}</button></div>
             )}
           </div>
 
-          <p className="text-center text-[12.5px] text-slate-500 mt-5">
-            Already have an account? <button type="button" onClick={onSwitchToLogin} className="font-semibold text-[#16A34A] hover:underline">Sign in</button>
-          </p>
+          <div className="mt-5 text-center"><p className="text-[12.5px] text-slate-500">Already have an account? <button type="button" onClick={onSwitchToLogin} className="font-semibold text-[#16A34A] hover:underline">Sign in</button></p><p className="mt-2 text-[11.5px] text-slate-400">{mode === "join" ? "Need to create a new company? Switch to Create a company above." : "Joining an existing company? Switch to Join existing company above."}</p></div>
         </div>
       </div>
     </div>
