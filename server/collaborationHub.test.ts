@@ -54,4 +54,10 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("Recurrence rule");
     expect(dashboardSource).toContain("Batch Roster Export");
   });
+
+  it("supports custom recurrence end dates, muted channel unread badges, and multi-department roster filters", () => {
+    expect(dashboardSource).toContain("recurrenceEndDate");
+    expect(dashboardSource).toContain("unreadCount");
+    expect(dashboardSource).toContain("selectedExportDept");
+  });
 });

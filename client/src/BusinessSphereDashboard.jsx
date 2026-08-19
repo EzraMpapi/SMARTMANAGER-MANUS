@@ -32560,10 +32560,12 @@ function ChannelsView({ currentUser, employees }) {
         <div className="flex-1 overflow-y-auto py-1.5">
           {channels.rows.map((c) => {
             const isMuted = mutedChannels.includes(c.id);
+            const unreadCount = messages.filter((m) => m.channelId === c.id && m.sender !== currentUser.name).length;
             return (
               <div key={c.id} className={`w-full flex items-center justify-between px-3 py-1.5 text-[12.5px] ${activeChannelId === c.id ? "bg-[#16A34A]/8 text-[#111827] font-medium" : "text-slate-600 hover:bg-slate-50"}`}>
                 <button onClick={() => setActiveChannelId(c.id)} className="flex-1 text-left flex items-center gap-2 min-w-0">
                   <Hash size={12} className="shrink-0 text-slate-400" /> <span className="truncate">{c.name}</span>
+                  {isMuted && unreadCount > 0 && <span className="text-[10px] font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full shrink-0">{unreadCount}</span>}
                 </button>
                 <button onClick={() => toggleMuteChannel(c.id)} className="text-[11px] text-slate-400 hover:text-slate-600 ml-1 shrink-0" title={isMuted ? "Unmute channel" : "Mute channel"}>
                   {isMuted ? "🔕" : "🔔"}
@@ -32999,10 +33001,11 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
 }
 
 function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
-  const [form, setForm] = useState({ title: "", type: MEETING_TYPES[0], date: defaultDate, startTime: "09:00", endTime: "09:30", recurrence: "None", meetingLink: "", attendees: "", description: "" });
+  const [form, setForm] = useState({ title: "", type: MEETING_TYPES[0], date: defaultDate, startTime: "09:00", endTime: "09:30", recurrence: "None", recurrenceEndDate: "", meetingLink: "", attendees: "", description: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.title.trim()) return; onSubmit(form); }
   const needsLink = form.type === "Voice Call" || form.type === "Video Call";
+  const showRecurrenceEnd = form.recurrence !== "None";
 
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
@@ -33039,6 +33042,11 @@ function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
               <option value="Monthly">Monthly</option>
             </select>
           </FormField>
+          {showRecurrenceEnd && (
+            <FormField label="Recurrence end date">
+              <input type="date" className={inputClass} value={form.recurrenceEndDate} onChange={(e) => set("recurrenceEndDate", e.target.value)} />
+            </FormField>
+          )}
           <FormField label="Description"><textarea className={inputClass} rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Agenda or notes" /></FormField>
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
@@ -33061,6 +33069,7 @@ function TeamWorkspaces({ employees, currentUser }) {
   const [savingWorkspace, setSavingWorkspace] = useState(false);
   const [deletingWorkspaceId, setDeletingWorkspaceId] = useState(null);
   const [pendingInvites, setPendingInvites] = useState([]);
+  const [selectedExportDept, setSelectedExportDept] = useState("All");
   const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
 
   const isManagerOrAdmin = ["Super Administrator", "Organization Owner", "CEO", "COO", "HR Manager", "Department Head"].includes(currentUser?.role) || allowedDepartments.length === 0;
@@ -33141,20 +33150,32 @@ function TeamWorkspaces({ employees, currentUser }) {
             URL.revokeObjectURL(url);
             notify("Workspace membership audit log exported as CSV.");
           }} className="btn-secondary text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Download size={14} /> Export Audit CSV</button>
-          <button onClick={() => {
-            const rosterRows = [
-              ["Roster ID", "Employee Name", "Department", "Role", "Assigned Workspaces"].join(","),
-              ...employees.rows.map(e => [e.id, `"${e.name.replace(/"/g, '""')}"`, `"${(e.department || "General").replace(/"/g, '""')}"`, `"${(e.role || "Staff").replace(/"/g, '""')}"`, `"${workspaces.rows.filter(w => (w.members || "").includes(e.name)).map(w => w.name).join("; ") || "General"}"`].join(","))
-            ].join("\n");
-            const blob = new Blob([rosterRows], { type: "text/csv;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `approved-workspace-roster-batch-${new Date().toISOString().slice(0, 10)}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            notify("Batch roster export generated for approved workspace members.");
-          }} className="btn-secondary text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5">👥 Batch Roster Export</button>
+          <div className="flex items-center gap-1.5">
+            <select
+              value={selectedExportDept}
+              onChange={(e) => setSelectedExportDept(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11.5px] text-slate-600 outline-none focus:border-[#16A34A]"
+              title="Filter Roster Export by Department"
+            >
+              <option value="All">All Departments</option>
+              {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <button onClick={() => {
+              const filteredEmployees = employees.rows.filter(e => selectedExportDept === "All" || e.department === selectedExportDept);
+              const rosterRows = [
+                ["Roster ID", "Employee Name", "Department", "Role", "Assigned Workspaces"].join(","),
+                ...filteredEmployees.map(e => [e.id, `"${e.name.replace(/"/g, '""')}"`, `"${(e.department || "General").replace(/"/g, '""')}"`, `"${(e.role || "Staff").replace(/"/g, '""')}"`, `"${workspaces.rows.filter(w => (w.members || "").includes(e.name)).map(w => w.name).join("; ") || "General"}"`].join(","))
+              ].join("\n");
+              const blob = new Blob([rosterRows], { type: "text/csv;charset=utf-8" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `approved-workspace-roster-${selectedExportDept.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              notify(`Batch roster export generated for department: ${selectedExportDept} (${filteredEmployees.length} members).`);
+            }} className="btn-secondary text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5">👥 Batch Roster Export</button>
+          </div>
           <button onClick={() => setShowForm(true)} className="btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Plus size={14} /> New Workspace</button>
         </div>
       </div>
