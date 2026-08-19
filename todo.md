@@ -908,3 +908,8 @@
 - [x] Review changed files for secrets, generated artifacts, and commit readiness
 - [x] Commit and push all verified project changes to GitHub
 - [x] Document the future push workflow and report the GitHub result
+
+- [ ] Inspect repository metadata, existing Dependabot/CI files, GitHub plan, and secret configuration
+- [ ] Add Dependabot scheduled updates and repository documentation
+- [ ] Configure safe Slack secret handoff and attempt eligible branch-protection settings
+- [ ] Validate, commit, push, and report enabled features and remaining account-level actions
