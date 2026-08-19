@@ -32448,6 +32448,19 @@ function ChannelsView({ currentUser, employees }) {
   const [pinnedMessageIds, setPinnedMessageIds] = useState(() => new Set());
   const [messageReactions, setMessageReactions] = useState({});
   const [channelReadStatus, setChannelReadStatus] = useState({});
+  const [mutedChannels, setMutedChannels] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("bs_muted_channels") || "[]"); } catch { return []; }
+  });
+
+  function toggleMuteChannel(cId) {
+    setMutedChannels((prev) => {
+      const isMuted = prev.includes(cId);
+      const next = isMuted ? prev.filter((id) => id !== cId) : [...prev, cId];
+      try { localStorage.setItem("bs_muted_channels", JSON.stringify(next)); } catch {}
+      notify(isMuted ? "Channel unmuted — notifications resumed." : "Channel muted — notifications silenced.");
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!activeChannelId) return;
@@ -32545,11 +32558,19 @@ function ChannelsView({ currentUser, employees }) {
           <button onClick={() => setShowChannelForm(true)} className="text-[#16A34A] hover:text-[#15803D]" aria-label="New channel"><Plus size={14} /></button>
         </div>
         <div className="flex-1 overflow-y-auto py-1.5">
-          {channels.rows.map((c) => (
-            <button key={c.id} onClick={() => setActiveChannelId(c.id)} className={`w-full text-left px-3 py-2 flex items-center gap-2 text-[12.5px] ${activeChannelId === c.id ? "bg-[#16A34A]/8 text-[#111827] font-medium" : "text-slate-600 hover:bg-slate-50"}`}>
-              <Hash size={12} className="shrink-0 text-slate-400" /> <span className="truncate">{c.name}</span>
-            </button>
-          ))}
+          {channels.rows.map((c) => {
+            const isMuted = mutedChannels.includes(c.id);
+            return (
+              <div key={c.id} className={`w-full flex items-center justify-between px-3 py-1.5 text-[12.5px] ${activeChannelId === c.id ? "bg-[#16A34A]/8 text-[#111827] font-medium" : "text-slate-600 hover:bg-slate-50"}`}>
+                <button onClick={() => setActiveChannelId(c.id)} className="flex-1 text-left flex items-center gap-2 min-w-0">
+                  <Hash size={12} className="shrink-0 text-slate-400" /> <span className="truncate">{c.name}</span>
+                </button>
+                <button onClick={() => toggleMuteChannel(c.id)} className="text-[11px] text-slate-400 hover:text-slate-600 ml-1 shrink-0" title={isMuted ? "Unmute channel" : "Mute channel"}>
+                  {isMuted ? "🔕" : "🔔"}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -32978,7 +32999,7 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
 }
 
 function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
-  const [form, setForm] = useState({ title: "", type: MEETING_TYPES[0], date: defaultDate, startTime: "09:00", endTime: "09:30", meetingLink: "", attendees: "", description: "" });
+  const [form, setForm] = useState({ title: "", type: MEETING_TYPES[0], date: defaultDate, startTime: "09:00", endTime: "09:30", recurrence: "None", meetingLink: "", attendees: "", description: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.title.trim()) return; onSubmit(form); }
   const needsLink = form.type === "Voice Call" || form.type === "Video Call";
@@ -33010,6 +33031,14 @@ function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
             </FormField>
           )}
           <FormField label="Attendees"><input className={inputClass} value={form.attendees} onChange={(e) => set("attendees", e.target.value)} placeholder="e.g. Sales team, or specific names" /></FormField>
+          <FormField label="Recurrence rule">
+            <select className={inputClass} value={form.recurrence} onChange={(e) => set("recurrence", e.target.value)}>
+              <option value="None">Does not repeat</option>
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+            </select>
+          </FormField>
           <FormField label="Description"><textarea className={inputClass} rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Agenda or notes" /></FormField>
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
@@ -33112,6 +33141,20 @@ function TeamWorkspaces({ employees, currentUser }) {
             URL.revokeObjectURL(url);
             notify("Workspace membership audit log exported as CSV.");
           }} className="btn-secondary text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Download size={14} /> Export Audit CSV</button>
+          <button onClick={() => {
+            const rosterRows = [
+              ["Roster ID", "Employee Name", "Department", "Role", "Assigned Workspaces"].join(","),
+              ...employees.rows.map(e => [e.id, `"${e.name.replace(/"/g, '""')}"`, `"${(e.department || "General").replace(/"/g, '""')}"`, `"${(e.role || "Staff").replace(/"/g, '""')}"`, `"${workspaces.rows.filter(w => (w.members || "").includes(e.name)).map(w => w.name).join("; ") || "General"}"`].join(","))
+            ].join("\n");
+            const blob = new Blob([rosterRows], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `approved-workspace-roster-batch-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            notify("Batch roster export generated for approved workspace members.");
+          }} className="btn-secondary text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5">👥 Batch Roster Export</button>
           <button onClick={() => setShowForm(true)} className="btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Plus size={14} /> New Workspace</button>
         </div>
       </div>

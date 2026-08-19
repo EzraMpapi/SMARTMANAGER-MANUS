@@ -48,4 +48,10 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("reminderTimezone");
     expect(dashboardSource).toContain("Approval Pending");
   });
+
+  it("supports channel notification mutes, calendar recurrence rules, and batch roster exports", () => {
+    expect(dashboardSource).toContain("bs_muted_channels");
+    expect(dashboardSource).toContain("Recurrence rule");
+    expect(dashboardSource).toContain("Batch Roster Export");
+  });
 });
