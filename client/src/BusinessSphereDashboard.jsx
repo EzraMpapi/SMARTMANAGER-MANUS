@@ -5532,7 +5532,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
-  const canViewMarketIntelligence = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager"].includes(currentUser.role);
+  const canViewMarketIntelligence = ["owner", "Owner", "Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager"].includes(currentUser.role);
   const vatAnomalySettingsQuery = trpc.traFiscal.getVatAnomalySettings.useQuery(
     { companyId: company?.id || "" },
     { enabled: Boolean(company?.id) },
