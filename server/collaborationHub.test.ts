@@ -29,4 +29,11 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("BEGIN:VCALENDAR");
     expect(dashboardSource).toContain("workspace-membership-audit");
   });
+
+  it("supports emoji reactions, pinned messages, calendar reminders, and department workspace permissions", () => {
+    expect(dashboardSource).toContain("messageReactions");
+    expect(dashboardSource).toContain("pinnedMessageIds");
+    expect(dashboardSource).toContain("remindersEnabled");
+    expect(dashboardSource).toContain("isManagerOrAdmin");
+  });
 });

@@ -32381,7 +32381,7 @@ function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, wo
         {tab === "whatsapp"   && <WhatsAppCenter currentUser={currentUser} crm={crm} employees={employees} invoices={invoices} company={window.__smartManagerCompany||{}} />}
         {tab === "email"      && <EmailCenter currentUser={currentUser} crm={crm} employees={employees} invoices={invoices} company={window.__smartManagerCompany||{}} />}
         {tab === "calendar"   && <SharedCalendar invoices={invoices} crm={crm} workOrders={workOrders} leaveRequests={leaveRequests} />}
-        {tab === "workspaces" && <TeamWorkspaces employees={employees} />}
+          {tab === "workspaces" && <TeamWorkspaces employees={employees} currentUser={currentUser} />}
         <VideoMeetingBar currentUser={currentUser} />
         <ResourceSchedulerPanel currentUser={currentUser} />
         {tab === "notebook" && <NotebookView currentUser={currentUser} />}
@@ -32445,6 +32445,25 @@ function ChannelsView({ currentUser, employees }) {
 
   const activeChannel = channels.rows.find((c) => c.id === activeChannelId);
   const channelMessages = messages.filter((m) => m.channelId === activeChannelId);
+  const [pinnedMessageIds, setPinnedMessageIds] = useState(() => new Set());
+  const [messageReactions, setMessageReactions] = useState({});
+
+  function togglePin(msgId) {
+    setPinnedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(msgId)) next.delete(msgId); else next.add(msgId);
+      return next;
+    });
+    notify("Message pin state updated.");
+  }
+
+  function addReaction(msgId, emoji) {
+    setMessageReactions((prev) => {
+      const current = prev[msgId] || {};
+      const count = current[emoji] || 0;
+      return { ...prev, [msgId]: { ...current, [emoji]: count + 1 } };
+    });
+  }
 
   async function sendMessage() {
     const text = draft.trim();
@@ -32523,22 +32542,55 @@ function ChannelsView({ currentUser, employees }) {
         {activeChannel ? (
           <>
             <div className="px-4 py-3 border-b border-slate-100 shrink-0">
-              <p className="text-[13.5px] font-semibold text-[#111827] flex items-center gap-1.5"><Hash size={13} className="text-slate-400" /> {activeChannel.name}</p>
-              <p className="text-[11px] text-slate-400">{activeChannel.scope} · {activeChannel.description}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[13.5px] font-semibold text-[#111827] flex items-center gap-1.5"><Hash size={13} className="text-slate-400" /> {activeChannel.name}</p>
+                  <p className="text-[11px] text-slate-400">{activeChannel.scope} · {activeChannel.description}</p>
+                </div>
+                {pinnedMessageIds.size > 0 && <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">{pinnedMessageIds.size} pinned</span>}
+              </div>
             </div>
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {channelMessages.length === 0 ? (
                 <div className="h-full flex items-center justify-center"><p className="text-[12.5px] text-slate-400">No messages yet — say something to get started.</p></div>
               ) : (
-                channelMessages.map((m) => (
-                  <div key={m.id} className={`flex gap-2.5 ${m.parentRef ? "ml-6 pl-3 border-l-2 border-slate-200" : ""}`}>
-                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-medium text-slate-500 shrink-0">{m.sender.split(" ").map((p) => p[0]).slice(0, 2).join("")}</div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between"><div className="flex items-baseline gap-2"><span className="text-[12.5px] font-medium text-[#111827]">{m.sender}</span><span className="text-[10.5px] text-slate-400">{new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></div><button onClick={() => setReplyingToId(m.id)} className="text-[11px] text-slate-400 hover:text-slate-600">Reply</button></div>
-                      <p className="text-[13px] text-slate-700 mt-0.5 break-words whitespace-pre-wrap">{m.text}</p>
+                channelMessages.map((m) => {
+                  const isPinned = pinnedMessageIds.has(m.id);
+                  const reactions = messageReactions[m.id] || {};
+                  return (
+                    <div key={m.id} className={`flex gap-2.5 p-2 rounded-lg transition-colors ${isPinned ? "bg-amber-50/50 border border-amber-100" : ""} ${m.parentRef ? "ml-6 pl-3 border-l-2 border-slate-200" : ""}`}>
+                      <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-medium text-slate-500 shrink-0">{m.sender.split(" ").map((p) => p[0]).slice(0, 2).join("")}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-[12.5px] font-medium text-[#111827]">{m.sender}</span>
+                            <span className="text-[10.5px] text-slate-400">{new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            {isPinned && <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded">Pinned</span>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => togglePin(m.id)} className="text-[11px] text-slate-400 hover:text-slate-600">{isPinned ? "Unpin" : "Pin"}</button>
+                            <button onClick={() => setReplyingToId(m.id)} className="text-[11px] text-slate-400 hover:text-slate-600">Reply</button>
+                          </div>
+                        </div>
+                        <p className="text-[13px] text-slate-700 mt-0.5 break-words whitespace-pre-wrap">{m.text}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          {Object.entries(reactions).map(([emoji, count]) => (
+                            <button key={emoji} onClick={() => addReaction(m.id, emoji)} className="text-[11px] bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <span>{emoji}</span> <span className="font-semibold">{count}</span>
+                            </button>
+                          ))}
+                          <div className="flex items-center gap-1 ml-1">
+                            {["👍", "❤️", "🚀", "💡", "✅"].map((emoji) => (
+                              <button key={emoji} onClick={() => addReaction(m.id, emoji)} className="text-[12px] hover:scale-110 transition-transform p-0.5" title={`React with ${emoji}`}>
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
             {replyingToId && (
@@ -32650,7 +32702,19 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
   const [showForm, setShowForm] = useState(false);
   const [savingEvent, setSavingEvent] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [remindersEnabled, setRemindersEnabled] = useState(() => {
+    try { return localStorage.getItem("bs_calendar_reminders") === "true"; } catch { return false; }
+  });
   const [visibleCategories, setVisibleCategories] = useState(() => new Set(CALENDAR_CATEGORIES.map((c) => c.id)));
+
+  function toggleReminders() {
+    setRemindersEnabled((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("bs_calendar_reminders", String(next)); } catch {}
+      notify(next ? "Automated deadline reminders enabled for upcoming integrated calendar events." : "Calendar reminders disabled.");
+      return next;
+    });
+  }
 
   const viewDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + monthOffset, 1);
   const year = viewDate.getFullYear(), month = viewDate.getMonth();
@@ -32747,16 +32811,24 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {CALENDAR_CATEGORIES.map((c) => (
-          <button
-            key={c.id} onClick={() => toggleCategory(c.id)}
-            className={`text-[11px] font-medium px-2.5 py-1.5 rounded-full border flex items-center gap-1.5 transition-opacity ${visibleCategories.has(c.id) ? "" : "opacity-40"}`}
-            style={{ borderColor: `${c.color}40`, backgroundColor: `${c.color}10`, color: c.color }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.color }} /> {c.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {CALENDAR_CATEGORIES.map((c) => (
+            <button
+              key={c.id} onClick={() => toggleCategory(c.id)}
+              className={`text-[11px] font-medium px-2.5 py-1.5 rounded-full border flex items-center gap-1.5 transition-opacity ${visibleCategories.has(c.id) ? "" : "opacity-40"}`}
+              style={{ borderColor: `${c.color}40`, backgroundColor: `${c.color}10`, color: c.color }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.color }} /> {c.label}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={toggleReminders}
+          className={`text-[12px] font-medium px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-colors ${remindersEnabled ? "bg-[#16A34A]/10 border-[#16A34A]/40 text-[#16A34A]" : "bg-white border-slate-200 text-slate-600"}`}
+        >
+          <Bell size={13} /> {remindersEnabled ? "Reminders Active" : "Enable Reminders"}
+        </button>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
@@ -32903,15 +32975,24 @@ function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
 
 /* ----------------------------------- TEAM WORKSPACES ----------------------------------- */
 
-function TeamWorkspaces({ employees }) {
+function TeamWorkspaces({ employees, currentUser }) {
   const workspaces = useCompanyTable("workspaces", workspacesSeed, { mapRow: mapWorkspaceRow });
+  const [allowedDepartments, setAllowedDepartments] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("bs_workspace_allowed_depts") || "[]"); } catch { return []; }
+  });
   const [showForm, setShowForm] = useState(false);
   const [savingWorkspace, setSavingWorkspace] = useState(false);
   const [deletingWorkspaceId, setDeletingWorkspaceId] = useState(null);
   const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
 
+  const isManagerOrAdmin = ["Super Administrator", "Organization Owner", "CEO", "COO", "HR Manager", "Department Head"].includes(currentUser?.role) || allowedDepartments.length === 0;
+
   async function addWorkspace(form) {
     if (savingWorkspace) return;
+    if (!isManagerOrAdmin) {
+      notify("Permission denied: your role or department settings restrict workspace creation to managers and authorized departments.", "error");
+      return;
+    }
     const draft = { id: docId("WS"), ...form };
     setSavingWorkspace(true);
     try {
