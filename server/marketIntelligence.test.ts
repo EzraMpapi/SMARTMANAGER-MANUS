@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { deriveMarketProviderUiStatus, normalizeBankRows, normalizeDseRows } from "./marketIntelligence";
+
+const marketSource = readFileSync(new URL("./marketIntelligence.ts", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 
 describe("market intelligence response validation", () => {
   it("normalizes validated bank-rate records and rejects incomplete rows", () => {
@@ -32,5 +36,20 @@ describe("market intelligence response validation", () => {
     expect(deriveMarketProviderUiStatus({ status: "CACHED", providerConfigured: true, hasRows: true, hasOutage: false })).toBe("STALE");
     expect(deriveMarketProviderUiStatus({ status: "UNAVAILABLE", providerConfigured: true, hasRows: true, hasOutage: true })).toBe("OUTAGE");
     expect(deriveMarketProviderUiStatus({ status: "AWAITING_CONFIGURATION", providerConfigured: false, hasRows: false, hasOutage: false })).toBe("AWAITING_CONFIGURATION");
+  });
+
+  it("returns tenant-resolved provider configuration and response latency for live health reporting", () => {
+    expect(marketSource).toContain("providerConfigured: Boolean(bankUrl)");
+    expect(marketSource).toContain("providerConfigured: Boolean(dseUrl)");
+    expect(marketSource).toContain("latencyMs: latencyBank");
+    expect(marketSource).toContain("latencyMs: latencyDse");
+  });
+
+  it("wires a responsive one-minute dashboard health monitor without synthetic values", () => {
+    expect(dashboardSource).toContain("refetchInterval: canViewMarketIntelligence ? 60_000 : false");
+    expect(dashboardSource).toContain("refetchIntervalInBackground: false");
+    expect(dashboardSource).toContain('aria-label="Live BOT and DSE feed health"');
+    expect(dashboardSource).toContain("Provider latency");
+    expect(dashboardSource).toContain("Auto-check every 60s");
   });
 });

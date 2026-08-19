@@ -249,21 +249,26 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
     dseMessage = statusMessage(dseStatus, false, "DSE market");
   }
 
+  const latencyBank = Date.now() - t0Bank;
+  const latencyDse = Date.now() - t0Dse;
+
   return {
     asOf: new Date().toISOString(),
     bankRates: {
       status: bankStatus,
-      uiStatus: deriveMarketProviderUiStatus({ status: bankStatus, providerConfigured: Boolean(providerConfig.bankUrl), hasRows: bankRows.length > 0, hasOutage: Boolean(bankOutage) }),
+      uiStatus: deriveMarketProviderUiStatus({ status: bankStatus, providerConfigured: Boolean(bankUrl), hasRows: bankRows.length > 0, hasOutage: Boolean(bankOutage) }),
       message: bankMessage,
-      providerConfigured: Boolean(providerConfig.bankUrl),
+      providerConfigured: Boolean(bankUrl),
+      latencyMs: latencyBank,
       outage: bankOutage ? { severity: "OUTAGE" as const, message: bankOutage } : null,
       rows: bankRows,
     },
     dse: {
       status: dseStatus,
-      uiStatus: deriveMarketProviderUiStatus({ status: dseStatus, providerConfigured: Boolean(providerConfig.dseUrl), hasRows: dseRows.length > 0, hasOutage: Boolean(dseOutage) }),
+      uiStatus: deriveMarketProviderUiStatus({ status: dseStatus, providerConfigured: Boolean(dseUrl), hasRows: dseRows.length > 0, hasOutage: Boolean(dseOutage) }),
       message: dseMessage,
-      providerConfigured: Boolean(providerConfig.dseUrl),
+      providerConfigured: Boolean(dseUrl),
+      latencyMs: latencyDse,
       outage: dseOutage ? { severity: "OUTAGE" as const, message: dseOutage } : null,
       rows: dseRows,
     },

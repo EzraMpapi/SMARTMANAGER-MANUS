@@ -5497,6 +5497,51 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
           {snapshotQuery.isFetching ? "Refreshing" : "Refresh feeds"}
         </button>
       </div>
+
+      {(() => {
+        const feedHealth = [
+          { key: "bot", label: "BOT / Bank Rates", source: "Bank of Tanzania or approved rate provider", icon: Landmark, feed: snapshot?.bankRates },
+          { key: "dse", label: "DSE Market", source: "Dar es Salaam Stock Exchange feed", icon: BarChart3, feed: snapshot?.dse },
+        ];
+        const statusDot = (status) => ({ LIVE: "bg-emerald-500", STALE: "bg-amber-500", CACHED: "bg-amber-500", OUTAGE: "bg-rose-500", UNAVAILABLE: "bg-rose-500", AWAITING_CONFIGURATION: "bg-blue-500", DELAYED: "bg-amber-500" }[status] || "bg-slate-400");
+        const statusText = (status, configured) => !configured ? "Awaiting configuration" : ({ LIVE: "Live", STALE: "Stale", CACHED: "Cached", OUTAGE: "Outage", UNAVAILABLE: "Unavailable", DELAYED: "Delayed" }[status] || "Checking");
+        const latencyText = (feed) => feed?.providerConfigured && Number.isFinite(Number(feed?.latencyMs)) ? `${Math.max(0, Math.round(Number(feed.latencyMs)))} ms` : "—";
+        const latencyClass = (feed) => {
+          if (!feed?.providerConfigured || feed?.uiStatus === "AWAITING_CONFIGURATION") return "text-slate-400";
+          if (["OUTAGE", "UNAVAILABLE"].includes(feed?.uiStatus)) return "text-rose-600";
+          if (Number(feed?.latencyMs) >= 1200) return "text-rose-600";
+          if (Number(feed?.latencyMs) >= 400 || ["STALE", "DELAYED"].includes(feed?.uiStatus)) return "text-amber-600";
+          return "text-emerald-600";
+        };
+        const latencyWidth = (feed) => !feed?.providerConfigured ? 0 : Math.min(100, Math.max(10, Math.round((Number(feed?.latencyMs || 0) / 1200) * 100)));
+
+        return (
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3.5 shadow-sm" aria-label="Live BOT and DSE feed health">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-white"><Activity size={14} /><span className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ${snapshotQuery.isFetching ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`} aria-hidden="true" /></span>
+                <div><p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-700">Feed health</p><p className="text-[10.5px] text-slate-400">Current status and provider response latency</p></div>
+              </div>
+              <div className="flex items-center gap-2 text-[10px] text-slate-400"><span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-1 font-semibold"><span className={`h-1.5 w-1.5 rounded-full ${snapshotQuery.isFetching ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`} />{snapshotQuery.isFetching ? "Checking now" : "Auto-check every 60s"}</span><span>Last check {formatTime(snapshot?.asOf)}</span></div>
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-2.5 md:grid-cols-2">
+              {feedHealth.map(({ key, label, source, icon: FeedIcon, feed }) => {
+                const status = feed?.uiStatus || feed?.status || "AWAITING_CONFIGURATION";
+                return (
+                  <div key={key} className="rounded-xl border border-white bg-white p-3 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700"><FeedIcon size={15} /></span><div className="min-w-0"><p className="truncate text-[11.5px] font-bold text-slate-800">{label}</p><p className="truncate text-[10px] text-slate-400">{source}</p></div></div>
+                      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[9.5px] font-bold text-slate-600"><span className={`h-1.5 w-1.5 rounded-full ${statusDot(status)} ${status === "LIVE" && !snapshotQuery.isFetching ? "animate-pulse" : ""}`} />{statusText(status, feed?.providerConfigured)}</span>
+                    </div>
+                    <div className="mt-3 flex items-end justify-between gap-3"><div><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Provider latency</p><p className={`mt-0.5 font-mono text-[17px] font-black ${latencyClass(feed)}`}>{latencyText(feed)}</p></div><p className="max-w-[180px] text-right text-[10px] leading-relaxed text-slate-400">{feed?.message || "Waiting for a validated provider response."}</p></div>
+                    <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full transition-all duration-300 ${latencyClass(feed).replace("text-", "bg-")}`} style={{ width: `${latencyWidth(feed)}%` }} /></div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       {providerAlerts.length > 0 && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3.5 shadow-sm" role="alert" aria-live="assertive">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -5557,8 +5602,10 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const marketSnapshotInput = useMemo(() => ({ companyId: company?.id || "" }), [company?.id]);
   const marketSnapshotQuery = trpc.marketIntelligence.snapshot.useQuery(marketSnapshotInput, {
     enabled: Boolean(company?.id) && canViewMarketIntelligence,
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
+    refetchInterval: canViewMarketIntelligence ? 60_000 : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
   // Time period filter — Day/Week/Month/Year. The filter cuts both invoice
   // and expense rows by their date field, so every KPI on the dashboard
