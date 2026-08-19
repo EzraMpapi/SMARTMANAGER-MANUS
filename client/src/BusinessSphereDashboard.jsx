@@ -32505,7 +32505,19 @@ function ChannelsView({ currentUser, employees }) {
         return;
       }
       if (isMentionAll) {
-        notify(`🔔 Mention Broadcast: @all alert dispatched across #${activeChannel?.name || "channel"} for active members.`);
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.15);
+        } catch {}
+        notify(`🔊 Sound Alert & Mention Broadcast: @all alert dispatched across muted #${activeChannel?.name || "channel"}.`);
       }
       const { data, error } = await runCompanyTableMutation("collab_messages", "insert", { channel_ref: activeChannelId, sender: currentUser.name, body: payloadBody, parent_ref: replyingToId });
       if (error || !data?.id) throw error || new Error("The server did not return the sent message.");
@@ -33001,7 +33013,7 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
 }
 
 function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
-  const [form, setForm] = useState({ title: "", type: MEETING_TYPES[0], date: defaultDate, startTime: "09:00", endTime: "09:30", recurrence: "None", recurrenceEndDate: "", meetingLink: "", attendees: "", description: "" });
+  const [form, setForm] = useState({ title: "", type: MEETING_TYPES[0], date: defaultDate, startTime: "09:00", endTime: "09:30", recurrence: "None", recurrenceEndDate: "", exceptionDates: "", meetingLink: "", attendees: "", description: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.title.trim()) return; onSubmit(form); }
   const needsLink = form.type === "Voice Call" || form.type === "Video Call";
@@ -33043,9 +33055,14 @@ function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
             </select>
           </FormField>
           {showRecurrenceEnd && (
-            <FormField label="Recurrence end date">
-              <input type="date" className={inputClass} value={form.recurrenceEndDate} onChange={(e) => set("recurrenceEndDate", e.target.value)} />
-            </FormField>
+            <>
+              <FormField label="Recurrence end date">
+                <input type="date" className={inputClass} value={form.recurrenceEndDate} onChange={(e) => set("recurrenceEndDate", e.target.value)} />
+              </FormField>
+              <FormField label="Exception dates (skip dates)">
+                <input className={inputClass} value={form.exceptionDates} onChange={(e) => set("exceptionDates", e.target.value)} placeholder="e.g. 2026-09-01, 2026-09-15" />
+              </FormField>
+            </>
           )}
           <FormField label="Description"><textarea className={inputClass} rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Agenda or notes" /></FormField>
         </div>
@@ -33070,6 +33087,7 @@ function TeamWorkspaces({ employees, currentUser }) {
   const [deletingWorkspaceId, setDeletingWorkspaceId] = useState(null);
   const [pendingInvites, setPendingInvites] = useState([]);
   const [selectedExportDept, setSelectedExportDept] = useState("All");
+  const [exportColumns, setExportColumns] = useState({ id: true, name: true, department: true, role: true, workspaces: true });
   const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
 
   const isManagerOrAdmin = ["Super Administrator", "Organization Owner", "CEO", "COO", "HR Manager", "Department Head"].includes(currentUser?.role) || allowedDepartments.length === 0;
@@ -33160,21 +33178,43 @@ function TeamWorkspaces({ employees, currentUser }) {
               <option value="All">All Departments</option>
               {departments.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
-            <button onClick={() => {
-              const filteredEmployees = employees.rows.filter(e => selectedExportDept === "All" || e.department === selectedExportDept);
-              const rosterRows = [
-                ["Roster ID", "Employee Name", "Department", "Role", "Assigned Workspaces"].join(","),
-                ...filteredEmployees.map(e => [e.id, `"${e.name.replace(/"/g, '""')}"`, `"${(e.department || "General").replace(/"/g, '""')}"`, `"${(e.role || "Staff").replace(/"/g, '""')}"`, `"${workspaces.rows.filter(w => (w.members || "").includes(e.name)).map(w => w.name).join("; ") || "General"}"`].join(","))
-              ].join("\n");
-              const blob = new Blob([rosterRows], { type: "text/csv;charset=utf-8" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `approved-workspace-roster-${selectedExportDept.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
-              a.click();
-              URL.revokeObjectURL(url);
-              notify(`Batch roster export generated for department: ${selectedExportDept} (${filteredEmployees.length} members).`);
-            }} className="btn-secondary text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5">👥 Batch Roster Export</button>
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5">
+              <span className="text-[11.5px] text-slate-500 font-medium">Columns:</span>
+              <label className="text-[11px] text-slate-600 flex items-center gap-1"><input type="checkbox" checked={exportColumns.id} onChange={(e) => setExportColumns(c => ({...c, id: e.target.checked}))} /> ID</label>
+              <label className="text-[11px] text-slate-600 flex items-center gap-1"><input type="checkbox" checked={exportColumns.name} onChange={(e) => setExportColumns(c => ({...c, name: e.target.checked}))} /> Name</label>
+              <label className="text-[11px] text-slate-600 flex items-center gap-1"><input type="checkbox" checked={exportColumns.department} onChange={(e) => setExportColumns(c => ({...c, department: e.target.checked}))} /> Dept</label>
+              <label className="text-[11px] text-slate-600 flex items-center gap-1"><input type="checkbox" checked={exportColumns.role} onChange={(e) => setExportColumns(c => ({...c, role: e.target.checked}))} /> Role</label>
+              <button onClick={() => {
+                const filteredEmployees = employees.rows.filter(e => selectedExportDept === "All" || e.department === selectedExportDept);
+                const headers = [];
+                if (exportColumns.id) headers.push("Roster ID");
+                if (exportColumns.name) headers.push("Employee Name");
+                if (exportColumns.department) headers.push("Department");
+                if (exportColumns.role) headers.push("Role");
+                if (exportColumns.workspaces) headers.push("Assigned Workspaces");
+
+                const rosterRows = [
+                  headers.join(","),
+                  ...filteredEmployees.map(e => {
+                    const row = [];
+                    if (exportColumns.id) row.push(e.id);
+                    if (exportColumns.name) row.push(`"${e.name.replace(/"/g, '""')}"`);
+                    if (exportColumns.department) row.push(`"${(e.department || "General").replace(/"/g, '""')}"`);
+                    if (exportColumns.role) row.push(`"${(e.role || "Staff").replace(/"/g, '""')}"`);
+                    if (exportColumns.workspaces) row.push(`"${workspaces.rows.filter(w => (w.members || "").includes(e.name)).map(w => w.name).join("; ") || "General"}"`);
+                    return row.join(",");
+                  })
+                ].join("\n");
+                const blob = new Blob([rosterRows], { type: "text/csv;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `approved-workspace-roster-${selectedExportDept.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                notify(`Batch roster export generated for department: ${selectedExportDept} (${filteredEmployees.length} members).`);
+              }} className="btn-secondary text-[12px] font-medium px-3 py-1.5 rounded-md ml-1">👥 Export Roster</button>
+            </div>
           </div>
           <button onClick={() => setShowForm(true)} className="btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Plus size={14} /> New Workspace</button>
         </div>

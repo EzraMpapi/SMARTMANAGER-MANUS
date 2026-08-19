@@ -52,12 +52,18 @@ describe("Collaboration Hub Enterprise Suite", () => {
   it("supports channel notification mutes, calendar recurrence rules, and batch roster exports", () => {
     expect(dashboardSource).toContain("bs_muted_channels");
     expect(dashboardSource).toContain("Recurrence rule");
-    expect(dashboardSource).toContain("Batch Roster Export");
+    expect(dashboardSource).toContain("Export Roster");
   });
 
   it("supports custom recurrence end dates, muted channel unread badges, and multi-department roster filters", () => {
     expect(dashboardSource).toContain("recurrenceEndDate");
     expect(dashboardSource).toContain("unreadCount");
     expect(dashboardSource).toContain("selectedExportDept");
+  });
+
+  it("supports recurring event exception dates, sound alerts for mentions, and selectable roster columns", () => {
+    expect(dashboardSource).toContain("exceptionDates");
+    expect(dashboardSource).toContain("AudioContext");
+    expect(dashboardSource).toContain("exportColumns");
   });
 });
