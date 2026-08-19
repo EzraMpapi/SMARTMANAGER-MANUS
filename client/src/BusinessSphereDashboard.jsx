@@ -31656,119 +31656,6 @@ function VideoMeetingBar({ currentUser }) {
    ─ Quick-send integration: Receivables, Invoices, Top Buyers
 ═══════════════════════════════════════════════════════════════════════ */
 
-
-      {showConfigModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-5 animate-message-enter">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>⚙️ Bird WhatsApp Provider Configuration</span>
-                </h3>
-                <p className="text-[12px] text-slate-500 mt-0.5">Configure secure API keys, webhook signing secrets, and workspace parameters for automated outbound messaging.</p>
-              </div>
-              <button onClick={() => setShowConfigModal(false)} className="text-slate-400 hover:text-slate-600 text-lg font-bold">×</button>
-            </div>
-            <div className="space-y-4 text-[13px]">
-              <div>
-                <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Bird API Key (Server-only)</label>
-                <input
-                  type="password"
-                  value={birdApiKey}
-                  onChange={(e) => setBirdApiKey(e.target.value)}
-                  placeholder="live_key_..."
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
-                />
-              </div>
-              <div>
-                <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Webhook Signing Secret</label>
-                <input
-                  type="password"
-                  value={birdSigningSecret}
-                  onChange={(e) => setBirdSigningSecret(e.target.value)}
-                  placeholder="whsec_..."
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Workspace ID</label>
-                  <input
-                    type="text"
-                    value={birdWorkspaceId}
-                    onChange={(e) => setBirdWorkspaceId(e.target.value)}
-                    placeholder="ws_..."
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">WhatsApp Channel ID</label>
-                  <input
-                    type="text"
-                    value={birdChannelId}
-                    onChange={(e) => setBirdChannelId(e.target.value)}
-                    placeholder="ch_..."
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-3 pt-2">
-                <input
-                  type="checkbox"
-                  id="birdDeliveryToggle"
-                  checked={birdDeliveryEnabled}
-                  onChange={(e) => setBirdDeliveryEnabled(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <label htmlFor="birdDeliveryToggle" className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
-                  Enable automated server-side delivery boundary (BIRD_WHATSAPP_DELIVERY_ENABLED)
-                </label>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setShowConfigModal(false)}
-                className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={updateBirdMutation.isPending}
-                onClick={() => {
-                  updateBirdMutation.mutate({
-                    apiKey: birdApiKey.trim(),
-                    signingSecret: birdSigningSecret.trim(),
-                    workspaceId: birdWorkspaceId.trim(),
-                    channelId: birdChannelId.trim(),
-                    deliveryEnabled: birdDeliveryEnabled,
-                  });
-                }}
-                className="rounded-xl bg-emerald-700 px-5 py-2 text-[12.5px] font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:opacity-50"
-              >
-                {updateBirdMutation.isPending ? "Saving securely…" : "Save & Activate Provider"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   EMAIL CENTER / DEPARTMENT CHANNELS ----------------------------- */
-
-// Real polling, not true push-based real-time — there is no WebSocket
-// signaling server in this architecture (see the module-level note above
-// MEETING_TYPES for why voice/video can't be hosted in-app for the same
-// underlying reason). While a channel is open, this refetches its
-// messages every 4 seconds in live mode, so two people with this channel
-// open genuinely see each other's messages appear without a manual
-// refresh — a real, working technique for this class of problem, honestly
-// short of a true WebSocket subscription.
-
 const WA_TEMPLATES = [
   {
     id:"invoice",   label:"📄 Invoice Ready",
@@ -32532,6 +32419,117 @@ function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, wo
         {tab === "notebook" && <NotebookView currentUser={currentUser} />}
         {tab === "files" && <CollabFileSharing filesHook={filesHook} onNavigate={onNavigate} />}
       </div>
+      {showConfigModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-5 animate-message-enter">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>⚙️ Bird WhatsApp Provider Configuration</span>
+                </h3>
+                <p className="text-[12px] text-slate-500 mt-0.5">Configure secure API keys, webhook signing secrets, and workspace parameters for automated outbound messaging.</p>
+              </div>
+              <button onClick={() => setShowConfigModal(false)} className="text-slate-400 hover:text-slate-600 text-lg font-bold">×</button>
+            </div>
+            <div className="space-y-4 text-[13px]">
+              <div>
+                <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Bird API Key (Server-only)</label>
+                <input
+                  type="password"
+                  value={birdApiKey}
+                  onChange={(e) => setBirdApiKey(e.target.value)}
+                  placeholder="live_key_..."
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Webhook Signing Secret</label>
+                <input
+                  type="password"
+                  value={birdSigningSecret}
+                  onChange={(e) => setBirdSigningSecret(e.target.value)}
+                  placeholder="whsec_..."
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Workspace ID</label>
+                  <input
+                    type="text"
+                    value={birdWorkspaceId}
+                    onChange={(e) => setBirdWorkspaceId(e.target.value)}
+                    placeholder="ws_..."
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 mb-1">WhatsApp Channel ID</label>
+                  <input
+                    type="text"
+                    value={birdChannelId}
+                    onChange={(e) => setBirdChannelId(e.target.value)}
+                    placeholder="ch_..."
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white outline-none focus:border-emerald-600 font-mono text-[12px]"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <input
+                  type="checkbox"
+                  id="birdDeliveryToggle"
+                  checked={birdDeliveryEnabled}
+                  onChange={(e) => setBirdDeliveryEnabled(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="birdDeliveryToggle" className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
+                  Enable automated server-side delivery boundary (BIRD_WHATSAPP_DELIVERY_ENABLED)
+                </label>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowConfigModal(false)}
+                className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={updateBirdMutation.isPending}
+                onClick={() => {
+                  updateBirdMutation.mutate({
+                    apiKey: birdApiKey.trim(),
+                    signingSecret: birdSigningSecret.trim(),
+                    workspaceId: birdWorkspaceId.trim(),
+                    channelId: birdChannelId.trim(),
+                    deliveryEnabled: birdDeliveryEnabled,
+                  });
+                }}
+                className="rounded-xl bg-emerald-700 px-5 py-2 text-[12.5px] font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:opacity-50"
+              >
+                {updateBirdMutation.isPending ? "Saving securely…" : "Save & Activate Provider"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   EMAIL CENTER / DEPARTMENT CHANNELS ----------------------------- */
+
+// Real polling, not true push-based real-time — there is no WebSocket
+// signaling server in this architecture (see the module-level note above
+// MEETING_TYPES for why voice/video can't be hosted in-app for the same
+// underlying reason). While a channel is open, this refetches its
+// messages every 4 seconds in live mode, so two people with this channel
+// open genuinely see each other's messages appear without a manual
+// refresh — a real, working technique for this class of problem, honestly
+// short of a true WebSocket subscription.
 function ChannelsView({ currentUser, employees }) {
   const channels = useCompanyTable("collab_channels", collabChannelsSeed, { mapRow: mapCollabChannelRow });
   const [activeChannelId, setActiveChannelId] = useState(null);
