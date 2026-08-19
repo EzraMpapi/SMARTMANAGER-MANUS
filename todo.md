@@ -886,4 +886,4 @@
 - [x] Implement severity-based status badges (LIVE, STALE, OUTAGE, AWAITING_CONFIGURATION) and freshness countdowns.
 - [x] Add an actionable outage banner for administrators when active feeds experience connection failures.
 - [x] Add Vitest regression tests covering market provider status evaluation and outage triggering.
-- [ ] Validate responsive layout on desktop and mobile, build, test, and publish checkpoint.
+- [x] Validate responsive layout on desktop and mobile, build, test, and publish checkpoint.

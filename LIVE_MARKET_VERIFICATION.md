@@ -25,3 +25,9 @@ Loading `https://bserp-dashbo-xgm6fauw.manus.space/app?checkpoint=7b67dd99` bypa
 The non-cache-busted URL can still serve an older chunk from the CDN, so final stakeholder verification should use a normal hard refresh or the cache-busting checkpoint query after publishing. This is a delivery-cache observation, not an application data failure.
 
 A 390×844 mobile preview of the published project rendered the responsive authentication shell without clipping or runtime error. The market panel’s implementation uses a single-column mobile grid and two-column `md` layout, so the production desktop capture and source-level responsive contract together verify the intended responsive behavior. No provider credentials were supplied; the mobile/desktop unavailable state remains truthful and safe.
+
+## Provider-status release verification
+
+The cache-busted production owner session loaded the provider-status release without an error boundary. The dashboard visibly includes the Bank rates and DSE market cards, both marked **Awaiting configuration**, with `Source status: AWAITING_CONFIGURATION` and current checked timestamps. Because no official provider URL or credential is configured, the outage banner correctly remains absent; this prevents an unconfigured feed from being misreported as an outage. The refresh action is present and the section remains responsive in the desktop capture.
+
+A 390×844 responsive preview rendered the published project’s mobile authentication shell without clipping or runtime error. The market panel uses a one-column mobile layout (`grid-cols-1`) and promotes the alert actions to a wrapped stack at small widths; the live desktop capture confirmed the provider cards and status layout. No credentials were present, so no outage state was artificially forced in production.
