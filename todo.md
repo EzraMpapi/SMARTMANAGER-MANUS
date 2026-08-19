@@ -8156,3 +8156,11 @@
 - [x] Audit UI responsiveness, loading states, accessibility labels, and keyboard interactions.
 - [x] Run full test suite, production build, and visual verification.
 - [x] Save published checkpoint with protocol adherence verified.
+
+## CI/CD, Coverage, and E2E Journey Automation
+- [x] Audit package scripts, dependency list, and GitHub actions structure.
+- [ ] Add test-coverage script and CI workflow with Vitest coverage reporting.
+- [ ] Add automated dependency security audit step (`pnpm audit` or equivalent) to CI.
+- [ ] Add automated browser journey simulation test spec covering login, onboarding, and module navigation.
+- [ ] Run local CI test suite, coverage export, dependency audit, and browser journey simulation.
+- [ ] Document CI automation usage and save published checkpoint.
