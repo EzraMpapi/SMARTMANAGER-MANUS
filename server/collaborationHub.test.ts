@@ -76,6 +76,12 @@ describe("Collaboration Hub Enterprise Suite", () => {
   it("supports drag-and-drop channel uploads, custom digest email subjects, and matrix department drill-downs", () => {
     expect(dashboardSource).toContain("onDrop");
     expect(dashboardSource).toContain("Custom Email Subject Line");
-    expect(dashboardSource).toContain("Matrix Drill-Down");
+    expect(dashboardSource).toContain("Dept:");
+  });
+
+  it("supports attachment size validation, recipient email previews, and employee name search", () => {
+    expect(dashboardSource).toContain("maxSizeMB");
+    expect(dashboardSource).toContain("Recipient Email Preview");
+    expect(dashboardSource).toContain("matrixSearch");
   });
 });

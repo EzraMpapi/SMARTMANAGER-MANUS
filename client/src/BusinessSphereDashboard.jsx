@@ -32669,9 +32669,14 @@ function ChannelsView({ currentUser, employees }) {
                   const files = e.dataTransfer.files;
                   if (files && files[0]) {
                     const file = files[0];
+                    const maxSizeMB = 15;
+                    if (file.size > maxSizeMB * 1024 * 1024) {
+                      alert(`❌ File attachment exceeds maximum limit of ${maxSizeMB}MB (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please choose a smaller file.`);
+                      return;
+                    }
                     const fakeUrl = URL.createObjectURL(file);
                     setAttachmentUrl(fakeUrl);
-                    notify(`📁 File attached via drag-and-drop: ${file.name}`);
+                    notify(`📁 File attached via drag-and-drop: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
                   }
                 }}
                 className="flex items-center gap-2 border border-dashed border-slate-300 rounded-lg p-2 bg-slate-50/50 hover:bg-slate-50 transition-colors"
@@ -33120,6 +33125,7 @@ function TeamWorkspaces({ employees, currentUser }) {
   const [deletingWorkspaceId, setDeletingWorkspaceId] = useState(null);
   const [pendingInvites, setPendingInvites] = useState([]);
   const [selectedExportDept, setSelectedExportDept] = useState("All");
+  const [matrixSearch, setMatrixSearch] = useState("");
   const [exportColumns, setExportColumns] = useState({ id: true, name: true, department: true, role: true, workspaces: true });
   const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
 
@@ -33258,8 +33264,15 @@ function TeamWorkspaces({ employees, currentUser }) {
             <h4 className="text-[13px] font-semibold text-[#111827]">Cross-Workspace Employee Membership Matrix</h4>
             <p className="text-[11.5px] text-slate-500">Compare employee assignments across all active team workspaces instantly.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11.5px] text-slate-500 font-medium">Matrix Drill-Down:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              placeholder="Search employee name..."
+              value={matrixSearch || ""}
+              onChange={(e) => setMatrixSearch(e.target.value)}
+              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[11.5px] text-slate-700 outline-none focus:border-[#16A34A] w-44"
+            />
+            <span className="text-[11.5px] text-slate-500 font-medium">Dept:</span>
             <select
               value={selectedExportDept}
               onChange={(e) => setSelectedExportDept(e.target.value)}
@@ -33284,6 +33297,7 @@ function TeamWorkspaces({ employees, currentUser }) {
             <tbody className="divide-y divide-slate-50 text-[12.5px]">
               {employees.rows
                 .filter(e => selectedExportDept === "All" || e.department === selectedExportDept)
+                .filter(e => !matrixSearch || e.name.toLowerCase().includes(matrixSearch.toLowerCase()))
                 .slice(0, 10)
                 .map(e => (
                   <tr key={e.id} className="hover:bg-slate-50">
@@ -53020,6 +53034,16 @@ function ComplianceDigestSettingsModal({ company, currentUser, onClose, onSaved 
                 <option value="pdf">PDF Attachment</option>
                 <option value="csv">CSV Spreadsheet</option>
               </select>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 space-y-2">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📧 Recipient Email Preview</p>
+            <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-100 dark:border-slate-800 text-[12px] space-y-1">
+              <p className="text-slate-500"><span className="font-medium text-slate-700 dark:text-slate-300">To:</span> {recipientEmail || "recipient@businesssphere.co.tz"}</p>
+              {ccEmails && <p className="text-slate-500"><span className="font-medium text-slate-700 dark:text-slate-300">CC:</span> {ccEmails}</p>}
+              <p className="text-slate-800 dark:text-slate-200 font-semibold pt-1 border-t border-slate-100 dark:border-slate-800">Subject: {emailSubject}</p>
+              <p className="text-slate-500 italic text-[11px] pt-1">Attached: {name} ({format.toUpperCase()}) — Scheduled {frequency}</p>
             </div>
           </div>
           <div className="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
