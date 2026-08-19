@@ -877,8 +877,8 @@
 - [x] Phase 3: Implement secure backend market-intelligence services and tRPC procedures.
 - [x] Phase 4: Integrate bank-rate and DSE widgets into the dashboard with truthful status states.
 - [x] Phase 5: Run database migration, unit tests, build, and responsive checks.
-- [ ] Phase 6: Publish the verified production checkpoint and deliver the final report.
+- [x] Phase 6: Publish the verified production checkpoint and deliver the final report.
 - [x] Fix report-schedule regression mock to include the shared CC recipient parser and restore the full suite to green.
-- [ ] Perform post-publish authenticated live verification of the market-intelligence widgets on desktop and mobile.
+- [x] Perform post-publish authenticated live verification of the market-intelligence widgets on desktop and mobile.
 - [x] Fix production market-intelligence role gate to recognize the authenticated lowercase `owner` role used by the live workspace.
-- [ ] Re-publish and verify the market-intelligence section for owner on desktop and mobile after the role-gate fix.
+- [x] Re-publish and verify the market-intelligence section for owner on desktop and mobile after the role-gate fix.
