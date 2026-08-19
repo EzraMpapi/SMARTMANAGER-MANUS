@@ -187,9 +187,11 @@ async function dispatchMarketOutageNotification(companyId: string, providerType:
       const recipients = settings.outageEmailRecipients.split(",").map((s) => s.trim()).filter(Boolean);
       for (const email of recipients) {
         await sendTransactionalEmail({
-          to: email,
+          to: [email],
           subject: `[Smart Manager] Market Outage Alert: ${providerType.toUpperCase()}`,
+          html: `<p>Smart Manager ERP detected a provider outage.</p><p><strong>Provider:</strong> ${providerType.toUpperCase()}<br /><strong>Summary:</strong> ${summary}<br /><strong>Timestamp:</strong> ${new Date().toUTCString()}</p><p>Please check integration settings or provider uptime history in the enterprise dashboard.</p>`,
           text: `Smart Manager ERP detected a provider outage.\n\nProvider: ${providerType.toUpperCase()}\nSummary: ${summary}\nTimestamp: ${new Date().toUTCString()}\n\nPlease check integration settings or provider uptime history in the enterprise dashboard.`,
+          category: "notification",
         }).catch(() => {});
       }
     }

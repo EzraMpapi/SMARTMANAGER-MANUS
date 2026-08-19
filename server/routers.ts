@@ -106,7 +106,7 @@ export const appRouter = router({
         const { companyId, ...settings } = input;
         const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
         const updated = await upsertMarketProviderSettings(companyId, settings, sessionToken);
-        await recordAuditLog(profile.profile, {
+        await recordAuditLog({ openId: profile.profile.id, name: profile.profile.full_name }, {
           companyId,
           action: "Market provider governance settings saved",
           module: "Market Intelligence",

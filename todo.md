@@ -901,3 +901,5 @@
 - [x] Add secure CBK/BOU/BNR provider configuration fields and remove unverified regional benchmark placeholders
 - [x] Research and pre-populate official public central bank endpoints (CBK, BOU, BNR) while retaining secure credential gates for protected institutional tokens
 - [x] Add regression coverage and validate schedule callback, alert cooldown, and truthful regional provider states
+- [x] Replace BOT/DSE configuration dead-end with validated official public feed adapters (BOT HTML and DSE official JSON)
+- [x] Preserve truthful unavailable fields and add regression/live-feed validation for BOT and DSE data

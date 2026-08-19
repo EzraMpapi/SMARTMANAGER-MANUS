@@ -293,9 +293,9 @@ export const dseMarketTickers = mysqlTable("dse_market_tickers", {
   symbol: varchar("symbol", { length: 32 }).notNull(),
   companyName: varchar("companyName", { length: 160 }).notNull(),
   priceTzs: varchar("priceTzs", { length: 32 }).notNull(),
-  changeTzs: varchar("changeTzs", { length: 32 }).notNull(),
-  changePercent: varchar("changePercent", { length: 32 }).notNull(),
-  volume: int("volume").notNull().default(0),
+  changeTzs: varchar("changeTzs", { length: 32 }),
+  changePercent: varchar("changePercent", { length: 32 }),
+  volume: int("volume"),
   status: varchar("status", { length: 32 }).notNull().default("UNAVAILABLE"),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({

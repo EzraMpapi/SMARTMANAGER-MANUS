@@ -16,7 +16,7 @@ async function requireDb() {
   return db;
 }
 
-export async function recordAuditLog(user: User, input: AuditLogInput): Promise<AuditLog> {
+export async function recordAuditLog(user: Pick<User, "openId" | "name">, input: AuditLogInput): Promise<AuditLog> {
   const db = await requireDb();
   const [insertResult] = await db.insert(auditLogs).values({
     actorOpenId: user.openId,

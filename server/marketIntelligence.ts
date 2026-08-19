@@ -1,5 +1,5 @@
-import { and, desc, eq } from "drizzle-orm";
-import { bankMarketRates, dseMarketTickers } from "../drizzle/schema";
+import { and, asc, desc, eq, gte } from "drizzle-orm";
+import { bankMarketRates, dseMarketTickers, marketProviderUptimeLogs } from "../drizzle/schema";
 import { getDb } from "./db";
 
 export type MarketDataStatus = "LIVE" | "CACHED" | "DELAYED" | "UNAVAILABLE" | "AWAITING_CONFIGURATION";
@@ -17,7 +17,7 @@ type BankRateRow = {
   currencyPair: string;
   buyRate: number;
   sellRate: number;
-  lendingRateAnnual: number;
+  lendingRateAnnual: number | null;
   status: MarketDataStatus;
   source: string;
   updatedAt: Date;
@@ -27,18 +27,21 @@ type DseTickerRow = {
   symbol: string;
   companyName: string;
   priceTzs: number;
-  changeTzs: number;
-  changePercent: number;
-  volume: number;
+  changeTzs: number | null;
+  changePercent: number | null;
+  volume: number | null;
   status: MarketDataStatus;
   source: string;
   updatedAt: Date;
 };
 
+const OFFICIAL_BOT_EXCHANGE_URL = "https://www.bot.go.tz/ExchangeRate/excRates";
+const OFFICIAL_DSE_MARKET_URL = "https://dse.co.tz/get/gainers/losers";
+
 const providerConfig = {
-  bankUrl: process.env.MARKET_BANK_RATES_API_URL?.trim() || "",
+  bankUrl: process.env.MARKET_BANK_RATES_API_URL?.trim() || OFFICIAL_BOT_EXCHANGE_URL,
   bankKey: process.env.MARKET_BANK_RATES_API_KEY?.trim() || "",
-  dseUrl: process.env.MARKET_DSE_API_URL?.trim() || "",
+  dseUrl: process.env.MARKET_DSE_API_URL?.trim() || OFFICIAL_DSE_MARKET_URL,
   dseKey: process.env.MARKET_DSE_API_KEY?.trim() || "",
 };
 
@@ -51,14 +54,87 @@ function parseFiniteNumber(value: unknown): number | null {
   return null;
 }
 
+function parseUpdatedAt(value: unknown): Date {
+  if (value === undefined || value === null || String(value).trim() === "") return new Date();
+  const parsed = new Date(String(value));
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
 function parseRows(payload: unknown): unknown[] {
   if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") return [];
   const record = payload as Record<string, unknown>;
-  for (const key of ["data", "results", "rates", "tickers", "quotes", "items"]) {
+  for (const key of ["data", "results", "rates", "tickers", "quotes", "items", "gainers_and_losers"]) {
     if (Array.isArray(record[key])) return record[key] as unknown[];
   }
   return [];
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCharCode(parseInt(code, 16)));
+}
+
+function htmlCellText(value: string): string {
+  return decodeHtmlEntities(value.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
+}
+
+function parseHtmlTables(html: string): string[][][] {
+  return Array.from(html.matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/gi)).map((tableMatch) =>
+    Array.from(tableMatch[1].matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)).map((rowMatch) =>
+      Array.from(rowMatch[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)).map((cellMatch) => htmlCellText(cellMatch[1])),
+    ).filter((cells) => cells.length > 0),
+  );
+}
+
+export function normalizeBotExchangeHtml(html: string, source: string): BankRateRow[] {
+  const table = parseHtmlTables(html).find((rows) => rows.some((row) => row.some((cell) => cell.toLowerCase() === "currency") && row.some((cell) => cell.toLowerCase() === "buying") && row.some((cell) => cell.toLowerCase() === "selling")));
+  if (!table) return [];
+  return table.flatMap((cells) => {
+    if (cells.length < 6 || !/^[A-Z]{3}$/.test(cells[1])) return [];
+    const buyRate = parseFiniteNumber(cells[2]);
+    const sellRate = parseFiniteNumber(cells[3]);
+    if (buyRate === null || sellRate === null) return [];
+    const parsedDate = new Date(cells[5]);
+    return [{ bankName: "Bank of Tanzania", currencyPair: `${cells[1]}/TZS`, buyRate, sellRate, lendingRateAnnual: null, status: "LIVE", source, updatedAt: Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate }];
+  });
+}
+
+export function normalizeDseMarketHtml(html: string, source: string): DseTickerRow[] {
+  const table = parseHtmlTables(html).find((rows) => rows.some((row) => row.some((cell) => cell.toUpperCase() === "SYMBOL") && row.some((cell) => cell.toUpperCase().includes("LTP")) && row.some((cell) => cell.toUpperCase().includes("CHANGE"))));
+  if (!table) return [];
+  return table.flatMap((cells) => {
+    if (cells.length < 3 || !/^[A-Z0-9][A-Z0-9-]*$/.test(cells[0])) return [];
+    const priceTzs = parseFiniteNumber(cells[1]);
+    const changePercent = parseFiniteNumber(cells[2]);
+    if (priceTzs === null || priceTzs < 0) return [];
+    return [{ symbol: cells[0], companyName: cells[0], priceTzs, changeTzs: null, changePercent, volume: null, status: "LIVE", source, updatedAt: new Date() }];
+  });
+}
+
+async function fetchProviderText(url: string, apiKey: string): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: "text/html,application/xhtml+xml",
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}`, "X-API-Key": apiKey } : {}),
+      },
+    });
+    if (!response.ok) throw new Error(`Provider responded with HTTP ${response.status}.`);
+    return response.text();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function fetchProviderJson(url: string, apiKey: string): Promise<unknown> {
@@ -87,7 +163,7 @@ export function normalizeBankRows(payload: unknown, source: string): BankRateRow
     const sellRate = parseFiniteNumber(row.sellRate ?? row.sell ?? row.selling ?? row.ask);
     const lendingRateAnnual = parseFiniteNumber(row.lendingRateAnnual ?? row.lendingRate ?? row.interestRate ?? row.rate);
     const bankName = String(row.bankName ?? row.bank ?? row.institution ?? "").trim();
-    if (!bankName || buyRate === null || sellRate === null || lendingRateAnnual === null) return [];
+    if (!bankName || buyRate === null || sellRate === null) return [];
     return [{
       bankName,
       currencyPair: String(row.currencyPair ?? row.pair ?? "USD/TZS").trim() || "USD/TZS",
@@ -96,7 +172,7 @@ export function normalizeBankRows(payload: unknown, source: string): BankRateRow
       lendingRateAnnual,
       status: row.status === "DELAYED" ? "DELAYED" : "LIVE",
       source,
-      updatedAt: new Date(String(row.updatedAt ?? row.timestamp ?? Date.now())),
+      updatedAt: parseUpdatedAt(row.updatedAt ?? row.timestamp),
     }];
   });
 }
@@ -105,23 +181,24 @@ export function normalizeDseRows(payload: unknown, source: string): DseTickerRow
   return parseRows(payload).flatMap((item) => {
     if (!item || typeof item !== "object") return [];
     const row = item as Record<string, unknown>;
-    const symbol = String(row.symbol ?? row.ticker ?? row.code ?? "").trim();
+    const symbol = String(row.symbol ?? row.ticker ?? row.code ?? row.company ?? "").trim();
     const companyName = String(row.companyName ?? row.company ?? row.name ?? symbol).trim();
     const priceTzs = parseFiniteNumber(row.priceTzs ?? row.price ?? row.lastPrice ?? row.ltp);
-    const changeTzs = parseFiniteNumber(row.changeTzs ?? row.change ?? row.priceChange) ?? 0;
-    const changePercent = parseFiniteNumber(row.changePercent ?? row.percentChange ?? row.changePct) ?? 0;
-    const volume = parseFiniteNumber(row.volume ?? row.quantity) ?? 0;
-    if (!symbol || priceTzs === null || priceTzs < 0 || !Number.isFinite(changeTzs) || !Number.isFinite(changePercent)) return [];
+    const explicitPercent = row.changePercent ?? row.percentChange ?? row.changePct;
+    const changeTzs = parseFiniteNumber(row.changeTzs ?? row.priceChange ?? (explicitPercent !== undefined ? row.change : null));
+    const changePercent = parseFiniteNumber(explicitPercent ?? row.change);
+    const volume = parseFiniteNumber(row.volume ?? row.quantity);
+    if (!symbol || priceTzs === null || priceTzs < 0) return [];
     return [{
       symbol,
       companyName,
       priceTzs,
       changeTzs,
       changePercent,
-      volume: Math.max(0, Math.round(volume)),
+      volume: volume === null ? null : Math.max(0, Math.round(volume)),
       status: row.status === "DELAYED" ? "DELAYED" : "LIVE",
       source,
-      updatedAt: new Date(String(row.updatedAt ?? row.timestamp ?? Date.now())),
+      updatedAt: parseUpdatedAt(row.updatedAt ?? row.timestamp),
     }];
   });
 }
@@ -155,9 +232,9 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
     getMarketProviderSettings(companyId),
   ]);
 
-  const bankUrl = providerSettings?.bankProviderUrl?.trim() || process.env.MARKET_BANK_RATES_API_URL?.trim() || "";
+  const bankUrl = providerSettings?.bankProviderUrl?.trim() || process.env.MARKET_BANK_RATES_API_URL?.trim() || OFFICIAL_BOT_EXCHANGE_URL;
   const bankKey = providerSettings?.bankProviderApiKey?.trim() || process.env.MARKET_BANK_RATES_API_KEY?.trim() || "";
-  const dseUrl = providerSettings?.dseProviderUrl?.trim() || process.env.MARKET_DSE_API_URL?.trim() || "";
+  const dseUrl = providerSettings?.dseProviderUrl?.trim() || process.env.MARKET_DSE_API_URL?.trim() || OFFICIAL_DSE_MARKET_URL;
   const dseKey = providerSettings?.dseProviderApiKey?.trim() || process.env.MARKET_DSE_API_KEY?.trim() || "";
 
   const cachedBankRows = latestUnique(storedBankRows.map((row) => ({
@@ -165,7 +242,7 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
     currencyPair: row.currencyPair,
     buyRate: Number(row.buyRate),
     sellRate: Number(row.sellRate),
-    lendingRateAnnual: Number(row.lendingRateAnnual),
+    lendingRateAnnual: Number.isFinite(Number(row.lendingRateAnnual)) ? Number(row.lendingRateAnnual) : null,
     status: "CACHED" as const,
     source: row.source,
     updatedAt: row.updatedAt,
@@ -174,9 +251,9 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
     symbol: row.symbol,
     companyName: row.companyName,
     priceTzs: Number(row.priceTzs),
-    changeTzs: Number(row.changeTzs),
-    changePercent: Number(row.changePercent),
-    volume: row.volume,
+    changeTzs: Number.isFinite(Number(row.changeTzs)) ? Number(row.changeTzs) : null,
+    changePercent: Number.isFinite(Number(row.changePercent)) ? Number(row.changePercent) : null,
+    volume: row.volume === null ? null : Number(row.volume),
     status: "CACHED" as const,
     source: "DSE provider cache",
     updatedAt: row.updatedAt,
@@ -194,10 +271,12 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
 
   if (bankUrl) {
     try {
-      const normalized = normalizeBankRows(await fetchProviderJson(bankUrl, bankKey), bankUrl);
+      const normalized = bankUrl === OFFICIAL_BOT_EXCHANGE_URL
+        ? normalizeBotExchangeHtml(await fetchProviderText(bankUrl, bankKey), "Bank of Tanzania official exchange-rate table")
+        : normalizeBankRows(await fetchProviderJson(bankUrl, bankKey), bankUrl);
       const latencyBank = Date.now() - t0Bank;
       if (normalized.length) {
-        await db.insert(bankMarketRates).values(normalized.map((row) => ({ companyId, bankName: row.bankName, currencyPair: row.currencyPair, buyRate: String(row.buyRate), sellRate: String(row.sellRate), lendingRateAnnual: String(row.lendingRateAnnual), status: row.status, source: row.source, updatedAt: row.updatedAt })));
+        await db.insert(bankMarketRates).values(normalized.map((row) => ({ companyId, bankName: row.bankName, currencyPair: row.currencyPair, buyRate: String(row.buyRate), sellRate: String(row.sellRate), lendingRateAnnual: row.lendingRateAnnual === null ? "N/A" : String(row.lendingRateAnnual), status: row.status, source: row.source, updatedAt: row.updatedAt })));
         bankRows = latestUnique(normalized, (row) => `${row.bankName}:${row.currencyPair}`);
         bankStatus = normalized.some((row) => row.status === "DELAYED") ? "DELAYED" : "LIVE";
         bankMessage = statusMessage(bankStatus, true, "Bank rates");
@@ -223,10 +302,10 @@ export async function getMarketIntelligenceSnapshot(companyId: string) {
   const t0Dse = Date.now();
   if (dseUrl) {
     try {
-      const normalized = normalizeDseRows(await fetchProviderJson(dseUrl, dseKey), dseUrl);
+      const normalized = normalizeDseRows(await fetchProviderJson(dseUrl, dseKey), dseUrl === OFFICIAL_DSE_MARKET_URL ? "DSE official public daily market summary" : dseUrl);
       const latencyDse = Date.now() - t0Dse;
       if (normalized.length) {
-        await db.insert(dseMarketTickers).values(normalized.map((row) => ({ companyId, symbol: row.symbol, companyName: row.companyName, priceTzs: String(row.priceTzs), changeTzs: String(row.changeTzs), changePercent: String(row.changePercent), volume: row.volume, status: row.status, updatedAt: row.updatedAt })));
+        await db.insert(dseMarketTickers).values(normalized.map((row) => ({ companyId, symbol: row.symbol, companyName: row.companyName, priceTzs: String(row.priceTzs), changeTzs: row.changeTzs === null ? null : String(row.changeTzs), changePercent: row.changePercent === null ? null : String(row.changePercent), volume: row.volume, status: row.status, updatedAt: row.updatedAt })));
         dseRows = latestUnique(normalized, (row) => row.symbol);
         dseStatus = normalized.some((row) => row.status === "DELAYED") ? "DELAYED" : "LIVE";
         dseMessage = statusMessage(dseStatus, true, "DSE market");
