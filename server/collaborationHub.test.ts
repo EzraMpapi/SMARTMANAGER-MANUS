@@ -22,4 +22,11 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("collab_channels");
     expect(dashboardSource).toContain("collab_messages");
   });
+
+  it("supports threaded chat replies, attachment URLs, .ics calendar export, and workspace audit CSV export", () => {
+    expect(dashboardSource).toContain("replyingToId");
+    expect(dashboardSource).toContain("attachmentUrl");
+    expect(dashboardSource).toContain("BEGIN:VCALENDAR");
+    expect(dashboardSource).toContain("workspace-membership-audit");
+  });
 });

@@ -32406,6 +32406,8 @@ function ChannelsView({ currentUser, employees }) {
   const [activeChannelId, setActiveChannelId] = useState(null);
   const [messages, setMessages] = useState(collabMessagesSeed);
   const [draft, setDraft] = useState("");
+  const [replyingToId, setReplyingToId] = useState(null);
+  const [attachmentUrl, setAttachmentUrl] = useState("");
   const [showChannelForm, setShowChannelForm] = useState(false);
   const [messageSending, setMessageSending] = useState(false);
   const [savingChannel, setSavingChannel] = useState(false);
@@ -32446,20 +32448,25 @@ function ChannelsView({ currentUser, employees }) {
 
   async function sendMessage() {
     const text = draft.trim();
-    if (!text || !activeChannelId || messageSending) return;
+    if ((!text && !attachmentUrl) || !activeChannelId || messageSending) return;
     setMessageSending(true);
     try {
+      const payloadBody = attachmentUrl ? `${text}${text ? " \n" : ""}[Attachment: ${attachmentUrl}]` : text;
       if (!IS_CONFIGURED) {
-        setMessages((prev) => [...prev, { id: `MSG-${Date.now()}`, channelId: activeChannelId, sender: currentUser.name, text, timestamp: new Date().toISOString() }]);
+        setMessages((prev) => [...prev, { id: `MSG-${Date.now()}`, channelId: activeChannelId, sender: currentUser.name, text: payloadBody, parentRef: replyingToId, timestamp: new Date().toISOString() }]);
         setDraft("");
+        setAttachmentUrl("");
+        setReplyingToId(null);
         notify("Message sent.");
         return;
       }
-      const { data, error } = await runCompanyTableMutation("collab_messages", "insert", { channel_ref: activeChannelId, sender: currentUser.name, body: text });
+      const { data, error } = await runCompanyTableMutation("collab_messages", "insert", { channel_ref: activeChannelId, sender: currentUser.name, body: payloadBody, parent_ref: replyingToId });
       if (error || !data?.id) throw error || new Error("The server did not return the sent message.");
       const confirmed = mapCollabMessageRow(data);
       setMessages((prev) => [...prev, confirmed]);
       setDraft("");
+      setAttachmentUrl("");
+      setReplyingToId(null);
       notify("Message sent.");
     } catch (error) {
       notify(`Message was not sent. ${error?.message || "Your draft is still available to retry."}`, "error");
@@ -32524,24 +32531,40 @@ function ChannelsView({ currentUser, employees }) {
                 <div className="h-full flex items-center justify-center"><p className="text-[12.5px] text-slate-400">No messages yet — say something to get started.</p></div>
               ) : (
                 channelMessages.map((m) => (
-                  <div key={m.id} className="flex gap-2.5">
+                  <div key={m.id} className={`flex gap-2.5 ${m.parentRef ? "ml-6 pl-3 border-l-2 border-slate-200" : ""}`}>
                     <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-medium text-slate-500 shrink-0">{m.sender.split(" ").map((p) => p[0]).slice(0, 2).join("")}</div>
-                    <div className="min-w-0">
-                      <div className="flex items-baseline gap-2"><span className="text-[12.5px] font-medium text-[#111827]">{m.sender}</span><span className="text-[10.5px] text-slate-400">{new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></div>
-                      <p className="text-[13px] text-slate-700 mt-0.5 break-words">{m.text}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between"><div className="flex items-baseline gap-2"><span className="text-[12.5px] font-medium text-[#111827]">{m.sender}</span><span className="text-[10.5px] text-slate-400">{new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></div><button onClick={() => setReplyingToId(m.id)} className="text-[11px] text-slate-400 hover:text-slate-600">Reply</button></div>
+                      <p className="text-[13px] text-slate-700 mt-0.5 break-words whitespace-pre-wrap">{m.text}</p>
                     </div>
                   </div>
                 ))
               )}
             </div>
-            <div className="p-3 border-t border-slate-100 shrink-0 flex gap-2">
-              <input
-                value={draft} onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                placeholder={`Message #${activeChannel.name}`}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30"
-              />
-              <button onClick={sendMessage} disabled={!draft.trim() || messageSending} aria-busy={messageSending} className="btn-primary text-white rounded-lg px-3 disabled:cursor-not-allowed disabled:opacity-40" aria-label={messageSending ? "Sending message" : "Send message"}><Send size={15} className={messageSending ? "animate-pulse" : ""} /></button>
+            {replyingToId && (
+              <div className="px-4 py-1.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11.5px] text-slate-600">
+                <span>Replying to thread message</span>
+                <button onClick={() => setReplyingToId(null)} className="text-slate-400 hover:text-slate-600"><X size={13} /></button>
+              </div>
+            )}
+            <div className="p-3 border-t border-slate-100 shrink-0 flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input
+                  value={draft} onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                  placeholder={replyingToId ? `Reply in thread…` : `Message #${activeChannel.name}`}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30"
+                />
+                <button onClick={sendMessage} disabled={(!draft.trim() && !attachmentUrl) || messageSending} aria-busy={messageSending} className="btn-primary text-white rounded-lg px-3 disabled:cursor-not-allowed disabled:opacity-40" aria-label={messageSending ? "Sending message" : "Send message"}><Send size={15} className={messageSending ? "animate-pulse" : ""} /></button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  value={attachmentUrl} onChange={(e) => setAttachmentUrl(e.target.value)}
+                  placeholder="Attach file/image URL (optional)"
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[11.5px] outline-none focus:border-[#16A34A]"
+                />
+                <span className="text-[11px] text-slate-400">Attach URL</span>
+              </div>
             </div>
           </>
         ) : (
@@ -32743,7 +32766,35 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
             <p className="text-[14px] font-semibold text-[#111827] w-36 text-center">{monthLabel}</p>
             <button onClick={() => setMonthOffset((m) => m + 1)} className="text-slate-400 hover:text-slate-600 p-1" aria-label="Next month"><ChevronRight size={16} /></button>
           </div>
-          <button onClick={() => { setSelectedDate(TODAY.toISOString().slice(0, 10)); setShowForm(true); }} className="btn-primary text-white text-[12px] font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5"><Plus size={13} /> New Event</button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => {
+              const allItems = Object.entries(entriesByDate).flatMap(([date, entries]) => entries.map(e => ({ ...e, date })));
+              const icsLines = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//Smart Manager ERP//Enterprise Calendar//EN",
+                ...allItems.map(item => [
+                  "BEGIN:VEVENT",
+                  `UID:${item.id}@smartmanager.erp`,
+                  `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
+                  `DTSTART:${item.date.replace(/-/g, "")}`,
+                  `SUMMARY:${item.title}`,
+                  `DESCRIPTION:Smart Manager ERP Integrated Event (${item.category})`,
+                  "END:VEVENT"
+                ].join("\r\n")),
+                "END:VCALENDAR"
+              ].join("\r\n");
+              const blob = new Blob([icsLines], { type: "text/calendar;charset=utf-8" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `smart-manager-calendar-${monthLabel.toLowerCase().replace(/\s+/g, "-")}.ics`;
+              a.click();
+              URL.revokeObjectURL(url);
+              notify("Calendar exported as .ics file for Outlook, Apple Calendar, and Google Calendar.");
+            }} className="btn-secondary text-[12px] font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5"><Download size={13} /> Export .ics</button>
+            <button onClick={() => { setSelectedDate(TODAY.toISOString().slice(0, 10)); setShowForm(true); }} className="btn-primary text-white text-[12px] font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5"><Plus size={13} /> New Event</button>
+          </div>
         </div>
         <div className="grid grid-cols-7 gap-1.5 mb-1.5">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <div key={d} className="text-center text-[10.5px] font-medium text-slate-400 py-1">{d}</div>)}
@@ -32907,8 +32958,25 @@ function TeamWorkspaces({ employees }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <button onClick={() => setShowForm(true)} className="btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Plus size={14} /> New Workspace</button>
+      <div className="flex items-center justify-between">
+        <p className="text-[12.5px] text-slate-500">{workspaces.rows.length} active team workspace(s)</p>
+        <div className="flex items-center gap-2">
+          <button onClick={() => {
+            const csvRows = [
+              ["Workspace ID", "Workspace Name", "Department", "Members", "Description"].join(","),
+              ...workspaces.rows.map(w => [w.id, `"${w.name.replace(/"/g, '""')}"`, `"${(w.department || "Cross-functional").replace(/"/g, '""')}"`, `"${(w.members || "").replace(/"/g, '""')}"`, `"${(w.description || "").replace(/"/g, '""')}"`].join(","))
+            ].join("\n");
+            const blob = new Blob([csvRows], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `workspace-membership-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            notify("Workspace membership audit log exported as CSV.");
+          }} className="btn-secondary text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Download size={14} /> Export Audit CSV</button>
+          <button onClick={() => setShowForm(true)} className="btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Plus size={14} /> New Workspace</button>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {workspaces.rows.map((w) => (
