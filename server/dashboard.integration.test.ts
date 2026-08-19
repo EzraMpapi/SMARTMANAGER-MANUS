@@ -863,3 +863,15 @@ describe("BusinessSphere launch and live-data integration", () => {
     const ascActual = sortFn("actual", "asc");
     expect(ascActual[0].name).toBe("Finance"); // 10000
   });
+
+it("exposes dedicated non-login recovery and email-confirmation screens with accessible onboarding transitions", () => {
+  expect(enterpriseAuthSource).toContain("export function PasswordRecoveryView");
+  expect(enterpriseAuthSource).toContain("export function EmailConfirmationView");
+  expect(enterpriseAuthSource).toContain("motion>");
+  expect(enterpriseAuthSource).toContain("auth-card-enter");
+  expect(publicAuthSource).toContain("PasswordRecoveryView");
+  expect(publicAuthSource).toContain("EmailConfirmationView");
+  expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"');
+  expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"');
+  expect(dashboardSource).toContain('<LoginPage onAuthenticated=');
+});

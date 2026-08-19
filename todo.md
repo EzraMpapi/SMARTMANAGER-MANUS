@@ -8117,3 +8117,10 @@
 - [x] Run 401 Vitest regressions, TypeScript validation, direct JSX parsing, responsive previews, and confirm the login page remains untouched via the dashboard diff.
 - [x] Complete the full local Vite production build using a temporary low-memory validation configuration; 2,656 modules transformed and the production bundle completed successfully.
 - [x] Save the published checkpoint for the verified non-login page migration.
+
+## Enhanced Non-Login Auth Flows & Transitions
+- [x] Add dedicated email-confirmation screen matching the new non-login visual system.
+- [x] Implement password-recovery page using the same non-login design tokens.
+- [x] Add smooth accessible slide/fade step-transition animations to Create Company and Join Existing Company flows.
+- [x] Run 401+ Vitest regressions, TypeScript validation, and responsive verification without touching the login component.
+- [x] Save published checkpoint for the enhanced non-login auth experience.

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { EnterpriseLoginView, ForgotPasswordView, ResetPasswordView, VerificationView } from "./EnterpriseAuthViews";
+import { EnterpriseLoginView, PasswordRecoveryView, ResetPasswordView, EmailConfirmationView } from "./EnterpriseAuthViews";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "../lib/authErrors";
 import { authScreenFromSearch, oauthCallbackFromHash } from "../lib/authOnboarding";
 import { passkeySignInUserMessage, signInWithAccountPasskey } from "../lib/accountPasskeys";
@@ -142,8 +142,8 @@ export default function PublicAuthGateway() {
     window.location.assign(`${SUPABASE_URL}/auth/v1/authorize?provider=${encodeURIComponent(provider)}&redirect_to=${encodeURIComponent(redirectTo.toString())}`);
   }
 
-  if (view === "forgot") return <ForgotPasswordView onBack={() => navigate("login")} onRequest={requestRecovery} toMessage={toAuthUserMessage} />;
+  if (view === "forgot") return <PasswordRecoveryView onBack={() => navigate("login")} onRequest={requestRecovery} toMessage={toAuthUserMessage} />;
   if (view === "reset") return <ResetPasswordView recoveryToken={recoveryToken} onBack={() => navigate("login")} onUpdate={updatePassword} toMessage={toAuthUserMessage} />;
-  if (view === "verify") return <VerificationView email={email} onBack={() => navigate("login")} onResend={resendVerification} toMessage={toAuthUserMessage} />;
+  if (view === "verify") return <EmailConfirmationView email={email} onBack={() => navigate("login")} onResend={resendVerification} toMessage={toAuthUserMessage} />;
   return <EnterpriseLoginView configured={configured} onSignIn={signIn} onPasskey={signInWithPasskey} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} onClearOAuthError={() => setOauthError(null)} oauthProvider={oauthProvider} toMessage={toAuthUserMessage} invitationPending={invitationPending} initialError={oauthError} />;
 }

@@ -584,6 +584,15 @@
   .sm-auth-module__surface { will-change: auto; }
 }
 
+.auth-screen-motion .auth-card-enter { animation: auth-card-enter .42s cubic-bezier(.23,1,.32,1) both; }
+.auth-step-panel { animation: auth-step-enter .28s cubic-bezier(.23,1,.32,1) both; transform-origin: 50% 0; }
+@keyframes auth-card-enter { from { opacity: 0; transform: translate3d(0,12px,0) scale(.985); } to { opacity: 1; transform: translate3d(0,0,0) scale(1); } }
+@keyframes auth-step-enter { from { opacity: 0; transform: translate3d(18px,0,0); } to { opacity: 1; transform: translate3d(0,0,0); } }
+@media (prefers-reduced-motion: reduce) {
+  .auth-screen-motion .auth-card-enter,
+  .auth-step-panel { animation: none !important; }
+}
+
 @keyframes sm-message-enter {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
