@@ -1435,9 +1435,11 @@ function mapNotificationRuleRow(r) {
 }
 
 function mapNotificationLogRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
   return {
     id: r.id, dbId: r.id, channel: r.channel, event: r.event, message: r.message,
     status: r.status, note: r.note || "", timestamp: r.created_at,
+    data, notificationType: r.notificationType || data.notificationType || "", recipientUserId: r.recipientUserId || data.recipientUserId || "", approvalId: r.approvalId || data.approvalId || "",
   };
 }
 
@@ -5671,8 +5673,16 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
   );
 }
 
-function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, onQuickAction, onNavigate }) {
+function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
+  const roleChangeRows = roleChangeApprovalsQuery?.data?.approvals || [];
+  const pendingRoleChangeRows = roleChangeRows.filter((row) => row.status === "Pending Review");
+  const reviewableRoleChangeRows = pendingRoleChangeRows.filter((row) => row.data?.targetUserId !== currentUser.id);
+  const canReviewRoleChanges = PASSKEY_READINESS_ROLES.has(currentUser.role);
+  const decideRoleChangeMutation = trpc.decideRoleChangeApproval.useMutation({
+    onSuccess: () => { roleChangeApprovalsQuery?.refetch?.(); notify("Role-change decision recorded ✓"); },
+    onError: (error) => notify(error.message || "The role-change decision could not be saved.", "error"),
+  });
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
   const canViewMarketIntelligence = ["owner", "Owner", "Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager"].includes(currentUser.role);
@@ -6417,8 +6427,51 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         </div>
       </div>
 
+      {canReviewRoleChanges && (
+        <section className="order-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white shadow-sm overflow-hidden" aria-label="Pending role-change approvals">
+          <div className="flex flex-col gap-3 border-b border-amber-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><ShieldCheck size={17} /></span>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-[13.5px] font-bold text-slate-900">Approvals</h3>
+                  <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-black text-amber-900">{reviewableRoleChangeRows.length} pending</span>
+                </div>
+                <p className="mt-0.5 text-[11px] text-slate-500">Independent role-change requests requiring your review.</p>
+              </div>
+            </div>
+            <button type="button" onClick={() => onNavigate("settings")} className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 py-2 text-[11px] font-bold text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50">Open approval center <ChevronRight size={13} /></button>
+          </div>
+          <div className="divide-y divide-amber-100/70">
+            {roleChangeApprovalsQuery?.isLoading ? (
+              <div className="px-4 py-5 text-[11.5px] text-slate-400">Checking server-backed approvals…</div>
+            ) : reviewableRoleChangeRows.length === 0 ? (
+              <div className="flex items-center gap-2 px-4 py-5 text-[11.5px] text-slate-500"><CheckCircle2 size={15} className="text-emerald-600" /> No pending role-change requests.</div>
+            ) : (
+              reviewableRoleChangeRows.slice(0, 4).map((row) => {
+                const data = row.data || {};
+                const requester = data.requestedBy?.name || "Workspace member";
+                return (
+                  <div key={row.id} className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate text-[12px] font-bold text-slate-800">{requester}</p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">{data.currentRole || "Current role"} <span className="px-1 text-slate-300">→</span> {data.requestedRole || "Requested role"}</p>
+                      <p className="mt-0.5 truncate text-[10.5px] text-slate-400">{row.notes || "No reason supplied."}</p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <button type="button" disabled={decideRoleChangeMutation.isPending} onClick={() => decideRoleChangeMutation.mutate({ approvalId: row.id, decision: "approve" })} className="rounded-lg bg-emerald-700 px-2.5 py-1.5 text-[10.5px] font-bold text-white transition hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-50">Approve</button>
+                      <button type="button" disabled={decideRoleChangeMutation.isPending} onClick={() => decideRoleChangeMutation.mutate({ approvalId: row.id, decision: "reject" })} className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-[10.5px] font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-50">Reject</button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </section>
+      )}
+
       {/* ══════════════════ ALERTS + QUICK ACTIONS ══════════════════ */}
-      <div className="order-2 grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="order-3 grid grid-cols-1 lg:grid-cols-4 gap-4">
 
         {/* Executive Guidance — recommendation only; it opens an existing module and never creates data. */}
         {(() => {
@@ -33116,6 +33169,7 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
   const channels = useCompanyTable("notification_channels", notificationChannelsSeed, { mapRow: mapNotificationChannelRow });
   const rules = useCompanyTable("notification_rules", notificationRulesSeed, { mapRow: mapNotificationRuleRow });
   const log = useCompanyTable("notification_log", notificationLogSeed, { order: { col: "created_at", ascending: false }, mapRow: mapNotificationLogRow });
+  const notificationRows = log.rows.filter((row) => !row.recipientUserId || row.recipientUserId === currentUser?.id);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
   const enabledCount = channels.rows.filter((c) => c.enabled).length;
@@ -33133,14 +33187,14 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
     });
   }
   function markAllRead() {
-    const allIds = [...(smartAlerts||[]).map(a=>a.id), ...log.rows.map(r=>r.id)];
+    const allIds = [...(smartAlerts||[]).map(a=>a.id), ...notificationRows.map(r=>r.id)];
     setReadIds(prev => {
       const next = new Set([...prev, ...allIds]);
       try { localStorage.setItem("bs_read_notifs", JSON.stringify([...next].slice(-200))); } catch(_e){}
       return next;
     });
   }
-  const unreadCount = (smartAlerts||[]).filter(a=>!readIds.has(a.id)).length + log.rows.slice(0,20).filter(r=>!readIds.has(r.id)).length;
+  const unreadCount = (smartAlerts||[]).filter(a=>!readIds.has(a.id)).length + notificationRows.slice(0,20).filter(r=>!readIds.has(r.id)).length;
 
   async function logDispatch(entry) {
     const draft = { id: `LOG-${Date.now()}`, ...entry, timestamp: new Date().toISOString() };
@@ -33254,25 +33308,24 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
           )}
 
           {/* Dispatch log as recent activity feed */}
-          {log.rows.length > 0 && (
+          {notificationRows.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wide">Recent Dispatches</p>
+              <p className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wide">Recent Notifications</p>
               <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm divide-y divide-slate-50">
-                {log.rows.slice(0,15).map((entry) => {
+                {notificationRows.slice(0,15).map((entry) => {
                   const isRead = readIds.has(entry.id);
-                  const statusColor = entry.status==="sent"?"#16A34A":entry.status==="error"?"#EF4444":"#F59E0B";
+                  const approvalAlert = entry.notificationType === "role_change_approval";
+                  const statusColor = approvalAlert ? "#D97706" : entry.status==="sent"?"#16A34A":entry.status==="error"?"#EF4444":"#F59E0B";
                   return (
-                    <div key={entry.id} onClick={()=>markRead(entry.id)}
+                    <div key={entry.id} onClick={()=>{ markRead(entry.id); if (approvalAlert) onNavigate?.("settings"); }}
                       className={`flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors ${isRead?"":"bg-[#FFFBEB]"}`}>
-                      <div className={`w-2 h-2 rounded-full shrink-0 ${isRead?"bg-slate-200":"bg-[#F59E0B]"}`}/>
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${approvalAlert ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}><Bell size={14} /></div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12.5px] font-semibold text-[#111827] truncate">{entry.event||entry.message}</p>
-                        <p className="text-[11px] text-slate-400 truncate">{entry.channel} · {entry.message}</p>
+                        <p className="text-[12.5px] font-semibold text-[#111827] truncate">{approvalAlert ? "Role-change approval request" : (entry.event||entry.message)}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{approvalAlert ? entry.note : `${entry.channel} · ${entry.message}`}</p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:statusColor+"15",color:statusColor}}>
-                          {entry.status}
-                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:statusColor+"15",color:statusColor}}>{approvalAlert ? "Review" : entry.status}</span>
                         <p className="text-[10px] text-slate-300 mt-0.5">{entry.timestamp?.slice(0,16).replace("T"," ")||""}</p>
                       </div>
                     </div>
@@ -33282,7 +33335,7 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
             </div>
           )}
 
-          {(smartAlerts||[]).length === 0 && log.rows.length === 0 && (
+          {(smartAlerts||[]).length === 0 && notificationRows.length === 0 && (
             <div className="py-16 text-center">
               <Bell size={28} className="text-slate-200 mx-auto mb-3"/>
               <p className="text-[13px] font-semibold text-slate-400">No notifications yet</p>
@@ -33293,7 +33346,7 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
       )}
       {tab === "channels" && <NotificationChannels channels={channels} onLog={logDispatch} canManage={canManage} currentUser={currentUser} />}
       {tab === "routing" && <AlertRouting rules={rules} channels={channels.rows} alerts={alerts} onLog={logDispatch} />}
-      {tab === "log" && <NotificationLog log={log} />}
+      {tab === "log" && <NotificationLog log={{ ...log, rows: notificationRows }} />}
     </div>
     </>
   );
@@ -33513,7 +33566,7 @@ function AlertRouting({ rules, channels, alerts, onLog }) {
 
 function NotificationLog({ log }) {
   const { rows, loading } = log;
-  const STATUS_COLOR = { Sent: "#16A34A", Failed: "#EF4444", Unavailable: "#9CA3AF" };
+  const STATUS_COLOR = { Sent: "#16A34A", Failed: "#EF4444", Unavailable: "#9CA3AF", Unread: "#D97706" };
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -34362,7 +34415,8 @@ function PushDeliveryHistoryPanel({ companyId, canManage }) {
   );
 }
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+  const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
   const workspaceSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: IS_CONFIGURED });
@@ -34779,7 +34833,10 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
 
       {/* Role — demo switcher */}
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
-        <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1">Your role</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+          <h2 className="text-[14.5px] font-semibold text-[#111827]">Your role</h2>
+          {pendingOwnRoleChange && <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10.5px] font-bold text-amber-800"><Clock3 size={12} /> Role change pending</span>}
+        </div>
         <p className="text-[12.5px] text-slate-500 mb-4">
           Your active role is derived from the authenticated workspace profile. Submit a role-change request below; direct local switching is intentionally disabled so that access cannot bypass independent approval.
         </p>
@@ -35845,7 +35902,7 @@ function RoleChangeApprovalPanel({ currentUser }) {
   return <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-[14.5px] font-semibold text-[#111827]">Role change approval</h2><p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">Role changes are requested from the authenticated workspace account and must be decided by an independent authorized administrator. Self-approval is blocked.</p></div><span className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-700">Server-reviewed</span></div><div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]"><select value={requestedRole} onChange={(event) => setRequestedRole(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-[12px]"><option value="">Request a role…</option>{ROLES.filter((role) => role.id !== currentUser.role).map((role) => <option key={role.id} value={role.id}>{role.id}</option>)}</select><input value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} className={inputClass} placeholder="Reason for the requested role (optional)" /><button type="button" disabled={!requestedRole || requestMutation.isPending} onClick={() => requestMutation.mutate({ requestedRole, reason: reason || undefined })} className="rounded-lg bg-slate-900 px-3 py-2 text-[11.5px] font-semibold text-white disabled:opacity-50">{requestMutation.isPending ? "Submitting…" : "Request review"}</button></div>{requestMutation.error && <p role="alert" className="mt-2 text-[11.5px] text-red-700">{requestMutation.error.message}</p>}<div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100">{approvals.isLoading ? <p className="p-4 text-center text-[12px] text-slate-400">Loading server-backed role requests…</p> : rows.length === 0 ? <p className="p-4 text-center text-[12px] text-slate-400">No role-change requests are awaiting or have recent decisions.</p> : rows.map((row) => { const data = row.data || {}; const pending = row.status === "Pending Review"; const ownRequest = data.targetUserId === currentUser.id; return <div key={row.id} className="flex flex-col gap-2 p-3.5 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-[12px] font-semibold text-slate-800">{data.currentRole || "Current role"} → {data.requestedRole || "Requested role"}</p><p className="mt-0.5 text-[10.5px] text-slate-500">{row.notes || "No reason supplied."}{row.createdAt ? ` · ${new Date(row.createdAt).toLocaleDateString()}` : ""}</p></div><span className={`w-fit rounded-full px-2 py-1 text-[10px] font-bold ${pending ? "bg-amber-100 text-amber-800" : row.status === "Approved" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{row.status}</span>{canDecide && pending && !ownRequest && <div className="flex gap-2"><button type="button" disabled={decideMutation.isPending} onClick={() => decideMutation.mutate({ approvalId: row.id, decision: "approve" })} className="rounded-lg bg-emerald-700 px-2.5 py-1.5 text-[10.5px] font-semibold text-white disabled:opacity-50">Approve</button><button type="button" disabled={decideMutation.isPending} onClick={() => decideMutation.mutate({ approvalId: row.id, decision: "reject" })} className="rounded-lg border border-red-100 px-2.5 py-1.5 text-[10.5px] font-semibold text-red-700 disabled:opacity-50">Reject</button></div>}</div>; })}</div></section>;
 }
 
-const PASSKEY_READINESS_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
+const PASSKEY_READINESS_ROLES = new Set(["owner", "Owner", "Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
 
 function AccountPasskeyManager({ session, isAdministrator = false }) {
   const [passkeys, setPasskeys] = useState([]);
@@ -50559,6 +50616,27 @@ function SmartManager() {
   const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
   const canManage = currentRole.writeAccess === "full";
+  const roleChangeApprovalsQuery = trpc.listRoleChangeApprovals.useQuery(undefined, {
+    enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id && PASSKEY_READINESS_ROLES.has(currentUser.role)),
+    retry: false,
+    refetchInterval: 10000,
+  });
+  const seenRoleApprovalIdsRef = useRef(null);
+  useEffect(() => {
+    const approvals = roleChangeApprovalsQuery.data?.approvals;
+    if (!Array.isArray(approvals)) return;
+    const pending = approvals.filter((row) => row.status === "Pending Review" && row.data?.targetUserId !== currentUser.id);
+    const nextIds = new Set(pending.map((row) => row.id));
+    if (seenRoleApprovalIdsRef.current === null) {
+      seenRoleApprovalIdsRef.current = nextIds;
+      return;
+    }
+    const newRequests = pending.filter((row) => !seenRoleApprovalIdsRef.current.has(row.id));
+    if (newRequests.length > 0) {
+      notify(newRequests.length === 1 ? "New role-change approval request requires your review." : `${newRequests.length} new role-change approval requests require your review.`);
+    }
+    seenRoleApprovalIdsRef.current = nextIds;
+  }, [roleChangeApprovalsQuery.data, currentUser.id]);
 
   useEffect(() => {
     if (session && !session.demo) {
@@ -51196,6 +51274,7 @@ function SmartManager() {
               moduleSettingPending={moduleSettingPending}
               currentUser={currentUser}
               setCurrentUser={setCurrentUser}
+              roleChangeApprovalsQuery={roleChangeApprovalsQuery}
               canManage={canManage}
               darkMode={darkMode}
               toggleDarkMode={toggleDarkMode}

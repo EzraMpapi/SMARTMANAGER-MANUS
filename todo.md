@@ -8078,3 +8078,19 @@
 - [x] Add regression coverage for procedure registration, authorized request, unauthorized request, wrong-tenant access, and duplicate/pending requests.
 - [x] Validate TypeScript, focused RBAC tests, full tests, production build, and responsive role-management behavior.
 - [x] Save a checkpoint and push the verified role-change approval fix to SMARTMANAGER-MANUS.
+
+## Role-change approval notifications and surfaces
+- [x] Audit the existing role-change approval records, in-app notification system, administrator role gates, Workspace Overview, and user profile UI.
+- [x] Trigger an immediate in-app administrator alert when a new role-change approval request is successfully persisted.
+- [x] Add a tenant-scoped pending role-change approvals query suitable for the Workspace Overview widget and profile status checks.
+- [x] Add an Approvals widget to Workspace Overview with pending count, request summaries, and authorized review/manage actions.
+- [x] Add a clear pending role-change status badge on the user profile page.
+- [x] Preserve RBAC, tenant isolation, audit logging, duplicate/pending semantics, and responsive behavior.
+- [x] Add regression coverage for alert creation, administrator targeting, pending badge state, widget data, unauthorized access, and resolved requests.
+- [x] Validate TypeScript, focused tests, full tests, production build, desktop/mobile views, and role-change flows.
+- [x] Save a checkpoint and push the verified role-change notification/surface update to SMARTMANAGER-MANUS.
+
+## Role-change approval list visibility hardening
+- [x] Restrict approval-list responses so authorized administrators see tenant requests while non-administrators see only their own request status.
+- [x] Add regression coverage for non-administrator filtering and administrator visibility.
+- [x] Re-run TypeScript, full tests, production build, responsive checks, and synchronize the final checkpoint.

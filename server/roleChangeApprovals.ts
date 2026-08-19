@@ -4,8 +4,47 @@ import { ENV } from "./_core/env";
 import { approvalData, resolveVerifiedProfile } from "./aiApprovals";
 
 const APPROVAL_TABLE = "approval_signatures";
-const APPROVER_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
+const APPROVER_ROLES = new Set(["owner", "Owner", "Organization Owner", "CEO", "Super Administrator", "System Administrator"]);
 type ApprovalRow = { id: string; status?: string; notes?: string | null; data?: unknown };
+type WorkspaceProfileRow = { id: string; company_id: string; role?: string | null; full_name?: string | null };
+
+async function notifyWorkspaceAdministrators(profile: WorkspaceProfileRow, approval: ApprovalRow | undefined, requestedRole: string) {
+  if (!ENV.supabaseUrl || !ENV.supabaseSecretKey || !approval?.id) {
+    return { delivered: false, reason: "Administrator notification storage is not configured." };
+  }
+  try {
+    const headers = { apikey: ENV.supabaseSecretKey, authorization: `Bearer ${ENV.supabaseSecretKey}`, "content-type": "application/json" };
+    const profilesResponse = await fetch(`${ENV.supabaseUrl}/rest/v1/profiles?select=id,company_id,role,full_name&company_id=eq.${encodeURIComponent(profile.company_id)}&limit=100`, { headers });
+    const profiles = await profilesResponse.json().catch(() => null) as WorkspaceProfileRow[] | null;
+    if (!profilesResponse.ok || !Array.isArray(profiles)) return { delivered: false, reason: "Administrator profiles could not be resolved." };
+    const recipients = profiles.filter((candidate) => candidate.id !== profile.id && APPROVER_ROLES.has(String(candidate.role || "")));
+    if (recipients.length === 0) return { delivered: true, recipientCount: 0 };
+    const requestedBy = profile.full_name || "A workspace member";
+    const notifications = recipients.map((recipient) => ({
+      company_id: profile.company_id,
+      name: "New role-change approval request",
+      status: "Unread",
+      notes: `${requestedBy} requested the ${requestedRole} role. Review is required before access changes.`,
+      data: {
+        kind: "role_change_notification",
+        notificationType: "role_change_approval",
+        recipientUserId: recipient.id,
+        companyId: profile.company_id,
+        approvalId: approval.id,
+        targetUserId: profile.id,
+        requestedBy,
+        currentRole: profile.role || "Unknown",
+        requestedRole,
+        requestedAt: new Date().toISOString(),
+      },
+    }));
+    const notificationResponse = await fetch(`${ENV.supabaseUrl}/rest/v1/notification_log`, { method: "POST", headers: { ...headers, Prefer: "return=minimal" }, body: JSON.stringify(notifications) });
+    if (!notificationResponse.ok) return { delivered: false, reason: "Administrator notification records could not be persisted." };
+    return { delivered: true, recipientCount: recipients.length };
+  } catch (_error) {
+    return { delivered: false, reason: "Administrator notification delivery was unavailable." };
+  }
+}
 
 async function requestWithSession(path: string, token: string, init: RequestInit = {}) {
   const response = await fetch(`${ENV.supabaseUrl}/rest/v1/${path}`, { ...init, headers: { apikey: ENV.supabaseAnonKey, authorization: `Bearer ${token}`, "content-type": "application/json", ...(init.headers || {}) } });
@@ -27,13 +66,16 @@ export async function requestRoleChangeApproval(req: CreateExpressContextOptions
   if (requestedRole === profile.role) throw new TRPCError({ code: "BAD_REQUEST", message: "Your requested role is already active." });
   const data = { kind: "role_change_approval", targetUserId: profile.id, requestedBy: { userId: profile.id, role: profile.role, name: profile.full_name || "Workspace user" }, currentRole: profile.role, requestedRole, requestedAt: new Date().toISOString(), requiredRoles: Array.from(APPROVER_ROLES) };
   const rows = await requestWithSession(APPROVAL_TABLE, token, { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ name: `Role change: ${profile.role} → ${requestedRole}`, status: "Pending Review", notes: (input.reason || "Role change requested by the authenticated user.").slice(0, 500), data }) }) as ApprovalRow[];
-  return { approval: rows[0], requester: profile };
+  const notification = await notifyWorkspaceAdministrators(profile, rows[0], requestedRole);
+  return { approval: rows[0], requester: profile, notification };
 }
 
 export async function listRoleChangeApprovals(req: CreateExpressContextOptions["req"]) {
   const { profile, token } = await resolveVerifiedProfile(req);
   const rows = await requestWithSession(`${APPROVAL_TABLE}?select=id,name,status,notes,data,created_at&data-%3E%3Ekind=eq.role_change_approval&order=created_at.desc&limit=50`, token) as (ApprovalRow & { name?: string; created_at?: string })[];
-  return { approvals: rows.map((row) => ({ id: row.id, name: row.name || "Role change", status: row.status || "Pending Review", notes: row.notes || "", data: approvalData(row), createdAt: row.created_at || null })), profile };
+  const approvals = rows.map((row) => ({ id: row.id, name: row.name || "Role change", status: row.status || "Pending Review", notes: row.notes || "", data: approvalData(row), createdAt: row.created_at || null }));
+  const canReview = APPROVER_ROLES.has(String(profile.role || ""));
+  return { approvals: canReview ? approvals : approvals.filter((approval) => approval.data.targetUserId === profile.id), profile };
 }
 
 export async function decideRoleChangeApproval(req: CreateExpressContextOptions["req"], input: { approvalId: string; decision: "approve" | "reject"; note?: string }) {
