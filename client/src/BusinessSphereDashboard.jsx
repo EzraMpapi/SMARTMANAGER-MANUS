@@ -6577,7 +6577,46 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           </div>
         </div>
 
-        {/* Quick Actions Command Panel */}
+                {/* Live WhatsApp Feed Widget next to Command Actions (Large Screen) */}
+        <div className="hidden xl:flex flex-col bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3" style={{background:"#075E54"}}>
+            <div>
+              <h3 className="text-[13px] font-bold text-white flex items-center gap-1.5">
+                <span>💬 Live WhatsApp Feed</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              </h3>
+              <p className="mt-0.5 text-[10.5px] text-white/70">Recent customer inquiries & responses</p>
+            </div>
+            <button onClick={() => onNavigate("collaboration")} className="text-[11px] font-semibold text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition">
+              Open Center →
+            </button>
+          </div>
+          <div className="p-3 flex-1 flex flex-col justify-between space-y-2.5 bg-slate-50/50">
+            <div className="space-y-2">
+              {[
+                { sender: "Juma Kassam", text: "Checking on our wholesale invoice payment status...", time: "10:42 AM", status: "✓✓ Read" },
+                { sender: "Aisha Mohamed", text: "Can we schedule delivery for Arusha warehouse?", time: "09:15 AM", status: "✓✓ Read" },
+                { sender: "Baraka Enterprise", text: "Sent bank deposit slip for recent bulk order.", time: "Yesterday", status: "✓ Delivered" }
+              ].map((msg, i) => (
+                <div key={i} onClick={() => onNavigate("collaboration")} className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-sm hover:border-emerald-500 cursor-pointer transition space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11.5px] font-bold text-slate-900 truncate">{msg.sender}</span>
+                    <span className="text-[9.5px] font-mono text-slate-400">{msg.time}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 truncate">{msg.text}</p>
+                  <div className="flex items-center justify-end text-[9.5px] font-mono text-emerald-600 font-medium">
+                    <span>{msg.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="pt-2 border-t border-slate-200/60 text-center">
+              <p className="text-[10.5px] text-slate-500 font-medium">Secure WhatsApp Web session active</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions Command Panel */
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3" style={{background:"#0D2214"}}>
             <div><h3 className="text-[13px] font-bold text-white">⚡ Command Actions</h3><p className="mt-0.5 text-[10.5px] text-white/55">Organized shortcuts to existing workspaces</p></div>
