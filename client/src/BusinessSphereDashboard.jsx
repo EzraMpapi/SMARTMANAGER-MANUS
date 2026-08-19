@@ -32561,7 +32561,8 @@ function ChannelsView({ currentUser, employees }) {
     }
   }
 
-  const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
+  const empRows = employees?.rows || employees || [];
+  const departments = Array.from(new Set(empRows.map((e) => e.department).filter(Boolean)));
 
   return (
     <div className="flex h-[560px] bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
