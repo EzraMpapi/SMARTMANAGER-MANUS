@@ -35,8 +35,8 @@ describe("Collaboration Hub persistence boundaries", () => {
   });
 
   it("disables duplicate message sends while preserving the draft during a failure", () => {
-    expect(channels).toContain("if (!text || !activeChannelId || messageSending) return;");
-    expect(channels).toContain("disabled={!draft.trim() || messageSending}");
+    expect(channels).toContain("if ((!text && !attachmentUrl) || !activeChannelId || messageSending) return;");
+    expect(channels).toContain("disabled={(!draft.trim() && !attachmentUrl) || messageSending}");
     expect(channels).toContain("aria-busy={messageSending}");
     expect(channels).toContain("className={messageSending ? \"animate-pulse\" : \"\"}");
   });

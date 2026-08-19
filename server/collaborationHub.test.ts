@@ -30,6 +30,14 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("workspace-membership-audit");
   });
 
+  it("supports threaded reaction summaries, HR department headcount, and WhatsApp feed filters", () => {
+    expect(dashboardSource).toContain("threadReactionSummaries");
+    expect(dashboardSource).toContain("Thread reaction summary");
+    expect(dashboardSource).toContain("Department Headcount Summary");
+    expect(dashboardSource).toContain("dateFilter");
+    expect(dashboardSource).toContain("senderQuery");
+    expect(dashboardSource).toContain("Sender A–Z");
+  });
   it("supports emoji reactions, pinned messages, calendar reminders, and department workspace permissions", () => {
     expect(dashboardSource).toContain("messageReactions");
     expect(dashboardSource).toContain("pinnedMessageIds");

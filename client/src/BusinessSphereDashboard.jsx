@@ -29700,8 +29700,16 @@ function HRDashboard({ employees, leaveRequests, onNavigate }) {
   // Department breakdown
   const byDept = useMemo(() => {
     const map = {};
-    employees.rows.forEach(e => { const d = e.department||"General"; map[d]=(map[d]||0)+1; });
-    return Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));
+    employees.rows.forEach((employee) => {
+      const name = employee.department || "General";
+      const row = map[name] || { name, active: 0, onLeave: 0, inactive: 0, total: 0 };
+      row.total += 1;
+      if (employee.status === "Active") row.active += 1;
+      else if (employee.status === "On Leave") row.onLeave += 1;
+      else row.inactive += 1;
+      map[name] = row;
+    });
+    return Object.values(map).sort((a, b) => b.total - a.total);
   }, [employees.rows]);
 
   // Leave type breakdown
@@ -29738,20 +29746,37 @@ function HRDashboard({ employees, leaveRequests, onNavigate }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Department breakdown BarChart */}
+        {/* Department headcount summary */}
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-          <h3 className="text-[14px] font-semibold text-[#111827] mb-3">Headcount by Department</h3>
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <h3 className="text-[14px] font-semibold text-[#111827]">Department Headcount Summary</h3>
+              <p className="mt-0.5 text-[11px] text-slate-400">Team size with active, leave, and inactive status context</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">{employees.rows.length} total</span>
+          </div>
           {byDept.length === 0 ? (
             <p className="text-slate-400 text-center py-8">No department data</p>
           ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={byDept} layout="vertical" margin={{left:5,right:20,top:0,bottom:0}}>
-                <XAxis type="number" tick={{fontSize:10}} axisLine={false} tickLine={false}/>
-                <YAxis dataKey="name" type="category" tick={{fontSize:11}} axisLine={false} tickLine={false} width={80}/>
-                <Tooltip formatter={v=>[v+" staff","Department"]}/>
-                <Bar dataKey="value" fill="#16A34A" radius={[0,6,6,0]}/>
-              </BarChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={205}>
+                <BarChart data={byDept} layout="vertical" margin={{left:5,right:20,top:0,bottom:0}}>
+                  <CartesianGrid horizontal={false} stroke="#F1F5F9" />
+                  <XAxis type="number" allowDecimals={false} tick={{fontSize:10}} axisLine={false} tickLine={false}/>
+                  <YAxis dataKey="name" type="category" tick={{fontSize:10.5}} axisLine={false} tickLine={false} width={92}/>
+                  <Tooltip formatter={(value, name) => [value + " staff", name]} />
+                  <Legend iconSize={8} wrapperStyle={{fontSize: "10px"}} />
+                  <Bar dataKey="active" name="Active" stackId="status" fill="#16A34A" />
+                  <Bar dataKey="onLeave" name="On leave" stackId="status" fill="#F59E0B" />
+                  <Bar dataKey="inactive" name="Inactive" stackId="status" fill="#CBD5E1" radius={[0,6,6,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-2 text-[10.5px] text-slate-500">
+                <span><strong className="text-emerald-700">{byDept.reduce((sum, row) => sum + row.active, 0)}</strong> active</span>
+                <span><strong className="text-amber-700">{byDept.reduce((sum, row) => sum + row.onLeave, 0)}</strong> on leave</span>
+                <span><strong className="text-slate-600">{byDept.reduce((sum, row) => sum + row.inactive, 0)}</strong> inactive</span>
+              </div>
+            </>
           )}
         </div>
 
@@ -31716,16 +31741,91 @@ function useWaMessages(contactId) {
 }
 
 
+const WHATSAPP_MESSAGE_SEED = [
+  { id: 1, sender: "Juma Kassam", phone: "+255 715 234 567", text: "Hello, checking on our wholesale invoice payment status for Dar es Salaam branch.", time: "10:42 AM", unread: true, readReceipt: true, ageHours: 2 },
+  { id: 2, sender: "Aisha Mohamed", phone: "+255 784 987 654", text: "Can we schedule a product delivery for Arusha warehouse tomorrow?", time: "09:15 AM", unread: false, readReceipt: true, ageHours: 4 },
+  { id: 3, sender: "Baraka Enterprise", phone: "+255 754 112 233", text: "Sent bank deposit slip for the recent bulk order. Please confirm receipt.", time: "Yesterday", unread: true, readReceipt: false, ageHours: 26 },
+];
+
+function DashboardWhatsAppFeed({ onOpen }) {
+  const [senderQuery, setSenderQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("date");
+  const feedRows = useMemo(() => WHATSAPP_MESSAGE_SEED.map((message) => ({
+    ...message,
+    receivedAt: new Date(Date.now() - message.ageHours * 60 * 60 * 1000),
+  })), []);
+  const filteredRows = useMemo(() => {
+    const now = Date.now();
+    const dateWindow = dateFilter === "today" ? 24 * 60 * 60 * 1000 : dateFilter === "7d" ? 7 * 24 * 60 * 60 * 1000 : dateFilter === "30d" ? 30 * 24 * 60 * 60 * 1000 : null;
+    return feedRows
+      .filter((message) => !senderQuery.trim() || message.sender.toLowerCase().includes(senderQuery.trim().toLowerCase()))
+      .filter((message) => !dateWindow || now - message.receivedAt.getTime() <= dateWindow)
+      .sort((a, b) => sortBy === "sender" ? a.sender.localeCompare(b.sender) : b.receivedAt - a.receivedAt);
+  }, [feedRows, senderQuery, dateFilter, sortBy]);
+  const unreadCount = feedRows.filter((message) => message.unread).length;
+
+  return (
+    <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden" aria-label="WhatsApp feed widget">
+      <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ background: "#075E54" }}>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <MessageCircle size={14} className="text-white" />
+            <h3 className="text-[13px] font-bold text-white">WhatsApp Feed</h3>
+            <span className="rounded-full bg-white/15 px-1.5 py-0.5 text-[9.5px] font-bold text-white">{unreadCount} unread</span>
+          </div>
+          <p className="mt-0.5 truncate text-[10.5px] text-white/65">Customer messages from the linked web session</p>
+        </div>
+        <button type="button" onClick={onOpen} className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-white/20 px-2 py-1 text-[10.5px] font-semibold text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+          Open <ChevronRight size={12} />
+        </button>
+      </div>
+      <div className="space-y-2 border-b border-slate-100 bg-slate-50/70 p-3">
+        <div className="relative">
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input value={senderQuery} onChange={(event) => setSenderQuery(event.target.value)} placeholder="Filter by sender" aria-label="Filter WhatsApp messages by sender" className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-7 pr-2.5 text-[11px] text-slate-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20" />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} aria-label="Filter WhatsApp messages by date" className="min-w-0 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-600 outline-none focus:border-emerald-500">
+            <option value="all">All dates</option>
+            <option value="today">Today</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+          </select>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} aria-label="Sort WhatsApp messages" className="min-w-0 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-600 outline-none focus:border-emerald-500">
+            <option value="date">Newest first</option>
+            <option value="sender">Sender A–Z</option>
+          </select>
+        </div>
+      </div>
+      <div className="max-h-[285px] overflow-y-auto px-3 py-2">
+        {filteredRows.length === 0 ? (
+          <div className="py-8 text-center text-[11.5px] text-slate-400">No WhatsApp messages match these filters.</div>
+        ) : filteredRows.map((message) => (
+          <button key={message.id} type="button" onClick={onOpen} className="group flex w-full items-start gap-2.5 border-b border-slate-100 py-2.5 text-left last:border-0 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30">
+            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[10px] font-bold text-emerald-700">{message.sender.split(" ").map((part) => part[0]).slice(0, 2).join("")}</span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center justify-between gap-2"><span className="truncate text-[11.5px] font-semibold text-slate-800">{message.sender}</span><span className="shrink-0 text-[10px] text-slate-400">{message.receivedAt.toLocaleDateString([], { month: "short", day: "numeric" })}</span></span>
+              <span className="mt-0.5 block truncate text-[11px] text-slate-500">{message.text}</span>
+            </span>
+            {message.unread && <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-label="Unread message" />}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2 text-[10px] text-slate-400">
+        <span>{filteredRows.length} of {feedRows.length} messages</span>
+        <span className="text-emerald-700">Filter by date or sender</span>
+      </div>
+    </section>
+  );
+}
+
 function WhatsAppWebIntegration() {
   const [linked, setLinked] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [messages, setMessages] = useState([
-    { id: 1, sender: "Juma Kassam", phone: "+255 715 234 567", text: "Hello, checking on our wholesale invoice payment status for Dar es Salaam branch.", time: "10:42 AM", unread: true, readReceipt: true },
-    { id: 2, sender: "Aisha Mohamed", phone: "+255 784 987 654", text: "Can we schedule a product delivery for Arusha warehouse tomorrow?", time: "09:15 AM", unread: false, readReceipt: true },
-    { id: 3, sender: "Baraka Enterprise", phone: "+255 754 112 233", text: "Sent bank deposit slip for the recent bulk order. Please confirm receipt.", time: "Yesterday", unread: true, readReceipt: false },
-  ]);
+  const [messages, setMessages] = useState(() => WHATSAPP_MESSAGE_SEED.map(({ ageHours, ...message }) => message));
   const [replyText, setReplyText] = useState("");
   const [selectedMsg, setSelectedMsg] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -32994,6 +33094,19 @@ function ChannelsView({ currentUser, employees }) {
       return { ...prev, [msgId]: { ...current, [emoji]: count + 1 } };
     });
   }
+  const threadReactionSummaries = useMemo(() => {
+    const summaries = {};
+    channelMessages.forEach((message) => {
+      const rootId = message.parentRef || message.id;
+      const summary = summaries[rootId] || { messageCount: 0, reactions: {} };
+      summary.messageCount += 1;
+      Object.entries(messageReactions[message.id] || {}).forEach(([emoji, count]) => {
+        summary.reactions[emoji] = (summary.reactions[emoji] || 0) + count;
+      });
+      summaries[rootId] = summary;
+    });
+    return summaries;
+  }, [channelMessages, messageReactions]);
 
   async function sendMessage() {
     const text = draft.trim();
@@ -33121,6 +33234,8 @@ function ChannelsView({ currentUser, employees }) {
                 channelMessages.map((m, index) => {
                   const isPinned = pinnedMessageIds.has(m.id);
                   const reactions = messageReactions[m.id] || {};
+                  const threadSummary = threadReactionSummaries[m.parentRef || m.id] || { messageCount: 1, reactions: {} };
+                  const threadReactionTotal = Object.values(threadSummary.reactions).reduce((sum, count) => sum + count, 0);
                   return (
                     <div key={m.id} className={`flex gap-2.5 p-2 rounded-lg animate-modal-fade transition-colors ${isPinned ? "bg-amber-50/50 border border-amber-100" : ""} ${m.parentRef ? "ml-6 pl-3 border-l-2 border-slate-200" : ""}`}>
                       <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-medium text-slate-500 shrink-0">{m.sender.split(" ").map((p) => p[0]).slice(0, 2).join("")}</div>
@@ -33137,6 +33252,13 @@ function ChannelsView({ currentUser, employees }) {
                           </div>
                         </div>
                         <p className="text-[13px] text-slate-700 mt-0.5 break-words whitespace-pre-wrap">{m.text}</p>
+                        {!m.parentRef && (threadSummary.messageCount > 1 || threadReactionTotal > 0) && (
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50/60 px-2 py-1.5" aria-label="Thread reaction summary">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Thread context</span>
+                            {Object.entries(threadSummary.reactions).map(([emoji, count]) => <span key={emoji} className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">{emoji} {count}</span>)}
+                            <span className="text-[10px] text-emerald-700">{threadSummary.messageCount} message{threadSummary.messageCount === 1 ? "" : "s"}</span>
+                          </div>
+                        )}
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
                           {Object.entries(reactions).map(([emoji, count]) => (
                             <button key={emoji} onClick={() => addReaction(m.id, emoji)} className="text-[11px] bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-full flex items-center gap-1">
