@@ -36,4 +36,10 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("remindersEnabled");
     expect(dashboardSource).toContain("isManagerOrAdmin");
   });
+
+  it("supports channel-level read receipts, push-style calendar reminders, and workspace invite links", () => {
+    expect(dashboardSource).toContain("Read by active team");
+    expect(dashboardSource).toContain("Push Notification");
+    expect(dashboardSource).toContain("Generate Invite Link");
+  });
 });

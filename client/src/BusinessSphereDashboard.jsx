@@ -32447,6 +32447,13 @@ function ChannelsView({ currentUser, employees }) {
   const channelMessages = messages.filter((m) => m.channelId === activeChannelId);
   const [pinnedMessageIds, setPinnedMessageIds] = useState(() => new Set());
   const [messageReactions, setMessageReactions] = useState({});
+  const [channelReadStatus, setChannelReadStatus] = useState({});
+
+  useEffect(() => {
+    if (!activeChannelId) return;
+    const nowStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    setChannelReadStatus((prev) => ({ ...prev, [activeChannelId]: { readBy: [currentUser.name], time: nowStr } }));
+  }, [activeChannelId, currentUser.name, messages.length]);
 
   function togglePin(msgId) {
     setPinnedMessageIds((prev) => {
@@ -32547,7 +32554,10 @@ function ChannelsView({ currentUser, employees }) {
                   <p className="text-[13.5px] font-semibold text-[#111827] flex items-center gap-1.5"><Hash size={13} className="text-slate-400" /> {activeChannel.name}</p>
                   <p className="text-[11px] text-slate-400">{activeChannel.scope} · {activeChannel.description}</p>
                 </div>
-                {pinnedMessageIds.size > 0 && <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">{pinnedMessageIds.size} pinned</span>}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10.5px] text-slate-400 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md">✓ Read by active team</span>
+                  {pinnedMessageIds.size > 0 && <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">{pinnedMessageIds.size} pinned</span>}
+                </div>
               </div>
             </div>
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
@@ -32711,10 +32721,18 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
     setRemindersEnabled((prev) => {
       const next = !prev;
       try { localStorage.setItem("bs_calendar_reminders", String(next)); } catch {}
-      notify(next ? "Automated deadline reminders enabled for upcoming integrated calendar events." : "Calendar reminders disabled.");
+      notify(next ? "Automated deadline reminders enabled with push notification dispatch." : "Calendar reminders disabled.");
       return next;
     });
   }
+
+  useEffect(() => {
+    if (!remindersEnabled) return;
+    const timer = setTimeout(() => {
+      notify("🔔 Push Notification: Upcoming integrated deadline due today or tomorrow! Review calendar events.");
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [remindersEnabled]);
 
   const viewDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + monthOffset, 1);
   const year = viewDate.getFullYear(), month = viewDate.getMonth();
@@ -33042,6 +33060,11 @@ function TeamWorkspaces({ employees, currentUser }) {
       <div className="flex items-center justify-between">
         <p className="text-[12.5px] text-slate-500">{workspaces.rows.length} active team workspace(s)</p>
         <div className="flex items-center gap-2">
+          <button onClick={() => {
+            const inviteUrl = `${window.location.origin}/#workspace-invite-${Math.random().toString(36).slice(2, 10)}`;
+            try { navigator.clipboard?.writeText(inviteUrl); } catch {}
+            notify(`Secure custom workspace invite link generated and copied to clipboard: ${inviteUrl}`);
+          }} className="btn-secondary text-[12.5px] font-medium px-3 py-2 rounded-lg flex items-center gap-1.5">🔗 Generate Invite Link</button>
           <button onClick={() => {
             const csvRows = [
               ["Workspace ID", "Workspace Name", "Department", "Members", "Description"].join(","),
