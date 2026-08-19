@@ -32761,7 +32761,16 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
   const [reminderTimezone, setReminderTimezone] = useState(() => {
     try { return localStorage.getItem("bs_reminder_timezone") || "Africa/Dar_es_Salaam"; } catch { return "Africa/Dar_es_Salaam"; }
   });
+  const [digestFrequency, setDigestFrequency] = useState(() => {
+    try { return localStorage.getItem("bs_calendar_digest_freq") || "weekly"; } catch { return "weekly"; }
+  });
   const [visibleCategories, setVisibleCategories] = useState(() => new Set(CALENDAR_CATEGORIES.map((c) => c.id)));
+
+  function handleDigestFrequencyChange(freq) {
+    setDigestFrequency(freq);
+    try { localStorage.setItem("bs_calendar_digest_freq", freq); } catch {}
+    notify(`Calendar digest frequency updated to: ${freq === "daily" ? "Daily" : freq === "weekly" ? "Weekly" : "Monthly"}.`);
+  }
 
   function handleTimezoneChange(tz) {
     setReminderTimezone(tz);
@@ -32904,6 +32913,16 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
             <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
             <option value="UTC">UTC</option>
             <option value="Europe/London">Europe/London (GMT)</option>
+          </select>
+          <select
+            value={digestFrequency}
+            onChange={(e) => handleDigestFrequencyChange(e.target.value)}
+            className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11.5px] text-slate-600 outline-none focus:border-[#16A34A]"
+            title="Digest Frequency"
+          >
+            <option value="daily">Daily Digest</option>
+            <option value="weekly">Weekly Digest</option>
+            <option value="monthly">Monthly Digest</option>
           </select>
           <button
             onClick={toggleReminders}
@@ -33219,6 +33238,40 @@ function TeamWorkspaces({ employees, currentUser }) {
           <button onClick={() => setShowForm(true)} className="btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Plus size={14} /> New Workspace</button>
         </div>
       </div>
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5 mb-4">
+        <h4 className="text-[13px] font-semibold text-[#111827] mb-2">Cross-Workspace Employee Membership Matrix</h4>
+        <p className="text-[11.5px] text-slate-500 mb-3">Compare employee assignments across all active team workspaces instantly.</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-100 text-[11px] font-medium text-slate-400 uppercase">
+                <th className="py-2 px-3">Employee Name</th>
+                <th className="py-2 px-3">Department</th>
+                <th className="py-2 px-3">Role</th>
+                {workspaces.rows.map(w => <th key={w.id} className="py-2 px-3 truncate max-w-[140px]">{w.name}</th>)}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 text-[12.5px]">
+              {employees.rows.slice(0, 10).map(e => (
+                <tr key={e.id} className="hover:bg-slate-50">
+                  <td className="py-2.5 px-3 font-medium text-[#111827]">{e.name}</td>
+                  <td className="py-2.5 px-3 text-slate-500">{e.department || "General"}</td>
+                  <td className="py-2.5 px-3 text-slate-500">{e.role || "Staff"}</td>
+                  {workspaces.rows.map(w => {
+                    const isMember = (w.members || "").includes(e.name);
+                    return (
+                      <td key={w.id} className="py-2.5 px-3">
+                        {isMember ? <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#16A34A]" title="Assigned"></span> : <span className="inline-block w-2.5 h-2.5 rounded-full bg-slate-200" title="Not assigned"></span>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {workspaces.rows.map((w) => (
           <div key={w.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
@@ -33284,6 +33337,8 @@ function WorkspaceFormPanel({ departments, onClose, onSubmit, saving = false }) 
 // store that could drift out of sync with the real one.
 function CollabFileSharing({ filesHook, onNavigate }) {
   const recent = [...filesHook.rows].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8);
+  const [previewFile, setPreviewFile] = useState(null);
+
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
       <div className="flex items-center justify-between mb-1">
@@ -33295,16 +33350,51 @@ function CollabFileSharing({ filesHook, onNavigate }) {
         {recent.map((f) => {
           const meta = FILE_TYPE_STYLE[f.type] || FILE_TYPE_STYLE.pdf;
           const Icon = meta.Icon;
+          const isImage = f.type === "image" || f.name.match(/\.(png|jpg|jpeg|webp)$/i);
           return (
-            <button key={f.id} onClick={() => onNavigate("documents")} className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-slate-50 text-left transition-colors">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${meta.color}14` }}><Icon size={14} style={{ color: meta.color }} /></div>
-              <div className="min-w-0 flex-1"><p className="text-[12.5px] font-medium text-[#111827] truncate">{f.name}</p><p className="text-[11px] text-slate-400">{f.folder} · {f.date}</p></div>
-              <ChevronRight size={14} className="text-slate-300 shrink-0" />
-            </button>
+            <div key={f.id} className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+              <button onClick={() => setPreviewFile(f)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 relative overflow-hidden" style={{ backgroundColor: `${meta.color}14` }}>
+                  {isImage && f.url ? <img src={f.url} alt="" className="w-full h-full object-cover" /> : <Icon size={14} style={{ color: meta.color }} />}
+                </div>
+                <div className="min-w-0 flex-1"><p className="text-[12.5px] font-medium text-[#111827] truncate">{f.name}</p><p className="text-[11px] text-slate-400">{f.folder} · {f.date}</p></div>
+              </button>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <button onClick={() => setPreviewFile(f)} className="text-[11px] font-medium text-[#16A34A] hover:underline px-2 py-1 bg-[#16A34A]/8 rounded">Preview</button>
+                <button onClick={() => onNavigate("documents")} className="text-slate-300 hover:text-slate-600"><ChevronRight size={14} /></button>
+              </div>
+            </div>
           );
         })}
         {recent.length === 0 && <p className="text-[12.5px] text-slate-400 text-center py-6">No files yet — upload one in the Document Center.</p>}
       </div>
+
+      {previewFile && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#111827]/30 backdrop-blur-[2px]" onClick={() => setPreviewFile(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 z-10" style={{ animation: "scaleIn .15s ease-out" }}>
+            <div className="flex items-center justify-between">
+              <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Rich Media Preview</p><h3 className="text-[16px] font-semibold text-[#111827] mt-0.5">{previewFile.name}</h3></div>
+              <button onClick={() => setPreviewFile(null)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
+            </div>
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col items-center justify-center min-h-[220px]">
+              {previewFile.url ? (
+                <img src={previewFile.url} alt={previewFile.name} className="max-h-[240px] rounded-lg object-contain shadow-sm" />
+              ) : (
+                <div className="text-center py-8">
+                  <FileText size={48} className="mx-auto text-slate-300 mb-2" />
+                  <p className="text-[13px] font-medium text-slate-700">{previewFile.name}</p>
+                  <p className="text-[11.5px] text-slate-400 mt-1">Folder: {previewFile.folder} · Size: {previewFile.size || "Standard"}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button onClick={() => setPreviewFile(null)} className="btn-secondary text-[12px] font-medium px-4 py-2 rounded-lg">Close</button>
+              <button onClick={() => { setPreviewFile(null); onNavigate("documents"); }} className="btn-primary text-white text-[12px] font-medium px-4 py-2 rounded-lg">Open in Document Center</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

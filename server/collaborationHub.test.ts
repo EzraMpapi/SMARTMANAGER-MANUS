@@ -66,4 +66,10 @@ describe("Collaboration Hub Enterprise Suite", () => {
     expect(dashboardSource).toContain("AudioContext");
     expect(dashboardSource).toContain("exportColumns");
   });
+
+  it("supports multi-workspace employee comparison, rich media thumbnail previews, and digest frequencies", () => {
+    expect(dashboardSource).toContain("Cross-Workspace Employee Membership Matrix");
+    expect(dashboardSource).toContain("previewFile");
+    expect(dashboardSource).toContain("digestFrequency");
+  });
 });
