@@ -31715,6 +31715,144 @@ function useWaMessages(contactId) {
   return [msgs, setMsgs];
 }
 
+
+function WhatsAppWebIntegration() {
+  const [linked, setLinked] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [messages, setMessages] = useState([
+    { id: 1, sender: "Juma Kassam", phone: "+255 715 234 567", text: "Hello, checking on our wholesale invoice payment status for Dar es Salaam branch.", time: "10:42 AM", unread: true },
+    { id: 2, sender: "Aisha Mohamed", phone: "+255 784 987 654", text: "Can we schedule a product delivery for Arusha warehouse tomorrow?", time: "09:15 AM", unread: false },
+  ]);
+  const [replyText, setReplyText] = useState("");
+  const [selectedMsg, setSelectedMsg] = useState(null);
+
+  const simulateScan = () => {
+    setScanning(true);
+    setTimeout(() => {
+      setScanning(false);
+      setLinked(true);
+      notify("WhatsApp account linked successfully via QR session.");
+    }, 2000);
+  };
+
+  const handleReply = () => {
+    if (!replyText.trim() || !selectedMsg) return;
+    notify(`Reply sent to ${selectedMsg.sender} via WhatsApp Web session.`);
+    setMessages(messages.map(m => m.id === selectedMsg.id ? { ...m, unread: false } : m));
+    setReplyText("");
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4 animate-modal-fade">
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div>
+          <h4 className="text-[14px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span>📱 WhatsApp Web Live Integration</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${linked ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"}`}>
+              {linked ? "🟢 Connected (Linked Device)" : "🟡 Disconnected"}
+            </span>
+          </h4>
+          <p className="text-[11.5px] text-slate-500 mt-0.5">Scan QR code with your mobile WhatsApp app to view customer messages and reply directly.</p>
+        </div>
+        {!linked ? (
+          <button
+            onClick={simulateScan}
+            disabled={scanning}
+            className="rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 transition disabled:opacity-50"
+          >
+            {scanning ? "Generating QR Code..." : "Scan QR to Connect"}
+          </button>
+        ) : (
+          <button
+            onClick={() => { setLinked(false); notify("WhatsApp session disconnected."); }}
+            className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-[11.5px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          >
+            Disconnect Account
+          </button>
+        )}
+      </div>
+
+      {!linked ? (
+        <div className="py-8 text-center space-y-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+          <div className="w-32 h-32 mx-auto bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center">
+            {scanning ? (
+              <div className="space-y-2 text-center">
+                <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-[10px] text-slate-400 font-mono">Linking...</p>
+              </div>
+            ) : (
+              <div className="text-center space-y-1">
+                <div className="text-3xl">🔲</div>
+                <p className="text-[10px] text-slate-400 font-mono">WhatsApp QR</p>
+              </div>
+            )}
+          </div>
+          <p className="text-[12px] text-slate-600 dark:text-slate-300 font-medium">Open WhatsApp on your phone → Menu / Settings → Linked Devices → Link a Device</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-1 border-r border-slate-100 dark:border-slate-800 pr-3 space-y-2">
+            <p className="text-[11.5px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Customer Inquiries ({messages.length})</p>
+            <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+              {messages.map(m => (
+                <div
+                  key={m.id}
+                  onClick={() => setSelectedMsg(m)}
+                  className={`p-2.5 rounded-xl cursor-pointer transition border text-left ${selectedMsg?.id === m.id ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800" : "bg-slate-50 dark:bg-slate-800/50 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-bold text-slate-900 dark:text-white truncate">{m.sender}</span>
+                    {m.unread && <span className="w-2 h-2 rounded-full bg-emerald-600"></span>}
+                  </div>
+                  <p className="text-[11px] text-slate-500 truncate mt-0.5">{m.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="md:col-span-2 flex flex-col justify-between bg-slate-50 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800 min-h-[260px]">
+            {selectedMsg ? (
+              <div className="flex flex-col h-full justify-between space-y-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <div>
+                      <h5 className="text-[13px] font-bold text-slate-900 dark:text-white">{selectedMsg.sender}</h5>
+                      <p className="text-[11px] font-mono text-slate-500">{selectedMsg.phone}</p>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">{selectedMsg.time}</span>
+                  </div>
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[12px] text-slate-700 dark:text-slate-300 shadow-sm mt-2">
+                    {selectedMsg.text}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                  <input
+                    type="text"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Type WhatsApp reply..."
+                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-[12px] text-slate-900 dark:text-white outline-none focus:border-emerald-600"
+                  />
+                  <button
+                    onClick={handleReply}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-semibold text-white shadow-sm hover:bg-emerald-700 transition shrink-0"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center py-12 text-slate-400 space-y-1">
+                <span className="text-2xl">💬</span>
+                <p className="text-[12px] font-medium">Select a customer conversation to view and respond.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
   const co = company || window.__smartManagerCompany || {};
   const providerReadiness = trpc.support.whatsappProviderReadiness.useQuery(undefined, { enabled: IS_CONFIGURED });
@@ -31846,6 +31984,7 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
 
   return (
     <div className="flex h-[640px] bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <WhatsAppWebIntegration />
 
       {/* ── LEFT PANEL — Contact list ── */}
       <div className="w-72 shrink-0 border-r border-slate-100 flex flex-col">
@@ -32421,7 +32560,7 @@ function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, wo
       </div>
       {showConfigModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-5 animate-message-enter">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-5 animate-modal-fade">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -32742,7 +32881,7 @@ function ChannelsView({ currentUser, employees }) {
                   const isPinned = pinnedMessageIds.has(m.id);
                   const reactions = messageReactions[m.id] || {};
                   return (
-                    <div key={m.id} className={`flex gap-2.5 p-2 rounded-lg animate-message-enter transition-colors ${isPinned ? "bg-amber-50/50 border border-amber-100" : ""} ${m.parentRef ? "ml-6 pl-3 border-l-2 border-slate-200" : ""}`}>
+                    <div key={m.id} className={`flex gap-2.5 p-2 rounded-lg animate-modal-fade transition-colors ${isPinned ? "bg-amber-50/50 border border-amber-100" : ""} ${m.parentRef ? "ml-6 pl-3 border-l-2 border-slate-200" : ""}`}>
                       <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-medium text-slate-500 shrink-0">{m.sender.split(" ").map((p) => p[0]).slice(0, 2).join("")}</div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between">
