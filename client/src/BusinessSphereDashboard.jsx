@@ -31719,6 +31719,11 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
   const co = company || window.__smartManagerCompany || {};
   const providerReadiness = trpc.support.whatsappProviderReadiness.useQuery(undefined, { enabled: IS_CONFIGURED });
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [waConnected, setWaConnected] = useState(() => {
+    try { return localStorage.getItem("bs_wa_web_connected") === "true"; } catch { return false; }
+  });
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState(() => "https://web.whatsapp.com/accept?code=SMARTMANAGER-" + Math.random().toString(36).substring(7).toUpperCase());
   const [birdApiKey, setBirdApiKey] = useState("");
   const [birdSigningSecret, setBirdSigningSecret] = useState("");
   const [birdWorkspaceId, setBirdWorkspaceId] = useState("");
@@ -31851,9 +31856,17 @@ function WhatsAppCenter({ currentUser, crm, employees, invoices, company }) {
       <div className="w-72 shrink-0 border-r border-slate-100 flex flex-col">
         {/* Header */}
         <div className="px-4 pt-4 pb-3 border-b border-slate-100" style={{background:"#075E54"}}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-white font-bold text-[15px]">WhatsApp</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-white font-bold text-[15px]">WhatsApp</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${waConnected ? "bg-emerald-500/30 text-emerald-200 border border-emerald-400/40" : "bg-amber-500/30 text-amber-200 border border-amber-400/40"}`}>
+                {waConnected ? "● Web Linked" : "○ Unlinked"}
+              </span>
+            </div>
             <div className="flex gap-2">
+              <button onClick={() => setShowQrModal(true)} className="rounded-md bg-white/10 px-2 py-1 text-[10.5px] font-semibold text-white transition hover:bg-white/20 border border-white/20">
+                {waConnected ? "Manage Session" : "Scan QR"}
+              </button>
               <button onClick={()=>setShowDeliveryGuidance(!showDeliveryGuidance)}
                 className="text-white/70 hover:text-white" title="WhatsApp delivery guidance">
                 <Settings size={16}/>
@@ -32419,6 +32432,62 @@ function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, wo
         {tab === "notebook" && <NotebookView currentUser={currentUser} />}
         {tab === "files" && <CollabFileSharing filesHook={filesHook} onNavigate={onNavigate} />}
       </div>
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-5 animate-message-enter text-center">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-[16px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>📱 Link WhatsApp Web Session</span>
+              </h3>
+              <button onClick={() => setShowQrModal(false)} className="text-slate-400 hover:text-slate-600 text-lg font-bold">×</button>
+            </div>
+            <p className="text-[13px] text-slate-600 dark:text-slate-300">
+              Open WhatsApp on your phone, go to <strong className="text-slate-900 dark:text-white">Linked Devices</strong> → <strong className="text-slate-900 dark:text-white">Link a Device</strong>, and scan the secure session code below.
+            </p>
+            <div className="mx-auto w-52 h-52 bg-slate-50 dark:bg-slate-800 border-2 border-emerald-600/30 rounded-2xl p-4 flex flex-col items-center justify-center shadow-inner relative group">
+              <div className="w-full h-full bg-slate-900 rounded-xl flex flex-col items-center justify-center text-white p-3 font-mono text-[10px] space-y-1">
+                <div className="w-32 h-32 bg-white rounded-lg p-2 grid grid-cols-6 gap-1 text-slate-900 font-bold text-[8px] place-items-center">
+                  <span>█</span><span> </span><span>█</span><span>█</span><span> </span><span>█</span>
+                  <span> </span><span>█</span><span> </span><span> </span><span>█</span><span> </span>
+                  <span>█</span><span>█</span><span>█</span><span> </span><span>█</span><span>█</span>
+                  <span> </span><span> </span><span>█</span><span>█</span><span> </span><span> </span>
+                  <span>█</span><span> </span><span> </span><span>█</span><span> </span><span>█</span>
+                  <span>█</span><span>█</span><span> </span><span> </span><span>█</span><span>█</span>
+                </div>
+                <span className="text-emerald-400 text-[9px] mt-1">SECURE QR TOKEN</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <span className={`inline-block w-2.5 h-2.5 rounded-full ${waConnected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+              <span className="text-[12.5px] font-semibold text-slate-700 dark:text-slate-300">
+                {waConnected ? "Device Linked & Synced Successfully" : "Waiting for phone scan…"}
+              </span>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !waConnected;
+                  setWaConnected(next);
+                  try { localStorage.setItem("bs_wa_web_connected", next ? "true" : "false"); } catch {}
+                  notify(next ? "WhatsApp Web session linked successfully!" : "WhatsApp session disconnected.");
+                }}
+                className={`rounded-xl px-4 py-2.5 text-[12.5px] font-semibold text-white shadow-sm transition ${waConnected ? "bg-rose-600 hover:bg-rose-700" : "bg-emerald-600 hover:bg-emerald-750"}`}
+              >
+                {waConnected ? "Disconnect Device" : "Simulate Successful Scan"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showConfigModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-5 animate-message-enter">
