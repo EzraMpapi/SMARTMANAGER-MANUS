@@ -27,16 +27,16 @@
 - [x] Add focused Vitest coverage for webhook event contracts, signature logo validation/storage, and rich-text hyperlink validation.
 - [x] Run focused tests, full regression suite, and low-memory production build.
 - [x] Complete authenticated responsive Collaboration Hub Email verification.
-- [ ] Review this checklist and save the published checkpoint.
+- [x] Review this checklist and save the published checkpoint.
 
 ## Collaboration Hub Email Runtime Follow-up
 - [x] Investigate and fix the newly surfaced `showCont is not defined` crash when opening the Email tab in the published deployment.
 - [x] Add a mounted EmailCenter regression test and re-run focused/full tests.
 - [x] Capture authenticated Collaboration Hub Email screenshots at desktop and mobile sizes after the published runtime is corrected.
-- [ ] Mark the complete verification and checkpoint items after the affected flow is validated.
+- [x] Mark the complete verification and checkpoint items after the affected flow is validated.
 
 ## Published Authentication Bootstrap Follow-up
 - [x] Diagnose why the latest published `/app` remains on `Preparing Smart Manager` instead of resolving the authenticated workspace gateway.
-- [ ] Correct the bootstrap/auth loading boundary without weakening tenant or session security.
+- [x] Correct the bootstrap/auth loading boundary without weakening tenant or session security.
 - [x] Add regression coverage for the bootstrap failure mode and re-run focused/full tests and build verification.
-- [ ] Publish and re-verify live Collaboration Hub Email at desktop and mobile sizes after the bootstrap fix.
+- [x] Publish and re-verify live Collaboration Hub Email at desktop and mobile sizes after the bootstrap fix.
