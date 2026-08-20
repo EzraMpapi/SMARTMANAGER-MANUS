@@ -43495,10 +43495,10 @@ function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentCo
 // path lets a signup browse or search other companies — see the schema
 // comment on companies.join_code for why that is a deliberate privacy
 // boundary, not an oversight.
-function SignupPage({ onAuthenticated, onSwitchToLogin }) {
+export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const onboardingModuleIds = useMemo(() => ONBOARDING_MODULES.map((module) => module.id), []);
   const onboardingProgress = useMemo(() => readOnboardingProgress(onboardingModuleIds), [onboardingModuleIds]);
-  const restoredOnboardingProgress = Boolean(onboardingProgress && hasOnboardingProgress(onboardingProgress, onboardingModuleIds));
+  const [restoredOnboardingProgress, setRestoredOnboardingProgress] = useState(() => Boolean(onboardingProgress && hasOnboardingProgress(onboardingProgress, onboardingModuleIds)));
   const persistedCountry = SIGNUP_COUNTRIES.includes(onboardingProgress?.company?.country) ? onboardingProgress.company.country : SIGNUP_COUNTRIES[0];
   const [mode, setMode] = useState(() => onboardingProgress?.mode || "create"); // "create" | "join"
   // A password is deliberately never stored; all recovered sessions restart at step 1.
@@ -43545,6 +43545,23 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  }
+  function discardSavedSetup() {
+    const defaultCountry = SIGNUP_COUNTRIES[0];
+    clearOnboardingProgress();
+    setRestoredOnboardingProgress(false);
+    setMode("create");
+    setStep(1);
+    setError(null);
+    setAccount({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
+    setCompany({ name: "", category: "general", country: defaultCountry, currency: SIGNUP_CURRENCIES[0], timezone: companyDefaultsForCountry(defaultCountry).timezone, website: "", taxId: "", brandColor: "#0B5D3B", brandAccentColor: "#16A34A", logo: null });
+    setSelectedModules(new Set(onboardingModuleIds));
+    setBusinessScale("large");
+    setFirstBranch("");
+    setJoinCode("");
+    setJoinRole("Employee");
+    setCustomerRef("");
+    setShowPassword(false);
   }
 
   const step1Valid = Boolean(account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword);
@@ -43706,7 +43723,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
           <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,.08)] sm:p-7">
             {error && <div role="alert" className="mb-4 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-[12px] leading-5 text-red-700">{error}</div>}
-            {restoredOnboardingProgress && !completedWorkspace && <div role="status" className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3 text-[12px] leading-5 text-emerald-800">Your in-progress setup was restored for this browser session. Re-enter your password to continue; passwords, confirmations, logo files, and company join codes are never saved.</div>}
+            {restoredOnboardingProgress && !completedWorkspace && <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3 text-[12px] leading-5 text-emerald-800"><p>Your in-progress setup was restored for this browser session. Re-enter your password to continue; passwords, confirmations, logo files, and company join codes are never saved.</p><button type="button" onClick={discardSavedSetup} className="shrink-0 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1" aria-label="Discard saved setup and start again">Discard saved setup</button></div>}
             {mode === "join" ? (
               <form onSubmit={handleFinalSubmit} className="auth-step-panel space-y-4" aria-live="polite">
                 <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Join an existing workspace</h3><p className="mt-1 text-[12.5px] text-slate-500">Your administrator should provide the company join code.</p></div>
@@ -43744,7 +43761,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(1)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to account details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Register your company</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Configure the first workspace essentials.</p></div></div>
                 <FormField label="Company name" required><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder="e.g. Kilimanjaro Traders Ltd" /></div></FormField>
                 <div className="grid gap-3 sm:grid-cols-2"><FormField label="Country" required><select className={inputClass} value={company.country} onChange={(e) => setCompanyField("country", e.target.value)}>{SIGNUP_COUNTRIES.map((country) => <option key={country}>{country}</option>)}</select></FormField><FormField label="Currency" required><select className={inputClass} value={company.currency} onChange={(e) => setCompanyField("currency", e.target.value)}>{SIGNUP_CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}</select></FormField></div>
-                <FormField label="Industry" required><select className={inputClass} value={company.category} onChange={(e) => setCompanyField("category", e.target.value)}>{SIGNUP_INDUSTRY_OPTIONS.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}</select></FormField>
+                <FormField label="Industry" required><select className={inputClass} value={company.category} onChange={(e) => setCompanyField("category", e.target.value)}>{ORGANIZATION_INDUSTRY_OPTIONS.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></FormField>
                 <div className="grid gap-3 sm:grid-cols-2"><FormField label="Website"><div className="relative"><Globe2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} type="url" value={company.website} onChange={(e) => setCompanyField("website", e.target.value)} placeholder="https://yourcompany.com" /></div></FormField><FormField label="Tax ID / TIN"><div className="relative"><FileText size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={company.taxId} onChange={(e) => setCompanyField("taxId", e.target.value)} placeholder="123-456-789" /></div></FormField></div>
                 <div><label className="mb-1.5 block text-[12px] font-semibold text-slate-600">Business scale</label><div className="grid grid-cols-2 gap-2">{[["small", "Small business", "Essential modules"], ["large", "Growing / Enterprise", "Full initial suite"]].map(([value, label, copy]) => <button key={value} type="button" onClick={() => { setBusinessScale(value); setSelectedModules(new Set(value === "small" ? ONBOARDING_MODULES.slice(0, 5).map((m) => m.id) : ONBOARDING_MODULES.map((m) => m.id))); }} className={`rounded-xl border px-3 py-2.5 text-left transition ${businessScale === value ? "border-[#16A34A] bg-emerald-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><p className="text-[12px] font-semibold text-slate-800">{label}</p><p className="mt-0.5 text-[10.5px] text-slate-400">{copy}</p></button>)}</div></div>
                 <FormField label="First branch / location"><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="Head Office" /></div></FormField>

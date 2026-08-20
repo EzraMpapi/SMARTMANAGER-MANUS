@@ -168,7 +168,19 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 2500,
-    rollupOptions: {},
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const moduleId = id.replaceAll("\\", "/");
+          if (!moduleId.includes("/node_modules/")) return;
+          if (moduleId.includes("/node_modules/react/") || moduleId.includes("/node_modules/react-dom/") || moduleId.includes("/node_modules/scheduler/")) return "react-runtime";
+          if (moduleId.includes("/node_modules/lucide-react/")) return "icon-library";
+          if (moduleId.includes("/node_modules/xlsx/")) return "spreadsheet-export";
+          if (moduleId.includes("/node_modules/jspdf/")) return "pdf-export";
+          if (moduleId.includes("/node_modules/@tanstack/") || moduleId.includes("/node_modules/@trpc/")) return "application-data";
+        },
+      },
+    },
   },
   server: {
     host: true,

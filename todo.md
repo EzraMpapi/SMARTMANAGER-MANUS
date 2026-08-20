@@ -99,3 +99,10 @@
 - [x] Persist and restore incomplete account, company, branch, and selected-module data without retaining passwords, confirmations, logo files, or company join codes.
 - [x] Add automated three-step signup progression coverage for account, company, and module-selection states.
 - [x] Run focused/full tests, schema verification, type checks, production build, and responsive signup verification.
+
+## Signup Interaction Coverage, Draft Control, and Loading Performance
+- [x] Inspect the public signup runtime, test tooling, and production bundle boundaries.
+- [x] Add browser-driven interaction coverage for completing each valid signup step without creating a real account.
+- [x] Add an accessible user-controlled action to discard a saved onboarding draft and reset the setup form.
+- [x] Code-split safe application boundaries to reduce the initial JavaScript payload without changing protected workspace behavior.
+- [x] Run focused/full tests, TypeScript and schema gates, optimized build analysis, responsive browser verification, and publish the checkpoint.

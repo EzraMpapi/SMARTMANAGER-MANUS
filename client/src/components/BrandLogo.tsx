@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import React, { useState, type CSSProperties } from "react";
 
 export const SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo-20260816_98336ac7.png";
 export const SMART_MANAGER_LOGO_ANIMATION_URL = "/manus-storage/1000411291_698e34d5.mp4";
