@@ -433,6 +433,8 @@ async function callRpc(name, params, accessToken) {
 // These deployed tenant tables use the common name/status/amount/notes/data
 // envelope. Normalize at this shared boundary so every module persists only
 // server-supported columns and keeps its feature-specific fields in data.
+// `finance_expenses` is intentionally excluded: it is a typed relational table
+// and its schema does not expose the generic JSON `data` column.
 export const GENERIC_COMPANY_TABLES = new Set(`
 approval_signatures bank_accounts bank_fixed_deposits bank_loans bank_standing_orders bank_transactions
 branches business_loans collab_messages community_contributions community_groups company_modules
