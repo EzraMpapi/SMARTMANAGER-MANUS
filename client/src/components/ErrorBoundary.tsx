@@ -1,7 +1,8 @@
 import { cn } from "@/lib/utils";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { Component, ReactNode } from "react";
+import { Component, ReactNode, ErrorInfo } from "react";
 import { BrandLogo } from "./BrandLogo";
+import { reportRuntimeError } from "../lib/runtimeTelemetry";
 
 interface Props {
   children: ReactNode;
@@ -20,6 +21,11 @@ class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+    reportRuntimeError(error, errorInfo);
   }
 
   render() {

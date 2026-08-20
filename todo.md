@@ -8185,3 +8185,10 @@
 - [x] Fix variable declaration order or hoist/reorder dependent helper functions.
 - [x] Add regression test spec covering workspace auth initialization and component mount.
 - [x] Run test suite, production build, and save published checkpoint.
+
+## Runtime Telemetry, Visual Regression & Journey Simulations
+- [x] Audit error boundary and authentication views for telemetry and snapshot compatibility.
+- [x] Implement privacy-safe runtime error logging helper with credential redaction.
+- [x] Implement visual regression spec covering mobile and desktop authentication breakpoints.
+- [x] Implement browser journey simulation spec for sign-in, signup progression, and workspace entry.
+- [x] Run focused tests, full test suite, production build, and save published checkpoint.
