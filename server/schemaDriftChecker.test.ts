@@ -11,6 +11,8 @@ describe("Server-Side Supabase Schema Contract Checker", () => {
     expect(ERP_SCHEMA_CONTRACTS.sales_invoices.requiredColumns).toContain("doc_number");
     expect(ERP_SCHEMA_CONTRACTS.inventory_items.requiredColumns).toContain("data");
     expect(ERP_SCHEMA_CONTRACTS.crm_leads.requiredColumns).toContain("data");
+    expect(ERP_SCHEMA_CONTRACTS.hc_patients.requiredColumns).toEqual(["company_id", "name", "status", "data"]);
+    expect(ERP_SCHEMA_CONTRACTS.hc_lab_orders.expectedColumns).toContain("data");
   });
 
   it("approves valid payloads containing only supported relational columns across all critical tables", () => {
@@ -52,6 +54,14 @@ describe("Server-Side Supabase Schema Contract Checker", () => {
       data: { email: "lead@corp.com" },
     };
     expect(validatePayloadContract("crm_leads", validLead).valid).toBe(true);
+
+    const validPatient = {
+      company_id: "comp-1",
+      name: "Demo Patient",
+      status: "Active",
+      data: { mrn: "MRN-000001" },
+    };
+    expect(validatePayloadContract("hc_patients", validPatient).valid).toBe(true);
   });
 
   it("rejects payloads containing forbidden drift columns like cost_center or department", () => {

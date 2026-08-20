@@ -30,6 +30,7 @@ import { notifyPasskeyRegistration } from "./passkeyRegistrationNotification";
 import { dispatchEmailTemplateWorkflowEvent, getEmailTemplateWorkflowStatus, testEmailTemplateWorkflowWebhook } from "./emailTemplateWorkflow";
 import { assertPayloadContract } from "./schemaDriftChecker";
 import { CRITICAL_SUPABASE_TABLES, persistSupabaseRow } from "./supabasePersistence";
+import { archiveHealthcareRecord, createHealthcareRecord, getHealthcareAccess, healthcareArchiveInput, healthcareCreateInput, healthcareListInput, healthcareUpdateInput, listHealthcareRecords, updateHealthcareRecord } from "./healthcareOperations";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -77,6 +78,34 @@ export const appRouter = router({
       }
       return persistSupabaseRow(input.tableName, { ...input.payload, company_id: input.companyId });
     }),
+  healthcare: router({
+    access: protectedProcedure
+      .query(async ({ ctx }) => getHealthcareAccess(ctx.req)),
+    list: protectedProcedure
+      .input(healthcareListInput)
+      .query(async ({ ctx, input }) => listHealthcareRecords(ctx.req, input)),
+    create: protectedProcedure
+      .input(healthcareCreateInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await createHealthcareRecord(ctx.req, input);
+        await recordAuditLog(ctx.user, { companyId: (await resolveVerifiedProfile(ctx.req)).profile.company_id, action: `Healthcare ${result.audit.action}`, module: "Healthcare", details: `${input.table} record` });
+        return result;
+      }),
+    update: protectedProcedure
+      .input(healthcareUpdateInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await updateHealthcareRecord(ctx.req, input);
+        await recordAuditLog(ctx.user, { companyId: (await resolveVerifiedProfile(ctx.req)).profile.company_id, action: `Healthcare ${result.audit.action}`, module: "Healthcare", details: `${input.table} record` });
+        return result;
+      }),
+    archive: protectedProcedure
+      .input(healthcareArchiveInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await archiveHealthcareRecord(ctx.req, input);
+        await recordAuditLog(ctx.user, { companyId: (await resolveVerifiedProfile(ctx.req)).profile.company_id, action: `Healthcare ${result.audit.action}`, module: "Healthcare", details: `${input.table} record` });
+        return result;
+      }),
+  }),
   listRoleChangeApprovals: protectedProcedure
     .query(async ({ ctx }) => listRoleChangeApprovals(ctx.req)),
   requestRoleChangeApproval: protectedProcedure

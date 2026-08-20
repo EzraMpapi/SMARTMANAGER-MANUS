@@ -152,3 +152,33 @@
 
 ## Session Recovery Experience Publication
 - [x] Save and publish the completed terminal-only diagnostic and privacy-safe session recovery experience release.
+
+## Healthcare Module Rebuild
+- [x] Inventory the existing healthcare workspace, routes, data contracts, and supplied visual references.
+- [x] Define tenant-safe clinical data and role access boundaries for patient, clinical, and financial workflows.
+- [x] Rebuild the healthcare navigation, operational dashboard, and responsive design system to match the supplied references.
+- [x] Connect patient registration, appointment, doctor, clinical record, vitals, diagnosis, and prescription CRUD workflows.
+- [x] Connect laboratory, pharmacy, billing, insurance, reports, notifications, and role-aware actions.
+- [x] Add accessible validation, search/filtering, loading, empty, error, and success states across healthcare workflows.
+- [ ] Add unit and browser coverage, run production quality gates, review responsive layouts, and publish the integrated Healthcare Module.
+- [x] Route all Healthcare Clinic reads and writes through the verified tenant-safe healthcare server routes rather than direct or local-only mutations.
+- [x] Apply role-aware UI gating and safe permission-error handling for front desk, clinician, laboratory, pharmacy, billing, and clinic-administrator actions.
+- [x] Add integration and browser coverage that proves cross-company and unauthorized healthcare actions are rejected without exposing clinical data.
+- [x] Add confirmed archive workflows for patients, appointments, clinical visits, vitals, and prescriptions with protected tenant-scoped persistence and recovery states.
+- [x] Add focused create, read, update, and archive coverage for each patient-care workflow, including permission-denied and record-not-found behavior.
+- [x] Add a complete tenant-safe insurance claim workflow with status transitions, claim actions, and validation.
+- [x] Add healthcare-specific notification workflows and visible states for clinical, laboratory, pharmacy, billing, and insurance events.
+- [x] Complete and test role-aware healthcare action gating and permission-denied recovery for reception, clinical, laboratory, pharmacy, billing, and clinic administration.
+- [x] Add direct protected-router integration plus isolated mocked browser UX coverage across diagnostics, pharmacy, billing, insurance, reports, and clinical notifications.
+- [x] Add explicit clinician-directory and diagnosis workflow coverage proving create, read, update, and archive behavior end-to-end.
+- [x] Add focused permission-denied browser or integration coverage for clinician, laboratory, pharmacy, billing, and clinic-administrator healthcare boundaries.
+- [x] Add protected healthcare-router integration coverage for diagnostics, pharmacy, billing, insurance claims, reports, and notifications without relying on browser response mocks.
+- [x] Add a protected-router cross-company healthcare access test that proves no foreign-company record is returned or mutated.
+- [x] Add protected healthcare record-not-found coverage for update and archive actions, plus patient-care permission-denied assertions where applicable.
+- [x] Distinguish isolated mocked browser UX coverage from direct protected-router integration coverage in the Healthcare release checklist.
+- [x] Add an explicit clinic-administrator allowed-workflow integration test to document the administrator boundary.
+- [x] Add per-workflow record-not-found coverage for patient, appointment, visit/diagnosis, vital, prescription, and clinician routes.
+- [x] Add per-workflow archive not-found coverage for patient, appointment, visit/diagnosis, vital, prescription, and clinician routes.
+- [x] Add per-workflow read, update, or archive permission-denied coverage for patient-care roles beyond create-path denials.
+- [x] Restore the direct Playwright test-runner dependency required by Healthcare browser regression coverage.
+- [ ] Save and publish a dedicated Healthcare Module release checkpoint after the completed quality gates.

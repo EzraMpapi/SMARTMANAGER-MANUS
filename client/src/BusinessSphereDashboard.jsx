@@ -54,6 +54,7 @@ const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/Predict
 const LazyTraPortalModule = lazy(() => import("./components/TraPortalModule").then((module) => ({ default: module.TraPortalModule })));
 const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer").then((module) => ({ default: module.DashboardPreferencesDrawer })));
 const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAuditLogView").then((module) => ({ default: module.ComplianceAuditLogView })));
+const LazyHealthcareClinicWorkspace = lazy(() => import("./components/HealthcareClinicWorkspace").then((module) => ({ default: module.HealthcareClinicWorkspace })));
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -3147,7 +3148,8 @@ function Toasts() {
 const ALL_MODULE_IDS = [
   "dashboard", "crm", "sales", "inventory", "procurement", "finance", "reports", "hr",
   "manufacturing", "scm", "marketing", "ecommerce", "pos", "documents", "projects",
-  "support", "analytics", "notifications", "integrations", "ai", "workflows", "collaboration", "tra_portal",
+  "support", "analytics", "notifications", "activity", "integrations", "ai", "workflows", "collaboration", "tra_portal",
+  "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "employee-portal", "presentation",
 ];
 
 const ROLES = [
@@ -3205,6 +3207,41 @@ const ROLES = [
     id: "Customer Support Agent", category: "Front Line",
     description: "Handles tickets, live chat, the knowledge base, and the call log; views CRM for customer context.",
     allowedModules: ["dashboard", "support", "crm", "collaboration"], primaryModules: ["support", "crm"], writeAccess: "full",
+  },
+  {
+    id: "Clinic Administrator", category: "Healthcare",
+    description: "Administers the clinic workspace, clinical directory, patient operations, and governed healthcare records.",
+    allowedModules: ALL_MODULE_IDS, primaryModules: ["healthcare", "pharmacy", "reports", "notifications"], writeAccess: "full",
+  },
+  {
+    id: "Doctor", category: "Healthcare",
+    description: "Documents clinical visits, diagnoses, prescriptions, diagnostic orders, and signed medical reports for the active healthcare workspace.",
+    allowedModules: ["dashboard", "healthcare", "pharmacy", "documents", "reports", "notifications"], primaryModules: ["healthcare"], writeAccess: "full",
+  },
+  {
+    id: "Nurse", category: "Healthcare",
+    description: "Registers clinical observations, triage vitals, and care notes in the healthcare workspace without billing authority.",
+    allowedModules: ["dashboard", "healthcare", "documents", "notifications"], primaryModules: ["healthcare"], writeAccess: "full",
+  },
+  {
+    id: "Laboratory Technician", category: "Healthcare",
+    description: "Reviews laboratory and radiology queues, reports results, and maintains diagnostic workflow status.",
+    allowedModules: ["dashboard", "healthcare", "documents", "notifications"], primaryModules: ["healthcare"], writeAccess: "full",
+  },
+  {
+    id: "Pharmacist", category: "Healthcare",
+    description: "Dispenses authorised prescriptions and manages pharmacy stock through the connected clinical and pharmacy workspaces.",
+    allowedModules: ["dashboard", "healthcare", "pharmacy", "inventory", "notifications"], primaryModules: ["healthcare", "pharmacy"], writeAccess: "full",
+  },
+  {
+    id: "Receptionist", category: "Healthcare",
+    description: "Registers patients, schedules appointments, and coordinates front-desk clinical workflow without access to clinical diagnoses.",
+    allowedModules: ["dashboard", "healthcare", "notifications"], primaryModules: ["healthcare"], writeAccess: "full",
+  },
+  {
+    id: "Billing Officer", category: "Healthcare",
+    description: "Manages healthcare billing, insurance claims, and clinical payment status without access to clinical visit details.",
+    allowedModules: ["dashboard", "healthcare", "finance", "reports", "notifications"], primaryModules: ["healthcare", "finance", "reports"], writeAccess: "full",
   },
   {
     id: "Employee", category: "General Staff",
@@ -45151,7 +45188,7 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
   );
 }
 
-function HealthcareClinicModule({ currentUser, company }) {
+function LegacyHealthcareClinicModule({ currentUser, company }) {
   const [tab, setTab] = useState("overview");
   const [subTab, setSubTab] = useState("list");
   const [selected, setSelected] = useState(null);
@@ -52935,7 +52972,11 @@ function SmartManager() {
           {active === "microfinance" && <MicrofinanceModule currentUser={currentUser} />}
           {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} />}
           {active === "community" && <CommunityGroupsModule currentUser={currentUser} />}
-          {active === "healthcare" && <HealthcareClinicModule currentUser={currentUser} company={company} />}
+          {active === "healthcare" && (
+            <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><div className="text-center"><LoaderCircle className="mx-auto animate-spin text-emerald-600" size={24}/><p className="mt-3 text-sm font-medium text-slate-500">Loading Healthcare Command Center…</p></div></div>}>
+              <LazyHealthcareClinicWorkspace currentUser={currentUser} company={company} isLive={Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo)} onNavigate={setActive} onToast={notify} />
+            </Suspense>
+          )}
           {active === "school"      && <SchoolManagementModule  currentUser={currentUser} company={company} onFeesLoad={setSchFeesForAlerts} />}
           {active === "pharmacy"    && <PharmacyManagementModule currentUser={currentUser} company={company} onStockLoad={setPhmStockForAlerts} />}
           {active === "hotel"       && <HotelManagementModule   currentUser={currentUser} company={company} onBookingsLoad={setHtlBookingsForAlerts} />}
