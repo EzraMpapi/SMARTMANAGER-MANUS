@@ -51,3 +51,21 @@
 - [x] Review todo.md, save the final published checkpoint, and deliver the fix.
 - [x] Remove the unsupported `finance_expenses.cost_center` field from the live Payables insert payload, add regression coverage, republish, and re-run the authenticated save verification.
 - [x] Remove the unsupported `finance_expenses.department` field from the live Payables insert payload and form, extend regression coverage, republish, and repeat live verification.
+
+## Server-Side Supabase Schema Drift Gate
+- [x] Implement a server-side schema contract validator (`server/schemaDriftChecker.ts`) that inspects critical tables (`finance_expenses`, `sales_invoices`, `inventory_items`, `crm_leads`) and rejects unsupported column payloads or missing required relational columns.
+- [x] Add comprehensive automated Vitest coverage for schema contract validation (`server/schemaDriftChecker.test.ts`).
+- [x] Integrate the schema contract check into the automated build/prepublish validation flow.
+- [ ] Run full test suite, verify TypeScript type safety, and save the final published checkpoint with schema-drift protection enabled.
+- [x] Fix the schema validator’s TypeScript downlevel compatibility issue, then rerun the full suite, check, build, and publish verification.
+
+## Active Server-Side Drift Rejection & Expanded Coverage
+- [x] Wire `assertPayloadContract` into server-side persistence procedures (e.g., finance expense recording, sales document mutation, and inventory inserts) so drifted payloads are actively rejected at the API boundary.
+- [x] Expand `server/schemaDriftChecker.test.ts` to comprehensively cover all four critical tables (`finance_expenses`, `sales_invoices`, `inventory_items`, `crm_leads`), unknown table handling, and additive-column warning/pass behavior.
+- [ ] Run full test suite, verify TypeScript type safety, and save the final published checkpoint with active drift rejection enabled.
+- [ ] Fix the Zod 4 router input schema compatibility error, then rerun the full suite, TypeScript check, build gate, and publication verification.
+
+## Direct Server Mutation Boundary Wiring
+- [x] Inspect and wrap server-side query/mutation helpers in `server/db.ts` or persistence modules with `assertPayloadContract` for `finance_expenses`, `sales_invoices`, `inventory_items`, and `crm_leads`.
+- [x] Add explicit unit tests verifying that real server mutation helpers reject drifted payloads before hitting the database or network.
+- [ ] Run full regression suite, TypeScript check, pre-build verification, and publish the final protected checkpoint.

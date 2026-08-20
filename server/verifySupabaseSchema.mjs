@@ -6,6 +6,9 @@ const dashboardSource = readFileSync(
   resolve(projectRoot, "client/src/BusinessSphereDashboard.jsx"),
   "utf8",
 );
+const contractManifest = JSON.parse(
+  readFileSync(resolve(projectRoot, "server/schemaContracts.json"), "utf8"),
+);
 
 const referencedTables = [...new Set(
   [...dashboardSource.matchAll(/(?:sb|useCompanyTable|runCompanyTableQuery|runCompanyTableMutation)\("([^\"]+)"/g)].map((match) => match[1]),
@@ -75,10 +78,26 @@ const tableColumns = (table) => {
 };
 
 const globalTables = new Set(["companies", "profiles", "workspaces"]);
+const stableAuditExemptions = new Set(["user_table_preferences"]);
 const tenantTableIssues = referencedTables
-  .filter((table) => !globalTables.has(table) && deployedTables.includes(table))
+  .filter((table) => !globalTables.has(table) && !stableAuditExemptions.has(table) && deployedTables.includes(table))
   .map((table) => ({ table, columns: tableColumns(table) }))
   .filter(({ columns }) => !["id", "company_id", "created_at", "updated_at"].every((column) => columns.includes(column)));
+
+const criticalTableIssues = Object.values(contractManifest).map((contract) => {
+  const columns = tableColumns(contract.tableName);
+  const missingRequired = contract.requiredColumns.filter((column) => !columns.includes(column));
+  const presentForbidden = contract.forbiddenColumns.filter((column) => columns.includes(column));
+  const additiveColumns = columns.filter((column) => !contract.expectedColumns.includes(column));
+  return {
+    table: contract.tableName,
+    missingRequired,
+    presentForbidden,
+    additiveColumns,
+  };
+}).filter(({ missingRequired, presentForbidden, additiveColumns }) => (
+  missingRequired.length > 0 || presentForbidden.length > 0 || additiveColumns.length > 0
+));
 
 const report = {
   verifiedAt: new Date().toISOString(),
@@ -90,10 +109,11 @@ const report = {
     table,
     missingColumns: ["id", "company_id", "created_at", "updated_at"].filter((column) => !columns.includes(column)),
   })),
+  criticalTableIssues,
 };
 
 console.log(JSON.stringify(report, null, 2));
 
-if (missingTables.length || tenantTableIssues.length) {
+if (missingTables.length || tenantTableIssues.length || criticalTableIssues.length) {
   process.exit(2);
 }

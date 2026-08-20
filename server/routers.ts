@@ -28,6 +28,8 @@ import { getMarketIntelligenceSnapshot, marketIntelligenceConfig } from "./marke
 import { getMarketGovernanceData, upsertMarketProviderSettings } from "./marketGovernance";
 import { notifyPasskeyRegistration } from "./passkeyRegistrationNotification";
 import { dispatchEmailTemplateWorkflowEvent, getEmailTemplateWorkflowStatus, testEmailTemplateWorkflowWebhook } from "./emailTemplateWorkflow";
+import { assertPayloadContract } from "./schemaDriftChecker";
+import { CRITICAL_SUPABASE_TABLES, persistSupabaseRow } from "./supabasePersistence";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -54,6 +56,27 @@ export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   traFiscal: traFiscalRouter,
+  schemaContractAssertion: protectedProcedure
+    .input(z.object({ tableName: z.string(), payload: z.record(z.string(), z.unknown()) }))
+    .mutation(({ input }) => {
+      return assertPayloadContract(input.tableName, input.payload);
+    }),
+  persistSupabaseCriticalRow: protectedProcedure
+    .input(z.object({
+      companyId: z.string().uuid(),
+      tableName: z.enum(CRITICAL_SUPABASE_TABLES),
+      payload: z.record(z.string(), z.unknown()),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { profile } = await resolveVerifiedProfile(ctx.req);
+      if (profile.company_id !== input.companyId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You cannot write records for another workspace." });
+      }
+      if (input.payload.company_id !== undefined && input.payload.company_id !== input.companyId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "The payload workspace does not match the authenticated workspace." });
+      }
+      return persistSupabaseRow(input.tableName, { ...input.payload, company_id: input.companyId });
+    }),
   marketIntelligence: router({
     configuration: protectedProcedure
       .input(z.object({ companyId: z.string().min(1).max(100) }))

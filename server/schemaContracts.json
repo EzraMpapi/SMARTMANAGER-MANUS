@@ -1,0 +1,26 @@
+{
+  "finance_expenses": {
+    "tableName": "finance_expenses",
+    "expectedColumns": ["id", "company_id", "amount", "category", "due_date", "expense_date", "method", "status", "vendor", "created_at", "updated_at"],
+    "requiredColumns": ["company_id", "vendor", "category", "amount", "expense_date", "status", "method"],
+    "forbiddenColumns": ["data", "cost_center", "department"]
+  },
+  "sales_invoices": {
+    "tableName": "sales_invoices",
+    "expectedColumns": ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data", "doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"],
+    "requiredColumns": ["company_id", "status", "amount", "doc_number", "customer", "issue_date", "due_date"],
+    "forbiddenColumns": []
+  },
+  "inventory_items": {
+    "tableName": "inventory_items",
+    "expectedColumns": ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data"],
+    "requiredColumns": ["company_id", "name", "status", "amount", "data"],
+    "forbiddenColumns": []
+  },
+  "crm_leads": {
+    "tableName": "crm_leads",
+    "expectedColumns": ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data"],
+    "requiredColumns": ["company_id", "name", "status", "data"],
+    "forbiddenColumns": []
+  }
+}

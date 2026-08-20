@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const verifierSource = readFileSync(new URL("./verifySupabaseSchema.mjs", import.meta.url), "utf8");
+const contractManifest = JSON.parse(readFileSync(new URL("./schemaContracts.json", import.meta.url), "utf8"));
 const baselineMigration = readFileSync(new URL("../supabase/migrations/20260812_001_complete_erp_schema_baseline.sql", import.meta.url), "utf8");
 const tenantBootstrapMigration = readFileSync(new URL("../supabase/migrations/20260814_002_guarded_first_tenant_bootstrap.sql", import.meta.url), "utf8");
 
@@ -25,6 +26,14 @@ describe("Supabase production schema contract guard", () => {
     expect(referencedTables).not.toContain("emails");
   });
 
+  it("keeps the critical relational contract manifest aligned with the Finance boundary", () => {
+    expect(contractManifest.finance_expenses.requiredColumns).toEqual(expect.arrayContaining(["vendor", "category", "amount", "expense_date", "status", "method"]));
+    expect(contractManifest.finance_expenses.forbiddenColumns).toEqual(expect.arrayContaining(["data", "cost_center", "department"]));
+    expect(contractManifest.sales_invoices.requiredColumns).toEqual(expect.arrayContaining(["doc_number", "customer", "issue_date", "due_date"]));
+    expect(contractManifest.inventory_items.requiredColumns).toEqual(expect.arrayContaining(["data"]));
+    expect(contractManifest.crm_leads.requiredColumns).toEqual(expect.arrayContaining(["data"]));
+  });
+
   it("uses the protected Supabase OpenAPI metadata rather than browser credentials or hardcoded schemas", () => {
     expect(verifierSource).toContain("SUPABASE_SECRET_KEY");
     expect(verifierSource).toContain("/rest/v1/");
@@ -33,6 +42,9 @@ describe("Supabase production schema contract guard", () => {
     expect(verifierSource).toContain("runCompanyTableMutation");
     expect(verifierSource).toContain("missingTables");
     expect(verifierSource).toContain("tenantTableIssues");
+    expect(verifierSource).toContain("criticalTableIssues");
+    expect(verifierSource).toContain("schemaContracts.json");
+    expect(verifierSource).toContain("stableAuditExemptions");
     expect(verifierSource).toContain("attempt <= 3");
     expect(verifierSource).not.toContain("sb_secret_");
   });

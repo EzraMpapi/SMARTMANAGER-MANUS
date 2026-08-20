@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { persistSupabaseRow, type CriticalSupabaseTable } from "./supabasePersistence";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -75,6 +76,14 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
   }
+}
+
+/**
+ * Persists a critical Supabase row only after the schema contract guard passes.
+ * The validation happens before server credentials are read and before fetch.
+ */
+export async function assertAndPersistPayload(tableName: CriticalSupabaseTable, payload: Record<string, unknown>) {
+  return persistSupabaseRow(tableName, payload);
 }
 
 export async function getUserByOpenId(openId: string) {
