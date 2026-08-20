@@ -17,3 +17,20 @@
 - [x] Implement local PDF attachment drop/upload simulation and preview pane in Collaboration Hub.
 - [x] Implement rich-text formatting helper controls (bold, italic, list) and automated test coverage.
 - [x] Run focused tests, full regression suite, production build, and save published checkpoint.
+
+## Collaboration Hub Workflow Alerts, Signature Logo & Link Validation
+- [x] Audit existing email draft/export actions, notification delivery boundaries, tenant branding persistence, and rich-text link handling.
+- [x] Implement tenant-isolated dispatch webhook alert contracts for branded email template saves and exports, with disabled/unconfigured states handled safely.
+- [x] Add administrator-facing controls and status feedback for template workflow alert configuration without exposing secrets in the browser.
+- [x] Extend workspace branding with a dedicated signature logo upload, validation, storage reference, preview, replacement, and removal flow.
+- [x] Add hyperlink validation for rich-text template links, including safe protocols, malformed URL feedback, and preview/send boundary protection.
+- [x] Add focused Vitest coverage for webhook event contracts, signature logo validation/storage, and rich-text hyperlink validation.
+- [x] Run focused tests, full regression suite, and low-memory production build.
+- [ ] Complete authenticated responsive Collaboration Hub Email verification.
+- [ ] Review this checklist and save the published checkpoint.
+
+## Collaboration Hub Email Runtime Follow-up
+- [x] Investigate and fix the newly surfaced `showCont is not defined` crash when opening the Email tab.
+- [x] Add a regression guard for undefined EmailCenter callbacks and re-run focused/full tests.
+- [ ] Capture authenticated Collaboration Hub Email screenshots at desktop and mobile sizes.
+- [ ] Mark the complete verification and checkpoint items after the affected flow is validated.

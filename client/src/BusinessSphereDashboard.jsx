@@ -38,6 +38,7 @@ import { auditEvidenceExportFilename, buildAuditEvidenceCsv } from "./lib/auditE
 import { getProactiveSessionRenewalDelay, isTerminalSessionRefreshError } from "./lib/proactiveSessionRenewal";
 import { createAccountPasskeyClient, listAccountPasskeys, passkeySignInUserMessage, passkeyUserMessage, registerAccountPasskey, renameAccountPasskey, revokeAccountPasskey, signInWithAccountPasskey } from "./lib/accountPasskeys";
 import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, rememberConfirmedOrganizationIndustryFocus } from "./lib/organizationIndustryFocus";
+import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -32752,7 +32753,7 @@ const EMAIL_TEMPLATES = [
 
 const emailBus = { listeners: new Set(), push(payload){ this.listeners.forEach(fn=>fn(payload)); }};
 
-function EmailCenter({ currentUser, crm, employees, invoices, company }) {
+export function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   const co = company || window.__smartManagerCompany || {};
 
   const contacts = useMemo(()=>{
@@ -32773,7 +32774,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   const [body, setBody]       = useState("");
   const [showCC, setShowCC]   = useState(false);
   const [tmplId, setTmplId]   = useState("custom");
-  const [showContacts, setShowCont] = useState(false);
+  const [showContacts, setShowContacts] = useState(false);
   const [contactQ, setContQ]  = useState("");
   const [sentEmails, setSent] = useState([]);
   const [drafts, setDrafts]   = useState([]);
@@ -32783,6 +32784,10 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [emailAttachments, setEmailAttachments] = useState([]);
   const emailDeliveryDisabled = true;
+  const workflowStatusQuery = trpc.emailTemplateWorkflow.status.useQuery(undefined, { enabled: Boolean(currentUser?.id), retry: false, staleTime: 30_000 });
+  const workflowDispatchMutation = trpc.emailTemplateWorkflow.dispatch.useMutation();
+  const linkIssues = useMemo(() => findEmailTemplateLinkIssues(body), [body]);
+  const workflowAlertsEnabled = Boolean(workflowStatusQuery.data?.enabled);
 
   // Listen for external compose trigger
   useEffect(()=>{
@@ -32824,10 +32829,56 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
     setBody(mergeTemplate(tmpl.body));
   }
 
+  function dispatchWorkflow(action) {
+    if (!workflowAlertsEnabled || workflowDispatchMutation.isPending) return;
+    workflowDispatchMutation.mutate({
+      action,
+      subject: subject.trim().slice(0, 240),
+      recipientCount: [to, cc, bcc].flatMap((value) => value.split(",")).map((value) => value.trim()).filter(Boolean).length,
+      attachmentCount: emailAttachments.length,
+    }, { onError: () => { /* delivery telemetry must never block local drafting or export */ } });
+  }
+
   function saveDraft() {
-    const d = {id:"DFT-"+Date.now(), to, cc, bcc, subject, body, savedAt:new Date().toISOString()};
+    const d = {id:"DFT-"+Date.now(), to, cc, bcc, subject, body, attachments: emailAttachments, linkIssues, savedAt:new Date().toISOString()};
     setDrafts(ds=>[d,...ds]);
-    notify("Draft saved");
+    dispatchWorkflow("EMAIL_TEMPLATE_SAVED");
+    notify(linkIssues.length ? `Draft saved with ${linkIssues.length} link warning${linkIssues.length === 1 ? "" : "s"}. Review before export.` : "Draft saved");
+  }
+
+  function exportTemplate() {
+    if (linkIssues.length > 0) {
+      notify(`Export blocked: fix ${linkIssues.length} unsafe or malformed link${linkIssues.length === 1 ? "" : "s"} first.`, "error");
+      return;
+    }
+    const renderedBody = mergeTemplate(body);
+    const signatureLogo = co.signatureLogo || co.logo;
+    const signatureMarkup = signatureLogo ? `<img src="${escapeEmailHtml(signatureLogo)}" alt="${escapeEmailHtml(co.name || "Workspace logo")}" style="width:56px;height:56px;object-fit:contain;border-radius:12px;" />` : `<span style="display:inline-grid;place-items:center;width:56px;height:56px;border-radius:12px;background:#16A34A;color:#fff;font-weight:700;font-size:18px;">${escapeEmailHtml((co.name || "BS").charAt(0).toUpperCase())}</span>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8" /><title>${escapeEmailHtml(subject.trim() || "BusinessSphere email template")}</title></head><body style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;max-width:720px;margin:40px auto;padding:0 24px;"><p style="color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.12em;">To: ${escapeEmailHtml(to.trim() || "recipient@example.com")}</p><h1 style="font-size:22px;">${escapeEmailHtml(subject.trim() || "(No subject)")}</h1><div>${buildEmailTemplateHtml(renderedBody)}</div><hr style="border:0;border-top:1px solid #e2e8f0;margin:28px 0;" /><div style="display:flex;gap:14px;align-items:center;">${signatureMarkup}<div><strong>${escapeEmailHtml(co.name || "BusinessSphere Enterprise")}</strong><br /><span style="color:#64748b;font-size:13px;">${escapeEmailHtml(co.email || "support@businesssphere.tz")} · ${escapeEmailHtml(co.phone || "+255 22 200 1000")}</span></div></div></body></html>`;
+    const objectUrl = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `smart-manager-email-template-${Date.now()}.html`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+    dispatchWorkflow("EMAIL_TEMPLATE_EXPORTED");
+    notify("Branded email template exported successfully.");
+  }
+
+  function insertValidatedLink() {
+    const label = window.prompt("Link text", "Open workspace portal");
+    if (!label?.trim()) return;
+    const href = window.prompt("Link destination (https://, mailto:, or tel:)", "https://");
+    if (!href?.trim()) return;
+    const validation = validateEmailHyperlink(href);
+    if (!validation.valid) {
+      notify(validation.reason, "error");
+      return;
+    }
+    setBody((current) => `${current}${current && !current.endsWith("\n") ? "\n" : ""}[${label.trim()}](${validation.normalized})`);
+    notify("Secure link inserted into the template.");
   }
 
   async function sendEmail() {
@@ -32917,18 +32968,18 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
               {/* To field with contact picker */}
               <div className="flex items-center gap-2 px-4 py-2.5 relative">
                 <span className="text-[11.5px] font-bold text-slate-400 w-10 shrink-0">To</span>
-                <input value={to} onChange={e=>{setTo(e.target.value);setContQ(e.target.value);setShowCont(true);}}
-                  onFocus={()=>setShowCont(true)} onBlur={()=>setTimeout(()=>setShowCont(false),200)}
+                <input value={to} onChange={e=>{setTo(e.target.value);setContQ(e.target.value);setShowContacts(true);}}
+                  onFocus={()=>setShowContacts(true)} onBlur={()=>setTimeout(()=>setShowContacts(false),200)}
                   className="flex-1 text-[13px] outline-none text-[#111827]"
                   placeholder="Recipient email address or name…"/>
                 <button onClick={()=>setShowCC(!showCC)} className="text-[10.5px] font-bold text-[#2563EB]">
                   {showCC?"Hide CC":"+ CC"}
                 </button>
                 {/* Contact autocomplete */}
-                {showCont && filteredContacts.length>0 && (
+                {showContacts && filteredContacts.length>0 && (
                   <div className="absolute top-full left-10 right-0 z-20 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto mt-1">
                     {filteredContacts.slice(0,8).map(ct=>(
-                      <button key={ct.id} onMouseDown={()=>{setTo(ct.name+" <"+ct.email+">");setShowCont(false);setContQ("");}}
+                      <button key={ct.id} onMouseDown={()=>{setTo(ct.name+" <"+ct.email+">");setShowContacts(false);setContQ("");}}
                         className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left">
                         <div className="w-7 h-7 rounded-full bg-[#2563EB] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
                           {ct.name.charAt(0)}
@@ -32971,8 +33022,10 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
                     <button type="button" onClick={()=>setBody(b=>b+" **Bold Text** ")} className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10.5px] font-bold text-slate-700 hover:bg-slate-50" title="Bold">B</button>
                     <button type="button" onClick={()=>setBody(b=>b+" *Italic Text* ")} className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10.5px] italic text-slate-700 hover:bg-slate-50" title="Italic">I</button>
                     <button type="button" onClick={()=>setBody(b=>b+"\n- List Item 1\n- List Item 2\n")} className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10.5px] text-slate-700 hover:bg-slate-50" title="Bullet List">☰ List</button>
+                    <button type="button" onClick={insertValidatedLink} className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10.5px] text-slate-700 hover:bg-slate-50" title="Insert secure hyperlink">↗ Link</button>
                   </div>
                 )}
+                {linkIssues.length > 0 && <span role="alert" className="hidden sm:inline text-[10px] font-semibold text-rose-600">{linkIssues.length} link warning{linkIssues.length === 1 ? "" : "s"}</span>}
               </div>
               <button
                 type="button"
@@ -33005,8 +33058,9 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
                     <div className="border-t border-slate-100 pt-4">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Message Body (Live Rendered)</p>
                       <div className="whitespace-pre-wrap font-sans text-[13px] leading-relaxed text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        {body.trim() ? mergeTemplate(body) : <span className="text-slate-400 italic">No content written yet. Select a template above or start typing…</span>}
+                        {body.trim() ? buildSafeEmailTemplateSegments(mergeTemplate(body)).map((segment, index) => segment.kind === "link" ? <a key={`${segment.href}-${index}`} href={segment.href} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#2563EB] underline underline-offset-2">{segment.label}</a> : <React.Fragment key={`text-${index}`}>{segment.value}</React.Fragment>) : <span className="text-slate-400 italic">No content written yet. Select a template above or start typing…</span>}
                       </div>
+                      {linkIssues.length > 0 && <div role="alert" className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] leading-4 text-rose-700"><strong>Review links before export.</strong> {linkIssues.map((issue, index) => <span key={`${issue.href}-${index}`} className="ml-1">{issue.label}: {issue.reason}{index < linkIssues.length - 1 ? ";" : ""}</span>)}</div>}
                     </div>
 
                     {/* PDF Attachment Previews in Live Preview */}
@@ -33029,8 +33083,8 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
 
                     {/* Tenant Branded Signature Banner */}
                     <div className="border-t border-slate-200/80 pt-4 mt-2 flex items-center gap-3 bg-gradient-to-r from-slate-50 to-emerald-50/30 p-3.5 rounded-xl border border-emerald-950/5">
-                      <div className="w-10 h-10 rounded-xl bg-[#16A34A] text-white font-bold flex items-center justify-center text-[15px] shadow-sm shrink-0">
-                        {(co.name || "BS").charAt(0).toUpperCase()}
+                      <div className="grid w-10 h-10 place-items-center overflow-hidden rounded-xl bg-[#16A34A] text-white font-bold text-[15px] shadow-sm shrink-0">
+                        {(co.signatureLogo || co.logo) ? <img src={co.signatureLogo || co.logo} alt={`${co.name || "Workspace"} signature mark`} className="h-full w-full object-contain bg-white p-1" /> : (co.name || "BS").charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-bold text-slate-900">{co.name || "BusinessSphere Enterprise"}</p>
@@ -33088,12 +33142,16 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
                 className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 border border-slate-200 px-3.5 py-2.5 rounded-xl hover:bg-white">
                 <BookOpen size={13}/> Save Draft
               </button>
+              <button onClick={exportTemplate} disabled={linkIssues.length > 0}
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 rounded-xl hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45" title={linkIssues.length ? "Fix invalid links before exporting" : "Download a branded HTML template"}>
+                <Download size={13}/> Export Template
+              </button>
               <button onClick={clearCompose}
                 className="text-[12px] text-slate-400 hover:text-slate-600 px-2 py-2.5">
                 Discard
               </button>
               <div className="flex-1"/>
-              <p className="text-[11px] text-amber-700">No delivery provider configured</p>
+              <p className={`text-[11px] ${workflowAlertsEnabled ? "text-emerald-700" : "text-amber-700"}`} title={workflowAlertsEnabled ? "Save and export actions emit tenant-scoped webhook events." : "Configure an approved administrator webhook to receive save and export alerts."}>{workflowAlertsEnabled ? "Workflow alerts active" : "Alerts not configured"}</p>
             </div>
           </div>
         )}
@@ -35759,18 +35817,24 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
   const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
+  const [workflowWebhookSecret, setWorkflowWebhookSecret] = useState("");
   const workspaceSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: IS_CONFIGURED });
   const workspaceSettingsMutation = trpc.workspaceSettings.save.useMutation();
+  const workflowWebhookTestMutation = trpc.emailTemplateWorkflow.test.useMutation({
+    onSuccess: (result) => notify(result.ok ? `Collaboration Hub webhook connected (HTTP ${result.status}).` : `Webhook responded with HTTP ${result.status}.`, result.ok ? "success" : "error"),
+    onError: (error) => notify(error.message || "Collaboration Hub webhook test failed.", "error"),
+  });
   const canManageCompanySettings = ["owner", "Owner", "Organization Owner", "CEO", "Super Administrator", "System Administrator"].includes(currentUser.role);
   const marketProviderConfigQuery = trpc.marketIntelligence.configuration.useQuery(
     { companyId: company?.id || "" },
     { enabled: Boolean(company?.id) && canManageCompanySettings },
   );
-  const dirty = JSON.stringify(draft) !== JSON.stringify(company);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(company) || Boolean(workflowWebhookSecret.trim());
   const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
 
   useEffect(() => {
     setDraft(company);
+    setWorkflowWebhookSecret("");
   }, [company]);
 
   useEffect(() => {
@@ -35795,6 +35859,20 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
     setDraft((d) => ({ ...d, [key]: val }));
   }
 
+  function handleSignatureLogoFile(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp", "image/svg+xml"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      notify("Signature logos must be PNG, JPEG, WebP, or SVG files under 2 MB.", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setField("signatureLogo", String(reader.result || ""));
+    reader.onerror = () => notify("The selected signature logo could not be read.", "error");
+    reader.readAsDataURL(file);
+  }
+
   async function saveProfile() {
     const previousIndustryFocus = normalizeOrganizationIndustryFocus(company.industry);
     if (IS_CONFIGURED) {
@@ -35803,17 +35881,19 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
           name: draft.name, country: draft.country, currency: draft.currency, tin: draft.tin || "", phone: draft.phone || "", email: draft.email || "", address: draft.address || "", city: draft.city || "", website: draft.website || "",
           taxRate: Number(draft.taxRate) || 0, timezone: draft.timezone, businessScale: draft.businessScale, receiptWidth: draft.receiptWidth, receiptFooter: draft.receiptFooter || "", receiptShowLogo: draft.receiptShowLogo !== false,
           primaryColor: draft.brandColor || "#0B5D3B", accentColor: draft.brandAccentColor || "#16A34A", industryFocus: normalizeOrganizationIndustryFocus(draft.industry), logo: workspaceLogoPayload(draft.logo), removeLogo: !draft.logo,
+          signatureLogo: workspaceLogoPayload(draft.signatureLogo), removeSignatureLogo: !draft.signatureLogo,
           cover: workspaceCoverPayload(draft.coverPhoto), removeCover: !draft.coverPhoto,
           loginBackground: workspaceBackgroundPayload(draft.loginBackgroundImage), removeLoginBackground: !draft.loginBackgroundImage,
           onboardingBackground: workspaceBackgroundPayload(draft.onboardingBackgroundImage), removeOnboardingBackground: !draft.onboardingBackgroundImage,
           idleTimeoutMinutes: Math.min(120, Math.max(5, Number(draft.idleTimeoutMinutes) || 30)),
-          profileData: { tagline: draft.tagline || "", description: draft.description || "", businessType: draft.businessType || "", foundedYear: String(draft.foundedYear || ""), regNumber: draft.regNumber || "", postalCode: draft.postalCode || "", facebook: draft.facebook || "", instagram: draft.instagram || "", twitter: draft.twitter || "", linkedin: draft.linkedin || "", tiktok: draft.tiktok || "", whatsappBusiness: draft.whatsappBusiness || "", bankName: draft.bankName || "", bankAccountName: draft.bankAccountName || "", bankAccountNo: draft.bankAccountNo || "", bankBranch: draft.bankBranch || "", bankSwift: draft.bankSwift || "", businessHours: draft.businessHours || {}, idleTimeoutMinutes: Math.min(120, Math.max(5, Number(draft.idleTimeoutMinutes) || 30)), ...(typeof draft.coverPhoto === "string" && !draft.coverPhoto.startsWith("data:") ? { coverPhoto: draft.coverPhoto } : {}), ...(typeof draft.loginBackgroundImage === "string" && !draft.loginBackgroundImage.startsWith("data:") ? { loginBackgroundImage: draft.loginBackgroundImage } : {}), ...(typeof draft.onboardingBackgroundImage === "string" && !draft.onboardingBackgroundImage.startsWith("data:") ? { onboardingBackgroundImage: draft.onboardingBackgroundImage } : {}) },
+          profileData: { tagline: draft.tagline || "", description: draft.description || "", businessType: draft.businessType || "", foundedYear: String(draft.foundedYear || ""), regNumber: draft.regNumber || "", postalCode: draft.postalCode || "", facebook: draft.facebook || "", instagram: draft.instagram || "", twitter: draft.twitter || "", linkedin: draft.linkedin || "", tiktok: draft.tiktok || "", whatsappBusiness: draft.whatsappBusiness || "", bankName: draft.bankName || "", bankAccountName: draft.bankAccountName || "", bankAccountNo: draft.bankAccountNo || "", bankBranch: draft.bankBranch || "", bankSwift: draft.bankSwift || "", businessHours: draft.businessHours || {}, idleTimeoutMinutes: Math.min(120, Math.max(5, Number(draft.idleTimeoutMinutes) || 30)), ...(typeof draft.coverPhoto === "string" && !draft.coverPhoto.startsWith("data:") ? { coverPhoto: draft.coverPhoto } : {}), ...(typeof draft.loginBackgroundImage === "string" && !draft.loginBackgroundImage.startsWith("data:") ? { loginBackgroundImage: draft.loginBackgroundImage } : {}), ...(typeof draft.onboardingBackgroundImage === "string" && !draft.onboardingBackgroundImage.startsWith("data:") ? { onboardingBackgroundImage: draft.onboardingBackgroundImage } : {}), ...(typeof draft.signatureLogo === "string" && !draft.signatureLogo.startsWith("data:") ? { signatureLogo: draft.signatureLogo } : {}), collaborationWorkflowWebhookEnabled: draft.collaborationWorkflowWebhookEnabled === true, collaborationWorkflowWebhookUrl: draft.collaborationWorkflowWebhookUrl || "", ...(workflowWebhookSecret.trim() ? { collaborationWorkflowWebhookSecret: workflowWebhookSecret.trim() } : {}) },
         });
         const serverCompany = saved.company || {};
         const confirmedDraft = { ...draft, ...(saved.profileData || {}), name: serverCompany.name || draft.name, industry: serverCompany.category || draft.industry, country: serverCompany.country || draft.country, currency: serverCompany.currency || draft.currency, taxRate: Number(serverCompany.tax_rate ?? draft.taxRate), timezone: serverCompany.timezone || draft.timezone, businessScale: serverCompany.business_scale || draft.businessScale, receiptWidth: serverCompany.receipt_width || draft.receiptWidth, receiptFooter: serverCompany.receipt_footer || "", receiptShowLogo: serverCompany.receipt_show_logo !== false, logo: serverCompany.logo || null, brandColor: serverCompany.brand_primary_color || draft.brandColor, brandAccentColor: serverCompany.brand_accent_color || draft.brandAccentColor, tin: serverCompany.tin || "", phone: serverCompany.phone || "", email: serverCompany.email || "", address: serverCompany.address || "", city: serverCompany.city || "", website: serverCompany.website || "" };
         rememberConfirmedOrganizationIndustryFocus(confirmedDraft.industry);
         setCompany(confirmedDraft);
         setDraft(confirmedDraft);
+        setWorkflowWebhookSecret("");
         writeAuthBranding(confirmedDraft);
         window.__smartManagerCompany = confirmedDraft;
         try {
@@ -36245,6 +36325,34 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
           <div className="flex items-start justify-between gap-4"><div><p className="text-[12px] font-bold text-amber-950">Administrative inactivity timeout</p><p className="mt-1 text-[11px] leading-5 text-amber-900/75">Administrators receive the existing two-minute warning before the selected limit is reached. Choose between 5 and 120 minutes.</p></div><span className="rounded-xl bg-white px-3 py-1.5 font-mono text-[15px] font-bold tabular-nums text-amber-800 shadow-sm">{Number(draft.idleTimeoutMinutes) || 30} min</span></div>
           <input aria-label="Tenant-wide administrative inactivity timeout in minutes" type="range" min="5" max="120" step="5" value={Number(draft.idleTimeoutMinutes) || 30} onChange={(event) => setField("idleTimeoutMinutes", Number(event.target.value))} className="mt-4 w-full accent-emerald-700" />
           <div className="mt-1 flex justify-between text-[10px] font-semibold text-amber-800/65"><span>5 min · strict</span><span>120 min · extended</span></div>
+        </div>
+        <div className="mt-5 rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-sky-200 bg-white text-sky-700">
+                {draft.signatureLogo ? <img src={draft.signatureLogo} alt="Email signature logo preview" className="h-full w-full object-contain p-2" /> : <PenTool size={18} aria-hidden="true" />}
+              </div>
+              <div><p className="text-[12px] font-bold text-sky-950">Email signature logo</p><p className="mt-1 max-w-xl text-[10.5px] leading-4 text-slate-600">This tenant-specific mark appears in Collaboration Hub live previews and exported HTML templates. It is stored in secure workspace storage after saving.</p></div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <label htmlFor="signature-logo-upload" className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-sky-900 px-3 py-2 text-[10.5px] font-bold text-white transition hover:bg-sky-800"><Upload size={12} /> {draft.signatureLogo ? "Replace logo" : "Upload logo"}</label>
+              <input id="signature-logo-upload" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={handleSignatureLogoFile} />
+              {draft.signatureLogo && <button type="button" onClick={() => setField("signatureLogo", null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10.5px] font-semibold text-slate-600 transition hover:border-rose-200 hover:text-rose-700">Remove</button>}
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div><p className="text-[12px] font-bold text-violet-950">Collaboration Hub workflow alerts</p><p className="mt-1 max-w-2xl text-[10.5px] leading-4 text-slate-600">Emit tenant-scoped events when branded email templates are saved or exported. The endpoint and signing secret are isolated to this workspace; the stored secret is never returned to the browser.</p></div>
+            <span className={`w-fit rounded-full px-2.5 py-1 text-[10px] font-bold ${draft.collaborationWorkflowWebhookEnabled && draft.collaborationWorkflowWebhookUrl ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>{draft.collaborationWorkflowWebhookEnabled && draft.collaborationWorkflowWebhookUrl ? "Enabled" : "Not configured"}</span>
+          </div>
+          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
+            <label className="block text-[10.5px] font-bold text-slate-700">Webhook endpoint<input type="url" value={draft.collaborationWorkflowWebhookUrl || ""} onChange={(event) => setField("collaborationWorkflowWebhookUrl", event.target.value)} placeholder="https://alerts.example.com/smart-manager" className="mt-1.5 w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-[12px] font-normal text-slate-800 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" /></label>
+            <label className="block text-[10.5px] font-bold text-slate-700">Signing secret {draft.collaborationWorkflowWebhookSecretConfigured && <span className="font-normal text-emerald-700">(configured)</span>}<input type="password" value={workflowWebhookSecret} onChange={(event) => setWorkflowWebhookSecret(event.target.value)} placeholder={draft.collaborationWorkflowWebhookSecretConfigured ? "Leave blank to keep current secret" : "Optional signing secret"} autoComplete="new-password" className="mt-1.5 w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-[12px] font-normal text-slate-800 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100" /></label>
+            <button type="button" onClick={() => workflowWebhookTestMutation.mutate()} disabled={workflowWebhookTestMutation.isPending || !draft.collaborationWorkflowWebhookUrl || !draft.collaborationWorkflowWebhookEnabled} className="self-end rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-[11px] font-bold text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-45">{workflowWebhookTestMutation.isPending ? "Testing…" : "Test connection"}</button>
+          </div>
+          <label className="mt-3 inline-flex items-center gap-2 text-[11px] font-semibold text-slate-700"><input type="checkbox" checked={draft.collaborationWorkflowWebhookEnabled === true} onChange={(event) => setField("collaborationWorkflowWebhookEnabled", event.target.checked)} className="h-4 w-4 rounded border-violet-300 text-violet-700 focus:ring-violet-500" />Enable save/export workflow alerts for this workspace</label>
+          <p className="mt-2 text-[10.5px] leading-4 text-slate-500">Save the company profile after changing these values. If the endpoint is disabled or incomplete, email drafting and export continue locally without attempting delivery.</p>
         </div>
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           {[{ key: "loginBackgroundImage", id: "login-background-upload", label: "Enterprise login background", description: "Shown behind the preserved login experience.", empty: "Use a quiet image with clear contrast for the sign-in card." }, { key: "onboardingBackgroundImage", id: "onboarding-background-upload", label: "Onboarding split-screen background", description: "Shown on Create Company and Join Company surfaces.", empty: "Use a confident workspace image that supports onboarding copy." }].map((item) => <div key={item.key} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5"><div className="flex items-start justify-between gap-3"><div><p className="text-[12px] font-bold text-slate-900">{item.label}</p><p className="mt-1 text-[10.5px] leading-4 text-slate-500">{item.description}</p></div><ImageIcon size={16} className="text-emerald-700" /></div><div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="h-28 w-full" style={{ backgroundImage: draft[item.key] ? `linear-gradient(120deg, rgba(7,28,21,.62), rgba(7,28,21,.22)), url(\"${draft[item.key]}\")` : "linear-gradient(135deg,#0b2d22,#16a34a)", backgroundSize: "cover", backgroundPosition: "center" }}><div className="flex h-full items-end p-3"><span className="rounded-lg bg-black/45 px-2 py-1 text-[10px] font-semibold text-white">{draft[item.key] ? "Custom background active" : item.empty}</span></div></div></div><div className="mt-3 flex flex-wrap gap-2"><label htmlFor={item.id} className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-[10.5px] font-bold text-white transition hover:bg-slate-700"><Upload size={12} /> {draft[item.key] ? "Replace image" : "Upload image"}</label><input id={item.id} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; if (file.size > 5 * 1024 * 1024) { notify("Background images must be under 5 MB.", "error"); return; } const reader = new FileReader(); reader.onload = () => setField(item.key, String(reader.result || "")); reader.onerror = () => notify("The selected background image could not be read.", "error"); reader.readAsDataURL(file); }} />{draft[item.key] && <button type="button" onClick={() => setField(item.key, null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10.5px] font-semibold text-slate-600 transition hover:border-rose-200 hover:text-rose-700">Remove</button>}</div></div>)}
@@ -43226,9 +43334,11 @@ function workspaceBackgroundPayload(dataUrl) {
   return { mimeType: match[1], base64: match[2] };
 }
 
-function WorkspaceBrandingControls({ logo, primaryColor, accentColor, onLogoChange, onPrimaryColorChange, onAccentColorChange }) {
+function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentColor, onLogoChange, onSignatureLogoChange, onPrimaryColorChange, onAccentColorChange }) {
   const fileRef = useRef(null);
+  const signatureFileRef = useRef(null);
   const [fileError, setFileError] = useState(null);
+  const [signatureFileError, setSignatureFileError] = useState(null);
   const [cropSource, setCropSource] = useState(null);
   const [cropZoom, setCropZoom] = useState(1);
   const [cropPosition, setCropPosition] = useState({ x: 50, y: 50 });
@@ -43244,6 +43354,20 @@ function WorkspaceBrandingControls({ logo, primaryColor, accentColor, onLogoChan
     const reader = new FileReader();
     reader.onload = () => { setFileError(null); setCropSource(String(reader.result || "")); setCropZoom(1); setCropPosition({ x: 50, y: 50 }); };
     reader.onerror = () => setFileError("The logo could not be read. Please choose another file.");
+    reader.readAsDataURL(file);
+  }
+
+  function selectSignatureLogo(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !onSignatureLogoChange) return;
+    if (!["image/png", "image/jpeg", "image/webp", "image/svg+xml"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      setSignatureFileError("Choose a PNG, JPEG, WebP, or SVG signature logo under 2 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => { setSignatureFileError(null); onSignatureLogoChange(String(reader.result || "")); };
+    reader.onerror = () => setSignatureFileError("The signature logo could not be read. Please choose another file.");
     reader.readAsDataURL(file);
   }
 
@@ -43280,6 +43404,17 @@ function WorkspaceBrandingControls({ logo, primaryColor, accentColor, onLogoChan
     </div>
     {fileError && <p role="alert" className="mt-3 text-[11px] font-medium text-red-700">{fileError}</p>}
     {cropSource && <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-3" aria-label="Logo crop preview"><div className="flex flex-col gap-3 sm:flex-row"><div className="grid h-32 w-32 shrink-0 place-items-center overflow-hidden rounded-2xl border border-sky-200 bg-white"><img src={cropSource} alt="Crop preview" className="h-full w-full object-cover" style={{ objectPosition: `${cropPosition.x}% ${cropPosition.y}%`, transform: `scale(${cropZoom})` }} /></div><div className="min-w-0 flex-1"><p className="text-[11.5px] font-bold text-sky-950">Adjust logo crop</p><p className="mt-1 text-[10.5px] leading-4 text-slate-600">Center the mark before it is saved to the workspace.</p><label className="mt-3 block text-[10.5px] font-semibold text-slate-700">Zoom <input type="range" min="1" max="2.5" step="0.1" value={cropZoom} onChange={(event) => setCropZoom(Number(event.target.value))} className="mt-1 w-full accent-emerald-600" /></label><label className="mt-2 block text-[10.5px] font-semibold text-slate-700">Horizontal position <input type="range" min="0" max="100" value={cropPosition.x} onChange={(event) => setCropPosition((current) => ({ ...current, x: Number(event.target.value) }))} className="mt-1 w-full accent-emerald-600" /></label><label className="mt-2 block text-[10.5px] font-semibold text-slate-700">Vertical position <input type="range" min="0" max="100" value={cropPosition.y} onChange={(event) => setCropPosition((current) => ({ ...current, y: Number(event.target.value) }))} className="mt-1 w-full accent-emerald-600" /></label></div></div><div className="mt-3 flex flex-wrap justify-end gap-2"><button type="button" onClick={() => setCropSource(null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10.5px] font-semibold text-slate-600 transition hover:border-slate-300">Cancel crop</button><button type="button" onClick={applyCrop} className="rounded-xl bg-emerald-700 px-3 py-2 text-[10.5px] font-bold text-white transition hover:bg-emerald-800">Apply crop</button></div></div>}
+    {onSignatureLogoChange && <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-3.5">
+      <div className="flex items-start gap-3">
+        <button type="button" onClick={() => signatureFileRef.current?.click()} className="group relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-sky-200 bg-white text-sky-700 transition hover:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2" aria-label={signatureLogo ? "Change email signature logo" : "Upload email signature logo"}>
+          {signatureLogo ? <img src={signatureLogo} alt="Email signature logo preview" className="h-full w-full object-contain p-2" /> : <PenTool size={18} aria-hidden="true" />}
+          {signatureLogo && <span className="absolute inset-0 grid place-items-center bg-slate-950/45 text-[9px] font-bold text-white opacity-0 transition group-hover:opacity-100">Change</span>}
+        </button>
+        <div className="min-w-0 flex-1"><p className="text-[12px] font-semibold text-slate-800">Email signature logo</p><p className="mt-0.5 text-[10.5px] leading-4 text-slate-500">Used in branded email previews and exported templates · 2 MB maximum</p>{signatureLogo && <button type="button" onClick={() => onSignatureLogoChange(null)} className="mt-1 text-[10.5px] font-semibold text-red-600 hover:underline">Remove signature logo</button>}</div>
+      </div>
+      <input ref={signatureFileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={selectSignatureLogo} className="sr-only" />
+      {signatureFileError && <p role="alert" className="mt-2 text-[11px] font-medium text-red-700">{signatureFileError}</p>}
+    </div>}
     <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label className="block text-[11px] font-semibold text-slate-700">Primary color
         <span className="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2"><input type="color" value={primaryColor} onChange={(event) => onPrimaryColorChange(event.target.value.toUpperCase())} className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0" aria-label="Choose primary brand color" /><span className="font-mono text-[11px] text-slate-600">{primaryColor}</span></span>
@@ -52027,6 +52162,12 @@ function SmartManager() {
       setCurrentUser({ id: session.userId, name: session.fullName, role: session.role, customerRef: session.customerRef || null });
     }
   }, [session]);
+
+  useEffect(() => {
+    const profileData = tenantSettingsQuery.data?.profileData;
+    if (!profileData || typeof profileData !== "object") return;
+    setCompany((current) => ({ ...current, ...profileData, signatureLogo: profileData.signatureLogo ?? current.signatureLogo ?? null }));
+  }, [tenantSettingsQuery.data]);
 
   // Activates the real, per-company tax rate everywhere lineTotal() and
   // every POS/invoice calculation already reads it from (see the TAX_RATE

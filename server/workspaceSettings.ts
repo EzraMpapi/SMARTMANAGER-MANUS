@@ -21,11 +21,17 @@ type ProfileData = {
   idleTimeoutMinutes?: number;
   loginBackgroundImage?: string | null;
   onboardingBackgroundImage?: string | null;
+  signatureLogo?: string | null;
+  collaborationWorkflowWebhookEnabled?: boolean;
+  collaborationWorkflowWebhookUrl?: string | null;
+  collaborationWorkflowWebhookSecret?: string | null;
+  collaborationWorkflowWebhookSecretConfigured?: boolean;
 };
 type SettingsInput = {
   name: string; country: string; currency: string; tin?: string; phone?: string; email?: string; address?: string; city?: string; website?: string;
   taxRate: number; timezone: string; businessScale: string; receiptWidth: string; receiptFooter?: string; receiptShowLogo: boolean;
   primaryColor: string; accentColor: string; industryFocus?: string; logo?: { mimeType: "image/png" | "image/jpeg" | "image/webp" | "image/svg+xml"; base64: string } | null; removeLogo?: boolean;
+  signatureLogo?: { mimeType: "image/png" | "image/jpeg" | "image/webp" | "image/svg+xml"; base64: string } | null; removeSignatureLogo?: boolean;
   cover?: ImagePayload | null; removeCover?: boolean;
   loginBackground?: ImagePayload | null; removeLoginBackground?: boolean;
   onboardingBackground?: ImagePayload | null; removeOnboardingBackground?: boolean;
@@ -106,7 +112,18 @@ async function upsertProfileData(companyId: string, profileData: ProfileData) {
   return rows[0].profile_data || profileData;
 }
 
-function cleanProfileData(data: ProfileData): ProfileData {
+export function validateSignatureLogoPayload(input: SettingsInput["signatureLogo"]) {
+  if (!input) return null;
+  const { bytes, ext } = decodeLogoBase64(input);
+  if (!isRecognizedLogo(bytes, input.mimeType)) throw new TRPCError({ code: "BAD_REQUEST", message: "The selected signature logo does not match its declared image type." });
+  return { bytes, ext, mimeType: input.mimeType };
+}
+
+export function signatureLogoStorageKey(companyId: string, extension: string) {
+  return `workspace-branding/${encodeURIComponent(companyId)}/signature-logo.${extension}`;
+}
+
+export function cleanProfileData(data: ProfileData): ProfileData {
   return {
     tagline: data.tagline || "", description: data.description || "", businessType: data.businessType || "", foundedYear: data.foundedYear || "", regNumber: data.regNumber || "", postalCode: data.postalCode || "",
     facebook: data.facebook || "", instagram: data.instagram || "", twitter: data.twitter || "", linkedin: data.linkedin || "", tiktok: data.tiktok || "", whatsappBusiness: data.whatsappBusiness || "",
@@ -115,13 +132,34 @@ function cleanProfileData(data: ProfileData): ProfileData {
     idleTimeoutMinutes: normalizeIdleTimeoutMinutes(data.idleTimeoutMinutes),
     ...(data.loginBackgroundImage ? { loginBackgroundImage: data.loginBackgroundImage } : {}),
     ...(data.onboardingBackgroundImage ? { onboardingBackgroundImage: data.onboardingBackgroundImage } : {}),
+    ...(data.signatureLogo ? { signatureLogo: data.signatureLogo } : {}),
+    collaborationWorkflowWebhookEnabled: data.collaborationWorkflowWebhookEnabled === true,
+    ...(data.collaborationWorkflowWebhookUrl ? { collaborationWorkflowWebhookUrl: data.collaborationWorkflowWebhookUrl } : {}),
+    ...(data.collaborationWorkflowWebhookSecret ? { collaborationWorkflowWebhookSecret: data.collaborationWorkflowWebhookSecret } : {}),
+    collaborationWorkflowWebhookSecretConfigured: Boolean(data.collaborationWorkflowWebhookSecret),
   };
+}
+
+export function profileDataForClient(profileData: ProfileData): ProfileData {
+  const { collaborationWorkflowWebhookSecret: _secret, ...safeProfileData } = profileData;
+  return { ...safeProfileData, collaborationWorkflowWebhookSecretConfigured: Boolean(_secret) };
 }
 
 export async function getWorkspaceSettings(req: CreateExpressContextOptions["req"]) {
   const { profile, token } = await resolveVerifiedProfile(req);
   const [company, profileData] = await Promise.all([fetchCompany(profile.company_id, token), fetchProfileData(profile.company_id, token)]);
-  return { company, profileData };
+  return { company, profileData: profileDataForClient(profileData) };
+}
+
+export async function getTenantCollaborationWorkflowWebhook(req: CreateExpressContextOptions["req"]) {
+  const { profile, token } = await resolveVerifiedProfile(req);
+  const profileData = await fetchProfileData(profile.company_id, token);
+  return {
+    companyId: profile.company_id,
+    enabled: profileData.collaborationWorkflowWebhookEnabled === true,
+    url: profileData.collaborationWorkflowWebhookUrl || "",
+    secret: profileData.collaborationWorkflowWebhookSecret || "",
+  };
 }
 
 export async function saveWorkspaceSettings(req: CreateExpressContextOptions["req"], input: SettingsInput) {
@@ -136,6 +174,7 @@ export async function saveWorkspaceSettings(req: CreateExpressContextOptions["re
   let coverUrl: string | undefined;
   let loginBackgroundUrl: string | undefined;
   let onboardingBackgroundUrl: string | undefined;
+  let signatureLogoUrl: string | undefined;
 
   if (input.logo) {
     const { bytes, ext } = decodeLogoBase64(input.logo);
@@ -157,6 +196,11 @@ export async function saveWorkspaceSettings(req: CreateExpressContextOptions["re
     if (!isRecognizedLogo(bytes, input.onboardingBackground.mimeType)) throw new TRPCError({ code: "BAD_REQUEST", message: "The selected onboarding background does not match its declared image type." });
     onboardingBackgroundUrl = (await storagePut(`workspace-branding/${profile.company_id}/auth-onboarding-background.${ext}`, bytes, input.onboardingBackground.mimeType)).url;
   }
+  if (input.signatureLogo) {
+    const signatureLogo = validateSignatureLogoPayload(input.signatureLogo);
+    if (!signatureLogo) throw new TRPCError({ code: "BAD_REQUEST", message: "A signature logo payload is required." });
+    signatureLogoUrl = (await storagePut(signatureLogoStorageKey(profile.company_id, signatureLogo.ext), signatureLogo.bytes, signatureLogo.mimeType)).url;
+  }
 
   const companyPatch = {
     name: input.name.trim(), country: input.country.trim(), currency: input.currency, tin: input.tin?.trim() || null, phone: input.phone?.trim() || null,
@@ -165,18 +209,22 @@ export async function saveWorkspaceSettings(req: CreateExpressContextOptions["re
     receipt_show_logo: input.receiptShowLogo, brand_primary_color: primaryColor, brand_accent_color: accentColor,
     ...(industryFocus ? { category: industryFocus } : {}), ...(logoUrl ? { logo: logoUrl } : input.removeLogo ? { logo: null } : {}),
   };
+  const preservedWorkflowSecret = previousProfileData.collaborationWorkflowWebhookSecret || "";
+  const submittedWorkflowSecret = input.profileData.collaborationWorkflowWebhookSecret?.trim() || preservedWorkflowSecret;
   const profileData = cleanProfileData({
     ...input.profileData,
+    collaborationWorkflowWebhookSecret: submittedWorkflowSecret || null,
     ...(coverUrl ? { coverPhoto: coverUrl } : input.removeCover ? { coverPhoto: null } : {}),
     idleTimeoutMinutes: normalizeIdleTimeoutMinutes(input.idleTimeoutMinutes ?? input.profileData.idleTimeoutMinutes),
     ...(loginBackgroundUrl ? { loginBackgroundImage: loginBackgroundUrl } : input.removeLoginBackground ? { loginBackgroundImage: null } : {}),
     ...(onboardingBackgroundUrl ? { onboardingBackgroundImage: onboardingBackgroundUrl } : input.removeOnboardingBackground ? { onboardingBackgroundImage: null } : {}),
+    ...(signatureLogoUrl ? { signatureLogo: signatureLogoUrl } : input.removeSignatureLogo ? { signatureLogo: null } : {}),
   });
 
   try {
     const company = await patchCompany(profile.company_id, token, companyPatch);
     const savedProfileData = await upsertProfileData(profile.company_id, profileData);
-    return { company, profileData: savedProfileData };
+    return { company, profileData: profileDataForClient(savedProfileData) };
   } catch (error) {
     try {
       await patchCompany(profile.company_id, token, previousCompany);

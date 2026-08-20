@@ -27,6 +27,7 @@ import { canReadTenantPushDeliveryHistory, listTenantPushDeliveryHistory } from 
 import { getMarketIntelligenceSnapshot, marketIntelligenceConfig } from "./marketIntelligence";
 import { getMarketGovernanceData, upsertMarketProviderSettings } from "./marketGovernance";
 import { notifyPasskeyRegistration } from "./passkeyRegistrationNotification";
+import { dispatchEmailTemplateWorkflowEvent, getEmailTemplateWorkflowStatus, testEmailTemplateWorkflowWebhook } from "./emailTemplateWorkflow";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -495,6 +496,17 @@ export const appRouter = router({
     })).mutation(({ ctx, input }) => saveWorkspaceBranding(ctx.req, input)),
   }),
 
+  emailTemplateWorkflow: router({
+    status: protectedProcedure.query(({ ctx }) => getEmailTemplateWorkflowStatus(ctx.req)),
+    dispatch: protectedProcedure.input(z.object({
+      action: z.enum(["EMAIL_TEMPLATE_SAVED", "EMAIL_TEMPLATE_EXPORTED"]),
+      subject: z.string().max(240),
+      recipientCount: z.number().int().min(0).max(1000),
+      attachmentCount: z.number().int().min(0).max(100),
+    })).mutation(({ ctx, input }) => dispatchEmailTemplateWorkflowEvent(ctx.req, input)),
+    test: protectedProcedure.mutation(({ ctx }) => testEmailTemplateWorkflowWebhook(ctx.req)),
+  }),
+
   workspaceSettings: router({
     get: protectedProcedure.query(({ ctx }) => getWorkspaceSettings(ctx.req)),
     save: protectedProcedure.input(z.object({
@@ -503,6 +515,7 @@ export const appRouter = router({
       taxRate: z.number().min(0).max(100), timezone: z.string().min(1).max(100), businessScale: z.enum(["small", "medium", "large"]), receiptWidth: z.enum(["58mm", "80mm", "A4"]), receiptFooter: z.string().max(500).optional(), receiptShowLogo: z.boolean(),
       primaryColor: z.string().min(7).max(7), accentColor: z.string().min(7).max(7), industryFocus: z.enum(["general", "retail", "manufacturing", "services", "healthcare", "education", "hospitality"]).optional(),
       logo: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]), base64: z.string().min(1).max(2_800_000) }).nullable().optional(), removeLogo: z.boolean().optional(),
+      signatureLogo: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"]), base64: z.string().min(1).max(2_800_000) }).nullable().optional(), removeSignatureLogo: z.boolean().optional(),
       cover: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]), base64: z.string().min(1).max(7_000_000) }).nullable().optional(), removeCover: z.boolean().optional(),
       loginBackground: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]), base64: z.string().min(1).max(7_000_000) }).nullable().optional(), removeLoginBackground: z.boolean().optional(),
       onboardingBackground: z.object({ mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]), base64: z.string().min(1).max(7_000_000) }).nullable().optional(), removeOnboardingBackground: z.boolean().optional(),
@@ -513,6 +526,7 @@ export const appRouter = router({
         bankName: z.string().max(160).optional(), bankAccountName: z.string().max(200).optional(), bankAccountNo: z.string().max(120).optional(), bankBranch: z.string().max(200).optional(), bankSwift: z.string().max(80).optional(),
         businessHours: z.record(z.string(), z.object({ open: z.string().max(10).optional(), close: z.string().max(10).optional(), closed: z.boolean().optional() })).optional(), coverPhoto: z.string().url().max(2_000).nullable().optional(),
         idleTimeoutMinutes: z.number().int().min(5).max(120).optional(), loginBackgroundImage: z.string().url().max(2_000).nullable().optional(), onboardingBackgroundImage: z.string().url().max(2_000).nullable().optional(),
+        collaborationWorkflowWebhookEnabled: z.boolean().optional(), collaborationWorkflowWebhookUrl: z.string().url().max(2_000).or(z.literal("")).optional(), collaborationWorkflowWebhookSecret: z.string().max(512).optional(),
       }),
     })).mutation(({ ctx, input }) => saveWorkspaceSettings(ctx.req, input)),
   }),

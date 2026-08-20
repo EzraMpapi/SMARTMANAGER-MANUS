@@ -99,7 +99,7 @@ export async function listWebhookDeliveryHistory() {
   }
 }
 
-async function sendWebhookPayload(payload: Record<string, unknown>) {
+async function sendWebhookPayloadWithConfig(config: { url: string; secret?: string }, payload: Record<string, unknown>) {
   let attempts = 0;
   let responseCode: number | undefined;
   let lastError = "";
@@ -107,11 +107,11 @@ async function sendWebhookPayload(payload: Record<string, unknown>) {
   while (attempts < 3) {
     attempts++;
     try {
-      const response = await fetch(globalWebhookConfig.url, {
+      const response = await fetch(config.url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(globalWebhookConfig.secret ? { "X-Webhook-Secret": globalWebhookConfig.secret } : {}),
+          ...(config.secret ? { "X-Webhook-Secret": config.secret } : {}),
         },
         body: JSON.stringify(payload),
       });
@@ -124,6 +124,27 @@ async function sendWebhookPayload(payload: Record<string, unknown>) {
     if (attempts < 3) await new Promise((resolve) => setTimeout(resolve, attempts * 1000));
   }
   return { success: false, attempts, responseCode, error: lastError };
+}
+
+async function sendWebhookPayload(payload: Record<string, unknown>) {
+  return sendWebhookPayloadWithConfig(globalWebhookConfig, payload);
+}
+
+export async function dispatchTenantWebhookEvent(config: { url: string; enabled: boolean; secret?: string }, event: WebhookEvent) {
+  if (!config.enabled || !config.url || !event.companyId) return { skipped: true as const };
+  const payload = {
+    timestamp: new Date().toISOString(),
+    source: "BusinessSphere ERP",
+    severity: event.severity || "INFO",
+    ...event,
+  };
+  const result = await sendWebhookPayloadWithConfig(config, payload);
+  if (result.success) {
+    recordDelivery({ status: "success", event: payload, attempts: result.attempts, responseCode: result.responseCode, companyId: event.companyId });
+  } else {
+    recordDelivery({ status: "failed", event: payload, attempts: result.attempts, responseCode: result.responseCode, error: result.error, companyId: event.companyId });
+  }
+  return result;
 }
 
 export async function dispatchWebhookEvent(event: WebhookEvent) {
