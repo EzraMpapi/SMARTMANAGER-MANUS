@@ -73,14 +73,14 @@
 ## Production Persistence Routing & Live Mutation Verification
 - [x] Connect the client-side Finance Record Expense form and other critical ERP insert mutations to `persistSupabaseCriticalRow` so client writes automatically benefit from schema contract rejection.
 - [x] Add explicit integration tests proving valid client-submitted payloads succeed while drifted client-submitted payloads are rejected by the guarded server boundary.
-- [ ] Save checkpoint, publish, and perform live end-to-end verification of the guarded persistence path.
+- [x] Save checkpoint, publish, and perform live end-to-end verification of the guarded persistence path.
 - [x] Update stale Finance integration fixtures that still include the removed department field, then rerun focused/full tests and build verification.
-- [ ] Fix production packaging so the server-side schema validator does not depend on an unbundled runtime JSON file, then republish and verify startup.
+- [x] Fix production packaging so the server-side schema validator does not depend on an unbundled runtime JSON file, then republish and verify startup.
 
 ## Complete Guarded Write Routing & Runtime Server Integration
 - [x] Ensure all direct `sb(...).insert` calls for critical tables (`finance_expenses`, `sales_invoices`, `inventory_items`, `crm_leads`) in `BusinessSphereDashboard.jsx` route through the guarded client helper.
 - [x] Implement a runtime tRPC integration test using `appRouter.createCaller` to prove valid payloads pass and drifted payloads are rejected across all four critical tables.
-- [ ] Save checkpoint, publish, and perform live verification of the guarded persistence path.
+- [x] Save checkpoint, publish, and perform live verification of the guarded persistence path.
 
 ## Bulk-Safe Guarded Inserts & All-Table Runtime Caller Coverage
 - [x] Upgrade `sb(...).insert` builder to support bulk array payloads safely through guarded server mutations.
@@ -92,4 +92,4 @@
 - [x] Normalize generic critical insert rows before routing them through the tenant-scoped guarded server mutation.
 - [x] Restore the generic `crm_leads` contract manifest and add regression coverage for generic and relational-shaped bulk rows.
 - [x] Re-run focused/full tests, the Supabase OpenAPI gate, TypeScript validation, and the low-memory production build.
-- [ ] Publish the correction and re-verify Finance and CRM guarded writes in the live workspace.
+- [x] Publish the correction and re-verify Finance and CRM guarded writes in the live workspace.
