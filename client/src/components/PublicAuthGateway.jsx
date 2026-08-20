@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { EnterpriseLoginView, PasswordRecoveryView, ResetPasswordView, EmailConfirmationView } from "./EnterpriseAuthViews";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "../lib/authErrors";
 import { authScreenFromSearch, oauthCallbackFromHash } from "../lib/authOnboarding";
@@ -84,12 +84,24 @@ export default function PublicAuthGateway() {
       window.history.replaceState(null, "", `${window.location.pathname}?auth=reset`);
       return;
     }
-    // OAuth callbacks land before the lightweight public route can see the
-    // session in browser storage. Persist and immediately re-enter /app so
-    // the existing tenant-aware bootstrap resolves profile → workspace.
     persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken });
     window.location.replace(withoutAuthView());
   }, []);
+
+  async function oauth(provider) {
+    if (!configured) {
+      setOauthError("Authentication is not configured for this application.");
+      return;
+    }
+    const redirectTo = new URL(window.location.href);
+    redirectTo.searchParams.set("oauth_provider", provider);
+    redirectTo.hash = "";
+    try {
+      window.location.assign(`${SUPABASE_URL}/auth/v1/authorize?provider=${encodeURIComponent(provider)}&redirect_to=${encodeURIComponent(redirectTo.toString())}`);
+    } catch (oauthError) {
+      setOauthError(toAuthUserMessage(oauthError));
+    }
+  }
 
   async function signIn(workEmail, password, remember = true) {
     const validation = validatePasswordLogin(workEmail, password);
@@ -120,30 +132,55 @@ export default function PublicAuthGateway() {
     }
   }
 
-  async function requestRecovery(workEmail) {
-    await authRequest("recover", { method: "POST", body: JSON.stringify({ email: workEmail, options: { redirectTo: resetRedirectUrl() } }) });
-  }
-
-  async function updatePassword(token, password) {
-    if (!token) { const error = new Error("Recovery session missing."); error.code = "RECOVERY_SESSION_MISSING"; throw error; }
-    await authRequest("user", { method: "PUT", headers: { authorization: `Bearer ${token}` }, body: JSON.stringify({ password }) });
-    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY); window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
-  }
-
-  async function resendVerification(workEmail) {
-    await authRequest("resend", { method: "POST", body: JSON.stringify({ type: "signup", email: workEmail }) });
-  }
-
-  function oauth(provider) {
-    if (!configured) return;
-    setOauthProvider(provider);
-    setOauthError(null);
-    const redirectTo = new URL(window.location.href); redirectTo.searchParams.delete("auth"); redirectTo.searchParams.set("oauth_provider", provider);
-    window.location.assign(`${SUPABASE_URL}/auth/v1/authorize?provider=${encodeURIComponent(provider)}&redirect_to=${encodeURIComponent(redirectTo.toString())}`);
-  }
-
-  if (view === "forgot") return <PasswordRecoveryView onBack={() => navigate("login")} onRequest={requestRecovery} toMessage={toAuthUserMessage} />;
-  if (view === "reset") return <ResetPasswordView recoveryToken={recoveryToken} onBack={() => navigate("login")} onUpdate={updatePassword} toMessage={toAuthUserMessage} />;
-  if (view === "verify") return <EmailConfirmationView email={email} onBack={() => navigate("login")} onResend={resendVerification} toMessage={toAuthUserMessage} />;
-  return <EnterpriseLoginView configured={configured} onSignIn={signIn} onPasskey={signInWithPasskey} onSignup={() => navigate("signup")} onForgot={() => navigate("forgot")} onOAuth={oauth} onClearOAuthError={() => setOauthError(null)} oauthProvider={oauthProvider} toMessage={toAuthUserMessage} invitationPending={invitationPending} initialError={oauthError} />;
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {view === "forgot" && (
+        <PasswordRecoveryView
+          onBack={() => navigate("login")}
+          onSubmit={async (workEmail) => {
+            await authRequest("recover", { method: "POST", body: JSON.stringify({ email: workEmail, redirect_to: resetRedirectUrl() }) });
+          }}
+          toMessage={toAuthUserMessage}
+        />
+      )}
+      {view === "reset" && (
+        <ResetPasswordView
+          recoveryToken={recoveryToken}
+          onBack={() => navigate("login")}
+          onSubmit={async (newPassword) => {
+            await authRequest("user", { method: "PUT", headers: { authorization: `Bearer ${recoveryToken}` }, body: JSON.stringify({ password: newPassword }) });
+          }}
+          toMessage={toAuthUserMessage}
+        />
+      )}
+      {view === "verify" && (
+        <EmailConfirmationView
+          email={email}
+          onBack={() => navigate("login")}
+          onResend={async (workEmail) => {
+            await authRequest("resend", { method: "POST", body: JSON.stringify({ email: workEmail, type: "signup" }) });
+          }}
+          toMessage={toAuthUserMessage}
+        />
+      )}
+      {view === "login" && (
+        <EnterpriseLoginView
+          onSignIn={signIn}
+          onSignInWithPasskey={signInWithPasskey}
+          onOAuth={oauth}
+          onForgotPassword={() => navigate("forgot")}
+          onSignUp={() => {
+            window.location.href = "/app?auth=signup";
+          }}
+          configured={configured}
+          oauthError={oauthError}
+          onClearOAuthError={() => setOauthError(null)}
+          oauthProvider={oauthProvider}
+          onSelectOauthProvider={setOauthProvider}
+          invitationPending={invitationPending}
+          toMessage={toAuthUserMessage}
+        />
+      )}
+    </div>
+  );
 }

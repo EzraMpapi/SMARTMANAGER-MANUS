@@ -8171,3 +8171,10 @@
 - [x] Implement in-app feedback and bug reporting modal with tenant-safe submission storage.
 - [x] Enhance loading animations and error-recovery states across login, onboarding, and module navigation.
 - [x] Add regression tests, run full test suite, verify build, and save published checkpoint.
+
+## Authentication Lexical Initialization & Signup Progression Bugfix
+- [x] Reproduce and trace "can't access lexical declaration 'V' before initialization" in login/signup flows.
+- [x] Fix circular or uninitialized variable reference in EnterpriseAuthViews or PublicAuthGateway.
+- [x] Ensure signup step progression transitions smoothly to the next step.
+- [x] Add regression test spec covering login initialization and signup step transitions.
+- [x] Run test suite, production build, and save published checkpoint.
