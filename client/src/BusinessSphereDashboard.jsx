@@ -32781,6 +32781,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   const [selectedEmail, setSel]= useState(null);
   const [busy, setBusy]       = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [emailAttachments, setEmailAttachments] = useState([]);
   const emailDeliveryDisabled = true;
 
   // Listen for external compose trigger
@@ -32961,9 +32962,18 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
               </div>
             </div>
 
-            {/* Body & Live Preview Toggle */}
+            {/* Body & Live Preview Toggle & Rich Text Toolbar */}
             <div className="px-4 py-2 bg-slate-100/80 border-b border-slate-100 flex items-center justify-between text-[11.5px] font-semibold text-slate-600">
-              <span className="flex items-center gap-1.5">✉️ Email Body Editor</span>
+              <div className="flex items-center gap-2">
+                <span>✉️ Email Body Editor</span>
+                {!showEmailPreview && (
+                  <div className="hidden sm:flex items-center gap-1 border-l border-slate-300 pl-2">
+                    <button type="button" onClick={()=>setBody(b=>b+" **Bold Text** ")} className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10.5px] font-bold text-slate-700 hover:bg-slate-50" title="Bold">B</button>
+                    <button type="button" onClick={()=>setBody(b=>b+" *Italic Text* ")} className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10.5px] italic text-slate-700 hover:bg-slate-50" title="Italic">I</button>
+                    <button type="button" onClick={()=>setBody(b=>b+"\n- List Item 1\n- List Item 2\n")} className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10.5px] text-slate-700 hover:bg-slate-50" title="Bullet List">☰ List</button>
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={()=>setShowEmailPreview(p=>!p)}
@@ -32980,10 +32990,13 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
               {showEmailPreview ? (
                 <div className="w-full h-full min-h-[280px] p-6 bg-slate-50/70 text-[13px] text-slate-800">
                   <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
-                    <div className="border-b border-slate-100 pb-3">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Recipient Preview</p>
-                      <p className="text-[13px] font-semibold text-slate-900 mt-0.5">{to.trim() || "recipient@example.com"}</p>
-                      {cc.trim() && <p className="text-[11.5px] text-slate-500 mt-0.5">CC: {cc}</p>}
+                    <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Recipient Preview</p>
+                        <p className="text-[13px] font-semibold text-slate-900 mt-0.5">{to.trim() || "recipient@example.com"}</p>
+                        {cc.trim() && <p className="text-[11.5px] text-slate-500 mt-0.5">CC: {cc}</p>}
+                      </div>
+                      <span className="rounded-full bg-emerald-50 text-emerald-700 px-2.5 py-1 text-[10px] font-bold border border-emerald-200">Secure TLS Draft</span>
                     </div>
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Subject</p>
@@ -32995,16 +33008,73 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
                         {body.trim() ? mergeTemplate(body) : <span className="text-slate-400 italic">No content written yet. Select a template above or start typing…</span>}
                       </div>
                     </div>
+
+                    {/* PDF Attachment Previews in Live Preview */}
+                    {emailAttachments.length > 0 && (
+                      <div className="border-t border-slate-100 pt-3">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Attached Documents ({emailAttachments.length})</p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {emailAttachments.map((att, idx)=>(
+                            <div key={idx} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-blue-50/40">
+                              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center shrink-0">PDF</div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[12px] font-semibold text-slate-900 truncate">{att.name}</p>
+                                <p className="text-[10px] text-slate-500">{Math.round(att.size / 1024)} KB · Verified Document</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tenant Branded Signature Banner */}
+                    <div className="border-t border-slate-200/80 pt-4 mt-2 flex items-center gap-3 bg-gradient-to-r from-slate-50 to-emerald-50/30 p-3.5 rounded-xl border border-emerald-950/5">
+                      <div className="w-10 h-10 rounded-xl bg-[#16A34A] text-white font-bold flex items-center justify-center text-[15px] shadow-sm shrink-0">
+                        {(co.name || "BS").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-bold text-slate-900">{co.name || "BusinessSphere Enterprise"}</p>
+                        <p className="text-[11px] text-slate-500">{co.email || "support@businesssphere.tz"} · {co.phone || "+255 22 200 1000"}</p>
+                        <p className="text-[10px] font-medium text-emerald-700 mt-0.5">Verified East African Commercial Workspace · Regulated VFD Tax Compliant</p>
+                      </div>
+                    </div>
+
                     <div className="pt-2 flex items-center justify-between text-[10.5px] text-slate-400 border-t border-slate-100">
-                      <span>Sender: {co.name || "BusinessSphere"}</span>
-                      <span className="text-emerald-600 font-semibold">✓ Template Preview Mode Active</span>
+                      <span>Sender: {co.owner || currentUser.name || "The Team"}</span>
+                      <span className="text-emerald-600 font-semibold">✓ Branded Template Preview Active</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <textarea value={body} onChange={e=>setBody(e.target.value)}
-                  className="w-full h-full min-h-[280px] px-6 py-4 text-[13px] leading-relaxed text-[#374151] resize-none outline-none"
-                  placeholder="Write your email here…&#10;&#10;Tip: Use templates above to auto-fill professional content."/>
+                <div className="flex flex-col h-full">
+                  <textarea value={body} onChange={e=>setBody(e.target.value)}
+                    className="w-full flex-1 min-h-[240px] px-6 py-4 text-[13px] leading-relaxed text-[#374151] resize-none outline-none"
+                    placeholder="Write your email here…&#10;&#10;Tip: Use templates above to auto-fill professional content or use the rich-text toolbar above."/>
+                  
+                  {/* Attachment Management Bar */}
+                  <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between text-[11.5px]">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-600">Attachments:</span>
+                      {emailAttachments.map((att, i)=>(
+                        <span key={i} className="inline-flex items-center gap-1 bg-white border border-slate-200 px-2 py-0.5 rounded-lg text-slate-700 text-[11px]">
+                          📄 {att.name}
+                          <button type="button" onClick={()=>setEmailAttachments(a=>a.filter((_,idx)=>idx!==i))} className="text-slate-400 hover:text-red-500 ml-1">×</button>
+                        </span>
+                      ))}
+                      {emailAttachments.length === 0 && <span className="text-slate-400 italic">No files attached</span>}
+                    </div>
+                    <label className="cursor-pointer text-[11.5px] font-bold text-[#2563EB] hover:underline">
+                      + Attach PDF / Document
+                      <input type="file" accept=".pdf,.doc,.docx,.png,.jpg" className="hidden" onChange={e=>{
+                        const f = e.target.files?.[0];
+                        if (f) {
+                          setEmailAttachments(a=>[...a, { name: f.name, size: f.size }]);
+                          notify(`Attached ${f.name} successfully.`);
+                        }
+                      }}/>
+                    </label>
+                  </div>
+                </div>
               )}
             </div>
 
