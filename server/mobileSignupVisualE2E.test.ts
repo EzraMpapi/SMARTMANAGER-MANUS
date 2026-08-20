@@ -10,5 +10,7 @@ describe("Mobile Signup Visual E2E & Multi-Step Progression", () => {
     expect(dashboardSource).toContain("SignupPage");
     expect(dashboardSource).toContain("Continue to company setup →");
     expect(dashboardSource).toContain("Continue to modules →");
+    expect(dashboardSource).toContain("<Check ");
+    expect(dashboardSource).toContain("ONBOARDING_MODULES");
   });
 });

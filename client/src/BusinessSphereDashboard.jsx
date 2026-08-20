@@ -4,7 +4,7 @@ import {
   Factory, Truck, Megaphone, Store, FileText, Brain, Settings,
   Search, Bell, ChevronDown, Plus, Phone, Mail, Building2, TrendingUp,
   TrendingDown, MoreHorizontal, ArrowUpRight, ArrowDownRight, Filter, X, Star,
-  CircleDollarSign, Clock, CheckCircle2, AlertCircle, AlertTriangle, Link, Trophy, Medal, Inbox, AtSign, CheckCheck, Lock, Send,
+  CircleDollarSign, Clock, Check, CheckCircle2, AlertCircle, AlertTriangle, Link, Trophy, Medal, Inbox, AtSign, CheckCheck, Lock, Send,
   Printer, Download, ChevronRight, Ban, ReceiptText, ClipboardList,
   FileCheck, Trash2, Copy, Landmark, BarChart3, Grid3x3, List,
   FileSpreadsheet, FileImage, File, Folder, FolderOpen, UploadCloud,
