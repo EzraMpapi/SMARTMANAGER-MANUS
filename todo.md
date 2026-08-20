@@ -124,3 +124,17 @@
 ## Visible Lazy Workspace Completion
 - [x] Extract an additional high-cost workspace module behind a `lazy()` boundary with a visible loading fallback.
 - [x] Add desktop and mobile browser verification for the new workspace loading fallback.
+
+## Smart Manager Launch Session Recovery
+- [x] Trace the erroneous “Your session has expired” launch error through stored-token refresh and company-join handling.
+- [x] Fix the launch boundary so a recoverable session is refreshed or routed truthfully without creating cross-tenant access.
+- [x] Add regression coverage for valid refresh recovery, terminal expiry, and company-join error mapping.
+- [x] Run focused/full tests, schema and type checks, production build, browser launch verification, and publish the correction.
+
+## Launch Session Recovery Completion
+- [x] Add direct user-facing company-join error mapping coverage for invalid codes, cross-company membership, and terminal session expiry.
+- [x] Add browser verification for the Smart Manager launch/session-recovery path without exposing or using a production tenant session.
+- [x] Publish the corrected launch-session checkpoint after the additional verification.
+
+## Launch Session Recovery Publication
+- [ ] Save and publish the verified Smart Manager launch-session recovery correction.

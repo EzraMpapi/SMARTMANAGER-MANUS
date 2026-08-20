@@ -20,7 +20,7 @@ describe("passkey onboarding and readiness UI", () => {
     expect(dashboard).toContain("Create passkey now");
     expect(dashboard).toContain("createAccountPasskeyClient");
     expect(dashboard).toContain("registerAccountPasskey(client)");
-    expect(dashboard).toContain("passkeySession: { accessToken: signUpResult.access_token, refreshToken: signUpResult.refresh_token }");
+    expect(dashboard).toContain("passkeySession: { accessToken: workspaceRpc.accessToken, refreshToken: workspaceRpc.refreshToken }");
     expect(dashboard).toContain("passkeyNotificationMutation.mutateAsync");
   });
 

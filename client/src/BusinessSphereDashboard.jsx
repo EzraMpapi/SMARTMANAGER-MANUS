@@ -430,8 +430,36 @@ async function callRpc(name, params, accessToken) {
     body: JSON.stringify(params),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || data.error_description || `${name} failed.`);
+  if (!res.ok) {
+    const error = new Error(data.message || data.error_description || `${name} failed.`);
+    error.status = res.status;
+    error.code = data.code || data.error_code || null;
+    throw error;
+  }
   return data;
+}
+
+export function isTerminalWorkspaceSessionError(error) {
+  return Number(error?.status) === 401 || error?.code === "SESSION_REFRESH_FAILED";
+}
+
+// A workspace RPC can race a short-lived access token during first launch.
+// Retry precisely once with Supabase's rotating refresh token; no 403 or
+// business-rule failure is ever reclassified as a session failure.
+export async function callWorkspaceRpcWithSessionRefresh(name, params, accessToken) {
+  try {
+    return { data: await callRpc(name, params, accessToken), accessToken, refreshToken: getStoredRefreshToken() };
+  } catch (firstError) {
+    if (!isTerminalWorkspaceSessionError(firstError) || !getStoredRefreshToken()) throw firstError;
+    try {
+      const refreshed = await authRefreshSession(getStoredRefreshToken());
+      persistAuthSession(refreshed, { remember: Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)) });
+      return { data: await callRpc(name, params, refreshed.access_token), accessToken: refreshed.access_token, refreshToken: refreshed.refresh_token || getStoredRefreshToken() };
+    } catch (refreshError) {
+      refreshError.code = "SESSION_REFRESH_FAILED";
+      throw refreshError;
+    }
+  }
 }
 
 // These deployed tenant tables use the common name/status/amount/notes/data
@@ -43370,11 +43398,11 @@ const JOIN_COMPANY_ROLE_OPTIONS = [
   { id: "Supplier", label: "Supplier" },
 ];
 
-function workspaceJoinErrorMessage(error, fallback) {
+export function workspaceJoinErrorMessage(error, fallback) {
   const message = String(error?.message || "").toLowerCase();
   if (message.includes("invalid join code")) return "That company join code is not recognised. Check the code with your administrator and try again.";
   if (message.includes("already belongs to a different company")) return "This account already belongs to another workspace. Use the account assigned to this company or ask an administrator for help.";
-  if (message.includes("not authenticated") || message.includes("sign in")) return "Your session has expired. Sign in again, then retry joining the company.";
+  if (isTerminalWorkspaceSessionError(error)) return "Your session has expired. Sign in again, then retry joining the company.";
   return error?.message || fallback;
 }
 
@@ -43638,13 +43666,14 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       const accessToken = signUpResult.access_token;
       persistAuthSession(signUpResult);
 
-      const rpcResult = mode === "create"
-        ? await callRpc("create_company_and_owner", {
+      const workspaceRpc = mode === "create"
+        ? await callWorkspaceRpcWithSessionRefresh("create_company_and_owner", {
             p_name: company.name.trim(), p_industry: company.category, p_country: company.country, p_currency: company.currency, p_full_name: account.fullName.trim(),
           }, accessToken)
-        : await callRpc("join_company_with_code", {
+        : await callWorkspaceRpcWithSessionRefresh("join_company_with_code", {
             p_join_code: joinCode.trim().toUpperCase(), p_full_name: account.fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
           }, accessToken);
+      const rpcResult = workspaceRpc.data;
 
       if (!rpcResult?.id) throw new Error("Workspace creation did not return a confirmed company record.");
 
@@ -43682,9 +43711,9 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       authDebug("Workspace setup confirmed", { mode, companyId: rpcResult.id });
       clearStoredAuthSession();
       clearOnboardingProgress();
-      setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning, passkeySession: { accessToken: signUpResult.access_token, refreshToken: signUpResult.refresh_token } });
+      setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning, passkeySession: { accessToken: workspaceRpc.accessToken, refreshToken: workspaceRpc.refreshToken } });
     } catch (err) {
-      clearStoredAuthSession();
+      if (isTerminalWorkspaceSessionError(err)) clearStoredAuthSession();
       setError(accountCreated ? workspaceJoinErrorMessage(err, "Your account was created, but workspace setup could not complete. Please sign in to continue setup.") : workspaceJoinErrorMessage(err, "Couldn't complete sign up. Please try again."));
     } finally {
       setBusy(false);
@@ -43838,13 +43867,14 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
     if (!valid) return;
     setBusy(true);
     try {
-      const rpcResult = mode === "create"
-        ? await callRpc("create_company_and_owner", {
+      const workspaceRpc = mode === "create"
+        ? await callWorkspaceRpcWithSessionRefresh("create_company_and_owner", {
             p_name: company.name.trim(), p_industry: company.category, p_country: company.country, p_currency: company.currency, p_full_name: fullName.trim(),
           }, oauthUser.accessToken)
-        : await callRpc("join_company_with_code", {
+        : await callWorkspaceRpcWithSessionRefresh("join_company_with_code", {
             p_join_code: joinCode.trim().toUpperCase(), p_full_name: fullName.trim(), p_role: joinRole, p_customer_ref: isPortalRole ? customerRef.trim() : null,
           }, oauthUser.accessToken);
+      const rpcResult = workspaceRpc.data;
 
       if (!rpcResult?.id) throw new Error("Workspace setup did not return a confirmed company record.");
 
@@ -43863,7 +43893,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
       }
 
       onAuthenticated({
-        userId: oauthUser.id, email: oauthUser.email, accessToken: oauthUser.accessToken,
+        userId: oauthUser.id, email: oauthUser.email, accessToken: workspaceRpc.accessToken,
         fullName: fullName.trim(), role: mode === "create" ? "Organization Owner" : joinRole,
         customerRef: isPortalRole ? customerRef.trim() : null,
         company: { id: rpcResult.id, name: rpcResult.name || company.name.trim(), category: company.category, industry: company.category, country: company.country, currency: company.currency, timezone: company.timezone, businessScale },
