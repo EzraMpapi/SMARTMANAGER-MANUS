@@ -8198,3 +8198,10 @@
 - [x] Fix signup account-to-company-setup transition where "Continue to company setup" does not advance.
 - [x] Add regression specs for Collaboration Hub email rendering and signup step transition.
 - [x] Run test suite, low-memory production build, and save published checkpoint.
+
+## Mobile Visual E2E, Email Link Check & Touch Telemetry
+- [x] Audit signup visual test conventions, Collaboration Hub email links, and touch/error telemetry boundaries.
+- [x] Implement mobile signup visual end-to-end test spec.
+- [x] Implement automated link-check spec for Collaboration Hub email templates and attachments.
+- [x] Integrate touch-interaction context into privacy-safe client runtime telemetry.
+- [x] Run focused test suite, full regression suite, type/build checks, and save published checkpoint.

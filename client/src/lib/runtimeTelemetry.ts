@@ -12,19 +12,40 @@ export interface RuntimeTelemetryPayload {
   componentStack: string;
   timestamp: number;
   href: string;
+  touchContext?: {
+    type?: string;
+    targetTagName?: string;
+    pointerType?: string;
+  };
 }
 
-export function reportRuntimeError(error: unknown, errorInfo?: { componentStack?: string | null }): void {
+export function reportRuntimeError(
+  error: unknown,
+  errorInfo?: { componentStack?: string | null },
+  touchEvent?: TouchEvent | PointerEvent | MouseEvent
+): void {
   if (typeof window === "undefined") return;
   const rawMsg = error instanceof Error ? error.message : String(error);
   const rawStack = error instanceof Error ? error.stack || "" : "";
   const sanitizedMessage = sanitizeErrorMessage(rawMsg);
+
+  let touchContext: RuntimeTelemetryPayload["touchContext"] = undefined;
+  if (touchEvent) {
+    const target = touchEvent.target as HTMLElement | null;
+    touchContext = {
+      type: touchEvent.type,
+      targetTagName: target?.tagName || "UNKNOWN",
+      pointerType: (touchEvent as PointerEvent).pointerType || (touchEvent instanceof TouchEvent ? "touch" : "mouse"),
+    };
+  }
+
   const telemetryPayload: RuntimeTelemetryPayload = {
     message: sanitizedMessage,
     stack: sanitizeErrorMessage(rawStack),
     componentStack: sanitizeErrorMessage(errorInfo?.componentStack || ""),
     timestamp: Date.now(),
     href: window.location.href,
+    touchContext,
   };
 
   try {
@@ -36,6 +57,6 @@ export function reportRuntimeError(error: unknown, errorInfo?: { componentStack?
   }
 
   if (import.meta.env.DEV) {
-    console.info("[RuntimeTelemetry] Recorded safe error log:", sanitizedMessage);
+    console.info("[RuntimeTelemetry] Recorded safe error log with touch context:", sanitizedMessage, touchContext);
   }
 }
