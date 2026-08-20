@@ -32780,6 +32780,7 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
   const [starred, setStarred] = useState([]);
   const [selectedEmail, setSel]= useState(null);
   const [busy, setBusy]       = useState(false);
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
   const emailDeliveryDisabled = true;
 
   // Listen for external compose trigger
@@ -32960,11 +32961,51 @@ function EmailCenter({ currentUser, crm, employees, invoices, company }) {
               </div>
             </div>
 
-            {/* Body */}
+            {/* Body & Live Preview Toggle */}
+            <div className="px-4 py-2 bg-slate-100/80 border-b border-slate-100 flex items-center justify-between text-[11.5px] font-semibold text-slate-600">
+              <span className="flex items-center gap-1.5">✉️ Email Body Editor</span>
+              <button
+                type="button"
+                onClick={()=>setShowEmailPreview(p=>!p)}
+                className={`rounded-lg px-3 py-1 text-[11px] font-bold transition-all border ${
+                  showEmailPreview
+                    ? "bg-[#2563EB] text-white border-[#2563EB]"
+                    : "bg-white text-slate-700 border-slate-200 hover:border-[#2563EB]/40"
+                }`}
+              >
+                {showEmailPreview ? "✎ Edit Message" : "👁 Live Preview"}
+              </button>
+            </div>
             <div className="flex-1 overflow-y-auto">
-              <textarea value={body} onChange={e=>setBody(e.target.value)}
-                className="w-full h-full min-h-[280px] px-6 py-4 text-[13px] leading-relaxed text-[#374151] resize-none outline-none"
-                placeholder="Write your email here…&#10;&#10;Tip: Use templates above to auto-fill professional content."/>
+              {showEmailPreview ? (
+                <div className="w-full h-full min-h-[280px] p-6 bg-slate-50/70 text-[13px] text-slate-800">
+                  <div className="max-w-xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+                    <div className="border-b border-slate-100 pb-3">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Recipient Preview</p>
+                      <p className="text-[13px] font-semibold text-slate-900 mt-0.5">{to.trim() || "recipient@example.com"}</p>
+                      {cc.trim() && <p className="text-[11.5px] text-slate-500 mt-0.5">CC: {cc}</p>}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Subject</p>
+                      <h4 className="text-[15px] font-bold text-slate-900 mt-0.5">{subject.trim() || "(No subject)"}</h4>
+                    </div>
+                    <div className="border-t border-slate-100 pt-4">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Message Body (Live Rendered)</p>
+                      <div className="whitespace-pre-wrap font-sans text-[13px] leading-relaxed text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        {body.trim() ? mergeTemplate(body) : <span className="text-slate-400 italic">No content written yet. Select a template above or start typing…</span>}
+                      </div>
+                    </div>
+                    <div className="pt-2 flex items-center justify-between text-[10.5px] text-slate-400 border-t border-slate-100">
+                      <span>Sender: {co.name || "BusinessSphere"}</span>
+                      <span className="text-emerald-600 font-semibold">✓ Template Preview Mode Active</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <textarea value={body} onChange={e=>setBody(e.target.value)}
+                  className="w-full h-full min-h-[280px] px-6 py-4 text-[13px] leading-relaxed text-[#374151] resize-none outline-none"
+                  placeholder="Write your email here…&#10;&#10;Tip: Use templates above to auto-fill professional content."/>
+              )}
             </div>
 
             {/* Actions */}

@@ -8205,3 +8205,9 @@
 - [x] Implement automated link-check spec for Collaboration Hub email templates and attachments.
 - [x] Integrate touch-interaction context into privacy-safe client runtime telemetry.
 - [x] Run focused test suite, full regression suite, type/build checks, and save published checkpoint.
+
+## Collaboration Hub Email Live Template Preview
+- [x] Audit Collaboration Hub email composer, templates, dynamic fields, and send boundaries.
+- [x] Implement live email-template preview toggle and responsive rendered view with placeholder interpolation.
+- [x] Add regression test spec covering email template preview rendering and send isolation.
+- [x] Run test suite, low-memory production build, and save published checkpoint.
