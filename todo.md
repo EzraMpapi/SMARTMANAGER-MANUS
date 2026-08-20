@@ -30,7 +30,7 @@
 - [ ] Review this checklist and save the published checkpoint.
 
 ## Collaboration Hub Email Runtime Follow-up
-- [x] Investigate and fix the newly surfaced `showCont is not defined` crash when opening the Email tab.
-- [x] Add a regression guard for undefined EmailCenter callbacks and re-run focused/full tests.
-- [ ] Capture authenticated Collaboration Hub Email screenshots at desktop and mobile sizes.
+- [ ] Investigate and fix the newly surfaced `showCont is not defined` crash when opening the Email tab in the published deployment.
+- [x] Add a mounted EmailCenter regression test and re-run focused/full tests.
+- [ ] Capture authenticated Collaboration Hub Email screenshots at desktop and mobile sizes after the published runtime is corrected.
 - [ ] Mark the complete verification and checkpoint items after the affected flow is validated.

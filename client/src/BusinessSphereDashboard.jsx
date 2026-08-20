@@ -32774,7 +32774,7 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
   const [body, setBody]       = useState("");
   const [showCC, setShowCC]   = useState(false);
   const [tmplId, setTmplId]   = useState("custom");
-  const [showContacts, setShowContacts] = useState(false);
+  const [showContactPicker, setShowContactPicker] = useState(false);
   const [contactQ, setContQ]  = useState("");
   const [sentEmails, setSent] = useState([]);
   const [drafts, setDrafts]   = useState([]);
@@ -32968,18 +32968,18 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
               {/* To field with contact picker */}
               <div className="flex items-center gap-2 px-4 py-2.5 relative">
                 <span className="text-[11.5px] font-bold text-slate-400 w-10 shrink-0">To</span>
-                <input value={to} onChange={e=>{setTo(e.target.value);setContQ(e.target.value);setShowContacts(true);}}
-                  onFocus={()=>setShowContacts(true)} onBlur={()=>setTimeout(()=>setShowContacts(false),200)}
+                <input value={to} onChange={e=>{setTo(e.target.value);setContQ(e.target.value);setShowContactPicker(true);}}
+                  onFocus={()=>setShowContactPicker(true)} onBlur={()=>setTimeout(()=>setShowContactPicker(false),200)}
                   className="flex-1 text-[13px] outline-none text-[#111827]"
                   placeholder="Recipient email address or name…"/>
                 <button onClick={()=>setShowCC(!showCC)} className="text-[10.5px] font-bold text-[#2563EB]">
                   {showCC?"Hide CC":"+ CC"}
                 </button>
                 {/* Contact autocomplete */}
-                {showContacts && filteredContacts.length>0 && (
+                {showContactPicker && filteredContacts.length>0 && (
                   <div className="absolute top-full left-10 right-0 z-20 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto mt-1">
                     {filteredContacts.slice(0,8).map(ct=>(
-                      <button key={ct.id} onMouseDown={()=>{setTo(ct.name+" <"+ct.email+">");setShowContacts(false);setContQ("");}}
+                      <button key={ct.id} onMouseDown={()=>{setTo(ct.name+" <"+ct.email+">");setShowContactPicker(false);setContQ("");}}
                         className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left">
                         <div className="w-7 h-7 rounded-full bg-[#2563EB] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
                           {ct.name.charAt(0)}
