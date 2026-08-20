@@ -25,6 +25,19 @@ describe("Finance persistence boundaries", () => {
     expect(finance).not.toContain("Expense recorded locally, but saving to the server failed.");
   });
 
+  it("does not route the typed finance_expenses table through the generic JSON data envelope", () => {
+    const genericStart = source.indexOf("export const GENERIC_COMPANY_TABLES");
+    const genericEnd = source.indexOf("const GENERIC_STANDARD_COLUMNS", genericStart);
+    const genericTableBlock = source.slice(genericStart, genericEnd);
+
+    expect(genericStart).toBeGreaterThan(-1);
+    expect(genericEnd).toBeGreaterThan(genericStart);
+    expect(genericTableBlock).not.toContain("finance_expenses");
+    expect(finance).toContain('runCompanyTableMutation("finance_expenses", "insert"');
+    expect(finance).toContain("expense_date: expenseDate");
+    expect(finance).toContain("cost_center: form.costCenter || \"CC-OPS-01\"");
+  });
+
   it("preserves the expense drawer and draft on failed mutations while preventing duplicate submissions", () => {
     expect(expenses).toContain('const created = await onAdd(form);');
     expect(expenses).toContain('if (created) setShowForm(false);');

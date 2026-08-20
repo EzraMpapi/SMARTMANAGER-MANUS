@@ -40,3 +40,12 @@
 - [x] Correct the bootstrap/auth loading boundary without weakening tenant or session security.
 - [x] Add regression coverage for the bootstrap failure mode and re-run focused/full tests and build verification.
 - [x] Publish and re-verify live Collaboration Hub Email at desktop and mobile sizes after the bootstrap fix.
+
+## Finance Payable Save Failure Follow-up
+- [x] Trace the mobile Record Expense form, Finance persistence procedure, generated schema, and database schema-cache mismatch.
+- [x] Document the incident and choose a tenant-safe correction for the missing `finance_expenses.data` column.
+- [x] Apply the database/schema compatibility correction and harden the expense save boundary without destructive data changes.
+- [x] Add focused regression coverage for expense recording and schema compatibility.
+- [x] Run focused/full tests, TypeScript checks, and low-memory production build.
+- [ ] Re-verify the authenticated published Payables submission after publishing this schema-envelope fix.
+- [ ] Review todo.md, save the final published checkpoint, and deliver the fix.
