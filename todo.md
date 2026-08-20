@@ -119,7 +119,7 @@
 - [x] Add a tenant-safe authenticated-session browser contract for the completed signup state without external authentication or production tenant writes.
 - [x] Extract one additional high-cost dashboard workspace behind a dedicated lazy boundary and visible loading fallback.
 - [x] Capture responsive verification for the final signup success state and the added workspace fallback.
-- [ ] Re-run quality gates, save the final checkpoint, and synchronize the CI workflow to the requested GitHub repository.
+- [x] Re-run quality gates, save the final checkpoint, and synchronize the CI workflow to the requested GitHub repository.
 
 ## Visible Lazy Workspace Completion
 - [x] Extract an additional high-cost workspace module behind a `lazy()` boundary with a visible loading fallback.
