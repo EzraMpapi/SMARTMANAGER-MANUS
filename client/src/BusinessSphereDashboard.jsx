@@ -39,6 +39,7 @@ import { getProactiveSessionRenewalDelay, isTerminalSessionRefreshError } from "
 import { createAccountPasskeyClient, listAccountPasskeys, passkeySignInUserMessage, passkeyUserMessage, registerAccountPasskey, renameAccountPasskey, revokeAccountPasskey, signInWithAccountPasskey } from "./lib/accountPasskeys";
 import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, rememberConfirmedOrganizationIndustryFocus } from "./lib/organizationIndustryFocus";
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
+import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -69,6 +70,7 @@ const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/Predict
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const IS_CONFIGURED     = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+const GUARDED_WRITE_TABLES = new Set(["finance_expenses", "sales_invoices", "inventory_items", "crm_leads"]);
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
 const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
 const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token";
@@ -526,7 +528,7 @@ function inflateGenericCompanyRow(table, row) {
 
 // Minimal chainable query builder over PostgREST, mirroring the shape of the
 // official supabase-js client closely enough that swapping later is trivial.
-function sb(table) {
+export function sb(table) {
   let path = `${SUPABASE_URL}/rest/v1/${table}`;
   const params = new URLSearchParams();
   let method = "GET";
@@ -550,6 +552,54 @@ function sb(table) {
     insert(row) {
       method = "POST";
       payload = row;
+      const guardedCompanyId = getGuardedPersistenceCompanyId();
+      if (GUARDED_WRITE_TABLES.has(table) && guardedCompanyId) {
+        const rows = Array.isArray(row) ? row : [row];
+        return {
+          async run() {
+            const results = [];
+            for (const singleRow of rows) {
+              const guardedResult = await guardedPersistenceClient.persistSupabaseCriticalRow.mutate({
+                companyId: guardedCompanyId,
+                tableName: table,
+                payload: singleRow,
+              });
+              results.push(Array.isArray(guardedResult) ? guardedResult[0] : guardedResult);
+            }
+            return Array.isArray(row) ? results : results[0];
+          },
+          single() {
+            return {
+              async run() {
+                const results = [];
+                for (const singleRow of rows) {
+                  const guardedResult = await guardedPersistenceClient.persistSupabaseCriticalRow.mutate({
+                    companyId: guardedCompanyId,
+                    tableName: table,
+                    payload: singleRow,
+                  });
+                  results.push(Array.isArray(guardedResult) ? guardedResult[0] : guardedResult);
+                }
+                return Array.isArray(row) ? results : results[0];
+              },
+            };
+          },
+          then(resolve, reject) {
+            (async () => {
+              const results = [];
+              for (const singleRow of rows) {
+                const guardedResult = await guardedPersistenceClient.persistSupabaseCriticalRow.mutate({
+                  companyId: guardedCompanyId,
+                  tableName: table,
+                  payload: singleRow,
+                });
+                results.push(Array.isArray(guardedResult) ? guardedResult[0] : guardedResult);
+              }
+              return Array.isArray(row) ? results : results[0];
+            })().then(resolve, reject);
+          },
+        };
+      }
       return builder;
     },
     upsert(row, { onConflict } = {}) {
@@ -584,6 +634,15 @@ function sb(table) {
         requestPayload = Array.isArray(payload)
           ? payload.map((record) => normalizeGenericCompanyPayload(table, record))
           : normalizeGenericCompanyPayload(table, payload);
+      }
+      if ((method === "POST" || method === "PATCH") && requestPayload && typeof requestPayload === "object") {
+        // Active client-side schema contract check matching server contract
+        const payloadKeys = Object.keys(Array.isArray(requestPayload) ? requestPayload[0] || {} : requestPayload);
+        if (table === "finance_expenses") {
+          const forbidden = ["cost_center", "department", "data"];
+          const hit = forbidden.find((f) => payloadKeys.includes(f));
+          if (hit) throw new Error(`Schema contract violation for "${table}": Forbidden/unsupported drift column "${hit}" detected.`);
+        }
       }
       if (GENERIC_COMPANY_TABLES.has(table) && method === "PATCH") {
         const lookupParams = new URLSearchParams(params);
@@ -851,8 +910,18 @@ export async function runCompanyTableMutation(table, operation, payload, { match
       let query = sb(table);
       let res = null;
       if (operation === "insert") {
-        const insertQuery = query.insert(payload);
-        res = Array.isArray(payload) ? await insertQuery.run() : await insertQuery.single().run();
+        const guardedCompanyId = getGuardedPersistenceCompanyId();
+        if (GUARDED_WRITE_TABLES.has(table) && guardedCompanyId) {
+          const guardedResult = await guardedPersistenceClient.persistSupabaseCriticalRow.mutate({
+            companyId: guardedCompanyId,
+            tableName: table,
+            payload: Array.isArray(payload) ? payload[0] : payload,
+          });
+          res = Array.isArray(guardedResult) ? guardedResult[0] : guardedResult;
+        } else {
+          const insertQuery = query.insert(payload);
+          res = Array.isArray(payload) ? await insertQuery.run() : await insertQuery.single().run();
+        }
       } else if (operation === "update") {
         res = await query.eq(matchCol, matchVal).update(payload).single().run();
       } else if (operation === "delete") {
@@ -52148,10 +52217,13 @@ function SmartManager() {
       });
       setCurrentUser({ id: session.userId, name: session.fullName, role: session.role, customerRef: session.customerRef || null });
     }
-  }, [session]);
-
+    }, [session]);
+  useEffect(() => {
+    setGuardedPersistenceCompanyId(session && !session.demo ? session.company?.id : "");
+  }, [session?.demo, session?.company?.id]);
   useEffect(() => {
     const profileData = tenantSettingsQuery.data?.profileData;
+
     if (!profileData || typeof profileData !== "object") return;
     setCompany((current) => ({ ...current, ...profileData, signatureLogo: profileData.signatureLogo ?? current.signatureLogo ?? null }));
   }, [tenantSettingsQuery.data]);

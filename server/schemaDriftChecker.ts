@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 export interface SchemaTableContract {
   tableName: string;
   expectedColumns: string[];
@@ -7,9 +5,32 @@ export interface SchemaTableContract {
   forbiddenColumns: string[];
 }
 
-const contractManifest = JSON.parse(
-  readFileSync(new URL("./schemaContracts.json", import.meta.url), "utf8"),
-) as Record<string, SchemaTableContract>;
+const contractManifest: Record<string, SchemaTableContract> = {
+  finance_expenses: {
+    tableName: "finance_expenses",
+    expectedColumns: ["id", "company_id", "amount", "category", "due_date", "expense_date", "method", "status", "vendor", "created_at", "updated_at"],
+    requiredColumns: ["company_id", "vendor", "category", "amount", "expense_date", "status", "method"],
+    forbiddenColumns: ["data", "cost_center", "department"],
+  },
+  sales_invoices: {
+    tableName: "sales_invoices",
+    expectedColumns: ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data", "doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"],
+    requiredColumns: ["company_id", "status", "amount", "doc_number", "customer", "issue_date", "due_date"],
+    forbiddenColumns: [],
+  },
+  inventory_items: {
+    tableName: "inventory_items",
+    expectedColumns: ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data"],
+    requiredColumns: ["company_id", "name", "status", "amount", "data"],
+    forbiddenColumns: [],
+  },
+  crm_leads: {
+    tableName: "crm_leads",
+    expectedColumns: ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data"],
+    requiredColumns: ["company_id", "name", "status", "data"],
+    forbiddenColumns: [],
+  },
+};
 
 export const ERP_SCHEMA_CONTRACTS = contractManifest;
 
@@ -28,8 +49,6 @@ function normalizeColumns(columns: string[]) {
 
 /**
  * Validates a deployed table column list against the versioned ERP contract.
- * Unknown columns are reported as additive drift but do not fail the check;
- * required-column loss and explicitly forbidden columns are blocking failures.
  */
 export function validateSchemaContract(tableName: string, providedColumns: string[]): SchemaDriftValidationResult {
   const contract = ERP_SCHEMA_CONTRACTS[tableName];
@@ -70,9 +89,6 @@ export function validateSchemaContract(tableName: string, providedColumns: strin
   };
 }
 
-/**
- * Validates an incoming insert or update payload object against required and forbidden columns.
- */
 export function validatePayloadContract(tableName: string, payload: Record<string, unknown>): SchemaDriftValidationResult {
   return validateSchemaContract(tableName, Object.keys(payload));
 }

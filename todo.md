@@ -56,16 +56,33 @@
 - [x] Implement a server-side schema contract validator (`server/schemaDriftChecker.ts`) that inspects critical tables (`finance_expenses`, `sales_invoices`, `inventory_items`, `crm_leads`) and rejects unsupported column payloads or missing required relational columns.
 - [x] Add comprehensive automated Vitest coverage for schema contract validation (`server/schemaDriftChecker.test.ts`).
 - [x] Integrate the schema contract check into the automated build/prepublish validation flow.
-- [ ] Run full test suite, verify TypeScript type safety, and save the final published checkpoint with schema-drift protection enabled.
+- [x] Run full test suite, verify TypeScript type safety, and save the final published checkpoint with schema-drift protection enabled.
 - [x] Fix the schema validator’s TypeScript downlevel compatibility issue, then rerun the full suite, check, build, and publish verification.
 
 ## Active Server-Side Drift Rejection & Expanded Coverage
 - [x] Wire `assertPayloadContract` into server-side persistence procedures (e.g., finance expense recording, sales document mutation, and inventory inserts) so drifted payloads are actively rejected at the API boundary.
 - [x] Expand `server/schemaDriftChecker.test.ts` to comprehensively cover all four critical tables (`finance_expenses`, `sales_invoices`, `inventory_items`, `crm_leads`), unknown table handling, and additive-column warning/pass behavior.
-- [ ] Run full test suite, verify TypeScript type safety, and save the final published checkpoint with active drift rejection enabled.
-- [ ] Fix the Zod 4 router input schema compatibility error, then rerun the full suite, TypeScript check, build gate, and publication verification.
+- [x] Run full test suite, verify TypeScript type safety, and save the final published checkpoint with active drift rejection enabled.
+- [x] Fix the Zod 4 router input schema compatibility error, then rerun the full suite, TypeScript check, build gate, and publication verification.
 
 ## Direct Server Mutation Boundary Wiring
 - [x] Inspect and wrap server-side query/mutation helpers in `server/db.ts` or persistence modules with `assertPayloadContract` for `finance_expenses`, `sales_invoices`, `inventory_items`, and `crm_leads`.
 - [x] Add explicit unit tests verifying that real server mutation helpers reject drifted payloads before hitting the database or network.
-- [ ] Run full regression suite, TypeScript check, pre-build verification, and publish the final protected checkpoint.
+- [x] Run full regression suite, TypeScript check, pre-build verification, and publish the final protected checkpoint.
+
+## Production Persistence Routing & Live Mutation Verification
+- [x] Connect the client-side Finance Record Expense form and other critical ERP insert mutations to `persistSupabaseCriticalRow` so client writes automatically benefit from schema contract rejection.
+- [x] Add explicit integration tests proving valid client-submitted payloads succeed while drifted client-submitted payloads are rejected by the guarded server boundary.
+- [ ] Save checkpoint, publish, and perform live end-to-end verification of the guarded persistence path.
+- [x] Update stale Finance integration fixtures that still include the removed department field, then rerun focused/full tests and build verification.
+- [ ] Fix production packaging so the server-side schema validator does not depend on an unbundled runtime JSON file, then republish and verify startup.
+
+## Complete Guarded Write Routing & Runtime Server Integration
+- [x] Ensure all direct `sb(...).insert` calls for critical tables (`finance_expenses`, `sales_invoices`, `inventory_items`, `crm_leads`) in `BusinessSphereDashboard.jsx` route through the guarded client helper.
+- [x] Implement a runtime tRPC integration test using `appRouter.createCaller` to prove valid payloads pass and drifted payloads are rejected across all four critical tables.
+- [ ] Save checkpoint, publish, and perform live verification of the guarded persistence path.
+
+## Bulk-Safe Guarded Inserts & All-Table Runtime Caller Coverage
+- [x] Upgrade `sb(...).insert` builder to support bulk array payloads safely through guarded server mutations.
+- [x] Expand `server/guardedServerBoundary.test.ts` to cover `finance_expenses`, `sales_invoices`, `inventory_items`, and `crm_leads` with both valid and drifted payloads.
+- [x] Add a regression test proving a guarded multi-row `crm_leads` insert preserves and submits every row.

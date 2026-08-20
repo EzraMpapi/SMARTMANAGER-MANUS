@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { setGuardedPersistenceCompanyId } from "../client/src/lib/guardedPersistenceClient";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -9,6 +10,7 @@ const jsonResponse = (body: unknown, status = 200) => ({
 });
 
 afterEach(() => {
+  setGuardedPersistenceCompanyId(null);
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -584,25 +586,27 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("persists finance expenses as typed relational rows without the unsupported data column", async () => {
+  it("persists finance expenses as typed relational rows without unsupported data, cost_center, or department columns", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({
       id: "expense-1", vendor: "Tanesco", category: "Rent & Utilities", expense_date: "2026-08-19",
-      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations",
+      amount: 2000000, status: "Paid", method: "Bank Transfer",
     }, 201));
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await runCompanyTableMutation("finance_expenses", "insert", {
       vendor: "Tanesco", category: "Rent & Utilities", expense_date: "2026-08-19", due_date: "2026-09-19",
-      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations",
+      amount: 2000000, status: "Paid", method: "Bank Transfer",
     });
 
     expect(result.error).toBeNull();
-    expect(result.data).toMatchObject({ id: "expense-1", department: "Operations" });
+    expect(result.data).toMatchObject({ id: "expense-1" });
     expect(result.data).not.toHaveProperty("cost_center");
+    expect(result.data).not.toHaveProperty("department");
     const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(requestBody).toMatchObject({ vendor: "Tanesco", expense_date: "2026-08-19", department: "Operations" });
+    expect(requestBody).toMatchObject({ vendor: "Tanesco", expense_date: "2026-08-19" });
     expect(requestBody).not.toHaveProperty("data");
     expect(requestBody).not.toHaveProperty("cost_center");
+    expect(requestBody).not.toHaveProperty("department");
   });
 
   it("keeps expense creation on the shared confirmed persistence boundary without unsupported columns", () => {
