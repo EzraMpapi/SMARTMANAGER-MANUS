@@ -60,3 +60,21 @@ export function reportRuntimeError(
     console.info("[RuntimeTelemetry] Recorded safe error log with touch context:", sanitizedMessage, touchContext);
   }
 }
+
+export type SessionRefreshOutcome = "success" | "retryable_failure" | "terminal_failure";
+export type SessionRefreshSource = "launch_bootstrap" | "workspace_rpc" | "proactive";
+
+// This compact local event stream deliberately excludes tokens, email
+// addresses, account IDs, tenant IDs, URLs, raw errors, and request bodies.
+// It is intended only for operational trend diagnostics in the browser.
+export function reportSessionRefreshOutcome(outcome: SessionRefreshOutcome, source: SessionRefreshSource): void {
+  if (typeof window === "undefined") return;
+  const event = { type: "session_refresh", outcome, source, timestamp: Date.now() };
+  try {
+    const existing = JSON.parse(window.localStorage.getItem("bs_session_refresh_telemetry") || "[]");
+    const safeEvents = Array.isArray(existing) ? existing.filter((item) => item && item.type === "session_refresh" && typeof item.outcome === "string" && typeof item.source === "string" && typeof item.timestamp === "number") : [];
+    window.localStorage.setItem("bs_session_refresh_telemetry", JSON.stringify([event, ...safeEvents].slice(0, 25)));
+  } catch (_storageError) {
+    // Private mode and storage quota failures must never block sign-in recovery.
+  }
+}

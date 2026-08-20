@@ -138,3 +138,17 @@
 
 ## Launch Session Recovery Publication
 - [x] Save and publish the verified Smart Manager launch-session recovery correction.
+
+## Session Recovery Experience
+- [x] Inspect current launch recovery states and privacy-safe telemetry boundaries.
+- [x] Add an in-app retry action for recoverable session launch failures without changing tenant scope.
+- [x] Add short, non-sensitive diagnostic codes only for terminal session failures.
+- [x] Record refresh success, retryable failure, and terminal failure outcomes without credentials, tokens, email addresses, or tenant identifiers.
+- [x] Add focused and browser regressions; run complete quality gates and publish the improvement.
+
+## Terminal Diagnostic Publication
+- [x] Restrict user-facing diagnostic code display to terminal sign-in/session expiry states.
+- [x] Re-run targeted verification and publish the finalized session recovery experience checkpoint.
+
+## Session Recovery Experience Publication
+- [ ] Save and publish the completed terminal-only diagnostic and privacy-safe session recovery experience release.

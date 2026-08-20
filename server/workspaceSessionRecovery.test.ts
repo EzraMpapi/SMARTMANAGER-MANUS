@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { callWorkspaceRpcWithSessionRefresh, isTerminalWorkspaceSessionError, workspaceJoinErrorMessage } from "../client/src/BusinessSphereDashboard.jsx";
+import { callWorkspaceRpcWithSessionRefresh, isTerminalWorkspaceSessionError, sessionRecoveryDiagnosticCode, workspaceJoinErrorMessage } from "../client/src/BusinessSphereDashboard.jsx";
+import { reportSessionRefreshOutcome } from "../client/src/lib/runtimeTelemetry";
 
 function storage(values: Record<string, string> = {}) {
   const entries = new Map(Object.entries(values));
@@ -49,6 +50,18 @@ describe("workspace session recovery", () => {
     expect(workspaceJoinErrorMessage(new Error("This account already belongs to a different company"), "fallback")).toContain("another workspace");
     expect(workspaceJoinErrorMessage({ status: 422, message: "Sign in through your administrator portal" }, "fallback")).toBe("Sign in through your administrator portal");
     expect(workspaceJoinErrorMessage({ status: 401, message: "JWT expired" }, "fallback")).toContain("Your session has expired");
+    expect(sessionRecoveryDiagnosticCode({ status: 401 })).toBe("SM-AUTH-401");
+    expect(sessionRecoveryDiagnosticCode({ status: 503 })).toBeNull();
+  });
+
+  it("records refresh outcomes without credentials, identity fields, routes, or raw error details", () => {
+    const localStorage = storage();
+    vi.stubGlobal("window", { localStorage });
+    reportSessionRefreshOutcome("retryable_failure", "launch_bootstrap");
+    const serialized = localStorage.getItem("bs_session_refresh_telemetry") || "";
+    expect(serialized).toContain('"type":"session_refresh"');
+    expect(serialized).toContain('"outcome":"retryable_failure"');
+    expect(serialized).not.toMatch(/token|email|tenant|company|href|error/i);
   });
 
   it("marks a failed refresh as terminal instead of silently retrying an invalid session", async () => {

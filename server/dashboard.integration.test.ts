@@ -359,7 +359,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).not.toContain("window.setTimeout(() => onAuthenticated(confirmedSession), 950)");
     expect(dashboardSource).toContain("const [workspaceResolutionError, setWorkspaceResolutionError]");
     expect(dashboardSource).toContain("Workspace resolution failed");
-    expect(dashboardSource).toContain("Retry workspace loading");
+    expect(dashboardSource).toContain("Retry secure workspace recovery");
     expect(dashboardSource).toContain("if ((bootstrapError?.status === 401 || bootstrapError?.status === 403) && !authenticatedUser)");
     expect(workspaceAuthMigrationSource).toContain("INSERT INTO public.profiles");
     expect(workspaceAuthMigrationSource).toContain("ON CONFLICT (id) DO UPDATE");
@@ -897,5 +897,5 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
   expect(publicAuthSource).toContain("EmailConfirmationView");
   expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"');
   expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"');
-  expect(dashboardSource).toContain('<LoginPage onAuthenticated=');
+  expect(dashboardSource).toContain('<LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated=');
 });

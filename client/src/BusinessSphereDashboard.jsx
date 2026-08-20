@@ -35,6 +35,7 @@ import { buildPosReconciliationCsv, posReconciliationExportFilename } from "./li
 import { calculateSupportMetrics } from "./lib/supportMetrics";
 import { auditEvidenceExportFilename, buildAuditEvidenceCsv } from "./lib/auditEvidenceExport";
 import { getProactiveSessionRenewalDelay, isTerminalSessionRefreshError } from "./lib/proactiveSessionRenewal";
+import { reportSessionRefreshOutcome } from "./lib/runtimeTelemetry";
 import { createAccountPasskeyClient, listAccountPasskeys, passkeySignInUserMessage, passkeyUserMessage, registerAccountPasskey, renameAccountPasskey, revokeAccountPasskey, signInWithAccountPasskey } from "./lib/accountPasskeys";
 import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, rememberConfirmedOrganizationIndustryFocus } from "./lib/organizationIndustryFocus";
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
@@ -366,12 +367,16 @@ function useProactiveSessionRefresh(enabled, onRenewed) {
         const refreshed = await authRefreshSession(refreshToken);
         const remember = Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY));
         persistAuthSession(refreshed, { remember });
+        reportSessionRefreshOutcome("success", "proactive");
         onRenewedRef.current?.(refreshed.access_token);
       } catch (error) {
         authDebug("Proactive session renewal deferred", { status: error?.status || null, terminal: isTerminalSessionRefreshError(error) });
         if (isTerminalSessionRefreshError(error)) {
+          reportSessionRefreshOutcome("terminal_failure", "proactive");
           clearStoredAuthSession();
-          window.dispatchEvent(new Event("smart-manager:auth-session-expired"));
+          window.dispatchEvent(new CustomEvent("smart-manager:auth-session-expired", { detail: { diagnosticCode: "SM-AUTH-401" } }));
+        } else {
+          reportSessionRefreshOutcome("retryable_failure", "proactive");
         }
       } finally {
         renewalInFlightRef.current = false;
@@ -443,6 +448,10 @@ export function isTerminalWorkspaceSessionError(error) {
   return Number(error?.status) === 401 || error?.code === "SESSION_REFRESH_FAILED";
 }
 
+export function sessionRecoveryDiagnosticCode(error) {
+  return isTerminalWorkspaceSessionError(error) ? "SM-AUTH-401" : null;
+}
+
 // A workspace RPC can race a short-lived access token during first launch.
 // Retry precisely once with Supabase's rotating refresh token; no 403 or
 // business-rule failure is ever reclassified as a session failure.
@@ -450,13 +459,18 @@ export async function callWorkspaceRpcWithSessionRefresh(name, params, accessTok
   try {
     return { data: await callRpc(name, params, accessToken), accessToken, refreshToken: getStoredRefreshToken() };
   } catch (firstError) {
-    if (!isTerminalWorkspaceSessionError(firstError) || !getStoredRefreshToken()) throw firstError;
+    if (!isTerminalWorkspaceSessionError(firstError) || !getStoredRefreshToken()) {
+      if (isTerminalWorkspaceSessionError(firstError)) reportSessionRefreshOutcome("terminal_failure", "workspace_rpc");
+      throw firstError;
+    }
     try {
       const refreshed = await authRefreshSession(getStoredRefreshToken());
       persistAuthSession(refreshed, { remember: Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)) });
+      reportSessionRefreshOutcome("success", "workspace_rpc");
       return { data: await callRpc(name, params, refreshed.access_token), accessToken: refreshed.access_token, refreshToken: refreshed.refresh_token || getStoredRefreshToken() };
     } catch (refreshError) {
       refreshError.code = "SESSION_REFRESH_FAILED";
+      reportSessionRefreshOutcome("terminal_failure", "workspace_rpc");
       throw refreshError;
     }
   }
@@ -43187,7 +43201,7 @@ function AuthTextField({ label, icon: Icon, type = "text", value, onChange, plac
   );
 }
 
-function LoginPage({ onAuthenticated, onSwitchToSignup, onForgotPassword }) {
+function LoginPage({ onAuthenticated, onSwitchToSignup, onForgotPassword, initialDiagnostic = null }) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -43238,6 +43252,7 @@ function LoginPage({ onAuthenticated, onSwitchToSignup, onForgotPassword }) {
       }
     }}
     toMessage={toAuthUserMessage}
+    terminalDiagnostic={initialDiagnostic}
     onSignIn={async (email, submittedPassword) => {
       if (!IS_CONFIGURED) {
         const configError = new Error("Authentication is not configured.");
@@ -51986,14 +52001,16 @@ function SmartManager() {
   const [oauthPendingUser, setOauthPendingUser] = useState(null);
   const [workspaceResolutionError, setWorkspaceResolutionError] = useState(null);
   const [authRetryKey, setAuthRetryKey] = useState(0);
+  const [terminalSessionDiagnostic, setTerminalSessionDiagnostic] = useState(null);
 
   useProactiveSessionRefresh(Boolean(session?.accessToken && !session?.demo), (accessToken) => {
     setSession((current) => current?.demo ? current : current ? { ...current, accessToken } : current);
   });
 
   useEffect(() => {
-    const handleSessionExpiry = () => {
+    const handleSessionExpiry = (event) => {
       setSession(IS_CONFIGURED ? null : { demo: true });
+      setTerminalSessionDiagnostic(event?.detail?.diagnosticCode || "SM-AUTH-401");
       setAuthView("login");
     };
     window.addEventListener("smart-manager:auth-session-expired", handleSessionExpiry);
@@ -52041,6 +52058,7 @@ function SmartManager() {
           if (!storedRefreshToken) throw _expiredAccessToken;
           const refreshed = await authRefreshSession(storedRefreshToken);
           persistAuthSession(refreshed, { remember: Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)) });
+          reportSessionRefreshOutcome("success", "launch_bootstrap");
           token = refreshed.access_token;
           user = await authGetUser(token);
         }
@@ -52095,9 +52113,12 @@ function SmartManager() {
         setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, industry: confirmedIndustryFocus, industryFocus: confirmedIndustryFocus, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
       } catch (bootstrapError) {
         if ((bootstrapError?.status === 401 || bootstrapError?.status === 403) && !authenticatedUser) {
+          reportSessionRefreshOutcome("terminal_failure", "launch_bootstrap");
           clearStoredAuthSession();
+          setTerminalSessionDiagnostic(sessionRecoveryDiagnosticCode(bootstrapError));
         } else {
           authDebug("Workspace resolution failed", { message: bootstrapError?.message || "unknown", authenticated: Boolean(authenticatedUser) });
+          reportSessionRefreshOutcome("retryable_failure", "launch_bootstrap");
           setWorkspaceResolutionError({ email: authenticatedUser?.email || null });
         }
       } finally {
@@ -52566,7 +52587,7 @@ function SmartManager() {
   }
 
   if (workspaceResolutionError) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6"><div className="w-full max-w-md rounded-[24px] border border-amber-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-amber-700"><RefreshCw size={28}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-amber-700">Workspace connection needs attention</p><h1 className="mt-2 text-[24px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your sign-in is still secure.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">We couldn’t load the workspace details for {workspaceResolutionError.email || "this account"} yet. This is not a sign-out. Try again to continue securely.</p><button type="button" onClick={() => { setWorkspaceResolutionError(null); setAuthChecking(true); setAuthRetryKey((key) => key + 1); }} className="mt-6 w-full rounded-xl bg-[#0B5D3B] py-3 text-[13px] font-semibold text-white transition hover:bg-[#084B30]">Retry workspace loading</button><button type="button" onClick={handleSignOut} className="mt-3 text-[12px] font-semibold text-slate-500 hover:text-slate-800">Sign out instead</button></div></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6"><div className="w-full max-w-md rounded-[24px] border border-amber-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-amber-700"><RefreshCw size={28}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-amber-700">Workspace connection needs attention</p><h1 className="mt-2 text-[24px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your sign-in is still secure.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">We couldn’t load the workspace details for {workspaceResolutionError.email || "this account"} yet. This is not a sign-out. Retry secure recovery to continue.</p><button type="button" onClick={() => { setWorkspaceResolutionError(null); setAuthChecking(true); setAuthRetryKey((key) => key + 1); }} className="mt-6 w-full rounded-xl bg-[#0B5D3B] py-3 text-[13px] font-semibold text-white transition hover:bg-[#084B30]">Retry secure workspace recovery</button><button type="button" onClick={handleSignOut} className="mt-3 text-[12px] font-semibold text-slate-500 hover:text-slate-800">Sign out instead</button></div></div>;
   }
 
   if (!session) {
@@ -52574,7 +52595,7 @@ function SmartManager() {
     if (authView === "reset") return <ResetPasswordView recoveryToken={recoveryAccessToken} onBack={() => navigateAuthView("login")} onUpdate={async (token, password) => { await authUpdatePassword(token, password); clearStoredAuthSession(); }} toMessage={toAuthUserMessage} />;
     if (authView === "verify") return <EmailConfirmationView email={authContextEmail} onBack={() => navigateAuthView("login")} onResend={authResendVerification} toMessage={toAuthUserMessage} />;
     return authView === "login"
-      ? <LoginPage onAuthenticated={(s) => invitationTokenRef.current ? window.location.reload() : setSession(s || { demo: true })} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
+      ? <LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated={(s) => invitationTokenRef.current ? window.location.reload() : setSession(s || { demo: true })} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
       : <SignupPage onAuthenticated={(s) => { if (invitationTokenRef.current) { window.location.reload(); return; } setSession(s || { demo: true }); if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }} onSwitchToLogin={() => navigateAuthView("login")} />;
   }
 
