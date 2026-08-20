@@ -1,7 +1,30 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ComponentType } from "react";
 import NotFound from "@/pages/NotFound";
+
+type LazyModule = { default: ComponentType<any> };
+
+function lazyWithRecovery(load: () => Promise<LazyModule>, key: string) {
+  return lazy(async () => {
+    const retryKey = `smart-manager-lazy-retry:${key}`;
+    try {
+      const module = await load();
+      try { window.sessionStorage.removeItem(retryKey); } catch {}
+      return module;
+    } catch (error) {
+      let alreadyRetried = false;
+      try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
+      if (!alreadyRetried && typeof window !== "undefined") {
+        try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      try { window.sessionStorage.removeItem(retryKey); } catch {}
+      throw error;
+    }
+  });
+}
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { BrandLogo } from "./components/BrandLogo";
@@ -10,13 +33,15 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { DashboardPreferencesProvider } from "./contexts/DashboardPreferencesContext";
 import Home from "./pages/Home";
 
-const PublicAuthGateway = lazy(
+const PublicAuthGateway = lazyWithRecovery(
   // @ts-expect-error The lightweight public auth gateway intentionally remains JavaScript.
   () => import("./components/PublicAuthGateway"),
+  "public-auth-gateway",
 );
-const BusinessSphereDashboard = lazy(
+const BusinessSphereDashboard = lazyWithRecovery(
   // @ts-expect-error The preserved single-file dashboard intentionally remains JavaScript.
   () => import("./BusinessSphereDashboard"),
+  "business-sphere-dashboard",
 );
 
 function DashboardRouteFallback() {
@@ -32,7 +57,14 @@ function DashboardRouteFallback() {
 function isPublicAuthRequest() {
   if (typeof window === "undefined") return false;
   const params = new URLSearchParams(window.location.search);
-  return params.get("auth") !== "signup" && !window.localStorage.getItem("bs_access_token") && !window.sessionStorage.getItem("bs_session_access_token");
+  let hasStoredSession = false;
+  try {
+    hasStoredSession = Boolean(
+      window.localStorage.getItem("bs_access_token") ||
+      window.sessionStorage.getItem("bs_session_access_token"),
+    );
+  } catch {}
+  return params.get("auth") !== "signup" && !hasStoredSession;
 }
 
 function Router() {
