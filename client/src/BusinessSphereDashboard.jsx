@@ -10,7 +10,7 @@ import {
   FileSpreadsheet, FileImage, File, Folder, FolderOpen, UploadCloud,
   Eye, Percent, Globe, CreditCard, Tag, MessageSquare, MousePointerClick, ChevronUp,
   ShoppingBag, Minus, Receipt, Banknote, Smartphone, ArrowUpDown, Repeat,
-  UserPlus, CalendarCheck, Stethoscope, ScanLine, Pill, FlaskConical, Edit2, Heart, Award, GraduationCap, HeartHandshake, Layers, ClipboardCheck,
+  UserPlus, CalendarCheck, Stethoscope, ScanLine, Pill, FlaskConical, Edit2, Edit3, Heart, Award, GraduationCap, HeartHandshake, Layers, ClipboardCheck,
   Cog, ShieldCheck, Wrench, Kanban, Flag, ListTodo,
   Headphones, Ticket, MessageCircle, BookOpen, PhoneCall, LoaderCircle, Gauge,
   Hash, Video, Mic, PenTool, QrCode, MapPin, EyeOff, User, UserCircle, ArrowRight, LogOut,
@@ -43227,7 +43227,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     });
   }
 
-  const step1Valid = account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword;
+  const step1Valid = Boolean(account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword);
   const isPortalRole = joinRole === "External Client" || joinRole === "Supplier";
   const joinAccountValid = account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword;
   const step2Valid = mode === "create" ? company.name.trim().length > 1 : joinAccountValid && joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
@@ -43397,7 +43397,15 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <button type="submit" disabled={!step2Valid || busy} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Request secure access →"}</button>
               </form>
             ) : step === 1 ? (
-              <form onSubmit={(e) => { e.preventDefault(); if (step1Valid) setStep(2); }} className="auth-step-panel space-y-4" aria-live="polite">
+              <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!account.fullName.trim()) { setError("Please enter your full name."); return; }
+                  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim())) { setError("Please enter a valid email address."); return; }
+                  if (!isEnterprisePassword(account.password)) { setError("Password must be at least 8 characters and include uppercase, lowercase, number, and symbol."); return; }
+                  if (account.password !== account.confirmPassword) { setError("Passwords do not match."); return; }
+                  setError(null);
+                  setStep(2);
+                }} className="auth-step-panel space-y-4" aria-live="polite">
                 <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Create your account</h3><p className="mt-1 text-[12.5px] text-slate-500">Your account becomes the initial organisation owner.</p></div>
                 <FormField label="Full name" required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" autoComplete="name" /></div></FormField>
                 <FormField label="Email address" required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" autoComplete="email" /></div></FormField>

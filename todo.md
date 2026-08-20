@@ -8192,3 +8192,9 @@
 - [x] Implement visual regression spec covering mobile and desktop authentication breakpoints.
 - [x] Implement browser journey simulation spec for sign-in, signup progression, and workspace entry.
 - [x] Run focused tests, full test suite, production build, and save published checkpoint.
+
+## Collaboration Hub Email & Signup Progression Bugfix
+- [x] Fix `Edit3 is not defined` error when entering email in Collaboration Hub.
+- [x] Fix signup account-to-company-setup transition where "Continue to company setup" does not advance.
+- [x] Add regression specs for Collaboration Hub email rendering and signup step transition.
+- [x] Run test suite, low-memory production build, and save published checkpoint.
