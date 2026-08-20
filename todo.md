@@ -8178,3 +8178,10 @@
 - [x] Ensure signup step progression transitions smoothly to the next step.
 - [x] Add regression test spec covering login initialization and signup step transitions.
 - [x] Run test suite, production build, and save published checkpoint.
+
+## Workspace Lexical Initialization Bugfix ("Cannot access 'V' before initialization")
+- [x] Inspect devserver logs for client-side bundle or browser console exceptions involving temporal dead zones.
+- [x] Trace the exact variable reference `V` in BusinessSphereDashboard.jsx or imported auth modules.
+- [x] Fix variable declaration order or hoist/reorder dependent helper functions.
+- [x] Add regression test spec covering workspace auth initialization and component mount.
+- [x] Run test suite, production build, and save published checkpoint.

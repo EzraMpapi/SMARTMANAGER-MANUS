@@ -51551,11 +51551,11 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
 
 function SmartManager() {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
-  // Real session state. Demo mode (no Supabase project connected) skips
-  // authentication entirely and goes straight to the sample company,
-  // matching every other demo-mode behavior already documented in this
-  // build. Live mode genuinely gates the app behind Login/Signup and
-  // tries to resume a stored session on load before falling back to them.
+  // Role-based access and session state initialized first to prevent temporal dead zones
+  const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
+  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
+  const canManage = currentRole.writeAccess === "full";
+
   const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
   const [authContextEmail, setAuthContextEmail] = useState("");
   const [recoveryAccessToken, setRecoveryAccessToken] = useState(null);
@@ -51871,13 +51871,7 @@ function SmartManager() {
     },
   };});
 
-  // Role-based access. In live mode, currentUser and company are hydrated
-  // below from the real authenticated session the moment it resolves —
-  // this initial state is only ever seen in demo mode, or for the brief
-  // instant before that hydration effect runs in live mode.
-  const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
-  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
-  const canManage = currentRole.writeAccess === "full";
+  // Role-based access state initialized at the top of SmartManager to prevent temporal dead zones.
   const roleChangeApprovalsQuery = trpc.listRoleChangeApprovals.useQuery(undefined, {
     enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id && PASSKEY_READINESS_ROLES.has(currentUser.role)),
     retry: false,
