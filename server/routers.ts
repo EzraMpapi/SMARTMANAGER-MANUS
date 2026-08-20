@@ -77,6 +77,15 @@ export const appRouter = router({
       }
       return persistSupabaseRow(input.tableName, { ...input.payload, company_id: input.companyId });
     }),
+  listRoleChangeApprovals: protectedProcedure
+    .query(async ({ ctx }) => listRoleChangeApprovals(ctx.req)),
+  requestRoleChangeApproval: protectedProcedure
+    .input(z.object({ requestedRole: z.string().min(1).max(80), reason: z.string().max(500).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await requestRoleChangeApproval(ctx.req, input);
+      await recordAuditLog(ctx.user, { companyId: result.requester.company_id, action: "Role change submitted for approval", module: "Security", details: `${result.requester.role} → ${input.requestedRole}; requested by verified user.` });
+      return result;
+    }),
   marketIntelligence: router({
     configuration: protectedProcedure
       .input(z.object({ companyId: z.string().min(1).max(100) }))
