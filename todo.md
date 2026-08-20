@@ -160,7 +160,7 @@
 - [x] Connect patient registration, appointment, doctor, clinical record, vitals, diagnosis, and prescription CRUD workflows.
 - [x] Connect laboratory, pharmacy, billing, insurance, reports, notifications, and role-aware actions.
 - [x] Add accessible validation, search/filtering, loading, empty, error, and success states across healthcare workflows.
-- [ ] Add unit and browser coverage, run production quality gates, review responsive layouts, and publish the integrated Healthcare Module.
+- [x] Add unit and browser coverage, run production quality gates, review responsive layouts, and publish the integrated Healthcare Module.
 - [x] Route all Healthcare Clinic reads and writes through the verified tenant-safe healthcare server routes rather than direct or local-only mutations.
 - [x] Apply role-aware UI gating and safe permission-error handling for front desk, clinician, laboratory, pharmacy, billing, and clinic-administrator actions.
 - [x] Add integration and browser coverage that proves cross-company and unauthorized healthcare actions are rejected without exposing clinical data.
@@ -181,4 +181,4 @@
 - [x] Add per-workflow archive not-found coverage for patient, appointment, visit/diagnosis, vital, prescription, and clinician routes.
 - [x] Add per-workflow read, update, or archive permission-denied coverage for patient-care roles beyond create-path denials.
 - [x] Restore the direct Playwright test-runner dependency required by Healthcare browser regression coverage.
-- [ ] Save and publish a dedicated Healthcare Module release checkpoint after the completed quality gates.
+- [x] Save and publish a dedicated Healthcare Module release checkpoint after the completed quality gates.
