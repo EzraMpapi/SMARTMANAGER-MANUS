@@ -50,3 +50,4 @@
 - [ ] Re-verify the authenticated published Payables submission after publishing this schema-envelope fix.
 - [ ] Review todo.md, save the final published checkpoint, and deliver the fix.
 - [ ] Remove the unsupported `finance_expenses.cost_center` field from the live Payables insert payload, add regression coverage, republish, and re-run the authenticated save verification.
+- [ ] Remove the unsupported `finance_expenses.department` field from the live Payables insert payload and form, extend regression coverage, republish, and repeat live verification.

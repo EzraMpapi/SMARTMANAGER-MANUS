@@ -517,7 +517,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     });
     const expense = {
       vendor: "Tanesco", category: "Rent & Utilities", expense_date: "2026-08-19", due_date: "2026-09-19",
-      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations", cost_center: "CC-OPS-01",
+      amount: 2000000, status: "Paid", method: "Bank Transfer",
     };
     const transaction = normalizeGenericCompanyPayload("pos_transactions", {
       cashier: "Asha", amount: 125000, status: "Completed", transaction_ref: "POS-QA-1",
@@ -530,7 +530,10 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(invoice).toMatchObject({ name: "Moshi Retail", status: "Draft", amount: 350000, doc_number: "INV-QA-1", customer: "Moshi Retail", due_date: "2026-09-01", data: {} });
     expect(payment).toMatchObject({ status: "Active", amount: 350000, invoice_id: "invoice-1", method: "Cash", reference: "RCPT-QA-1", data: {} });
     expect(supplier).toMatchObject({ name: "Arusha Supplies", data: { contact_person: "Neema", lead_time_days: 5 } });
-    expect(expense).toMatchObject({ amount: 2000000, status: "Paid", vendor: "Tanesco", cost_center: "CC-OPS-01" });
+    expect(expense).toMatchObject({ amount: 2000000, status: "Paid", vendor: "Tanesco" });
+    expect(expense).not.toHaveProperty("data");
+    expect(expense).not.toHaveProperty("department");
+    expect(expense).not.toHaveProperty("cost_center");
     expect(transaction).toMatchObject({ name: "Asha", status: "Completed", amount: 125000, data: { cashier: "Asha", transaction_ref: "POS-QA-1" } });
   });
 
