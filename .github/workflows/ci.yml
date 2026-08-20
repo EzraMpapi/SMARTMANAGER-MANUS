@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate:
-    name: Test, Coverage, Audit and Build
+    name: Unit, Schema, Type and Production Build
     runs-on: ubuntu-latest
 
     steps:
@@ -42,17 +42,20 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify Supabase schema contract
+        run: pnpm run verify:supabase-schema
+
       - name: Run Type Check
-        run: pnpm check
+        run: pnpm run check
 
       - name: Run Automated Tests with Coverage
-        run: pnpm vitest run --coverage --reporter=verbose
+        run: pnpm test -- --coverage --reporter=verbose
 
       - name: Run Automated Dependency Vulnerability Audit
         run: pnpm audit --prod || true
 
       - name: Run Production Build
-        run: NODE_OPTIONS="--max-old-space-size=2048" pnpm build
+        run: NODE_OPTIONS="--max-old-space-size=4096" pnpm build
 
       - name: Notify Slack on Success
         if: success() && env.SLACK_WEBHOOK_URL != ''
@@ -71,3 +74,52 @@ jobs:
           curl -X POST -H 'Content-Type: application/json' \
             --data '{"text": "❌ *Smart Manager ERP* pipeline FAILED on commit `${{ github.sha }}`. Please inspect GitHub Actions."}' \
             "$SLACK_WEBHOOK_URL"
+
+  browser-signup:
+    name: Browser Signup Journey
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10.4.1
+          run_install: false
+
+      - name: Restore pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pnpm
+          key: ${{ runner.os }}-pnpm-browser-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-browser-
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium for Playwright
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run isolated browser signup journey
+        run: pnpm run test:browser
+
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: signup-browser-diagnostics
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore

@@ -43,6 +43,18 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(appSource).toContain("isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />");
   });
 
+  it("defers TRA compliance and dashboard PDF code until the matching feature is opened", () => {
+    expect(dashboardSource).toContain('const LazyTraPortalModule = lazy(() => import("./components/TraPortalModule")');
+    expect(dashboardSource).not.toContain('import { TraPortalModule } from "./components/TraPortalModule"');
+    expect(dashboardSource).toContain('aria-label="Loading TRA portal"');
+    expect(dashboardSource).toContain('const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer")');
+    expect(dashboardSource).not.toContain('import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer"');
+    expect(dashboardSource).toContain('<LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen}');
+    expect(dashboardSource).toContain('export async function createDashboardPdfDocument');
+    expect(dashboardSource).toContain('await import("jspdf")');
+    expect(dashboardSource).toContain('async function exportDashboard(format)');
+  });
+
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
     expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
@@ -740,8 +752,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(buildDashboardExportFilterSummary({ startDate: "2026-08-01", endDate: "2026-08-12", enabledModules: { finance: true, sales: true, crm: false, inventory: true, operations: true } })).toContain("2026-08-01 → 2026-08-12");
   });
 
-  it("creates a non-empty PDF document for the chart export report", () => {
-    const pdf = createDashboardPdfDocument({
+  it("creates a non-empty PDF document for the chart export report", async () => {
+    const pdf = await createDashboardPdfDocument({
       companyName: "Kilimanjaro Trading Co.",
       periodLabel: "This month",
       sections: [{ title: "Pipeline", rows: [{ stage: "Proposal", deal_count: 2 }] }],

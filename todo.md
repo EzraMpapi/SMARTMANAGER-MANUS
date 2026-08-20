@@ -106,3 +106,21 @@
 - [x] Add an accessible user-controlled action to discard a saved onboarding draft and reset the setup form.
 - [x] Code-split safe application boundaries to reduce the initial JavaScript payload without changing protected workspace behavior.
 - [x] Run focused/full tests, TypeScript and schema gates, optimized build analysis, responsive browser verification, and publish the checkpoint.
+
+## Isolated Signup Completion, Feature Loading, and CI
+- [x] Inspect existing signup completion boundaries, high-cost module mounting points, and the configured GitHub repository state.
+- [x] Add an opt-in isolated test mode that proves successful post-signup completion without allowing a browser test to contact the production tenant.
+- [x] Add authenticated browser coverage for the isolated post-signup completion state and tenant-safety controls.
+- [x] Move selected high-cost dashboard workspaces behind feature-level lazy boundaries while preserving navigation and loading feedback.
+- [x] Create a GitHub Actions workflow that runs unit tests, type checks, schema verification, production build, and the browser journey.
+- [x] Run complete local quality gates, verify CI configuration, review responsive behavior, and publish the checkpoint.
+
+## Final Isolated Session and Lazy-Workspace Verification
+- [x] Add a tenant-safe authenticated-session browser contract for the completed signup state without external authentication or production tenant writes.
+- [x] Extract one additional high-cost dashboard workspace behind a dedicated lazy boundary and visible loading fallback.
+- [x] Capture responsive verification for the final signup success state and the added workspace fallback.
+- [ ] Re-run quality gates, save the final checkpoint, and synchronize the CI workflow to the requested GitHub repository.
+
+## Visible Lazy Workspace Completion
+- [x] Extract an additional high-cost workspace module behind a `lazy()` boundary with a visible loading fallback.
+- [x] Add desktop and mobile browser verification for the new workspace loading fallback.

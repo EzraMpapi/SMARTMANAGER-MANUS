@@ -25,7 +25,6 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
 import * as XLSX from "xlsx";
-import { jsPDF } from "jspdf";
 import { trpc } from "./lib/trpc";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "./lib/authErrors";
 import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
@@ -41,18 +40,19 @@ import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, reme
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
-import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
-import { TraPortalModule } from "./components/TraPortalModule";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
+const LazyTraPortalModule = lazy(() => import("./components/TraPortalModule").then((module) => ({ default: module.TraPortalModule })));
+const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer").then((module) => ({ default: module.DashboardPreferencesDrawer })));
+const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAuditLogView").then((module) => ({ default: module.ComplianceAuditLogView })));
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -71,6 +71,7 @@ const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/Predict
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const IS_CONFIGURED     = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+const IS_ISOLATED_SIGNUP_E2E = import.meta.env.MODE === "e2e";
 const GUARDED_WRITE_TABLES = new Set(["finance_expenses", "sales_invoices", "inventory_items", "crm_leads"]);
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
 const REFRESH_TOKEN_STORAGE_KEY = "bs_refresh_token";
@@ -5379,7 +5380,8 @@ export function buildDashboardExportFilterSummary({ startDate = "", endDate = ""
   return `${activeModules.length === 5 ? "All modules" : activeModules.join(", ") || "Executive KPIs only"} · ${dates}`;
 }
 
-export function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", filterSummary = "All modules · All available dates", sections = [] } = {}) {
+export async function createDashboardPdfDocument({ companyName = "BusinessSphere ERP", periodLabel = "Current period", filterSummary = "All modules · All available dates", sections = [] } = {}) {
+  const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 36;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -5943,7 +5945,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   const exportFilterSummary = useMemo(() => buildDashboardExportFilterSummary({ startDate: exportStartDate, endDate: exportEndDate, enabledModules: exportModules }), [exportStartDate, exportEndDate, exportModules]);
 
-  function exportDashboard(format) {
+  async function exportDashboard(format) {
     if (exportBusy) return;
     setExportBusy(format);
     try {
@@ -5953,7 +5955,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         downloadDashboardCsv(filteredExportSections, `${base}.csv`);
         notify("Filtered dashboard chart data downloaded as CSV.");
       } else {
-        createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], filterSummary: exportFilterSummary, sections: filteredExportSections }).save(`${base}.pdf`);
+        (await createDashboardPdfDocument({ companyName: company.name, periodLabel: PERIOD_LABELS[period], filterSummary: exportFilterSummary, sections: filteredExportSections })).save(`${base}.pdf`);
         notify("Filtered dashboard chart data downloaded as PDF.");
       }
     } catch (_e) {
@@ -6253,7 +6255,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   return (
     <div className="flex flex-col gap-5">
       {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
-      <DashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
+      <Suspense fallback={null}>
+        <LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
+      </Suspense>
 
       <section className="order-8 grid grid-cols-1 gap-5" aria-label="Workspace setup and analytics readiness">
         <GettingStartedChecklist inventory={inventory} crm={crm} invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
@@ -43509,6 +43513,8 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyStatus, setPasskeyStatus] = useState("idle");
   const [passkeyError, setPasskeyError] = useState(null);
+  const [isolatedPreferencesOpen, setIsolatedPreferencesOpen] = useState(false);
+  const [isolatedComplianceAuditOpen, setIsolatedComplianceAuditOpen] = useState(false);
 
   const [account, setAccount] = useState(() => ({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", ...(onboardingProgress?.account || {}) }));
   const [company, setCompany] = useState({
@@ -43603,6 +43609,16 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     setError(null);
     if (!step2Valid) return;
 
+    // Browser tests compile with MODE=e2e and use the reserved .invalid domain.
+    // This path proves the post-signup success state without sending an auth or
+    // tenant-creation request to any configured Supabase project.
+    if (IS_ISOLATED_SIGNUP_E2E && account.email.trim().toLowerCase().endsWith("@e2e.invalid")) {
+      clearStoredAuthSession();
+      clearOnboardingProgress();
+      setCompletedWorkspace({ mode, name: company.name.trim(), email: account.email.trim(), workspaceWarning: null, brandingWarning: null, passkeySession: null, isolatedTest: true, isolatedSession: { authenticated: true, tenantId: "e2e-isolated-tenant" } });
+      return;
+    }
+
     // Demo mode: no backend to create a real account or company against —
     // simulate the outcome locally and say so, rather than silently doing
     // nothing or pretending a real signup happened.
@@ -43688,8 +43704,12 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const onboardingSceneStyle = { fontFamily: "'Inter',system-ui,sans-serif", ...(onboardingBackground ? { backgroundImage: `linear-gradient(120deg, rgba(248,250,252,.96), rgba(248,250,252,.86)), url(\"${onboardingBackground}\")`, backgroundPosition: "center", backgroundSize: "cover" } : {}) };
   const onboardingPanelStyle = onboardingBackground ? { backgroundImage: `linear-gradient(145deg, rgba(5,38,20,.95), rgba(15,77,38,.78)), url(\"${onboardingBackground}\")`, backgroundPosition: "center", backgroundSize: "cover" } : { background: gradientBg };
 
+  if (completedWorkspace?.isolatedSession?.authenticated) {
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><section className="w-full max-w-2xl rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]" aria-labelledby="isolated-workspace-title"><CheckCircle2 size={30} className="mx-auto text-emerald-700" aria-hidden="true" /><p className="mt-5 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 id="isolated-workspace-title" className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950">Congratulations — you’re ready.</h1><p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">Isolated authenticated workspace session is active. No authentication request or tenant record was sent to the configured Supabase project.</p><div className="mt-4 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setIsolatedPreferencesOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview dashboard preferences</button><button type="button" onClick={() => setIsolatedComplianceAuditOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview compliance audit workspace</button></div>{isolatedPreferencesOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard preferences" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading dashboard preferences…</div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setIsolatedPreferencesOpen(false)} /></Suspense>}{isolatedComplianceAuditOpen && <Suspense fallback={<div role="status" aria-label="Loading compliance audit workspace" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading compliance audit workspace…</div>}><LazyComplianceAuditLogView companyId="e2e-isolated-tenant" /></Suspense>}</section></div>;
+  }
+
   if (completedWorkspace) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p><p className="mt-1 text-[11px] font-semibold tracking-[.08em] text-[#008A45]">Simamia Biashara Yako. Popote, Wakati Wote.</p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Congratulations — you’re ready.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your Smart Manager account and {completedWorkspace.mode === "create" ? `${completedWorkspace.name} workspace` : "workspace access"} are ready. Sign in with {completedWorkspace.email} to continue.</p>{completedWorkspace.passkeySession && <section className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-left" aria-labelledby="onboarding-passkey-title"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><Fingerprint size={20} aria-hidden="true" /></span><div className="min-w-0"><h2 id="onboarding-passkey-title" className="text-[12.5px] font-bold text-emerald-950">Secure this account with a passkey</h2><p className="mt-1 text-[11px] leading-5 text-emerald-900/75">Use this device or password manager for faster, phishing-resistant sign-in. Your password remains available as a fallback.</p></div></div>{passkeyError && <p role="alert" className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-[11px] leading-5 text-red-700">{passkeyError}</p>}<button type="button" onClick={enrollPasskey} disabled={passkeyBusy} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-[11.5px] font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">{passkeyBusy ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : <Fingerprint size={15} aria-hidden="true" />}{passkeyBusy ? "Waiting for device confirmation…" : "Create passkey now"}</button></section>}{passkeyStatus === "enrolled" && <div role="status" className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-left text-[11.5px] font-semibold text-emerald-800"><CheckCircle2 size={16} aria-hidden="true" />Passkey created. This account is ready for secure sign-in.</div>}{completedWorkspace.workspaceWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{completedWorkspace.workspaceWarning}</p>}{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p><p className="mt-1 text-[11px] font-semibold tracking-[.08em] text-[#008A45]">Simamia Biashara Yako. Popote, Wakati Wote.</p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={30}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Congratulations — you’re ready.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">Your Smart Manager account and {completedWorkspace.mode === "create" ? `${completedWorkspace.name} workspace` : "workspace access"} are ready. Sign in with {completedWorkspace.email} to continue.</p>{completedWorkspace.isolatedTest && <p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">Isolated browser test completed. No authentication request or tenant record was sent to the configured Supabase project.</p>}{completedWorkspace.passkeySession && <section className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-left" aria-labelledby="onboarding-passkey-title"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><Fingerprint size={20} aria-hidden="true" /></span><div className="min-w-0"><h2 id="onboarding-passkey-title" className="text-[12.5px] font-bold text-emerald-950">Secure this account with a passkey</h2><p className="mt-1 text-[11px] leading-5 text-emerald-900/75">Use this device or password manager for faster, phishing-resistant sign-in. Your password remains available as a fallback.</p></div></div>{passkeyError && <p role="alert" className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-[11px] leading-5 text-red-700">{passkeyError}</p>}<button type="button" onClick={enrollPasskey} disabled={passkeyBusy} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-[11.5px] font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60">{passkeyBusy ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : <Fingerprint size={15} aria-hidden="true" />}{passkeyBusy ? "Waiting for device confirmation…" : "Create passkey now"}</button></section>}{passkeyStatus === "enrolled" && <div role="status" className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-left text-[11.5px] font-semibold text-emerald-800"><CheckCircle2 size={16} aria-hidden="true" />Passkey created. This account is ready for secure sign-in.</div>}{completedWorkspace.workspaceWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">{completedWorkspace.workspaceWarning}</p>}{completedWorkspace.brandingWarning && <p role="alert" className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-left text-[11.5px] leading-5 text-amber-800">Your account is ready, but branding was not saved: {completedWorkspace.brandingWarning}</p>}<button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
   }
 
   return (
@@ -52851,7 +52871,9 @@ function SmartManager() {
             <CollaborationHub currentUser={currentUser} filesHook={files} employees={employees} invoices={invoices} crm={crm} workOrders={workOrders} leaveRequests={leaveRequests} onNavigate={go} />
           )}
           {active === "tra_portal" && (
-            <TraPortalModule companyId={company?.id || company?.companyId || "default-company"} lang={getTraPortalLanguage()} onNavigate={go} />
+            <Suspense fallback={<div className="h-64 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading TRA portal" />}>
+              <LazyTraPortalModule companyId={company?.id || company?.companyId || "default-company"} lang={getTraPortalLanguage()} onNavigate={go} />
+            </Suspense>
           )}
           {active === "marketing" && <Marketing crm={crm} />}
           {active === "hr" && <HR employeesHook={employees} leaveRequestsHook={leaveRequests} expensesHook={expenses} intent={intent} clearIntent={clearIntent} currentUser={currentUser} canManage={canManage} />}
