@@ -151,4 +151,4 @@
 - [x] Re-run targeted verification and publish the finalized session recovery experience checkpoint.
 
 ## Session Recovery Experience Publication
-- [ ] Save and publish the completed terminal-only diagnostic and privacy-safe session recovery experience release.
+- [x] Save and publish the completed terminal-only diagnostic and privacy-safe session recovery experience release.
