@@ -14652,7 +14652,6 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
       status: form.status || "Pending",
       method: form.method || "Bank Transfer",
       department: form.department || "Operations",
-      costCenter: form.costCenter || "CC-OPS-01",
     };
 
     if (IS_CONFIGURED) {
@@ -14666,7 +14665,6 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
           status: form.status,
           method: form.method,
           department: form.department || "Operations",
-          cost_center: form.costCenter || "CC-OPS-01",
         });
         if (result.error) throw result.error;
         const header = result.data;
@@ -15389,7 +15387,7 @@ function ExpensePanel({ expense, onClose, onSetStatus, onDelete }) {
 function ExpenseFormPanel({ onClose, onSubmit }) {
   const [form, setForm] = useState({
     vendor: "", category: EXPENSE_CATEGORIES_LIST[0], date: TODAY.toISOString().slice(0, 10), dueDate: "",
-    amount: "", status: "Paid", method: "Bank Transfer", department: "Operations", costCenter: "CC-OPS-01",
+    amount: "", status: "Paid", method: "Bank Transfer", department: "Operations",
   });
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -15469,16 +15467,11 @@ function ExpenseFormPanel({ onClose, onSubmit }) {
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label="Department">
-              <select className={inputClass} value={form.department} onChange={(e) => set("department", e.target.value)}>
-                {["Operations", "Sales", "Finance", "Warehouse", "Admin"].map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </FormField>
-            <FormField label="Cost Center Code">
-              <input className={inputClass} value={form.costCenter} onChange={(e) => set("costCenter", e.target.value)} placeholder="e.g. CC-OPS-01" />
-            </FormField>
-          </div>
+          <FormField label="Department">
+            <select className={inputClass} value={form.department} onChange={(e) => set("department", e.target.value)}>
+              {["Operations", "Sales", "Finance", "Warehouse", "Admin"].map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </FormField>
 
           {form.status !== "Paid" && (
             <FormField label="Payment due date">

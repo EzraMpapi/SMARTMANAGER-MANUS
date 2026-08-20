@@ -35,7 +35,11 @@ describe("Finance persistence boundaries", () => {
     expect(genericTableBlock).not.toContain("finance_expenses");
     expect(finance).toContain('runCompanyTableMutation("finance_expenses", "insert"');
     expect(finance).toContain("expense_date: expenseDate");
-    expect(finance).toContain("cost_center: form.costCenter || \"CC-OPS-01\"");
+    const expenseInsertAt = finance.indexOf('runCompanyTableMutation("finance_expenses", "insert"');
+    const expenseStateAt = finance.indexOf('setExpenses((prev) => [mapExpenseRow(header), ...prev]);', expenseInsertAt);
+    const expenseInsertBlock = finance.slice(expenseInsertAt, expenseStateAt);
+    expect(expenseInsertBlock).not.toContain("cost_center");
+    expect(expenseInsertBlock).not.toContain("form.costCenter");
   });
 
   it("preserves the expense drawer and draft on failed mutations while preventing duplicate submissions", () => {

@@ -49,3 +49,4 @@
 - [x] Run focused/full tests, TypeScript checks, and low-memory production build.
 - [ ] Re-verify the authenticated published Payables submission after publishing this schema-envelope fix.
 - [ ] Review todo.md, save the final published checkpoint, and deliver the fix.
+- [ ] Remove the unsupported `finance_expenses.cost_center` field from the live Payables insert payload, add regression coverage, republish, and re-run the authenticated save verification.

@@ -584,25 +584,31 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("persists finance expenses as typed relational rows without the unsupported data column", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({
       id: "expense-1", vendor: "Tanesco", category: "Rent & Utilities", expense_date: "2026-08-19",
-      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations", cost_center: "CC-OPS-01",
+      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations",
     }, 201));
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await runCompanyTableMutation("finance_expenses", "insert", {
       vendor: "Tanesco", category: "Rent & Utilities", expense_date: "2026-08-19", due_date: "2026-09-19",
-      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations", cost_center: "CC-OPS-01",
+      amount: 2000000, status: "Paid", method: "Bank Transfer", department: "Operations",
     });
 
     expect(result.error).toBeNull();
-    expect(result.data).toMatchObject({ id: "expense-1", cost_center: "CC-OPS-01" });
+    expect(result.data).toMatchObject({ id: "expense-1", department: "Operations" });
+    expect(result.data).not.toHaveProperty("cost_center");
     const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(requestBody).toMatchObject({ vendor: "Tanesco", expense_date: "2026-08-19", cost_center: "CC-OPS-01" });
+    expect(requestBody).toMatchObject({ vendor: "Tanesco", expense_date: "2026-08-19", department: "Operations" });
     expect(requestBody).not.toHaveProperty("data");
+    expect(requestBody).not.toHaveProperty("cost_center");
   });
 
-  it("keeps expense creation on the shared confirmed persistence boundary", () => {
+  it("keeps expense creation on the shared confirmed persistence boundary without unsupported columns", () => {
     expect(dashboardSource).toContain('runCompanyTableMutation("finance_expenses", "insert"');
-    expect(dashboardSource).toContain("cost_center: form.costCenter");
+    const expenseInsertAt = dashboardSource.indexOf('runCompanyTableMutation("finance_expenses", "insert"');
+    const expenseStateAt = dashboardSource.indexOf('setExpenses((prev) => [mapExpenseRow(header), ...prev]);', expenseInsertAt);
+    const expenseInsertBlock = dashboardSource.slice(expenseInsertAt, expenseStateAt);
+    expect(expenseInsertBlock).not.toContain("cost_center");
+    expect(expenseInsertBlock).not.toContain("form.costCenter");
   });
 
   it("returns every confirmed row for a bulk inventory insert and normalizes each row", async () => {
