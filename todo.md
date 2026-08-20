@@ -93,3 +93,9 @@
 - [x] Restore the generic `crm_leads` contract manifest and add regression coverage for generic and relational-shaped bulk rows.
 - [x] Re-run focused/full tests, the Supabase OpenAPI gate, TypeScript validation, and the low-memory production build.
 - [x] Publish the correction and re-verify Finance and CRM guarded writes in the live workspace.
+
+## Signup Flow Persistence and Automated Progression Coverage
+- [x] Audit the signup wizard state and identify safe non-secret fields for session-scoped recovery.
+- [x] Persist and restore incomplete account, company, branch, and selected-module data without retaining passwords, confirmations, logo files, or company join codes.
+- [x] Add automated three-step signup progression coverage for account, company, and module-selection states.
+- [x] Run focused/full tests, schema verification, type checks, production build, and responsive signup verification.

@@ -40,6 +40,7 @@ import { createAccountPasskeyClient, listAccountPasskeys, passkeySignInUserMessa
 import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, rememberConfirmedOrganizationIndustryFocus } from "./lib/organizationIndustryFocus";
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
+import { clearOnboardingProgress, getSignupProgressionStep, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
 import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -43495,7 +43496,12 @@ function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentCo
 // comment on companies.join_code for why that is a deliberate privacy
 // boundary, not an oversight.
 function SignupPage({ onAuthenticated, onSwitchToLogin }) {
-  const [mode, setMode] = useState("create"); // "create" | "join"
+  const onboardingModuleIds = useMemo(() => ONBOARDING_MODULES.map((module) => module.id), []);
+  const onboardingProgress = useMemo(() => readOnboardingProgress(onboardingModuleIds), [onboardingModuleIds]);
+  const restoredOnboardingProgress = Boolean(onboardingProgress && hasOnboardingProgress(onboardingProgress, onboardingModuleIds));
+  const persistedCountry = SIGNUP_COUNTRIES.includes(onboardingProgress?.company?.country) ? onboardingProgress.company.country : SIGNUP_COUNTRIES[0];
+  const [mode, setMode] = useState(() => onboardingProgress?.mode || "create"); // "create" | "join"
+  // A password is deliberately never stored; all recovered sessions restart at step 1.
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -43504,21 +43510,30 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [passkeyStatus, setPasskeyStatus] = useState("idle");
   const [passkeyError, setPasskeyError] = useState(null);
 
-  const [account, setAccount] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
+  const [account, setAccount] = useState(() => ({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", ...(onboardingProgress?.account || {}) }));
   const [company, setCompany] = useState({
-    name: "", category: "general", country: SIGNUP_COUNTRIES[0], currency: SIGNUP_CURRENCIES[0],
-    timezone: companyDefaultsForCountry(SIGNUP_COUNTRIES[0]).timezone, website: "", taxId: "", logo: null, brandColor: "#0B5D3B", brandAccentColor: "#16A34A",
+    name: "", category: "general", country: persistedCountry, currency: SIGNUP_CURRENCIES[0],
+    timezone: companyDefaultsForCountry(persistedCountry).timezone, website: "", taxId: "", brandColor: "#0B5D3B", brandAccentColor: "#16A34A",
+    ...(onboardingProgress?.company || {}), logo: null,
   });
   const directPasswordSignupMutation = trpc.accountRegistration.createConfirmedPasswordAccount.useMutation();
   const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
   const passkeyNotificationMutation = trpc.passkeySecurity.notifyRegistered.useMutation();
-  const [selectedModules, setSelectedModules] = useState(() => new Set(ONBOARDING_MODULES.map((m) => m.id)));
-  const [businessScale, setBusinessScale] = useState("large");
-  const [firstBranch, setFirstBranch] = useState("");
+  const [selectedModules, setSelectedModules] = useState(() => new Set(onboardingProgress ? onboardingProgress.selectedModules : onboardingModuleIds));
+  const [businessScale, setBusinessScale] = useState(() => onboardingProgress?.businessScale || "large");
+  const [firstBranch, setFirstBranch] = useState(() => onboardingProgress?.firstBranch || "");
   const [joinCode, setJoinCode] = useState("");
-  const [joinRole, setJoinRole] = useState("Employee");
-  const [customerRef, setCustomerRef] = useState("");
+  const [joinRole, setJoinRole] = useState(() => onboardingProgress?.joinRole || "Employee");
+  const [customerRef, setCustomerRef] = useState(() => onboardingProgress?.customerRef || "");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (completedWorkspace) {
+      clearOnboardingProgress();
+      return;
+    }
+    writeOnboardingProgress({ mode, step, account, company, selectedModules: [...selectedModules], businessScale, firstBranch, joinRole, customerRef }, onboardingModuleIds);
+  }, [account, businessScale, company, completedWorkspace, customerRef, firstBranch, joinRole, mode, onboardingModuleIds, selectedModules, step]);
 
   function setAccountField(key, val) { setAccount((a) => ({ ...a, [key]: val })); }
   function setCompanyField(key, val) {
@@ -43576,6 +43591,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     // nothing or pretending a real signup happened.
     if (!IS_CONFIGURED) {
       notify(`Demo mode — no Supabase project connected, so "${company.name || "your company"}" is not really created. Continuing with the sample company instead.`);
+      clearOnboardingProgress();
       onAuthenticated(null);
       return;
     }
@@ -43632,6 +43648,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
       authDebug("Workspace setup confirmed", { mode, companyId: rpcResult.id });
       clearStoredAuthSession();
+      clearOnboardingProgress();
       setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning, passkeySession: { accessToken: signUpResult.access_token, refreshToken: signUpResult.refresh_token } });
     } catch (err) {
       clearStoredAuthSession();
@@ -43689,6 +43706,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
           <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,.08)] sm:p-7">
             {error && <div role="alert" className="mb-4 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-[12px] leading-5 text-red-700">{error}</div>}
+            {restoredOnboardingProgress && !completedWorkspace && <div role="status" className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3 text-[12px] leading-5 text-emerald-800">Your in-progress setup was restored for this browser session. Re-enter your password to continue; passwords, confirmations, logo files, and company join codes are never saved.</div>}
             {mode === "join" ? (
               <form onSubmit={handleFinalSubmit} className="auth-step-panel space-y-4" aria-live="polite">
                 <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Join an existing workspace</h3><p className="mt-1 text-[12.5px] text-slate-500">Your administrator should provide the company join code.</p></div>
@@ -43709,7 +43727,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                   if (!isEnterprisePassword(account.password)) { setError("Password must be at least 8 characters and include uppercase, lowercase, number, and symbol."); return; }
                   if (account.password !== account.confirmPassword) { setError("Passwords do not match."); return; }
                   setError(null);
-                  setStep(2);
+                  setStep(getSignupProgressionStep({ step: 1, account, company }));
                 }} className="auth-step-panel space-y-4" aria-live="polite">
                 <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Create your account</h3><p className="mt-1 text-[12.5px] text-slate-500">Your account becomes the initial organisation owner.</p></div>
                 <FormField label="Full name" required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" autoComplete="name" /></div></FormField>
@@ -43722,7 +43740,7 @@ function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <button type="submit" disabled={!step1Valid} className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>Continue to company setup →</button>
               </form>
             ) : step === 2 ? (
-              <form onSubmit={(e) => { e.preventDefault(); if (step2Valid) setStep(3); }} className="auth-step-panel space-y-4" aria-live="polite">
+              <form onSubmit={(e) => { e.preventDefault(); if (step2Valid) setStep(getSignupProgressionStep({ step: 2, account, company })); }} className="auth-step-panel space-y-4" aria-live="polite">
                 <div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(1)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to account details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Register your company</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Configure the first workspace essentials.</p></div></div>
                 <FormField label="Company name" required><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder="e.g. Kilimanjaro Traders Ltd" /></div></FormField>
                 <div className="grid gap-3 sm:grid-cols-2"><FormField label="Country" required><select className={inputClass} value={company.country} onChange={(e) => setCompanyField("country", e.target.value)}>{SIGNUP_COUNTRIES.map((country) => <option key={country}>{country}</option>)}</select></FormField><FormField label="Currency" required><select className={inputClass} value={company.currency} onChange={(e) => setCompanyField("currency", e.target.value)}>{SIGNUP_CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}</select></FormField></div>
