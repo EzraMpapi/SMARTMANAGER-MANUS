@@ -86,3 +86,10 @@
 - [x] Upgrade `sb(...).insert` builder to support bulk array payloads safely through guarded server mutations.
 - [x] Expand `server/guardedServerBoundary.test.ts` to cover `finance_expenses`, `sales_invoices`, `inventory_items`, and `crm_leads` with both valid and drifted payloads.
 - [x] Add a regression test proving a guarded multi-row `crm_leads` insert preserves and submits every row.
+
+## Live CRM Bulk Contract Correction
+- [x] Reproduce the published CRM two-row import failure and capture the server contract report showing raw relational keys bypassed normalization.
+- [x] Normalize generic critical insert rows before routing them through the tenant-scoped guarded server mutation.
+- [x] Restore the generic `crm_leads` contract manifest and add regression coverage for generic and relational-shaped bulk rows.
+- [x] Re-run focused/full tests, the Supabase OpenAPI gate, TypeScript validation, and the low-memory production build.
+- [ ] Publish the correction and re-verify Finance and CRM guarded writes in the live workspace.

@@ -554,7 +554,10 @@ export function sb(table) {
       payload = row;
       const guardedCompanyId = getGuardedPersistenceCompanyId();
       if (GUARDED_WRITE_TABLES.has(table) && guardedCompanyId) {
-        const rows = Array.isArray(row) ? row : [row];
+        const sourceRows = Array.isArray(row) ? row : [row];
+        const rows = sourceRows.map((record) => GENERIC_COMPANY_TABLES.has(table)
+          ? normalizeGenericCompanyPayload(table, record)
+          : record);
         return {
           async run() {
             const results = [];

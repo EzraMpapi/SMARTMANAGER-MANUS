@@ -66,8 +66,40 @@ describe("Guarded client mutation routing", () => {
     ]).run();
 
     expect(guardedMutation.mutate).toHaveBeenCalledTimes(2);
-    expect(guardedMutation.mutate).toHaveBeenNthCalledWith(1, expect.objectContaining({ tableName: "crm_leads", payload: { name: "Lead One", status: "New", data: { email: "one@example.com" } } }));
-    expect(guardedMutation.mutate).toHaveBeenNthCalledWith(2, expect.objectContaining({ tableName: "crm_leads", payload: { name: "Lead Two", status: "New", data: { email: "two@example.com" } } }));
+    expect(guardedMutation.mutate).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      tableName: "crm_leads",
+      payload: { name: "Lead One", status: "New", amount: undefined, notes: undefined, data: { email: "one@example.com" } },
+    }));
+    expect(guardedMutation.mutate).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      tableName: "crm_leads",
+      payload: { name: "Lead Two", status: "New", amount: undefined, notes: undefined, data: { email: "two@example.com" } },
+    }));
     expect(result).toEqual([{ id: "lead-1" }, { id: "lead-2" }]);
+  });
+
+  it("normalizes relational-shaped CRM bulk rows before the guarded server boundary", async () => {
+    guardedMutation.mutate
+      .mockResolvedValueOnce([{ id: "live-lead-1" }])
+      .mockResolvedValueOnce([{ id: "live-lead-2" }]);
+
+    await sb("crm_leads").insert([
+      { contact_name: "Schema Lead A", company_name: "Schema Company A", stage: "New", value_amount: 0, email: "a@example.invalid", phone: "+255700000001", industry: "General" },
+      { contact_name: "Schema Lead B", company_name: "Schema Company B", stage: "New", value_amount: 0, email: "b@example.invalid", phone: "+255700000002", industry: "General" },
+    ]).run();
+
+    expect(guardedMutation.mutate).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      tableName: "crm_leads",
+      payload: {
+        name: "Schema Lead A", status: "New", amount: 0, notes: undefined,
+        data: { contact_name: "Schema Lead A", company_name: "Schema Company A", stage: "New", value_amount: 0, email: "a@example.invalid", phone: "+255700000001", industry: "General" },
+      },
+    }));
+    expect(guardedMutation.mutate).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      tableName: "crm_leads",
+      payload: {
+        name: "Schema Lead B", status: "New", amount: 0, notes: undefined,
+        data: { contact_name: "Schema Lead B", company_name: "Schema Company B", stage: "New", value_amount: 0, email: "b@example.invalid", phone: "+255700000002", industry: "General" },
+      },
+    }));
   });
 });
