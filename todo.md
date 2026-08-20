@@ -47,7 +47,7 @@
 - [x] Apply the database/schema compatibility correction and harden the expense save boundary without destructive data changes.
 - [x] Add focused regression coverage for expense recording and schema compatibility.
 - [x] Run focused/full tests, TypeScript checks, and low-memory production build.
-- [ ] Re-verify the authenticated published Payables submission after publishing this schema-envelope fix.
-- [ ] Review todo.md, save the final published checkpoint, and deliver the fix.
-- [ ] Remove the unsupported `finance_expenses.cost_center` field from the live Payables insert payload, add regression coverage, republish, and re-run the authenticated save verification.
-- [ ] Remove the unsupported `finance_expenses.department` field from the live Payables insert payload and form, extend regression coverage, republish, and repeat live verification.
+- [x] Re-verify the authenticated published Payables submission after publishing this schema-envelope fix.
+- [x] Review todo.md, save the final published checkpoint, and deliver the fix.
+- [x] Remove the unsupported `finance_expenses.cost_center` field from the live Payables insert payload, add regression coverage, republish, and re-run the authenticated save verification.
+- [x] Remove the unsupported `finance_expenses.department` field from the live Payables insert payload and form, extend regression coverage, republish, and repeat live verification.
