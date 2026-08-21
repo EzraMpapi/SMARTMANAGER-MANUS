@@ -57,9 +57,10 @@ describe("microfinance input contracts", () => {
   });
 
   it("requires explicit valid local schedule time and bounded PAR thresholds", () => {
-    const valid = microfinanceEscalationSettingsInput.safeParse({ recipientMode: "roles", managedRecipients: [], scheduleLocalTime: "08:30", timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false, par30AlertThreshold: 10, overdueAmountAlertThreshold: 0 });
+    const valid = microfinanceEscalationSettingsInput.safeParse({ recipientMode: "roles", roleRecipients: ["Company Administrator", "Collections Officer"], managedRecipients: [], scheduleLocalTime: "08:30", timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false, par30AlertThreshold: 10, overdueAmountAlertThreshold: 0 });
     expect(valid.success).toBe(true);
     expect(microfinanceEscalationSettingsInput.safeParse({ ...valid.data, scheduleLocalTime: "25:99" }).success).toBe(false);
+    expect(microfinanceEscalationSettingsInput.safeParse({ ...valid.data, roleRecipients: ["Unapproved recipient"] }).success).toBe(false);
   });
 });
 

@@ -262,3 +262,6 @@
 - [x] Build administrator scoring and escalation settings plus scorecard, schedule-state, and delivery-history visibility in the Microfinance workspace.
 - [x] Add unit, protected-router, and browser coverage; run full quality gates.
 - [ ] Publish the verified implementation and activate the approved daily schedule after local time and recipient confirmation.
+- [ ] Configure the confirmed daily 12:00 Africa/Dar_es_Salaam escalation with Company Administrator and Collections Officer recipient roles.
+- [ ] Verify the active production schedule binding and aggregate-only email safeguards, then publish the activation record.
+- [x] Make role-based escalation recipients explicitly selectable so delivery is limited to the confirmed Company Administrator and Collections Officer roles.

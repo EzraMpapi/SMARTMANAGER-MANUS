@@ -35,7 +35,7 @@ test("loads the Microfinance Command Center and completes guarded borrower regis
       if (procedure === "microfinance.createBorrower") return trpcResult({ id: "new-borrower-id", name: "Amina Kweka", status: "Active", kycStatus: "Pending" });
       if (procedure === "microfinance.auditHistory") return trpcResult({ rows: [] });
       if (procedure === "microfinance.creditScoringSettings") return trpcResult({ settings: { id: "score-settings", kycWeight: 20, affordabilityWeight: 30, repaymentHistoryWeight: 20, guarantorWeight: 15, collateralWeight: 15, maxDebtServiceRatio: 40, approvalThreshold: 70, reviewThreshold: 50 }, canManage: true });
-      if (procedure === "microfinance.escalationSettings") return trpcResult({ settings: { id: "escalation-settings", recipientMode: "roles", managedRecipients: [], roleRecipients: ["Organization Owner"], scheduleLocalTime: "08:00", timezone: "Africa/Dar_es_Salaam", par30AlertThreshold: 10, overdueAmountAlertThreshold: 100000, deliveryEnabled: false, scheduleState: "Inactive pending explicit time and activation confirmation", nextRunAt: null }, canManage: true });
+      if (procedure === "microfinance.escalationSettings") return trpcResult({ settings: { id: "escalation-settings", recipientMode: "roles", managedRecipients: [], roleRecipients: ["Company Administrator", "Collections Officer"], scheduleLocalTime: "08:00", timezone: "Africa/Dar_es_Salaam", par30AlertThreshold: 10, overdueAmountAlertThreshold: 100000, deliveryEnabled: false, scheduleState: "Inactive pending explicit time and activation confirmation", nextRunAt: null }, canManage: true });
       if (procedure === "microfinance.escalationHistory") return trpcResult({ rows: [] });
       if (procedure === "microfinance.saveCreditScoringSettings") return trpcResult({ settings: { id: "score-settings", kycWeight: 20, affordabilityWeight: 30, repaymentHistoryWeight: 20, guarantorWeight: 15, collateralWeight: 15, maxDebtServiceRatio: 40, approvalThreshold: 70, reviewThreshold: 50 } });
       if (procedure === "microfinance.saveEscalationSettings") return trpcResult({ message: "Escalation configuration saved. Daily delivery remains inactive until an explicit activation is confirmed.", settings: { id: "escalation-settings", deliveryEnabled: false } });
@@ -83,6 +83,8 @@ test("loads the Microfinance Command Center and completes guarded borrower regis
   await expect(page.getByText("Inactive pending explicit time and activation confirmation", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Configure", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Daily PAR and collections escalation" })).toBeVisible();
+  await expect(page.getByLabel("Recipient role Company Administrator")).toBeChecked();
+  await expect(page.getByLabel("Recipient role Collections Officer")).toBeChecked();
   await expect(page.getByLabel("Enable daily PAR escalation")).not.toBeChecked();
   await page.getByRole("button", { name: "Save escalation settings" }).click();
   await expect(page.getByText("Daily escalation configuration saved", { exact: true })).toBeVisible();

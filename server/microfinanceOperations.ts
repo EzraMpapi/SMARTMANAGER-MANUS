@@ -65,12 +65,14 @@ export const microfinanceCashOpenInput = z.object({ openingBalance: nonNegativeM
 export const microfinanceCashCloseInput = z.object({ cashSessionId: z.string().uuid(), closingBalance: nonNegativeMoney, note: optionalText });
 export const microfinanceCollectionInput = z.object({ loanId: z.string().uuid(), action: z.enum(["Call", "Visit", "Promise to pay", "Restructure review"]), dueOn: dateInput, note: optionalText });
 export const microfinanceListInput = z.object({ limit: z.number().int().min(1).max(200).optional().default(100) });
+const ESCALATION_RECIPIENT_ROLE_OPTIONS = ["Company Administrator", "Organization Owner", "CEO", "Finance Manager", "Microfinance Manager", "Collections Officer"] as const;
+const DEFAULT_ESCALATION_ROLES = ["Company Administrator", "Collections Officer"] as const;
 export const microfinanceCreditScoringSettingsInput = z.object({
   kycWeight: z.number().int().min(0).max(100), affordabilityWeight: z.number().int().min(0).max(100), repaymentHistoryWeight: z.number().int().min(0).max(100), guarantorWeight: z.number().int().min(0).max(100), collateralWeight: z.number().int().min(0).max(100),
   maxDebtServiceRatio: z.number().min(5).max(100), approvalThreshold: z.number().int().min(1).max(100), reviewThreshold: z.number().int().min(0).max(99),
 });
 export const microfinanceEscalationSettingsInput = z.object({
-  recipientMode: z.enum(["roles", "managed", "both"]), managedRecipients: z.array(z.string().trim().email()).max(20).default([]), scheduleLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), timezone: z.literal("Africa/Dar_es_Salaam").default("Africa/Dar_es_Salaam"), deliveryEnabled: z.boolean().default(false),
+  recipientMode: z.enum(["roles", "managed", "both"]), roleRecipients: z.array(z.enum(ESCALATION_RECIPIENT_ROLE_OPTIONS)).min(1).max(ESCALATION_RECIPIENT_ROLE_OPTIONS.length).default([...DEFAULT_ESCALATION_ROLES]), managedRecipients: z.array(z.string().trim().email()).max(20).default([]), scheduleLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), timezone: z.literal("Africa/Dar_es_Salaam").default("Africa/Dar_es_Salaam"), deliveryEnabled: z.boolean().default(false),
   par30AlertThreshold: z.number().min(0).max(100), overdueAmountAlertThreshold: nonNegativeMoney,
 });
 
@@ -83,7 +85,6 @@ const PORTFOLIO_READ_ROLES = new Set(["credit officer", "loan officer", "microfi
 const REPAYMENT_RECORDING_ROLES = new Set(["teller", "cashier", "finance officer", "collections officer", "recovery officer", "credit officer", "loan officer"]);
 const ESCALATION_ACTION = "MICROFINANCE_PAR_COLLECTIONS_ESCALATION_EMAIL";
 const ESCALATION_TIMEZONE = "Africa/Dar_es_Salaam";
-const DEFAULT_ESCALATION_ROLES = ["Organization Owner", "CEO", "Finance Manager", "Microfinance Manager", "Collections Officer"];
 const DEFAULT_SCORING_RULES = { kycWeight: 20, affordabilityWeight: 30, repaymentHistoryWeight: 20, guarantorWeight: 15, collateralWeight: 15, maxDebtServiceRatio: 40, approvalThreshold: 70, reviewThreshold: 50 };
 type CreditScoringRules = z.infer<typeof microfinanceCreditScoringSettingsInput>;
 
@@ -134,9 +135,12 @@ function scoringRulesFromRow(row?: Row): CreditScoringRules { const data = dataO
 function escalationSettingsFromRow(row?: Row) {
   const data = dataOf(row); const scheduleCronTaskUid = typeof data.scheduleCronTaskUid === "string" && data.scheduleCronTaskUid ? data.scheduleCronTaskUid : null;
   const scheduleLocalTime = typeof data.scheduleLocalTime === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(data.scheduleLocalTime) ? data.scheduleLocalTime : "08:00";
+  const roleRecipients = Array.isArray(data.roleRecipients)
+    ? Array.from(new Set(data.roleRecipients.filter((role): role is typeof ESCALATION_RECIPIENT_ROLE_OPTIONS[number] => typeof role === "string" && (ESCALATION_RECIPIENT_ROLE_OPTIONS as readonly string[]).includes(role))))
+    : [...DEFAULT_ESCALATION_ROLES];
   const deliveryEnabled = data.deliveryEnabled === true && Boolean(scheduleCronTaskUid);
   const [hour, minute] = scheduleLocalTime.split(":").map(Number); const utcHour = (hour + 21) % 24; const now = new Date(); const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), utcHour, minute, 0)); if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
-  return { id: row?.id || null, companyId: row?.company_id || "", recipientMode: data.recipientMode === "roles" || data.recipientMode === "managed" || data.recipientMode === "both" ? data.recipientMode : "roles", managedRecipients: Array.isArray(data.managedRecipients) ? normalizedRecipients(data.managedRecipients.filter((value): value is string => typeof value === "string")) : [], roleRecipients: DEFAULT_ESCALATION_ROLES, scheduleLocalTime, timezone: ESCALATION_TIMEZONE, par30AlertThreshold: numeric(data.par30AlertThreshold || 10), overdueAmountAlertThreshold: numeric(data.overdueAmountAlertThreshold || 0), scheduleCronTaskUid, deliveryEnabled, scheduleState: deliveryEnabled ? `Active — daily at ${scheduleLocalTime} ${ESCALATION_TIMEZONE}` : "Inactive pending explicit time and activation confirmation", nextRunAt: deliveryEnabled ? next.toISOString() : null };
+  return { id: row?.id || null, companyId: row?.company_id || "", recipientMode: data.recipientMode === "roles" || data.recipientMode === "managed" || data.recipientMode === "both" ? data.recipientMode : "roles", managedRecipients: Array.isArray(data.managedRecipients) ? normalizedRecipients(data.managedRecipients.filter((value): value is string => typeof value === "string")) : [], roleRecipients: roleRecipients.length ? roleRecipients : [...DEFAULT_ESCALATION_ROLES], scheduleLocalTime, timezone: ESCALATION_TIMEZONE, par30AlertThreshold: numeric(data.par30AlertThreshold || 10), overdueAmountAlertThreshold: numeric(data.overdueAmountAlertThreshold || 0), scheduleCronTaskUid, deliveryEnabled, scheduleState: deliveryEnabled ? `Active — daily at ${scheduleLocalTime} ${ESCALATION_TIMEZONE}` : "Inactive pending explicit time and activation confirmation", nextRunAt: deliveryEnabled ? next.toISOString() : null };
 }
 
 export function calculateMicrofinanceCreditScore(input: { rules: CreditScoringRules; kycStatus: string; monthlyIncome: number; projectedInstallment: number; hasRepaymentHistory: boolean; hasOverdueHistory: boolean; requiresGuarantor: boolean; guarantorVerified: boolean; requiresCollateral: boolean; collateralVerified: boolean }) {
@@ -263,7 +267,7 @@ export async function saveMicrofinanceEscalationSettings(req: CreateExpressConte
     if (!options.userSession) throw new TRPCError({ code: "UNAUTHORIZED", message: "An authenticated workspace session is required to deactivate daily portfolio escalation delivery." });
     await deleteHeartbeatJob(scheduleCronTaskUid, options.userSession); scheduleCronTaskUid = null;
   }
-  const data = { recipientMode: input.recipientMode, managedRecipients: normalizedRecipients(input.managedRecipients), scheduleLocalTime: input.scheduleLocalTime, timezone: ESCALATION_TIMEZONE, par30AlertThreshold: input.par30AlertThreshold, overdueAmountAlertThreshold: input.overdueAmountAlertThreshold, deliveryEnabled: Boolean(input.deliveryEnabled && scheduleCronTaskUid), scheduleCronTaskUid, updatedAt: new Date().toISOString(), updatedById: actor.id, updatedByName: actor.full_name || "Microfinance administrator" };
+  const data = { recipientMode: input.recipientMode, roleRecipients: Array.from(new Set(input.roleRecipients)), managedRecipients: normalizedRecipients(input.managedRecipients), scheduleLocalTime: input.scheduleLocalTime, timezone: ESCALATION_TIMEZONE, par30AlertThreshold: input.par30AlertThreshold, overdueAmountAlertThreshold: input.overdueAmountAlertThreshold, deliveryEnabled: Boolean(input.deliveryEnabled && scheduleCronTaskUid), scheduleCronTaskUid, updatedAt: new Date().toISOString(), updatedById: actor.id, updatedByName: actor.full_name || "Microfinance administrator" };
   const saved = existing[0] ? await patch("mfi_par_escalation_settings", actor.company_id, existing[0].id, { status: data.deliveryEnabled ? "Configured — active" : "Configured — inactive", data }) : await insert("mfi_par_escalation_settings", { company_id: actor.company_id, name: "Daily PAR and collections escalation configuration", status: data.deliveryEnabled ? "Configured — active" : "Configured — inactive", amount: null, notes: null, data });
   await audit(actor.company_id, actor, "Portfolio escalation configuration saved", "par_escalation_settings", saved.id, { deliveryEnabled: data.deliveryEnabled, scheduleLocalTime: input.scheduleLocalTime });
   return { message: data.deliveryEnabled ? `Daily PAR and collections escalation is active at ${input.scheduleLocalTime} ${ESCALATION_TIMEZONE}.` : "Escalation configuration saved. Daily delivery remains inactive until an explicit activation is confirmed.", settings: escalationSettingsFromRow(saved) };

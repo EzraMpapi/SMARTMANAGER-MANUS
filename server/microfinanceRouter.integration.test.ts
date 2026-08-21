@@ -28,6 +28,7 @@ const product = {
   requiresGuarantor: false, requiresCollateral: false,
 };
 const scoringRules = { kycWeight: 20, affordabilityWeight: 30, repaymentHistoryWeight: 20, guarantorWeight: 15, collateralWeight: 15, maxDebtServiceRatio: 40, approvalThreshold: 70, reviewThreshold: 50 };
+const escalationRules = { recipientMode: "roles" as const, roleRecipients: ["Company Administrator", "Collections Officer"] as const, managedRecipients: [], scheduleLocalTime: "12:00", timezone: "Africa/Dar_es_Salaam" as const, deliveryEnabled: false, par30AlertThreshold: 10, overdueAmountAlertThreshold: 0 };
 
 describe("protected microfinance router integration", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -70,5 +71,16 @@ describe("protected microfinance router integration", () => {
     const caller = callerFor("Customer Support Agent", requests);
     await expect(caller.microfinance.saveCreditScoringSettings(scoringRules)).rejects.toThrow("cannot manage credit scoring configuration");
     expect(requests.some((request) => request.url.includes("mfi_credit_scoring_settings"))).toBe(false);
+  });
+
+  it("persists an administrator-selected escalation recipient role set without broadening delivery", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerFor("Organization Owner", requests);
+    const result = await caller.microfinance.saveEscalationSettings(escalationRules);
+
+    expect(result.settings.roleRecipients).toEqual(["Company Administrator", "Collections Officer"]);
+    const escalationWrite = requests.find((request) => request.method === "POST" && request.url.includes("/rest/v1/mfi_par_escalation_settings"));
+    expect(escalationWrite?.body?.company_id).toBe(companyId);
+    expect(escalationWrite?.body?.data).toMatchObject({ roleRecipients: ["Company Administrator", "Collections Officer"], scheduleLocalTime: "12:00", deliveryEnabled: false });
   });
 });
