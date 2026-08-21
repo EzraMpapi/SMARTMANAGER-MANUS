@@ -5,7 +5,7 @@ import { ENV } from "./_core/env";
 const APPROVAL_TABLE = "approval_signatures";
 const EXPIRY_MS = 24 * 60 * 60 * 1000;
 
-type VerifiedProfile = { id: string; company_id: string; role: string; full_name: string | null };
+type VerifiedProfile = { id: string; company_id: string; role: string; full_name: string | null; customer_ref: string | null };
 type ApprovalRow = { id: string; name?: string; status?: string; notes?: string | null; data?: unknown };
 
 const ACTION_RULES: Record<string, { label: string; module: string; roles: string[] }> = {
@@ -47,7 +47,7 @@ export async function resolveVerifiedProfile(req: CreateExpressContextOptions["r
   const identity = await fetch(`${ENV.supabaseUrl}/auth/v1/user`, { headers: { apikey: ENV.supabaseAnonKey, authorization: `Bearer ${token}` } });
   const user = await identity.json().catch(() => null) as { id?: string } | null;
   if (!identity.ok || !user?.id) throw new TRPCError({ code: "UNAUTHORIZED", message: "The workspace session could not be verified." });
-  const rows = await supabaseRequest(`profiles?select=id,company_id,role,full_name&id=eq.${encodeURIComponent(user.id)}&limit=1`, token) as VerifiedProfile[];
+  const rows = await supabaseRequest(`profiles?select=id,company_id,role,full_name,customer_ref&id=eq.${encodeURIComponent(user.id)}&limit=1`, token) as VerifiedProfile[];
   const profile = rows[0];
   if (!profile?.company_id || !profile.role) throw new TRPCError({ code: "FORBIDDEN", message: "Your workspace role is not configured for AI approval." });
   return { profile, token };

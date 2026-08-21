@@ -33,6 +33,7 @@ import { CRITICAL_SUPABASE_TABLES, persistSupabaseRow } from "./supabasePersiste
 import { archiveHealthcareRecord, createHealthcareRecord, getHealthcareAccess, healthcareArchiveInput, healthcareCreateInput, healthcareListInput, healthcareUpdateInput, listHealthcareRecords, updateHealthcareRecord } from "./healthcareOperations";
 import { exportHealthcareFhirBundle, getHealthcareClinicianAnalytics, healthcareAnalyticsInput, healthcareFhirExportInput } from "./healthcareInteroperability";
 import { getReminderSettings, listReminderDeliveries, reminderDeliveryListInput, reminderSettingsInput, requestReminderTest, saveReminderSettings } from "./healthcareReminders";
+import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePatientSmsConsentPreferences } from "./healthcareSelfService";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -109,6 +110,16 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => listReminderDeliveries(ctx.req, input)),
     testReminder: protectedProcedure
       .mutation(async ({ ctx }) => requestReminderTest(ctx.req)),
+    patientSmsConsent: protectedProcedure
+      .query(async ({ ctx }) => getPatientSmsConsentPreferences(ctx.req)),
+    updatePatientSmsConsent: protectedProcedure
+      .input(patientSmsConsentUpdateInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await updatePatientSmsConsentPreferences(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Patient SMS consent preference updated", module: "Healthcare", details: "Patient self-service preference updated without exposing clinical record details." }).catch(() => undefined);
+        return result;
+      }),
     list: protectedProcedure
       .input(healthcareListInput)
       .query(async ({ ctx, input }) => listHealthcareRecords(ctx.req, input)),

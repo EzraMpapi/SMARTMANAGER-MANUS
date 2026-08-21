@@ -29,7 +29,7 @@ const textValue = z.string().trim().max(4_000);
 const shortTextValue = z.string().trim().max(240);
 
 const tableDataKeys: Record<HealthcareTable, readonly string[]> = {
-  hc_patients: ["mrn", "firstName", "lastName", "dateOfBirth", "gender", "bloodType", "phone", "email", "nationalId", "nationality", "occupation", "maritalStatus", "allergies", "chronicConditions", "insuranceProvider", "insuranceMemberId", "emergencyContactName", "emergencyContactPhone", "address", "clinicalNotes", "smsConsentStatus", "smsConsentCapturedAt", "smsConsentMethod", "smsConsentRevokedAt", "archivedAt"],
+  hc_patients: ["mrn", "firstName", "lastName", "dateOfBirth", "gender", "bloodType", "phone", "email", "nationalId", "nationality", "occupation", "maritalStatus", "allergies", "chronicConditions", "insuranceProvider", "insuranceMemberId", "emergencyContactName", "emergencyContactPhone", "address", "clinicalNotes", "patientPortalReference", "smsConsentStatus", "smsConsentCapturedAt", "smsConsentMethod", "smsConsentRevokedAt", "archivedAt"],
   hc_doctors: ["firstName", "lastName", "specialty", "department", "license", "qualifications", "phone", "email", "experienceYears", "consultationFee", "bio", "availability", "archivedAt"],
   hc_appointments: ["patientId", "patientName", "doctorId", "doctorName", "appointmentType", "startsAt", "endsAt", "reason", "checkedInAt", "cancelReason", "archivedAt"],
   hc_visits: ["patientId", "patientName", "doctorId", "doctorName", "appointmentId", "openedAt", "closedAt", "chiefComplaint", "diagnosis", "clinicalNotes", "followUpDate", "archivedAt"],

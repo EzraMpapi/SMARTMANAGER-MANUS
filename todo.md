@@ -203,3 +203,10 @@
 - [x] Add consent and delivery-status visibility to the Healthcare workspace without exposing phone numbers, message content, or provider secrets.
 - [x] Add unit, protected-router, and browser coverage for consent capture, consent-gated delivery eligibility, webhook idempotency, and inactive-provider safety.
 - [x] Run complete quality gates and publish the verified Healthcare SMS-consent enhancement.
+
+## Patient Self-Service SMS Consent Settings
+- [x] Verify the authenticated patient-to-clinical-record linkage and define a fail-closed self-service access rule.
+- [x] Add protected self-service consent view, grant, update, and revoke procedures with tenant isolation and audit-safe timestamps.
+- [x] Build a responsive patient-facing SMS preference settings page with clear inactive-provider disclosure and revocation feedback.
+- [x] Add unit, protected-route, and browser coverage for self-service consent access, updates, revocation, and unauthorized-record denial.
+- [x] Run complete quality gates and publish the verified patient consent settings page.

@@ -43,6 +43,11 @@ const BusinessSphereDashboard = lazyWithRecovery(
   () => import("./BusinessSphereDashboard"),
   "business-sphere-dashboard",
 );
+const PatientSmsConsentSettings = lazyWithRecovery(
+  // @ts-expect-error The patient preference experience is intentionally authored in JavaScript.
+  () => import("./components/PatientSmsConsentSettings"),
+  "patient-sms-consent-settings",
+);
 
 function DashboardRouteFallback() {
   return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6" role="status" aria-live="polite">
@@ -73,6 +78,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/app"}>{() => <Suspense fallback={<DashboardRouteFallback />}>{isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />}</Suspense>}</Route>
+      <Route path={"/patient/sms-preferences"}>{() => <Suspense fallback={<DashboardRouteFallback />}><PatientSmsConsentSettings /></Suspense>}</Route>
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

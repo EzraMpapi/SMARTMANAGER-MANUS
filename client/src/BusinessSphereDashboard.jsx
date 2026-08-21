@@ -42442,7 +42442,7 @@ function CustomerPortal({ currentUser, invoices, filesHook, onSignOut }) {
             <p className="text-[10.5px] text-slate-400 leading-tight">{effectiveCustomer}</p>
           </div>
         </div>
-        <ProfileMenu currentUser={currentUser} session={{ demo: !currentUser.customerRef }} onSignOut={onSignOut} />
+        <div className="flex items-center gap-2"><a href="/patient/sms-preferences" className="hidden rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex">SMS preferences</a><ProfileMenu currentUser={currentUser} session={{ demo: !currentUser.customerRef }} onSignOut={onSignOut} /></div>
       </header>
 
       {!currentUser.customerRef && (
