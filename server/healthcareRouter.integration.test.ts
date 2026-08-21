@@ -169,6 +169,23 @@ describe("protected healthcare router integration", () => {
     expect(requests).toHaveLength(0);
   });
 
+  it("returns the in-app reconciliation summary only to clinic supervisors through company-scoped workflow tables", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Clinic Administrator", requests);
+    const result = await caller.healthcare.portalReferenceDailySummary();
+    expect(result.delivery).toContain("In-app only");
+    const workflowReads = requests.filter((request) => /hc_(patients|portal_reference_imports|portal_reference_approvals)/.test(request.url));
+    expect(workflowReads).toHaveLength(3);
+    expect(workflowReads.every((request) => request.url.includes(`company_id=eq.${companyId}`))).toBe(true);
+  });
+
+  it("blocks billing-only users from the daily reconciliation summary before workflow records are queried", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Billing Officer", requests);
+    await expect(caller.healthcare.portalReferenceDailySummary()).rejects.toThrow("cannot reconcile patient portal references");
+    expect(requests).toHaveLength(0);
+  });
+
   it("builds a patient-scoped FHIR R4 collection only from active-company clinical source tables", async () => {
     const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
     const caller = callerForRole("Clinic Administrator", requests);

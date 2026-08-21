@@ -103,7 +103,7 @@ export async function linkPatientPortalReference(req: CreateExpressContextOption
   const exactProfiles = profiles.filter((profile) => profile.customer_ref?.trim() === input.reference);
   if (exactProfiles.length !== 1) throw new TRPCError({ code: "CONFLICT", message: "This portal reference is unavailable or needs review before it can be linked." });
   const currentReference = String(patientData(patient).patientPortalReference || "").trim();
-  if (currentReference && currentReference !== input.reference && !input.replaceExisting) throw new TRPCError({ code: "CONFLICT", message: "This patient already has a portal reference. Confirm replacement before changing it." });
+  if (currentReference && currentReference !== input.reference) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A supervisor approval is required before an existing portal reference can be replaced." });
   const duplicateParams = new URLSearchParams({ select: "id", company_id: `eq.${staff.company_id}`, limit: "2" });
   duplicateParams.set("data->>patientPortalReference", `eq.${input.reference}`);
   const duplicates = await serviceRequest<Array<{ id: string }>>(PATIENT_TABLE, duplicateParams);

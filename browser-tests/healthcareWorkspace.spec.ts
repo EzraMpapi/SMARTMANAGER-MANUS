@@ -66,6 +66,9 @@ test("opens the Healthcare Command Center and completes guarded patient registra
       if (procedure === "healthcare.portalReferenceReconciliation") return trpcResult({ patients: [{ id: "e2e11111-1111-4111-8111-111111111111", name: "Asha Mtemi", status: "Active", mrn: "SMC-000184", portalReference: null, linkState: "unlinked" }], candidates: [{ reference: "ASHA-PORTAL", displayName: "Asha Portal", availability: "available" }], summary: { unlinkedPatients: 1, availableReferences: 1 } });
       if (procedure === "healthcare.linkPatientPortalReference") return trpcResult({ id: "e2e11111-1111-4111-8111-111111111111", name: "Asha Mtemi", status: "Active", mrn: "SMC-000184", portalReference: "ASHA-PORTAL", linkState: "linked" });
       if (procedure === "healthcare.clearPatientPortalReference") return trpcResult({ id: "e2e11111-1111-4111-8111-111111111111", name: "Asha Mtemi", status: "Active", mrn: "SMC-000184", portalReference: null, linkState: "unlinked" });
+      if (procedure === "healthcare.portalReferenceWorkflow") return trpcResult({ imports: [], approvals: [], canApprove: true });
+      if (procedure === "healthcare.portalReferenceDailySummary") return trpcResult({ delivery: "In-app only — scheduled outbound delivery is inactive.", totals: { unlinkedPatients: 1, pendingApprovals: 0, readyToApply: 0, appliedToday: 0, rejectedToday: 0, invalidToday: 0 } });
+      if (procedure === "healthcare.stagePortalReferenceCsvImport") return trpcResult({ batchId: "batch-1", staged: 1, ready: 1, approvalRequired: 0, invalid: 0 });
       if (procedure === "healthcare.list") {
         const requestUrl = new URL(route.request().url());
         const rawInput = requestUrl.searchParams.get("input") || "{}";
@@ -200,6 +203,10 @@ test("opens the Healthcare Command Center and completes guarded patient registra
 
   await page.getByRole("main").getByRole("button", { name: "Portal links", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Patient portal reference reconciliation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Daily reconciliation summary" })).toBeVisible();
+  await page.getByLabel("Portal reference CSV content").fill("MRN,Portal Reference\nSMC-000184,ASHA-PORTAL");
+  await page.getByRole("button", { name: "Stage rows for review" }).click();
+  await expect(page.getByText("1 rows staged: 1 ready, 0 need approval.", { exact: true })).toBeVisible();
   await page.getByText("Asha Mtemi", { exact: true }).last().click();
   await page.getByLabel("Verified portal-reference candidate").selectOption("ASHA-PORTAL");
   await page.getByRole("button", { name: "Link verified portal reference" }).click();

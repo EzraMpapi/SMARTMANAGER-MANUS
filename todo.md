@@ -217,3 +217,11 @@
 - [x] Build a responsive clinic staff dashboard for searching patients, viewing unlinked records, linking a portal reference, and safely clearing an incorrect reference.
 - [x] Add unit, protected-router, and browser coverage for staff authorization, tenant isolation, link, clear, and unlinked-state behavior.
 - [x] Run complete quality gates and publish the verified clinic portal-reference reconciliation dashboard.
+
+## Clinic Reconciliation Import, Approval, and Daily Summary
+- [x] Confirm the daily summary delivery approach and keep automated scheduling inactive until its recipient and activation choice are approved.
+- [x] Add tenant-safe CSV parsing, row validation, duplicate detection, staged import review, and explicit apply actions for vetted portal references.
+- [x] Add supervisor approval requests for portal-reference replacements, with protected approval, rejection, and immutable audit-safe status transitions.
+- [x] Build the staff import-review and supervisor approval controls plus clinic-administrator reconciliation summary visibility.
+- [x] Add unit, protected-router, and browser coverage for CSV validation, staged apply, approval isolation, and summary authorization.
+- [x] Run complete quality gates, publish the reconciliation enhancements, and activate a daily schedule only after the delivery approach is confirmed.

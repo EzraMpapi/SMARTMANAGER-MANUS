@@ -1,0 +1,98 @@
+import { TRPCError } from "@trpc/server";
+import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
+import { z } from "zod";
+import { ENV } from "./_core/env";
+import { resolveVerifiedProfile } from "./aiApprovals";
+import { healthcareAccessForRole } from "./healthcareOperations";
+
+const PATIENT_TABLE = "hc_patients";
+const IMPORT_TABLE = "hc_portal_reference_imports";
+const APPROVAL_TABLE = "hc_portal_reference_approvals";
+const PORTAL_ROLES = new Set(["External Client", "Patient"]);
+const SUPERVISOR_ROLES = new Set(["Super Administrator", "Organization Owner", "CEO", "Clinic Administrator"]);
+const referenceSchema = z.string().trim().min(2).max(120).regex(/^[A-Za-z0-9 ._\-/'()]+$/, "Use letters, numbers, spaces, and basic reference punctuation only.");
+
+export const portalReferenceCsvInput = z.object({ csvText: z.string().min(8).max(60_000) });
+export const portalReferenceImportApplyInput = z.object({ importId: z.string().uuid() });
+export const portalReferenceApprovalRequestInput = z.object({ patientId: z.string().uuid(), reference: referenceSchema, reason: z.string().trim().max(240).optional().default("Clinic portal-reference replacement") });
+export const portalReferenceApprovalDecisionInput = z.object({ approvalId: z.string().uuid(), decision: z.enum(["Approved", "Rejected"]), note: z.string().trim().max(400).optional().default("") });
+export const portalReferenceWorkflowListInput = z.object({ limit: z.number().int().min(1).max(100).optional().default(50) });
+
+type Row = { id: string; company_id: string; name: string; status: string; created_at?: string; data?: unknown };
+type ProfileRow = { id: string; full_name?: string | null; customer_ref?: string | null; role?: string | null };
+type Profile = { id: string; company_id: string; full_name: string | null; role: string };
+
+function dataOf(row: Row) { return row.data && typeof row.data === "object" && !Array.isArray(row.data) ? row.data as Record<string, unknown> : {}; }
+function headers() {
+  if (!ENV.supabaseUrl || !ENV.supabaseSecretKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Portal-reference reconciliation is not configured." });
+  return { apikey: ENV.supabaseSecretKey, authorization: `Bearer ${ENV.supabaseSecretKey}`, "content-type": "application/json" };
+}
+function url(table: string, params: URLSearchParams) { return `${ENV.supabaseUrl.replace(/\/$/, "")}/rest/v1/${table}?${params.toString()}`; }
+async function request<T>(table: string, params: URLSearchParams, init: RequestInit = {}) {
+  const response = await fetch(url(table, params), { ...init, headers: { ...headers(), ...(init.headers || {}) } });
+  const body = await response.json().catch(() => []) as T;
+  if (!response.ok) throw new TRPCError({ code: "BAD_REQUEST", message: "The portal-reference workflow could not be completed." });
+  return body;
+}
+async function staff(req: CreateExpressContextOptions["req"]): Promise<Profile> {
+  const { profile } = await resolveVerifiedProfile(req);
+  if (PORTAL_ROLES.has(profile.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Patient portal accounts cannot manage clinic portal references." });
+  const access = healthcareAccessForRole(profile.role);
+  if (!access.canRead.hc_patients || !access.canUpdate.hc_patients) throw new TRPCError({ code: "FORBIDDEN", message: "Your clinic role cannot reconcile patient portal references." });
+  return profile;
+}
+async function supervisor(req: CreateExpressContextOptions["req"]) {
+  const profile = await staff(req);
+  if (!SUPERVISOR_ROLES.has(profile.role)) throw new TRPCError({ code: "FORBIDDEN", message: "A clinic supervisor must decide portal-reference replacements." });
+  return profile;
+}
+async function patients(companyId: string) { return request<Row[]>(PATIENT_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${companyId}`, status: "neq.Archived", limit: "500", order: "created_at.desc" })); }
+async function portalProfiles(companyId: string) {
+  const params = new URLSearchParams({ select: "id,full_name,customer_ref,role", company_id: `eq.${companyId}`, limit: "500", order: "full_name.asc" });
+  params.set("role", "in.(External Client,Patient)"); params.set("customer_ref", "not.is.null");
+  const rows = await request<ProfileRow[]>("profiles", params);
+  return rows.filter((row) => PORTAL_ROLES.has(String(row.role || "")) && typeof row.customer_ref === "string" && row.customer_ref.trim());
+}
+function parseCsv(csv: string) {
+  const cells: string[][] = []; let row: string[] = []; let cell = ""; let quoted = false;
+  for (let index = 0; index < csv.length; index += 1) { const char = csv[index]; const next = csv[index + 1]; if (char === '"' && quoted && next === '"') { cell += '"'; index += 1; } else if (char === '"') quoted = !quoted; else if (char === "," && !quoted) { row.push(cell.trim()); cell = ""; } else if ((char === "\n" || char === "\r") && !quoted) { if (char === "\r" && next === "\n") index += 1; row.push(cell.trim()); if (row.some(Boolean)) cells.push(row); row = []; cell = ""; } else cell += char; }
+  row.push(cell.trim()); if (row.some(Boolean)) cells.push(row); if (quoted) throw new TRPCError({ code: "BAD_REQUEST", message: "The CSV contains an unmatched quote." });
+  if (cells.length < 2) throw new TRPCError({ code: "BAD_REQUEST", message: "Add a header and at least one portal-reference row." });
+  const header = cells.shift()!.map((value) => value.toLowerCase().replace(/[^a-z0-9]/g, "")); const mrnIndex = header.findIndex((value) => value === "mrn" || value === "patientmrn"); const referenceIndex = header.findIndex((value) => value === "portalreference" || value === "patientportalreference" || value === "reference");
+  if (mrnIndex < 0 || referenceIndex < 0) throw new TRPCError({ code: "BAD_REQUEST", message: "CSV headers must include MRN and Portal Reference." });
+  if (cells.length > 200) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Import up to 200 rows at a time." });
+  return cells.map((values, index) => ({ rowNumber: index + 2, mrn: String(values[mrnIndex] || "").trim(), reference: String(values[referenceIndex] || "").trim() }));
+}
+async function insertRows(table: string, rows: Array<Record<string, unknown>>) { return request<Row[]>(table, new URLSearchParams(), { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(rows) }); }
+async function patchRow(table: string, companyId: string, id: string, patch: Record<string, unknown>) { const rows = await request<Row[]>(table, new URLSearchParams({ id: `eq.${id}`, company_id: `eq.${companyId}` }), { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(patch) }); if (rows.length !== 1) throw new TRPCError({ code: "CONFLICT", message: "The reconciliation record changed before the update completed." }); return rows[0]; }
+async function patientById(companyId: string, patientId: string) { const rows = await request<Row[]>(PATIENT_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data", id: `eq.${patientId}`, company_id: `eq.${companyId}`, limit: "1" })); if (!rows[0]) throw new TRPCError({ code: "NOT_FOUND", message: "The patient record is no longer available in this clinic." }); return rows[0]; }
+async function validateCandidate(companyId: string, patient: Row, reference: string) {
+  const [profiles, allPatients] = await Promise.all([portalProfiles(companyId), patients(companyId)]); const matches = profiles.filter((profile) => profile.customer_ref!.trim() === reference); if (matches.length !== 1) throw new TRPCError({ code: "CONFLICT", message: "This portal reference is unavailable or needs review before it can be used." });
+  const duplicate = allPatients.some((row) => row.id !== patient.id && String(dataOf(row).patientPortalReference || "").trim() === reference); if (duplicate) throw new TRPCError({ code: "CONFLICT", message: "This portal reference is already linked to another patient record." });
+}
+async function replaceReference(companyId: string, patientId: string, reference: string) { const patient = await patientById(companyId, patientId); await validateCandidate(companyId, patient, reference); const updated = await patchRow(PATIENT_TABLE, companyId, patient.id, { data: { ...dataOf(patient), patientPortalReference: reference } }); return updated; }
+
+export async function stagePortalReferenceCsvImport(req: CreateExpressContextOptions["req"], input: z.infer<typeof portalReferenceCsvInput>) {
+  const profile = await staff(req); const parsed = parseCsv(input.csvText); const [allPatients, profiles] = await Promise.all([patients(profile.company_id), portalProfiles(profile.company_id)]); const batchId = crypto.randomUUID(); const byMrn = new Map<string, Row[]>(); const profileCount = new Map<string, number>(); const linked = new Map<string, string>(); const seen = new Set<string>();
+  allPatients.forEach((patient) => { const mrn = String(dataOf(patient).mrn || "").trim().toLowerCase(); if (mrn) byMrn.set(mrn, [...(byMrn.get(mrn) || []), patient]); const reference = String(dataOf(patient).patientPortalReference || "").trim(); if (reference) linked.set(reference, patient.id); }); profiles.forEach((portal) => { const reference = portal.customer_ref!.trim(); profileCount.set(reference, (profileCount.get(reference) || 0) + 1); });
+  const staged = parsed.map((line) => { const patientMatches = byMrn.get(line.mrn.toLowerCase()) || []; let status = "Ready to apply"; let reason = ""; let patient: Row | undefined; try { referenceSchema.parse(line.reference); } catch { status = "Invalid"; reason = "Portal reference format is invalid."; } if (status !== "Invalid" && patientMatches.length !== 1) { status = "Invalid"; reason = patientMatches.length ? "MRN matches more than one patient record." : "No active patient matches this MRN."; } patient = patientMatches[0]; if (status !== "Invalid" && profileCount.get(line.reference) !== 1) { status = "Invalid"; reason = "Portal reference is unavailable or ambiguous."; } if (status !== "Invalid" && (seen.has(line.reference) || linked.has(line.reference) && linked.get(line.reference) !== patient!.id)) { status = "Invalid"; reason = "Portal reference is duplicated in this import or already linked."; } seen.add(line.reference); const previousReference = patient ? String(dataOf(patient).patientPortalReference || "").trim() : ""; if (status === "Ready to apply" && previousReference && previousReference !== line.reference) { status = "Approval required"; reason = "Replacing an existing portal reference requires supervisor approval."; } if (previousReference === line.reference) { status = "No change"; reason = "The verified reference is already linked to this patient."; } return { name: `Portal reference import · row ${line.rowNumber}`, company_id: profile.company_id, status, amount: null, notes: null, data: { batchId, rowNumber: line.rowNumber, patientId: patient?.id || null, mrn: line.mrn, proposedReference: line.reference, previousReference: previousReference || null, validationReason: reason || null, requestedAt: new Date().toISOString(), requestedById: profile.id, requestedByName: profile.full_name } }; });
+  const imports = await insertRows(IMPORT_TABLE, staged); const approvalImports = imports.filter((row) => row.status === "Approval required");
+  for (const item of approvalImports) { const data = dataOf(item); const approval = (await insertRows(APPROVAL_TABLE, [{ name: "Portal-reference replacement approval", company_id: profile.company_id, status: "Pending", amount: null, notes: null, data: { patientId: data.patientId, importId: item.id, previousReference: data.previousReference, proposedReference: data.proposedReference, reason: data.validationReason, requestedAt: new Date().toISOString(), requestedById: profile.id, requestedByName: profile.full_name } }]))[0]; await patchRow(IMPORT_TABLE, profile.company_id, item.id, { data: { ...data, approvalId: approval.id } }); }
+  return { batchId, staged: imports.length, ready: imports.filter((row) => row.status === "Ready to apply").length, approvalRequired: approvalImports.length, invalid: imports.filter((row) => row.status === "Invalid").length };
+}
+
+export async function applyPortalReferenceImport(req: CreateExpressContextOptions["req"], input: z.infer<typeof portalReferenceImportApplyInput>) {
+  const profile = await staff(req); const rows = await request<Row[]>(IMPORT_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data", id: `eq.${input.importId}`, company_id: `eq.${profile.company_id}`, limit: "1" })); const item = rows[0]; if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "The staged import row is no longer available." }); if (item.status !== "Ready to apply") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only validated unlinked rows can be applied directly." }); const data = dataOf(item); await replaceReference(profile.company_id, String(data.patientId || ""), String(data.proposedReference || "")); await patchRow(IMPORT_TABLE, profile.company_id, item.id, { status: "Applied", data: { ...data, appliedAt: new Date().toISOString() } }); return { id: item.id, status: "Applied" };
+}
+
+export async function requestPortalReferenceReplacement(req: CreateExpressContextOptions["req"], input: z.infer<typeof portalReferenceApprovalRequestInput>) {
+  const profile = await staff(req); const patient = await patientById(profile.company_id, input.patientId); const previousReference = String(dataOf(patient).patientPortalReference || "").trim(); if (!previousReference || previousReference === input.reference) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Choose a different existing portal reference to request replacement." }); await validateCandidate(profile.company_id, patient, input.reference); const duplicate = await request<Row[]>(APPROVAL_TABLE, new URLSearchParams({ select: "id", company_id: `eq.${profile.company_id}`, status: "eq.Pending", limit: "1", "data->>patientId": `eq.${patient.id}` })); if (duplicate.length) throw new TRPCError({ code: "CONFLICT", message: "A replacement approval is already pending for this patient." }); const approval = (await insertRows(APPROVAL_TABLE, [{ name: "Portal-reference replacement approval", company_id: profile.company_id, status: "Pending", amount: null, notes: null, data: { patientId: patient.id, importId: null, previousReference, proposedReference: input.reference, reason: input.reason, requestedAt: new Date().toISOString(), requestedById: profile.id, requestedByName: profile.full_name } }]))[0]; return { id: approval.id, status: approval.status };
+}
+
+export async function decidePortalReferenceApproval(req: CreateExpressContextOptions["req"], input: z.infer<typeof portalReferenceApprovalDecisionInput>) {
+  const profile = await supervisor(req); const rows = await request<Row[]>(APPROVAL_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data", id: `eq.${input.approvalId}`, company_id: `eq.${profile.company_id}`, limit: "1" })); const approval = rows[0]; if (!approval) throw new TRPCError({ code: "NOT_FOUND", message: "The replacement request is no longer available." }); if (approval.status !== "Pending") throw new TRPCError({ code: "CONFLICT", message: "This replacement request has already been decided." }); const data = dataOf(approval); const decidedAt = new Date().toISOString(); if (input.decision === "Approved") await replaceReference(profile.company_id, String(data.patientId || ""), String(data.proposedReference || "")); await patchRow(APPROVAL_TABLE, profile.company_id, approval.id, { status: input.decision, data: { ...data, decidedAt, decidedById: profile.id, decidedByName: profile.full_name, decisionNote: input.note || null } }); if (typeof data.importId === "string") await patchRow(IMPORT_TABLE, profile.company_id, data.importId, { status: input.decision === "Approved" ? "Applied" : "Rejected", data: { ...data, decidedAt, decisionNote: input.note || null, appliedAt: input.decision === "Approved" ? decidedAt : null } }); return { id: approval.id, status: input.decision };
+}
+
+function safeWorkflowRow(row: Row) { const data = dataOf(row); return { id: row.id, name: row.name, status: row.status, createdAt: row.created_at || null, patientId: typeof data.patientId === "string" ? data.patientId : null, mrn: typeof data.mrn === "string" ? data.mrn : null, proposedReference: typeof data.proposedReference === "string" ? data.proposedReference : null, previousReference: typeof data.previousReference === "string" ? data.previousReference : null, reason: typeof data.validationReason === "string" ? data.validationReason : typeof data.reason === "string" ? data.reason : null, approvalId: typeof data.approvalId === "string" ? data.approvalId : null }; }
+export async function listPortalReferenceWorkflow(req: CreateExpressContextOptions["req"], input: z.infer<typeof portalReferenceWorkflowListInput>) { const profile = await staff(req); const [imports, approvals] = await Promise.all([request<Row[]>(IMPORT_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${profile.company_id}`, limit: String(input.limit), order: "created_at.desc" })), request<Row[]>(APPROVAL_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${profile.company_id}`, limit: String(input.limit), order: "created_at.desc" }))]); const supervisorView = SUPERVISOR_ROLES.has(profile.role); return { imports: imports.map(safeWorkflowRow), approvals: supervisorView ? approvals.map(safeWorkflowRow) : [], canApprove: supervisorView }; }
+export async function getPortalReferenceDailySummary(req: CreateExpressContextOptions["req"]) { const profile = await supervisor(req); const [allPatients, imports, approvals] = await Promise.all([patients(profile.company_id), request<Row[]>(IMPORT_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${profile.company_id}`, limit: "500", order: "created_at.desc" })), request<Row[]>(APPROVAL_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${profile.company_id}`, limit: "500", order: "created_at.desc" }))]); const today = new Date().toISOString().slice(0, 10); const todayRows = imports.filter((item) => String(item.created_at || "").slice(0, 10) === today); return { generatedAt: new Date().toISOString(), delivery: "In-app only — scheduled outbound delivery is inactive.", totals: { unlinkedPatients: allPatients.filter((patient) => !String(dataOf(patient).patientPortalReference || "").trim()).length, pendingApprovals: approvals.filter((item) => item.status === "Pending").length, readyToApply: imports.filter((item) => item.status === "Ready to apply").length, appliedToday: todayRows.filter((item) => item.status === "Applied").length, rejectedToday: todayRows.filter((item) => item.status === "Rejected").length, invalidToday: todayRows.filter((item) => item.status === "Invalid").length } }; }

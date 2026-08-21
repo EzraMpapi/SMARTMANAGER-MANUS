@@ -35,6 +35,7 @@ import { exportHealthcareFhirBundle, getHealthcareClinicianAnalytics, healthcare
 import { getReminderSettings, listReminderDeliveries, reminderDeliveryListInput, reminderSettingsInput, requestReminderTest, saveReminderSettings } from "./healthcareReminders";
 import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePatientSmsConsentPreferences } from "./healthcareSelfService";
 import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPatientPortalReference, linkPatientPortalReferenceInput, listPortalReferenceReconciliation, portalReferenceListInput } from "./healthcarePortalReconciliation";
+import { applyPortalReferenceImport, decidePortalReferenceApproval, getPortalReferenceDailySummary, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceCsvInput, portalReferenceImportApplyInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -140,6 +141,43 @@ export const appRouter = router({
         void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Patient portal reference cleared", module: "Healthcare", details: "Clinic staff cleared a patient portal reference after explicit confirmation." }).catch(() => undefined);
         return result;
       }),
+    stagePortalReferenceCsvImport: protectedProcedure
+      .input(portalReferenceCsvInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await stagePortalReferenceCsvImport(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Portal-reference CSV import staged", module: "Healthcare", details: `${result.staged} portal-reference rows staged for review without logging reference values.` }).catch(() => undefined);
+        return result;
+      }),
+    applyPortalReferenceImport: protectedProcedure
+      .input(portalReferenceImportApplyInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await applyPortalReferenceImport(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Validated portal-reference import applied", module: "Healthcare", details: "A reviewed unlinked portal-reference row was applied." }).catch(() => undefined);
+        return result;
+      }),
+    requestPortalReferenceReplacement: protectedProcedure
+      .input(portalReferenceApprovalRequestInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await requestPortalReferenceReplacement(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Portal-reference replacement approval requested", module: "Healthcare", details: "A replacement request was created without logging portal-reference values." }).catch(() => undefined);
+        return result;
+      }),
+    decidePortalReferenceApproval: protectedProcedure
+      .input(portalReferenceApprovalDecisionInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await decidePortalReferenceApproval(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: `Portal-reference replacement ${result.status.toLowerCase()}`, module: "Healthcare", details: "A supervisor decided a portal-reference replacement request." }).catch(() => undefined);
+        return result;
+      }),
+    portalReferenceWorkflow: protectedProcedure
+      .input(portalReferenceWorkflowListInput)
+      .query(async ({ ctx, input }) => listPortalReferenceWorkflow(ctx.req, input)),
+    portalReferenceDailySummary: protectedProcedure
+      .query(async ({ ctx }) => getPortalReferenceDailySummary(ctx.req)),
     list: protectedProcedure
       .input(healthcareListInput)
       .query(async ({ ctx, input }) => listHealthcareRecords(ctx.req, input)),
