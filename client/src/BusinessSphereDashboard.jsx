@@ -53,6 +53,7 @@ import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
 import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, SalesCommandCenter } from "./components/CommercialCommandCenters";
 import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter } from "./components/OperationsCommandCenters";
 import { FinanceCommandCenter, IntegrationsCommandCenter, ReportsCommandCenter } from "./components/FinanceCommandCenters";
+import { CollaborationCommandCenter, DocumentsCommandCenter, EmployeePortalCommandCenter, HrCommandCenter, WorkflowCommandCenter } from "./components/PeopleCommandCenters";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -18311,7 +18312,7 @@ function DutyFormPanel({ employees, onClose, onSubmit }) {
 }
 
 
-function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearIntent, currentUser, canManage }) {
+function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearIntent, currentUser, canManage, onNavigate }) {
   const [tab, setTab] = useState("employees");
 
   useEffect(() => {
@@ -18348,6 +18349,8 @@ function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearInten
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Human Resources</h1>
         <p className="text-[13px] text-slate-500 mt-1">Team roster, recruitment, attendance, and payroll in one place</p>
       </div>
+
+      <HrCommandCenter employees={employeesHook} leaveRequests={leaveRequestsHook} expenses={expensesHook} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {HR_TABS.map((t) => {
@@ -25391,7 +25394,7 @@ function ESignature() {
 
 /* --------------------------------- DOCUMENTS ----------------------------------- */
 
-function Documents({ filesHook, company }) {
+function Documents({ filesHook, company, onNavigate }) {
   const [folder, setFolder] = useState("all");
   const [view, setView] = useState("grid");
   const [query, setQuery] = useState("");
@@ -25534,6 +25537,8 @@ function Documents({ filesHook, company }) {
           <UploadCloud size={15} /> Upload File
         </button>
       </div>
+
+      <DocumentsCommandCenter files={filesHook} onNavigate={onNavigate} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5">
         {/* Folder sidebar */}
@@ -31195,7 +31200,7 @@ async function executeWorkflowStep(step, context) {
   return { ok: false, note: "Step type not recognized." };
 }
 
-function WorkflowStudio({ company, invoices, expenses, inventory }) {
+function WorkflowStudio({ company, invoices, expenses, inventory, onNavigate }) {
   const workflows = useCompanyTable("workflows", workflowsSeed, { mapRow: mapWorkflowRow });
   const marketplace = useCompanyTable("workflow_marketplace_templates", OFFICIAL_MARKETPLACE_TEMPLATES, { mapRow: mapMarketplaceTemplateRow });
   // Read-only access to real webhook config — the same table Notifications
@@ -31332,6 +31337,8 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
           </button>
         )}
       </div>
+
+      <WorkflowCommandCenter workflows={workflows} marketplace={marketplace} channels={channels} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit">
         <button onClick={() => setView("my-workflows")} className={`text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors ${view === "my-workflows" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
@@ -33384,6 +33391,8 @@ function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, wo
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Collaboration Hub</h1>
         <p className="text-[13px] text-slate-500 mt-1">Team chat, an enterprise calendar pulling from every module, and team workspaces — all real. Voice and video calls coordinate through a real meeting link rather than being hosted in-app; see the note on the Calendar tab.</p>
       </div>
+
+      <CollaborationCommandCenter employees={employees} invoices={invoices} crm={crm} files={filesHook} workOrders={workOrders} leaveRequests={leaveRequests} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full shrink-0">
         {COLLAB_TABS.map((t) => {
@@ -51720,7 +51729,7 @@ function SmartManager() {
           {active === "scm" && <SupplyChain onNavigate={go} />}
           {active === "ecommerce" && <ECommerce inventory={inventory} onNavigate={go} />}
           {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} onNavigate={go} />}
-          {active === "documents" && <Documents filesHook={files} company={company} />}
+          {active === "documents" && <Documents filesHook={files} company={company} onNavigate={go} />}
           {active === "projects" && <Projects filesHook={files} expensesHook={expenses} />}
           {active === "support" && <CustomerSupport company={company} />}
           {active === "analytics" && (
@@ -51738,7 +51747,7 @@ function SmartManager() {
             <Integrations invoices={invoices} expenses={expenses} canManage={canManage} currentUser={currentUser} onNavigate={go} />
           )}
           {active === "workflows" && (
-            <WorkflowStudio company={company} invoices={invoices} expenses={expenses} inventory={inventory} />
+            <WorkflowStudio company={company} invoices={invoices} expenses={expenses} inventory={inventory} onNavigate={go} />
           )}
           {active === "collaboration" && (
             <CollaborationHub currentUser={currentUser} filesHook={files} employees={employees} invoices={invoices} crm={crm} workOrders={workOrders} leaveRequests={leaveRequests} onNavigate={go} />
@@ -51749,7 +51758,7 @@ function SmartManager() {
             </Suspense>
           )}
           {active === "marketing" && <Marketing crm={crm} onNavigate={go} />}
-          {active === "hr" && <HR employeesHook={employees} leaveRequestsHook={leaveRequests} expensesHook={expenses} intent={intent} clearIntent={clearIntent} currentUser={currentUser} canManage={canManage} />}
+          {active === "hr" && <HR employeesHook={employees} leaveRequestsHook={leaveRequests} expensesHook={expenses} intent={intent} clearIntent={clearIntent} currentUser={currentUser} canManage={canManage} onNavigate={go} />}
           {active === "manufacturing" && <Manufacturing inventory={inventory} workOrdersHook={workOrders} expensesHook={expenses} />}
           {active === "ai" && (
             <AIAssistant company={company} invoices={invoices} inventory={inventory} crm={crm} expenses={expenses} employees={employees} leaveRequests={leaveRequests} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} onNavigate={go} currentUser={currentUser} />
