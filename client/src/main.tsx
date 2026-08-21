@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { startLogin } from "./const";
+import { hasStoredSupabaseSession, isUnauthenticatedTrpcFailure } from "./lib/trpcAuthRecovery";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -14,10 +15,20 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
 
-  const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
+  const isUnauthorized = isUnauthenticatedTrpcFailure(error);
 
   if (!isUnauthorized) return;
 
+  try {
+    if (hasStoredSupabaseSession(window.localStorage) || hasStoredSupabaseSession(window.sessionStorage)) {
+      window.dispatchEvent(new CustomEvent("smart-manager:auth-session-expired", {
+        detail: { diagnosticCode: "SM-AUTH-401" },
+      }));
+      return;
+    }
+  } catch {
+    // Fall through to the standard OAuth entry point when storage is unavailable.
+  }
   startLogin();
 };
 

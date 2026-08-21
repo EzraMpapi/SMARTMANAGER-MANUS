@@ -74,3 +74,21 @@ test("offers an in-app retry for a transient workspace launch failure without si
   expect(telemetry).toContain('"outcome":"retryable_failure"');
   expect(telemetry).not.toMatch(/token|email|tenant|company|href|error/i);
 });
+
+test("returns to sign-in when a verified session loses authorization during workspace bootstrap", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("bs_access_token", "stale-access-token");
+    window.localStorage.setItem("bs_refresh_token", "stale-refresh-token");
+  });
+  await page.route("**/auth/v1/user", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "e2e-user", email: "launch@e2e.invalid", user_metadata: { full_name: "Asha Mrema" } }) });
+  });
+  await page.route("**/rest/v1/profiles**", async (route) => {
+    await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ message: "JWT expired" }) });
+  });
+
+  await page.goto("/app", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("button", { name: "Sign in securely" })).toBeVisible();
+  await expect(page.getByText("Something went wrong", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Retry secure workspace recovery" })).toHaveCount(0);
+});

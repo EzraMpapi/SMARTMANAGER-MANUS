@@ -52149,10 +52149,12 @@ function SmartManager() {
         rememberConfirmedOrganizationIndustryFocus(confirmedIndustryFocus);
         setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, industry: confirmedIndustryFocus, industryFocus: confirmedIndustryFocus, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
       } catch (bootstrapError) {
-        if ((bootstrapError?.status === 401 || bootstrapError?.status === 403) && !authenticatedUser) {
+        if (isTerminalWorkspaceSessionError(bootstrapError)) {
           reportSessionRefreshOutcome("terminal_failure", "launch_bootstrap");
           clearStoredAuthSession();
           setTerminalSessionDiagnostic(sessionRecoveryDiagnosticCode(bootstrapError));
+          setSession(null);
+          setAuthView("login");
         } else {
           authDebug("Workspace resolution failed", { message: bootstrapError?.message || "unknown", authenticated: Boolean(authenticatedUser) });
           reportSessionRefreshOutcome("retryable_failure", "launch_bootstrap");
