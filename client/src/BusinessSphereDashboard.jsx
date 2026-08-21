@@ -51729,8 +51729,8 @@ function SmartManager() {
             <EmployeePortal
               currentUser={currentUser}
               company={company}
-              employees={employees}
-              leaveRequests={leaveRequests}
+              employees={employees.rows}
+              leaveRequests={leaveRequests.rows}
               canManage={canManage}
             />
           )}

@@ -14,6 +14,8 @@ describe("Employee Portal production contracts", () => {
     expect(workspace).not.toContain("sessionStorage");
     expect(dashboard).toContain('fetch(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`');
     expect(dashboard).toContain("<EmployeePortalWorkspace");
+    expect(dashboard).toContain("employees={employees.rows}");
+    expect(dashboard).toContain("leaveRequests={leaveRequests.rows}");
   });
 
   it("covers employee self-service, management approvals, and the requested connected portal areas", () => {
