@@ -240,7 +240,7 @@
 - [x] Add an idempotent tenant-safe daily reconciliation email dispatch handler and persisted schedule lifecycle state.
 - [x] Add clinic-administrator schedule status, next-run, and privacy-safe delivery-history visibility.
 - [x] Add unit, protected-router, and browser coverage for authorized schedule activation, idempotent delivery, recipient isolation, and failure recovery.
-- [ ] Run complete quality gates, publish the callback implementation, and activate the approved 10:38 Africa/Dar_es_Salaam daily schedule.
+- [x] Run complete quality gates, publish the callback implementation, and activate the approved 10:38 Africa/Dar_es_Salaam daily schedule.
 
 ## Published Workspace Server Error Follow-up
 - [x] Diagnose and correct the server error reported while accessing the published workspace.
