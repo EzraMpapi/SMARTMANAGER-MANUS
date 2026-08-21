@@ -15,6 +15,7 @@ import { scheduledTraZReportArchiveHandler } from "../scheduledTraZReportArchive
 import { scheduledMarketHealthDigestHandler } from "../scheduledMarketHealthDigest";
 import { scheduledAppointmentRemindersHandler } from "../scheduledAppointmentReminders";
 import { healthcareReminderDeliveryWebhookHandler } from "../healthcareReminderWebhook";
+import { scheduledPortalReferenceReconciliationDigestHandler } from "../scheduledPortalReferenceReconciliationDigest";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -50,6 +51,7 @@ async function startServer() {
   app.post("/api/scheduled/traZReportArchive", scheduledTraZReportArchiveHandler);
   app.post("/api/scheduled/marketHealthDigest", scheduledMarketHealthDigestHandler);
   app.post("/api/scheduled/appointmentReminders", scheduledAppointmentRemindersHandler);
+  app.post("/api/scheduled/portalReferenceReconciliationDigest", scheduledPortalReferenceReconciliationDigestHandler);
   app.post("/api/webhooks/backup-complete", async (req, res) => {
     try {
       const { handleBackupCompletionWebhook } = await import("../backupWebhook");

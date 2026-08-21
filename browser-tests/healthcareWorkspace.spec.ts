@@ -44,6 +44,7 @@ function trpcResult(data: unknown) {
 }
 
 test("opens the Healthcare Command Center and completes guarded patient registration", async ({ page }, testInfo) => {
+  let reconciliationScheduleActive = false;
   await page.addInitScript(() => {
     window.localStorage.setItem("bs_access_token", "e2e-healthcare-access-token");
     window.localStorage.setItem("bs_refresh_token", "e2e-healthcare-refresh-token");
@@ -70,8 +71,10 @@ test("opens the Healthcare Command Center and completes guarded patient registra
       if (procedure === "healthcare.portalReferenceDailySummary") return trpcResult({ delivery: "In-app only — scheduled outbound delivery is inactive.", totals: { unlinkedPatients: 1, pendingApprovals: 0, readyToApply: 0, appliedToday: 0, rejectedToday: 0, invalidToday: 0 } });
       if (procedure === "healthcare.portalReferenceErrorExport") return trpcResult({ generatedAt: "2026-08-21T06:00:00.000Z", rows: [{ rowNumber: 4, mrn: "SMC-000189", status: "Invalid", validationReason: "Portal reference format is invalid." }] });
       if (procedure === "healthcare.portalReferenceAuditSearch") return trpcResult({ rows: [{ id: "audit-1", name: "Portal-reference replacement approval", status: "Rejected", createdAt: "2026-08-21T06:00:00.000Z", mrn: "SMC-000189", reason: "Replacement review", decisionNote: "Identity could not be confirmed.", decidedAt: "2026-08-21T07:00:00.000Z" }] });
-      if (procedure === "healthcare.portalReferenceSummarySettings") return trpcResult({ settings: { id: "summary-1", recipientMode: "both", roleRecipients: ["Clinic Administrator", "Organization Owner", "CEO"], managedRecipients: ["admin@clinic.example"], timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false, scheduleState: "Inactive pending explicit time and activation confirmation" } });
+      if (procedure === "healthcare.portalReferenceSummarySettings") return trpcResult({ settings: { id: "summary-1", recipientMode: "both", roleRecipients: ["Clinic Administrator", "Organization Owner", "CEO"], managedRecipients: ["admin@clinic.example"], timezone: "Africa/Dar_es_Salaam", deliveryEnabled: reconciliationScheduleActive, scheduleState: reconciliationScheduleActive ? "Active — daily at 10:38 Africa/Dar_es_Salaam" : "Inactive pending explicit time and activation confirmation", nextRunAt: reconciliationScheduleActive ? "2026-08-22T07:38:00.000Z" : null } });
+      if (procedure === "healthcare.portalReferenceDeliveryHistory") return trpcResult({ rows: reconciliationScheduleActive ? [{ createdAt: "2026-08-21T07:38:00.000Z", status: "success", severity: "INFO", responseCode: 200, date: "2026-08-21", recipientCount: 1, successCount: 1, failedCount: 0 }] : [] });
       if (procedure === "healthcare.savePortalReferenceSummarySettings") return trpcResult({ message: "Recipient configuration saved. Daily email delivery remains inactive until its local time and activation are explicitly approved.", settings: { id: "summary-1", recipientMode: "both", roleRecipients: ["Clinic Administrator", "Organization Owner", "CEO"], managedRecipients: ["admin@clinic.example"], timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false, scheduleState: "Inactive pending explicit time and activation confirmation" } });
+      if (procedure === "healthcare.activatePortalReferenceDailySchedule") { reconciliationScheduleActive = true; return trpcResult({ message: "Daily reconciliation email delivery is active at 10:38 Africa/Dar_es_Salaam.", settings: { id: "summary-1", recipientMode: "both", roleRecipients: ["Clinic Administrator", "Organization Owner", "CEO"], managedRecipients: ["admin@clinic.example"], timezone: "Africa/Dar_es_Salaam", deliveryEnabled: true, scheduleState: "Active — daily at 10:38 Africa/Dar_es_Salaam", nextRunAt: "2026-08-22T07:38:00.000Z" } }); }
       if (procedure === "healthcare.stagePortalReferenceCsvImport") return trpcResult({ batchId: "batch-1", staged: 1, ready: 1, approvalRequired: 0, invalid: 0 });
       if (procedure === "healthcare.list") {
         const requestUrl = new URL(route.request().url());
@@ -224,7 +227,13 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await expect(page.getByText("Identity could not be confirmed.", { exact: false })).toBeVisible();
   await page.getByLabel("Approved managed recipients").fill("admin@clinic.example\nowner@clinic.example");
   await page.getByRole("button", { name: "Save recipients" }).click();
-  await expect(page.getByText("Recipient configuration saved. Daily sending remains inactive.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Recipient configuration saved.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Daily reconciliation email schedule" })).toBeVisible();
+  await expect(page.getByText("No scheduled delivery records yet. History will appear after the first daily run.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Activate 10:38 daily" }).click();
+  await expect(page.getByText("Daily reconciliation email delivery is active at 10:38 Africa/Dar_es_Salaam.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Active — daily at 10:38 Africa\/Dar_es_Salaam/)).toBeVisible();
+  await expect(page.getByText("1 accepted · 0 not accepted · 1 recipients", { exact: true })).toBeVisible();
 
   await page.getByRole("main").getByRole("button", { name: "Insurance claims", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Insurance claims" })).toBeVisible();

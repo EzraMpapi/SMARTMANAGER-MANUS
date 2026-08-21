@@ -35,7 +35,7 @@ import { exportHealthcareFhirBundle, getHealthcareClinicianAnalytics, healthcare
 import { getReminderSettings, listReminderDeliveries, reminderDeliveryListInput, reminderSettingsInput, requestReminderTest, saveReminderSettings } from "./healthcareReminders";
 import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePatientSmsConsentPreferences } from "./healthcareSelfService";
 import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPatientPortalReference, linkPatientPortalReferenceInput, listPortalReferenceReconciliation, portalReferenceListInput } from "./healthcarePortalReconciliation";
-import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
+import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceDeliveryHistory, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceDeliveryHistoryInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -186,12 +186,34 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => searchPortalReferenceAudit(ctx.req, input)),
     portalReferenceSummarySettings: protectedProcedure
       .query(async ({ ctx }) => getPortalReferenceSummarySettings(ctx.req)),
+    portalReferenceDeliveryHistory: protectedProcedure
+      .input(portalReferenceDeliveryHistoryInput)
+      .query(async ({ ctx, input }) => listPortalReferenceDeliveryHistory(ctx.req, input)),
     savePortalReferenceSummarySettings: protectedProcedure
       .input(portalReferenceSummarySettingsInput)
       .mutation(async ({ ctx, input }) => {
-        const result = await savePortalReferenceSummarySettings(ctx.req, input);
+        const result = await savePortalReferenceSummarySettings(ctx.req, input, { userSession: getSessionToken(ctx.req) });
         const { profile } = await resolveVerifiedProfile(ctx.req);
-        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Reconciliation email recipient configuration updated", module: "Healthcare", details: "Role-based and managed recipients were configured; daily delivery remains inactive pending explicit activation." }).catch(() => undefined);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Reconciliation email recipient configuration updated", module: "Healthcare", details: result.settings.deliveryEnabled ? "Role-based and managed recipients were configured with active daily delivery." : "Role-based and managed recipients were configured with daily delivery inactive." }).catch(() => undefined);
+        return result;
+      }),
+    activatePortalReferenceDailySchedule: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const current = await getPortalReferenceSummarySettings(ctx.req);
+        const settings = current.settings;
+        if (settings.recipientMode === "managed" && !settings.managedRecipients.length) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Add at least one approved managed recipient before activating this delivery mode." });
+        const result = await savePortalReferenceSummarySettings(ctx.req, { recipientMode: settings.recipientMode, managedRecipients: settings.managedRecipients, timezone: "Africa/Dar_es_Salaam", deliveryEnabled: true }, { userSession: getSessionToken(ctx.req) });
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Daily reconciliation email schedule activated", module: "Healthcare", details: "A clinic supervisor activated the privacy-safe daily reconciliation digest at 10:38 Africa/Dar_es_Salaam." }).catch(() => undefined);
+        return result;
+      }),
+    deactivatePortalReferenceDailySchedule: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const current = await getPortalReferenceSummarySettings(ctx.req);
+        const settings = current.settings;
+        const result = await savePortalReferenceSummarySettings(ctx.req, { recipientMode: settings.recipientMode, managedRecipients: settings.managedRecipients, timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false }, { userSession: getSessionToken(ctx.req) });
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Daily reconciliation email schedule deactivated", module: "Healthcare", details: "A clinic supervisor deactivated the privacy-safe daily reconciliation digest." }).catch(() => undefined);
         return result;
       }),
     list: protectedProcedure

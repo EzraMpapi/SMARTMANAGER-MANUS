@@ -14,4 +14,6 @@ export const ENV = {
   healthcareSmsProviderUrl: process.env.HEALTHCARE_SMS_PROVIDER_URL ?? "",
   healthcareSmsProviderApiKey: process.env.HEALTHCARE_SMS_PROVIDER_API_KEY ?? "",
   healthcareSmsWebhookSecret: process.env.HEALTHCARE_SMS_WEBHOOK_SECRET ?? "",
+  resendApiKey: process.env.RESEND_API_KEY ?? "",
+  resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "",
 };

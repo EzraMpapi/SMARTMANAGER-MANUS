@@ -4,6 +4,10 @@ import { z } from "zod";
 import { ENV } from "./_core/env";
 import { resolveVerifiedProfile } from "./aiApprovals";
 import { healthcareAccessForRole } from "./healthcareOperations";
+import { createHeartbeatJob, deleteHeartbeatJob } from "./_core/heartbeat";
+import { getDb } from "./db";
+import { webhookDeliveries } from "../drizzle/schema";
+import { and, desc, eq } from "drizzle-orm";
 
 const PATIENT_TABLE = "hc_patients";
 const IMPORT_TABLE = "hc_portal_reference_imports";
@@ -21,11 +25,13 @@ export const portalReferenceApprovalDecisionInput = z.object({ approvalId: z.str
 export const portalReferenceWorkflowListInput = z.object({ limit: z.number().int().min(1).max(100).optional().default(50) });
 export const portalReferenceAuditSearchInput = z.object({ query: z.string().trim().max(120).optional().default(""), status: z.enum(["all", "Pending", "Approved", "Rejected", "Invalid", "Applied", "No change"]).optional().default("all"), limit: z.number().int().min(1).max(100).optional().default(50) });
 export const portalReferenceErrorExportInput = z.object({ limit: z.number().int().min(1).max(200).optional().default(200) });
-export const portalReferenceSummarySettingsInput = z.object({ recipientMode: z.enum(["roles", "managed", "both"]), managedRecipients: z.array(z.string().trim().email().max(254)).max(25), timezone: z.string().trim().min(3).max(80).default("Africa/Dar_es_Salaam") });
+export const portalReferenceSummarySettingsInput = z.object({ recipientMode: z.enum(["roles", "managed", "both"]), managedRecipients: z.array(z.string().trim().email().max(254)).max(25), timezone: z.string().trim().min(3).max(80).default("Africa/Dar_es_Salaam"), deliveryEnabled: z.boolean().optional() });
+export const portalReferenceDeliveryHistoryInput = z.object({ limit: z.number().int().min(1).max(50).optional().default(20) });
 
-type Row = { id: string; company_id: string; name: string; status: string; created_at?: string; data?: unknown };
-type ProfileRow = { id: string; full_name?: string | null; customer_ref?: string | null; role?: string | null };
+type Row = { id: string; company_id: string; name: string; status: string; created_at?: string; updated_at?: string; data?: unknown };
+type ProfileRow = { id: string; full_name?: string | null; customer_ref?: string | null; role?: string | null; email?: string | null; is_active?: boolean | null };
 type Profile = { id: string; company_id: string; full_name: string | null; role: string };
+export type PortalReferenceDigestSettings = { id: string; companyId: string; recipientMode: "roles" | "managed" | "both"; roleRecipients: string[]; managedRecipients: string[]; timezone: string; deliveryEnabled: boolean; scheduleCronTaskUid: string | null };
 
 function dataOf(row: Row) { return row.data && typeof row.data === "object" && !Array.isArray(row.data) ? row.data as Record<string, unknown> : {}; }
 function headers() {
@@ -57,6 +63,83 @@ async function portalProfiles(companyId: string) {
   params.set("role", "in.(External Client,Patient)"); params.set("customer_ref", "not.is.null");
   const rows = await request<ProfileRow[]>("profiles", params);
   return rows.filter((row) => PORTAL_ROLES.has(String(row.role || "")) && typeof row.customer_ref === "string" && row.customer_ref.trim());
+}
+
+const DIGEST_CRON = "0 38 7 * * *";
+const DIGEST_TIMEZONE = "Africa/Dar_es_Salaam";
+const DIGEST_TIME_LABEL = "10:38 Africa/Dar_es_Salaam";
+const roleAliases = new Map<string, string[]>([
+  ["Clinic Administrator", ["clinic administrator", "admin"]],
+  ["Organization Owner", ["organization owner", "owner"]],
+  ["CEO", ["ceo"]],
+]);
+
+function settingsFromRow(row?: Row): PortalReferenceDigestSettings & { updatedAt: string | null; scheduleState: string; nextRunAt: string | null } {
+  const data = row ? dataOf(row) : {};
+  const recipientMode = data.recipientMode === "roles" || data.recipientMode === "managed" || data.recipientMode === "both" ? data.recipientMode : "both";
+  const roleRecipients = Array.isArray(data.roleRecipients) ? data.roleRecipients.filter((value): value is string => typeof value === "string") : DEFAULT_ROLE_RECIPIENTS;
+  const managedRecipients = Array.isArray(data.managedRecipients) ? normalizedRecipients(data.managedRecipients.filter((value): value is string => typeof value === "string")) : [];
+  const scheduleCronTaskUid = typeof data.scheduleCronTaskUid === "string" && data.scheduleCronTaskUid.trim() ? data.scheduleCronTaskUid : null;
+  const deliveryEnabled = data.deliveryEnabled === true && Boolean(scheduleCronTaskUid);
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 7, 38, 0));
+  if (next.getTime() <= now.getTime()) next.setUTCDate(next.getUTCDate() + 1);
+  return {
+    id: row?.id || "",
+    companyId: row?.company_id || "",
+    recipientMode,
+    roleRecipients,
+    managedRecipients,
+    timezone: typeof data.timezone === "string" ? data.timezone : DIGEST_TIMEZONE,
+    deliveryEnabled,
+    scheduleCronTaskUid,
+    updatedAt: row?.updated_at || row?.created_at || null,
+    scheduleState: deliveryEnabled ? `Active — daily at ${DIGEST_TIME_LABEL}` : "Inactive pending explicit time and activation confirmation",
+    nextRunAt: deliveryEnabled ? next.toISOString() : null,
+  };
+}
+
+export async function getPortalReferenceDailySummaryForCompany(companyId: string) {
+  const [allPatients, imports, approvals] = await Promise.all([
+    patients(companyId),
+    request<Row[]>(IMPORT_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${companyId}`, limit: "500", order: "created_at.desc" })),
+    request<Row[]>(APPROVAL_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${companyId}`, limit: "500", order: "created_at.desc" })),
+  ]);
+  const today = new Date().toISOString().slice(0, 10);
+  const todayRows = imports.filter((item) => String(item.created_at || "").slice(0, 10) === today);
+  return {
+    generatedAt: new Date().toISOString(),
+    totals: {
+      unlinkedPatients: allPatients.filter((patient) => !String(dataOf(patient).patientPortalReference || "").trim()).length,
+      pendingApprovals: approvals.filter((item) => item.status === "Pending").length,
+      readyToApply: imports.filter((item) => item.status === "Ready to apply").length,
+      appliedToday: todayRows.filter((item) => item.status === "Applied").length,
+      rejectedToday: todayRows.filter((item) => item.status === "Rejected").length,
+      invalidToday: todayRows.filter((item) => item.status === "Invalid").length,
+    },
+  };
+}
+
+export async function getPortalReferenceDigestSettingsByTaskUid(taskUid: string): Promise<PortalReferenceDigestSettings | null> {
+  if (!taskUid.trim()) return null;
+  const rows = await request<Row[]>(SUMMARY_SETTINGS_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at,updated_at", "data->>scheduleCronTaskUid": `eq.${taskUid}`, limit: "1" }));
+  const settings = settingsFromRow(rows[0]);
+  if (!settings.id || !settings.deliveryEnabled || settings.scheduleCronTaskUid !== taskUid) return null;
+  return settings;
+}
+
+export async function resolvePortalReferenceDigestRecipients(companyId: string, settings: Pick<PortalReferenceDigestSettings, "recipientMode" | "roleRecipients" | "managedRecipients">) {
+  const recipients = new Set<string>();
+  if (settings.recipientMode === "managed" || settings.recipientMode === "both") normalizedRecipients(settings.managedRecipients).forEach((email) => recipients.add(email));
+  if (settings.recipientMode === "roles" || settings.recipientMode === "both") {
+    const permitted = new Set(settings.roleRecipients.flatMap((role) => roleAliases.get(role) || [role.toLowerCase()]));
+    const rows = await request<ProfileRow[]>("profiles", new URLSearchParams({ select: "email,role,is_active", company_id: `eq.${companyId}`, is_active: "eq.true", email: "not.is.null", limit: "200" }));
+    rows.forEach((profile) => {
+      const email = profile.email?.trim().toLowerCase();
+      if (email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && permitted.has(String(profile.role || "").trim().toLowerCase())) recipients.add(email);
+    });
+  }
+  return Array.from(recipients).sort();
 }
 function parseCsv(csv: string) {
   const cells: string[][] = []; let row: string[] = []; let cell = ""; let quoted = false;
@@ -100,7 +183,15 @@ export async function decidePortalReferenceApproval(req: CreateExpressContextOpt
 
 function safeWorkflowRow(row: Row) { const data = dataOf(row); return { id: row.id, name: row.name, status: row.status, createdAt: row.created_at || null, patientId: typeof data.patientId === "string" ? data.patientId : null, mrn: typeof data.mrn === "string" ? data.mrn : null, proposedReference: typeof data.proposedReference === "string" ? data.proposedReference : null, previousReference: typeof data.previousReference === "string" ? data.previousReference : null, reason: typeof data.validationReason === "string" ? data.validationReason : typeof data.reason === "string" ? data.reason : null, approvalId: typeof data.approvalId === "string" ? data.approvalId : null }; }
 export async function listPortalReferenceWorkflow(req: CreateExpressContextOptions["req"], input: z.infer<typeof portalReferenceWorkflowListInput>) { const profile = await staff(req); const [imports, approvals] = await Promise.all([request<Row[]>(IMPORT_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${profile.company_id}`, limit: String(input.limit), order: "created_at.desc" })), request<Row[]>(APPROVAL_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${profile.company_id}`, limit: String(input.limit), order: "created_at.desc" }))]); const supervisorView = SUPERVISOR_ROLES.has(profile.role); return { imports: imports.map(safeWorkflowRow), approvals: supervisorView ? approvals.map(safeWorkflowRow) : [], canApprove: supervisorView }; }
-export async function getPortalReferenceDailySummary(req: CreateExpressContextOptions["req"]) { const profile = await supervisor(req); const [allPatients, imports, approvals] = await Promise.all([patients(profile.company_id), request<Row[]>(IMPORT_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${profile.company_id}`, limit: "500", order: "created_at.desc" })), request<Row[]>(APPROVAL_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at", company_id: `eq.${profile.company_id}`, limit: "500", order: "created_at.desc" }))]); const today = new Date().toISOString().slice(0, 10); const todayRows = imports.filter((item) => String(item.created_at || "").slice(0, 10) === today); return { generatedAt: new Date().toISOString(), delivery: "In-app only — scheduled outbound delivery is inactive.", totals: { unlinkedPatients: allPatients.filter((patient) => !String(dataOf(patient).patientPortalReference || "").trim()).length, pendingApprovals: approvals.filter((item) => item.status === "Pending").length, readyToApply: imports.filter((item) => item.status === "Ready to apply").length, appliedToday: todayRows.filter((item) => item.status === "Applied").length, rejectedToday: todayRows.filter((item) => item.status === "Rejected").length, invalidToday: todayRows.filter((item) => item.status === "Invalid").length } }; }
+export async function getPortalReferenceDailySummary(req: CreateExpressContextOptions["req"]) {
+  const profile = await supervisor(req);
+  const [summary, rows] = await Promise.all([
+    getPortalReferenceDailySummaryForCompany(profile.company_id),
+    request<Row[]>(SUMMARY_SETTINGS_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at,updated_at", company_id: `eq.${profile.company_id}`, limit: "1" })),
+  ]);
+  const settings = settingsFromRow(rows[0]);
+  return { ...summary, delivery: settings.deliveryEnabled ? `Scheduled email delivery is active daily at ${DIGEST_TIME_LABEL}.` : "In-app only — scheduled outbound delivery is inactive." };
+}
 
 function normalizedRecipients(values: string[]) { return Array.from(new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))); }
 function safeAuditRow(row: Row) { const data = dataOf(row); return { id: row.id, name: row.name, status: row.status, createdAt: row.created_at || null, mrn: typeof data.mrn === "string" ? data.mrn : null, reason: typeof data.validationReason === "string" ? data.validationReason : typeof data.reason === "string" ? data.reason : null, decisionNote: typeof data.decisionNote === "string" ? data.decisionNote : null, decidedAt: typeof data.decidedAt === "string" ? data.decidedAt : null, decisionMaker: typeof data.decidedByName === "string" ? data.decidedByName : null }; }
@@ -116,16 +207,56 @@ export async function searchPortalReferenceAudit(req: CreateExpressContextOption
   const rows = [...imports, ...approvals].map(safeAuditRow).filter((row) => (input.status === "all" || row.status === input.status) && (!query || [row.name, row.status, row.mrn, row.reason, row.decisionNote, row.decisionMaker].some((value) => String(value || "").toLowerCase().includes(query))));
   return { rows: rows.slice(0, input.limit) };
 }
+export async function listPortalReferenceDeliveryHistory(req: CreateExpressContextOptions["req"], input: z.infer<typeof portalReferenceDeliveryHistoryInput>) {
+  const profile = await supervisor(req);
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Reconciliation delivery history is temporarily unavailable." });
+  const rows = await db.select({ createdAt: webhookDeliveries.createdAt, status: webhookDeliveries.status, severity: webhookDeliveries.severity, responseCode: webhookDeliveries.responseCode, eventSummary: webhookDeliveries.eventSummary }).from(webhookDeliveries).where(and(eq(webhookDeliveries.companyId, profile.company_id), eq(webhookDeliveries.action, "PORTAL_REFERENCE_RECONCILIATION_DIGEST_EMAIL"))).orderBy(desc(webhookDeliveries.createdAt)).limit(input.limit);
+  return {
+    rows: rows.map((row) => {
+      let summary: Record<string, unknown> = {};
+      try { summary = row.eventSummary ? JSON.parse(row.eventSummary) as Record<string, unknown> : {}; } catch { /* return a safe empty summary */ }
+      return {
+        createdAt: row.createdAt.toISOString(),
+        status: row.status,
+        severity: row.severity,
+        responseCode: row.responseCode,
+        date: typeof summary.date === "string" ? summary.date : null,
+        recipientCount: typeof summary.recipientCount === "number" ? summary.recipientCount : 0,
+        successCount: typeof summary.successCount === "number" ? summary.successCount : 0,
+        failedCount: typeof summary.failedCount === "number" ? summary.failedCount : 0,
+      };
+    }),
+  };
+}
 export async function getPortalReferenceSummarySettings(req: CreateExpressContextOptions["req"]) {
   const profile = await supervisor(req);
-  const rows = await request<Row[]>(SUMMARY_SETTINGS_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,updated_at", company_id: `eq.${profile.company_id}`, limit: "1" }));
-  const row = rows[0]; const data = row ? dataOf(row) : {};
-  return { settings: { id: row?.id || null, recipientMode: data.recipientMode === "roles" || data.recipientMode === "managed" || data.recipientMode === "both" ? data.recipientMode : "both", roleRecipients: Array.isArray(data.roleRecipients) ? data.roleRecipients.filter((value): value is string => typeof value === "string") : DEFAULT_ROLE_RECIPIENTS, managedRecipients: Array.isArray(data.managedRecipients) ? data.managedRecipients.filter((value): value is string => typeof value === "string") : [], timezone: typeof data.timezone === "string" ? data.timezone : "Africa/Dar_es_Salaam", deliveryEnabled: false, scheduleState: "Inactive pending explicit time and activation confirmation", updatedAt: row?.created_at || null } };
+  const rows = await request<Row[]>(SUMMARY_SETTINGS_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at,updated_at", company_id: `eq.${profile.company_id}`, limit: "1" }));
+  const settings = settingsFromRow(rows[0]);
+  return { settings: { ...settings, id: settings.id || null } };
 }
-export async function savePortalReferenceSummarySettings(req: CreateExpressContextOptions["req"], input: z.infer<typeof portalReferenceSummarySettingsInput>) {
-  const profile = await supervisor(req); const existing = await request<Row[]>(SUMMARY_SETTINGS_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data", company_id: `eq.${profile.company_id}`, limit: "1" }));
-  const data = { recipientMode: input.recipientMode, roleRecipients: DEFAULT_ROLE_RECIPIENTS, managedRecipients: normalizedRecipients(input.managedRecipients), timezone: input.timezone, deliveryEnabled: false, scheduleCronTaskUid: null, updatedById: profile.id, updatedByName: profile.full_name || "Clinic supervisor" };
-  if (existing[0]) await patchRow(SUMMARY_SETTINGS_TABLE, profile.company_id, existing[0].id, { status: "Configured — inactive", data });
-  else await insertRows(SUMMARY_SETTINGS_TABLE, [{ name: "Daily reconciliation email configuration", company_id: profile.company_id, status: "Configured — inactive", amount: null, notes: null, data }]);
-  return { message: "Recipient configuration saved. Daily email delivery remains inactive until its local time and activation are explicitly approved.", settings: (await getPortalReferenceSummarySettings(req)).settings };
+export async function savePortalReferenceSummarySettings(req: CreateExpressContextOptions["req"], input: z.infer<typeof portalReferenceSummarySettingsInput>, options: { userSession?: string } = {}) {
+  const profile = await supervisor(req);
+  const existing = await request<Row[]>(SUMMARY_SETTINGS_TABLE, new URLSearchParams({ select: "id,company_id,name,status,data,created_at,updated_at", company_id: `eq.${profile.company_id}`, limit: "1" }));
+  const prior = settingsFromRow(existing[0]);
+  const deliveryEnabled = input.deliveryEnabled ?? prior.deliveryEnabled;
+  let scheduleCronTaskUid = prior.scheduleCronTaskUid;
+  if (deliveryEnabled && !scheduleCronTaskUid) {
+    if (!options.userSession) throw new TRPCError({ code: "UNAUTHORIZED", message: "An authenticated workspace session is required to activate daily reconciliation delivery." });
+    const job = await createHeartbeatJob({
+      name: `portal-reference-reconciliation-${profile.company_id}`,
+      cron: DIGEST_CRON,
+      path: "/api/scheduled/portalReferenceReconciliationDigest",
+      description: `Daily ${DIGEST_TIME_LABEL} clinic portal-reference reconciliation email digest`,
+    }, options.userSession);
+    scheduleCronTaskUid = job.taskUid;
+  } else if (!deliveryEnabled && scheduleCronTaskUid) {
+    if (!options.userSession) throw new TRPCError({ code: "UNAUTHORIZED", message: "An authenticated workspace session is required to deactivate daily reconciliation delivery." });
+    await deleteHeartbeatJob(scheduleCronTaskUid, options.userSession);
+    scheduleCronTaskUid = null;
+  }
+  const data = { recipientMode: input.recipientMode, roleRecipients: DEFAULT_ROLE_RECIPIENTS, managedRecipients: normalizedRecipients(input.managedRecipients), timezone: DIGEST_TIMEZONE, deliveryEnabled: Boolean(deliveryEnabled && scheduleCronTaskUid), scheduleCronTaskUid, updatedById: profile.id, updatedByName: profile.full_name || "Clinic supervisor" };
+  if (existing[0]) await patchRow(SUMMARY_SETTINGS_TABLE, profile.company_id, existing[0].id, { status: data.deliveryEnabled ? "Configured — active" : "Configured — inactive", data });
+  else await insertRows(SUMMARY_SETTINGS_TABLE, [{ name: "Daily reconciliation email configuration", company_id: profile.company_id, status: data.deliveryEnabled ? "Configured — active" : "Configured — inactive", amount: null, notes: null, data }]);
+  return { message: data.deliveryEnabled ? `Daily reconciliation email delivery is active at ${DIGEST_TIME_LABEL}.` : "Recipient configuration saved. Daily email delivery remains inactive until its local time and activation are explicitly approved.", settings: (await getPortalReferenceSummarySettings(req)).settings };
 }

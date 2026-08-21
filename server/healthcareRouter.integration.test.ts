@@ -208,11 +208,41 @@ describe("protected healthcare router integration", () => {
     expect(configurationWrite?.body?.data).toMatchObject({ recipientMode: "both", deliveryEnabled: false });
   });
 
+  it("activates the approved daily reconciliation schedule only through the clinic-supervisor company route", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    let settings = { id: "summary-1", company_id: companyId, name: "Daily reconciliation email configuration", status: "Configured — inactive", data: { recipientMode: "both", roleRecipients: ["Clinic Administrator", "Organization Owner", "CEO"], managedRecipients: ["admin@clinic.example"], timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false, scheduleCronTaskUid: null } };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "supabase-user-1" }), { status: 200, headers: { "content-type": "application/json" } });
+      if (url.includes("/rest/v1/profiles?")) return new Response(JSON.stringify([{ id: "supabase-user-1", company_id: companyId, role: "Clinic Administrator", full_name: "Healthcare Test User" }]), { status: 200, headers: { "content-type": "application/json" } });
+      const method = init?.method || "GET";
+      const body = typeof init?.body === "string" ? JSON.parse(init.body) as Record<string, unknown> : null;
+      requests.push({ url, method, body });
+      if (url.includes("CreateHeartbeatJob")) return new Response(JSON.stringify({ taskUid: "portal-reference-task-1", nextExecutionAt: "2026-08-22T07:38:00.000Z" }), { status: 200, headers: { "content-type": "application/json" } });
+      if (url.includes("/rest/v1/hc_portal_reference_summary_settings") && method === "GET") return new Response(JSON.stringify([settings]), { status: 200, headers: { "content-type": "application/json" } });
+      if (url.includes("/rest/v1/hc_portal_reference_summary_settings") && method === "PATCH") {
+        settings = { ...settings, ...(body || {}) } as typeof settings;
+        return new Response(JSON.stringify([settings]), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      return new Response(JSON.stringify([]), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const caller = appRouter.createCaller({ req: { headers: { authorization: "Bearer valid-healthcare-token" } } as any, res: {} as any, user: { id: 1, openId: "sup_supabase-user-1", name: "Healthcare Test User", email: "healthcare@example.invalid", loginMethod: "supabase", role: "user", createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() } as any });
+    const result = await caller.healthcare.activatePortalReferenceDailySchedule();
+    expect(result.settings).toMatchObject({ deliveryEnabled: true, scheduleCronTaskUid: "portal-reference-task-1", timezone: "Africa/Dar_es_Salaam" });
+    const heartbeatRequest = requests.find((request) => request.url.includes("CreateHeartbeatJob"));
+    expect(heartbeatRequest?.body).toMatchObject({ cronExpression: "0 38 7 * * *", callbackPath: "/api/scheduled/portalReferenceReconciliationDigest" });
+    const settingsWrite = requests.find((request) => request.method === "PATCH" && request.url.includes("hc_portal_reference_summary_settings"));
+    expect(settingsWrite?.url).toContain(`company_id=eq.${companyId}`);
+    expect(settingsWrite?.body?.data).toMatchObject({ deliveryEnabled: true, scheduleCronTaskUid: "portal-reference-task-1" });
+  });
+
   it("blocks billing-only users from correction audit and daily-email recipient configuration before workflow records are queried", async () => {
     const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
     const caller = callerForRole("Billing Officer", requests);
     await expect(caller.healthcare.portalReferenceAuditSearch({ query: "", status: "all", limit: 20 })).rejects.toThrow("cannot reconcile patient portal references");
     await expect(caller.healthcare.savePortalReferenceSummarySettings({ recipientMode: "both", managedRecipients: [], timezone: "Africa/Dar_es_Salaam" })).rejects.toThrow("cannot reconcile patient portal references");
+    await expect(caller.healthcare.activatePortalReferenceDailySchedule()).rejects.toThrow("cannot reconcile patient portal references");
     expect(requests).toHaveLength(0);
   });
 
