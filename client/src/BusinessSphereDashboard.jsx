@@ -51,6 +51,7 @@ import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
 import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
 import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, SalesCommandCenter } from "./components/CommercialCommandCenters";
+import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter } from "./components/OperationsCommandCenters";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -12135,7 +12136,7 @@ function InventoryDashboard({ inventory, suppliersHook }) {
   );
 }
 
-function Inventory({ inventory, suppliersHook }) {
+function Inventory({ inventory, suppliersHook, onNavigate }) {
   const [tab, setTab] = useState("stock");
   const [warehouse, setWarehouse] = useState("all");
   const [query, setQuery] = useState("");
@@ -12326,6 +12327,8 @@ function Inventory({ inventory, suppliersHook }) {
           </button>
         </div>
       </div>
+
+      <InventoryCommandCenter inventory={inventory} suppliers={suppliersHook} onNavigate={onNavigate} />
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
@@ -13853,7 +13856,7 @@ const PROC_TABS = [
   { id: "portal", label: "Supplier Portal", icon: Building2 },
 ];
 
-function Procurement({ inventory, suppliersHook, expensesHook, currentUser, canManage }) {
+function Procurement({ inventory, suppliersHook, expensesHook, currentUser, canManage, onNavigate }) {
   const [tab, setTab] = useState("orders");
   const orders = useCompanyTable("procurement_purchase_orders", purchaseOrdersSeed, {
     select: "*,purchase_order_items(*)", order: { col: "order_date", ascending: false }, mapRow: mapPurchaseOrderRow,
@@ -13879,6 +13882,8 @@ function Procurement({ inventory, suppliersHook, expensesHook, currentUser, canM
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Procurement</h1>
         <p className="text-[13px] text-slate-500 mt-1">Purchase orders, approvals, contracts, and vendor payments</p>
       </div>
+
+      <ProcurementCommandCenter inventory={inventory} suppliers={suppliersHook} expenses={expensesHook} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {PROC_TABS.map((t) => {
@@ -22111,7 +22116,7 @@ const SCM_TABS = [
   { id: "fleet", label: "Fleet", icon: ClipboardList },
 ];
 
-function SupplyChain() {
+function SupplyChain({ onNavigate }) {
   const [tab, setTab] = useState("shipments");
   const [savingVehicleReg, setSavingVehicleReg] = useState(null);
   const shipments = useCompanyTable("scm_shipments", shipmentsSeed, { order: { col: "dispatch_date", ascending: false }, mapRow: mapShipmentRow });
@@ -22166,6 +22171,8 @@ function SupplyChain() {
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Supply Chain</h1>
         <p className="text-[13px] text-slate-500 mt-1">Deliveries and the fleet that carries them</p>
       </div>
+
+      <SupplyChainCommandCenter shipments={shipments} vehicles={vehicles} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {SCM_TABS.map((t) => {
@@ -40526,7 +40533,7 @@ function PosShiftPanel({ transactions, currentUser }) {
   );
 }
 
-function POS({ inventory, transactionsHook, transactionItemsHook, company, currentUser }) {
+function POS({ inventory, transactionsHook, transactionItemsHook, company, currentUser, onNavigate }) {
   const [tab, setTab] = useState("checkout");
   const transactions = useMemo(() => ({
     ...transactionsHook,
@@ -40610,6 +40617,8 @@ function POS({ inventory, transactionsHook, transactionItemsHook, company, curre
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Point of Sale</h1>
         <p className="text-[13px] text-slate-500 mt-1">Counter checkout, priced and stocked from live Inventory</p>
       </div>
+
+      <PosCommandCenter transactions={transactions} inventory={inventory} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {POS_TABS.map((t) => {
@@ -51697,13 +51706,13 @@ function SmartManager() {
           )}
           {active === "crm" && <CRM crm={crm} invoices={invoices} expenses={expenses} suppliers={suppliers} onNavigate={go} />}
           {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} crm={crm} currentUser={currentUser} intent={intent} clearIntent={clearIntent} onNavigate={go} />}
-          {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
-          {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
+          {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} onNavigate={go} />}
+          {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} onNavigate={go} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
       {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} currentUser={currentUser} />}
-          {active === "scm" && <SupplyChain />}
+          {active === "scm" && <SupplyChain onNavigate={go} />}
           {active === "ecommerce" && <ECommerce inventory={inventory} onNavigate={go} />}
-          {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} />}
+          {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} onNavigate={go} />}
           {active === "documents" && <Documents filesHook={files} company={company} />}
           {active === "projects" && <Projects filesHook={files} expensesHook={expenses} />}
           {active === "support" && <CustomerSupport company={company} />}
