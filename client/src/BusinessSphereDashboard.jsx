@@ -54,6 +54,8 @@ import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, Sales
 import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter } from "./components/OperationsCommandCenters";
 import { FinanceCommandCenter, IntegrationsCommandCenter, ReportsCommandCenter } from "./components/FinanceCommandCenters";
 import { CollaborationCommandCenter, DocumentsCommandCenter, EmployeePortalCommandCenter, HrCommandCenter, WorkflowCommandCenter } from "./components/PeopleCommandCenters";
+import { BankingMfiCommandCenter, CommunityCommandCenter, MicrofinanceCommandCenter, VicobaCommandCenter } from "./components/SectorCommandCenters";
+import { FleetCommandCenter, HealthcareCommandCenter, HotelCommandCenter, PharmacyCommandCenter, RestaurantCommandCenter, SchoolCommandCenter } from "./components/VerticalCommandCenters";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -28691,7 +28693,7 @@ const MFI_TABS = [
   { id: "reports", label: "MFI Reports", icon: BarChart2 },
 ];
 
-function MicrofinanceModule({ currentUser }) {
+function MicrofinanceModule({ currentUser, onNavigate }) {
   const [tab, setTab] = useState("overview");
   const clients  = useCompanyTable("mfi_clients",  MFI_CLIENT_SEED,  { mapRow: (r) => ({ id:r.id, name:r.name, phone:r.phone, nationalId:r.national_id||r.nationalId, gender:r.gender, village:r.village, joinedDate:r.joined_date||r.joinedDate, status:r.status }) });
   const loans    = useCompanyTable("mfi_loans",    MFI_LOAN_SEED,    { mapRow: (r) => ({ id:r.id, clientId:r.client_id||r.clientId, clientName:r.client_name||r.clientName, productId:r.product_id||r.productId, productName:r.product_name||r.productName, principal:r.principal, rate:r.rate, months:r.months, disbursed:r.disbursed, status:r.status, balance:r.balance||r.principal, collateral:r.collateral||"None" }) });
@@ -28788,6 +28790,8 @@ function MicrofinanceModule({ currentUser }) {
           </div>
         </div>
       </div>
+
+      <MicrofinanceCommandCenter clients={clients} loans={loans} savings={savings} onNavigate={onNavigate} />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
@@ -44111,7 +44115,7 @@ const VICOBA_MEETING_SEED = [
   { id: "MTG-002", date: "2026-06-30", venue: "Chairperson's House", attendees: 6, totalBuyIn: 288, loansGiven: 0, minutes: "Annual dividend discussion. All members present. Fine collected from 1 member." },
 ];
 
-function VicobaSaccosModule({ currentUser }) {
+function VicobaSaccosModule({ currentUser, onNavigate }) {
   const [tab, setTab] = useState("overview");
   const members  = useCompanyTable("vicoba_members",  VICOBA_MEMBER_SEED,  { mapRow: (r) => ({ ...r, shares: r.shares||0, contributions: r.contributions||0 }) });
   const loans    = useCompanyTable("vicoba_loans",    VICOBA_LOAN_SEED,    { mapRow: (r) => ({ ...r, balance: r.balance||0 }) });
@@ -44208,11 +44212,14 @@ function VicobaSaccosModule({ currentUser }) {
             <button onClick={() => setShowLoanForm(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold text-white" style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)"}}><Plus size={13}/>New Loan</button>
           </div>
         </div>
-      </div>
+            </div>
+
+      <VicobaCommandCenter members={members} loans={loans} meetings={meetings} onNavigate={onNavigate} />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
         {VICOBA_TABS.map((t) => {
+
           const I = t.icon;
           return <button key={t.id} onClick={() => setTab(t.id)} className={"flex items-center gap-1.5 flex-1 justify-center py-2 rounded-lg text-[12px] font-medium transition-colors whitespace-nowrap " + (tab===t.id?"bg-[#2563EB] text-white shadow-sm":"text-slate-500 hover:bg-slate-50")}><I size={13}/>{t.label}</button>;
         })}
@@ -44482,7 +44489,7 @@ const COMM_CONTRIBUTIONS_SEED = [
   { id: "CTB-004", groupId: "GRP-001", member: "Diana Waweru",      amount: 100, date: "2026-07-01", type: "Monthly Share",  status: "Pending" },
 ];
 
-function CommunityGroupsModule({ currentUser }) {
+function CommunityGroupsModule({ currentUser, onNavigate }) {
   const [tab, setTab]         = useState("groups");
   const [selGroup, setSelGroup] = useState(null);
   const groups        = useCompanyTable("community_groups",        COMM_GROUPS_SEED,        { mapRow: (r) => ({ ...r, fund: r.fund||0 }) });
@@ -44545,11 +44552,14 @@ function CommunityGroupsModule({ currentUser }) {
             <div className="text-center"><p className="text-[10px] text-purple-300">Members</p><p className="text-[16px] font-bold text-white">{totalMembers}</p></div>
           </div>
         </div>
-      </div>
+            </div>
+
+      <CommunityCommandCenter groups={groups} contributions={contributions} onNavigate={onNavigate} />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
         {TABS.map((t) => { const I=t.icon; return (
+
           <button key={t.id} onClick={()=>setTab(t.id)} className={"flex items-center gap-1.5 flex-1 justify-center py-2 rounded-lg text-[12px] font-medium transition-colors whitespace-nowrap "+(tab===t.id?"bg-[#7C3AED] text-white shadow-sm":"text-slate-500 hover:bg-slate-50")}><I size={13}/>{t.label}</button>
         ); })}
       </div>
@@ -45200,7 +45210,7 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
   );
 }
 
-function HealthcareClinicModule({ currentUser, company }) {
+function HealthcareClinicModule({ currentUser, company, onNavigate }) {
   const [tab, setTab] = useState("overview");
   const [subTab, setSubTab] = useState("list");
   const [selected, setSelected] = useState(null);
@@ -45361,6 +45371,8 @@ function HealthcareClinicModule({ currentUser, company }) {
           </div>
         </div>
       </div>
+
+      <HealthcareCommandCenter patients={patients} doctors={doctors} appointments={appointments} visits={visits} prescriptions={prescriptions} labOrders={labOrders} onNavigate={onNavigate} />
 
       {/* Tabs */}
       <div className="flex gap-0.5 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
@@ -46125,7 +46137,7 @@ const SCHOOL_SUBJECTS = ["Mathematics","English Language","Kiswahili","Biology",
 const SCHOOL_LEVELS   = ["Form 1","Form 2","Form 3","Form 4"];
 const TERMS           = ["Term 1 2026","Term 2 2026","Term 3 2026"];
 
-function SchoolManagementModule({ currentUser, company }) {
+function SchoolManagementModule({ currentUser, company, onNavigate }) {
   const [tab, setTab] = useState("overview");
   const students  = useCompanyTable("sch_students",  SCH_STUDENTS_SEED,  { mapRow: r => r });
   const teachers  = useCompanyTable("sch_teachers",  SCH_TEACHERS_SEED,  { mapRow: r => r });
@@ -46221,6 +46233,8 @@ function SchoolManagementModule({ currentUser, company }) {
           </div>
         </div>
       </div>
+
+      <SchoolCommandCenter students={students} teachers={teachers} classes={classes} exams={exams} fees={fees} onNavigate={onNavigate} />
 
       {/* Tabs */}
       <div className="flex gap-0.5 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
@@ -46625,7 +46639,7 @@ const PHM_SUPPLIERS_SEED = [
 
 const DRUG_CATEGORIES = ["Antibiotic","Analgesic","Antidiabetic","Antihypertensive","Statin","PPI","Insulin","Sedative","Bronchodilator","Antihistamine","Antifungal","Antimalarial","Vitamin","Supplement","IV Fluid"];
 
-function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
+function PharmacyManagementModule({ currentUser, company, onStockLoad, onNavigate }) {
   const [tab, setTab] = useState("overview");
   const drugs     = useCompanyTable("phm_drugs",     PHM_DRUGS_SEED,     { mapRow: r => r });
   const stock     = useCompanyTable("phm_stock",     PHM_STOCK_SEED,     { mapRow: r => r });
@@ -46716,12 +46730,15 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
             <button onClick={()=>setShowDrug(true)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12.5px] font-semibold text-white" style={{background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.3)"}}><Plus size={13}/>Add Drug</button>
           </div>
         </div>
-      </div>
+            </div>
+
+      <PharmacyCommandCenter drugs={drugs} stock={stock} dispense={dispense} onNavigate={onNavigate} />
 
       {/* Tabs */}
       <div className="flex gap-0.5 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
         {TABS.map(t => { const I = t.icon; return (
           <button key={t.id} onClick={()=>setTab(t.id)} className={"flex items-center gap-1 px-3 py-2 rounded-lg text-[11.5px] font-medium transition-all whitespace-nowrap "+(tab===t.id?"text-white shadow-sm":"text-slate-500 hover:bg-slate-50")} style={{background:tab===t.id?PHM_GREEN:"transparent"}}>
+
             <I size={12}/>{t.label}
             {t.id==="expiry" && expiringItems.length>0 && <span className="ml-0.5 bg-[#EF4444] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{expiringItems.length}</span>}
           </button>
@@ -47133,7 +47150,7 @@ const HTL_BOOKINGS_SEED = [
   { id:"BKG-004", guest:"John Smith",          room:"102", type:"Standard",   checkIn:"2026-07-10", checkOut:"2026-07-14", nights:4, total:380, paid:380, status:"Checked Out",source:"Expedia" },
 ];
 
-function HotelManagementModule({ currentUser, company }) {
+function HotelManagementModule({ currentUser, company, onNavigate }) {
   const [tab, setTab]         = useState("overview");
   const [checkInForm, setCheckInForm]   = useState({ guestName:"", email:"", phone:"", nationality:"", roomId:"", checkOut:"", adults:1, children:0, purpose:"Leisure", paymentMethod:"Card", specialRequests:"" });
   const [showCheckIn, setShowCheckIn]   = useState(false);
@@ -47220,6 +47237,8 @@ function HotelManagementModule({ currentUser, company }) {
           </div>
         </div>
       </div>
+
+      <HotelCommandCenter rooms={rooms} bookings={bookings} onNavigate={onNavigate} />
 
       {/* TABS */}
       <div className="flex gap-0.5 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
@@ -47676,7 +47695,7 @@ function HotelManagementModule({ currentUser, company }) {
 }
 
 
-function FleetManagementModule({ currentUser, company, onVehiclesLoad }) {
+function FleetManagementModule({ currentUser, company, onVehiclesLoad, onNavigate }) {
   const [tab, setTab] = useState("overview");
   const vehicles    = useCompanyTable("flt_vehicles",    FLT_VEHICLES_SEED,    { mapRow: r => r });
   useEffect(() => { if (onVehiclesLoad) onVehiclesLoad(vehicles.rows); }, [vehicles.rows, onVehiclesLoad]);
@@ -47717,6 +47736,8 @@ function FleetManagementModule({ currentUser, company, onVehiclesLoad }) {
           </div>
         </div>
       </div>
+
+      <FleetCommandCenter vehicles={vehicles} trips={trips} maintenance={maintenance} onNavigate={onNavigate} />
 
       <div className="flex gap-0.5 bg-white rounded-xl p-1 border border-slate-200">
         {TABS.map(t=>{const I=t.icon;return(<button key={t.id} onClick={()=>setTab(t.id)} className={"flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium transition-all "+(tab===t.id?"text-white shadow-sm":"text-slate-500 hover:bg-slate-50")} style={{background:tab===t.id?FLT_BLUE:"transparent"}}><I size={13}/>{t.label}</button>);})}
@@ -48048,7 +48069,7 @@ const BNK_APPLICATIONS_SEED = [
   { id:"APP-003", memberId:"MBR-B001", member:"Amina Hassan",  product:"Personal Loan",amount:3000,  term:12, purpose:"School fees",           collateral:"Guarantor",  submittedDate:"2026-07-17", status:"Pending Docs",  officer:"Jane Wairimũ", score:68 },
 ];
 
-function BankingMFIModule({ currentUser, company, onLoansLoad }) {
+function BankingMFIModule({ currentUser, company, onLoansLoad, onNavigate }) {
   const [tab, setTab]     = useState("dashboard");
   const [loanCalc, setLoanCalc] = useState({ product:"", amount:"", term:"", rate:0 });
   const [appForm, setAppForm]   = useState({ memberId:"", product:"", amount:"", term:"", purpose:"", collateral:"" });
@@ -48160,11 +48181,14 @@ function BankingMFIModule({ currentUser, company, onLoansLoad }) {
             <button onClick={()=>setShowApp(true)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12.5px] font-semibold text-white" style={{background:"rgba(255,255,255,.22)",border:"1px solid rgba(255,255,255,.3)"}}><Plus size={14}/>New Application</button>
           </div>
         </div>
-      </div>
+            </div>
+
+      <BankingMfiCommandCenter accounts={accounts} loans={loans} members={members} applications={applications} transactions={transactions} onNavigate={onNavigate} />
 
       {/* Tabs */}
       <div className="flex gap-0.5 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
         {TABS.map(t => { const I=t.icon; return (
+
           <button key={t.id} onClick={()=>setTab(t.id)} className={"flex items-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap "+(tab===t.id?"text-white shadow-sm":"text-slate-500 hover:bg-slate-50")} style={{background:tab===t.id?BNK_NAVY:"transparent"}}>
             <I size={11}/>{t.label}
             {t.id==="par" && parRatio>5 && <span className="ml-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">!</span>}
@@ -49361,7 +49385,7 @@ const MENU_CATEGORIES = ["Starters","Main Course","Grills","Desserts","Drinks","
 const TABLE_ZONES = ["Indoor","Terrace","VIP","Bar","Outdoor"];
 const TZS_FMT = (n) => "TZS " + Number(n).toLocaleString();
 
-function RestaurantModule({ currentUser, company }) {
+function RestaurantModule({ currentUser, company, onNavigate }) {
   const [tab, setTab]       = useState("floor");
   const [kitchenTab, setKitchenTab] = useState("active");
   const [menuCat, setMenuCat]   = useState("All");
@@ -49488,6 +49512,8 @@ function RestaurantModule({ currentUser, company }) {
       </div>
 
       {/* TABS */}
+      <RestaurantCommandCenter tables={tables} menuItems={menuItems} orders={orders} reservations={reservations} onNavigate={onNavigate} />
+
       <div className="flex gap-0.5 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
         {TABS.map(t=>{const I=t.icon;return(
           <button key={t.id} onClick={()=>setTab(t.id)} className={"flex items-center gap-1 px-3 py-2 rounded-lg text-[11.5px] font-medium transition-all whitespace-nowrap "+(tab===t.id?"text-white shadow-sm":"text-slate-500 hover:bg-slate-50")} style={{background:tab===t.id?RST_RED:"transparent"}}>
@@ -51763,16 +51789,16 @@ function SmartManager() {
           {active === "ai" && (
             <AIAssistant company={company} invoices={invoices} inventory={inventory} crm={crm} expenses={expenses} employees={employees} leaveRequests={leaveRequests} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} onNavigate={go} currentUser={currentUser} />
           )}
-          {active === "microfinance" && <MicrofinanceModule currentUser={currentUser} />}
-          {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} />}
-          {active === "community" && <CommunityGroupsModule currentUser={currentUser} />}
-          {active === "healthcare" && <HealthcareClinicModule currentUser={currentUser} company={company} />}
-          {active === "school"      && <SchoolManagementModule  currentUser={currentUser} company={company} onFeesLoad={setSchFeesForAlerts} />}
-          {active === "pharmacy"    && <PharmacyManagementModule currentUser={currentUser} company={company} onStockLoad={setPhmStockForAlerts} />}
-          {active === "hotel"       && <HotelManagementModule   currentUser={currentUser} company={company} onBookingsLoad={setHtlBookingsForAlerts} />}
-          {active === "fleet"       && <FleetManagementModule      currentUser={currentUser} company={company} onVehiclesLoad={setVehiclesForAlerts} />}
-          {active === "banking"     && <BankingMFIModule            currentUser={currentUser} company={company} onLoansLoad={setBankLoansForAlerts} />}
-          {active === "restaurant"  && <RestaurantModule            currentUser={currentUser} company={company} onOrdersLoad={setRstOrdersForAlerts} />}
+          {active === "microfinance" && <MicrofinanceModule currentUser={currentUser} onNavigate={go} />}
+          {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} onNavigate={go} />}
+          {active === "community" && <CommunityGroupsModule currentUser={currentUser} onNavigate={go} />}
+          {active === "healthcare" && <HealthcareClinicModule currentUser={currentUser} company={company} onNavigate={go} />}
+          {active === "school"      && <SchoolManagementModule  currentUser={currentUser} company={company} onFeesLoad={setSchFeesForAlerts} onNavigate={go} />}
+          {active === "pharmacy"    && <PharmacyManagementModule currentUser={currentUser} company={company} onStockLoad={setPhmStockForAlerts} onNavigate={go} />}
+          {active === "hotel"       && <HotelManagementModule   currentUser={currentUser} company={company} onBookingsLoad={setHtlBookingsForAlerts} onNavigate={go} />}
+          {active === "fleet"       && <FleetManagementModule      currentUser={currentUser} company={company} onVehiclesLoad={setVehiclesForAlerts} onNavigate={go} />}
+          {active === "banking"     && <BankingMFIModule            currentUser={currentUser} company={company} onLoansLoad={setBankLoansForAlerts} onNavigate={go} />}
+          {active === "restaurant"  && <RestaurantModule            currentUser={currentUser} company={company} onOrdersLoad={setRstOrdersForAlerts} onNavigate={go} />}
           {active === "employee-portal" && (
             <EmployeePortal
               currentUser={currentUser}
