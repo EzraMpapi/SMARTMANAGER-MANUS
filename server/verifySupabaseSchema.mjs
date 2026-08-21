@@ -6,13 +6,18 @@ const dashboardSource = readFileSync(
   resolve(projectRoot, "client/src/BusinessSphereDashboard.jsx"),
   "utf8",
 );
+const microfinanceSource = readFileSync(
+  resolve(projectRoot, "server/microfinanceOperations.ts"),
+  "utf8",
+);
 const contractManifest = JSON.parse(
   readFileSync(resolve(projectRoot, "server/schemaContracts.json"), "utf8"),
 );
 
-const referencedTables = [...new Set(
-  [...dashboardSource.matchAll(/(?:sb|useCompanyTable|runCompanyTableQuery|runCompanyTableMutation)\("([^\"]+)"/g)].map((match) => match[1]),
-)].sort();
+const referencedTables = [...new Set([
+  ...[...dashboardSource.matchAll(/(?:sb|useCompanyTable|runCompanyTableQuery|runCompanyTableMutation)\("([^\"]+)"/g)].map((match) => match[1]),
+  ...[...microfinanceSource.matchAll(/"(mfi_[a-z_]+)"/g)].map((match) => match[1]),
+])].sort();
 
 const supabaseUrl = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "").replace(/\/$/, "");
 const serviceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
@@ -101,7 +106,7 @@ const criticalTableIssues = Object.values(contractManifest).map((contract) => {
 
 const report = {
   verifiedAt: new Date().toISOString(),
-  source: "BusinessSphereDashboard.jsx complete persistence-table contract",
+  source: "BusinessSphereDashboard.jsx and protected Microfinance service persistence-table contract",
   referencedTableCount: referencedTables.length,
   deployedTableCount: deployedTables.length,
   missingTables,

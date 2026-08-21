@@ -55,6 +55,7 @@ const LazyTraPortalModule = lazy(() => import("./components/TraPortalModule").th
 const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer").then((module) => ({ default: module.DashboardPreferencesDrawer })));
 const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAuditLogView").then((module) => ({ default: module.ComplianceAuditLogView })));
 const LazyHealthcareClinicWorkspace = lazy(() => import("./components/HealthcareClinicWorkspace").then((module) => ({ default: module.HealthcareClinicWorkspace })));
+const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWorkspace").then((module) => ({ default: module.MicrofinanceWorkspace })));
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -52971,7 +52972,11 @@ function SmartManager() {
           {active === "ai" && (
             <AIAssistant company={company} invoices={invoices} inventory={inventory} crm={crm} expenses={expenses} employees={employees} leaveRequests={leaveRequests} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} onNavigate={go} currentUser={currentUser} />
           )}
-          {active === "microfinance" && <MicrofinanceModule currentUser={currentUser} />}
+          {active === "microfinance" && (
+            <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><div className="text-center"><LoaderCircle className="mx-auto animate-spin text-emerald-600" size={24}/><p className="mt-3 text-sm font-medium text-slate-500">Loading Microfinance Command Center…</p></div></div>}>
+              <LazyMicrofinanceWorkspace />
+            </Suspense>
+          )}
           {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} />}
           {active === "community" && <CommunityGroupsModule currentUser={currentUser} />}
           {active === "healthcare" && (

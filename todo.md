@@ -245,3 +245,12 @@
 ## Published Workspace Server Error Follow-up
 - [x] Diagnose and correct the server error reported while accessing the published workspace.
 - [x] Add regression coverage for the identified failure and re-verify the affected published workflow.
+
+## Production Microfinance Module
+- [x] Audit the current Microfinance workspace, backend contracts, persisted data, role model, calculations, and navigation boundaries.
+- [x] Define tenant-safe borrower, KYC, group, loan, savings, repayment, collections, cash, commission, receipt, notification, reporting, and audit data contracts.
+- [x] Implement protected microfinance APIs, calculations, validations, approvals, transaction workflows, and tenant-scoped persistence.
+- [x] Build responsive connected dashboards and CRUD interfaces for borrower, loan, savings, collections, cash-management, staff-agent, report, and notification workflows.
+- [x] Add Tanzania-ready TZS, local-date, mobile-money-ready integration boundaries, statements, receipts, PAR/overdue analytics, and role-aware operational controls.
+- [x] Add unit, protected-router integration, and browser coverage for critical microfinance customer-to-repayment workflows and permission isolation.
+- [x] Run full quality gates, publish the integrated Microfinance Module, and complete the final checklist.

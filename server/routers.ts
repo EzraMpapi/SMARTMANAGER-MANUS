@@ -36,6 +36,7 @@ import { getReminderSettings, listReminderDeliveries, reminderDeliveryListInput,
 import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePatientSmsConsentPreferences } from "./healthcareSelfService";
 import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPatientPortalReference, linkPatientPortalReferenceInput, listPortalReferenceReconciliation, portalReferenceListInput } from "./healthcarePortalReconciliation";
 import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceDeliveryHistory, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceDeliveryHistoryInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
+import { closeMicrofinanceCashSession, createMicrofinanceBorrower, createMicrofinanceCollateral, createMicrofinanceCollection, createMicrofinanceGroup, createMicrofinanceGuarantor, createMicrofinanceProduct, decideMicrofinanceApplication, disburseMicrofinanceLoan, listMicrofinanceAudit, listMicrofinanceDashboard, microfinanceApplicationInput, microfinanceBorrowerInput, microfinanceCashCloseInput, microfinanceCashOpenInput, microfinanceCollateralInput, microfinanceCollectionInput, microfinanceDecisionInput, microfinanceDisbursementInput, microfinanceGroupInput, microfinanceGuarantorInput, microfinanceListInput, microfinanceProductInput, microfinanceRepaymentInput, microfinanceSavingsInput, openMicrofinanceCashSession, recordMicrofinanceRepayment, recordMicrofinanceSavings, submitMicrofinanceApplication } from "./microfinanceOperations";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -83,6 +84,53 @@ export const appRouter = router({
       }
       return persistSupabaseRow(input.tableName, { ...input.payload, company_id: input.companyId });
     }),
+  microfinance: router({
+    dashboard: protectedProcedure
+      .input(microfinanceListInput)
+      .query(({ ctx, input }) => listMicrofinanceDashboard(ctx.req, input)),
+    auditHistory: protectedProcedure
+      .input(microfinanceListInput)
+      .query(({ ctx, input }) => listMicrofinanceAudit(ctx.req, input)),
+    createBorrower: protectedProcedure
+      .input(microfinanceBorrowerInput)
+      .mutation(({ ctx, input }) => createMicrofinanceBorrower(ctx.req, input)),
+    createGroup: protectedProcedure
+      .input(microfinanceGroupInput)
+      .mutation(({ ctx, input }) => createMicrofinanceGroup(ctx.req, input)),
+    createLoanProduct: protectedProcedure
+      .input(microfinanceProductInput)
+      .mutation(({ ctx, input }) => createMicrofinanceProduct(ctx.req, input)),
+    createGuarantor: protectedProcedure
+      .input(microfinanceGuarantorInput)
+      .mutation(({ ctx, input }) => createMicrofinanceGuarantor(ctx.req, input)),
+    createCollateral: protectedProcedure
+      .input(microfinanceCollateralInput)
+      .mutation(({ ctx, input }) => createMicrofinanceCollateral(ctx.req, input)),
+    submitApplication: protectedProcedure
+      .input(microfinanceApplicationInput)
+      .mutation(({ ctx, input }) => submitMicrofinanceApplication(ctx.req, input)),
+    decideApplication: protectedProcedure
+      .input(microfinanceDecisionInput)
+      .mutation(({ ctx, input }) => decideMicrofinanceApplication(ctx.req, input)),
+    disburseLoan: protectedProcedure
+      .input(microfinanceDisbursementInput)
+      .mutation(({ ctx, input }) => disburseMicrofinanceLoan(ctx.req, input)),
+    recordRepayment: protectedProcedure
+      .input(microfinanceRepaymentInput)
+      .mutation(({ ctx, input }) => recordMicrofinanceRepayment(ctx.req, input)),
+    recordSavings: protectedProcedure
+      .input(microfinanceSavingsInput)
+      .mutation(({ ctx, input }) => recordMicrofinanceSavings(ctx.req, input)),
+    openCashSession: protectedProcedure
+      .input(microfinanceCashOpenInput)
+      .mutation(({ ctx, input }) => openMicrofinanceCashSession(ctx.req, input)),
+    closeCashSession: protectedProcedure
+      .input(microfinanceCashCloseInput)
+      .mutation(({ ctx, input }) => closeMicrofinanceCashSession(ctx.req, input)),
+    createCollectionAction: protectedProcedure
+      .input(microfinanceCollectionInput)
+      .mutation(({ ctx, input }) => createMicrofinanceCollection(ctx.req, input)),
+  }),
   healthcare: router({
     access: protectedProcedure
       .query(async ({ ctx }) => getHealthcareAccess(ctx.req)),
