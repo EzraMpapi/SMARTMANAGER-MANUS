@@ -182,3 +182,17 @@
 - [x] Add per-workflow read, update, or archive permission-denied coverage for patient-care roles beyond create-path denials.
 - [x] Restore the direct Playwright test-runner dependency required by Healthcare browser regression coverage.
 - [x] Save and publish a dedicated Healthcare Module release checkpoint after the completed quality gates.
+
+## Healthcare Interoperability, Reminders, and Analytics
+- [x] Inventory existing clinical export utilities, reminder delivery boundaries, appointment data, and clinician analytics inputs.
+- [x] Define a tenant-safe FHIR export profile and clinical-resource mapping for Healthcare records.
+- [x] Implement permission-gated FHIR-compatible clinical exports with validation and download flows.
+- [x] Build responsive clinician workload and patient wait-time analytics with clear filters and operational drill-downs.
+- [x] Add tenant-safe appointment-reminder configuration, consent-aware delivery records, and an approved SMS provider boundary.
+- [x] Add an idempotent scheduled reminder dispatch handler with retry-safe records and delivery status recovery.
+- [x] Add unit, integration, and browser coverage for FHIR exports, clinician analytics, and appointment reminder workflows.
+- [x] Run full production quality gates, validate responsive views, and publish the healthcare enhancements.
+- [x] Register reminder settings and delivery tables in the Healthcare permission registry and Supabase schema contract.
+- [x] Implement an administrator-controlled reminder configuration UI with clear provider-unconfigured, consent, lead-time, and delivery-history states.
+- [x] Implement a tenant-scoped idempotent dispatch boundary that never attempts an SMS delivery without approved provider credentials.
+- [x] Add protected router and browser coverage for reminder access, configuration, delivery-history visibility, and inactive-provider safety.

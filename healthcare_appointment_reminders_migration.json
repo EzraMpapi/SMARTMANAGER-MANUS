@@ -1,0 +1,5 @@
+{
+  "name": "healthcare_appointment_reminders",
+  "project_id": "rlhngsrihahhyxnjxrxm",
+  "summary": "Adds tenant-scoped healthcare appointment reminder settings and idempotent delivery records with RLS policies based on current_company_id()."
+}

@@ -31,6 +31,8 @@ import { dispatchEmailTemplateWorkflowEvent, getEmailTemplateWorkflowStatus, tes
 import { assertPayloadContract } from "./schemaDriftChecker";
 import { CRITICAL_SUPABASE_TABLES, persistSupabaseRow } from "./supabasePersistence";
 import { archiveHealthcareRecord, createHealthcareRecord, getHealthcareAccess, healthcareArchiveInput, healthcareCreateInput, healthcareListInput, healthcareUpdateInput, listHealthcareRecords, updateHealthcareRecord } from "./healthcareOperations";
+import { exportHealthcareFhirBundle, getHealthcareClinicianAnalytics, healthcareAnalyticsInput, healthcareFhirExportInput } from "./healthcareInteroperability";
+import { getReminderSettings, listReminderDeliveries, reminderDeliveryListInput, reminderSettingsInput, requestReminderTest, saveReminderSettings } from "./healthcareReminders";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -81,6 +83,32 @@ export const appRouter = router({
   healthcare: router({
     access: protectedProcedure
       .query(async ({ ctx }) => getHealthcareAccess(ctx.req)),
+    fhirExport: protectedProcedure
+      .input(healthcareFhirExportInput)
+      .query(async ({ ctx, input }) => {
+        const result = await exportHealthcareFhirBundle(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Healthcare FHIR R4 export generated", module: "Healthcare", details: `Patient-scoped collection with ${result.resourceCount} resources.` }).catch(() => undefined);
+        return result;
+      }),
+    clinicianAnalytics: protectedProcedure
+      .input(healthcareAnalyticsInput)
+      .query(async ({ ctx, input }) => getHealthcareClinicianAnalytics(ctx.req, input)),
+    reminderSettings: protectedProcedure
+      .query(async ({ ctx }) => getReminderSettings(ctx.req)),
+    saveReminderSettings: protectedProcedure
+      .input(reminderSettingsInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await saveReminderSettings(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Healthcare reminder settings updated", module: "Healthcare", details: "Appointment reminder configuration updated without enabling provider delivery." }).catch(() => undefined);
+        return result;
+      }),
+    reminderDeliveries: protectedProcedure
+      .input(reminderDeliveryListInput)
+      .query(async ({ ctx, input }) => listReminderDeliveries(ctx.req, input)),
+    testReminder: protectedProcedure
+      .mutation(async ({ ctx }) => requestReminderTest(ctx.req)),
     list: protectedProcedure
       .input(healthcareListInput)
       .query(async ({ ctx, input }) => listHealthcareRecords(ctx.req, input)),

@@ -17,6 +17,8 @@ export const HEALTHCARE_TABLES = [
   "hc_insurance_claims",
   "hc_notifications",
   "hc_reports",
+  "hc_reminder_settings",
+  "hc_reminder_deliveries",
 ] as const;
 
 export type HealthcareTable = (typeof HEALTHCARE_TABLES)[number];
@@ -39,6 +41,8 @@ const tableDataKeys: Record<HealthcareTable, readonly string[]> = {
   hc_insurance_claims: ["patientId", "patientName", "invoiceId", "invoiceName", "provider", "memberId", "claimNumber", "submittedAt", "reviewedAt", "decisionAt", "approvedAmount", "requestedAmount", "decisionNotes", "archivedAt"],
   hc_notifications: ["eventType", "severity", "patientId", "patientName", "claimId", "invoiceId", "relatedTable", "relatedRecordId", "actionLabel", "readAt", "acknowledgedBy", "archivedAt"],
   hc_reports: ["patientId", "patientName", "doctorId", "doctorName", "visitId", "reportType", "createdAt", "signedAt", "signedBy", "content", "archivedAt"],
+  hc_reminder_settings: ["provider", "senderId", "timezone", "leadMinutes", "consentRequired", "enabled", "scheduleEnabled", "scheduleTaskUid", "lastDispatchAt", "archivedAt"],
+  hc_reminder_deliveries: ["appointmentId", "patientId", "scheduledFor", "leadMinutes", "channel", "provider", "providerMessageId", "attemptCount", "errorCategory", "consentCapturedAt", "idempotencyKey", "archivedAt"],
 };
 
 const fullHealthcareAccessRoles = new Set([
@@ -120,6 +124,18 @@ const tablePermissions: Record<HealthcareTable, { read: string[]; create: string
     create: ["clinician"],
     update: ["clinician"],
     archive: ["admin", "clinician"],
+  },
+  hc_reminder_settings: {
+    read: ["admin"],
+    create: ["admin"],
+    update: ["admin"],
+    archive: ["admin"],
+  },
+  hc_reminder_deliveries: {
+    read: ["admin", "front_desk"],
+    create: ["admin"],
+    update: ["admin"],
+    archive: ["admin"],
   },
 };
 

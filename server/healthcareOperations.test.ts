@@ -8,6 +8,8 @@ describe("healthcare role boundaries", () => {
     expect(HEALTHCARE_TABLES).toContain("hc_insurance_claims");
     expect(HEALTHCARE_TABLES).toContain("hc_notifications");
     expect(HEALTHCARE_TABLES).toContain("hc_reports");
+    expect(HEALTHCARE_TABLES).toContain("hc_reminder_settings");
+    expect(HEALTHCARE_TABLES).toContain("hc_reminder_deliveries");
   });
 
   it("keeps front-desk access away from clinical visit edits", () => {
@@ -51,5 +53,14 @@ describe("healthcare role boundaries", () => {
     const access = healthcareAccessForRole("Unknown Role");
     expect(access.canRead.hc_patients).toBe(false);
     expect(access.canCreate.hc_patients).toBe(false);
+  });
+
+  it("limits reminder configuration to healthcare administration while preserving front-desk delivery visibility", () => {
+    const administrator = healthcareAccessForRole("Clinic Administrator");
+    const receptionist = healthcareAccessForRole("Receptionist");
+    expect(administrator.canUpdate.hc_reminder_settings).toBe(true);
+    expect(administrator.canCreate.hc_reminder_deliveries).toBe(true);
+    expect(receptionist.canRead.hc_reminder_deliveries).toBe(true);
+    expect(receptionist.canRead.hc_reminder_settings).toBe(false);
   });
 });

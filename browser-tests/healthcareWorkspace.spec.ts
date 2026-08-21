@@ -7,19 +7,19 @@ const access = {
   role: "Organization Owner",
   canRead: Object.fromEntries([
     "hc_patients", "hc_doctors", "hc_appointments", "hc_visits", "hc_vitals",
-    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports",
+    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports", "hc_reminder_settings", "hc_reminder_deliveries",
   ].map((table) => [table, true])),
   canCreate: Object.fromEntries([
     "hc_patients", "hc_doctors", "hc_appointments", "hc_visits", "hc_vitals",
-    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports",
+    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports", "hc_reminder_settings", "hc_reminder_deliveries",
   ].map((table) => [table, true])),
   canUpdate: Object.fromEntries([
     "hc_patients", "hc_doctors", "hc_appointments", "hc_visits", "hc_vitals",
-    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports",
+    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports", "hc_reminder_settings", "hc_reminder_deliveries",
   ].map((table) => [table, true])),
   canArchive: Object.fromEntries([
     "hc_patients", "hc_doctors", "hc_appointments", "hc_visits", "hc_vitals",
-    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports",
+    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports", "hc_reminder_settings", "hc_reminder_deliveries",
   ].map((table) => [table, true])),
 };
 
@@ -35,7 +35,8 @@ const rowsByTable: Record<string, unknown[]> = {
   hc_invoices: [{ id: "e2ed1111-1111-4111-8111-111111111111", name: "Asha Mtemi · Invoice", status: "Awaiting insurer", amount: 50000, notes: null, data: { patientId: "e2e11111-1111-4111-8111-111111111111", patientName: "Asha Mtemi", issuedAt: "2026-08-20T10:00", services: [{ name: "Consultation", amount: 50000 }], subtotal: 50000, discountPercent: 0, discountAmount: 0, balance: 50000, paymentMethod: "Insurance", insuranceProvider: "NHIF", insuranceClaimStatus: "Not applicable" } }],
   hc_insurance_claims: [{ id: "e2ef1111-1111-4111-8111-111111111111", name: "Asha Mtemi · NHIF claim", status: "Submitted", amount: 50000, notes: null, data: { patientId: "e2e11111-1111-4111-8111-111111111111", patientName: "Asha Mtemi", invoiceId: "e2e99999-9999-4999-8999-999999999999", provider: "NHIF", claimNumber: "NHIF-SMC-000184", submittedAt: "2026-08-20T10:05", requestedAmount: 50000, decisionNotes: "Awaiting insurer review" } }],
   hc_notifications: [{ id: "e2f01111-1111-4111-8111-111111111111", name: "Urgent radiology review pending", status: "Unread", amount: null, notes: null, data: { eventType: "Diagnostic", severity: "Urgent", patientId: "e2e11111-1111-4111-8111-111111111111", patientName: "Asha Mtemi", relatedTable: "hc_radiology", relatedRecordId: "e2ec1111-1111-4111-8111-111111111111", actionLabel: "Review diagnostic order" } }],
-  hc_reports: [{ id: "e2ee1111-1111-4111-8111-111111111111", name: "Asha Mtemi · Consultation summary", status: "Draft", amount: null, notes: null, data: { patientId: "e2e11111-1111-4111-8111-111111111111", patientName: "Asha Mtemi", doctorId: "e2e44444-4444-4444-8444-444444444444", doctorName: "Dr. Rehema Mhando", visitId: "e2e88888-8888-4888-8888-888888888888", reportType: "Consultation summary", createdAt: "2026-08-20T10:05", signedAt: "", signedBy: "", content: "Clinical summary documented." } }],
+  hc_reports: [{ id: "e2ee1111-1111-4111-8111-111111111111", name: "Asha Mtemi · Consultation summary", status: "Draft", amount: null, notes: null, data: { patientId: "e2e11111-1111-4111-8111-111111111111", patientName: "Asha Mtemi", doctorId: "e2e44444-4444-4444-8444-444444444444", doctorName: "Dr. Rehema Mhando", visitId: "e2e88888-8888-8888-8888-888888888888", reportType: "Consultation summary", createdAt: "2026-08-20T10:05", signedAt: "", signedBy: "", content: "Clinical summary documented." } }],
+  hc_reminder_deliveries: [{ id: "e2ef1111-1111-4111-8111-111111111111", name: "Appointment reminder awaiting provider configuration", status: "Provider unconfigured", amount: null, notes: null, data: { scheduledFor: "2026-08-20T09:30", leadMinutes: 1440, channel: "SMS", attemptCount: 0 } }],
 };
 
 function trpcResult(data: unknown) {
@@ -58,6 +59,10 @@ test("opens the Healthcare Command Center and completes guarded patient registra
     const procedures = route.request().url().split("/api/trpc/")[1]?.split("?")[0].split(",") || [];
     const responses = procedures.map((procedure, index) => {
       if (procedure === "healthcare.access") return trpcResult(access);
+      if (procedure === "healthcare.reminderSettings") return trpcResult({ settings: { id: "e2es1111-1111-4111-8111-111111111111", enabled: false, leadMinutes: 1440, consentRequired: true, timezone: "Africa/Dar_es_Salaam", senderId: "", providerStatus: "unconfigured", providerMessage: "Provider credentials required", scheduleEnabled: false, updatedAt: null }, access });
+      if (procedure === "healthcare.reminderDeliveries") return trpcResult({ deliveries: rowsByTable.hc_reminder_deliveries, access });
+      if (procedure === "healthcare.saveReminderSettings") return trpcResult({ settings: { id: "e2es1111-1111-4111-8111-111111111111", enabled: true, leadMinutes: 120, consentRequired: true, timezone: "Africa/Dar_es_Salaam", senderId: "CLINIC", providerStatus: "unconfigured", providerMessage: "Provider credentials required", scheduleEnabled: false, updatedAt: null }, activation: "provider_unconfigured", message: "Settings saved. SMS delivery remains inactive until an approved provider connection is configured." });
+      if (procedure === "healthcare.testReminder") return trpcResult({ status: "blocked", reason: "provider_unconfigured", message: "A test SMS cannot be sent until an approved provider connection is configured." });
       if (procedure === "healthcare.list") {
         const requestUrl = new URL(route.request().url());
         const rawInput = requestUrl.searchParams.get("input") || "{}";
@@ -178,6 +183,15 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await page.getByLabel("Clinical report content").fill("Follow-up care has been discussed and documented.");
   await page.getByRole("dialog", { name: "Create Medical report" }).getByRole("button", { name: "Create Medical report" }).click();
   await expect(page.getByRole("dialog", { name: "Create Medical report" })).toHaveCount(0);
+
+  await page.getByRole("main").getByRole("button", { name: "Reminders", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Appointment SMS reminders" })).toBeVisible();
+  await expect(page.getByText("Provider unconfigured", { exact: true }).first()).toBeVisible();
+  await page.getByRole("combobox").first().selectOption("120");
+  await page.getByRole("button", { name: "Save reminder policy" }).click();
+  await expect(page.getByText("Settings saved. SMS delivery remains inactive until an approved provider connection is configured.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Test reminder" }).click();
+  await expect(page.getByText("A test SMS cannot be sent until an approved provider connection is configured.", { exact: true })).toBeVisible();
 
   await page.getByRole("main").getByRole("button", { name: "Insurance claims", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Insurance claims" })).toBeVisible();

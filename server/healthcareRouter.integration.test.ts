@@ -122,6 +122,65 @@ describe("protected healthcare router integration", () => {
     expect(access.canUpdate.hc_notifications).toBe(true);
   });
 
+  it("allows administrators to configure the provider-safe reminder boundary through active-company routes", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Clinic Administrator", requests);
+    const result = await caller.healthcare.saveReminderSettings({ leadMinutes: 120, consentRequired: true, timezone: "Africa/Dar_es_Salaam", senderId: "CLINIC", enabled: true });
+    expect(result.activation).toBe("provider_unconfigured");
+    expect(result.settings.scheduleEnabled).toBe(false);
+    const reminderRequests = requests.filter((request) => request.url.includes("/rest/v1/hc_reminder_settings"));
+    expect(reminderRequests).toHaveLength(3);
+    expect(reminderRequests.every((request) => request.url.includes(`company_id=eq.${companyId}`))).toBe(true);
+    expect(reminderRequests.at(-1)?.body?.data).toMatchObject({ leadMinutes: 120, consentRequired: true, enabled: true, scheduleEnabled: false });
+  });
+
+  it("allows front-desk staff to see delivery history but blocks reminder configuration", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Receptionist", requests);
+    await expect(caller.healthcare.reminderDeliveries({ limit: 10 })).resolves.toHaveProperty("deliveries");
+    await expect(caller.healthcare.reminderSettings()).rejects.toThrow("assigned healthcare role does not allow this action");
+    expect(requests.filter((request) => request.url.includes("hc_reminder_settings"))).toHaveLength(0);
+    expect(requests.filter((request) => request.url.includes("hc_reminder_deliveries")).every((request) => request.url.includes(`company_id=eq.${companyId}`))).toBe(true);
+  });
+
+  it("builds a patient-scoped FHIR R4 collection only from active-company clinical source tables", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Clinic Administrator", requests);
+    const result = await caller.healthcare.fhirExport({ patientId: recordId });
+    expect(result.bundle).toMatchObject({ resourceType: "Bundle", type: "collection" });
+    expect(result.patientId).toBe(recordId);
+    expect(result.profile).toBe("FHIR R4 collection");
+    const clinicalReads = requests.filter((request) => request.method === "GET" && request.url.includes("/rest/v1/hc_"));
+    expect(clinicalReads.length).toBeGreaterThan(5);
+    expect(clinicalReads.every((request) => request.url.includes(`company_id=eq.${companyId}`))).toBe(true);
+  });
+
+  it("rejects FHIR clinical exports before clinical records are queried for a billing-only role", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Billing Officer", requests);
+    await expect(caller.healthcare.fhirExport({ patientId: recordId })).rejects.toThrow("FHIR clinical exports require a clinician or healthcare-administrator role");
+    expect(requests.filter((request) => request.url.includes("/rest/v1/hc_"))).toHaveLength(0);
+  });
+
+  it("returns clinician operations analytics only from active-company appointments, visits, and clinician records", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Clinic Administrator", requests);
+    const result = await caller.healthcare.clinicianAnalytics({ rangeDays: 30 });
+    expect(result.rangeDays).toBe(30);
+    expect(result).toHaveProperty("totals");
+    const analyticsReads = requests.filter((request) => request.method === "GET" && request.url.includes("/rest/v1/hc_"));
+    expect(analyticsReads).toHaveLength(3);
+    expect(analyticsReads.every((request) => request.url.includes(`company_id=eq.${companyId}`))).toBe(true);
+    expect(analyticsReads.map((request) => request.url)).toEqual(expect.arrayContaining([expect.stringContaining("hc_doctors"), expect.stringContaining("hc_appointments"), expect.stringContaining("hc_visits")]));
+  });
+
+  it("rejects clinician operations analytics before clinical source records are queried for a billing-only role", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Billing Officer", requests);
+    await expect(caller.healthcare.clinicianAnalytics({ rangeDays: 30 })).rejects.toThrow("Clinician operations analytics require clinical scheduling access");
+    expect(requests.filter((request) => request.url.includes("/rest/v1/hc_"))).toHaveLength(0);
+  });
+
   it.each([
     ["Doctor", "hc_invoices"],
     ["Laboratory Technician", "hc_prescriptions"],

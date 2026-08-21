@@ -32,7 +32,7 @@ const contractManifest: Record<string, SchemaTableContract> = {
   },
   ...Object.fromEntries([
     "hc_patients", "hc_doctors", "hc_appointments", "hc_visits", "hc_vitals",
-    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports",
+    "hc_prescriptions", "hc_lab_orders", "hc_radiology", "hc_invoices", "hc_insurance_claims", "hc_notifications", "hc_reports", "hc_reminder_settings", "hc_reminder_deliveries",
   ].map((tableName) => [tableName, {
     tableName,
     expectedColumns: ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data"],
