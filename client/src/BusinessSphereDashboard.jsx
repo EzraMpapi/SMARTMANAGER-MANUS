@@ -56,6 +56,7 @@ import { FinanceCommandCenter, IntegrationsCommandCenter, ReportsCommandCenter }
 import { CollaborationCommandCenter, DocumentsCommandCenter, EmployeePortalCommandCenter, HrCommandCenter, WorkflowCommandCenter } from "./components/PeopleCommandCenters";
 import { BankingMfiCommandCenter, CommunityCommandCenter, MicrofinanceCommandCenter, VicobaCommandCenter } from "./components/SectorCommandCenters";
 import { FleetCommandCenter, HealthcareCommandCenter, HotelCommandCenter, PharmacyCommandCenter, RestaurantCommandCenter, SchoolCommandCenter } from "./components/VerticalCommandCenters";
+import { AiBusinessSignals, SupportCommandCenter } from "./components/IntelligenceCommandCenters";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -27179,7 +27180,7 @@ const SUPPORT_TABS = [
   { id: "ai", label: "AI Assistant", icon: Brain },
 ];
 
-function CustomerSupport({ company }) {
+function CustomerSupport({ company, onNavigate }) {
   const [tab, setTab] = useState("tickets");
   const tickets = useCompanyTable("support_tickets", supportTicketsSeed, {
     select: "*,support_ticket_messages(*)", order: { col: "created_date", ascending: false }, mapRow: mapTicketRow,
@@ -27206,6 +27207,8 @@ function CustomerSupport({ company }) {
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Customer Support</h1>
         <p className="text-[13px] text-slate-500 mt-1">Tickets, live chat, knowledge base, call log, and AI-drafted replies</p>
       </div>
+
+      <SupportCommandCenter tickets={tickets} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {SUPPORT_TABS.map((t) => {
@@ -38603,6 +38606,7 @@ function AIAssistant({ company, invoices, inventory, crm, expenses, employees, l
           <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Smart Manager AI</h1>
           <p className="text-[13px] text-slate-500 mt-1">One assistant, twelve roles — each grounded in the live data relevant to it</p>
         </div>
+        <AiBusinessSignals invoices={invoices} inventory={inventory} crm={crm} expenses={expenses} employees={employees} leaveRequests={leaveRequests} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} onNavigate={onNavigate} />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {AI_PERSONAS.map((p) => {
             const Icon = p.icon;
@@ -51757,7 +51761,7 @@ function SmartManager() {
           {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} onNavigate={go} />}
           {active === "documents" && <Documents filesHook={files} company={company} onNavigate={go} />}
           {active === "projects" && <Projects filesHook={files} expensesHook={expenses} />}
-          {active === "support" && <CustomerSupport company={company} />}
+          {active === "support" && <CustomerSupport company={company} onNavigate={go} />}
           {active === "analytics" && (
             <Analytics
               company={company} invoices={invoices} expenses={expenses} crm={crm} inventory={inventory}
