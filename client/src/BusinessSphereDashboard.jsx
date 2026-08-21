@@ -50,6 +50,7 @@ import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
 import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
+import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, SalesCommandCenter } from "./components/CommercialCommandCenters";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -7940,7 +7941,7 @@ const CRM_TABS = [
 // pipeline value real and consistent rather than a guess with a decimal.
 const STAGE_PROBABILITY = { New: 10, Qualified: 35, Proposal: 60, Negotiation: 80, Won: 100, Lost: 0 };
 
-function CRM({ crm, invoices, expenses, suppliers }) {
+function CRM({ crm, invoices, expenses, suppliers, onNavigate }) {
   const [tab, setTab] = useState("leads");
   const [view, setView] = useState("pipeline"); // pipeline | list
   const { rows: leads, setRows: setLeads, loading, error } = crm;
@@ -8089,6 +8090,8 @@ function CRM({ crm, invoices, expenses, suppliers }) {
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Customer Relationship Management</h1>
         <p className="text-[13px] text-slate-500 mt-1">Leads, opportunities, accounts, and the people behind them</p>
       </div>
+
+      <CrmCommandCenter crm={crm} invoices={invoices} onNavigate={onNavigate} />
 
       <ScrollableModuleTabs tabs={CRM_TABS} activeTab={tab} onChangeTab={setTab} />
 
@@ -10142,7 +10145,7 @@ function ContactFormPanel({ onClose, onSubmit }) {
 
 /* --------------------------------- SALES ------------------------------------ */
 
-function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, currentUser, intent, clearIntent }) {
+function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, currentUser, intent, clearIntent, onNavigate }) {
   const [tab, setTab] = useState("quotations");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
@@ -10733,6 +10736,8 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
           </div>
         )}
       </div>
+
+      <SalesCommandCenter invoices={invoices} orders={orders} crm={crm} inventory={inventory} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {[...DOC_TABS, { id: "subscriptions", label: "Subscriptions", icon: Repeat }].map((t) => {
@@ -22673,7 +22678,7 @@ const ECOM_TABS = [
   { id: "orders", label: "Orders", icon: ShoppingCart },
 ];
 
-function ECommerce({ inventory }) {
+function ECommerce({ inventory, onNavigate }) {
   const [tab, setTab] = useState("storefront");
   const products = useCompanyTable("ecommerce_products", storefrontSeed, {
     select: "*,inventory_items(name,category)", order: { col: "sku", ascending: true }, mapRow: mapProductRow,
@@ -22706,6 +22711,8 @@ function ECommerce({ inventory }) {
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">E-Commerce</h1>
         <p className="text-[13px] text-slate-500 mt-1">Your online storefront, priced from live Inventory stock</p>
       </div>
+
+      <EcommerceCommandCenter products={products} orders={orders} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {ECOM_TABS.map((t) => {
@@ -39599,7 +39606,7 @@ const MKT_TABS = [
 
 const CAMPAIGN_STATUS_NEXT = { Draft: "Scheduled", Scheduled: "Sent", Sent: null };
 
-function Marketing({ crm }) {
+function Marketing({ crm, onNavigate }) {
   const [tab, setTab] = useState("campaigns");
   const campaigns = useCompanyTable("marketing_campaigns", campaignsSeed, { order: { col: "sent_date", ascending: false }, mapRow: mapCampaignRow });
 
@@ -39646,6 +39653,8 @@ function Marketing({ crm }) {
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Marketing</h1>
         <p className="text-[13px] text-slate-500 mt-1">Campaigns targeted at real segments of your CRM pipeline</p>
       </div>
+
+      <MarketingCommandCenter crm={crm} campaigns={campaigns} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {MKT_TABS.map((t) => {
@@ -51686,14 +51695,14 @@ function SmartManager() {
               onQuickAction={goWithIntent} onNavigate={go}
             />
           )}
-          {active === "crm" && <CRM crm={crm} invoices={invoices} expenses={expenses} suppliers={suppliers} />}
-          {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} crm={crm} currentUser={currentUser} intent={intent} clearIntent={clearIntent} />}
+          {active === "crm" && <CRM crm={crm} invoices={invoices} expenses={expenses} suppliers={suppliers} onNavigate={go} />}
+          {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} crm={crm} currentUser={currentUser} intent={intent} clearIntent={clearIntent} onNavigate={go} />}
           {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
       {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} currentUser={currentUser} />}
           {active === "scm" && <SupplyChain />}
-          {active === "ecommerce" && <ECommerce inventory={inventory} />}
+          {active === "ecommerce" && <ECommerce inventory={inventory} onNavigate={go} />}
           {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} />}
           {active === "documents" && <Documents filesHook={files} company={company} />}
           {active === "projects" && <Projects filesHook={files} expensesHook={expenses} />}
@@ -51723,7 +51732,7 @@ function SmartManager() {
               <LazyTraPortalModule companyId={company?.id || company?.companyId || "default-company"} lang={getTraPortalLanguage()} onNavigate={go} />
             </Suspense>
           )}
-          {active === "marketing" && <Marketing crm={crm} />}
+          {active === "marketing" && <Marketing crm={crm} onNavigate={go} />}
           {active === "hr" && <HR employeesHook={employees} leaveRequestsHook={leaveRequests} expensesHook={expenses} intent={intent} clearIntent={clearIntent} currentUser={currentUser} canManage={canManage} />}
           {active === "manufacturing" && <Manufacturing inventory={inventory} workOrdersHook={workOrders} expensesHook={expenses} />}
           {active === "ai" && (
