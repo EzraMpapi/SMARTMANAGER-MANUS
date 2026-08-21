@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateMicrofinanceCreditScore, calculateMicrofinanceOverdueDays, calculateMicrofinanceRepaymentTerms, microfinanceApplicationInput, microfinanceCreditScoringSettingsInput, microfinanceEscalationSettingsInput, microfinanceProductInput } from "./microfinanceOperations";
+import { calculateMicrofinanceCreditScore, calculateMicrofinanceOverdueDays, calculateMicrofinanceRepaymentTerms, isMicrofinanceEscalationRoleRecipient, microfinanceApplicationInput, microfinanceCreditScoringSettingsInput, microfinanceEscalationSettingsInput, microfinanceProductInput } from "./microfinanceOperations";
 
 describe("microfinance lending calculations", () => {
   const product = {
@@ -61,6 +61,12 @@ describe("microfinance input contracts", () => {
     expect(valid.success).toBe(true);
     expect(microfinanceEscalationSettingsInput.safeParse({ ...valid.data, scheduleLocalTime: "25:99" }).success).toBe(false);
     expect(microfinanceEscalationSettingsInput.safeParse({ ...valid.data, roleRecipients: ["Unapproved recipient"] }).success).toBe(false);
+  });
+
+  it("maps the selected Company Administrator role to an owner profile without expanding the Collections Officer role", () => {
+    expect(isMicrofinanceEscalationRoleRecipient("owner", ["Company Administrator", "Collections Officer"])).toBe(true);
+    expect(isMicrofinanceEscalationRoleRecipient("collections officer", ["Company Administrator", "Collections Officer"])).toBe(true);
+    expect(isMicrofinanceEscalationRoleRecipient("recovery officer", ["Company Administrator", "Collections Officer"])).toBe(false);
   });
 });
 

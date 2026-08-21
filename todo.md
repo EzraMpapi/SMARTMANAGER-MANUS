@@ -265,3 +265,4 @@
 - [ ] Configure the confirmed daily 12:00 Africa/Dar_es_Salaam escalation with Company Administrator and Collections Officer recipient roles.
 - [ ] Verify the active production schedule binding and aggregate-only email safeguards, then publish the activation record.
 - [x] Make role-based escalation recipients explicitly selectable so delivery is limited to the confirmed Company Administrator and Collections Officer roles.
+- [x] Map the selected Company Administrator escalation role safely to the tenant's existing owner-profile designation without broadening Collections Officer delivery.

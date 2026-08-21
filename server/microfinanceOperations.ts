@@ -67,6 +67,9 @@ export const microfinanceCollectionInput = z.object({ loanId: z.string().uuid(),
 export const microfinanceListInput = z.object({ limit: z.number().int().min(1).max(200).optional().default(100) });
 const ESCALATION_RECIPIENT_ROLE_OPTIONS = ["Company Administrator", "Organization Owner", "CEO", "Finance Manager", "Microfinance Manager", "Collections Officer"] as const;
 const DEFAULT_ESCALATION_ROLES = ["Company Administrator", "Collections Officer"] as const;
+const ESCALATION_ROLE_ALIASES: Record<string, readonly string[]> = {
+  "company administrator": ["company administrator", "owner"],
+};
 export const microfinanceCreditScoringSettingsInput = z.object({
   kycWeight: z.number().int().min(0).max(100), affordabilityWeight: z.number().int().min(0).max(100), repaymentHistoryWeight: z.number().int().min(0).max(100), guarantorWeight: z.number().int().min(0).max(100), collateralWeight: z.number().int().min(0).max(100),
   maxDebtServiceRatio: z.number().min(5).max(100), approvalThreshold: z.number().int().min(1).max(100), reviewThreshold: z.number().int().min(0).max(99),
@@ -93,6 +96,10 @@ function numeric(value: unknown): number { const parsed = typeof value === "numb
 function roundTzs(value: number) { return Math.round(value); }
 function normalizedRole(role: string) { return role.trim().toLowerCase(); }
 function normalizedRecipients(values: string[]) { return Array.from(new Set(values.map((value) => value.trim().toLowerCase()).filter((value) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)))); }
+export function isMicrofinanceEscalationRoleRecipient(profileRole: string, selectedRoles: readonly string[]) {
+  const normalizedProfileRole = normalizedRole(profileRole);
+  return selectedRoles.some((selectedRole) => (ESCALATION_ROLE_ALIASES[normalizedRole(selectedRole)] || [normalizedRole(selectedRole)]).includes(normalizedProfileRole));
+}
 function headers() {
   if (!ENV.supabaseUrl || !ENV.supabaseSecretKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Microfinance operations are not configured." });
   return { apikey: ENV.supabaseSecretKey, authorization: `Bearer ${ENV.supabaseSecretKey}`, "content-type": "application/json" };
@@ -235,9 +242,8 @@ export async function resolveMicrofinanceEscalationRecipients(companyId: string,
   const recipients = new Set<string>();
   if (settings.recipientMode === "managed" || settings.recipientMode === "both") normalizedRecipients(settings.managedRecipients).forEach((email) => recipients.add(email));
   if (settings.recipientMode === "roles" || settings.recipientMode === "both") {
-    const permitted = new Set(settings.roleRecipients.map(normalizedRole));
     const profiles = await request<Array<{ email?: string | null; role?: string | null; is_active?: boolean | null }>>("profiles", new URLSearchParams({ select: "email,role,is_active", company_id: `eq.${companyId}`, is_active: "eq.true", email: "not.is.null", limit: "200" }));
-    profiles.forEach((item) => { const email = item.email?.trim().toLowerCase(); if (email && permitted.has(normalizedRole(String(item.role || ""))) && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) recipients.add(email); });
+    profiles.forEach((item) => { const email = item.email?.trim().toLowerCase(); if (email && isMicrofinanceEscalationRoleRecipient(String(item.role || ""), settings.roleRecipients) && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) recipients.add(email); });
   }
   return Array.from(recipients).sort();
 }
