@@ -52,6 +52,7 @@ import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
 import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
 import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, SalesCommandCenter } from "./components/CommercialCommandCenters";
 import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter } from "./components/OperationsCommandCenters";
+import { FinanceCommandCenter, IntegrationsCommandCenter, ReportsCommandCenter } from "./components/FinanceCommandCenters";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -14728,7 +14729,7 @@ const FIN_TABS = [
   { id: "assets", label: "Assets", icon: Package },
 ];
 
-function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, intent, clearIntent, company, employeesHook, inventoryHook }) {
+function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, intent, clearIntent, company, employeesHook, inventoryHook, onNavigate }) {
   const [tab, setTab] = useState("overview");
 
   useEffect(() => {
@@ -14902,6 +14903,8 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Finance</h1>
         <p className="text-[13px] text-slate-500 mt-1">Revenue, receivables, and operating expenses at a glance</p>
       </div>
+
+      <FinanceCommandCenter invoices={invoices} expenses={expensesHook} posTransactions={posTransactionsHook} onNavigate={onNavigate} />
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {FIN_TABS.map((t) => {
@@ -23357,6 +23360,8 @@ function Reports({ invoices, inventory, expensesHook, company, schedulesHook, po
         )}
       </div>
 
+      <ReportsCommandCenter invoices={invoices} inventory={inventory} expenses={expensesHook} schedules={schedulesHook} posTransactions={posTransactions} onNavigate={onNavigate} />
+
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {REPORT_TABS.map((t) => {
           const Icon = t.icon;
@@ -24868,6 +24873,8 @@ function Integrations({ invoices, expenses, canManage, currentUser, onNavigate }
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Integration Hub</h1>
         <p className="text-[13px] text-slate-500 mt-1">Real capabilities where a browser genuinely can — honest limits where it cannot. {functionalCount} of {INTEGRATION_DIRECTORY.length} are genuinely working today, not configuration for a backend this app does not have.</p>
       </div>
+
+      <IntegrationsCommandCenter directory={INTEGRATION_DIRECTORY} onNavigate={onNavigate} />
 
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
         <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-3">Integration Directory</p>
@@ -51708,7 +51715,7 @@ function SmartManager() {
           {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} crm={crm} currentUser={currentUser} intent={intent} clearIntent={clearIntent} onNavigate={go} />}
           {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} onNavigate={go} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} onNavigate={go} />}
-          {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
+          {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} onNavigate={go} />}
       {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} currentUser={currentUser} />}
           {active === "scm" && <SupplyChain onNavigate={go} />}
           {active === "ecommerce" && <ECommerce inventory={inventory} onNavigate={go} />}
