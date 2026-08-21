@@ -56,6 +56,7 @@ const LazyDashboardPreferencesDrawer = lazy(() => import("./components/Dashboard
 const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAuditLogView").then((module) => ({ default: module.ComplianceAuditLogView })));
 const LazyHealthcareClinicWorkspace = lazy(() => import("./components/HealthcareClinicWorkspace").then((module) => ({ default: module.HealthcareClinicWorkspace })));
 const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWorkspace").then((module) => ({ default: module.MicrofinanceWorkspace })));
+const LazyPharmacyWorkspace = lazy(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })));
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -52985,7 +52986,7 @@ function SmartManager() {
             </Suspense>
           )}
           {active === "school"      && <SchoolManagementModule  currentUser={currentUser} company={company} onFeesLoad={setSchFeesForAlerts} />}
-          {active === "pharmacy"    && <PharmacyManagementModule currentUser={currentUser} company={company} onStockLoad={setPhmStockForAlerts} />}
+          {active === "pharmacy"    && <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><LoaderCircle className="animate-spin text-emerald-600"/></div>}><LazyPharmacyWorkspace onNavigate={setActive} /></Suspense>}
           {active === "hotel"       && <HotelManagementModule   currentUser={currentUser} company={company} onBookingsLoad={setHtlBookingsForAlerts} />}
           {active === "fleet"       && <FleetManagementModule      currentUser={currentUser} company={company} onVehiclesLoad={setVehiclesForAlerts} />}
           {active === "banking"     && <BankingMFIModule            currentUser={currentUser} company={company} onLoansLoad={setBankLoansForAlerts} />}

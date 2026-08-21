@@ -37,6 +37,7 @@ import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePa
 import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPatientPortalReference, linkPatientPortalReferenceInput, listPortalReferenceReconciliation, portalReferenceListInput } from "./healthcarePortalReconciliation";
 import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceDeliveryHistory, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceDeliveryHistoryInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
 import { closeMicrofinanceCashSession, createMicrofinanceBorrower, createMicrofinanceCollateral, createMicrofinanceCollection, createMicrofinanceGroup, createMicrofinanceGuarantor, createMicrofinanceProduct, decideMicrofinanceApplication, disburseMicrofinanceLoan, getMicrofinanceCreditScoringSettings, getMicrofinanceEscalationSettings, listMicrofinanceAudit, listMicrofinanceDashboard, listMicrofinanceEscalationHistory, microfinanceApplicationInput, microfinanceBorrowerInput, microfinanceCashCloseInput, microfinanceCashOpenInput, microfinanceCollateralInput, microfinanceCollectionInput, microfinanceCreditScoringSettingsInput, microfinanceDecisionInput, microfinanceDisbursementInput, microfinanceEscalationSettingsInput, microfinanceGroupInput, microfinanceGuarantorInput, microfinanceListInput, microfinanceProductInput, microfinanceRepaymentInput, microfinanceSavingsInput, openMicrofinanceCashSession, recordMicrofinanceRepayment, recordMicrofinanceSavings, saveMicrofinanceCreditScoringSettings, saveMicrofinanceEscalationSettings, submitMicrofinanceApplication } from "./microfinanceOperations";
+import { adjustPharmacyStock, archivePharmacyRecord, completePharmacySale, createPharmacyBrand, createPharmacyCategory, createPharmacyInsuranceClaim, createPharmacyMedicine, createPharmacyPurchaseOrder, createPharmacySupplier, createPharmacyTransfer, dispensePharmacyPrescription, getPharmacyAccess, getPharmacyClinicalQueue, getPharmacyDashboard, getPharmacyReports, listPharmacyAudit, listPharmacyRecords, markPharmacyNotificationRead, pharmacyAdjustmentInput, pharmacyArchiveInput, pharmacyBrandInput, pharmacyBrandUpdateInput, pharmacyCategoryInput, pharmacyCategoryUpdateInput, pharmacyClinicalQueueInput, pharmacyDispenseInput, pharmacyInsuranceClaimInput, pharmacyListInput, pharmacyMedicineInput, pharmacyMedicineUpdateInput, pharmacyNotificationInput, pharmacyPaymentInput, pharmacyPurchaseOrderInput, pharmacyReceiptInput, pharmacyReturnInput, pharmacySaleInput, pharmacySupplierInput, pharmacySupplierPaymentInput, pharmacySupplierUpdateInput, pharmacyTransferInput, receivePharmacyStock, recordPharmacySalePayment, recordPharmacySupplierPayment, returnPharmacySaleItems, updatePharmacyBrand, updatePharmacyCategory, updatePharmacyMedicine, updatePharmacySupplier } from "./pharmacyOperations";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -143,6 +144,34 @@ export const appRouter = router({
     createCollectionAction: protectedProcedure
       .input(microfinanceCollectionInput)
       .mutation(({ ctx, input }) => createMicrofinanceCollection(ctx.req, input)),
+  }),
+  pharmacy: router({
+    access: protectedProcedure.query(({ ctx }) => getPharmacyAccess(ctx.req)),
+    dashboard: protectedProcedure.query(({ ctx }) => getPharmacyDashboard(ctx.req)),
+    list: protectedProcedure.input(pharmacyListInput).query(({ ctx, input }) => listPharmacyRecords(ctx.req, input)),
+    reports: protectedProcedure.query(({ ctx }) => getPharmacyReports(ctx.req)),
+    clinicalQueue: protectedProcedure.input(pharmacyClinicalQueueInput).query(({ ctx, input }) => getPharmacyClinicalQueue(ctx.req, input)),
+    audit: protectedProcedure.input(pharmacyListInput).query(({ ctx, input }) => listPharmacyAudit(ctx.req, input)),
+    createCategory: protectedProcedure.input(pharmacyCategoryInput).mutation(({ ctx, input }) => createPharmacyCategory(ctx.req, input)),
+    createBrand: protectedProcedure.input(pharmacyBrandInput).mutation(({ ctx, input }) => createPharmacyBrand(ctx.req, input)),
+    createSupplier: protectedProcedure.input(pharmacySupplierInput).mutation(({ ctx, input }) => createPharmacySupplier(ctx.req, input)),
+    createMedicine: protectedProcedure.input(pharmacyMedicineInput).mutation(({ ctx, input }) => createPharmacyMedicine(ctx.req, input)),
+    updateCategory: protectedProcedure.input(pharmacyCategoryUpdateInput).mutation(({ ctx, input }) => updatePharmacyCategory(ctx.req, input)),
+    updateBrand: protectedProcedure.input(pharmacyBrandUpdateInput).mutation(({ ctx, input }) => updatePharmacyBrand(ctx.req, input)),
+    updateSupplier: protectedProcedure.input(pharmacySupplierUpdateInput).mutation(({ ctx, input }) => updatePharmacySupplier(ctx.req, input)),
+    updateMedicine: protectedProcedure.input(pharmacyMedicineUpdateInput).mutation(({ ctx, input }) => updatePharmacyMedicine(ctx.req, input)),
+    archive: protectedProcedure.input(pharmacyArchiveInput).mutation(({ ctx, input }) => archivePharmacyRecord(ctx.req, input)),
+    createPurchaseOrder: protectedProcedure.input(pharmacyPurchaseOrderInput).mutation(({ ctx, input }) => createPharmacyPurchaseOrder(ctx.req, input)),
+    receiveStock: protectedProcedure.input(pharmacyReceiptInput).mutation(({ ctx, input }) => receivePharmacyStock(ctx.req, input)),
+    adjustStock: protectedProcedure.input(pharmacyAdjustmentInput).mutation(({ ctx, input }) => adjustPharmacyStock(ctx.req, input)),
+    createStockTransfer: protectedProcedure.input(pharmacyTransferInput).mutation(({ ctx, input }) => createPharmacyTransfer(ctx.req, input)),
+    dispensePrescription: protectedProcedure.input(pharmacyDispenseInput).mutation(({ ctx, input }) => dispensePharmacyPrescription(ctx.req, input)),
+    completeSale: protectedProcedure.input(pharmacySaleInput).mutation(({ ctx, input }) => completePharmacySale(ctx.req, input)),
+    recordSalePayment: protectedProcedure.input(pharmacyPaymentInput).mutation(({ ctx, input }) => recordPharmacySalePayment(ctx.req, input)),
+    recordSupplierPayment: protectedProcedure.input(pharmacySupplierPaymentInput).mutation(({ ctx, input }) => recordPharmacySupplierPayment(ctx.req, input)),
+    createInsuranceClaim: protectedProcedure.input(pharmacyInsuranceClaimInput).mutation(({ ctx, input }) => createPharmacyInsuranceClaim(ctx.req, input)),
+    returnSaleItems: protectedProcedure.input(pharmacyReturnInput).mutation(({ ctx, input }) => returnPharmacySaleItems(ctx.req, input)),
+    markNotificationRead: protectedProcedure.input(pharmacyNotificationInput).mutation(({ ctx, input }) => markPharmacyNotificationRead(ctx.req, input)),
   }),
   healthcare: router({
     access: protectedProcedure

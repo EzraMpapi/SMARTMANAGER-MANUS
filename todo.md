@@ -276,3 +276,13 @@
 - [x] Add the user-approved ezrampapi@gmail.com address as a managed recipient without modifying its existing tenant profile or permissions.
 - [x] Schedule a one-time privacy-safe first-run delivery review for 12:10 Africa/Dar_es_Salaam on 22 August 2026.
 - [x] Correct the one-time review schedule using an exact delay to the verified 12:10 Africa/Dar_es_Salaam execution time on 22 August 2026.
+
+## Pharmacy Module
+- [x] Audit existing Healthcare, Inventory, POS, Finance, permissions, data contracts, and browser-test conventions for pharmacy integration.
+- [x] Define tenant-safe Pharmacy domain models, role permissions, clinical safeguards, stock accounting boundaries, and Tanzania-ready tax/payment rules.
+- [x] Apply RLS-protected Supabase schema for medicines, suppliers, purchasing, batches, stock, prescriptions, dispensing, sales, payments, adjustments, notifications, and audit records.
+- [x] Implement protected pharmacy service workflows for catalog, suppliers, purchasing, barcode and batch intake, expiry, controlled medicines, stock movements, and alerts.
+- [x] Implement clinical prescription, dispensing, patient, doctor, insurance, sales/POS, returns, transfers, payment, invoice, receipt, and supplier-balance workflows.
+- [x] Build the responsive Pharmacy Command Center with connected dashboards, forms, tables, reports, accessible validation, loading, empty, and recovery states.
+- [x] Add navigation, role-aware access, Healthcare/Inventory/Finance cross-links, and privacy-safe notification and audit visibility.
+- [x] Add unit, protected-router, schema-drift, browser, TypeScript, and production-build coverage; fix regressions; publish the completed Pharmacy Module.
