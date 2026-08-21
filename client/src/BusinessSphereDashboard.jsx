@@ -49,6 +49,7 @@ import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomi
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
+import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -6549,6 +6550,19 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           })()}
         </div>
       </div>
+
+      <ExecutiveCommandCenter
+        invoices={invoices}
+        expenses={expenses}
+        inventory={inventory}
+        crm={crm}
+        employees={employees}
+        leaveRequests={leaveRequests}
+        posTransactions={posTransactions}
+        workOrders={workOrders}
+        onNavigate={onNavigate}
+        currency={preferences.currency}
+      />
 
       {canReviewRoleChanges && (
         <section className="order-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white shadow-sm overflow-hidden" aria-label="Pending role-change approvals">
