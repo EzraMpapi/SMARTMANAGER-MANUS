@@ -1,14 +1,18 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { TRPCError } from "@trpc/server";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { webhookDeliveries } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { createHeartbeatJob, deleteHeartbeatJob } from "./_core/heartbeat";
 import { resolveVerifiedProfile } from "./aiApprovals";
+import { getDb } from "./db";
 
 export const MICROFINANCE_TABLES = [
   "mfi_clients", "mfi_groups", "mfi_loan_products", "mfi_loan_applications", "mfi_loans",
   "mfi_repayment_schedules", "mfi_repayments", "mfi_savings", "mfi_guarantors", "mfi_collateral",
   "mfi_collections", "mfi_cash_sessions", "mfi_cash_transactions", "mfi_staff_commissions",
-  "mfi_notifications", "mfi_audit_logs",
+  "mfi_notifications", "mfi_audit_logs", "mfi_credit_scoring_settings", "mfi_credit_scorecards", "mfi_par_escalation_settings",
 ] as const;
 
 type MicrofinanceTable = (typeof MICROFINANCE_TABLES)[number];
@@ -61,6 +65,14 @@ export const microfinanceCashOpenInput = z.object({ openingBalance: nonNegativeM
 export const microfinanceCashCloseInput = z.object({ cashSessionId: z.string().uuid(), closingBalance: nonNegativeMoney, note: optionalText });
 export const microfinanceCollectionInput = z.object({ loanId: z.string().uuid(), action: z.enum(["Call", "Visit", "Promise to pay", "Restructure review"]), dueOn: dateInput, note: optionalText });
 export const microfinanceListInput = z.object({ limit: z.number().int().min(1).max(200).optional().default(100) });
+export const microfinanceCreditScoringSettingsInput = z.object({
+  kycWeight: z.number().int().min(0).max(100), affordabilityWeight: z.number().int().min(0).max(100), repaymentHistoryWeight: z.number().int().min(0).max(100), guarantorWeight: z.number().int().min(0).max(100), collateralWeight: z.number().int().min(0).max(100),
+  maxDebtServiceRatio: z.number().min(5).max(100), approvalThreshold: z.number().int().min(1).max(100), reviewThreshold: z.number().int().min(0).max(99),
+});
+export const microfinanceEscalationSettingsInput = z.object({
+  recipientMode: z.enum(["roles", "managed", "both"]), managedRecipients: z.array(z.string().trim().email()).max(20).default([]), scheduleLocalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), timezone: z.literal("Africa/Dar_es_Salaam").default("Africa/Dar_es_Salaam"), deliveryEnabled: z.boolean().default(false),
+  par30AlertThreshold: z.number().min(0).max(100), overdueAmountAlertThreshold: nonNegativeMoney,
+});
 
 const ADMIN_ROLES = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "branch manager", "microfinance manager"]);
 const CREDIT_ROLES = new Set(["credit officer", "loan officer", "microfinance officer"]);
@@ -69,11 +81,17 @@ const COLLECTION_ROLES = new Set(["collections officer", "recovery officer", "cr
 const AUDIT_ROLES = new Set(["internal auditor", "auditor"]);
 const PORTFOLIO_READ_ROLES = new Set(["credit officer", "loan officer", "microfinance officer", "teller", "cashier", "finance officer", "collections officer", "recovery officer", "internal auditor", "auditor"]);
 const REPAYMENT_RECORDING_ROLES = new Set(["teller", "cashier", "finance officer", "collections officer", "recovery officer", "credit officer", "loan officer"]);
+const ESCALATION_ACTION = "MICROFINANCE_PAR_COLLECTIONS_ESCALATION_EMAIL";
+const ESCALATION_TIMEZONE = "Africa/Dar_es_Salaam";
+const DEFAULT_ESCALATION_ROLES = ["Organization Owner", "CEO", "Finance Manager", "Microfinance Manager", "Collections Officer"];
+const DEFAULT_SCORING_RULES = { kycWeight: 20, affordabilityWeight: 30, repaymentHistoryWeight: 20, guarantorWeight: 15, collateralWeight: 15, maxDebtServiceRatio: 40, approvalThreshold: 70, reviewThreshold: 50 };
+type CreditScoringRules = z.infer<typeof microfinanceCreditScoringSettingsInput>;
 
 function dataOf(row: Row | undefined): Record<string, unknown> { return row?.data && typeof row.data === "object" && !Array.isArray(row.data) ? row.data as Record<string, unknown> : {}; }
 function numeric(value: unknown): number { const parsed = typeof value === "number" ? value : Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 function roundTzs(value: number) { return Math.round(value); }
 function normalizedRole(role: string) { return role.trim().toLowerCase(); }
+function normalizedRecipients(values: string[]) { return Array.from(new Set(values.map((value) => value.trim().toLowerCase()).filter((value) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)))); }
 function headers() {
   if (!ENV.supabaseUrl || !ENV.supabaseSecretKey) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Microfinance operations are not configured." });
   return { apikey: ENV.supabaseSecretKey, authorization: `Bearer ${ENV.supabaseSecretKey}`, "content-type": "application/json" };
@@ -112,6 +130,26 @@ async function notify(companyId: string, name: string, severity: "Info" | "Warni
 }
 function displayBorrower(row: Row) { const data = dataOf(row); return { id: row.id, name: row.name || "Borrower", status: row.status || "Pending", phone: String(data.phone || ""), nationalId: String(data.nationalId || ""), kycStatus: String(data.kycStatus || "Pending"), village: String(data.village || ""), district: String(data.district || ""), region: String(data.region || ""), groupId: typeof data.groupId === "string" ? data.groupId : null, monthlyIncome: numeric(data.monthlyIncome), createdAt: row.created_at }; }
 function displayLoan(row: Row) { const data = dataOf(row); return { id: row.id, number: String(data.loanNumber || row.id.slice(0, 8).toUpperCase()), borrowerId: String(data.borrowerId || ""), borrowerName: String(data.borrowerName || "Borrower"), productId: String(data.productId || ""), productName: String(data.productName || "Loan product"), principal: numeric(row.amount), totalDue: numeric(data.totalDue), outstanding: numeric(data.outstanding), disbursedOn: String(data.disbursedOn || ""), status: row.status || "Active", repaymentFrequency: String(data.repaymentFrequency || "monthly"), termMonths: numeric(data.termMonths), paymentMethod: String(data.paymentMethod || ""), mobileMoneyState: String(data.mobileMoneyState || "Not configured") }; }
+function scoringRulesFromRow(row?: Row): CreditScoringRules { const data = dataOf(row); return microfinanceCreditScoringSettingsInput.parse({ ...DEFAULT_SCORING_RULES, ...data }); }
+function escalationSettingsFromRow(row?: Row) {
+  const data = dataOf(row); const scheduleCronTaskUid = typeof data.scheduleCronTaskUid === "string" && data.scheduleCronTaskUid ? data.scheduleCronTaskUid : null;
+  const scheduleLocalTime = typeof data.scheduleLocalTime === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(data.scheduleLocalTime) ? data.scheduleLocalTime : "08:00";
+  const deliveryEnabled = data.deliveryEnabled === true && Boolean(scheduleCronTaskUid);
+  const [hour, minute] = scheduleLocalTime.split(":").map(Number); const utcHour = (hour + 21) % 24; const now = new Date(); const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), utcHour, minute, 0)); if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+  return { id: row?.id || null, companyId: row?.company_id || "", recipientMode: data.recipientMode === "roles" || data.recipientMode === "managed" || data.recipientMode === "both" ? data.recipientMode : "roles", managedRecipients: Array.isArray(data.managedRecipients) ? normalizedRecipients(data.managedRecipients.filter((value): value is string => typeof value === "string")) : [], roleRecipients: DEFAULT_ESCALATION_ROLES, scheduleLocalTime, timezone: ESCALATION_TIMEZONE, par30AlertThreshold: numeric(data.par30AlertThreshold || 10), overdueAmountAlertThreshold: numeric(data.overdueAmountAlertThreshold || 0), scheduleCronTaskUid, deliveryEnabled, scheduleState: deliveryEnabled ? `Active — daily at ${scheduleLocalTime} ${ESCALATION_TIMEZONE}` : "Inactive pending explicit time and activation confirmation", nextRunAt: deliveryEnabled ? next.toISOString() : null };
+}
+
+export function calculateMicrofinanceCreditScore(input: { rules: CreditScoringRules; kycStatus: string; monthlyIncome: number; projectedInstallment: number; hasRepaymentHistory: boolean; hasOverdueHistory: boolean; requiresGuarantor: boolean; guarantorVerified: boolean; requiresCollateral: boolean; collateralVerified: boolean }) {
+  const { rules } = input; const ratio = input.monthlyIncome > 0 ? input.projectedInstallment / input.monthlyIncome * 100 : Number.POSITIVE_INFINITY;
+  const kyc = input.kycStatus === "Verified" ? rules.kycWeight : 0;
+  const affordability = ratio <= rules.maxDebtServiceRatio ? rules.affordabilityWeight : ratio <= rules.maxDebtServiceRatio * 1.25 ? Math.round(rules.affordabilityWeight / 2) : 0;
+  const repaymentHistory = !input.hasRepaymentHistory ? Math.round(rules.repaymentHistoryWeight / 2) : input.hasOverdueHistory ? 0 : rules.repaymentHistoryWeight;
+  const guarantor = !input.requiresGuarantor || input.guarantorVerified ? rules.guarantorWeight : 0;
+  const collateral = !input.requiresCollateral || input.collateralVerified ? rules.collateralWeight : 0;
+  const score = kyc + affordability + repaymentHistory + guarantor + collateral;
+  const recommendation = score >= rules.approvalThreshold ? "Eligible for approval" : score >= rules.reviewThreshold ? "Manual review" : "Decline recommended";
+  return { score, recommendation, debtServiceRatio: Number.isFinite(ratio) ? Number(ratio.toFixed(1)) : null, breakdown: { kyc, affordability, repaymentHistory, guarantor, collateral } };
+}
 function scheduleDates(disbursedOn: string, periods: number, frequency: z.infer<typeof loanFrequency>) {
   const base = new Date(`${disbursedOn}T00:00:00.000Z`); const dates: string[] = [];
   for (let index = 1; index <= periods; index += 1) {
@@ -135,8 +173,8 @@ export function calculateMicrofinanceOverdueDays(dueDate: string, outstanding: n
 
 export async function listMicrofinanceDashboard(req: CreateExpressContextOptions["req"], input: z.infer<typeof microfinanceListInput>) {
   const actor = await profile(req); requirePermission(actor, PORTFOLIO_READ_ROLES, "view portfolio data");
-  const [borrowers, groups, products, applications, loans, schedules, repayments, savings, guarantors, collateral, collections, cashSessions, commissions, notifications] = await Promise.all([
-    rows("mfi_clients", actor.company_id, input.limit), rows("mfi_groups", actor.company_id, input.limit), rows("mfi_loan_products", actor.company_id, input.limit), rows("mfi_loan_applications", actor.company_id, input.limit), rows("mfi_loans", actor.company_id, input.limit), rows("mfi_repayment_schedules", actor.company_id, input.limit * 4), rows("mfi_repayments", actor.company_id, input.limit), rows("mfi_savings", actor.company_id, input.limit), rows("mfi_guarantors", actor.company_id, input.limit), rows("mfi_collateral", actor.company_id, input.limit), rows("mfi_collections", actor.company_id, input.limit), rows("mfi_cash_sessions", actor.company_id, 20), rows("mfi_staff_commissions", actor.company_id, input.limit), rows("mfi_notifications", actor.company_id, input.limit),
+  const [borrowers, groups, products, applications, loans, schedules, repayments, savings, guarantors, collateral, collections, cashSessions, commissions, notifications, scorecards] = await Promise.all([
+    rows("mfi_clients", actor.company_id, input.limit), rows("mfi_groups", actor.company_id, input.limit), rows("mfi_loan_products", actor.company_id, input.limit), rows("mfi_loan_applications", actor.company_id, input.limit), rows("mfi_loans", actor.company_id, input.limit), rows("mfi_repayment_schedules", actor.company_id, input.limit * 4), rows("mfi_repayments", actor.company_id, input.limit), rows("mfi_savings", actor.company_id, input.limit), rows("mfi_guarantors", actor.company_id, input.limit), rows("mfi_collateral", actor.company_id, input.limit), rows("mfi_collections", actor.company_id, input.limit), rows("mfi_cash_sessions", actor.company_id, 20), rows("mfi_staff_commissions", actor.company_id, input.limit), rows("mfi_notifications", actor.company_id, input.limit), rows("mfi_credit_scorecards", actor.company_id, input.limit),
   ]);
   const activeLoans = loans.filter((item) => ["Active", "Overdue"].includes(item.status || ""));
   const portfolioOutstanding = activeLoans.reduce((sum, item) => sum + numeric(dataOf(item).outstanding), 0);
@@ -160,7 +198,81 @@ export async function listMicrofinanceDashboard(req: CreateExpressContextOptions
     cashSessions: cashSessions.map((item) => ({ id: item.id, name: item.name, status: item.status, amount: numeric(item.amount), createdAt: item.created_at, ...dataOf(item) })),
     commissions: commissions.map((item) => ({ id: item.id, name: item.name, status: item.status, amount: numeric(item.amount), createdAt: item.created_at, ...dataOf(item) })),
     notifications: notifications.map((item) => ({ id: item.id, name: item.name, status: item.status, createdAt: item.created_at, ...dataOf(item) })),
+    scorecards: scorecards.map((item) => ({ id: item.id, name: item.name, status: item.status, score: numeric(item.amount), createdAt: item.created_at, ...dataOf(item) })),
   };
+}
+
+export async function getMicrofinanceCreditScoringSettings(req: CreateExpressContextOptions["req"]) {
+  const actor = await profile(req); requirePermission(actor, CREDIT_ROLES, "view credit scoring configuration");
+  const existing = await rows("mfi_credit_scoring_settings", actor.company_id, 1);
+  return { settings: { id: existing[0]?.id || null, ...scoringRulesFromRow(existing[0]) }, canManage: can(actor, new Set()) };
+}
+
+export async function saveMicrofinanceCreditScoringSettings(req: CreateExpressContextOptions["req"], input: z.infer<typeof microfinanceCreditScoringSettingsInput>) {
+  const actor = await profile(req); requirePermission(actor, new Set(), "manage credit scoring configuration");
+  const totalWeight = input.kycWeight + input.affordabilityWeight + input.repaymentHistoryWeight + input.guarantorWeight + input.collateralWeight;
+  if (totalWeight !== 100) throw new TRPCError({ code: "BAD_REQUEST", message: "Credit-scoring weights must total exactly 100 points." });
+  if (input.reviewThreshold >= input.approvalThreshold) throw new TRPCError({ code: "BAD_REQUEST", message: "The manual-review threshold must be below the approval threshold." });
+  const existing = await rows("mfi_credit_scoring_settings", actor.company_id, 1);
+  const data = { ...input, updatedAt: new Date().toISOString(), updatedById: actor.id, updatedByName: actor.full_name || "Microfinance administrator" };
+  const saved = existing[0] ? await patch("mfi_credit_scoring_settings", actor.company_id, existing[0].id, { status: "Configured", data }) : await insert("mfi_credit_scoring_settings", { company_id: actor.company_id, name: "Credit scoring configuration", status: "Configured", amount: null, notes: null, data });
+  await audit(actor.company_id, actor, "Credit scoring configuration saved", "credit_scoring_settings", saved.id, { approvalThreshold: input.approvalThreshold, reviewThreshold: input.reviewThreshold });
+  return { settings: { id: saved.id, ...input } };
+}
+
+export async function getMicrofinanceEscalationSettingsByTaskUid(taskUid: string) {
+  if (!taskUid.trim()) return null;
+  const items = await request<Row[]>("mfi_par_escalation_settings", new URLSearchParams({ select: "id,company_id,name,status,amount,notes,data,created_at,updated_at", "data->>scheduleCronTaskUid": `eq.${taskUid}`, limit: "1" }));
+  const settings = escalationSettingsFromRow(items[0]);
+  return settings.deliveryEnabled && settings.scheduleCronTaskUid === taskUid ? settings : null;
+}
+
+export async function resolveMicrofinanceEscalationRecipients(companyId: string, settings: Pick<ReturnType<typeof escalationSettingsFromRow>, "recipientMode" | "managedRecipients" | "roleRecipients">) {
+  const recipients = new Set<string>();
+  if (settings.recipientMode === "managed" || settings.recipientMode === "both") normalizedRecipients(settings.managedRecipients).forEach((email) => recipients.add(email));
+  if (settings.recipientMode === "roles" || settings.recipientMode === "both") {
+    const permitted = new Set(settings.roleRecipients.map(normalizedRole));
+    const profiles = await request<Array<{ email?: string | null; role?: string | null; is_active?: boolean | null }>>("profiles", new URLSearchParams({ select: "email,role,is_active", company_id: `eq.${companyId}`, is_active: "eq.true", email: "not.is.null", limit: "200" }));
+    profiles.forEach((item) => { const email = item.email?.trim().toLowerCase(); if (email && permitted.has(normalizedRole(String(item.role || ""))) && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) recipients.add(email); });
+  }
+  return Array.from(recipients).sort();
+}
+
+export async function getMicrofinanceParCollectionsSummaryForCompany(companyId: string) {
+  const [loans, schedules, collections] = await Promise.all([rows("mfi_loans", companyId, 500), rows("mfi_repayment_schedules", companyId, 2_000), rows("mfi_collections", companyId, 500)]);
+  const activeLoans = loans.filter((item) => ["Active", "Overdue"].includes(item.status || "")); const portfolioOutstanding = activeLoans.reduce((sum, item) => sum + numeric(dataOf(item).outstanding), 0);
+  const overdue = schedules.filter((item) => calculateMicrofinanceOverdueDays(String(dataOf(item).dueDate || ""), numeric(dataOf(item).outstanding)) > 0);
+  const par30 = overdue.filter((item) => calculateMicrofinanceOverdueDays(String(dataOf(item).dueDate || ""), numeric(dataOf(item).outstanding)) >= 30);
+  return { generatedAt: new Date().toISOString(), totals: { activeLoans: activeLoans.length, portfolioOutstanding, overdueAmount: overdue.reduce((sum, item) => sum + numeric(dataOf(item).outstanding), 0), par30Amount: par30.reduce((sum, item) => sum + numeric(dataOf(item).outstanding), 0), par30Ratio: portfolioOutstanding ? Number((par30.reduce((sum, item) => sum + numeric(dataOf(item).outstanding), 0) / portfolioOutstanding * 100).toFixed(2)) : 0, overdueInstallments: overdue.length, openCollectionActions: collections.filter((item) => item.status === "Open").length } };
+}
+
+export async function getMicrofinanceEscalationSettings(req: CreateExpressContextOptions["req"]) {
+  const actor = await profile(req); requirePermission(actor, CREDIT_ROLES, "view portfolio escalation configuration");
+  const existing = await rows("mfi_par_escalation_settings", actor.company_id, 1); const settings = escalationSettingsFromRow(existing[0]);
+  return { settings, canManage: can(actor, new Set()) };
+}
+
+export async function saveMicrofinanceEscalationSettings(req: CreateExpressContextOptions["req"], input: z.infer<typeof microfinanceEscalationSettingsInput>, options: { userSession?: string } = {}) {
+  const actor = await profile(req); requirePermission(actor, new Set(), "manage portfolio escalation configuration");
+  const existing = await rows("mfi_par_escalation_settings", actor.company_id, 1); const prior = escalationSettingsFromRow(existing[0]); let scheduleCronTaskUid = prior.scheduleCronTaskUid;
+  const [hour, minute] = input.scheduleLocalTime.split(":").map(Number); const cron = `0 ${minute} ${(hour + 21) % 24} * * *`;
+  if (input.deliveryEnabled && !scheduleCronTaskUid) {
+    if (!options.userSession) throw new TRPCError({ code: "UNAUTHORIZED", message: "An authenticated workspace session is required to activate daily portfolio escalation delivery." });
+    const job = await createHeartbeatJob({ name: `microfinance-par-escalation-${actor.company_id}`, cron, path: "/api/scheduled/microfinanceParCollectionsEscalation", description: `Daily ${input.scheduleLocalTime} ${ESCALATION_TIMEZONE} PAR and collections escalation` }, options.userSession); scheduleCronTaskUid = job.taskUid;
+  } else if (!input.deliveryEnabled && scheduleCronTaskUid) {
+    if (!options.userSession) throw new TRPCError({ code: "UNAUTHORIZED", message: "An authenticated workspace session is required to deactivate daily portfolio escalation delivery." });
+    await deleteHeartbeatJob(scheduleCronTaskUid, options.userSession); scheduleCronTaskUid = null;
+  }
+  const data = { recipientMode: input.recipientMode, managedRecipients: normalizedRecipients(input.managedRecipients), scheduleLocalTime: input.scheduleLocalTime, timezone: ESCALATION_TIMEZONE, par30AlertThreshold: input.par30AlertThreshold, overdueAmountAlertThreshold: input.overdueAmountAlertThreshold, deliveryEnabled: Boolean(input.deliveryEnabled && scheduleCronTaskUid), scheduleCronTaskUid, updatedAt: new Date().toISOString(), updatedById: actor.id, updatedByName: actor.full_name || "Microfinance administrator" };
+  const saved = existing[0] ? await patch("mfi_par_escalation_settings", actor.company_id, existing[0].id, { status: data.deliveryEnabled ? "Configured — active" : "Configured — inactive", data }) : await insert("mfi_par_escalation_settings", { company_id: actor.company_id, name: "Daily PAR and collections escalation configuration", status: data.deliveryEnabled ? "Configured — active" : "Configured — inactive", amount: null, notes: null, data });
+  await audit(actor.company_id, actor, "Portfolio escalation configuration saved", "par_escalation_settings", saved.id, { deliveryEnabled: data.deliveryEnabled, scheduleLocalTime: input.scheduleLocalTime });
+  return { message: data.deliveryEnabled ? `Daily PAR and collections escalation is active at ${input.scheduleLocalTime} ${ESCALATION_TIMEZONE}.` : "Escalation configuration saved. Daily delivery remains inactive until an explicit activation is confirmed.", settings: escalationSettingsFromRow(saved) };
+}
+
+export async function listMicrofinanceEscalationHistory(req: CreateExpressContextOptions["req"], input: z.infer<typeof microfinanceListInput>) {
+  const actor = await profile(req); requirePermission(actor, CREDIT_ROLES, "view portfolio escalation delivery history"); const db = await getDb(); if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Escalation delivery history is temporarily unavailable." });
+  const items = await db.select({ createdAt: webhookDeliveries.createdAt, status: webhookDeliveries.status, severity: webhookDeliveries.severity, responseCode: webhookDeliveries.responseCode, eventSummary: webhookDeliveries.eventSummary }).from(webhookDeliveries).where(and(eq(webhookDeliveries.companyId, actor.company_id), eq(webhookDeliveries.action, ESCALATION_ACTION))).orderBy(desc(webhookDeliveries.createdAt)).limit(input.limit);
+  return { rows: items.map((item) => { let summary: Record<string, unknown> = {}; try { summary = item.eventSummary ? JSON.parse(item.eventSummary) as Record<string, unknown> : {}; } catch { /* privacy-safe empty fallback */ } return { createdAt: item.createdAt.toISOString(), status: item.status, severity: item.severity, responseCode: item.responseCode, date: typeof summary.date === "string" ? summary.date : null, par30Ratio: typeof summary.par30Ratio === "number" ? summary.par30Ratio : 0, overdueAmount: typeof summary.overdueAmount === "number" ? summary.overdueAmount : 0, openCollectionActions: typeof summary.openCollectionActions === "number" ? summary.openCollectionActions : 0, recipientCount: typeof summary.recipientCount === "number" ? summary.recipientCount : 0, successCount: typeof summary.successCount === "number" ? summary.successCount : 0, failedCount: typeof summary.failedCount === "number" ? summary.failedCount : 0 }; }) };
 }
 
 export async function createMicrofinanceBorrower(req: CreateExpressContextOptions["req"], input: z.infer<typeof microfinanceBorrowerInput>) {
@@ -209,9 +321,22 @@ export async function submitMicrofinanceApplication(req: CreateExpressContextOpt
   const guarantors = input.guarantorIds.length ? await Promise.all(input.guarantorIds.map((id) => row("mfi_guarantors", actor.company_id, id))) : [];
   const collateral = input.collateralIds.length ? await Promise.all(input.collateralIds.map((id) => row("mfi_collateral", actor.company_id, id))) : [];
   if ((productData.requiresGuarantor === true && guarantors.some(Boolean) === false) || (productData.requiresCollateral === true && collateral.some(Boolean) === false)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This product requires the configured guarantor or collateral evidence." });
-  const inserted = await insert("mfi_loan_applications", { company_id: actor.company_id, name: `Application · ${borrower.name || "Borrower"}`, status: "Submitted", amount: input.principal, notes: null, data: { ...input, borrowerName: borrower.name || "Borrower", productName: product.name || "Loan product", submittedAt: new Date().toISOString(), submittedById: actor.id, kycStatus: dataOf(borrower).kycStatus } });
-  await notify(actor.company_id, "Loan application awaiting credit decision", "Info", { applicationId: inserted.id, borrowerId: borrower.id }); await audit(actor.company_id, actor, "Loan application submitted", "application", inserted.id, { borrowerId: borrower.id });
-  return { id: inserted.id, status: inserted.status };
+  const [scoringSettingsRows, historicalSchedules] = await Promise.all([
+    rows("mfi_credit_scoring_settings", actor.company_id, 1),
+    request<Row[]>("mfi_repayment_schedules", new URLSearchParams({ select: "id,company_id,name,status,amount,notes,data,created_at,updated_at", company_id: `eq.${actor.company_id}`, "data->>borrowerId": `eq.${borrower.id}`, limit: "500" })),
+  ]);
+  const terms = calculateMicrofinanceRepaymentTerms(input.principal, productData, input.termMonths, input.repaymentFrequency);
+  const rules = scoringRulesFromRow(scoringSettingsRows[0]);
+  const scorecard = calculateMicrofinanceCreditScore({
+    rules, kycStatus: String(dataOf(borrower).kycStatus || "Pending"), monthlyIncome: numeric(dataOf(borrower).monthlyIncome), projectedInstallment: terms.installment + (terms.remainder ? 1 : 0),
+    hasRepaymentHistory: historicalSchedules.length > 0, hasOverdueHistory: historicalSchedules.some((item) => calculateMicrofinanceOverdueDays(String(dataOf(item).dueDate || ""), numeric(dataOf(item).outstanding)) > 0),
+    requiresGuarantor: productData.requiresGuarantor === true, guarantorVerified: guarantors.some((item) => item?.status === "Verified"), requiresCollateral: productData.requiresCollateral === true, collateralVerified: collateral.some((item) => item?.status === "Verified"),
+  });
+  const inserted = await insert("mfi_loan_applications", { company_id: actor.company_id, name: `Application · ${borrower.name || "Borrower"}`, status: "Submitted", amount: input.principal, notes: null, data: { ...input, borrowerName: borrower.name || "Borrower", productName: product.name || "Loan product", submittedAt: new Date().toISOString(), submittedById: actor.id, kycStatus: dataOf(borrower).kycStatus, creditScore: scorecard.score, creditRecommendation: scorecard.recommendation } });
+  const scorecardRow = await insert("mfi_credit_scorecards", { company_id: actor.company_id, name: `Scorecard · ${borrower.name || "Borrower"}`, status: scorecard.recommendation, amount: scorecard.score, notes: null, data: { applicationId: inserted.id, borrowerId: borrower.id, borrowerName: borrower.name || "Borrower", productId: product.id, projectedInstallment: terms.installment, rules, ...scorecard, evaluatedAt: new Date().toISOString(), evaluatedById: actor.id } });
+  await patch("mfi_loan_applications", actor.company_id, inserted.id, { data: { ...dataOf(inserted), scorecardId: scorecardRow.id } });
+  await notify(actor.company_id, "Loan application awaiting credit decision", scorecard.recommendation === "Decline recommended" ? "Warning" : "Info", { applicationId: inserted.id, borrowerId: borrower.id, score: scorecard.score, recommendation: scorecard.recommendation }); await audit(actor.company_id, actor, "Loan application submitted", "application", inserted.id, { borrowerId: borrower.id, score: scorecard.score, recommendation: scorecard.recommendation });
+  return { id: inserted.id, status: inserted.status, scorecard: { id: scorecardRow.id, score: scorecard.score, recommendation: scorecard.recommendation } };
 }
 
 export async function decideMicrofinanceApplication(req: CreateExpressContextOptions["req"], input: z.infer<typeof microfinanceDecisionInput>) {

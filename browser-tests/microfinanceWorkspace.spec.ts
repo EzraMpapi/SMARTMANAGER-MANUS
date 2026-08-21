@@ -12,7 +12,7 @@ const dashboard = {
   applications: [{ id: "fc415a61-1c54-4d55-8c4d-0c0d0f0fc382", borrowerName: "Neema Mushi", productName: "Business working capital", amount: 800000, termMonths: 6, kycStatus: "Verified", status: "Submitted" }],
   loans: [{ id: "b90609db-53cf-43df-83d0-bafc7e7b1c39", number: "MFI-20260821-NEEMA", borrowerName: "Neema Mushi", productName: "Business working capital", principal: 800000, totalDue: 930000, outstanding: 780000, disbursedOn: "2026-06-21", status: "Active", repaymentFrequency: "monthly", termMonths: 6, paymentMethod: "cash", mobileMoneyState: "Not applicable" }],
   schedules: [{ id: "0c2b4336-004c-45b6-a13b-31bedc6b490b", loanId: "b90609db-53cf-43df-83d0-bafc7e7b1c39", loanNumber: "MFI-20260821-NEEMA", borrowerName: "Neema Mushi", dueDate: "2026-07-01", outstanding: 100000, status: "Due", daysPastDue: 51 }],
-  repayments: [], savings: [], collections: [], cashSessions: [],
+  repayments: [], savings: [], collections: [], cashSessions: [], scorecards: [{ id: "b3c7f6cf-44e9-45d7-8c1a-0ed1527a83a2", name: "Scorecard · Neema Mushi", status: "Manual review", score: 62, createdAt: "2026-08-21T07:00:00.000Z" }],
   notifications: [{ id: "5a527bd3-8d52-4a94-814a-0bb9b066657f", name: "Loan application awaiting credit decision", status: "Unread", severity: "Info", createdAt: "2026-08-21T07:00:00.000Z" }],
 };
 
@@ -34,6 +34,11 @@ test("loads the Microfinance Command Center and completes guarded borrower regis
       if (procedure === "microfinance.dashboard") return trpcResult(dashboard);
       if (procedure === "microfinance.createBorrower") return trpcResult({ id: "new-borrower-id", name: "Amina Kweka", status: "Active", kycStatus: "Pending" });
       if (procedure === "microfinance.auditHistory") return trpcResult({ rows: [] });
+      if (procedure === "microfinance.creditScoringSettings") return trpcResult({ settings: { id: "score-settings", kycWeight: 20, affordabilityWeight: 30, repaymentHistoryWeight: 20, guarantorWeight: 15, collateralWeight: 15, maxDebtServiceRatio: 40, approvalThreshold: 70, reviewThreshold: 50 }, canManage: true });
+      if (procedure === "microfinance.escalationSettings") return trpcResult({ settings: { id: "escalation-settings", recipientMode: "roles", managedRecipients: [], roleRecipients: ["Organization Owner"], scheduleLocalTime: "08:00", timezone: "Africa/Dar_es_Salaam", par30AlertThreshold: 10, overdueAmountAlertThreshold: 100000, deliveryEnabled: false, scheduleState: "Inactive pending explicit time and activation confirmation", nextRunAt: null }, canManage: true });
+      if (procedure === "microfinance.escalationHistory") return trpcResult({ rows: [] });
+      if (procedure === "microfinance.saveCreditScoringSettings") return trpcResult({ settings: { id: "score-settings", kycWeight: 20, affordabilityWeight: 30, repaymentHistoryWeight: 20, guarantorWeight: 15, collateralWeight: 15, maxDebtServiceRatio: 40, approvalThreshold: 70, reviewThreshold: 50 } });
+      if (procedure === "microfinance.saveEscalationSettings") return trpcResult({ message: "Escalation configuration saved. Daily delivery remains inactive until an explicit activation is confirmed.", settings: { id: "escalation-settings", deliveryEnabled: false } });
       return trpcResult(null);
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
@@ -66,4 +71,19 @@ test("loads the Microfinance Command Center and completes guarded borrower regis
   await page.getByRole("button", { name: "Save borrower" }).click();
   await expect(page.getByText("Borrower and KYC record saved", { exact: true })).toBeVisible();
   await expect(page.getByRole("dialog", { name: "Register borrower" })).toHaveCount(0);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.getByRole("button", { name: "Credit desk" }).click();
+  await expect(page.getByText("Approval threshold", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Configure rules" }).first().click();
+  await expect(page.getByRole("dialog", { name: "Configure credit scoring rules" })).toBeVisible();
+  await expect(page.getByText("100 / 100 points allocated.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Save scoring rules" }).click();
+  await expect(page.getByText("Credit scoring rules saved", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Governance" }).click();
+  await expect(page.getByText("Inactive pending explicit time and activation confirmation", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Configure", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Daily PAR and collections escalation" })).toBeVisible();
+  await expect(page.getByLabel("Enable daily PAR escalation")).not.toBeChecked();
+  await page.getByRole("button", { name: "Save escalation settings" }).click();
+  await expect(page.getByText("Daily escalation configuration saved", { exact: true })).toBeVisible();
 });

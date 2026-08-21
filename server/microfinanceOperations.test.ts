@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateMicrofinanceOverdueDays, calculateMicrofinanceRepaymentTerms, microfinanceApplicationInput, microfinanceProductInput } from "./microfinanceOperations";
+import { calculateMicrofinanceCreditScore, calculateMicrofinanceOverdueDays, calculateMicrofinanceRepaymentTerms, microfinanceApplicationInput, microfinanceCreditScoringSettingsInput, microfinanceEscalationSettingsInput, microfinanceProductInput } from "./microfinanceOperations";
 
 describe("microfinance lending calculations", () => {
   const product = {
@@ -54,5 +54,29 @@ describe("microfinance input contracts", () => {
     });
     expect(valid.success).toBe(true);
     expect(microfinanceApplicationInput.safeParse({ ...valid.data, borrowerId: "foreign-tenant-id" }).success).toBe(false);
+  });
+
+  it("requires explicit valid local schedule time and bounded PAR thresholds", () => {
+    const valid = microfinanceEscalationSettingsInput.safeParse({ recipientMode: "roles", managedRecipients: [], scheduleLocalTime: "08:30", timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false, par30AlertThreshold: 10, overdueAmountAlertThreshold: 0 });
+    expect(valid.success).toBe(true);
+    expect(microfinanceEscalationSettingsInput.safeParse({ ...valid.data, scheduleLocalTime: "25:99" }).success).toBe(false);
+  });
+});
+
+describe("configurable credit scoring", () => {
+  const rules = microfinanceCreditScoringSettingsInput.parse({ kycWeight: 20, affordabilityWeight: 30, repaymentHistoryWeight: 20, guarantorWeight: 15, collateralWeight: 15, maxDebtServiceRatio: 40, approvalThreshold: 70, reviewThreshold: 50 });
+
+  it("returns an eligible recommendation only when the configured score thresholds are met", () => {
+    const score = calculateMicrofinanceCreditScore({ rules, kycStatus: "Verified", monthlyIncome: 1_000_000, projectedInstallment: 200_000, hasRepaymentHistory: true, hasOverdueHistory: false, requiresGuarantor: true, guarantorVerified: true, requiresCollateral: true, collateralVerified: true });
+    expect(score.score).toBe(100);
+    expect(score.recommendation).toBe("Eligible for approval");
+    expect(score.debtServiceRatio).toBe(20);
+  });
+
+  it("recommends decline when KYC, affordability, repayment history, and security evidence fail", () => {
+    const score = calculateMicrofinanceCreditScore({ rules, kycStatus: "Pending", monthlyIncome: 0, projectedInstallment: 300_000, hasRepaymentHistory: true, hasOverdueHistory: true, requiresGuarantor: true, guarantorVerified: false, requiresCollateral: true, collateralVerified: false });
+    expect(score.score).toBe(0);
+    expect(score.recommendation).toBe("Decline recommended");
+    expect(score.debtServiceRatio).toBeNull();
   });
 });

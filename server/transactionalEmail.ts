@@ -14,7 +14,7 @@ type SendInput = {
   attachments?: Attachment[];
   category: "manual" | "invitation" | "report" | "notification";
   idempotencyKey?: string;
-  providerDeliveryPurpose?: "portal_reference_reconciliation_digest";
+  providerDeliveryPurpose?: "portal_reference_reconciliation_digest" | "microfinance_par_collections_escalation";
 };
 
 const EMAIL_SENDER_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator", "Sales Manager", "Sales Representative", "Finance Manager", "HR Manager", "Customer Support"]);
@@ -54,7 +54,7 @@ export function workspaceEmailHtml({ title, preheader, body }: { title: string; 
 }
 
 export async function sendTransactionalEmail(input: SendInput): Promise<{ deliveryId: string; acceptedAt: string }> {
-  if (input.providerDeliveryPurpose !== "portal_reference_reconciliation_digest") assertTransactionalEmailDeliveryEnabled();
+  if (input.providerDeliveryPurpose !== "portal_reference_reconciliation_digest" && input.providerDeliveryPurpose !== "microfinance_par_collections_escalation") assertTransactionalEmailDeliveryEnabled();
   if (!ENV.resendApiKey.trim() || !ENV.resendFromEmail.trim()) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: TRANSACTIONAL_EMAIL_DISABLED_MESSAGE });
   }

@@ -254,3 +254,11 @@
 - [x] Add Tanzania-ready TZS, local-date, mobile-money-ready integration boundaries, statements, receipts, PAR/overdue analytics, and role-aware operational controls.
 - [x] Add unit, protected-router integration, and browser coverage for critical microfinance customer-to-repayment workflows and permission isolation.
 - [x] Run full quality gates, publish the integrated Microfinance Module, and complete the final checklist.
+
+## Microfinance Credit Scoring and Daily Escalations
+- [x] Audit microfinance borrower, application, collections, notification, role, email, and scheduling contracts.
+- [x] Define tenant-safe configurable credit-scoring rules, scorecards, approval thresholds, escalation recipients, and schedule delivery rules.
+- [x] Implement protected scoring evaluation, administrator rule management, daily PAR and collections escalation dispatch, and idempotent delivery telemetry.
+- [x] Build administrator scoring and escalation settings plus scorecard, schedule-state, and delivery-history visibility in the Microfinance workspace.
+- [x] Add unit, protected-router, and browser coverage; run full quality gates.
+- [ ] Publish the verified implementation and activate the approved daily schedule after local time and recipient confirmation.

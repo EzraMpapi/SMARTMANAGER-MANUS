@@ -27,6 +27,7 @@ const product = {
   collectorCommissionRate: 1, termMinMonths: 1, termMaxMonths: 12, repaymentFrequency: "monthly" as const,
   requiresGuarantor: false, requiresCollateral: false,
 };
+const scoringRules = { kycWeight: 20, affordabilityWeight: 30, repaymentHistoryWeight: 20, guarantorWeight: 15, collateralWeight: 15, maxDebtServiceRatio: 40, approvalThreshold: 70, reviewThreshold: 50 };
 
 describe("protected microfinance router integration", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -51,5 +52,23 @@ describe("protected microfinance router integration", () => {
 
     await expect(caller.microfinance.createLoanProduct(product)).rejects.toThrow("cannot manage loan products");
     expect(requests.some((request) => request.url.includes("/rest/v1/mfi_loan_products"))).toBe(false);
+  });
+
+  it("persists administrator-approved credit rules through the authenticated tenant route", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerFor("Organization Owner", requests);
+    const result = await caller.microfinance.saveCreditScoringSettings(scoringRules);
+
+    expect(result.settings.approvalThreshold).toBe(70);
+    const scoringWrite = requests.find((request) => request.method === "POST" && request.url.includes("/rest/v1/mfi_credit_scoring_settings"));
+    expect(scoringWrite?.body?.company_id).toBe(companyId);
+    expect(scoringWrite?.body?.data).toMatchObject(scoringRules);
+  });
+
+  it("blocks unapproved roles from changing a tenant credit-rule set before it is loaded or written", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerFor("Customer Support Agent", requests);
+    await expect(caller.microfinance.saveCreditScoringSettings(scoringRules)).rejects.toThrow("cannot manage credit scoring configuration");
+    expect(requests.some((request) => request.url.includes("mfi_credit_scoring_settings"))).toBe(false);
   });
 });
