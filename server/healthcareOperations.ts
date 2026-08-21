@@ -21,6 +21,7 @@ export const HEALTHCARE_TABLES = [
   "hc_reminder_deliveries",
   "hc_portal_reference_imports",
   "hc_portal_reference_approvals",
+  "hc_portal_reference_summary_settings",
 ] as const;
 
 export type HealthcareTable = (typeof HEALTHCARE_TABLES)[number];
@@ -47,6 +48,7 @@ const tableDataKeys: Record<HealthcareTable, readonly string[]> = {
   hc_reminder_deliveries: ["appointmentId", "patientId", "scheduledFor", "leadMinutes", "channel", "provider", "providerMessageId", "attemptCount", "errorCategory", "consentCapturedAt", "idempotencyKey", "providerEventId", "providerEventStatus", "providerStatusAt", "providerEventReceivedAt", "archivedAt"],
   hc_portal_reference_imports: ["batchId", "rowNumber", "patientId", "mrn", "proposedReference", "previousReference", "validationReason", "approvalId", "requestedAt", "requestedById", "requestedByName", "appliedAt", "archivedAt"],
   hc_portal_reference_approvals: ["patientId", "importId", "previousReference", "proposedReference", "reason", "requestedAt", "requestedById", "requestedByName", "decidedAt", "decidedById", "decidedByName", "decisionNote", "archivedAt"],
+  hc_portal_reference_summary_settings: ["recipientMode", "roleRecipients", "managedRecipients", "timezone", "deliveryEnabled", "scheduleCronTaskUid", "updatedById", "updatedByName", "archivedAt"],
 };
 
 const fullHealthcareAccessRoles = new Set([
@@ -148,6 +150,12 @@ const tablePermissions: Record<HealthcareTable, { read: string[]; create: string
     archive: ["admin"],
   },
   hc_portal_reference_approvals: {
+    read: ["admin"],
+    create: ["admin"],
+    update: ["admin"],
+    archive: ["admin"],
+  },
+  hc_portal_reference_summary_settings: {
     read: ["admin"],
     create: ["admin"],
     update: ["admin"],

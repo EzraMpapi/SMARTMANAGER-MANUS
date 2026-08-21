@@ -35,7 +35,7 @@ import { exportHealthcareFhirBundle, getHealthcareClinicianAnalytics, healthcare
 import { getReminderSettings, listReminderDeliveries, reminderDeliveryListInput, reminderSettingsInput, requestReminderTest, saveReminderSettings } from "./healthcareReminders";
 import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePatientSmsConsentPreferences } from "./healthcareSelfService";
 import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPatientPortalReference, linkPatientPortalReferenceInput, listPortalReferenceReconciliation, portalReferenceListInput } from "./healthcarePortalReconciliation";
-import { applyPortalReferenceImport, decidePortalReferenceApproval, getPortalReferenceDailySummary, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceCsvInput, portalReferenceImportApplyInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
+import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -178,6 +178,22 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => listPortalReferenceWorkflow(ctx.req, input)),
     portalReferenceDailySummary: protectedProcedure
       .query(async ({ ctx }) => getPortalReferenceDailySummary(ctx.req)),
+    portalReferenceErrorExport: protectedProcedure
+      .input(portalReferenceErrorExportInput)
+      .query(async ({ ctx, input }) => exportPortalReferenceErrors(ctx.req, input)),
+    portalReferenceAuditSearch: protectedProcedure
+      .input(portalReferenceAuditSearchInput)
+      .query(async ({ ctx, input }) => searchPortalReferenceAudit(ctx.req, input)),
+    portalReferenceSummarySettings: protectedProcedure
+      .query(async ({ ctx }) => getPortalReferenceSummarySettings(ctx.req)),
+    savePortalReferenceSummarySettings: protectedProcedure
+      .input(portalReferenceSummarySettingsInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await savePortalReferenceSummarySettings(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Reconciliation email recipient configuration updated", module: "Healthcare", details: "Role-based and managed recipients were configured; daily delivery remains inactive pending explicit activation." }).catch(() => undefined);
+        return result;
+      }),
     list: protectedProcedure
       .input(healthcareListInput)
       .query(async ({ ctx, input }) => listHealthcareRecords(ctx.req, input)),

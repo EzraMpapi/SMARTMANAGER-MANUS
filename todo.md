@@ -225,3 +225,12 @@
 - [x] Build the staff import-review and supervisor approval controls plus clinic-administrator reconciliation summary visibility.
 - [x] Add unit, protected-router, and browser coverage for CSV validation, staged apply, approval isolation, and summary authorization.
 - [x] Run complete quality gates, publish the reconciliation enhancements, and activate a daily schedule only after the delivery approach is confirmed.
+
+## Clinic Reconciliation Error Export, Audit Search, and Daily Email
+- [ ] Confirm approved recipient scope, local delivery time, and user authorization before activating daily reconciliation email delivery.
+- [x] Support both automatic role-based recipients and an administrator-managed approved recipient list while keeping delivery disabled until final confirmation.
+- [x] Add privacy-safe CSV export of rejected or invalid staged import rows with row number, MRN, status, and validation reason only.
+- [x] Add supervisor decision notes and tenant-safe reconciliation audit search across staged import and approval outcomes.
+- [x] Build the export and searchable audit controls in the clinic reconciliation workspace.
+- [x] Add unit, protected-router, and browser coverage for error export, decision-note persistence, audit isolation, and recipient authorization.
+- [x] Run complete quality gates and publish the improvements while retaining the inactive email schedule until explicit user approval.

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ENV } from "./_core/env";
-import { decidePortalReferenceApproval, getPortalReferenceDailySummary, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
+import { decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
 import { resolveVerifiedProfile } from "./aiApprovals";
 
 vi.mock("./aiApprovals", () => ({ resolveVerifiedProfile: vi.fn() }));
@@ -59,5 +59,46 @@ describe("portal-reference CSV staging and supervisor approval", () => {
     expect(result.totals).toMatchObject({ unlinkedPatients: 1, pendingApprovals: 1, appliedToday: 1 });
     expect(JSON.stringify(result)).not.toContain("ASHA-PORTAL");
     expect(JSON.stringify(result)).not.toContain("+255700000000");
+  });
+
+  it("exports only correction-safe rejected rows without portal references or contact values", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/hc_portal_reference_imports?")) return json([{ id: "import-error", company_id: companyId, name: "row", status: "Invalid", created_at: "2026-08-21T06:00:00.000Z", data: { rowNumber: 6, mrn: "SMC-000184", proposedReference: "ASHA-PORTAL", validationReason: "Portal reference format is invalid.", phone: "+255700000000" } }]);
+      return json([]);
+    }));
+    const result = await exportPortalReferenceErrors({} as never, { limit: 50 });
+    expect(result.rows).toEqual([{ rowNumber: 6, mrn: "SMC-000184", status: "Invalid", validationReason: "Portal reference format is invalid." }]);
+    expect(JSON.stringify(result)).not.toContain("ASHA-PORTAL");
+    expect(JSON.stringify(result)).not.toContain("+255700000000");
+  });
+
+  it("limits searchable decision notes to supervisors within the active clinic", async () => {
+    asRole("Clinic Administrator");
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("/hc_portal_reference_imports?")) return json([{ id: "import-1", company_id: companyId, name: "Import row", status: "Rejected", created_at: "2026-08-21T06:00:00.000Z", data: { mrn: "SMC-000184", validationReason: "Needs correction", proposedReference: "ASHA-PORTAL" } }]);
+      if (url.includes("/hc_portal_reference_approvals?")) return json([{ id: "approval-1", company_id: companyId, name: "Replacement approval", status: "Rejected", created_at: "2026-08-21T06:00:00.000Z", data: { reason: "Replacement review", decisionNote: "Identity could not be confirmed.", decidedAt: "2026-08-21T07:00:00.000Z", proposedReference: "BARAKA-PORTAL" } }]);
+      return json([]);
+    }));
+    const result = await searchPortalReferenceAudit({} as never, { query: "identity", status: "Rejected", limit: 20 });
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toMatchObject({ status: "Rejected", decisionNote: "Identity could not be confirmed." });
+    expect(JSON.stringify(result)).not.toContain("BARAKA-PORTAL");
+  });
+
+  it("stores both recipient models but keeps daily delivery inactive", async () => {
+    asRole("Clinic Administrator");
+    const persisted = { id: "55555555-5555-4555-8555-555555555555", company_id: companyId, name: "Daily reconciliation email configuration", status: "Configured — inactive", created_at: "2026-08-21T06:00:00.000Z", data: { recipientMode: "both", roleRecipients: ["Clinic Administrator"], managedRecipients: ["admin@clinic.example"], timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false } };
+    let calls = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes("/hc_portal_reference_summary_settings?")) {
+        calls += 1;
+        if (init?.method === "POST") return json([persisted]);
+        return json(calls === 1 ? [] : [persisted]);
+      }
+      return json([]);
+    }));
+    const result = await savePortalReferenceSummarySettings({} as never, { recipientMode: "both", managedRecipients: ["ADMIN@clinic.example"], timezone: "Africa/Dar_es_Salaam" });
+    expect(result.settings).toMatchObject({ recipientMode: "both", managedRecipients: ["admin@clinic.example"], deliveryEnabled: false });
+    expect(result.settings.scheduleState).toContain("Inactive");
   });
 });

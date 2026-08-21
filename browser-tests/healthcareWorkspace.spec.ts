@@ -68,6 +68,10 @@ test("opens the Healthcare Command Center and completes guarded patient registra
       if (procedure === "healthcare.clearPatientPortalReference") return trpcResult({ id: "e2e11111-1111-4111-8111-111111111111", name: "Asha Mtemi", status: "Active", mrn: "SMC-000184", portalReference: null, linkState: "unlinked" });
       if (procedure === "healthcare.portalReferenceWorkflow") return trpcResult({ imports: [], approvals: [], canApprove: true });
       if (procedure === "healthcare.portalReferenceDailySummary") return trpcResult({ delivery: "In-app only — scheduled outbound delivery is inactive.", totals: { unlinkedPatients: 1, pendingApprovals: 0, readyToApply: 0, appliedToday: 0, rejectedToday: 0, invalidToday: 0 } });
+      if (procedure === "healthcare.portalReferenceErrorExport") return trpcResult({ generatedAt: "2026-08-21T06:00:00.000Z", rows: [{ rowNumber: 4, mrn: "SMC-000189", status: "Invalid", validationReason: "Portal reference format is invalid." }] });
+      if (procedure === "healthcare.portalReferenceAuditSearch") return trpcResult({ rows: [{ id: "audit-1", name: "Portal-reference replacement approval", status: "Rejected", createdAt: "2026-08-21T06:00:00.000Z", mrn: "SMC-000189", reason: "Replacement review", decisionNote: "Identity could not be confirmed.", decidedAt: "2026-08-21T07:00:00.000Z" }] });
+      if (procedure === "healthcare.portalReferenceSummarySettings") return trpcResult({ settings: { id: "summary-1", recipientMode: "both", roleRecipients: ["Clinic Administrator", "Organization Owner", "CEO"], managedRecipients: ["admin@clinic.example"], timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false, scheduleState: "Inactive pending explicit time and activation confirmation" } });
+      if (procedure === "healthcare.savePortalReferenceSummarySettings") return trpcResult({ message: "Recipient configuration saved. Daily email delivery remains inactive until its local time and activation are explicitly approved.", settings: { id: "summary-1", recipientMode: "both", roleRecipients: ["Clinic Administrator", "Organization Owner", "CEO"], managedRecipients: ["admin@clinic.example"], timezone: "Africa/Dar_es_Salaam", deliveryEnabled: false, scheduleState: "Inactive pending explicit time and activation confirmation" } });
       if (procedure === "healthcare.stagePortalReferenceCsvImport") return trpcResult({ batchId: "batch-1", staged: 1, ready: 1, approvalRequired: 0, invalid: 0 });
       if (procedure === "healthcare.list") {
         const requestUrl = new URL(route.request().url());
@@ -211,6 +215,16 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await page.getByLabel("Verified portal-reference candidate").selectOption("ASHA-PORTAL");
   await page.getByRole("button", { name: "Link verified portal reference" }).click();
   await expect(page.getByText("Patient portal reference linked", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Rejected-row correction export" })).toBeVisible();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export correction CSV" }).click();
+  expect((await download).suggestedFilename()).toBe("portal-reference-correction-rows.csv");
+  await expect(page.getByRole("heading", { name: "Supervisor decision notes and audit search" })).toBeVisible();
+  await page.getByLabel("Search portal reconciliation audit").fill("identity");
+  await expect(page.getByText("Identity could not be confirmed.", { exact: false })).toBeVisible();
+  await page.getByLabel("Approved managed recipients").fill("admin@clinic.example\nowner@clinic.example");
+  await page.getByRole("button", { name: "Save recipients" }).click();
+  await expect(page.getByText("Recipient configuration saved. Daily sending remains inactive.", { exact: true })).toBeVisible();
 
   await page.getByRole("main").getByRole("button", { name: "Insurance claims", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Insurance claims" })).toBeVisible();

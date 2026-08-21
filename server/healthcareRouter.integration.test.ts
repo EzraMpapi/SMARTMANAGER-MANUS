@@ -186,6 +186,36 @@ describe("protected healthcare router integration", () => {
     expect(requests).toHaveLength(0);
   });
 
+  it("returns correction-export rows through the active-company import table without returning portal references", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Receptionist", requests);
+    const result = await caller.healthcare.portalReferenceErrorExport({ limit: 20 });
+    expect(result).toHaveProperty("rows");
+    const importRead = requests.find((request) => request.url.includes("/rest/v1/hc_portal_reference_imports"));
+    expect(importRead?.url).toContain(`company_id=eq.${companyId}`);
+    expect(JSON.stringify(result)).not.toContain("PORTAL-");
+  });
+
+  it("allows clinic supervisors to search tenant-scoped decision audit entries and configure inactive recipients", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Clinic Administrator", requests);
+    await caller.healthcare.portalReferenceAuditSearch({ query: "identity", status: "all", limit: 20 });
+    await caller.healthcare.savePortalReferenceSummarySettings({ recipientMode: "both", managedRecipients: ["admin@clinic.example"], timezone: "Africa/Dar_es_Salaam" });
+    const scoped = requests.filter((request) => /hc_portal_reference_(imports|approvals|summary_settings)/.test(request.url));
+    expect(scoped.length).toBeGreaterThan(2);
+    expect(scoped.every((request) => request.url.includes(`company_id=eq.${companyId}`) || request.method === "POST")).toBe(true);
+    const configurationWrite = requests.find((request) => (request.method === "POST" || request.method === "PATCH") && request.url.includes("hc_portal_reference_summary_settings"));
+    expect(configurationWrite?.body?.data).toMatchObject({ recipientMode: "both", deliveryEnabled: false });
+  });
+
+  it("blocks billing-only users from correction audit and daily-email recipient configuration before workflow records are queried", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Billing Officer", requests);
+    await expect(caller.healthcare.portalReferenceAuditSearch({ query: "", status: "all", limit: 20 })).rejects.toThrow("cannot reconcile patient portal references");
+    await expect(caller.healthcare.savePortalReferenceSummarySettings({ recipientMode: "both", managedRecipients: [], timezone: "Africa/Dar_es_Salaam" })).rejects.toThrow("cannot reconcile patient portal references");
+    expect(requests).toHaveLength(0);
+  });
+
   it("builds a patient-scoped FHIR R4 collection only from active-company clinical source tables", async () => {
     const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
     const caller = callerForRole("Clinic Administrator", requests);
