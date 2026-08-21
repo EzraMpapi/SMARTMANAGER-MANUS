@@ -63,6 +63,9 @@ test("opens the Healthcare Command Center and completes guarded patient registra
       if (procedure === "healthcare.reminderDeliveries") return trpcResult({ deliveries: rowsByTable.hc_reminder_deliveries, access });
       if (procedure === "healthcare.saveReminderSettings") return trpcResult({ settings: { id: "e2es1111-1111-4111-8111-111111111111", enabled: true, leadMinutes: 120, consentRequired: true, timezone: "Africa/Dar_es_Salaam", senderId: "CLINIC", providerStatus: "unconfigured", providerMessage: "Provider credentials required", scheduleEnabled: false, updatedAt: null }, activation: "provider_unconfigured", message: "Settings saved. SMS delivery remains inactive until an approved provider connection is configured." });
       if (procedure === "healthcare.testReminder") return trpcResult({ status: "blocked", reason: "provider_unconfigured", message: "A test SMS cannot be sent until an approved provider connection is configured." });
+      if (procedure === "healthcare.portalReferenceReconciliation") return trpcResult({ patients: [{ id: "e2e11111-1111-4111-8111-111111111111", name: "Asha Mtemi", status: "Active", mrn: "SMC-000184", portalReference: null, linkState: "unlinked" }], candidates: [{ reference: "ASHA-PORTAL", displayName: "Asha Portal", availability: "available" }], summary: { unlinkedPatients: 1, availableReferences: 1 } });
+      if (procedure === "healthcare.linkPatientPortalReference") return trpcResult({ id: "e2e11111-1111-4111-8111-111111111111", name: "Asha Mtemi", status: "Active", mrn: "SMC-000184", portalReference: "ASHA-PORTAL", linkState: "linked" });
+      if (procedure === "healthcare.clearPatientPortalReference") return trpcResult({ id: "e2e11111-1111-4111-8111-111111111111", name: "Asha Mtemi", status: "Active", mrn: "SMC-000184", portalReference: null, linkState: "unlinked" });
       if (procedure === "healthcare.list") {
         const requestUrl = new URL(route.request().url());
         const rawInput = requestUrl.searchParams.get("input") || "{}";
@@ -194,6 +197,13 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await expect(page.getByText("Settings saved. SMS delivery remains inactive until an approved provider connection is configured.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Test reminder" }).click();
   await expect(page.getByText("A test SMS cannot be sent until an approved provider connection is configured.", { exact: true })).toBeVisible();
+
+  await page.getByRole("main").getByRole("button", { name: "Portal links", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Patient portal reference reconciliation" })).toBeVisible();
+  await page.getByText("Asha Mtemi", { exact: true }).last().click();
+  await page.getByLabel("Verified portal-reference candidate").selectOption("ASHA-PORTAL");
+  await page.getByRole("button", { name: "Link verified portal reference" }).click();
+  await expect(page.getByText("Patient portal reference linked", { exact: true })).toBeVisible();
 
   await page.getByRole("main").getByRole("button", { name: "Insurance claims", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Insurance claims" })).toBeVisible();

@@ -34,6 +34,7 @@ import { archiveHealthcareRecord, createHealthcareRecord, getHealthcareAccess, h
 import { exportHealthcareFhirBundle, getHealthcareClinicianAnalytics, healthcareAnalyticsInput, healthcareFhirExportInput } from "./healthcareInteroperability";
 import { getReminderSettings, listReminderDeliveries, reminderDeliveryListInput, reminderSettingsInput, requestReminderTest, saveReminderSettings } from "./healthcareReminders";
 import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePatientSmsConsentPreferences } from "./healthcareSelfService";
+import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPatientPortalReference, linkPatientPortalReferenceInput, listPortalReferenceReconciliation, portalReferenceListInput } from "./healthcarePortalReconciliation";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -118,6 +119,25 @@ export const appRouter = router({
         const result = await updatePatientSmsConsentPreferences(ctx.req, input);
         const { profile } = await resolveVerifiedProfile(ctx.req);
         void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Patient SMS consent preference updated", module: "Healthcare", details: "Patient self-service preference updated without exposing clinical record details." }).catch(() => undefined);
+        return result;
+      }),
+    portalReferenceReconciliation: protectedProcedure
+      .input(portalReferenceListInput)
+      .query(async ({ ctx, input }) => listPortalReferenceReconciliation(ctx.req, input)),
+    linkPatientPortalReference: protectedProcedure
+      .input(linkPatientPortalReferenceInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await linkPatientPortalReference(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Patient portal reference linked", module: "Healthcare", details: "Clinic staff linked a verified patient portal reference without logging its value." }).catch(() => undefined);
+        return result;
+      }),
+    clearPatientPortalReference: protectedProcedure
+      .input(clearPatientPortalReferenceInput)
+      .mutation(async ({ ctx, input }) => {
+        const result = await clearPatientPortalReference(ctx.req, input);
+        const { profile } = await resolveVerifiedProfile(ctx.req);
+        void recordAuditLog(ctx.user, { companyId: profile.company_id, action: "Patient portal reference cleared", module: "Healthcare", details: "Clinic staff cleared a patient portal reference after explicit confirmation." }).catch(() => undefined);
         return result;
       }),
     list: protectedProcedure

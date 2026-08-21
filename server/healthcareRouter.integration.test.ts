@@ -152,6 +152,23 @@ describe("protected healthcare router integration", () => {
     expect(requests.filter((request) => request.url.includes("hc_reminder_deliveries")).every((request) => request.url.includes(`company_id=eq.${companyId}`))).toBe(true);
   });
 
+  it("allows front-desk staff to review tenant-scoped unlinked patient portal references", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Receptionist", requests);
+    const result = await caller.healthcare.portalReferenceReconciliation({ query: "", status: "unlinked", limit: 20 });
+    expect(result).toHaveProperty("patients");
+    expect(result).toHaveProperty("candidates");
+    const patientRead = requests.find((request) => request.url.includes("/rest/v1/hc_patients"));
+    expect(patientRead?.url).toContain(`company_id=eq.${companyId}`);
+  });
+
+  it("blocks billing-only users from reading or resolving patient portal references before clinical records are queried", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Billing Officer", requests);
+    await expect(caller.healthcare.portalReferenceReconciliation({ query: "", status: "unlinked", limit: 20 })).rejects.toThrow("cannot reconcile patient portal references");
+    expect(requests).toHaveLength(0);
+  });
+
   it("builds a patient-scoped FHIR R4 collection only from active-company clinical source tables", async () => {
     const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
     const caller = callerForRole("Clinic Administrator", requests);

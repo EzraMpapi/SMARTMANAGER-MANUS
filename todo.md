@@ -210,3 +210,10 @@
 - [x] Build a responsive patient-facing SMS preference settings page with clear inactive-provider disclosure and revocation feedback.
 - [x] Add unit, protected-route, and browser coverage for self-service consent access, updates, revocation, and unauthorized-record denial.
 - [x] Run complete quality gates and publish the verified patient consent settings page.
+
+## Clinic Portal Reference Reconciliation
+- [x] Define clinic-staff authorization, safe candidate data, and fail-closed matching rules for patient portal reference resolution.
+- [x] Add protected tenant-scoped search, unlinked-patient list, portal-reference link, and clear-reference procedures with audit-safe actions.
+- [x] Build a responsive clinic staff dashboard for searching patients, viewing unlinked records, linking a portal reference, and safely clearing an incorrect reference.
+- [x] Add unit, protected-router, and browser coverage for staff authorization, tenant isolation, link, clear, and unlinked-state behavior.
+- [x] Run complete quality gates and publish the verified clinic portal-reference reconciliation dashboard.
