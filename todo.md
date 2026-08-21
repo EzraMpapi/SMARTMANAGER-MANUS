@@ -266,3 +266,12 @@
 - [x] Verify the active production schedule binding and aggregate-only email safeguards, then publish the activation record.
 - [x] Make role-based escalation recipients explicitly selectable so delivery is limited to the confirmed Company Administrator and Collections Officer roles.
 - [x] Map the selected Company Administrator escalation role safely to the tenant's existing owner-profile designation without broadening Collections Officer delivery.
+
+## Microfinance Escalation Operational Follow-up
+- [x] Audit tenant Collections Officer profile readiness and current active escalation thresholds without exposing email addresses.
+- [x] Apply an approved Collections Officer recipient assignment only after an eligible active account or explicit recipient email is confirmed.
+- [ ] Review first-run aggregate delivery telemetry after the daily schedule executes and record any required operational adjustment.
+- [x] Evaluate the approved ezrampapi@gmail.com profile safely and use managed-recipient routing rather than altering its existing cross-tenant ownership or permissions.
+- [x] Preserve the approved address's existing cross-tenant owner profile and obtain authorization before adding it as a managed recipient to the active Microfinance escalation.
+- [x] Add the user-approved ezrampapi@gmail.com address as a managed recipient without modifying its existing tenant profile or permissions.
+- [x] Schedule a one-time privacy-safe first-run delivery review for 12:10 Africa/Dar_es_Salaam on 22 August 2026.
