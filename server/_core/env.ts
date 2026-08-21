@@ -10,4 +10,8 @@ export const ENV = {
   supabaseUrl: process.env.VITE_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.VITE_SUPABASE_ANON_KEY ?? "",
   supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? "",
+  healthcareSmsProvider: process.env.HEALTHCARE_SMS_PROVIDER ?? "",
+  healthcareSmsProviderUrl: process.env.HEALTHCARE_SMS_PROVIDER_URL ?? "",
+  healthcareSmsProviderApiKey: process.env.HEALTHCARE_SMS_PROVIDER_API_KEY ?? "",
+  healthcareSmsWebhookSecret: process.env.HEALTHCARE_SMS_WEBHOOK_SECRET ?? "",
 };

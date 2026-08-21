@@ -29,7 +29,7 @@ const textValue = z.string().trim().max(4_000);
 const shortTextValue = z.string().trim().max(240);
 
 const tableDataKeys: Record<HealthcareTable, readonly string[]> = {
-  hc_patients: ["mrn", "firstName", "lastName", "dateOfBirth", "gender", "bloodType", "phone", "email", "nationalId", "nationality", "occupation", "maritalStatus", "allergies", "chronicConditions", "insuranceProvider", "insuranceMemberId", "emergencyContactName", "emergencyContactPhone", "address", "clinicalNotes", "archivedAt"],
+  hc_patients: ["mrn", "firstName", "lastName", "dateOfBirth", "gender", "bloodType", "phone", "email", "nationalId", "nationality", "occupation", "maritalStatus", "allergies", "chronicConditions", "insuranceProvider", "insuranceMemberId", "emergencyContactName", "emergencyContactPhone", "address", "clinicalNotes", "smsConsentStatus", "smsConsentCapturedAt", "smsConsentMethod", "smsConsentRevokedAt", "archivedAt"],
   hc_doctors: ["firstName", "lastName", "specialty", "department", "license", "qualifications", "phone", "email", "experienceYears", "consultationFee", "bio", "availability", "archivedAt"],
   hc_appointments: ["patientId", "patientName", "doctorId", "doctorName", "appointmentType", "startsAt", "endsAt", "reason", "checkedInAt", "cancelReason", "archivedAt"],
   hc_visits: ["patientId", "patientName", "doctorId", "doctorName", "appointmentId", "openedAt", "closedAt", "chiefComplaint", "diagnosis", "clinicalNotes", "followUpDate", "archivedAt"],
@@ -42,7 +42,7 @@ const tableDataKeys: Record<HealthcareTable, readonly string[]> = {
   hc_notifications: ["eventType", "severity", "patientId", "patientName", "claimId", "invoiceId", "relatedTable", "relatedRecordId", "actionLabel", "readAt", "acknowledgedBy", "archivedAt"],
   hc_reports: ["patientId", "patientName", "doctorId", "doctorName", "visitId", "reportType", "createdAt", "signedAt", "signedBy", "content", "archivedAt"],
   hc_reminder_settings: ["provider", "senderId", "timezone", "leadMinutes", "consentRequired", "enabled", "scheduleEnabled", "scheduleTaskUid", "lastDispatchAt", "archivedAt"],
-  hc_reminder_deliveries: ["appointmentId", "patientId", "scheduledFor", "leadMinutes", "channel", "provider", "providerMessageId", "attemptCount", "errorCategory", "consentCapturedAt", "idempotencyKey", "archivedAt"],
+  hc_reminder_deliveries: ["appointmentId", "patientId", "scheduledFor", "leadMinutes", "channel", "provider", "providerMessageId", "attemptCount", "errorCategory", "consentCapturedAt", "idempotencyKey", "providerEventId", "providerEventStatus", "providerStatusAt", "providerEventReceivedAt", "archivedAt"],
 };
 
 const fullHealthcareAccessRoles = new Set([

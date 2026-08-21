@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildReminderDeliveryRecord, createReminderIdempotencyKey, processAppointmentReminders } from "./healthcareReminders";
+import { buildReminderDeliveryRecord, createReminderIdempotencyKey, evaluatePatientSmsConsent, processAppointmentReminders } from "./healthcareReminders";
 
 describe("healthcare appointment reminder safety boundary", () => {
   const appointment = {
@@ -24,5 +24,11 @@ describe("healthcare appointment reminder safety boundary", () => {
 
   it("fails closed when the scheduled callback is reached before provider activation", async () => {
     await expect(processAppointmentReminders("task-safe-boundary")).resolves.toEqual({ ok: true, skipped: "provider_unconfigured", attempted: 0, delivered: 0, failed: 0 });
+  });
+
+  it("requires a patient phone and recorded granted consent when the clinic policy requires it", () => {
+    expect(evaluatePatientSmsConsent({ phone: "+255700000000", smsConsentStatus: "Granted", smsConsentCapturedAt: "2026-08-21T08:00:00.000Z" }, true)).toMatchObject({ eligible: true, consentCapturedAt: "2026-08-21T08:00:00.000Z" });
+    expect(evaluatePatientSmsConsent({ phone: "+255700000000", smsConsentStatus: "Declined" }, true)).toMatchObject({ eligible: false, reason: "consent_not_granted" });
+    expect(evaluatePatientSmsConsent({ smsConsentStatus: "Granted" }, false)).toMatchObject({ eligible: false, reason: "phone_missing" });
   });
 });

@@ -134,6 +134,15 @@ describe("protected healthcare router integration", () => {
     expect(reminderRequests.at(-1)?.body?.data).toMatchObject({ leadMinutes: 120, consentRequired: true, enabled: true, scheduleEnabled: false });
   });
 
+  it("persists patient SMS consent only within the authenticated healthcare company route", async () => {
+    const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
+    const caller = callerForRole("Clinic Administrator", requests);
+    await caller.healthcare.create({ table: "hc_patients", record: { name: "Mariam Kweka", status: "Active", amount: null, notes: null, data: { mrn: "SMC-000201", firstName: "Mariam", lastName: "Kweka", dateOfBirth: "1998-02-14", gender: "Female", bloodType: "O+", phone: "+255700000000", email: "", allergies: "None known", chronicConditions: "None known", insuranceProvider: "", insuranceMemberId: "", emergencyContactName: "", emergencyContactPhone: "", smsConsentStatus: "Granted", smsConsentCapturedAt: "2026-08-21T08:00:00.000Z", smsConsentMethod: "Signed form", smsConsentRevokedAt: null } } });
+    const write = requests.find((request) => request.method === "POST" && request.url.includes("/rest/v1/hc_patients"));
+    expect(write?.body?.company_id).toBe(companyId);
+    expect(write?.body?.data).toMatchObject({ smsConsentStatus: "Granted", smsConsentMethod: "Signed form" });
+  });
+
   it("allows front-desk staff to see delivery history but blocks reminder configuration", async () => {
     const requests: Array<{ url: string; method: string; body: Record<string, unknown> | null }> = [];
     const caller = callerForRole("Receptionist", requests);

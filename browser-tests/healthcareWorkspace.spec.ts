@@ -97,6 +97,8 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await page.getByLabel("First name").fill("Mariam");
   await page.getByLabel("Last name").fill("Kweka");
   await page.getByLabel("Date of birth").fill("1998-02-14");
+  await page.getByLabel("SMS reminder consent").selectOption("Granted");
+  await page.getByLabel("Consent capture method").selectOption("Signed form");
   await page.getByRole("button", { name: "Create Patient" }).click();
   await expect(page.getByText("Healthcare record saved", { exact: true })).toBeVisible();
   await expect(page.getByRole("dialog", { name: "Create Patient" })).toHaveCount(0);

@@ -14,6 +14,7 @@ import { scheduledTraVatAnomalyHandler } from "../scheduledTraVatAnomaly";
 import { scheduledTraZReportArchiveHandler } from "../scheduledTraZReportArchive";
 import { scheduledMarketHealthDigestHandler } from "../scheduledMarketHealthDigest";
 import { scheduledAppointmentRemindersHandler } from "../scheduledAppointmentReminders";
+import { healthcareReminderDeliveryWebhookHandler } from "../healthcareReminderWebhook";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -37,6 +38,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  app.post("/api/webhooks/healthcare-sms-delivery", express.raw({ type: "application/json", limit: "64kb" }), healthcareReminderDeliveryWebhookHandler);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

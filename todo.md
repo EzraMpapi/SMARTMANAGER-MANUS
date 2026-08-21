@@ -196,3 +196,10 @@
 - [x] Implement an administrator-controlled reminder configuration UI with clear provider-unconfigured, consent, lead-time, and delivery-history states.
 - [x] Implement a tenant-scoped idempotent dispatch boundary that never attempts an SMS delivery without approved provider credentials.
 - [x] Add protected router and browser coverage for reminder access, configuration, delivery-history visibility, and inactive-provider safety.
+
+## Healthcare SMS Consent and Delivery Monitoring
+- [x] Add patient-level SMS consent status, capture timestamp, method, and revocation fields to the tenant-safe patient contract and registration workflow.
+- [x] Add provider-adapter readiness, delivery webhook authentication, idempotent status processing, and tenant-safe delivery-status persistence boundaries.
+- [x] Add consent and delivery-status visibility to the Healthcare workspace without exposing phone numbers, message content, or provider secrets.
+- [x] Add unit, protected-router, and browser coverage for consent capture, consent-gated delivery eligibility, webhook idempotency, and inactive-provider safety.
+- [x] Run complete quality gates and publish the verified Healthcare SMS-consent enhancement.
