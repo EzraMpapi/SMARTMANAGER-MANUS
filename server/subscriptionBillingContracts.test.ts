@@ -7,7 +7,7 @@ const read = (relativePath: string) => fs.readFileSync(path.join(root, relativeP
 
 const migration = read("supabase/migrations/20260822_023_subscription_billing_harakapay_core.sql");
 const service = read("server/subscriptionBilling.ts");
-const server = read("server/_core/index.ts");
+const server = read("server/_core/apiApp.ts");
 const workspace = read("client/src/components/SubscriptionBillingWorkspace.jsx");
 const environment = read("server/_core/env.ts");
 const hardening = read("supabase/migrations/20260822_025_subscription_billing_function_execute_hardening.sql");

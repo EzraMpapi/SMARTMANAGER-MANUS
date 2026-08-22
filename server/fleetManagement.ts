@@ -2,6 +2,7 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import type { Request, Response } from "express";
 import { ENV } from "./_core/env";
 import { resolveVerifiedProfile } from "./aiApprovals";
+import { httpStatusFromError } from "./_core/httpError";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -52,7 +53,7 @@ export async function fleetSnapshotHandler(req: Request, res: Response) {
     ensureFleetManager(profile.role);
     if (typeof profile.company_id === "string" && profile.company_id) await serviceRpc("fleet_reconcile_alerts", { p_company_id: profile.company_id });
     return res.status(200).json(await userRpc("fleet_snapshot", token, {}));
-  } catch (error) { return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "Fleet could not be loaded."); }
+  } catch (error) { return sendError(res, httpStatusFromError(error), (error as Error).message || "Fleet could not be loaded."); }
 }
 
 export async function fleetActionHandler(req: Request, res: Response) {
@@ -64,7 +65,7 @@ export async function fleetActionHandler(req: Request, res: Response) {
     const payload = isRecord(body.payload) ? body.payload : {};
     if (!action) return sendError(res, 400, "A Fleet action is required.");
     return res.status(200).json(await userRpc("fleet_action", token, { p_action: action, p_payload: payload }));
-  } catch (error) { return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "Fleet action could not be completed."); }
+  } catch (error) { return sendError(res, httpStatusFromError(error), (error as Error).message || "Fleet action could not be completed."); }
 }
 
 /** Provider-agnostic normalized GPS/IoT ingress. A connector-specific adapter can post this shape. */

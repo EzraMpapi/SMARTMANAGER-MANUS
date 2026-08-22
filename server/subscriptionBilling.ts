@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { ENV } from "./_core/env";
 import { resolveVerifiedProfile } from "./aiApprovals";
+import { httpStatusFromError } from "./_core/httpError";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -196,7 +197,7 @@ export async function subscriptionBillingSnapshotHandler(req: Request, res: Resp
     }
     return res.status(200).json(await userRpc("billing_snapshot", token, {}));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "Billing could not be loaded.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Billing could not be loaded.");
   }
 }
 
@@ -208,7 +209,7 @@ export async function subscriptionBillingStartTrialHandler(req: Request, res: Re
     const planCode = asString(payload.planCode, 40) || "TWIGA";
     return res.status(201).json(await userRpc("billing_start_trial", token, { p_plan_code: planCode }));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The free trial could not be started.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The free trial could not be started.");
   }
 }
 
@@ -221,7 +222,7 @@ export async function subscriptionBillingSelectTrialPlanHandler(req: Request, re
     if (!planCode) return sendError(res, 400, "A subscription package is required.");
     return res.status(200).json(await userRpc("billing_select_trial_plan", token, { p_plan_code: planCode }));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The selected trial package could not be saved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The selected trial package could not be saved.");
   }
 }
 
@@ -232,7 +233,7 @@ export async function subscriptionBillingProfileHandler(req: Request, res: Respo
     const payload = isRecord(req.body) ? req.body : {};
     return res.status(200).json(await userRpc("billing_upsert_profile", token, { p_payload: payload }));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "Billing information could not be saved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Billing information could not be saved.");
   }
 }
 
@@ -243,7 +244,7 @@ export async function subscriptionBillingPlanHandler(req: Request, res: Response
     const payload = isRecord(req.body) ? req.body : {};
     return res.status(200).json(await userRpc("billing_upsert_plan", token, { p_payload: payload }));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The billing plan could not be saved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The billing plan could not be saved.");
   }
 }
 
@@ -321,7 +322,7 @@ export async function harakaPayCollectHandler(req: Request, res: Response) {
         // The primary response remains generic; details are retained only in server logs.
       }
     }
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The payment request could not be started.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The payment request could not be started.");
   }
 }
 
@@ -342,7 +343,7 @@ export async function harakaPayStatusHandler(req: Request, res: Response) {
     });
     return res.status(200).json(publicPaymentState(result));
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The payment status could not be verified.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The payment status could not be verified.");
   }
 }
 
@@ -362,7 +363,7 @@ export async function harakaPayWebhookHandler(req: Request, res: Response) {
     });
     return res.status(200).json({ received: true, payment: publicPaymentState(result) });
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, "The payment webhook could not be processed safely.");
+    return sendError(res, httpStatusFromError(error), "The payment webhook could not be processed safely.");
   }
 }
 
@@ -376,6 +377,6 @@ export async function harakaPayBalanceHandler(req: Request, res: Response) {
     if (!response.ok) return sendError(res, 502, "HarakaPay balance could not be retrieved.");
     return res.status(200).json({ walletBalance: payload.wallet_balance ?? payload.balance ?? null, floatBalance: payload.float_balance ?? payload.float ?? null, currency: payload.currency ?? "TZS" });
   } catch (error) {
-    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "HarakaPay balance could not be retrieved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "HarakaPay balance could not be retrieved.");
   }
 }

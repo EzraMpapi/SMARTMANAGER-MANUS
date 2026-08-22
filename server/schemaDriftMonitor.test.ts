@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const monitorSource = readFileSync(new URL("./schemaDriftMonitor.ts", import.meta.url), "utf8");
 const handlerSource = readFileSync(new URL("./scheduledSchemaDriftMonitor.ts", import.meta.url), "utf8");
-const routeSource = readFileSync(new URL("./_core/index.ts", import.meta.url), "utf8");
+const routeSource = readFileSync(new URL("./_core/apiApp.ts", import.meta.url), "utf8");
 const schemaSource = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
 
 describe("daily schema-drift monitor contract", () => {
