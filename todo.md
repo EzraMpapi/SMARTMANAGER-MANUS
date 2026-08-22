@@ -302,3 +302,4 @@
 - [ ] Commit and push all verified BusinessSphere ERP changes that are not yet present in `EzraMpapi/SMARTMANAGER-MANUS`.
 - [ ] Diagnose the Vercel deployment block and apply any safe repository-level configuration correction that makes the synchronized changes deployable.
 - [ ] Verify the pushed commit and deployment status, then document any Vercel account-level action that cannot be completed from the repository.
+- [x] Make the Vercel build schema check skip safely only when server-only Supabase credentials are unavailable, while retaining the verified managed-deployment schema gate.

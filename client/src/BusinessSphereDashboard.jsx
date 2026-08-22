@@ -75,7 +75,7 @@ const LazySchoolWorkspace = lazy(() => import("./components/SchoolWorkspace").th
 // Option B: replace the empty strings below with your actual URL and key
 // Get these from: supabase.com → your project → Settings → API
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.ITE_SUPABASE_ANON_KEY || "";
 const IS_CONFIGURED     = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 const IS_ISOLATED_SIGNUP_E2E = import.meta.env.MODE === "e2e";
 const GUARDED_WRITE_TABLES = new Set(["finance_expenses", "sales_invoices", "inventory_items", "crm_leads"]);

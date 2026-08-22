@@ -33,6 +33,13 @@ const supabaseUrl = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?
 const serviceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !serviceKey) {
+  if (process.env.VERCEL === "1") {
+    console.warn(JSON.stringify({
+      skipped: true,
+      reason: "Vercel build has no server-only Supabase schema credential; schema verification remains required in managed deployment and CI environments.",
+    }));
+    process.exit(0);
+  }
   console.error("Supabase schema verification requires SUPABASE_URL (or VITE_SUPABASE_URL) and SUPABASE_SECRET_KEY.");
   process.exit(1);
 }
