@@ -11,7 +11,7 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "pretest:browser": "vite build --mode e2e --sourcemap=false --minify=esbuild",
+    "pretest:browser": "SUPABASE_URL=https://e2e.supabase.invalid SUPABASE_ANON_KEY=e2e-anon-key vite build --mode e2e --sourcemap=false --minify=esbuild",
     "test:browser": "playwright test",
     "verify:supabase-schema": "node server/verifySupabaseSchema.mjs",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
