@@ -1,0 +1,45 @@
+name: Generate Release Notes
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "New release tag, for example v1.4.0"
+        required: true
+        type: string
+      target_commitish:
+        description: "Commit SHA or branch to tag; defaults to main"
+        required: false
+        default: "main"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish-release-notes:
+    name: Generate GitHub Release Notes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release target
+        id: release
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "target=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ inputs.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "target=${{ inputs.target_commitish }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release with generated notes
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release.outputs.tag }}
+          target_commitish: ${{ steps.release.outputs.target }}
+          generate_release_notes: true
+          name: Smart Manager ${{ steps.release.outputs.tag }}

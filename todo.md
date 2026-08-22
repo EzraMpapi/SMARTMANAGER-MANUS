@@ -316,3 +316,10 @@
 - [x] Verify the requested repository remote, branch state, and non-destructive synchronization baseline.
 - [x] Document the per-change tracking and GitHub synchronization workflow in the project repository.
 - [x] Verify the tracking record is committed and pushed to the requested repository at `fef5e28`.
+
+## GitHub Quality Visibility and Release Notes
+- [x] Inspect current GitHub Actions workflow names, repository README, and available branch-protection controls. The GitHub API confirms that required branch protection needs GitHub Pro or a public repository for this private repository.
+- [x] Add a GitHub Actions status badge for the primary quality workflow.
+- [x] Add automated release-note generation from merged commit history and document how to use it.
+- [ ] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration.
+- [ ] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements.
