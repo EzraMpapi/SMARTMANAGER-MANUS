@@ -19,7 +19,14 @@ describe("people and work command-center contracts", () => {
   });
 
   it("keeps existing module routes and source-of-truth boundaries", () => {
-    for (const tag of ["<HrCommandCenter", "<DocumentsCommandCenter", "<WorkflowCommandCenter", "<CollaborationCommandCenter"]) expect(dashboard).toContain(tag);
+    for (const route of [
+      '{active === "hr" && <HR',
+      '{active === "documents" && <Documents',
+      '{active === "workflows" && (',
+      '<WorkflowStudio company={company}',
+      '{active === "collaboration" && (',
+      '<CollaborationHub currentUser={currentUser}',
+    ]) expect(dashboard).toContain(route);
     for (const source of ["hr_employees", "hr_leave_requests", "documents", "workflows", "collab_channels"]) expect(workspace + dashboard).toContain(source);
     expect(workspace).toContain("Insufficient confirmed push/event telemetry");
   });

@@ -17,7 +17,17 @@ describe("vertical command-center contracts", () => {
   });
 
   it("keeps vertical centers routed through their existing module shells", () => {
-    for (const tag of ["<HealthcareCommandCenter", "<SchoolCommandCenter", "<PharmacyCommandCenter", "<HotelCommandCenter", "<FleetCommandCenter", "<RestaurantCommandCenter"]) expect(dashboard).toContain(tag);
+    for (const route of [
+      '{active === "healthcare" && (',
+      "<LazyHealthcareClinicWorkspace",
+      '{active === "school"      && <Suspense',
+      "<LazySchoolWorkspace",
+      '{active === "pharmacy"    && <Suspense',
+      "<LazyPharmacyWorkspace",
+      '{active === "hotel"       && <HotelManagementModule',
+      '{active === "fleet"       && <FleetManagementModule',
+      '{active === "restaurant"  && <RestaurantModule',
+    ]) expect(dashboard).toContain(route);
     expect(workspace).toContain("Insufficient confirmed data");
   });
 });

@@ -1,4 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+vi.mock("./auditLogs", () => ({
+  recordAuditLog: vi.fn(async (user: { openId: string; name?: string }, input: { companyId: string; action: string; module: string; details?: string }) => ({
+    id: 1,
+    actorOpenId: user.openId,
+    actorName: user.name || "System User",
+    companyId: input.companyId,
+    action: input.action,
+    module: input.module,
+    details: input.details || null,
+    createdAt: new Date(),
+  })),
+  listAuditLogs: vi.fn(async () => []),
+}));
+
 import { appRouter } from "./routers";
 
 const companyId = "11111111-1111-4111-8111-111111111111";

@@ -17,6 +17,19 @@ import { scheduledAppointmentRemindersHandler } from "../scheduledAppointmentRem
 import { healthcareReminderDeliveryWebhookHandler } from "../healthcareReminderWebhook";
 import { scheduledPortalReferenceReconciliationDigestHandler } from "../scheduledPortalReferenceReconciliationDigest";
 import { scheduledMicrofinanceParCollectionsEscalationHandler } from "../scheduledMicrofinanceParCollectionsEscalation";
+import { scheduledSubscriptionTrialLifecycleHandler } from "../scheduledSubscriptionTrialLifecycle";
+import {
+  harakaPayBalanceHandler,
+  harakaPayCollectHandler,
+  harakaPayStatusHandler,
+  harakaPayWebhookHandler,
+  subscriptionBillingCatalogHandler,
+  subscriptionBillingPlanHandler,
+  subscriptionBillingProfileHandler,
+  subscriptionBillingSelectTrialPlanHandler,
+  subscriptionBillingSnapshotHandler,
+  subscriptionBillingStartTrialHandler,
+} from "../subscriptionBilling";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -44,6 +57,16 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.post("/api/payments/harakapay/webhook", harakaPayWebhookHandler);
+  app.get("/api/billing/catalog", subscriptionBillingCatalogHandler);
+  app.get("/api/billing/subscription", subscriptionBillingSnapshotHandler);
+  app.post("/api/billing/trial/start", subscriptionBillingStartTrialHandler);
+  app.post("/api/billing/trial/select-plan", subscriptionBillingSelectTrialPlanHandler);
+  app.post("/api/billing/profile", subscriptionBillingProfileHandler);
+  app.post("/api/billing/plans", subscriptionBillingPlanHandler);
+  app.post("/api/payments/harakapay/collect", harakaPayCollectHandler);
+  app.get("/api/payments/harakapay/status/:orderId", harakaPayStatusHandler);
+  app.get("/api/payments/harakapay/balance", harakaPayBalanceHandler);
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   app.post("/api/scheduled/dashboardReport", scheduledDashboardReportHandler);
@@ -54,6 +77,7 @@ async function startServer() {
   app.post("/api/scheduled/appointmentReminders", scheduledAppointmentRemindersHandler);
   app.post("/api/scheduled/portalReferenceReconciliationDigest", scheduledPortalReferenceReconciliationDigestHandler);
   app.post("/api/scheduled/microfinanceParCollectionsEscalation", scheduledMicrofinanceParCollectionsEscalationHandler);
+  app.post("/api/scheduled/subscriptionTrialLifecycle", scheduledSubscriptionTrialLifecycleHandler);
   app.post("/api/webhooks/backup-complete", async (req, res) => {
     try {
       const { handleBackupCompletionWebhook } = await import("../backupWebhook");

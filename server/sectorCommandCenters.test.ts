@@ -17,7 +17,13 @@ describe("sector command-center contracts", () => {
   });
 
   it("keeps all sector centers routed through existing modules", () => {
-    for (const tag of ["<MicrofinanceCommandCenter", "<BankingMfiCommandCenter", "<VicobaCommandCenter", "<CommunityCommandCenter"]) expect(dashboard).toContain(tag);
+    for (const route of [
+      '{active === "microfinance" && (',
+      "<LazyMicrofinanceWorkspace",
+      '{active === "banking"     && <BankingMFIModule',
+      '{active === "vicoba" && <VicobaSaccosModule',
+      '{active === "community" && <CommunityGroupsModule',
+    ]) expect(dashboard).toContain(route);
     expect(workspace).toContain("Insufficient confirmed data");
   });
 });

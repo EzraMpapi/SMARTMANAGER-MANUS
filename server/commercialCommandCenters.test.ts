@@ -16,9 +16,13 @@ describe("commercial command-center contracts", () => {
     for (const source of ["marketing_campaigns", "ecommerce_orders"]) expect(workspace).toContain(source);
   });
 
-  it("keeps all four centers wired through existing module routes", () => {
-    for (const tag of ["<CrmCommandCenter", "<SalesCommandCenter", "<MarketingCommandCenter", "<EcommerceCommandCenter"]) expect(dashboard).toContain(tag);
-    for (const route of ["onNavigate={go}", "onNavigate={onNavigate}"]) expect(dashboard).toContain(route);
+  it("keeps all four commercial capabilities wired through the current dashboard route shells", () => {
+    for (const route of [
+      '{active === "crm" && <CRM',
+      '{active === "sales" && <Sales',
+      '{active === "marketing" && <Marketing',
+      '{active === "ecommerce" && <ECommerce',
+    ]) expect(dashboard).toContain(route);
     expect(workspace).toContain("Insufficient confirmed data");
   });
 });

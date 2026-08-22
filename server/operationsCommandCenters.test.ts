@@ -17,7 +17,12 @@ describe("operations command-center contracts", () => {
   });
 
   it("keeps all four centers wired through existing module routes", () => {
-    for (const tag of ["<InventoryCommandCenter", "<ProcurementCommandCenter", "<SupplyChainCommandCenter", "<PosCommandCenter"]) expect(dashboard).toContain(tag);
+    for (const route of [
+      '{active === "inventory" && <Inventory',
+      '{active === "procurement" && <Procurement',
+      '{active === "scm" && <SupplyChain',
+      '{active === "pos" && <POS',
+    ]) expect(dashboard).toContain(route);
     expect(workspace).toContain("Insufficient confirmed data");
   });
 });

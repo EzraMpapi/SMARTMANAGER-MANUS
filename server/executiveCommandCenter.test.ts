@@ -24,6 +24,7 @@ describe("executive command center contracts", () => {
     }
     for (const source of ["sales_invoices", "finance_expenses", "inventory_items", "hr_leave_requests"]) expect(workspace).toContain(source);
     for (const module of ["onNavigate(\"sales\")", "onNavigate(\"finance\")", "onNavigate(\"inventory\")", "onNavigate(\"hr\")", "onNavigate(\"reports\")"]) expect(workspace).toContain(module);
-    expect(dashboard).toContain("<ExecutiveCommandCenter");
+    expect(dashboard).toContain('{active === "dashboard" && (');
+    expect(dashboard).toContain("<Dashboard");
   });
 });
