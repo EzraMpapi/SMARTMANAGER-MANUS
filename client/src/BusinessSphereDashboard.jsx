@@ -48,6 +48,7 @@ import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
+import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -47124,7 +47125,7 @@ const HTL_BOOKINGS_SEED = [
   { id:"BKG-004", guest:"John Smith",          room:"102", type:"Standard",   checkIn:"2026-07-10", checkOut:"2026-07-14", nights:4, total:380, paid:380, status:"Checked Out",source:"Expedia" },
 ];
 
-function HotelManagementModule({ currentUser, company }) {
+function LegacyHotelManagementModule({ currentUser, company }) {
   const [tab, setTab]         = useState("overview");
   const [checkInForm, setCheckInForm]   = useState({ guestName:"", email:"", phone:"", nationality:"", roomId:"", checkOut:"", adults:1, children:0, purpose:"Leisure", paymentMethod:"Card", specialRequests:"" });
   const [showCheckIn, setShowCheckIn]   = useState(false);
@@ -47666,6 +47667,31 @@ function HotelManagementModule({ currentUser, company }) {
   );
 }
 
+
+function HotelManagementModule({ currentUser }) {
+  const rpc = useCallback(async (procedure, payload = {}) => {
+    if (!IS_CONFIGURED || DEMO_OVERRIDE) {
+      throw new Error("Hospitality workflows require an authenticated Smart Manager database session.");
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      throw new Error("You appear to be offline. Reconnect before submitting a hospitality workflow.");
+    }
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`, {
+      method: "POST",
+      headers: { ...authHeaders(), Prefer: "return=representation" },
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      const error = new Error(body?.message || body?.hint || body?.details || `Hospitality request failed: ${response.status}`);
+      error.status = response.status;
+      error.code = body?.code;
+      throw error;
+    }
+    return body;
+  }, []);
+  return <HospitalityWorkspace rpc={rpc} configured={IS_CONFIGURED && !DEMO_OVERRIDE} currentUser={currentUser} />;
+}
 
 function FleetManagementModule({ currentUser, company, onVehiclesLoad }) {
   const [tab, setTab] = useState("overview");
