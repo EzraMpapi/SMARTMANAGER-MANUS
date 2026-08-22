@@ -321,5 +321,7 @@
 - [x] Inspect current GitHub Actions workflow names, repository README, and available branch-protection controls. The GitHub API confirms that required branch protection needs GitHub Pro or a public repository for this private repository.
 - [x] Add a GitHub Actions status badge for the primary quality workflow.
 - [x] Add automated release-note generation from merged commit history and document how to use it.
-- [ ] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration.
+- [x] Preserve the repository as private rather than changing visibility or billing; document that GitHub does not permit required-check enforcement for this repository plan, while CI remains active as a visible merge-quality gate.
 - [ ] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements.
+- [x] Document the private-repository main-branch quality policy and the exact future required-check configuration to apply if GitHub branch protections become available.
+- [ ] Verify the active GitHub Actions workflow registration after the privacy-preserving decision record is pushed.
