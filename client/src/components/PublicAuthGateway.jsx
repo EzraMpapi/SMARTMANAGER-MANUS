@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { EnterpriseLoginView, PasswordRecoveryView, ResetPasswordView, EmailConfirmationView } from "./EnterpriseAuthViews";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "../lib/authErrors";
 import { authScreenFromSearch, oauthCallbackFromHash } from "../lib/authOnboarding";
@@ -57,7 +57,6 @@ export default function PublicAuthGateway() {
   const [recoveryToken, setRecoveryToken] = useState(null);
   const [oauthError, setOauthError] = useState(null);
   const [oauthProvider, setOauthProvider] = useState(oauthProviderFromSearch);
-  const invitationPending = useMemo(() => new URLSearchParams(window.location.search).has("invite"), []);
 
   function navigate(next, contextEmail = "") {
     if (contextEmail) setEmail(contextEmail);
@@ -137,7 +136,7 @@ export default function PublicAuthGateway() {
       {view === "forgot" && (
         <PasswordRecoveryView
           onBack={() => navigate("login")}
-          onSubmit={async (workEmail) => {
+          onRequest={async (workEmail) => {
             await authRequest("recover", { method: "POST", body: JSON.stringify({ email: workEmail, redirect_to: resetRedirectUrl() }) });
           }}
           toMessage={toAuthUserMessage}
@@ -147,8 +146,13 @@ export default function PublicAuthGateway() {
         <ResetPasswordView
           recoveryToken={recoveryToken}
           onBack={() => navigate("login")}
-          onSubmit={async (newPassword) => {
-            await authRequest("user", { method: "PUT", headers: { authorization: `Bearer ${recoveryToken}` }, body: JSON.stringify({ password: newPassword }) });
+          onUpdate={async (token, newPassword) => {
+            if (!token) {
+              const error = new Error("Your password reset session is missing or expired.");
+              error.code = "RECOVERY_SESSION_MISSING";
+              throw error;
+            }
+            await authRequest("user", { method: "PUT", headers: { authorization: `Bearer ${token}` }, body: JSON.stringify({ password: newPassword }) });
           }}
           toMessage={toAuthUserMessage}
         />
@@ -166,18 +170,16 @@ export default function PublicAuthGateway() {
       {view === "login" && (
         <EnterpriseLoginView
           onSignIn={signIn}
-          onSignInWithPasskey={signInWithPasskey}
+          onPasskey={signInWithPasskey}
           onOAuth={oauth}
-          onForgotPassword={() => navigate("forgot")}
-          onSignUp={() => {
+          onForgot={() => navigate("forgot")}
+          onSignup={() => {
             window.location.href = "/app?auth=signup";
           }}
           configured={configured}
-          oauthError={oauthError}
+          initialError={oauthError}
           onClearOAuthError={() => setOauthError(null)}
           oauthProvider={oauthProvider}
-          onSelectOauthProvider={setOauthProvider}
-          invitationPending={invitationPending}
           toMessage={toAuthUserMessage}
         />
       )}
