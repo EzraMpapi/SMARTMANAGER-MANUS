@@ -310,3 +310,4 @@
 - [ ] Run safe regression checks and report the verified live deployment outcome.
 - [ ] Diagnose and correct the Vercel output routing defect that currently serves the server bundle source at the public application root.
 - [ ] Redeploy and confirm the Vercel public root renders the browser application before continuing School Management validation.
+- [ ] Diagnose and correct the live owner-role denial that prevents authorized workspace owners from opening School Management.

@@ -36,6 +36,17 @@ describe("School Management role boundaries", () => {
     expect(admin.canManageServices).toBe(true);
     expect(admin.canGovern).toBe(true);
   });
+
+  it("maps the live workspace owner designation to full School Management administration", () => {
+    const owner = schoolAccessForRole("owner");
+    expect(owner.canRead).toBe(true);
+    expect(owner.canConfigure).toBe(true);
+    expect(owner.canManageAdmissions).toBe(true);
+    expect(owner.canManageAcademic).toBe(true);
+    expect(owner.canManageFinance).toBe(true);
+    expect(owner.canManageServices).toBe(true);
+    expect(owner.canGovern).toBe(true);
+  });
 });
 
 describe("School Management input contracts", () => {
