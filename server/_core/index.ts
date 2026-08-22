@@ -52,11 +52,15 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
-async function startServer() {
+/**
+ * Build the API-only Express application used by Vercel and by the local server.
+ * Static hosting is deliberately kept outside this function so /api/* cannot fall
+ * through to the SPA index.html on a serverless deployment.
+ */
+export function createApiApp() {
   const app = express();
-  const server = createServer(app);
+
   app.post("/api/webhooks/healthcare-sms-delivery", express.raw({ type: "application/json", limit: "64kb" }), healthcareReminderDeliveryWebhookHandler);
-  // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   app.post("/api/payments/harakapay/webhook", harakaPayWebhookHandler);
@@ -93,7 +97,6 @@ async function startServer() {
       res.status(500).json({ error: err.message });
     }
   });
-  // tRPC API
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -101,7 +104,14 @@ async function startServer() {
       createContext,
     })
   );
-  // development mode uses Vite, production mode uses static files
+
+  return app;
+}
+
+async function startServer() {
+  const app = createApiApp();
+  const server = createServer(app);
+
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
@@ -120,4 +130,8 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+// Vercel imports createApiApp through api/index.ts. Do not start a second listener
+// when the module is loaded as a serverless function.
+if (process.env.VERCEL !== "1") {
+  startServer().catch(console.error);
+}
