@@ -296,3 +296,9 @@
 - [x] Implement protected parent, teacher, and student portal workflows; announcements, communication, approval, notification, search, bulk, dashboard, report, and audit experiences.
 - [x] Build the responsive School Management Command Center with real loading, empty, error, validation, permission, and cross-module navigation states.
 - [x] Add unit, protected-router, schema-drift, calculation, browser, TypeScript, and production-build verification; fix regressions and publish the completed module.
+
+## GitHub Synchronization and Vercel Deployment Review
+- [ ] Inspect the requested GitHub repository remote, local unpushed commits, repository protections, and Vercel integration availability.
+- [ ] Commit and push all verified BusinessSphere ERP changes that are not yet present in `EzraMpapi/SMARTMANAGER-MANUS`.
+- [ ] Diagnose the Vercel deployment block and apply any safe repository-level configuration correction that makes the synchronized changes deployable.
+- [ ] Verify the pushed commit and deployment status, then document any Vercel account-level action that cannot be completed from the repository.
