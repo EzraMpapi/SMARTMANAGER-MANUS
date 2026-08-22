@@ -18,6 +18,7 @@ import { healthcareReminderDeliveryWebhookHandler } from "../healthcareReminderW
 import { scheduledPortalReferenceReconciliationDigestHandler } from "../scheduledPortalReferenceReconciliationDigest";
 import { scheduledMicrofinanceParCollectionsEscalationHandler } from "../scheduledMicrofinanceParCollectionsEscalation";
 import { scheduledSubscriptionTrialLifecycleHandler } from "../scheduledSubscriptionTrialLifecycle";
+import { fleetActionHandler, fleetSnapshotHandler, fleetTelematicsWebhookHandler, scheduledFleetAlertsHandler } from "../fleetManagement";
 import {
   harakaPayBalanceHandler,
   harakaPayCollectHandler,
@@ -60,6 +61,9 @@ async function startServer() {
   app.post("/api/payments/harakapay/webhook", harakaPayWebhookHandler);
   app.get("/api/billing/catalog", subscriptionBillingCatalogHandler);
   app.get("/api/billing/subscription", subscriptionBillingSnapshotHandler);
+  app.get("/api/fleet/snapshot", fleetSnapshotHandler);
+  app.post("/api/fleet/action", fleetActionHandler);
+  app.post("/api/webhooks/fleet-telematics", fleetTelematicsWebhookHandler);
   app.post("/api/billing/trial/start", subscriptionBillingStartTrialHandler);
   app.post("/api/billing/trial/select-plan", subscriptionBillingSelectTrialPlanHandler);
   app.post("/api/billing/profile", subscriptionBillingProfileHandler);
@@ -78,6 +82,7 @@ async function startServer() {
   app.post("/api/scheduled/portalReferenceReconciliationDigest", scheduledPortalReferenceReconciliationDigestHandler);
   app.post("/api/scheduled/microfinanceParCollectionsEscalation", scheduledMicrofinanceParCollectionsEscalationHandler);
   app.post("/api/scheduled/subscriptionTrialLifecycle", scheduledSubscriptionTrialLifecycleHandler);
+  app.post("/api/scheduled/fleetAlerts", scheduledFleetAlertsHandler);
   app.post("/api/webhooks/backup-complete", async (req, res) => {
     try {
       const { handleBackupCompletionWebhook } = await import("../backupWebhook");

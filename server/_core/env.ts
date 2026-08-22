@@ -20,4 +20,5 @@ export const ENV = {
   harakaPayBaseUrl: process.env.HARAKAPAY_BASE_URL ?? "https://harakapay.net",
   harakaPayCollectUrl: process.env.HARAKAPAY_COLLECT_URL ?? "",
   harakaPayWebhookUrl: process.env.HARAKAPAY_WEBHOOK_URL ?? "",
+  fleetTelematicsWebhookSecret: process.env.FLEET_TELEMATICS_WEBHOOK_SECRET ?? "",
 };
