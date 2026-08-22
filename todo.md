@@ -303,3 +303,10 @@
 - [x] Diagnose the Vercel deployment block and apply any safe repository-level configuration correction that makes the synchronized changes deployable.
 - [x] Verify the pushed commit and deployment status, then document any Vercel account-level action that cannot be completed from the repository.
 - [x] Make the Vercel build schema check skip safely only when server-only Supabase credentials are unavailable, while retaining the verified managed-deployment schema gate.
+
+## Live Vercel and School Management Verification
+- [ ] Confirm the latest Vercel Production deployment and public application availability.
+- [ ] Verify the live School Management Module navigation, access controls, and non-destructive operational views.
+- [ ] Run safe regression checks and report the verified live deployment outcome.
+- [ ] Diagnose and correct the Vercel output routing defect that currently serves the server bundle source at the public application root.
+- [ ] Redeploy and confirm the Vercel public root renders the browser application before continuing School Management validation.
