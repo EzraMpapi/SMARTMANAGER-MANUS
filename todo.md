@@ -325,3 +325,4 @@
 - [ ] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements.
 - [x] Document the private-repository main-branch quality policy and the exact future required-check configuration to apply if GitHub branch protections become available.
 - [ ] Verify the active GitHub Actions workflow registration after the privacy-preserving decision record is pushed.
+- [ ] Resolve the GitHub CI schema-verification configuration failure using an approved secret-management approach without exposing production credentials.
