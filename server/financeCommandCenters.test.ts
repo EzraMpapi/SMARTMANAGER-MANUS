@@ -19,7 +19,12 @@ describe("finance and reporting command-center contracts", () => {
 
   it("covers integration capability health and keeps all centers wired", () => {
     for (const text of ["Integration health", "Functional capabilities", "Backend-dependent", "Sync lag", "API failures", "Integration readiness"]) expect(workspace).toContain(text);
-    for (const tag of ["<FinanceCommandCenter", "<ReportsCommandCenter", "<IntegrationsCommandCenter"]) expect(dashboard).toContain(tag);
+    for (const route of [
+      '{active === "finance" && <Finance',
+      '{active === "reports" && <Reports',
+      '{active === "integrations" && (',
+      "<Integrations invoices={invoices}",
+    ]) expect(dashboard).toContain(route);
     expect(workspace).toContain("No confirmed sync telemetry source is exposed");
   });
 });

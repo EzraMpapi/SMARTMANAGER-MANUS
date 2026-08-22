@@ -50,6 +50,7 @@ import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
 import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWorkspace";
+import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -50490,6 +50491,14 @@ function PortalTraining({ empName }) {
 
 
 function EmployeePortal({ currentUser, company, employees, leaveRequests, canManage }) {
+  if (IS_CONFIGURED && !DEMO_OVERRIDE) {
+    return <EmployeePortalWorkspace
+      currentUser={currentUser}
+      configured={IS_CONFIGURED}
+      rpc={(procedure, payload) => callRpc(procedure, payload, getStoredAccessToken() || "")}
+    />;
+  }
+
   const co = company || {};
   const TODAY_STR = TODAY.toISOString().slice(0,10);
 

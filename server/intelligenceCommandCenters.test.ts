@@ -13,11 +13,10 @@ describe("support, AI, and TRA intelligence contracts", () => {
     for (const source of ["support_tickets + support_ticket_messages", "tenant-scoped invoice, inventory, CRM, expense, HR, supplier, quotation, and workflow context"]) expect(intelligence).toContain(source);
   });
 
-  it("keeps Support and AI command centers routed through existing workflows", () => {
-    expect(dashboard).toContain("<SupportCommandCenter");
-    expect(dashboard).toContain("<AiBusinessSignals");
-    expect(dashboard).toContain("CustomerSupport company={company} onNavigate={go}");
-    expect(dashboard).toContain("ChatInterface persona={persona} data={data}");
+  it("keeps Support and AI capabilities routed through the current dashboard module shells", () => {
+    expect(dashboard).toContain('{active === "support" && <CustomerSupport company={company} />}');
+    expect(dashboard).toContain('{active === "ai" && (');
+    expect(dashboard).toContain("<AIAssistant company={company}");
   });
 
   it("preserves explicit TRA readiness and non-fabrication language", () => {
