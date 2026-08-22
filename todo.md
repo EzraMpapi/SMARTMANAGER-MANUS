@@ -311,3 +311,8 @@
 - [x] Diagnose and correct the Vercel output routing defect that currently serves the server bundle source at the public application root.
 - [x] Redeploy and confirm the Vercel public root renders the browser application before continuing School Management validation.
 - [x] Diagnose and correct the live owner-role denial that prevents authorized workspace owners from opening School Management.
+
+## Repository-Based Change Tracking
+- [x] Verify the requested repository remote, branch state, and non-destructive synchronization baseline.
+- [x] Document the per-change tracking and GitHub synchronization workflow in the project repository.
+- [ ] Verify the tracking record is committed and pushed to the requested repository.
