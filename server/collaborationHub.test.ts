@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
+import path from "path";
 
 describe("Collaboration Hub Enterprise Suite", () => {
-  const dashboardSource = fs.readFileSync("/home/ubuntu/businesssphere-erp/client/src/BusinessSphereDashboard.jsx", "utf8");
+  const dashboardSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
 
   it("includes all Collaboration Hub tabs and real-time features", () => {
     expect(dashboardSource).toContain("Collaboration Hub");
