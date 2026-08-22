@@ -5,7 +5,7 @@
   "outputDirectory": "dist/public",
   "functions": {
     "api/index.ts": {
-      "includeFiles": ["dist/index.js"]
+      "includeFiles": "dist/index.js"
     }
   },
   "rewrites": [
