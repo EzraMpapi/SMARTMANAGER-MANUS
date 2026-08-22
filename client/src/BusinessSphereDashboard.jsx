@@ -51,6 +51,7 @@ import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
 import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWorkspace";
 import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
+import { FleetWorkspace } from "./components/FleetWorkspace";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -47751,7 +47752,21 @@ function HotelManagementModule({ currentUser }) {
   return <HospitalityWorkspace rpc={rpc} configured={IS_CONFIGURED && !DEMO_OVERRIDE} currentUser={currentUser} />;
 }
 
-function FleetManagementModule({ currentUser, company, onVehiclesLoad }) {
+function FleetManagementModule({ currentUser }) {
+  const api = useCallback(async (path, init = {}) => {
+    const response = await fetch(path, { ...init, headers: { ...authHeaders(), ...(init.headers || {}) } });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(body?.error || body?.message || `Fleet request failed: ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+    return body;
+  }, []);
+  return <FleetWorkspace api={api} currentUser={currentUser} />;
+}
+
+function LegacyFleetManagementModule({ currentUser, company, onVehiclesLoad }) {
   const [tab, setTab] = useState("overview");
   const vehicles    = useCompanyTable("flt_vehicles",    FLT_VEHICLES_SEED,    { mapRow: r => r });
   useEffect(() => { if (onVehiclesLoad) onVehiclesLoad(vehicles.rows); }, [vehicles.rows, onVehiclesLoad]);
