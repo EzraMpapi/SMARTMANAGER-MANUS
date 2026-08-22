@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const gatewaySource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
+const publicConfigSource = readFileSync(new URL("../client/src/lib/publicSupabaseConfig.ts", import.meta.url), "utf8");
 
 describe("PublicAuthGateway Lexical Initialization Safety", () => {
   it("imports React hooks correctly to prevent lexical declaration errors", () => {
@@ -17,5 +18,9 @@ describe("PublicAuthGateway Lexical Initialization Safety", () => {
     expect(gatewaySource).not.toContain("onForgotPassword=");
     expect(gatewaySource).not.toContain("onSignUp=");
     expect(gatewaySource).not.toContain("onSubmit={async (newPassword) => {");
+    expect(gatewaySource).toContain("loadPublicSupabaseConfig");
+    expect(gatewaySource).toContain("const [supabaseConfig, setSupabaseConfig] = useState(getBuildPublicSupabaseConfig);");
+    expect(publicConfigSource).toContain("/api/config/public");
+    expect(publicConfigSource).not.toContain("SUPABASE_SECRET_KEY");
   });
 });

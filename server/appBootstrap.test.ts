@@ -13,6 +13,15 @@ describe("application bootstrap recovery", () => {
     expect(source).toContain("window.location.reload();");
   });
 
+  it("registers a publishable-only runtime auth configuration route", () => {
+    const source = readFileSync(resolve(process.cwd(), "server/_core/apiApp.ts"), "utf8");
+
+    expect(source).toContain('app.get("/api/config/public"');
+    expect(source).toContain("ENV.supabaseUrl");
+    expect(source).toContain("ENV.supabaseAnonKey");
+    expect(source).not.toContain("ENV.supabaseSecretKey");
+  });
+
   it("keeps auth route detection safe when browser storage is unavailable", () => {
     const source = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
 

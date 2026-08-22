@@ -2,6 +2,7 @@ import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
+import { ENV } from "./env";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { scheduledDashboardReportHandler } from "../scheduledDashboardReport";
@@ -41,6 +42,13 @@ export function createApiApp() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   app.post("/api/payments/harakapay/webhook", harakaPayWebhookHandler);
+  app.get("/api/config/public", (_req, res) => {
+    if (!ENV.supabaseUrl || !ENV.supabaseAnonKey) {
+      res.status(503).json({ error: "Public authentication configuration is not available." });
+      return;
+    }
+    res.set("Cache-Control", "no-store").json({ url: ENV.supabaseUrl, anonKey: ENV.supabaseAnonKey });
+  });
   app.get("/api/billing/catalog", subscriptionBillingCatalogHandler);
   app.get("/api/billing/subscription", subscriptionBillingSnapshotHandler);
   app.get("/api/fleet/snapshot", fleetSnapshotHandler);
