@@ -5,6 +5,7 @@ import path from "node:path";
 const core = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260822_018_hospitality_core.sql"), "utf8");
 const pos = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260822_019_hospitality_pos_and_services.sql"), "utf8");
 const services = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260822_020_hospitality_guest_engagement.sql"), "utf8");
+const finance = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260822_022_hospitality_finance_reconciliation.sql"), "utf8");
 const workspace = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/HospitalityWorkspace.jsx"), "utf8");
 const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
 
@@ -36,11 +37,24 @@ describe("Hospitality production workflow contracts", () => {
     expect(core).toContain('hospitality_notify');
   });
 
+  it("creates a controlled Finance and General Ledger end-of-day bridge for settled hospitality revenue", () => {
+    expect(finance).toContain('public.hospitality_finance_reconciliations');
+    expect(finance).toContain('hospitality_reconcile_end_of_day');
+    expect(finance).toContain("INSERT INTO public.pos_transactions");
+    expect(finance).toContain("INSERT INTO public.journal_entries");
+    expect(finance).toContain("'Cash and Cash Equivalents'");
+    expect(finance).toContain("'Hospitality Revenue'");
+    expect(finance).toContain("'Tax Payable'");
+    expect(finance).toContain("v_status:=CASE WHEN abs(v_variance)<=0.01 THEN 'Reconciled' ELSE 'Review' END");
+    expect(finance).toContain('finance_reference');
+  });
+
   it("uses authenticated tenant policies and disallows anonymous access to hospitality commands", () => {
     expect(core).toContain("ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY");
     expect(core).toContain("company_id=public.current_company_id()");
     expect(core).toContain('REVOKE EXECUTE ON FUNCTION public.hospitality_action(text,jsonb) FROM PUBLIC,anon');
     expect(pos).toContain('REVOKE EXECUTE ON FUNCTION public.hospitality_pos_action(text,jsonb) FROM PUBLIC,anon');
     expect(services).toContain('REVOKE EXECUTE ON FUNCTION public.hospitality_service_action(text,jsonb) FROM PUBLIC,anon');
+    expect(finance).toContain('REVOKE ALL ON FUNCTION public.hospitality_reconcile_end_of_day(uuid,date) FROM PUBLIC,anon');
   });
 });
