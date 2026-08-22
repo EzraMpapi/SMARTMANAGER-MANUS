@@ -19,6 +19,7 @@ import { scheduledPortalReferenceReconciliationDigestHandler } from "../schedule
 import { scheduledMicrofinanceParCollectionsEscalationHandler } from "../scheduledMicrofinanceParCollectionsEscalation";
 import { scheduledSubscriptionTrialLifecycleHandler } from "../scheduledSubscriptionTrialLifecycle";
 import { fleetActionHandler, fleetSnapshotHandler, fleetTelematicsWebhookHandler, scheduledFleetAlertsHandler } from "../fleetManagement";
+import { scheduledRestaurantAlertsHandler } from "../restaurantManagement";
 import {
   harakaPayBalanceHandler,
   harakaPayCollectHandler,
@@ -83,6 +84,7 @@ async function startServer() {
   app.post("/api/scheduled/microfinanceParCollectionsEscalation", scheduledMicrofinanceParCollectionsEscalationHandler);
   app.post("/api/scheduled/subscriptionTrialLifecycle", scheduledSubscriptionTrialLifecycleHandler);
   app.post("/api/scheduled/fleetAlerts", scheduledFleetAlertsHandler);
+  app.post("/api/scheduled/restaurantAlerts", scheduledRestaurantAlertsHandler);
   app.post("/api/webhooks/backup-complete", async (req, res) => {
     try {
       const { handleBackupCompletionWebhook } = await import("../backupWebhook");

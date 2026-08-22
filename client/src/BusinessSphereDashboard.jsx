@@ -52,6 +52,7 @@ import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
 import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWorkspace";
 import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
 import { FleetWorkspace } from "./components/FleetWorkspace";
+import { RestaurantWorkspace } from "./components/RestaurantWorkspace";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -47766,6 +47767,31 @@ function FleetManagementModule({ currentUser }) {
   return <FleetWorkspace api={api} currentUser={currentUser} />;
 }
 
+function RestaurantManagementModule({ currentUser }) {
+  const rpc = useCallback(async (procedure, payload = {}) => {
+    if (!IS_CONFIGURED || DEMO_OVERRIDE) {
+      throw new Error("Restaurant workflows require an authenticated Smart Manager database session.");
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      throw new Error("You appear to be offline. Reconnect before submitting a Restaurant workflow.");
+    }
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`, {
+      method: "POST",
+      headers: { ...authHeaders(), Prefer: "return=representation" },
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      const error = new Error(body?.message || body?.hint || body?.details || `Restaurant request failed: ${response.status}`);
+      error.status = response.status;
+      error.code = body?.code;
+      throw error;
+    }
+    return body;
+  }, []);
+  return <RestaurantWorkspace rpc={rpc} configured={IS_CONFIGURED && !DEMO_OVERRIDE} currentUser={currentUser} />;
+}
+
 function LegacyFleetManagementModule({ currentUser, company, onVehiclesLoad }) {
   const [tab, setTab] = useState("overview");
   const vehicles    = useCompanyTable("flt_vehicles",    FLT_VEHICLES_SEED,    { mapRow: r => r });
@@ -49451,7 +49477,7 @@ const MENU_CATEGORIES = ["Starters","Main Course","Grills","Desserts","Drinks","
 const TABLE_ZONES = ["Indoor","Terrace","VIP","Bar","Outdoor"];
 const TZS_FMT = (n) => "TZS " + Number(n).toLocaleString();
 
-function RestaurantModule({ currentUser, company }) {
+function LegacyRestaurantModule({ currentUser, company }) {
   const [tab, setTab]       = useState("floor");
   const [kitchenTab, setKitchenTab] = useState("active");
   const [menuCat, setMenuCat]   = useState("All");
@@ -53101,7 +53127,7 @@ function SmartManager() {
           {active === "hotel"       && <HotelManagementModule   currentUser={currentUser} company={company} onBookingsLoad={setHtlBookingsForAlerts} />}
           {active === "fleet"       && <FleetManagementModule      currentUser={currentUser} company={company} onVehiclesLoad={setVehiclesForAlerts} />}
           {active === "banking"     && <BankingMFIModule            currentUser={currentUser} company={company} onLoansLoad={setBankLoansForAlerts} />}
-          {active === "restaurant"  && <RestaurantModule            currentUser={currentUser} company={company} onOrdersLoad={setRstOrdersForAlerts} />}
+          {active === "restaurant"  && <RestaurantManagementModule  currentUser={currentUser} />}
           {active === "employee-portal" && (
             <EmployeePortal
               currentUser={currentUser}
