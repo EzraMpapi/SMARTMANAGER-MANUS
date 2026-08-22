@@ -90,6 +90,18 @@ async function userRpc<T>(functionName: string, accessToken: string, body: JsonR
   return payload as T;
 }
 
+async function publicRpc<T>(functionName: string, body: JsonRecord = {}): Promise<T> {
+  if (!ENV.supabaseUrl || !ENV.supabaseAnonKey) throw new Error("Billing catalog is not configured.");
+  const response = await fetch(`${ENV.supabaseUrl}/rest/v1/rpc/${functionName}`, {
+    method: "POST",
+    headers: { apikey: ENV.supabaseAnonKey, "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await parseProviderResponse(response);
+  if (!response.ok) throw new Error(asString(payload.message) || "The subscription catalog could not be loaded.");
+  return payload as T;
+}
+
 async function serviceRpc<T>(functionName: string, body: JsonRecord): Promise<T> {
   if (!ENV.supabaseUrl || !ENV.supabaseSecretKey) throw new Error("Billing server verification is not configured.");
   const response = await fetch(`${ENV.supabaseUrl}/rest/v1/rpc/${functionName}`, {
@@ -167,13 +179,49 @@ function publicPaymentState(result: unknown) {
   };
 }
 
+export async function subscriptionBillingCatalogHandler(_req: Request, res: Response) {
+  try {
+    return res.status(200).json({ plans: await serviceRpc("billing_public_plan_catalog", {}) });
+  } catch (error) {
+    return sendError(res, 503, (error as Error).message || "The subscription catalog could not be loaded.");
+  }
+}
+
 export async function subscriptionBillingSnapshotHandler(req: Request, res: Response) {
   try {
     const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
     ensureBillingManager(profile.role);
+    if (typeof profile.company_id === "string" && profile.company_id) {
+      await serviceRpc("billing_reconcile_trial_expiry", { p_company_id: profile.company_id });
+    }
     return res.status(200).json(await userRpc("billing_snapshot", token, {}));
   } catch (error) {
     return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "Billing could not be loaded.");
+  }
+}
+
+export async function subscriptionBillingStartTrialHandler(req: Request, res: Response) {
+  try {
+    const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    ensureBillingManager(profile.role);
+    const payload = isRecord(req.body) ? req.body : {};
+    const planCode = asString(payload.planCode, 40) || "TWIGA";
+    return res.status(201).json(await userRpc("billing_start_trial", token, { p_plan_code: planCode }));
+  } catch (error) {
+    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The free trial could not be started.");
+  }
+}
+
+export async function subscriptionBillingSelectTrialPlanHandler(req: Request, res: Response) {
+  try {
+    const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    ensureBillingManager(profile.role);
+    const payload = isRecord(req.body) ? req.body : {};
+    const planCode = asString(payload.planCode, 40);
+    if (!planCode) return sendError(res, 400, "A subscription package is required.");
+    return res.status(200).json(await userRpc("billing_select_trial_plan", token, { p_plan_code: planCode }));
+  } catch (error) {
+    return sendError(res, (error as Error & { status?: number }).status || 500, (error as Error).message || "The selected trial package could not be saved.");
   }
 }
 

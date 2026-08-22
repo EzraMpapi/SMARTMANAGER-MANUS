@@ -12,6 +12,10 @@ const workspace = read("client/src/components/SubscriptionBillingWorkspace.jsx")
 const environment = read("server/_core/env.ts");
 const hardening = read("supabase/migrations/20260822_025_subscription_billing_function_execute_hardening.sql");
 const helperHardening = read("supabase/migrations/20260822_026_subscription_billing_helper_execute_hardening.sql");
+const trialCatalog = read("supabase/migrations/20260822_028_subscription_trials_and_official_catalog.sql");
+const trialHardening = read("supabase/migrations/20260822_029_subscription_trial_function_execute_hardening.sql");
+const planAdminControls = read("supabase/migrations/20260822_030_subscription_plan_admin_controls.sql");
+const dashboard = read("client/src/BusinessSphereDashboard.jsx");
 
 describe("Subscription billing and HarakaPay contracts", () => {
   it("creates tenant-scoped subscription, payment, invoice, usage, profile, and audit persistence with RLS", () => {
@@ -65,9 +69,49 @@ describe("Subscription billing and HarakaPay contracts", () => {
     expect(migration).toContain("public.billing_require_manager()");
   });
 
+  it("seeds the exact official monthly TZS catalog and prevents repeat free-trial entitlement", () => {
+    [
+      "'TWIGA'", "5000", "'TEMBO'", "10000", "'SIMBA'", "15000",
+      "'SIMBA_SC'", "4500", "'YANGA_SC'", "9000", "'AZAM_FC'", "7000",
+      "'Business'", "'Football'", "trial_days", "UNIQUE INDEX IF NOT EXISTS tenant_subscriptions_one_trial_per_company_idx",
+      "FUNCTION public.billing_start_trial", "trial_already_granted",
+    ].forEach((marker) => expect(trialCatalog).toContain(marker));
+  });
+
+  it("keeps trial state server-authoritative and emits idempotent expiry notifications without automatic charging", () => {
+    [
+      "trial_started_at", "trial_ends_at", "FUNCTION public.billing_reconcile_trial_expiry",
+      "TRIAL_WARNING_", "TRIAL_EXPIRED", "subscription_notifications", "ON CONFLICT (company_id, notification_key) DO NOTHING",
+      "FUNCTION public.billing_select_trial_plan",
+    ].forEach((marker) => expect(trialCatalog).toContain(marker));
+    expect(trialCatalog).not.toContain("auto_charge");
+    [
+      "REVOKE ALL ON FUNCTION public.billing_public_plan_catalog() FROM PUBLIC, anon, authenticated",
+      "REVOKE ALL ON FUNCTION public.billing_start_trial(text) FROM PUBLIC, anon, authenticated",
+      "REVOKE ALL ON FUNCTION public.billing_select_trial_plan(text) FROM PUBLIC, anon, authenticated",
+      "GRANT EXECUTE ON FUNCTION public.billing_public_plan_catalog() TO service_role",
+      "GRANT EXECUTE ON FUNCTION public.billing_reconcile_trial_expiry(uuid) TO service_role",
+    ].forEach((marker) => expect(trialHardening).toContain(marker));
+  });
+
+  it("keeps official-plan price, feature, limit, theme, and trial controls behind audited administrator procedures", () => {
+    [
+      "FUNCTION public.billing_upsert_plan", "public.billing_is_platform_admin()",
+      "Only a platform administrator can manage the official package catalog.",
+      "plan_category", "visual_theme", "trial_days", "PERFORM public.billing_audit",
+      "REVOKE ALL ON FUNCTION public.billing_upsert_plan(jsonb) FROM PUBLIC, anon",
+    ].forEach((marker) => expect(planAdminControls).toContain(marker));
+    expect(trialCatalog).toContain("billing_plan_audit_log");
+    ["Feature flags JSON", "Module entitlements JSON", "Official global package", "Save audited plan"].forEach((marker) => expect(workspace).toContain(marker));
+  });
+
   it("registers the protected billing API and the webhook endpoint", () => {
     [
+      'app.get("/api/billing/catalog", subscriptionBillingCatalogHandler)',
       'app.get("/api/billing/subscription", subscriptionBillingSnapshotHandler)',
+      'app.post("/api/billing/trial/start", subscriptionBillingStartTrialHandler)',
+      'app.post("/api/billing/trial/select-plan", subscriptionBillingSelectTrialPlanHandler)',
+      'app.post("/api/scheduled/subscriptionTrialLifecycle", scheduledSubscriptionTrialLifecycleHandler)',
       'app.post("/api/billing/profile", subscriptionBillingProfileHandler)',
       'app.post("/api/billing/plans", subscriptionBillingPlanHandler)',
       'app.post("/api/payments/harakapay/collect", harakaPayCollectHandler)',
@@ -86,5 +130,16 @@ describe("Subscription billing and HarakaPay contracts", () => {
       "Plan settings",
       "payment status",
     ].forEach((marker) => expect(workspace).toContain(marker));
+  });
+
+  it("presents a 30-day trial dashboard and separates the Football Fans Special catalog without unlicensed logos", () => {
+    [
+      "30-DAY FREE TRIAL", "Siku ${days} zimebaki", "Trial yako imekwisha", "Subscribe Now",
+      "SMART MANAGER BUSINESS PLANS", "FOOTBALL FANS SPECIAL", "Chagua timu yako. Furahia SMART MANAGER kwa bei maalum.",
+      "Abstract club-themed colors only", "Start Free Trial", "Upgrade / downgrade", "/ mwezi",
+    ].forEach((marker) => expect(workspace).toContain(marker));
+    [
+      'fetch("/api/billing/catalog")', "billing_start_trial", "preferredPlanCode", "Anza na siku 30 BURE",
+    ].forEach((marker) => expect(dashboard).toContain(marker));
   });
 });
