@@ -49,6 +49,7 @@ import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomi
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
+import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWorkspace";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -3153,7 +3154,7 @@ const ALL_MODULE_IDS = [
   "dashboard", "crm", "sales", "inventory", "procurement", "finance", "reports", "hr",
   "manufacturing", "scm", "marketing", "ecommerce", "pos", "documents", "projects",
   "support", "analytics", "notifications", "activity", "integrations", "ai", "workflows", "collaboration", "tra_portal",
-  "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "employee-portal", "presentation",
+  "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "employee-portal", "presentation", "billing",
 ];
 
 const ROLES = [
@@ -3302,6 +3303,7 @@ const MODULES = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, live: true },
   { id: "crm", label: "CRM", icon: Users, live: true },
   { id: "sales", label: "Sales", icon: ShoppingCart, live: true },
+  { id: "billing", label: "Subscription Billing", icon: CreditCard, live: true },
   { id: "inventory", label: "Inventory", icon: Package, live: true },
   { id: "procurement", label: "Procurement", icon: ClipboardCheck, live: true },
   { id: "finance", label: "Finance", icon: Wallet, live: true },
@@ -52540,7 +52542,9 @@ function SmartManager() {
 
   const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
 
-  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id));
+  const billingManagerRoles = new Set(["Super Administrator", "Organization Owner", "Owner", "CEO", "CFO", "Finance Manager", "Admin"]);
+  const canManageBilling = billingManagerRoles.has(currentUser.role);
+  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (m.id !== "billing" || canManageBilling));
 
   // If switching roles removes access to whatever module is currently on
   // screen (e.g. testing "Employee" while viewing Finance), fall back to
@@ -52959,6 +52963,7 @@ function SmartManager() {
           )}
           {active === "crm" && <CRM crm={crm} invoices={invoices} expenses={expenses} suppliers={suppliers} />}
           {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} crm={crm} currentUser={currentUser} intent={intent} clearIntent={clearIntent} />}
+          {active === "billing" && canManageBilling && <SubscriptionBillingWorkspace accessToken={session?.accessToken || getStoredAccessToken()} company={company} onBack={() => go("dashboard")} />}
           {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
@@ -53049,7 +53054,7 @@ function SmartManager() {
               accountSession={session?.demo ? null : session}
             />
           )}
-          {!["dashboard", "crm", "sales", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "activity"].includes(active) && (
+          {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "activity"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
           )}
         </main>

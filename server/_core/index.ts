@@ -17,6 +17,15 @@ import { scheduledAppointmentRemindersHandler } from "../scheduledAppointmentRem
 import { healthcareReminderDeliveryWebhookHandler } from "../healthcareReminderWebhook";
 import { scheduledPortalReferenceReconciliationDigestHandler } from "../scheduledPortalReferenceReconciliationDigest";
 import { scheduledMicrofinanceParCollectionsEscalationHandler } from "../scheduledMicrofinanceParCollectionsEscalation";
+import {
+  harakaPayBalanceHandler,
+  harakaPayCollectHandler,
+  harakaPayStatusHandler,
+  harakaPayWebhookHandler,
+  subscriptionBillingPlanHandler,
+  subscriptionBillingProfileHandler,
+  subscriptionBillingSnapshotHandler,
+} from "../subscriptionBilling";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -44,6 +53,13 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.post("/api/payments/harakapay/webhook", harakaPayWebhookHandler);
+  app.get("/api/billing/subscription", subscriptionBillingSnapshotHandler);
+  app.post("/api/billing/profile", subscriptionBillingProfileHandler);
+  app.post("/api/billing/plans", subscriptionBillingPlanHandler);
+  app.post("/api/payments/harakapay/collect", harakaPayCollectHandler);
+  app.get("/api/payments/harakapay/status/:orderId", harakaPayStatusHandler);
+  app.get("/api/payments/harakapay/balance", harakaPayBalanceHandler);
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   app.post("/api/scheduled/dashboardReport", scheduledDashboardReportHandler);
