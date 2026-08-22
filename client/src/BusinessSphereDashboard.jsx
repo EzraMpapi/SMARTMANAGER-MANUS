@@ -57,6 +57,7 @@ const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAud
 const LazyHealthcareClinicWorkspace = lazy(() => import("./components/HealthcareClinicWorkspace").then((module) => ({ default: module.HealthcareClinicWorkspace })));
 const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWorkspace").then((module) => ({ default: module.MicrofinanceWorkspace })));
 const LazyPharmacyWorkspace = lazy(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })));
+const LazySchoolWorkspace = lazy(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })));
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -52985,7 +52986,7 @@ function SmartManager() {
               <LazyHealthcareClinicWorkspace currentUser={currentUser} company={company} isLive={Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo)} onNavigate={setActive} onToast={notify} />
             </Suspense>
           )}
-          {active === "school"      && <SchoolManagementModule  currentUser={currentUser} company={company} onFeesLoad={setSchFeesForAlerts} />}
+          {active === "school"      && <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><LoaderCircle className="animate-spin text-indigo-600"/></div>}><LazySchoolWorkspace onNavigate={setActive} /></Suspense>}
           {active === "pharmacy"    && <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><LoaderCircle className="animate-spin text-emerald-600"/></div>}><LazyPharmacyWorkspace onNavigate={setActive} /></Suspense>}
           {active === "hotel"       && <HotelManagementModule   currentUser={currentUser} company={company} onBookingsLoad={setHtlBookingsForAlerts} />}
           {active === "fleet"       && <FleetManagementModule      currentUser={currentUser} company={company} onVehiclesLoad={setVehiclesForAlerts} />}

@@ -38,6 +38,7 @@ import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPati
 import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceDeliveryHistory, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceDeliveryHistoryInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
 import { closeMicrofinanceCashSession, createMicrofinanceBorrower, createMicrofinanceCollateral, createMicrofinanceCollection, createMicrofinanceGroup, createMicrofinanceGuarantor, createMicrofinanceProduct, decideMicrofinanceApplication, disburseMicrofinanceLoan, getMicrofinanceCreditScoringSettings, getMicrofinanceEscalationSettings, listMicrofinanceAudit, listMicrofinanceDashboard, listMicrofinanceEscalationHistory, microfinanceApplicationInput, microfinanceBorrowerInput, microfinanceCashCloseInput, microfinanceCashOpenInput, microfinanceCollateralInput, microfinanceCollectionInput, microfinanceCreditScoringSettingsInput, microfinanceDecisionInput, microfinanceDisbursementInput, microfinanceEscalationSettingsInput, microfinanceGroupInput, microfinanceGuarantorInput, microfinanceListInput, microfinanceProductInput, microfinanceRepaymentInput, microfinanceSavingsInput, openMicrofinanceCashSession, recordMicrofinanceRepayment, recordMicrofinanceSavings, saveMicrofinanceCreditScoringSettings, saveMicrofinanceEscalationSettings, submitMicrofinanceApplication } from "./microfinanceOperations";
 import { adjustPharmacyStock, archivePharmacyRecord, completePharmacySale, createPharmacyBrand, createPharmacyCategory, createPharmacyInsuranceClaim, createPharmacyMedicine, createPharmacyPurchaseOrder, createPharmacySupplier, createPharmacyTransfer, dispensePharmacyPrescription, getPharmacyAccess, getPharmacyClinicalQueue, getPharmacyDashboard, getPharmacyReports, listPharmacyAudit, listPharmacyRecords, markPharmacyNotificationRead, pharmacyAdjustmentInput, pharmacyArchiveInput, pharmacyBrandInput, pharmacyBrandUpdateInput, pharmacyCategoryInput, pharmacyCategoryUpdateInput, pharmacyClinicalQueueInput, pharmacyDispenseInput, pharmacyInsuranceClaimInput, pharmacyListInput, pharmacyMedicineInput, pharmacyMedicineUpdateInput, pharmacyNotificationInput, pharmacyPaymentInput, pharmacyPurchaseOrderInput, pharmacyReceiptInput, pharmacyReturnInput, pharmacySaleInput, pharmacySupplierInput, pharmacySupplierPaymentInput, pharmacySupplierUpdateInput, pharmacyTransferInput, receivePharmacyStock, recordPharmacySalePayment, recordPharmacySupplierPayment, returnPharmacySaleItems, updatePharmacyBrand, updatePharmacyCategory, updatePharmacyMedicine, updatePharmacySupplier } from "./pharmacyOperations";
+import { archiveSchoolRecord, assignSchoolService, createSchoolAcademicYear, createSchoolAdmission, createSchoolAnnouncement, createSchoolAssignment, createSchoolAssessment, createSchoolClass, createSchoolDepartment, createSchoolDisciplineRecord, createSchoolDocument, createSchoolFeeStructure, createSchoolGradingScale, createSchoolLibraryLoan, createSchoolServiceRecord, createSchoolStream, createSchoolSubject, createSchoolTeacher, createSchoolTeacherAssignment, createSchoolTerm, createSchoolTimetable, decideSchoolAdmission, decideSchoolApproval, decideSchoolScholarship, getSchoolAccess, getSchoolDashboard, getSchoolPortal, getSchoolReports, issueSchoolFeeInvoice, linkSchoolPortal, listSchoolAudit, listSchoolRecords, markSchoolNotificationRead, openSchoolAttendanceSession, publishSchoolReportCard, recordSchoolAssessmentScores, recordSchoolAttendance, recordSchoolInventoryMovement, recordSchoolPayment, requestSchoolApproval, requestSchoolScholarship, schoolAcademicYearInput, schoolAdmissionDecisionInput, schoolAdmissionInput, schoolAnnouncementInput, schoolApprovalDecisionInput, schoolApprovalRequestInput, schoolArchiveInput, schoolAssignmentInput, schoolAssignmentSubmissionInput, schoolAssessmentInput, schoolAttendanceInput, schoolAttendanceSessionInput, schoolClassInput, schoolDepartmentInput, schoolDisciplineInput, schoolDocumentInput, schoolDocumentUploadInput, schoolFeeStructureInput, schoolGradingScaleInput, schoolIdInput, schoolInventoryMovementInput, schoolInvoiceInput, schoolLibraryLoanInput, schoolListInput, schoolMessageInput, schoolPaymentInput, schoolPortalLinkInput, schoolReportCardInput, schoolScoreInput, schoolScholarshipDecisionInput, schoolScholarshipInput, schoolServiceAssignmentInput, schoolServiceInput, schoolStreamInput, schoolSubjectInput, schoolTeacherAssignmentInput, schoolTeacherInput, schoolTermInput, schoolTimetableInput, sendSchoolMessage, submitSchoolAssignment, uploadSchoolDocument } from "./schoolOperations";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -172,6 +173,52 @@ export const appRouter = router({
     createInsuranceClaim: protectedProcedure.input(pharmacyInsuranceClaimInput).mutation(({ ctx, input }) => createPharmacyInsuranceClaim(ctx.req, input)),
     returnSaleItems: protectedProcedure.input(pharmacyReturnInput).mutation(({ ctx, input }) => returnPharmacySaleItems(ctx.req, input)),
     markNotificationRead: protectedProcedure.input(pharmacyNotificationInput).mutation(({ ctx, input }) => markPharmacyNotificationRead(ctx.req, input)),
+  }),
+  school: router({
+    access: protectedProcedure.query(({ ctx }) => getSchoolAccess(ctx.req)),
+    dashboard: protectedProcedure.query(({ ctx }) => getSchoolDashboard(ctx.req)),
+    reports: protectedProcedure.query(({ ctx }) => getSchoolReports(ctx.req)),
+    portal: protectedProcedure.query(({ ctx }) => getSchoolPortal(ctx.req)),
+    list: protectedProcedure.input(schoolListInput).query(({ ctx, input }) => listSchoolRecords(ctx.req, input)),
+    audit: protectedProcedure.input(schoolListInput).query(({ ctx, input }) => listSchoolAudit(ctx.req, input)),
+    createAcademicYear: protectedProcedure.input(schoolAcademicYearInput).mutation(({ ctx, input }) => createSchoolAcademicYear(ctx.req, input)),
+    createTerm: protectedProcedure.input(schoolTermInput).mutation(({ ctx, input }) => createSchoolTerm(ctx.req, input)),
+    createDepartment: protectedProcedure.input(schoolDepartmentInput).mutation(({ ctx, input }) => createSchoolDepartment(ctx.req, input)),
+    createSubject: protectedProcedure.input(schoolSubjectInput).mutation(({ ctx, input }) => createSchoolSubject(ctx.req, input)),
+    createClass: protectedProcedure.input(schoolClassInput).mutation(({ ctx, input }) => createSchoolClass(ctx.req, input)),
+    createStream: protectedProcedure.input(schoolStreamInput).mutation(({ ctx, input }) => createSchoolStream(ctx.req, input)),
+    createGradingScale: protectedProcedure.input(schoolGradingScaleInput).mutation(({ ctx, input }) => createSchoolGradingScale(ctx.req, input)),
+    createTeacher: protectedProcedure.input(schoolTeacherInput).mutation(({ ctx, input }) => createSchoolTeacher(ctx.req, input)),
+    createAdmission: protectedProcedure.input(schoolAdmissionInput).mutation(({ ctx, input }) => createSchoolAdmission(ctx.req, input)),
+    decideAdmission: protectedProcedure.input(schoolAdmissionDecisionInput).mutation(({ ctx, input }) => decideSchoolAdmission(ctx.req, input)),
+    createTeacherAssignment: protectedProcedure.input(schoolTeacherAssignmentInput).mutation(({ ctx, input }) => createSchoolTeacherAssignment(ctx.req, input)),
+    createTimetable: protectedProcedure.input(schoolTimetableInput).mutation(({ ctx, input }) => createSchoolTimetable(ctx.req, input)),
+    openAttendanceSession: protectedProcedure.input(schoolAttendanceSessionInput).mutation(({ ctx, input }) => openSchoolAttendanceSession(ctx.req, input)),
+    recordAttendance: protectedProcedure.input(schoolAttendanceInput).mutation(({ ctx, input }) => recordSchoolAttendance(ctx.req, input)),
+    createAssessment: protectedProcedure.input(schoolAssessmentInput).mutation(({ ctx, input }) => createSchoolAssessment(ctx.req, input)),
+    recordAssessmentScores: protectedProcedure.input(schoolScoreInput).mutation(({ ctx, input }) => recordSchoolAssessmentScores(ctx.req, input)),
+    publishReportCard: protectedProcedure.input(schoolReportCardInput).mutation(({ ctx, input }) => publishSchoolReportCard(ctx.req, input)),
+    createAssignment: protectedProcedure.input(schoolAssignmentInput).mutation(({ ctx, input }) => createSchoolAssignment(ctx.req, input)),
+    submitAssignment: protectedProcedure.input(schoolAssignmentSubmissionInput).mutation(({ ctx, input }) => submitSchoolAssignment(ctx.req, input)),
+    createFeeStructure: protectedProcedure.input(schoolFeeStructureInput).mutation(({ ctx, input }) => createSchoolFeeStructure(ctx.req, input)),
+    issueFeeInvoice: protectedProcedure.input(schoolInvoiceInput).mutation(({ ctx, input }) => issueSchoolFeeInvoice(ctx.req, input)),
+    recordPayment: protectedProcedure.input(schoolPaymentInput).mutation(({ ctx, input }) => recordSchoolPayment(ctx.req, input)),
+    requestScholarship: protectedProcedure.input(schoolScholarshipInput).mutation(({ ctx, input }) => requestSchoolScholarship(ctx.req, input)),
+    decideScholarship: protectedProcedure.input(schoolScholarshipDecisionInput).mutation(({ ctx, input }) => decideSchoolScholarship(ctx.req, input)),
+    createServiceRecord: protectedProcedure.input(schoolServiceInput).mutation(({ ctx, input }) => createSchoolServiceRecord(ctx.req, input)),
+    assignService: protectedProcedure.input(schoolServiceAssignmentInput).mutation(({ ctx, input }) => assignSchoolService(ctx.req, input)),
+    createLibraryLoan: protectedProcedure.input(schoolLibraryLoanInput).mutation(({ ctx, input }) => createSchoolLibraryLoan(ctx.req, input)),
+    recordInventoryMovement: protectedProcedure.input(schoolInventoryMovementInput).mutation(({ ctx, input }) => recordSchoolInventoryMovement(ctx.req, input)),
+    createDisciplineRecord: protectedProcedure.input(schoolDisciplineInput).mutation(({ ctx, input }) => createSchoolDisciplineRecord(ctx.req, input)),
+    createAnnouncement: protectedProcedure.input(schoolAnnouncementInput).mutation(({ ctx, input }) => createSchoolAnnouncement(ctx.req, input)),
+    sendMessage: protectedProcedure.input(schoolMessageInput).mutation(({ ctx, input }) => sendSchoolMessage(ctx.req, input)),
+    linkPortal: protectedProcedure.input(schoolPortalLinkInput).mutation(({ ctx, input }) => linkSchoolPortal(ctx.req, input)),
+    createDocument: protectedProcedure.input(schoolDocumentInput).mutation(({ ctx, input }) => createSchoolDocument(ctx.req, input)),
+    uploadDocument: protectedProcedure.input(schoolDocumentUploadInput).mutation(({ ctx, input }) => uploadSchoolDocument(ctx.req, input)),
+    requestApproval: protectedProcedure.input(schoolApprovalRequestInput).mutation(({ ctx, input }) => requestSchoolApproval(ctx.req, input)),
+    decideApproval: protectedProcedure.input(schoolApprovalDecisionInput).mutation(({ ctx, input }) => decideSchoolApproval(ctx.req, input)),
+    markNotificationRead: protectedProcedure.input(schoolIdInput).mutation(({ ctx, input }) => markSchoolNotificationRead(ctx.req, input)),
+    archive: protectedProcedure.input(schoolArchiveInput).mutation(({ ctx, input }) => archiveSchoolRecord(ctx.req, input)),
   }),
   healthcare: router({
     access: protectedProcedure

@@ -286,3 +286,13 @@
 - [x] Build the responsive Pharmacy Command Center with connected dashboards, forms, tables, reports, accessible validation, loading, empty, and recovery states.
 - [x] Add navigation, role-aware access, Healthcare/Inventory/Finance cross-links, and privacy-safe notification and audit visibility.
 - [x] Add unit, protected-router, schema-drift, browser, TypeScript, and production-build coverage; fix regressions; publish the completed Pharmacy Module.
+
+## School Management Module
+- [x] Audit the existing ERP architecture, reusable workspace patterns, permissions, and cross-module contracts for school integration.
+- [x] Define tenant-safe School Management domain models, academic configuration, role permissions, audit rules, and Tanzania-ready finance and date boundaries.
+- [x] Deploy RLS-protected database schema and protected backend workflows for admissions, learner profiles, guardians, academics, and staff teaching assignments.
+- [x] Implement connected admissions, student records, classes, streams, subjects, timetables, attendance, examinations, assessments, grading, report cards, and assignments.
+- [x] Implement fees, invoices, payments, scholarships, transport, hostel, library, school inventory, disciplinary records, documents, and linked Finance/HR/Payroll workflows.
+- [x] Implement protected parent, teacher, and student portal workflows; announcements, communication, approval, notification, search, bulk, dashboard, report, and audit experiences.
+- [x] Build the responsive School Management Command Center with real loading, empty, error, validation, permission, and cross-module navigation states.
+- [x] Add unit, protected-router, schema-drift, calculation, browser, TypeScript, and production-build verification; fix regressions and publish the completed module.
