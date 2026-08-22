@@ -1,3 +1,3 @@
-import { createApiApp } from "../server/_core/index.ts";
+import { createApiApp } from "../dist/index.js";
 
 export default createApiApp();
