@@ -59,6 +59,9 @@ jobs:
         run: pnpm audit --prod || true
 
       - name: Run Production Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: NODE_OPTIONS="--max-old-space-size=4096" pnpm build
 
       - name: Notify Slack on Success
