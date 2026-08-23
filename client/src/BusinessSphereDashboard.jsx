@@ -52647,8 +52647,8 @@ function SmartManager() {
 
   const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
 
-  const billingManagerRoles = new Set(["Super Administrator", "Organization Owner", "Owner", "CEO", "CFO", "Finance Manager", "Admin"]);
-  const canManageBilling = billingManagerRoles.has(currentUser.role);
+  const billingManagerRoles = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "admin"]);
+  const canManageBilling = billingManagerRoles.has(String(currentUser.role || "").trim().toLowerCase());
   const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (m.id !== "billing" || canManageBilling));
 
   // If switching roles removes access to whatever module is currently on

@@ -105,6 +105,11 @@ describe("Subscription billing and HarakaPay contracts", () => {
     ["Feature flags JSON", "Module entitlements JSON", "Official global package", "Save audited plan"].forEach((marker) => expect(workspace).toContain(marker));
   });
 
+  it("keeps owner billing access consistent across frontend role casing", () => {
+    expect(dashboard).toContain('const billingManagerRoles = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "admin"]);');
+    expect(dashboard).toContain('String(currentUser.role || "").trim().toLowerCase()');
+  });
+
   it("registers the protected billing API and the webhook endpoint", () => {
     [
       'app.get("/api/billing/catalog", subscriptionBillingCatalogHandler)',
