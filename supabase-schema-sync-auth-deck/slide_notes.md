@@ -1,39 +1,39 @@
-# 1 — Supabase Schema Synchronization & Auth Identity Snapshot
+# 1 - Advisor findings require targeted follow-up
 
-This deck summarizes the SMART MANAGER reconciliation between versioned repository contracts, the connected Supabase catalog, and the authentication boundary. The implementation is additive and evidence-led. It centralizes identity hydration in a server-side snapshot while keeping existing modules and data intact. The final slides distinguish what was verified from what still requires isolated staging fixtures.
+Advisor findings require targeted follow-up rather than blanket automation. We found numerous historical warnings across security and performance, but applying them blindly risks breaking production workloads. Remediation must be deliberate, measured, and tied to actual product intent. This brings us to our safe operational sequence.
 
-# 2 — Synchronization objective
+# 2 - Supabase Schema Synchronization & Auth Identity Snapshot
 
-The objective was not to replay every historical SQL file blindly. We first compared the repository migrations and application references with live tables, constraints, policies, indexes, triggers, functions, storage, and the migration ledger. Only verified additive work was applied. The resulting chain is repository, Supabase, backend/API, and frontend, with explicit stop gates whenever evidence is incomplete.
+We are reviewing the synchronization architecture for SMART MANAGER. This session covers our database state, auth patterns, and security posture. Let us walk through how we align our repository with live controls.
 
-# 3 — Live schema is present; history has drift
+# 3 - Database controls remain enabled
 
-The live project inventory contains 518 public tables, while 279 tables are declared by the local migrations. The comparison found no local-declared table missing from Supabase. This means the main reconciliation issue is historical migration naming and ledger drift, not an empty or incomplete database. That distinction prevents us from replaying old migrations or duplicating objects unnecessarily.
+Security controls remain fully intact across the entire environment. Every single public table retains active row level security without exception. We preserve existing constraints, policies, and storage limits. But remember, our focus goes beyond basic table integrity.
 
-# 4 — Database controls remain enabled
+# 4 - Frontend hydration now fails closed
 
-The catalog review found 719 public policies, 2,546 constraints, 1,189 indexes, and 441 non-internal triggers. No public table was found with Row Level Security disabled. Three storage buckets were present: avatars, company-logos, and private documents. The synchronization did not disable RLS, edit constraints, rewrite data, or modify the migration ledger manually.
+Frontend hydration now fails closed through an explicit state machine. We map the server snapshot directly into our reducer so the protected shell never mounts with an incomplete identity. If the RPC fails or identity is missing, access stops immediately. Let us turn to how we verify these guarantees across the stack.
 
-# 5 — One server snapshot closes the tenant boundary
+# 5 - One server snapshot closes the tenant boundary
 
-The new auth_identity_snapshot RPC provides one server-side identity contract. It requires an authenticated auth.uid, an active profile, matching company context, a real company, a membership row, and a workspace. If any relationship is missing, the response is unauthorized rather than partially trusted. With no authenticated session, the function raises SQLSTATE 42501. This prevents browser-side joins from becoming the authorization source.
+We close the tenant boundary using a single server-side RPC instead of scattered browser queries. If any security gate fails, access is denied immediately. This gives us a robust, fail-closed perimeter before any dashboard code executes.
 
-# 6 — Effective permissions are evaluated in PostgreSQL
+# 6 - Live schema is present; history has drift
 
-Permission evaluation occurs inside PostgreSQL. Active workforce assignments must be valid for the current time window and linked to active roles. Active permissions can be reached through role grants or approved module-access paths. A time-valid Deny overrides an Allow for the same permission. Legacy profile role strings remain available for display compatibility but cannot silently elevate authorization.
+Our inventory confirms the live schema is fully populated. The main risk is historical drift in migration ledgers rather than missing tables. We inspect first and apply additive changes safely. So what does this mean for our migration strategy?
 
-# 7 — Frontend hydration now fails closed
+# 7 - Safe next sequence
 
-After Supabase restores a session, AuthProvider invokes the snapshot RPC. An authorized response enters AUTHORIZED and permits the protected surface to mount. An unauthorized response enters INCOMPLETE_IDENTITY, retains only the verified session and user, and blocks the secured shell. A real RPC or initialization failure enters AUTH_ERROR. This keeps incomplete tenant state out of the dashboard instead of treating a partial profile as sufficient.
+Our safe next sequence focuses strictly on measured progress. We will provision disposable test fixtures, run our remote Playwright suite, and tackle advisor warnings one by one. This additive approach ensures we keep the system stable without resorting to unsafe global rewrites.
 
-# 8 — Verification evidence is layered
+# 8 - Synchronization objective
 
-The database checks confirmed security-definer behavior, revoked anonymous execution, granted authenticated execution, and the expected unauthenticated 42501 failure. The focused authentication suite passed 3 files and 10 tests. The full Vitest suite passed 204 files and 835 tests with 5 skipped files, and the production build completed through the Vercel-compatible path. These results establish source, reducer, privilege, and build confidence, but do not substitute for fixture-backed deployed E2E.
+We aren't doing a blind replay of historical files. We match declared contracts against live catalogs to preserve data integrity and stability. Every step follows a strict evidence chain from repository to production. And here's why this matters for our platform integrity.
 
-# 9 — Advisor findings require targeted follow-up
+# 9 - Effective permissions are evaluated in PostgreSQL
 
-The advisor scan reported 117 security warnings and 855 performance findings. Security warnings include 110 authenticated security-definer calls, 6 anonymous calls, and one breached-password-protection setting. Performance findings include 632 unindexed foreign keys, 152 multiple-permissive-policy findings, 61 unused indexes, and 10 auth RLS init-plan warnings. These are remediation candidates, not a license for blanket changes. The separate 327-index inventory requires workload-based approval.
+Effective permissions are evaluated in PostgreSQL to guarantee consistent, server-side enforcement. We calculate active workforce roles and time-valid grant windows directly inside the database. And because security is fail-closed, active deny rules strictly override allow grants. Building on that server-side foundation, let us examine how the frontend consumes this data.
 
-# 10 — Safe next sequence
+# 10 - Verification evidence is layered
 
-The next safe sequence is to provision disposable users and isolated tenant fixtures in a non-production Supabase target, deploy an approved Vercel preview, and run the guarded remote Playwright suite. Then review anonymous RPCs individually, apply only measured index batches with CREATE INDEX CONCURRENTLY outside transaction wrappers, and reconcile historical migration drift deliberately. Production certification remains pending until those fixture-backed checks exist.
+Verification evidence is layered across privileges, contracts, and builds. We validate database security-definer settings, run focused vitest suites, and confirm that our production build succeeds cleanly. Real-user E2E and targeted advisor remediation remain pending deployment, but the local stack is sound. Moving forward, let us examine what our database advisors tell us about legacy configuration.
