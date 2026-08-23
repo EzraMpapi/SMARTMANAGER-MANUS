@@ -42,6 +42,25 @@ async function mockSupabasePreview(page: Page, identity: PreviewIdentity = OWNER
 
   await page.route("**/rest/v1/**", async (route) => {
     const url = route.request().url();
+    if (url.includes("/rpc/auth_identity_snapshot")) {
+      const authorized = Boolean(identity.profile && identity.company);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          authorized,
+          reason: authorized ? null : "PROFILE_MISSING",
+          profile: identity.profile,
+          company: identity.company,
+          membership: authorized ? { userId: identity.id, companyId: "preview-company-001", role: "owner" } : null,
+          workspace: authorized ? { id: "preview-workspace-001", companyId: "preview-company-001", name: "Preview Workspace" } : null,
+          role: authorized ? "owner" : null,
+          roles: [],
+          permissions: [],
+        }),
+      });
+      return;
+    }
     if (url.includes("/profiles")) {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(identity.profile ? [identity.profile] : []) });
       return;
