@@ -33,3 +33,5 @@ The verified CI rerun satisfies the repository validation prerequisite for a rel
 ## Specified Vercel Deployment
 
 The requested `https://menejajanja.vercel.com` address returned Vercel’s `DEPLOYMENT_NOT_FOUND` response at the root path. It therefore cannot currently serve the Global Admin experience or reach a protected application data path. No Vercel configuration, custom domain, deployment, user role, tenant data, or control-plane record was changed during this read-only availability check.
+
+The corrected `https://menejajanja.vercel.app` deployment serves both the public landing page and the `/app` sign-in route. An unauthenticated request to the protected `globalAdmin.snapshot` tRPC endpoint returned **401**, which confirms that the Vercel deployment reaches the protected server boundary and does not disclose Global Admin data before authentication. A real-role review remains pending because the current browser session is not signed in as a Platform Administrator.
