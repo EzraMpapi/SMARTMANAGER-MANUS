@@ -1,5 +1,5 @@
 -- REVIEW-ONLY GENERATED ARTIFACT: not applied automatically.
--- Snapshot: 2026-08-23T18:23:11.061Z
+-- Snapshot: 2026-08-23T19:55:42.090Z
 -- Catalog: 1097 foreign keys; 640 uncovered; 457 covered.
 -- This migration contains only the bounded P0 populated/hot subset (5 indexes), not all uncovered relationships.
 -- Safety: no DROP INDEX, no foreign-key/RLS/grant changes, no CONCURRENTLY inside this transaction-managed migration.

@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const DEFAULT_AUDIT = "/tmp/supabase-complete-constraint-fk-audit.json";
-export const DEFAULT_ADVISOR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "fk-index-advisor-targets-20260823.txt");
+export const DEFAULT_ADVISOR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "fk-index-advisor-current-20260823.txt");
 export const DEFAULT_OUT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../generated");
 export const HOT_TABLES = new Set(["workforce_role_permissions", "workforce_permissions"]);
 export const TRANSACTION_PREFIXES = new Set(["pos", "fin", "money", "workforce", "restaurant", "hospitality", "fleet", "community", "bank", "sales", "billing"]);
@@ -132,7 +132,7 @@ export function buildManifest(rows, audit, advisorCount) {
       tenantLeadingUncovered: audit.tenantLeadingForeignKeyCount,
       compositeUncovered: audit.compositeForeignKeyCount,
     },
-    advisorSnapshot: { allowlistEntries: advisorCount, note: "Earlier advisor snapshot; it is a cross-check, not a substitute for the newer catalog audit." },
+    advisorSnapshot: { allowlistEntries: advisorCount, note: "Current Supabase performance-advisor snapshot; it is a prioritization cross-check, not a substitute for the catalog audit." },
     tierCounts: counts,
     rows,
   };
@@ -147,7 +147,7 @@ export function buildMarkdown(manifest) {
     "",
     `The latest read-only catalog snapshot contains **${auditCounts.foreignKeys} validated foreign keys**. Of these, **${auditCounts.uncovered}** lack a valid non-partial leading-column index and **${auditCounts.covered}** have valid leading-column coverage. The audit also reports ${auditCounts.companyLeadingUncovered} company-leading, ${auditCounts.tenantLeadingUncovered} tenant-leading, and ${auditCounts.compositeUncovered} composite uncovered relationships.`,
     "",
-    `The earlier advisor allowlist contains ${advisorSnapshot.allowlistEntries} entries and overlaps the current uncovered catalog for the advisor-confirmed rows. These are different snapshots: the current plan is driven by the newer catalog artifact, while the advisor flag is used only for prioritization.`,
+    `The current Supabase performance-advisor snapshot contains ${advisorSnapshot.allowlistEntries} unindexed-FK notices. The older repository allowlist contained 622 entries; that historical count is retained only for comparison. The current plan is driven by the catalog artifact, while the advisor flag is used only for prioritization.`,
     "",
     "## Priority policy",
     "",

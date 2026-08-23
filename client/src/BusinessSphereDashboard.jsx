@@ -66,6 +66,7 @@ import { BankingMfiCommandCenter, CommunityCommandCenter, MicrofinanceCommandCen
 import { FleetCommandCenter, HealthcareCommandCenter, HotelCommandCenter, PharmacyCommandCenter, RestaurantCommandCenter, SchoolCommandCenter } from "./components/VerticalCommandCenters";
 import { AiBusinessSignals, SupportCommandCenter } from "./components/IntelligenceCommandCenters";
 import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
+import { GlobalAdminControlCenter } from "./components/GlobalAdminControlCenter";
 import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
@@ -3218,7 +3219,7 @@ const ROLES = [
   {
     id: "Super Administrator", category: "System",
     description: "Full system control, including company settings, module entitlements, and every integration credential.",
-    allowedModules: ALL_MODULE_IDS, primaryModules: ALL_MODULE_IDS, writeAccess: "full",
+    allowedModules: [...ALL_MODULE_IDS, "global-admin"], primaryModules: [...ALL_MODULE_IDS, "global-admin"], writeAccess: "full",
   },
   {
     id: "Organization Owner", category: "Executive",
@@ -3500,6 +3501,7 @@ const MODULES = [
   { id: "restaurant",     label: "Restaurant & F&B",   icon: UtensilsCrossed, live: true },
   { id: "employee-portal",label: "Employee Portal",     icon: UserCircle,      live: true },
   { id: "presentation",   label: "Presentation Progress", icon: FileText,      live: true },
+  { id: "global-admin",   label: "Global Admin Control Center", icon: ShieldCheck, live: true },
 ];
 
 const STAGES = ["New", "Qualified", "Proposal", "Negotiation", "Won"];
@@ -43078,7 +43080,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [joinCode, setJoinCode] = useState("");
   const [joinRole, setJoinRole] = useState(() => onboardingProgress?.joinRole || "Employee");
   const [customerRef, setCustomerRef] = useState(() => onboardingProgress?.customerRef || "");
-  const [preferredPlanCode, setPreferredPlanCode] = useState("FREE_15");
+  const [preferredPlanCode, setPreferredPlanCode] = useState(() => onboardingProgress?.preferredPlanCode || "TWIGA");
   const [onboardingPlans, setOnboardingPlans] = useState([]);
   const [onboardingPlanError, setOnboardingPlanError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -43127,7 +43129,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     setJoinCode("");
     setJoinRole("Employee");
     setCustomerRef("");
-    setPreferredPlanCode("FREE_15");
+    setPreferredPlanCode("TWIGA");
     setOnboardingPlans([]);
     setOnboardingPlanError("");
     setShowPassword(false);
@@ -43218,8 +43220,8 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       // if this second call fails, the account and company both still
       // exist correctly, just without these details filled in yet.
       let workspaceWarning = null;
-      let freePlanWarning = null;
-      let freePlanDetails = null;
+      let trialWarning = null;
+      let trialDetails = null;
       if (mode === "create" && rpcResult?.id) {
         try {
           await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale, timezone: company.timezone }).run();
@@ -43232,11 +43234,11 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       }
       if (mode === "create" && rpcResult?.id) {
         try {
-          const freePlanRpc = await callWorkspaceRpcWithSessionRefresh("billing_start_free_plan", { p_plan_code: "FREE_15" }, workspaceRpc.accessToken);
-          freePlanDetails = freePlanRpc.data?.subscription || null;
-        } catch (freePlanError) {
-          freePlanWarning = "Your workspace was created, but Free access could not be confirmed yet. Sign in and open Subscription & Billing from the account menu to retry safely.";
-          authDebug("Free plan activation failed after workspace creation", { message: freePlanError?.message || "unknown" });
+          const trialRpc = await callWorkspaceRpcWithSessionRefresh("billing_start_trial", { p_plan_code: preferredPlanCode || "TWIGA" }, workspaceRpc.accessToken);
+          trialDetails = trialRpc.data?.subscription || null;
+        } catch (trialError) {
+          trialWarning = "Your workspace was created, but its free trial could not be confirmed yet. Sign in and open Subscription & Billing from the account menu to retry safely.";
+          authDebug("Trial activation failed after workspace creation", { message: trialError?.message || "unknown" });
         }
       }
       let brandingWarning = null;
@@ -43257,7 +43259,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       authDebug("Workspace setup confirmed", { mode, companyId: rpcResult.id });
       clearStoredAuthSession();
       clearOnboardingProgress();
-      setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning, freePlanWarning, freePlanDetails, passkeySession: { accessToken: workspaceRpc.accessToken, refreshToken: workspaceRpc.refreshToken } });
+      setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning, trialWarning, trialDetails, passkeySession: { accessToken: workspaceRpc.accessToken, refreshToken: workspaceRpc.refreshToken } });
     } catch (err) {
       if (isTerminalWorkspaceSessionError(err)) clearStoredAuthSession();
       setError(accountCreated ? workspaceJoinErrorMessage(err, "Your account was created, but workspace setup could not complete. Please sign in to continue setup.") : workspaceJoinErrorMessage(err, "Couldn't complete sign up. Please try again."));
@@ -43364,7 +43366,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <button type="submit" disabled={!step2Valid} className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>Continue to modules →</button>
               </form>
             ) : (
-              <div className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to company details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Choose your starting modules</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Enable the workflows you need first. You can change these later.</p></div></div><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">{ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" onClick={() => toggleModule(module.id)} className={`flex items-start gap-2 rounded-xl border p-3 text-left transition ${activeModule ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14} /></span><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{module.label}</span><span className="mt-0.5 block text-[10px]">{activeModule ? "Enabled" : "Not enabled"}</span></span>{activeModule && <Check size={12} className="ml-auto shrink-0" />}</button>; })}</div><p className="text-[11.5px] leading-5 text-slate-500">Module choices are saved to your workspace and can be changed by authorised administrators later.</p><section className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-emerald-700">FREE PLAN — 15 DAYS</p><h4 className="mt-1 text-[15px] font-bold text-emerald-950">🎉 Karibu SMART MANAGER</h4><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">FREE kwa siku 15. Hakuna malipo yanayohitajika sasa.</p><label className="mt-3 block text-[11px] font-semibold text-emerald-950">Free package<select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-1.5 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-[12px] font-semibold text-slate-800">{onboardingPlans.length ? onboardingPlans.filter((plan) => plan.code === "FREE_15").map((plan) => <option key={plan.code} value={plan.code}>{plan.name} — TZS 0 · 15 DAYS</option>) : <option value="FREE_15">FREE — TZS 0 · 15 DAYS</option>}</select></label>{onboardingPlanError && <p className="mt-2 text-[10.5px] text-amber-700">{onboardingPlanError}</p>}<p className="mt-2 text-[10.5px] leading-4 text-emerald-800">Free access inaanza baada ya kampuni kusajiliwa. Data yako itahifadhiwa hata muda wa Free ukiisha.</p></section><button type="button" onClick={handleFinalSubmit} disabled={busy || !step2Valid} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Launch Smart Manager →"}</button></div>
+              <div className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to company details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Choose your starting modules</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Enable the workflows you need first. You can change these later.</p></div></div><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">{ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" onClick={() => toggleModule(module.id)} className={`flex items-start gap-2 rounded-xl border p-3 text-left transition ${activeModule ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14} /></span><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{module.label}</span><span className="mt-0.5 block text-[10px]">{activeModule ? "Enabled" : "Not enabled"}</span></span>{activeModule && <Check size={12} className="ml-auto shrink-0" />}</button>; })}</div><p className="text-[11.5px] leading-5 text-slate-500">Module choices are saved to your workspace and can be changed by authorised administrators later.</p><section className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-emerald-700">30-Day Free Trial</p><h4 className="mt-1 text-[15px] font-bold text-emerald-950">🎉 Karibu SMART MANAGER</h4><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">Anza na siku 30 BURE. Hakuna malipo yanayohitajika sasa; chagua kifurushi unachopendelea.</p><label className="mt-3 block text-[11px] font-semibold text-emerald-950">Preferred package<select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-1.5 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-[12px] font-semibold text-slate-800">{onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.category === "Football" ? "⚽ " : ""}{plan.name} — TZS {Number(plan.monthlyPrice || 0).toLocaleString()} / mwezi</option>) : <option value="TWIGA">TWIGA — 30 DAYS FREE TRIAL</option>}</select></label>{onboardingPlanError && <p className="mt-2 text-[10.5px] text-amber-700">{onboardingPlanError}</p>}<p className="mt-2 text-[10.5px] leading-4 text-emerald-800">Trial yako inaanza baada ya kampuni kusajiliwa. Data yako itahifadhiwa hata trial ikiisha.</p></section><button type="button" onClick={handleFinalSubmit} disabled={busy || !step2Valid} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Launch Smart Manager →"}</button></div>
             )}
           </div>
 
@@ -43395,7 +43397,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [joinCode, setJoinCode] = useState("");
   const [joinRole, setJoinRole] = useState("Employee");
   const [customerRef, setCustomerRef] = useState("");
-  const [preferredPlanCode, setPreferredPlanCode] = useState("FREE_15");
+  const [preferredPlanCode, setPreferredPlanCode] = useState("TWIGA");
   const [onboardingPlans, setOnboardingPlans] = useState([]);
 
   useEffect(() => {
@@ -43449,12 +43451,12 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
           await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
         } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
       }
-      let freePlanWarning = null;
+      let trialWarning = null;
       if (mode === "create" && rpcResult?.id) {
         try {
-          await callWorkspaceRpcWithSessionRefresh("billing_start_free_plan", { p_plan_code: "FREE_15" }, workspaceRpc.accessToken);
-        } catch (_freePlanError) {
-          freePlanWarning = "Your workspace is ready, but Free access could not be confirmed yet. Open Subscription & Billing from the account menu after sign-in to retry safely.";
+          await callWorkspaceRpcWithSessionRefresh("billing_start_trial", { p_plan_code: preferredPlanCode || "TWIGA" }, workspaceRpc.accessToken);
+        } catch (_trialError) {
+          trialWarning = "Your workspace is ready, but the free trial could not be confirmed yet. Open Subscription & Billing from the account menu after sign-in to retry safely.";
         }
       }
 
@@ -43464,7 +43466,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         customerRef: isPortalRole ? customerRef.trim() : null,
         company: { id: rpcResult.id, name: rpcResult.name || company.name.trim(), category: company.category, industry: company.category, country: company.country, currency: company.currency, timezone: company.timezone, businessScale },
         workspaceCreated: mode === "create",
-        freePlanWarning,
+        trialWarning,
       });
     } catch (err) {
       setError(workspaceJoinErrorMessage(err, "Couldn't complete setup. Please try again."));
@@ -43552,10 +43554,10 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
                 <input className={inputClass} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="e.g. Kariakoo Branch — defaults to Head Office" />
               </FormField>
               <section className="rounded-xl border border-emerald-100 bg-emerald-50 p-3.5">
-                <p className="text-[10px] font-bold uppercase tracking-[.13em] text-emerald-700">FREE PLAN — 15 DAYS</p>
-                <p className="mt-1 text-[12px] font-semibold text-emerald-950">FREE kwa siku 15 — no payment is required today.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[.13em] text-emerald-700">30-Day Free Trial</p>
+                <p className="mt-1 text-[12px] font-semibold text-emerald-950">Anza na siku 30 BURE — no payment is required today.</p>
                 <select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-2 w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-800">
-                  {onboardingPlans.length ? onboardingPlans.filter((plan) => plan.code === "FREE_15").map((plan) => <option key={plan.code} value={plan.code}>{plan.name} — TZS 0 · 15 DAYS</option>) : <option value="FREE_15">FREE — TZS 0 · 15 DAYS</option>}
+                  {onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.category === "Football" ? "⚽ " : ""}{plan.name} — TZS {Number(plan.monthlyPrice || 0).toLocaleString()} / mwezi</option>) : <option value="TWIGA">TWIGA — 30 DAYS FREE TRIAL</option>}
                 </select>
               </section>
             </div>
@@ -47494,7 +47496,7 @@ function SmartManager() {
     return <ExternalSupplierPortal currentUser={currentUser} onSignOut={handleSignOut} />;
   }
 
-  const subscriptionEscapeDestination = new Set(["profile", "support", "notifications", "settings"]);
+  const subscriptionEscapeDestination = new Set(["profile", "support", "notifications", "settings", "global-admin"]);
   const canUseSubscriptionEscape = subscriptionEscapeDestination.has(active) || (active === "billing" && canManageBilling);
   if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && !subscriptionAccess.ready && !canUseSubscriptionEscape) {
     return <SubscriptionAccessBoundary access={subscriptionAccess.access} loading={subscriptionAccess.loading || subscriptionAccess.status === "idle"} error={subscriptionAccess.error} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
@@ -47786,6 +47788,7 @@ function SmartManager() {
           {active === "crm" && <CRM crm={crm} invoices={invoices} expenses={expenses} suppliers={suppliers} />}
           {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} crm={crm} currentUser={currentUser} intent={intent} clearIntent={clearIntent} />}
           {active === "billing" && canManageBilling && <SubscriptionBillingWorkspace accessToken={session?.accessToken || getStoredAccessToken()} company={company} onBack={() => go("dashboard")} />}
+          {active === "global-admin" && <GlobalAdminControlCenter />}
           {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
@@ -47889,7 +47892,7 @@ function SmartManager() {
               accountSession={session?.demo ? null : session}
             />
           )}
-          {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "activity", "profile"].includes(active) && (
+          {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "global-admin", "activity", "profile"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
           )}
         </main>
