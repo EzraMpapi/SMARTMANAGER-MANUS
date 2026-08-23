@@ -16,6 +16,11 @@ describe("operations command-center contracts", () => {
     for (const source of ["finance_expenses", "inventory_items", "inventory_suppliers"]) expect(workspace).toContain(source);
   });
 
+  it("covers the Warehouse turnover and fulfillment companion widget", () => {
+    for (const text of ["Warehouse turnover and fulfillment widget", "Warehouse throughput pulse", "Stock turnover and fulfillment latency", "60-day stock movement", "Days of cover", "Fastest mover", "Fulfillment latency", "Planned cycle", "Overdue work", "No confirmed fulfilled-at timestamps", "not a financial inventory-turn calculation"]) expect(workspace).toContain(text);
+    for (const source of ["sales_invoices", "inventory_items", "manufacturing_work_orders"]) expect(workspace).toContain(source);
+  });
+
   it("covers the dedicated Warehouse Manager control tower", () => {
     for (const text of ["Warehouse Manager command center", "Warehouse operations control tower", "Stock, work orders, and operational throughput", "Warehouse workload", "Warehouse action queue", "Supplier and POS coverage", "Open work orders", "Completed POS sales"]) expect(workspace).toContain(text);
     for (const source of ["manufacturing_work_orders", "inventory_items", "inventory_suppliers", "pos_transactions"]) expect(workspace).toContain(source);
@@ -29,7 +34,7 @@ describe("operations command-center contracts", () => {
   it("keeps operations roles routed to distinct command centers", () => {
     expect(dashboard).toContain('const isProcurementOfficer = currentRole.id === "Procurement Officer"');
     expect(dashboard).toContain('<ProcurementCommandCenter inventory={inventory} suppliers={suppliers} expenses={expenses} onNavigate={onNavigate} />');
-    expect(dashboard).toContain('<WarehouseCommandCenter inventory={inventory} suppliers={suppliers} workOrders={workOrders} posTransactions={posTransactions} onNavigate={onNavigate} />');
+    expect(dashboard).toContain('<WarehouseCommandCenter inventory={inventory} suppliers={suppliers} invoices={invoices} workOrders={workOrders} posTransactions={posTransactions} onNavigate={onNavigate} />');
   });
 
   it("keeps all four centers wired through existing module routes", () => {

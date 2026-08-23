@@ -6414,7 +6414,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         {isProcurementOfficer ? (
           <ProcurementCommandCenter inventory={inventory} suppliers={suppliers} expenses={expenses} onNavigate={onNavigate} />
         ) : (
-          <WarehouseCommandCenter inventory={inventory} suppliers={suppliers} workOrders={workOrders} posTransactions={posTransactions} onNavigate={onNavigate} />
+          <WarehouseCommandCenter inventory={inventory} suppliers={suppliers} invoices={invoices} workOrders={workOrders} posTransactions={posTransactions} onNavigate={onNavigate} />
         )}
         {sidePanels}
       </div>
