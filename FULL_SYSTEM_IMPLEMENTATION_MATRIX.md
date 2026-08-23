@@ -84,3 +84,19 @@
 The repository has strong source-level and automated coverage for the authentication shell, shared bearer-token boundary, role/tenant boundaries, settings persistence, dashboard integration, Money Agent, Property Management, backup-status truthfulness, and the existing critical module contracts. The matrix deliberately does not mark the entire ERP as production-complete merely because the application compiles. The remaining work is chiefly controlled live migration/provider activation and broader authenticated, data-backed CRUD walkthroughs for legacy modules.
 
 The next safe engineering step is to continue module-by-module with isolated authenticated browser journeys and settings/organization verification. Live provider calls, migration application, and production deployment verification must remain separately authorized operations.
+
+## Profile Identity Center — 2026-08-23
+
+| Capability | Status | Evidence and boundary |
+|---|---|---|
+| Premium responsive account popover | Implemented | `client/src/components/ProfileIdentityCenter.jsx`, integrated into the dashboard header while preserving search, theme, notifications, navigation, and mobile behavior |
+| Dedicated My Profile experience | Implemented | Shell-level `profile` route with Overview, Personal, Work, Security, Preferences, and Activity sections |
+| Verified profile read and self-only update contract | Source-ready / pending controlled migration | `server/profileIdentity.ts`, `profileIdentity` tRPC procedures, and `20260823_045_profile_identity_center.sql`; protected fields cannot be changed by the user |
+| Avatar upload, preview, persistence, and removal | Source-ready / pending controlled migration and storage verification | Server magic-byte validation, 2 MB limit, `storagePut`, scoped key, avatar-reference RPC, and confirmed refresh; no browser localStorage source of truth |
+| Work identity and HR linkage | Implemented with truthful empty state | Reads only tenant-scoped `hr_employees` linkage; does not infer branch, manager, title, or employee number |
+| Security, notifications, preferences, and activity actions | Implemented / explicit limitations | Routes to existing security/settings/notifications surfaces; only server-returned activity is shown; device/session listing and workspace switching are explicitly unavailable |
+| Focused profile tests | Passed | 7 service tests plus 4 source-contract tests |
+| Full validation | Passed | Frozen install, production audit, TypeScript, 779 Vitest tests with 13 skips, and 21 isolated Playwright tests |
+| Live migration or deployment | Controlled / not executed | Requires authorized migration review, schema verification, tenant staging persistence test, storage confirmation, and deployment approval |
+
+The profile implementation is not represented as live-complete until the controlled migration is applied and verified against the intended Supabase project. The source-ready contract is deliberately fail-closed before that point.

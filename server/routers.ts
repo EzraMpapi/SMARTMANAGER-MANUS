@@ -44,6 +44,7 @@ import { getPropertySnapshot, propertyActionInput, propertyDocumentUploadInput, 
 import { adjustPharmacyStock, archivePharmacyRecord, completePharmacySale, createPharmacyBrand, createPharmacyCategory, createPharmacyInsuranceClaim, createPharmacyMedicine, createPharmacyPurchaseOrder, createPharmacySupplier, createPharmacyTransfer, dispensePharmacyPrescription, getPharmacyAccess, getPharmacyClinicalQueue, getPharmacyDashboard, getPharmacyReports, listPharmacyAudit, listPharmacyRecords, markPharmacyNotificationRead, pharmacyAdjustmentInput, pharmacyArchiveInput, pharmacyBrandInput, pharmacyBrandUpdateInput, pharmacyCategoryInput, pharmacyCategoryUpdateInput, pharmacyClinicalQueueInput, pharmacyDispenseInput, pharmacyInsuranceClaimInput, pharmacyListInput, pharmacyMedicineInput, pharmacyMedicineUpdateInput, pharmacyNotificationInput, pharmacyPaymentInput, pharmacyPurchaseOrderInput, pharmacyReceiptInput, pharmacyReturnInput, pharmacySaleInput, pharmacySupplierInput, pharmacySupplierPaymentInput, pharmacySupplierUpdateInput, pharmacyTransferInput, receivePharmacyStock, recordPharmacySalePayment, recordPharmacySupplierPayment, returnPharmacySaleItems, updatePharmacyBrand, updatePharmacyCategory, updatePharmacyMedicine, updatePharmacySupplier } from "./pharmacyOperations";
 import { archiveSchoolRecord, assignSchoolService, createSchoolAcademicYear, createSchoolAdmission, createSchoolAnnouncement, createSchoolAssignment, createSchoolAssessment, createSchoolClass, createSchoolDepartment, createSchoolDisciplineRecord, createSchoolDocument, createSchoolFeeStructure, createSchoolGradingScale, createSchoolLibraryLoan, createSchoolServiceRecord, createSchoolStream, createSchoolSubject, createSchoolTeacher, createSchoolTeacherAssignment, createSchoolTerm, createSchoolTimetable, decideSchoolAdmission, decideSchoolApproval, decideSchoolScholarship, getSchoolAccess, getSchoolDashboard, getSchoolPortal, getSchoolReports, issueSchoolFeeInvoice, linkSchoolPortal, listSchoolAudit, listSchoolRecords, markSchoolNotificationRead, openSchoolAttendanceSession, publishSchoolReportCard, recordSchoolAssessmentScores, recordSchoolAttendance, recordSchoolInventoryMovement, recordSchoolPayment, requestSchoolApproval, requestSchoolScholarship, schoolAcademicYearInput, schoolAdmissionDecisionInput, schoolAdmissionInput, schoolAnnouncementInput, schoolApprovalDecisionInput, schoolApprovalRequestInput, schoolArchiveInput, schoolAssignmentInput, schoolAssignmentSubmissionInput, schoolAssessmentInput, schoolAttendanceInput, schoolAttendanceSessionInput, schoolClassInput, schoolDepartmentInput, schoolDisciplineInput, schoolDocumentInput, schoolDocumentUploadInput, schoolFeeStructureInput, schoolGradingScaleInput, schoolIdInput, schoolInventoryMovementInput, schoolInvoiceInput, schoolLibraryLoanInput, schoolListInput, schoolMessageInput, schoolPaymentInput, schoolPortalLinkInput, schoolReportCardInput, schoolScoreInput, schoolScholarshipDecisionInput, schoolScholarshipInput, schoolServiceAssignmentInput, schoolServiceInput, schoolStreamInput, schoolSubjectInput, schoolTeacherAssignmentInput, schoolTeacherInput, schoolTermInput, schoolTimetableInput, sendSchoolMessage, submitSchoolAssignment, uploadSchoolDocument } from "./schoolOperations";
 import { addBeneficiary, addCollateral, addGroupMember, addGuarantor, createAmlAlert, createGroup, createLoanProduct, createPaymentInstruction, createReconciliation, createStandingOrder, createAccountType as createBankAccountType, customerStatement, decideLoanApplication, disburseLoan, listBankMfiSnapshot, moveCash, recordSharePurchase, runStandingOrders, scoreLoanApplication, openAccount, postTransaction, recordRepayment, registerCustomer, resolveAmlAlert, restructureLoan, runDailyControls, setupInstitution, submitLoanApplication, updateKyc, writeOffLoan } from "./bankMfiOperations";
+import { getProfileIdentity, removeProfileAvatar, updateProfileIdentity, uploadProfileAvatar } from "./profileIdentity";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -859,6 +860,33 @@ export const appRouter = router({
       attachmentCount: z.number().int().min(0).max(100),
     })).mutation(({ ctx, input }) => dispatchEmailTemplateWorkflowEvent(ctx.req, input)),
     test: protectedProcedure.mutation(({ ctx }) => testEmailTemplateWorkflowWebhook(ctx.req)),
+  }),
+
+  profileIdentity: router({
+    get: protectedProcedure.query(({ ctx }) => getProfileIdentity(ctx.req)),
+    update: protectedProcedure.input(z.object({
+      preferredName: z.string().trim().max(120).nullable().optional(),
+      firstName: z.string().trim().max(120).nullable().optional(),
+      middleName: z.string().trim().max(120).nullable().optional(),
+      lastName: z.string().trim().max(120).nullable().optional(),
+      fullName: z.string().trim().min(1).max(240).nullable().optional(),
+      dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      gender: z.string().trim().max(40).nullable().optional(),
+      phone: z.string().trim().max(40).regex(/^[+()\d\s.-]*$/).nullable().optional(),
+      address: z.string().trim().max(500).nullable().optional(),
+      country: z.string().trim().max(80).nullable().optional(),
+      preferredLanguage: z.string().trim().max(12).nullable().optional(),
+      currencyDisplay: z.string().trim().length(3).toUpperCase().nullable().optional(),
+      timezone: z.string().trim().max(100).nullable().optional(),
+      dateFormat: z.enum(["dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd"]).nullable().optional(),
+      theme: z.enum(["system", "light", "dark"]).nullable().optional(),
+      notificationPreferences: z.object({ email: z.boolean().optional(), push: z.boolean().optional(), sms: z.boolean().optional() }).strict().nullable().optional(),
+    }).strict()).mutation(({ ctx, input }) => updateProfileIdentity(ctx.req, input)),
+    uploadAvatar: protectedProcedure.input(z.object({
+      mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+      base64: z.string().min(1).max(2_800_000),
+    }).strict()).mutation(({ ctx, input }) => uploadProfileAvatar(ctx.req, input)),
+    removeAvatar: protectedProcedure.mutation(({ ctx }) => removeProfileAvatar(ctx.req)),
   }),
 
   workspaceSettings: router({

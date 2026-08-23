@@ -47,7 +47,7 @@ test("loads the Property Management workspace and submits a guarded portfolio fo
   const skipTour = tour.locator("button").filter({ hasText: "Skip tour" });
   if (await skipTour.count()) await skipTour.evaluate((node) => (node as HTMLButtonElement).click());
   if (await tour.count()) await expect(tour).toHaveCount(0);
-  const closeMenu = page.getByRole("button", { name: "Close menu" }); if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
+  const closeMenu = page.locator('button[aria-label="Close menu"]:visible'); if (await closeMenu.count()) await closeMenu.click({ force: true });
   const openMenu = page.getByRole("button", { name: "Open menu" }); if (await openMenu.isVisible().catch(() => false)) await openMenu.click();
   const propertyNavigation = page.locator("aside nav button").filter({ hasText: "Property Management" });
   await expect(propertyNavigation).toHaveCount(1);

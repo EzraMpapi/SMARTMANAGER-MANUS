@@ -62,6 +62,7 @@ import { BankingMfiCommandCenter, CommunityCommandCenter, MicrofinanceCommandCen
 import { FleetCommandCenter, HealthcareCommandCenter, HotelCommandCenter, PharmacyCommandCenter, RestaurantCommandCenter, SchoolCommandCenter } from "./components/VerticalCommandCenters";
 import { AiBusinessSignals, SupportCommandCenter } from "./components/IntelligenceCommandCenters";
 import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
+import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -52140,7 +52141,7 @@ function SmartManager() {
   // the first module that role can actually see — never leave a
   // now-restricted screen rendered just because nothing told it to change.
   useEffect(() => {
-    if (active === "settings") return; // settings has its own internal gating, always reachable
+    if (active === "settings" || active === "profile") return; // identity/settings are shell-level destinations
     if (!visibleModules.some((m) => m.id === active)) {
       setActive(visibleModules[0]?.id || "dashboard");
     }
@@ -52494,7 +52495,7 @@ function SmartManager() {
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
                         <NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
-            <ProfileMenu currentUser={currentUser} session={session} company={company} onSignOut={handleSignOut} />
+            <PremiumProfileMenu currentUser={currentUser} session={session} company={company} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
           </div>
         </header>
 
@@ -52633,6 +52634,7 @@ function SmartManager() {
             />
           )}
           {active === "presentation" && <PresentationProgressView />}
+          {active === "profile" && <ProfileIdentityPage currentUser={currentUser} session={session} company={company} onNavigate={go} onSignOut={handleSignOut} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} onThemeChange={(theme) => { if (theme === "dark") setDarkMode(true); if (theme === "light") setDarkMode(false); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} initialTab={intent?.module === "profile" ? intent.profileTab : "overview"} />}
           {active === "settings" && (
             <SettingsPage
               company={company}
@@ -52654,7 +52656,7 @@ function SmartManager() {
               accountSession={session?.demo ? null : session}
             />
           )}
-          {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "activity"].includes(active) && (
+          {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "activity", "profile"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
           )}
         </main>
