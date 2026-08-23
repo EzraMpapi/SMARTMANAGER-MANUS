@@ -104,7 +104,13 @@ test.describe("operations role command-center widgets", () => {
     await expect(procurementWidget.getByText("1 replenishment signal require review", { exact: true })).toBeVisible();
     await expect(procurementWidget.getByText("Out of stock", { exact: true })).toBeVisible();
     await expect(procurementWidget.getByText("Live source snapshot", { exact: true })).toBeVisible();
+    await expect(procurementWidget).toHaveScreenshot("procurement-widget-desktop.png", { animations: "disabled", caret: "hide", scale: "css" });
 
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(procurementWidget).toBeVisible();
+    await expect(procurementWidget).toHaveScreenshot("procurement-widget-mobile.png", { animations: "disabled", caret: "hide", scale: "css" });
+
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.getByRole("button", { name: "Open replenishment queue" }).click();
     await expect(page.getByRole("heading", { name: "Inventory" })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("procurement-widget-drilldown.png"), fullPage: true });
@@ -121,10 +127,13 @@ test.describe("operations role command-center widgets", () => {
     await expect(page.getByText("25 units sold against 90 units on hand", { exact: true })).toBeVisible();
     await expect(page.getByText("Insufficient", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("1 open work order past the confirmed due date", { exact: true })).toBeVisible();
+    const warehouseWidget = page.getByRole("region", { name: "Warehouse turnover and fulfillment widget" });
+    await expect(warehouseWidget).toHaveScreenshot("warehouse-widget-desktop.png", { animations: "disabled", caret: "hide", scale: "css" });
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.getByRole("region", { name: "Warehouse turnover and fulfillment widget" })).toBeVisible();
+    await expect(warehouseWidget).toBeVisible();
     await expect(page.getByRole("button", { name: "Review fulfillment work" })).toBeVisible();
+    await expect(warehouseWidget).toHaveScreenshot("warehouse-widget-mobile.png", { animations: "disabled", caret: "hide", scale: "css" });
     await page.getByRole("button", { name: "Review fulfillment work" }).click();
     await expect(page.getByRole("heading", { name: "Manufacturing" })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("warehouse-widget-mobile.png"), fullPage: true });
