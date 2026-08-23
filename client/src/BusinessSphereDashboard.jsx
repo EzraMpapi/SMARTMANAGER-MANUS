@@ -12,7 +12,7 @@ import {
   ShoppingBag, Minus, Receipt, Banknote, Smartphone, ArrowUpDown, Repeat,
   UserPlus, CalendarCheck, Stethoscope, ScanLine, Pill, FlaskConical, Edit2, Edit3, Heart, Award, GraduationCap, HeartHandshake, Layers, ClipboardCheck,
   Cog, ShieldCheck, Wrench, Kanban, Flag, ListTodo,
-  Headphones, Ticket, MessageCircle, BookOpen, PhoneCall, LoaderCircle, Gauge,
+  Headphones, Ticket, MessageCircle, CircleHelp, BookOpen, PhoneCall, LoaderCircle, Gauge,
   Hash, Video, Mic, PenTool, QrCode, MapPin, EyeOff, User, UserCircle, ArrowRight, LogOut,
   Target, Crosshair, GitBranch, Circle, ScanText, History, Calendar, ChevronLeft, Sparkles, Zap, HeartPulse, HardHat, Fingerprint, Activity, FolderKanban, Clock3
 , PiggyBank, HandCoins, Users2, Coins, BookHeart, TreePine, Scale, CircleUserRound, BadgeDollarSign, Shield, ArrowRightLeft,
