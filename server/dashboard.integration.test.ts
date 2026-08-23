@@ -11,6 +11,7 @@ const jsonResponse = (body: unknown, status = 200) => ({
 
 afterEach(() => {
   setGuardedPersistenceCompanyId(null);
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -468,6 +469,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("retries a transient network failure once and emits a reconnect-success toast", async () => {
+    vi.useFakeTimers();
     const fetchMock = vi.fn()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValueOnce(jsonResponse([{ id: "lead-1" }]));
@@ -477,7 +479,9 @@ describe("BusinessSphere launch and live-data integration", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     try {
-      const result = await runCompanyTableQuery("crm_leads");
+      const query = runCompanyTableQuery("crm_leads");
+      await vi.runAllTimersAsync();
+      const result = await query;
       expect(result.rows).toEqual([{ id: "lead-1" }]);
       expect(result.recoveredAfterRetry).toBe(true);
     } finally {
@@ -591,10 +595,13 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("handles runCompanyTableMutation transient retry and missing table errors", async () => {
+    vi.useFakeTimers();
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ message: "Network gateway timeout" }, 502)).mockResolvedValueOnce(jsonResponse({ id: "loan-uuid-99" }, 201));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await runCompanyTableMutation("business_loans", "insert", { lender: "CRDB Bank", principal: 2000000 });
+    const mutation = runCompanyTableMutation("business_loans", "insert", { lender: "CRDB Bank", principal: 2000000 });
+    await vi.runAllTimersAsync();
+    const result = await mutation;
     expect(result.error).toBeNull();
     expect(result.data).toMatchObject({ id: "loan-uuid-99" });
     expect(fetchMock).toHaveBeenCalledTimes(2);
