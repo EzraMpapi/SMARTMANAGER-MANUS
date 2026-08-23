@@ -343,7 +343,7 @@
 - [x] Register the merged protected Global Admin tRPC procedures in the application router, preserve its authorization boundaries, and make its focused contract tests pass. Verified with the focused Global Admin and managed-logo suites (6 tests) plus TypeScript.
 
 ## Post-Publication Global Admin and Release Readiness
-- [ ] Review the Global Admin control center against the current Platform Administrator authorization boundary without changing roles, user data, or tenant data.
+- [ ] Complete the final read-only Global Admin control-center snapshot review with a verified Platform Administrator session. The authenticated Vercel tenant-owner session correctly remained outside this boundary and did not expose the control center.
 - [x] Verify or run the available full validation workflow in CI and record its outcome without changing the CI runner configuration. The user-approved GitHub-hosted full quality-gate rerun passed, including the production build and Browser Signup Journey.
 - [x] Document release-tag readiness and retain the release tag until explicit stakeholder acceptance is provided. No release tag has been created.
 
