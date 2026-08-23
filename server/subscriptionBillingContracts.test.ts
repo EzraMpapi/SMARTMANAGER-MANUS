@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const root = process.cwd();
 const read = (relativePath: string) => fs.readFileSync(path.join(root, relativePath), "utf8");
@@ -10,7 +11,7 @@ const service = read("server/subscriptionBilling.ts");
 const server = read("server/_core/apiApp.ts");
 const workspace = read("client/src/components/SubscriptionBillingWorkspace.jsx");
 const environment = read("server/_core/env.ts");
-const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+const dashboard = [dashboardSource, workspace].join("\n");
 
 const activeRuntimeSource = [service, server, workspace, dashboard];
 
@@ -96,7 +97,7 @@ describe("Subscription billing and HarakaPay contracts", () => {
     ].forEach((marker) => expect(workspace).toContain(marker));
     expect(workspace).not.toMatch(/30.?day (?:free )?trial|Start Free Trial|Trial Activated|Trial Expiry/i);
     expect(dashboard).toContain('callWorkspaceRpcWithSessionRefresh("billing_start_free_plan"');
-    expect(dashboard).toContain("FREE kwa siku 15");
+    expect(dashboard).toContain("Anza na siku 15 BURE");
     expect(dashboard).not.toMatch(/30.?day (?:free )?trial|billing_start_trial|Trial Activated|Trial Expiry/i);
   });
 
