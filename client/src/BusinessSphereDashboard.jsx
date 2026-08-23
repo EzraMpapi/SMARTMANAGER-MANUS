@@ -48,7 +48,7 @@ import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
-import { calculateCommunityLoan, splitCommunityRepayment } from "./lib/communityGroups";
+import { calculateCommunityLoan, splitCommunityRepayment, unwrapCommunityMutationResult } from "./lib/communityGroups";
 import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
 import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWorkspace";
 import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
@@ -44601,7 +44601,8 @@ function CommunityGroupsModule({ currentUser, canManage = false }) {
         logAudit(label, "Community Groups", actor, "Preview-mode local record");
         return local;
       }
-      const saved = await runCompanyTableMutation(table, operation, payload, { matchVal });
+      const result = await runCompanyTableMutation(table, operation, payload, { matchVal });
+      const saved = unwrapCommunityMutationResult(result);
       if (!saved) throw new Error("The server did not return a confirmed record.");
       if (operation === "insert") updateHook(hook, saved, mapper);
       else await hook.reload?.();

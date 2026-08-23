@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateCommunityLoan, calculateCommunityMemberBalance, splitCommunityRepayment } from "../client/src/lib/communityGroups";
+import { calculateCommunityLoan, calculateCommunityMemberBalance, splitCommunityRepayment, unwrapCommunityMutationResult } from "../client/src/lib/communityGroups";
 
 describe("Community Groups calculations", () => {
   it("calculates flat-rate TZS loan repayment deterministically", () => {
@@ -19,5 +19,12 @@ describe("Community Groups calculations", () => {
 
   it("returns member contribution, savings, and loan balances in TZS", () => {
     expect(calculateCommunityMemberBalance([10_000, 15_000], [{ amount: 50_000, transactionType: "Deposit" }, { amount: 5_000, transactionType: "Withdrawal" }], 80_000)).toEqual({ paidContributions: 25_000, savingsBalance: 45_000, loanDue: 80_000 });
+  });
+
+  it("unwraps only confirmed mutation rows", () => {
+    const row = { id: "contribution-1", amount: 25_000 };
+    expect(unwrapCommunityMutationResult({ data: row, error: null })).toEqual(row);
+    expect(() => unwrapCommunityMutationResult({ data: null, error: new Error("row-level security") })).toThrow("row-level security");
+    expect(() => unwrapCommunityMutationResult({ data: null, error: null })).toThrow("confirmed record");
   });
 });

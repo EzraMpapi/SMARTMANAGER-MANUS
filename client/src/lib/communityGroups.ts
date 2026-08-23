@@ -24,3 +24,9 @@ export function calculateCommunityMemberBalance(contributions: number[], savings
   const savingsBalance = savings.reduce((sum, row) => sum + (row.transactionType === "Withdrawal" ? -1 : 1) * (Number(row.amount) || 0), 0);
   return { paidContributions, savingsBalance, loanDue: Math.max(0, Number(loanDue) || 0) };
 }
+
+export function unwrapCommunityMutationResult<T>(result: { data?: T | null; error?: unknown } | null | undefined): T {
+  if (result?.error) throw result.error;
+  if (result?.data == null) throw new Error("The server did not return a confirmed record.");
+  return result.data;
+}
