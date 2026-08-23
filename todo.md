@@ -324,5 +324,5 @@
 - [x] Preserve the repository as private rather than changing visibility or billing; document that GitHub does not permit required-check enforcement for this repository plan, while CI remains active as a visible merge-quality gate.
 - [x] Document the private-repository main-branch quality policy and the exact future required-check configuration to apply if GitHub branch protections become available.
 - [x] Scope schema verification and the production-build precheck to the protected GitHub environment without exposing credential values.
-- [ ] Align the GitHub job named Browser Signup Journey with the isolated signup specification and verify its end-to-end run.
-- [ ] Verify the active GitHub Actions workflow registration, commit the CI remediation record, push it to the requested repository, and publish the completed quality improvements.
+- [x] Align the GitHub job named Browser Signup Journey with the isolated signup specification and verify its end-to-end run. GitHub run `32658438400` passed the full quality gate and isolated browser journey.
+- [x] Verify the active GitHub Actions workflow registration, commit the CI remediation record, push it to the requested repository, and publish the completed quality improvements.
