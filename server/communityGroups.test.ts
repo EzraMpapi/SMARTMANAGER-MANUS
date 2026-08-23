@@ -6,6 +6,10 @@ describe("Community Groups calculations", () => {
     expect(calculateCommunityLoan(1_000_000, 12, 12, "Flat")).toEqual({ interest: 120_000, repayable: 1_120_000 });
   });
 
+  it("rounds whole-shilling flat loans so UI totals reconcile with repayment allocation", () => {
+    expect(calculateCommunityLoan(1_001, 10, 6, "Flat")).toEqual({ interest: 50, repayable: 1_051 });
+  });
+
   it("calculates reducing-balance repayment without rounding away interest", () => {
     const result = calculateCommunityLoan(1_000_000, 12, 12, "Reducing Balance");
     expect(result.repayable).toBeGreaterThan(1_000_000);

@@ -41,12 +41,13 @@ BEGIN
     'community_group_approvals','community_group_documents','community_group_events'
   ) THEN
     PERFORM public.community_groups_assert_group_company(NEW.group_id, c);
-    IF TG_TABLE_NAME IN ('community_group_contributions','community_group_savings','community_group_welfare_claims')
-       AND NEW.member_id IS NOT NULL THEN
-      group_a := NEW.group_id;
-      group_b := public.community_groups_member_group(NEW.member_id, c);
-      IF group_a IS DISTINCT FROM group_b THEN
-        RAISE EXCEPTION 'Transaction and member must belong to the same group.' USING ERRCODE = '42501';
+    IF TG_TABLE_NAME IN ('community_group_contributions','community_group_savings','community_group_welfare_claims') THEN
+      IF NEW.member_id IS NOT NULL THEN
+        group_a := NEW.group_id;
+        group_b := public.community_groups_member_group(NEW.member_id, c);
+        IF group_a IS DISTINCT FROM group_b THEN
+          RAISE EXCEPTION 'Transaction and member must belong to the same group.' USING ERRCODE = '42501';
+        END IF;
       END IF;
     END IF;
   ELSIF TG_TABLE_NAME = 'community_group_committee_members' THEN

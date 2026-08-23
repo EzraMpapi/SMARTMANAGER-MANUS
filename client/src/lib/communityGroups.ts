@@ -1,14 +1,14 @@
 export function calculateCommunityLoan(principal: number, annualRate: number, termMonths: number, method: "Flat" | "Reducing Balance" = "Flat") {
-  const p = Number(principal) || 0;
+  const p = Math.max(0, Math.round(Number(principal) || 0));
   const n = Math.max(1, Number(termMonths) || 1);
   const annual = Number(annualRate) || 0;
   const monthlyRate = annual / 100 / 12;
   if (method === "Reducing Balance" && monthlyRate > 0) {
     const payment = p * monthlyRate * Math.pow(1 + monthlyRate, n) / (Math.pow(1 + monthlyRate, n) - 1);
-    const repayable = payment * n;
-    return { interest: Math.max(0, repayable - p), repayable };
+    const repayable = Math.max(p, Math.round(payment * n));
+    return { interest: repayable - p, repayable };
   }
-  const interest = p * (annual / 100) * n / 12;
+  const interest = Math.max(0, Math.round(p * (annual / 100) * n / 12));
   return { interest, repayable: p + interest };
 }
 

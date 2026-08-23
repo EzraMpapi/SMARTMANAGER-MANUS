@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const hardening = readFileSync(new URL("../supabase/migrations/20260823_036_community_groups_security_hardening.sql", import.meta.url), "utf8");
-const insertGuard = readFileSync(new URL("../supabase/migrations/20260823_042_community_groups_relationship_guard_insert_fix_v2.sql", import.meta.url), "utf8");
+const insertGuard = readFileSync(new URL("../supabase/migrations/20260823_043_community_groups_relationship_guard_approval_fix.sql", import.meta.url), "utf8");
 const base = readFileSync(new URL("../supabase/migrations/20260823_035_community_groups_module.sql", import.meta.url), "utf8");
 const tables = [
   "community_groups", "community_group_members", "community_group_committees", "community_group_committee_members",
