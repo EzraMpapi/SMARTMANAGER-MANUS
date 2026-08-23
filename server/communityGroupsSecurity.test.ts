@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const hardening = readFileSync(new URL("../supabase/migrations/20260823_036_community_groups_security_hardening.sql", import.meta.url), "utf8");
+const insertGuard = readFileSync(new URL("../supabase/migrations/20260823_042_community_groups_relationship_guard_insert_fix_v2.sql", import.meta.url), "utf8");
 const base = readFileSync(new URL("../supabase/migrations/20260823_035_community_groups_module.sql", import.meta.url), "utf8");
 const tables = [
   "community_groups", "community_group_members", "community_group_committees", "community_group_committee_members",
@@ -37,6 +38,12 @@ describe("Community Groups security hardening contract", () => {
     expect(hardening).toContain("Ballot member must belong to the same group as the vote.");
     expect(hardening).toContain("Notification member must belong to its notification group.");
     for (const table of tables) expect(hardening).toContain(`'${table}'`);
+  });
+
+  it("uses the incoming transaction group during BEFORE INSERT without weakening tenant validation", () => {
+    expect(insertGuard).toContain("auth.uid() IS NULL OR NEW.company_id IS DISTINCT FROM c");
+    expect(insertGuard).toContain("group_a := NEW.group_id;");
+    expect(insertGuard).not.toContain("group_a := public.community_groups_parent_group(TG_TABLE_NAME, NEW.id, c);");
   });
 
   it("makes audit history append-only and normalizes the actor server-side", () => {
