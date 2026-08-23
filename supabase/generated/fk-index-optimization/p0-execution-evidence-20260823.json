@@ -121,16 +121,20 @@
     "action": "no table DDL executed; all repository-declared tables are already present; local ledger-name differences were not blindly replayed",
     "source_result": "/tmp/repository_live_table_reconciliation_20260823.json"
   },
+  "ci": {"final_commit": "f58c112cfe07019bc0267864726a14c55988c2ec", "run_id": 32665842751, "status": "completed", "conclusion": "success", "jobs": ["Unit, Schema, Type and Production Build", "Browser Signup Journey"]},
   "vercel": {
     "team_id": "team_4wJsmnbcklDGcpeMu7Onld7v",
     "project_id": "prj_R6b8nLQWSUUshxHW5O0rj8dDOyw2",
     "project_name": "menejajanja",
     "required_domain": "https://menejajanja.vercel.app",
     "configured_domains": ["menejajanja.vercel.app", "menejajanja-ezra-mpapi.vercel.app", "menejajanja-git-main-ezra-mpapi.vercel.app"],
-    "latest_ready_production": {"deployment_id": "dpl_tywT2YyCoyChoW59WUubahd1Ftqi", "sha": "cda9d3de1be5e8486c273b3aa30a5c2dadfa994c", "url": "menejajanja-anyqucph7-ezra-mpapi.vercel.app"},
+    "latest_ready_production": {"deployment_id": "dpl_9uXhzRjFYfZFpbjy5PJffuQFpNaW", "sha": "a4a72ce18846e54fc426a9c4d13a562ef93f1e7c", "url": "menejajanja-64dfvvaun-ezra-mpapi.vercel.app"},
     "requested_sha": "a273450c200b8041bab45682d6c49f3b4c362171",
-    "requested_sha_is_ancestor_of_latest_ready": false,
-    "domain_fetch": {"status": 200, "content_type": "text/html; charset=utf-8", "success": true, "x_vercel_cache": "MISS"},
-    "status": "domain responds, but the exact target is not verified as serving a273450 or a descendant; no alternate project/domain or manual deployment was created"
+    "requested_sha_is_ancestor_of_latest_ready": true,
+    "final_pushed_sha": "f58c112cfe07019bc0267864726a14c55988c2ec",
+    "latest_ready_is_ancestor_of_final_pushed": true,
+    "domain_fetch": {"captured_at": "2026-08-23T20:59:33Z", "status": 200, "content_type": "text/html; charset=utf-8", "success": true, "x_vercel_cache": "MISS"},
+    "application_changes_live_via_descendant": true,
+    "status": "verified: READY production deployment a4a72ce is a descendant of a273450 and an ancestor of the final evidence commit f58c112; no alternate project/domain or manual deployment was created"
   }
 }
