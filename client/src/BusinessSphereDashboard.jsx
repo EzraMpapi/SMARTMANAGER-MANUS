@@ -41,6 +41,7 @@ import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
+import { useAuthContext } from "./contexts/AuthContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
@@ -51736,6 +51737,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
 }
 
 function SmartManager() {
+  const centralizedAuth = useAuthContext();
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   // Role-based access and session state initialized first to prevent temporal dead zones
   const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
@@ -51747,7 +51749,22 @@ function SmartManager() {
   const [recoveryAccessToken, setRecoveryAccessToken] = useState(null);
   const invitationTokenRef = useRef(typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "");
   const acceptInvitationMutation = trpc.teamInvitations.accept.useMutation();
-  const [session, setSession] = useState(() => (IS_CONFIGURED ? null : { demo: true }));
+  const [session, setSession] = useState(() => centralizedAuth.session ? {
+    userId: centralizedAuth.user?.id || null,
+    email: centralizedAuth.user?.email || null,
+    accessToken: centralizedAuth.session.access_token,
+    refreshToken: centralizedAuth.session.refresh_token,
+    fullName: centralizedAuth.user?.user_metadata?.full_name || centralizedAuth.user?.email || "Workspace user",
+    role: centralizedAuth.role || "Employee",
+    customerRef: null,
+    company: centralizedAuth.company,
+  } : (IS_CONFIGURED ? null : { demo: true }));
+  const adoptCentralizedSession = useCallback(async (candidate, fallback = null) => {
+    if (candidate?.access_token && candidate?.refresh_token) {
+      await centralizedAuth.adoptSession({ access_token: candidate.access_token, refresh_token: candidate.refresh_token });
+    }
+    setSession(candidate || fallback || (IS_CONFIGURED ? null : { demo: true }));
+  }, [centralizedAuth.adoptSession]);
   const tenantSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo), retry: false });
   const tenantIdleTimeoutMinutes = Math.min(120, Math.max(5, Number(tenantSettingsQuery.data?.profileData?.idleTimeoutMinutes) || 30));
   const [idleWarningOpen, setIdleWarningOpen] = useState(false);
@@ -51818,8 +51835,8 @@ function SmartManager() {
       }
     }
 
-    let token = tokenFromOAuth || getStoredAccessToken();
-    const storedRefreshToken = refreshTokenFromOAuth || getStoredRefreshToken();
+    let token = tokenFromOAuth || centralizedAuth.session?.access_token || getStoredAccessToken();
+    const storedRefreshToken = refreshTokenFromOAuth || centralizedAuth.session?.refresh_token || getStoredRefreshToken();
     if (!token) { setAuthChecking(false); return; }
     (async () => {
       let authenticatedUser = null;
@@ -51900,7 +51917,7 @@ function SmartManager() {
         setAuthChecking(false);
       }
     })();
-  }, [authRetryKey]);
+  }, [authRetryKey, centralizedAuth.session?.access_token]);
 
   function navigateAuthView(view, email = "") {
     if (email) setAuthContextEmail(email);
@@ -51912,15 +51929,19 @@ function SmartManager() {
     window.history.replaceState(null, "", `${url.pathname}${url.search}`);
   }
 
-    const handleSignOut = useCallback(() => {
-    clearStoredAuthSession();
-    if (session?.accessToken) authSignOut(session.accessToken);
-    DEMO_OVERRIDE = false;
-    setIdleWarningOpen(false);
-    setIdleSecondsRemaining(0);
-    setSession(IS_CONFIGURED ? null : { demo: true });
-    navigateAuthView("login");
-  }, [session]);
+  const handleSignOut = useCallback(async () => {
+    try {
+      if (session?.accessToken) await authSignOut(session.accessToken);
+    } finally {
+      try { await centralizedAuth.signOut(); } catch { /* local state is cleared even when the network is unavailable */ }
+      clearStoredAuthSession();
+      DEMO_OVERRIDE = false;
+      setIdleWarningOpen(false);
+      setIdleSecondsRemaining(0);
+      setSession(IS_CONFIGURED ? null : { demo: true });
+      navigateAuthView("login");
+    }
+  }, [centralizedAuth.signOut, session]);
 
   const isAdministrativeSession = Boolean(session?.accessToken && !session?.demo && PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role)));
   useEffect(() => {
@@ -52333,7 +52354,7 @@ function SmartManager() {
     return (
       <OAuthCompanySetup
         oauthUser={oauthPendingUser}
-        onAuthenticated={(s) => { setOauthPendingUser(null); setSession(s || { demo: true }); if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }}
+        onAuthenticated={async (s) => { setOauthPendingUser(null); try { await adoptCentralizedSession(s); } catch (error) { notify(toAuthUserMessage(error), "error"); return; } if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }}
         onCancel={() => { clearStoredAuthSession(); setOauthPendingUser(null); }}
       />
     );
@@ -52348,8 +52369,8 @@ function SmartManager() {
     if (authView === "reset") return <ResetPasswordView recoveryToken={recoveryAccessToken} onBack={() => navigateAuthView("login")} onUpdate={async (token, password) => { await authUpdatePassword(token, password); clearStoredAuthSession(); }} toMessage={toAuthUserMessage} />;
     if (authView === "verify") return <EmailConfirmationView email={authContextEmail} onBack={() => navigateAuthView("login")} onResend={authResendVerification} toMessage={toAuthUserMessage} />;
     return authView === "login"
-      ? <LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated={(s) => invitationTokenRef.current ? window.location.reload() : setSession(s || { demo: true })} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
-      : <SignupPage onAuthenticated={(s) => { if (invitationTokenRef.current) { window.location.reload(); return; } setSession(s || { demo: true }); if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }} onSwitchToLogin={() => navigateAuthView("login")} />;
+      ? <LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated={async (s) => { if (invitationTokenRef.current) { window.location.reload(); return; } try { await adoptCentralizedSession(s); } catch (error) { notify(toAuthUserMessage(error), "error"); } }} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
+      : <SignupPage onAuthenticated={async (s) => { if (invitationTokenRef.current) { window.location.reload(); return; } try { await adoptCentralizedSession(s); } catch (error) { notify(toAuthUserMessage(error), "error"); return; } if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }} onSwitchToLogin={() => navigateAuthView("login")} />;
   }
 
   // A customer never sees the internal ERP shell at all — not a hidden

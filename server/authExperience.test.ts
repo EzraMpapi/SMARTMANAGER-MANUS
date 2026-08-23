@@ -14,22 +14,22 @@ describe("public authentication experience", () => {
     expect(authViewSource).toContain('onClick={() => onOAuth("google")}');
     expect(authViewSource).toContain('type="button" disabled={busy}');
     expect(authGatewaySource).toContain('function oauth(provider)');
-    expect(authGatewaySource).toContain('provider=${encodeURIComponent(provider)}');
-    expect(authGatewaySource).toContain('redirect_to=${encodeURIComponent(redirectTo.toString())}');
+    expect(authGatewaySource).toContain('await auth.signInWithOAuth(provider)');
+    expect(authGatewaySource).toContain('useAuthContext');
   });
 
   it("honours the Remember Me choice without treating a session-only login as a persistent device session", () => {
     expect(authViewSource).toContain("const [rememberMe, setRememberMe] = useState(true)");
     expect(authViewSource).toContain("await onSignIn(email.trim(), password, rememberMe)");
-    expect(authGatewaySource).toContain('import { persistAuthSession } from "../lib/authSessionStorage"');
+    expect(authGatewaySource).toContain('await auth.adoptSession({ access_token: result.access_token, refresh_token: result.refresh_token })');
     expect(authSessionStorageSource).toContain("function persistAuthSession(result, remember = true)");
     expect(authSessionStorageSource).toContain('const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token"');
     expect(authSessionStorageSource).toContain("const activeStorage = remember ? window.localStorage : window.sessionStorage");
-    expect(appSource).toContain('window.sessionStorage.getItem("bs_session_access_token")');
-    expect(trpcBootstrapSource).toContain('sessionStorage.getItem("bs_session_access_token")');
+    expect(appSource).toContain("<AuthProvider>");
+    expect(trpcBootstrapSource).toContain("getSupabaseAuthClient");
+    expect(trpcBootstrapSource).toContain("client.auth.getSession()");
     expect(dashboardSource).toContain("function getStoredAccessToken()");
-    expect(dashboardSource).toContain("window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY)");
-    expect(dashboardSource).toContain("window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY)");
+    expect(readFileSync(new URL("../client/src/contexts/AuthContext.tsx", import.meta.url), "utf8")).toContain("onAuthStateChange");
   });
 
   it("gives visible, provider-specific recovery paths when Google, Microsoft, or Apple OAuth returns an error", () => {

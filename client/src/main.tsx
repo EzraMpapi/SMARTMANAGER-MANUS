@@ -1,50 +1,50 @@
-import { trpc } from "@/lib/trpc";
-import { COOKIE_NAME, UNAUTHED_ERR_MSG } from '@shared/const';
+import { COOKIE_NAME } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { startLogin } from "./const";
-import { hasStoredSupabaseSession, isUnauthenticatedTrpcFailure } from "./lib/trpcAuthRecovery";
+import { trpc } from "./lib/trpc";
+import { getSupabaseAuthClient } from "./lib/supabaseAuthClient";
+import { loadPublicSupabaseConfig } from "./lib/publicSupabaseConfig";
+import { isUnauthenticatedTrpcFailure } from "./lib/trpcAuthRecovery";
 import "./index.css";
 
 const queryClient = new QueryClient();
+const publicConfigPromise = loadPublicSupabaseConfig();
 
-const redirectToLoginIfUnauthorized = (error: unknown) => {
-  if (!(error instanceof TRPCClientError)) return;
-  if (typeof window === "undefined") return;
-
-  const isUnauthorized = isUnauthenticatedTrpcFailure(error);
-
-  if (!isUnauthorized) return;
+const redirectToLoginIfUnauthorized = async (error: unknown) => {
+  if (!(error instanceof TRPCClientError) || typeof window === "undefined") return;
+  if (!isUnauthenticatedTrpcFailure(error)) return;
 
   try {
-    if (hasStoredSupabaseSession(window.localStorage) || hasStoredSupabaseSession(window.sessionStorage)) {
+    const config = await publicConfigPromise;
+    const client = getSupabaseAuthClient(config);
+    const session = client ? (await client.auth.getSession()).data.session : null;
+    if (session) {
       window.dispatchEvent(new CustomEvent("smart-manager:auth-session-expired", {
         detail: { diagnosticCode: "SM-AUTH-401" },
       }));
       return;
     }
   } catch {
-    // Fall through to the standard OAuth entry point when storage is unavailable.
+    // Fall through to the standard login entry point when session state cannot be read.
   }
   startLogin();
 };
 
 queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
-    const error = event.query.state.error;
-    redirectToLoginIfUnauthorized(error);
-    console.error("[API Query Error]", error);
+    void redirectToLoginIfUnauthorized(event.query.state.error);
+    console.error("[API Query Error]", event.query.state.error);
   }
 });
 
 queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
-    const error = event.mutation.state.error;
-    redirectToLoginIfUnauthorized(error);
-    console.error("[API Mutation Error]", error);
+    void redirectToLoginIfUnauthorized(event.mutation.state.error);
+    console.error("[API Mutation Error]", event.mutation.state.error);
   }
 });
 
@@ -53,11 +53,7 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
-      headers() {
-        // Preview auto-login fallback: when the browser blocks iframe cookies
-        // (Safari ITP / private browsing / WebView), the runtime mirrors the
-        // session into sessionStorage so we can forward it as a Bearer token.
-        // The regular OAuth cookie flow keeps working and takes priority server-side.
+      async headers() {
         const headers: Record<string, string> = {};
         try {
           const raw = sessionStorage.getItem("manus-cookie");
@@ -65,21 +61,21 @@ const trpcClient = trpc.createClient({
             const prefix = `${COOKIE_NAME}=`;
             const pair = raw.split(";").find(s => s.trim().startsWith(prefix));
             const token = pair?.trim().slice(prefix.length);
-            if (token) {
-              headers.Authorization = `Bearer ${token}`;
-            }
+            if (token) headers.Authorization = `Bearer ${token}`;
           }
         } catch {
           // sessionStorage unavailable
         }
         try {
-          const supabaseToken = localStorage.getItem("bs_access_token") || sessionStorage.getItem("bs_session_access_token");
+          const config = await publicConfigPromise;
+          const client = getSupabaseAuthClient(config);
+          const supabaseToken = client ? (await client.auth.getSession()).data.session?.access_token : null;
           if (supabaseToken) {
             headers["x-supabase-authorization"] = `Bearer ${supabaseToken}`;
             if (!headers.Authorization) headers.Authorization = `Bearer ${supabaseToken}`;
           }
         } catch {
-          // localStorage unavailable
+          // Provider initialization or browser storage may still be in progress.
         }
         return headers;
       },
