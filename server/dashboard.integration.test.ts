@@ -820,6 +820,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(canonicalRoleId("owner")).toBe("Organization Owner");
     expect(canonicalRoleId("ADMIN")).toBe("Super Administrator");
     expect(canonicalRoleId("finance manager")).toBe("Finance Manager");
+    expect(canonicalRoleId("School Administrator")).toBe("School Administrator");
+    expect(roleDefinitionFor("School Administrator").allowedModules).toContain("school");
     expect(canonicalRoleId("unrecognized-role")).toBe("Employee");
     expect(roleDefinitionFor("owner").writeAccess).toBe("full");
     expect(roleDefinitionFor("unrecognized-role").writeAccess).toBe("none");

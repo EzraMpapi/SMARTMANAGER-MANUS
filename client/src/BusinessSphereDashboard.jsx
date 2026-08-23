@@ -3252,6 +3252,11 @@ const ROLES = [
     allowedModules: ["dashboard", "healthcare", "finance", "reports", "notifications"], primaryModules: ["healthcare", "finance", "reports"], writeAccess: "full",
   },
   {
+    id: "School Administrator", category: "Education",
+    description: "Runs the school workspace, learner operations, academic workflows, fees, services, portals, and school governance.",
+    allowedModules: ["dashboard", "school", "reports", "finance", "documents", "notifications"], primaryModules: ["school", "reports"], writeAccess: "full",
+  },
+  {
     id: "Employee", category: "General Staff",
     description: "General staff access — Dashboard and Employee Portal only.",
     allowedModules: ["dashboard", "employee-portal"], primaryModules: ["employee-portal"], writeAccess: "none",
@@ -3315,6 +3320,7 @@ const ROLE_HOME_VIEW = {
   "Procurement Officer": "operations",
   "Warehouse Manager": "operations",
   "Project Manager": "focused",
+  "School Administrator": "focused",
   "Customer Support Agent": "focused",
   "Employee": "minimal",
   "Auditor": "executive",
@@ -5884,6 +5890,12 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
+  const schedulesQuery = trpc.reportSchedules.list.useQuery(undefined, { enabled: Boolean(company?.id) });
+  const scheduleRows = schedulesQuery.data || [];
+  const activeScheduleCount = scheduleRows.filter((schedule) => schedule.isActive).length;
+  const lastScheduleSentAt = scheduleRows.map((schedule) => schedule.lastSentAt).filter(Boolean).sort().pop();
+  const hasActiveSchedules = activeScheduleCount > 0;
+
   // Time period filter — Day/Week/Month/Year. The filter cuts both invoice
   // and expense rows by their date field, so every KPI on the dashboard
   // reflects the same window. "This session" is replaced by a real label.
@@ -6376,34 +6388,28 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         {canViewMarketIntelligence && <MarketIntelligencePanel snapshotQuery={marketSnapshotQuery} onNavigate={onNavigate} />}
 
       {/* ══════════════════ COMPLIANCE DIGEST STATUS BADGE ══════════════════ */}
-      {(() => {
-        const schedulesQuery = trpc.reportSchedules.list.useQuery(undefined, { enabled: Boolean(company?.id) });
-        const list = schedulesQuery.data || [];
-        const activeCount = list.filter(s => s.isActive).length;
-        const lastSent = list.map(s => s.lastSentAt).filter(Boolean).sort().pop();
-        const hasActive = activeCount > 0;
-        return (
+      {(
           <div className="rounded-2xl border border-slate-200/80 bg-white dark:bg-slate-900 p-4 shadow-sm flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <span className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold ${hasActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
-                {hasActive ? '🛡️' : '⏸️'}
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold ${hasActiveSchedules ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                {hasActiveSchedules ? '🛡️' : '⏸️'}
               </span>
               <div>
                 <div className="flex items-center gap-2">
                   <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-white">Automated Weekly Compliance Digest</h4>
                   <span
                     tabIndex={0}
-                    className={`group/badge relative inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-bold cursor-help ${hasActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
-                    title={lastSent ? `Last successful email delivery: ${new Date(lastSent).toLocaleString()}` : 'No successful email deliveries recorded yet'}
+                    className={`group/badge relative inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-bold cursor-help ${hasActiveSchedules ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+                    title={lastScheduleSentAt ? `Last successful email delivery: ${new Date(lastScheduleSentAt).toLocaleString()}` : 'No successful email deliveries recorded yet'}
                   >
-                    {schedulesQuery.isLoading ? 'Checking...' : hasActive ? `Active (${activeCount} schedule${activeCount > 1 ? 's' : ''})` : 'Paused / Unconfigured'}
+                    {schedulesQuery.isLoading ? 'Checking...' : hasActiveSchedules ? `Active (${activeScheduleCount} schedule${activeScheduleCount > 1 ? 's' : ''})` : 'Paused / Unconfigured'}
                     <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/badge:block group-focus/badge:block w-56 rounded-lg bg-slate-900 dark:bg-slate-800 px-3 py-1.5 text-[11px] font-normal text-white shadow-xl z-30 text-center leading-snug">
-                      {lastSent ? `Last successful email delivery:\n${new Date(lastSent).toLocaleString()}` : 'No successful email deliveries recorded yet'}
+                      {lastScheduleSentAt ? `Last successful email delivery:\n${new Date(lastScheduleSentAt).toLocaleString()}` : 'No successful email deliveries recorded yet'}
                     </span>
                   </span>
                 </div>
                 <p className="text-[11.5px] text-slate-500 mt-0.5">
-                  {lastSent ? `Last email digest delivered successfully on ${new Date(lastSent).toLocaleString()}` : hasActive ? 'Scheduled weekly email dispatches are active and monitoring tenant tax records.' : 'Configure automated report schedules in the Reports module to enable weekly compliance email dispatches.'}
+                  {lastScheduleSentAt ? `Last email digest delivered successfully on ${new Date(lastScheduleSentAt).toLocaleString()}` : hasActiveSchedules ? 'Scheduled weekly email dispatches are active and monitoring tenant tax records.' : 'Configure automated report schedules in the Reports module to enable weekly compliance email dispatches.'}
                 </p>
               </div>
             </div>
@@ -6436,8 +6442,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               />
             )}
           </div>
-        );
-      })()}
+        )}
 
       </section>
 
@@ -52774,6 +52779,7 @@ function SmartManager() {
           green gradient, white-variant text, white/10 borders) was
           removed entirely rather than layered under the new palette. */}
       <aside
+        aria-hidden={!sidebarOpen}
         className={`fixed z-50 h-full w-[240px] shrink-0 flex flex-col bg-white transition-transform duration-200 ease-out overflow-hidden ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
