@@ -17,6 +17,7 @@ import { scheduledMicrofinanceParCollectionsEscalationHandler } from "../schedul
 import { scheduledSubscriptionTrialLifecycleHandler } from "../scheduledSubscriptionTrialLifecycle";
 import { fleetActionHandler, fleetSnapshotHandler, fleetTelematicsWebhookHandler, scheduledFleetAlertsHandler } from "../fleetManagement";
 import { scheduledRestaurantAlertsHandler } from "../restaurantManagement";
+import { scheduledPropertyControlsHandler } from "../propertyManagement";
 import {
   harakaPayBalanceHandler,
   harakaPayCollectHandler,
@@ -74,6 +75,7 @@ export function createApiApp() {
   app.post("/api/scheduled/subscriptionTrialLifecycle", scheduledSubscriptionTrialLifecycleHandler);
   app.post("/api/scheduled/fleetAlerts", scheduledFleetAlertsHandler);
   app.post("/api/scheduled/restaurantAlerts", scheduledRestaurantAlertsHandler);
+  app.post("/api/scheduled/propertyControls", scheduledPropertyControlsHandler);
   app.post("/api/webhooks/backup-complete", async (req, res) => {
     try {
       const { handleBackupCompletionWebhook } = await import("../backupWebhook");

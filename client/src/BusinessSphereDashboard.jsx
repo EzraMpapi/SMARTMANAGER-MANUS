@@ -74,6 +74,7 @@ const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWo
 const LazyPharmacyWorkspace = lazy(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })));
 const LazySchoolWorkspace = lazy(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })));
 const LazyMoneyAgentWorkspace = lazy(() => import("./components/MoneyAgentWorkspace").then((module) => ({ default: module.MoneyAgentWorkspace })));
+const LazyPropertyManagementWorkspace = lazy(() => import("./components/PropertyManagementWorkspace").then((module) => ({ default: module.PropertyManagementWorkspace })));
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -3168,7 +3169,7 @@ const ALL_MODULE_IDS = [
   "dashboard", "crm", "sales", "inventory", "procurement", "finance", "reports", "hr",
   "manufacturing", "scm", "marketing", "ecommerce", "pos", "documents", "projects",
   "support", "analytics", "notifications", "activity", "integrations", "ai", "workflows", "collaboration", "tra_portal",
-  "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "money-agent", "employee-portal", "presentation", "billing",
+  "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "money-agent", "property-management", "employee-portal", "presentation", "billing",
 ];
 
 const ROLES = [
@@ -3231,6 +3232,41 @@ const ROLES = [
     id: "Supervisor", category: "Financial Services",
     description: "Reviews maker-checker approvals, agent activity, risk alerts, and settlement variances without institution configuration authority.",
     allowedModules: ["dashboard", "money-agent", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Property Administrator", category: "Property Management",
+    description: "Administers the property portfolio, owners, tenants, leases, billing, maintenance, documents, controls, and reports.",
+    allowedModules: ALL_MODULE_IDS, primaryModules: ["property-management", "finance", "reports", "documents", "notifications"], writeAccess: "full",
+  },
+  {
+    id: "Property Manager", category: "Property Management",
+    description: "Runs property operations, applications, leases, inspections, maintenance, notices, occupancy, and portfolio performance.",
+    allowedModules: ["dashboard", "property-management", "finance", "reports", "documents", "procurement", "crm", "notifications"], primaryModules: ["property-management", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Landlord / Owner", category: "Property Management",
+    description: "Views linked owned properties, tenants, leases, income, expenses, documents, maintenance decisions, and owner statements.",
+    allowedModules: ["dashboard", "property-management", "finance", "reports", "documents", "notifications"], primaryModules: ["property-management", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Property Agent", category: "Property Management",
+    description: "Handles assigned listings, applicants, tenant onboarding, unit availability, and commission evidence without finance approval.",
+    allowedModules: ["dashboard", "property-management", "crm", "documents", "notifications"], primaryModules: ["property-management"], writeAccess: "full",
+  },
+  {
+    id: "Tenant", category: "Property Management Portal",
+    description: "Uses the authenticated tenant portal for own leases, invoices, payments, receipts, utilities, maintenance, notices, and documents.",
+    allowedModules: ["dashboard", "property-management", "notifications"], primaryModules: ["property-management"], writeAccess: "full",
+  },
+  {
+    id: "Maintenance Staff", category: "Property Management",
+    description: "Works only on assigned property maintenance requests, work orders, inspections, completion evidence, and related notes.",
+    allowedModules: ["dashboard", "property-management", "procurement", "documents", "notifications"], primaryModules: ["property-management"], writeAccess: "full",
+  },
+  {
+    id: "Property Finance Officer", category: "Property Management",
+    description: "Controls property invoices, rent collection, receipts, expenses, reconciliations, owner statements, and financial reports.",
+    allowedModules: ["dashboard", "property-management", "finance", "reports", "documents", "notifications"], primaryModules: ["property-management", "finance", "reports"], writeAccess: "full",
   },
   {
     id: "Procurement Officer", category: "Operations",
@@ -3370,6 +3406,13 @@ const ROLE_HOME_VIEW = {
   "School Administrator": "focused",
   "Customer Support Agent": "focused",
   "Customer": "focused",
+  "Property Administrator": "focused",
+  "Property Manager": "focused",
+  "Landlord / Owner": "focused",
+  "Property Agent": "focused",
+  "Tenant": "focused",
+  "Maintenance Staff": "focused",
+  "Property Finance Officer": "focused",
   "Employee": "minimal",
   "Auditor": "executive",
   "External Client": "minimal",
@@ -3404,6 +3447,7 @@ const MODULES = [
   { id: "ai", label: "AI Assistant", icon: Brain, live: true },
   { id: "microfinance", label: "Microfinance", icon: HandCoins, live: true },
   { id: "money-agent", label: "Money Agent", icon: Banknote, live: true },
+  { id: "property-management", label: "Property Management", icon: Building2, live: true },
   { id: "vicoba", label: "VICOBA / SACCOS", icon: Users2, live: true },
   { id: "community", label: "Community Groups", icon: TreePine, live: true },
   { id: "healthcare", label: "Healthcare / Clinic", icon: HeartPulse, live: true },
@@ -6374,9 +6418,13 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // one-click path into the real module instead.
   if (roleView === "focused") {
     const preferredTarget = currentRole.id === "Project Manager" ? "projects" : "support";
-    const target = currentRole.allowedModules.includes(preferredTarget)
-      ? preferredTarget
-      : (currentRole.primaryModules[0] || currentRole.allowedModules[0]);
+    const rolePreferredTarget = ["Property Administrator", "Property Manager", "Landlord / Owner", "Property Agent", "Tenant", "Maintenance Staff", "Property Finance Officer"].includes(currentRole.id) ? "property-management" : currentRole.id === "School Administrator" ? "school" : currentRole.id === "Customer Support Agent" ? "support" : preferredTarget;
+    const preferredTargetAllowed = currentRole.allowedModules.includes(preferredTarget);
+    const target = currentRole.allowedModules.includes(rolePreferredTarget)
+      ? rolePreferredTarget
+      : preferredTargetAllowed && currentRole.allowedModules.includes(preferredTarget)
+        ? preferredTarget
+        : (currentRole.primaryModules[0] || currentRole.allowedModules[0]);
     const targetLabel = MODULES.find((module) => module.id === target)?.label || "your workspace";
     return (
       <div className="space-y-6">
@@ -52991,8 +53039,13 @@ function SmartManager() {
             </Suspense>
           )}
           {active === "money-agent" && (
-            <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><div className="text-center"><LoaderCircle className="mx-auto animate-spin text-emerald-600" size={24}/><p className="mt-3 text-sm font-medium text-slate-500">Loading Money Agent Command Center…</p></div></div>}>
+            <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><LoaderCircle className="animate-spin text-emerald-600" /></div>}>
               <LazyMoneyAgentWorkspace currentUser={currentUser} />
+            </Suspense>
+          )}
+          {active === "property-management" && (
+            <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><LoaderCircle className="animate-spin text-emerald-600" /></div>}>
+              <LazyPropertyManagementWorkspace currentUser={currentUser} />
             </Suspense>
           )}
           {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} />}
