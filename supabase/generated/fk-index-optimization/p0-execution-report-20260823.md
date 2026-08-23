@@ -2,7 +2,7 @@
 
 ## Executive result
 
-The explicitly authorized **P0 foreign-key index batch was applied successfully** to Supabase production project `rlhngsrihahhyxnjxrxm`. The final GitHub commit `f58c112` passed the repository CI quality gate (run `32665842751`), including the unit/schema/type/production-build job and the browser signup journey.[1] The migration contained exactly five idempotent `CREATE INDEX IF NOT EXISTS` statements and no P1/P2 indexes, drops, foreign-key changes, RLS changes, grants, or policy changes. The remote ledger records the migration as `fk_index_optimization_p0_review_20260823` at version `20260823204324`.[1]
+The explicitly authorized **P0 foreign-key index batch was applied successfully** to Supabase production project `rlhngsrihahhyxnjxrxm`. The final GitHub commit `96e4fc9` passed the repository CI quality gate (run `32666171009`), including the unit/schema/type/production-build job and the browser signup journey.[1] The migration contained exactly five idempotent `CREATE INDEX IF NOT EXISTS` statements and no P1/P2 indexes, drops, foreign-key changes, RLS changes, grants, or policy changes. The remote ledger records the migration as `fk_index_optimization_p0_review_20260823` at version `20260823204324`.[1]
 
 The post-application catalog audit reports **1,097 foreign keys, 462 covered relationships, and 635 uncovered relationships**. This is the expected arithmetic change from the pre-application 457/640 split. All five expected index names are present with the intended definitions. P1 and P2 remain unapplied.[1]
 
@@ -63,11 +63,11 @@ The exact requested Vercel target was checked without creating or replacing any 
 | Latest READY production SHA | `a4a72ce18846e54fc426a9c4d13a562ef93f1e7c` |
 | Requested SHA | `a273450c200b8041bab45682d6c49f3b4c362171` |
 | Requested SHA ancestor of latest READY SHA | Yes |
-| Final pushed evidence SHA | `f58c112cfe07019bc0267864726a14c55988c2ec` |
+| Final pushed evidence SHA | `96e4fc959d32b450cc094a2c4fe27a25cbd3ee80` |
 | Latest READY SHA ancestor of final pushed SHA | Yes |
-| Required domain fetch | HTTP 200 at 20:59:33 UTC, `text/html; charset=utf-8`, Vercel cache MISS |
+| Required domain fetch | HTTP 200 at 21:05:51 UTC, `text/html; charset=utf-8`, Vercel cache HIT; content last modified 20:59:33 UTC |
 
-The domain is healthy and serves Smart Manager HTML. The final verification found the exact existing project’s READY production deployment `a4a72ce`, which is a descendant of the requested `a273450` commit and an ancestor of the final pushed evidence commit `f58c112`. Therefore the requested application changes are live through the existing Git-linked deployment path. No manual direct upload and no alternate Vercel project/domain were used.[1]
+The domain is healthy and serves Smart Manager HTML. The final verification found the exact existing project’s READY production deployment `a4a72ce`, which is a descendant of the requested `a273450` commit and an ancestor of the final pushed evidence commit `96e4fc9`. The final commits contain only migration/audit evidence and do not change the built frontend, so the requested application changes are live through the existing Git-linked deployment path even though Vercel did not create a separate deployment for the documentation-only final commit. No manual direct upload and no alternate Vercel project/domain were used.[1]
 
 ## References
 

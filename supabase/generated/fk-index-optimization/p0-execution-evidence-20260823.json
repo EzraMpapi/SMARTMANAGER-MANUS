@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-23T20:52:00Z",
+  "generated_at": "2026-08-23T21:06:00Z",
   "supabase": {
     "project_id": "rlhngsrihahhyxnjxrxm",
     "application": {
@@ -121,7 +121,7 @@
     "action": "no table DDL executed; all repository-declared tables are already present; local ledger-name differences were not blindly replayed",
     "source_result": "/tmp/repository_live_table_reconciliation_20260823.json"
   },
-  "ci": {"final_commit": "f58c112cfe07019bc0267864726a14c55988c2ec", "run_id": 32665842751, "status": "completed", "conclusion": "success", "jobs": ["Unit, Schema, Type and Production Build", "Browser Signup Journey"]},
+  "ci": {"final_commit": "96e4fc959d32b450cc094a2c4fe27a25cbd3ee80", "run_id": 32666171009, "status": "completed", "conclusion": "success", "jobs": ["Unit, Schema, Type and Production Build", "Browser Signup Journey"]},
   "vercel": {
     "team_id": "team_4wJsmnbcklDGcpeMu7Onld7v",
     "project_id": "prj_R6b8nLQWSUUshxHW5O0rj8dDOyw2",
@@ -131,10 +131,11 @@
     "latest_ready_production": {"deployment_id": "dpl_9uXhzRjFYfZFpbjy5PJffuQFpNaW", "sha": "a4a72ce18846e54fc426a9c4d13a562ef93f1e7c", "url": "menejajanja-64dfvvaun-ezra-mpapi.vercel.app"},
     "requested_sha": "a273450c200b8041bab45682d6c49f3b4c362171",
     "requested_sha_is_ancestor_of_latest_ready": true,
-    "final_pushed_sha": "f58c112cfe07019bc0267864726a14c55988c2ec",
+    "final_pushed_sha": "96e4fc959d32b450cc094a2c4fe27a25cbd3ee80",
     "latest_ready_is_ancestor_of_final_pushed": true,
-    "domain_fetch": {"captured_at": "2026-08-23T20:59:33Z", "status": 200, "content_type": "text/html; charset=utf-8", "success": true, "x_vercel_cache": "MISS"},
+    "domain_fetch": {"captured_at": "2026-08-23T21:05:51Z", "status": 200, "content_type": "text/html; charset=utf-8", "success": true, "x_vercel_cache": "HIT", "last_modified": "2026-08-23T20:59:33Z"},
     "application_changes_live_via_descendant": true,
-    "status": "verified: READY production deployment a4a72ce is a descendant of a273450 and an ancestor of the final evidence commit f58c112; no alternate project/domain or manual deployment was created"
+    "audit_only_commit_deployed_independently": false,
+    "status": "verified: READY production deployment a4a72ce is a descendant of a273450 and an ancestor of final commit 96e4fc9; the final commits contain audit/migration evidence only, so no separate runtime deployment was required; no alternate project/domain or manual deployment was created"
   }
 }
