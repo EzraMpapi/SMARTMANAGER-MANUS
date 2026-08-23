@@ -53,6 +53,15 @@ import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWo
 import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
 import { FleetWorkspace } from "./components/FleetWorkspace";
 import { RestaurantWorkspace } from "./components/RestaurantWorkspace";
+import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
+import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, SalesCommandCenter } from "./components/CommercialCommandCenters";
+import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter } from "./components/OperationsCommandCenters";
+import { FinanceCommandCenter, IntegrationsCommandCenter, ReportsCommandCenter } from "./components/FinanceCommandCenters";
+import { CollaborationCommandCenter, DocumentsCommandCenter, EmployeePortalCommandCenter, HrCommandCenter, WorkflowCommandCenter } from "./components/PeopleCommandCenters";
+import { BankingMfiCommandCenter, CommunityCommandCenter, MicrofinanceCommandCenter, VicobaCommandCenter } from "./components/SectorCommandCenters";
+import { FleetCommandCenter, HealthcareCommandCenter, HotelCommandCenter, PharmacyCommandCenter, RestaurantCommandCenter, SchoolCommandCenter } from "./components/VerticalCommandCenters";
+import { AiBusinessSignals, SupportCommandCenter } from "./components/IntelligenceCommandCenters";
+import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -48074,7 +48083,11 @@ const BNK_APPLICATIONS_SEED = [
   { id:"APP-003", memberId:"MBR-B001", member:"Amina Hassan",  product:"Personal Loan",amount:3000,  term:12, purpose:"School fees",           collateral:"Guarantor",  submittedDate:"2026-07-17", status:"Pending Docs",  officer:"Jane Wairimũ", score:68 },
 ];
 
-function BankingMFIModule({ currentUser, company, onLoansLoad }) {
+function BankingMFIModule({ company, onLoansLoad, onNavigate }) {
+  return <BankMfiWorkspace company={company} onLoansLoad={onLoansLoad} onNavigate={onNavigate} />;
+}
+
+function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNavigate }) {
   const [tab, setTab]     = useState("dashboard");
   const [loanCalc, setLoanCalc] = useState({ product:"", amount:"", term:"", rate:0 });
   const [appForm, setAppForm]   = useState({ memberId:"", product:"", amount:"", term:"", purpose:"", collateral:"" });
