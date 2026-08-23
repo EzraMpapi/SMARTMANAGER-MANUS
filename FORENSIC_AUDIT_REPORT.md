@@ -73,11 +73,12 @@ The billing flow remains safe at the external-provider boundary. The existing fa
 | Server index bundle compilation | Passed |
 | Server API bundle compilation | Passed |
 | Vercel production build path (`VERCEL=1 pnpm build`) | Passed |
+| GitHub Actions CI & Quality Gate for commit `47d5cdc` | **Passed**; unit/schema/type/production-build and browser jobs succeeded |
 | Local schema-gated build without Supabase credentials | Intentionally blocked by the repository guard |
 | Catalog/public-config/health runtime checks from the authorized Production validation | Passed in the prior runtime validation |
 | HarakaPay authenticated balance runtime check | **HTTP 502**; provider credential/account authorization remains unresolved |
 
-The Vercel build path reports a deliberate schema-verification skip when server-only Supabase credentials are not present in the local build environment. The CI workflow still requires the managed `VITE_SUPABASE_URL` and `SUPABASE_SECRET_KEY` values, so this behavior does not disable the CI schema gate.
+The Vercel build path reports a deliberate schema-verification skip when server-only Supabase credentials are not present in the local build environment. The managed GitHub Actions quality gate for commit `47d5cdc` passed its schema, type, automated-test, dependency-audit, production-build, and isolated browser jobs. The CI workflow still requires the managed `VITE_SUPABASE_URL` and `SUPABASE_SECRET_KEY` values, so the local skip does not disable the CI schema gate.
 
 The browser session was not used to issue any payment operation during this audit. The complete repository Playwright suite passed 16 tests, including authentication gateway, responsive workspace, role-restricted actions, portal views, and the restored School Management journeys. A full manual CRUD walkthrough across every module remains dependent on a usable authenticated browser session and the external provider credential; automated source and runtime contracts passed for the repaired areas.
 
