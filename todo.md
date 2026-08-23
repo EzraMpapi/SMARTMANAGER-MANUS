@@ -326,3 +326,8 @@
 - [x] Scope schema verification and the production-build precheck to the protected GitHub environment without exposing credential values.
 - [x] Align the GitHub job named Browser Signup Journey with the isolated signup specification and verify its end-to-end run. GitHub run `32658438400` passed the full quality gate and isolated browser journey.
 - [x] Verify the active GitHub Actions workflow registration, commit the CI remediation record, push it to the requested repository, and publish the completed quality improvements.
+
+## Managed Asset Publication Recovery
+- [x] Verify the uploaded managed-storage asset locations and identify all active code references to blocked local media.
+- [x] Replace active brand media references with managed-storage URLs and retain the original asset names in the storage record. The managed application configuration already uses storage-hosted branding; no local source reference required replacement.
+- [ ] Remove only confirmed duplicate local media from the project, validate deployment readiness, and save the recovered publication checkpoint.
