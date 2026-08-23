@@ -13,3 +13,7 @@ Release notes are generated automatically when a version tag matching `v*` is pu
 ## Collaboration Workflow
 
 All project changes follow the non-destructive retrieval, validation, commit, remote-verification, and publication workflow documented in [REPOSITORY_TRACKING.md](REPOSITORY_TRACKING.md).
+
+## Vercel Deployment Contract
+
+The GitHub production source is the `main` branch of `EzraMpapi/SMARTMANAGER-MANUS`. Vercel must use the repository root as its Root Directory, the Vite framework preset, `pnpm run build` as the Build Command, and `dist/public` as the Output Directory. The repository’s `vercel.json` also bundles `dist/api.js` for the `/api` function and rewrites the application shell to `index.html`. Keep Git author and committer identity configured as **Ezra Mpapi <ezraincome@gmail.com>**; do not rewrite already-pushed history solely to change older commit metadata.
