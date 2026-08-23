@@ -137,6 +137,8 @@ export function SubscriptionBillingWorkspace({ accessToken, company, onBack }) {
           window.clearInterval(pollingRef.current);
           pollingRef.current = null;
           await refresh();
+          window.dispatchEvent(new Event("smart-manager:subscription-updated"));
+          if (result.status === "Completed") onBack?.();
         }
       } catch (nextError) {
         setNotice(nextError.message || "Payment status could not be refreshed. You can retry safely.");
@@ -163,6 +165,8 @@ export function SubscriptionBillingWorkspace({ accessToken, company, onBack }) {
       setNotice(result?.created === false ? "This company already has Free access or has used its introductory Free plan. Choose a paid package to continue." : "Free access activated for 15 days. No payment has been requested.");
       setSelectedPlan(plans.find((entry) => entry.id === freePlan.plan_id) || plan);
       await refresh();
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("smart-manager:subscription-updated"));
+      if (["Active", "Grace"].includes(String(freePlan.status || ""))) onBack?.();
     } catch (nextError) {
       setNotice(nextError.message || "The Free plan could not be started.");
     } finally { setSubmitting(false); }
@@ -260,7 +264,7 @@ export function SubscriptionBillingWorkspace({ accessToken, company, onBack }) {
 
       <FreeAccessBanner subscription={subscription} activePlan={activePlan} notifications={notifications} onChoosePlan={() => setTab("plans")} />
 
-      {pendingPayment?.status === "Pending" && <PaymentWaiting payment={pendingPayment} onRefresh={async () => { const id = pendingPayment.providerOrderId || pendingPayment.provider_order_id; if (!id) return; const result = await api(`/api/payments/harakapay/status/${encodeURIComponent(id)}`); setPayment(result); await refresh(); }} />}
+      {pendingPayment?.status === "Pending" && <PaymentWaiting payment={pendingPayment} onRefresh={async () => { const id = pendingPayment.providerOrderId || pendingPayment.provider_order_id; if (!id) return; const result = await api(`/api/payments/harakapay/status/${encodeURIComponent(id)}`); setPayment(result); await refresh(); if (result.status !== "Pending" && typeof window !== "undefined") window.dispatchEvent(new Event("smart-manager:subscription-updated")); if (result.status === "Completed") onBack?.(); }} />}
 
       <div className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
         {[
