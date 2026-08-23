@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildDashboardChartSections, buildDashboardExportFilterSummary, canonicalRoleId, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, roleDefinitionFor, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 import { setGuardedPersistenceCompanyId } from "../client/src/lib/guardedPersistenceClient";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -18,7 +19,6 @@ afterEach(() => {
 
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
 const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const salesDetailSource = readFileSync(new URL("../client/src/components/SalesDetailWorkspace.jsx", import.meta.url), "utf8");
 const invitationServiceSource = readFileSync(new URL("./teamInvitations.ts", import.meta.url), "utf8");
 const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");

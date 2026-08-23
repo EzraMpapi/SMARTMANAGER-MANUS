@@ -202,7 +202,7 @@ export async function subscriptionBillingSnapshotHandler(req: Request, res: Resp
     const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
     ensureBillingManager(profile.role);
     if (typeof profile.company_id === "string" && profile.company_id) {
-      await serviceRpc("billing_reconcile_trial_expiry", { p_company_id: profile.company_id });
+      await serviceRpc("billing_reconcile_free_plan_expiry", { p_company_id: profile.company_id });
     }
     return res.status(200).json(await userRpc("billing_snapshot", token, {}));
   } catch (error) {
@@ -210,28 +210,13 @@ export async function subscriptionBillingSnapshotHandler(req: Request, res: Resp
   }
 }
 
-export async function subscriptionBillingStartTrialHandler(req: Request, res: Response) {
+export async function subscriptionBillingStartFreePlanHandler(req: Request, res: Response) {
   try {
     const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
     ensureBillingManager(profile.role);
-    const payload = isRecord(req.body) ? req.body : {};
-    const planCode = asString(payload.planCode, 40) || "TWIGA";
-    return res.status(201).json(await userRpc("billing_start_trial", token, { p_plan_code: planCode }));
+    return res.status(201).json(await userRpc("billing_start_free_plan", token, { p_plan_code: "FREE_15" }));
   } catch (error) {
-    return sendError(res, httpStatusFromError(error), (error as Error).message || "The free trial could not be started.");
-  }
-}
-
-export async function subscriptionBillingSelectTrialPlanHandler(req: Request, res: Response) {
-  try {
-    const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
-    ensureBillingManager(profile.role);
-    const payload = isRecord(req.body) ? req.body : {};
-    const planCode = asString(payload.planCode, 40);
-    if (!planCode) return sendError(res, 400, "A subscription package is required.");
-    return res.status(200).json(await userRpc("billing_select_trial_plan", token, { p_plan_code: planCode }));
-  } catch (error) {
-    return sendError(res, httpStatusFromError(error), (error as Error).message || "The selected trial package could not be saved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The Free plan could not be started.");
   }
 }
 
@@ -264,11 +249,11 @@ export async function harakaPayCollectHandler(req: Request, res: Response) {
     ensureBillingManager(profile.role);
     const payload = isRecord(req.body) ? req.body : {};
     const planId = asString(payload.planId, 200);
-    const billingCycle = asString(payload.billingCycle, 20);
+    const billingCycle = "Monthly";
     const phone = asString(payload.phone, 30);
     const description = asString(payload.description, 250);
     const idempotencyKey = asString(payload.idempotencyKey, 200);
-    if (!planId || !billingCycle || !phone) return sendError(res, 400, "Plan, billing cycle, and Tanzanian mobile number are required.");
+    if (!planId || !phone) return sendError(res, 400, "Package and Tanzanian mobile number are required.");
     payment = await userRpc<PaymentIntent>("billing_create_payment_intent", token, {
       p_plan_id: planId,
       p_billing_cycle: billingCycle,

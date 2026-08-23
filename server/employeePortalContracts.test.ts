@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const workspace = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/EmployeePortalWorkspace.jsx"), "utf8");
-const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = dashboardSource;
 const migration = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260821_013_employee_portal_core.sql"), "utf8");
 
 describe("Employee Portal production contracts", () => {
