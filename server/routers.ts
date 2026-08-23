@@ -15,6 +15,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
+import { getGlobalAdminSnapshot, globalAdminActionInput, recordGlobalAdminAction } from "./globalAdmin";
 import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
 import { getGlobalAdminSnapshot, globalAdminActionInput, recordGlobalAdminAction } from "./globalAdmin";
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
@@ -1174,6 +1175,10 @@ export const appRouter = router({
     moveCash: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => moveCash(ctx.req, input.payload)),
     runDailyControls: protectedProcedure.mutation(({ ctx }) => runDailyControls(ctx.req)),
     runStandingOrders: protectedProcedure.mutation(({ ctx }) => runStandingOrders(ctx.req)),
+  }),
+  globalAdmin: router({
+    snapshot: protectedProcedure.query(({ ctx }) => getGlobalAdminSnapshot(ctx.req)),
+    recordAction: protectedProcedure.input(globalAdminActionInput).mutation(({ ctx, input }) => recordGlobalAdminAction(ctx.req, input)),
   }),
   admin: router({
     verifyBackup: protectedProcedure.query(({ ctx }) => {
