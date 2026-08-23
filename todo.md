@@ -335,3 +335,9 @@
 ## Header Logo Rendering Follow-up
 - [x] Diagnose the broken header-logo image observed after managed asset cleanup and identify a storage-backed replacement that preserves deployment limits.
 - [x] Apply the smallest safe logo rendering correction, verify the landing page at desktop and mobile widths, and publish the correction to GitHub and managed hosting. The shared logo component, document shell metadata, and managed application logo configuration all use the uploaded storage paths; desktop and mobile headers render correctly.
+
+## Remote Merge Asset Regression Follow-up
+- [x] Re-remove only the two already-approved oversized local brand PNG duplicates reintroduced by concurrent GitHub history, then re-verify the managed storage references and checkpoint readiness.
+
+## Concurrent Global Admin Regression Follow-up
+- [x] Register the merged protected Global Admin tRPC procedures in the application router, preserve its authorization boundaries, and make its focused contract tests pass. Verified with the focused Global Admin and managed-logo suites (6 tests) plus TypeScript.
