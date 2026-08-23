@@ -1954,7 +1954,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
 
   // Auto-show once per day for exec roles
   const [open, setOpen] = useState(() => {
-    if (!BRIEFING_EXEC_ROLES.has(currentUser?.role)) return false;
+    if (!BRIEFING_EXEC_ROLES.has(canonicalRoleId(currentUser?.role))) return false;
     try { return !localStorage.getItem(briKey); } catch { return false; }
   });
   const [printing, setPrinting] = useState(false);
@@ -3272,6 +3272,26 @@ const ROLES = [
     allowedModules: ["procurement"], primaryModules: ["procurement"], writeAccess: "none",
   },
 ];
+
+const ROLE_ALIASES = {
+  owner: "Organization Owner",
+  admin: "Super Administrator",
+  "system administrator": "Super Administrator",
+};
+
+export function canonicalRoleId(role) {
+  const value = String(role || "").trim();
+  if (!value) return "Employee";
+  const alias = ROLE_ALIASES[value.toLowerCase()];
+  if (alias) return alias;
+  const matched = ROLES.find((entry) => entry.id.toLowerCase() === value.toLowerCase());
+  return matched?.id || "Employee";
+}
+
+export function roleDefinitionFor(role) {
+  const canonicalId = canonicalRoleId(role);
+  return ROLES.find((entry) => entry.id === canonicalId) || ROLES.find((entry) => entry.id === "Employee");
+}
 
 // Dynamic Home Screen — every role lands on a genuinely different
 // dashboard, not a cosmetic label change. Reuses the exact real Analytics
@@ -5844,14 +5864,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const roleChangeRows = roleChangeApprovalsQuery?.data?.approvals || [];
   const pendingRoleChangeRows = roleChangeRows.filter((row) => row.status === "Pending Review");
   const reviewableRoleChangeRows = pendingRoleChangeRows.filter((row) => row.data?.targetUserId !== currentUser.id);
-  const canReviewRoleChanges = PASSKEY_READINESS_ROLES.has(currentUser.role);
+  const canReviewRoleChanges = PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role));
   const decideRoleChangeMutation = trpc.decideRoleChangeApproval.useMutation({
     onSuccess: () => { roleChangeApprovalsQuery?.refetch?.(); notify("Role-change decision recorded ✓"); },
     onError: (error) => notify(error.message || "The role-change decision could not be saved.", "error"),
   });
-  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
-  const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
-  const canViewMarketIntelligence = ["owner", "Owner", "Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager"].includes(currentUser.role);
+  const currentRole = roleDefinitionFor(currentUser.role);
+  const roleView = ROLE_HOME_VIEW[currentRole.id] || "executive";
+  const canViewMarketIntelligence = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager"].includes(canonicalRoleId(currentUser.role));
   const vatAnomalySettingsQuery = trpc.traFiscal.getVatAnomalySettings.useQuery(
     { companyId: company?.id || "" },
     { enabled: Boolean(company?.id) },
@@ -6292,7 +6312,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // for data this screen genuinely does not have, this gives a direct,
   // one-click path into the real module instead.
   if (roleView === "focused") {
-    const preferredTarget = currentUser.role === "Project Manager" ? "projects" : "support";
+    const preferredTarget = currentRole.id === "Project Manager" ? "projects" : "support";
     const target = currentRole.allowedModules.includes(preferredTarget)
       ? preferredTarget
       : (currentRole.primaryModules[0] || currentRole.allowedModules[0]);
@@ -17593,7 +17613,7 @@ const APPROVER_ROLES = new Set([
   "Finance Manager","HR Manager","Sales Manager","Procurement Officer","Warehouse Manager","Project Manager",
 ]);
 function isApprover(user) {
-  return user?.writeAccess === "full" || APPROVER_ROLES.has(user?.role);
+  return user?.writeAccess === "full" || APPROVER_ROLES.has(canonicalRoleId(user?.role));
 }
 
 function mapDutyRow(r) {
@@ -27254,7 +27274,7 @@ function SupportPolicyCenter() {
   const [workflowPanel, setWorkflowPanel] = useState(false);
   const [slaPanel, setSlaPanel] = useState(false);
   const profile = workflowPolicies.data?.profile || slaPolicies.data?.profile;
-  const canConfigure = !IS_CONFIGURED || SUPPORT_CONFIGURATION_ROLE_NAMES.has(profile?.role);
+  const canConfigure = !IS_CONFIGURED || SUPPORT_CONFIGURATION_ROLE_NAMES.has(canonicalRoleId(profile?.role));
   const workflows = workflowPolicies.data?.workflows || [];
   const policies = slaPolicies.data?.policies || [];
 
@@ -34205,7 +34225,7 @@ function TeamWorkspaces({ employees, currentUser }) {
   const [exportColumns, setExportColumns] = useState({ id: true, name: true, department: true, role: true, workspaces: true });
   const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
 
-  const isManagerOrAdmin = ["Super Administrator", "Organization Owner", "CEO", "COO", "HR Manager", "Department Head"].includes(currentUser?.role) || allowedDepartments.length === 0;
+  const isManagerOrAdmin = ["Super Administrator", "Organization Owner", "CEO", "COO", "HR Manager", "Department Head"].includes(canonicalRoleId(currentUser?.role)) || allowedDepartments.length === 0;
 
   async function addWorkspace(form) {
     if (savingWorkspace) return;
@@ -35976,13 +35996,13 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
     onSuccess: (result) => notify(result.ok ? `Collaboration Hub webhook connected (HTTP ${result.status}).` : `Webhook responded with HTTP ${result.status}.`, result.ok ? "success" : "error"),
     onError: (error) => notify(error.message || "Collaboration Hub webhook test failed.", "error"),
   });
-  const canManageCompanySettings = ["owner", "Owner", "Organization Owner", "CEO", "Super Administrator", "System Administrator"].includes(currentUser.role);
+  const canManageCompanySettings = ["Organization Owner", "CEO", "Super Administrator"].includes(canonicalRoleId(currentUser.role));
   const marketProviderConfigQuery = trpc.marketIntelligence.configuration.useQuery(
     { companyId: company?.id || "" },
     { enabled: Boolean(company?.id) && canManageCompanySettings },
   );
   const dirty = JSON.stringify(draft) !== JSON.stringify(company) || Boolean(workflowWebhookSecret.trim());
-  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
+  const currentRole = roleDefinitionFor(currentUser.role);
 
   useEffect(() => {
     setDraft(company);
@@ -36430,7 +36450,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                     onClick={() => notify("Use the role-change approval workflow below. Your active access remains unchanged until an independent administrator approves the request.")}
                     title={r.description}
                     className={`text-[12.5px] font-medium rounded-lg py-2.5 px-2 border transition-colors ${
-                      currentUser.role === r.id ? "border-[#16A34A] bg-[#16A34A]/8 text-[#111827]" : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                      currentRole.id === r.id ? "border-[#16A34A] bg-[#16A34A]/8 text-[#111827]" : "border-slate-200 text-slate-500 hover:bg-slate-50"
                     }`}
                   >
                     {r.id}
@@ -36464,7 +36484,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
       <PushDeliveryHistoryPanel companyId={company.id} canManage={canManageCompanySettings} />
       <RoleChangeApprovalPanel currentUser={currentUser} />
 
-      <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(currentUser.role)} />
+      <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role))} />
       {canManageCompanySettings && <section className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm" aria-labelledby="tenant-security-branding-title">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -36511,7 +36531,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         </div>
         <p className="mt-4 text-[10.5px] leading-4 text-slate-400">Click <strong className="font-semibold text-slate-600">Save Company Profile</strong> below to persist these settings. Images are validated, stored under the current tenant, and never sent to the browser as raw upload bytes after save.</p>
       </section>}
-      {PASSKEY_READINESS_ROLES.has(currentUser.role) && <QuarterlySecurityReviewChecklist companyName={company.name} companyId={company.id} userId={currentUser.id} />}
+      {PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role)) && <QuarterlySecurityReviewChecklist companyName={company.name} companyId={company.id} userId={currentUser.id} />}
 
       {!canManageCompanySettings && (
         <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
@@ -37520,7 +37540,7 @@ function RoleChangeApprovalPanel({ currentUser }) {
   const approvals = trpc.listRoleChangeApprovals.useQuery(undefined, { retry: false });
   const requestMutation = trpc.requestRoleChangeApproval.useMutation({ onSuccess: () => { setRequestedRole(""); setReason(""); approvals.refetch(); notify("Role change submitted for independent review. Your active access has not changed."); } });
   const decideMutation = trpc.decideRoleChangeApproval.useMutation({ onSuccess: () => { approvals.refetch(); notify("Role-change decision recorded. Approved access updates only after the server confirms it."); } });
-  const canDecide = PASSKEY_READINESS_ROLES.has(currentUser.role);
+  const canDecide = PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role));
   const rows = approvals.data?.approvals || [];
   const markReadMutation = trpc.roleChangeApprovals.markRead.useMutation({
     onSuccess: () => approvals.refetch(),
@@ -40694,7 +40714,7 @@ function PosReconciliationDashboard({ currentUser }) {
   const syncedCount = reconciliation.rows.filter((row) => row.status === "synced").length;
   const attentionCount = reconciliation.rows.filter((row) => row.status === "needs_attention").length;
   const displayDate = (value) => value ? new Date(value).toLocaleString() : "—";
-  const canExport = ["admin", "manager", "owner"].includes(String(currentUser?.role || "").toLowerCase());
+  const canExport = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager", "HR Manager", "Sales Manager", "Procurement Officer", "Warehouse Manager", "Project Manager"].includes(canonicalRoleId(currentUser?.role));
 
   function exportFilteredReconciliation() {
     if (!canExport || typeof document === "undefined") return;
@@ -43311,121 +43331,6 @@ function LoginPage({ onAuthenticated, onSwitchToSignup, onForgotPassword, initia
       window.location.reload();
     }}
   />;
-
-  return (
-    <div className="min-h-screen w-full flex" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
-      {/* Left — brand panel, hidden on small screens */}
-      <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-12" style={{ background: "linear-gradient(160deg, #052614 0%, #0F4D26 35%, #16A34A 70%, #22C55E 100%)" }}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-96 h-96 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #4ADE80 0%, transparent 70%)", top: "-100px", right: "-80px", filter: "blur(70px)" }} />
-          <div className="absolute w-64 h-64 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #BBF7D0 0%, transparent 70%)", bottom: "5%", left: "10%", filter: "blur(50px)" }} />
-          <svg className="absolute opacity-8" style={{ bottom: "15%", right: "5%", width: 180, height: 208 }} viewBox="0 0 120 140">
-            <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="none" stroke="#4ADE80" strokeWidth="1.5" />
-          </svg>
-          <svg className="absolute opacity-6" style={{ top: "5%", left: "5%", width: 80, height: 92 }} viewBox="0 0 120 140">
-            <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="none" stroke="#86EFAC" strokeWidth="2" />
-          </svg>
-        </div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
-            <svg width="40" height="46" viewBox="0 0 120 140">
-              <defs><linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#4ADE80"/><stop offset="100%" stopColor="#16A34A"/></linearGradient></defs>
-              <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="url(#lg1)"/>
-              <text x="60" y="76" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="52" fontWeight="900" fontFamily="Poppins,sans-serif">S</text>
-            </svg>
-            <div>
-              <p className="text-white font-bold text-[18px] leading-tight" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
-              <p className="text-white/50 text-[11px] tracking-wide uppercase">Enterprise Edition</p>
-            </div>
-          </div>
-          <h2 className="text-[36px] font-bold text-white leading-tight mb-4" style={{ fontFamily: "Poppins,sans-serif" }}>Africa first AI-powered Business Ecosystem</h2>
-          <p className="text-white/65 text-[14px] leading-relaxed">Manage every aspect of your organisation — from sales and inventory to HR, tax, and AI insights — in one place.</p>
-        </div>
-        <div className="relative z-10 space-y-3">
-          {[["TRA Tax Center", "PAYE, SDL, WCF with real brackets"],["Biometric Attendance", "Real fingerprint via WebAuthn"],["AI Command Center", "English & Kiswahili, live business data"]].map(([t,s]) => (
-            <div key={t} className="flex items-start gap-2.5">
-              <div className="w-5 h-5 rounded-full bg-[#4ADE80]/20 flex items-center justify-center shrink-0 mt-0.5"><CheckCircle2 size={12} className="text-[#4ADE80]" /></div>
-              <div><p className="text-white text-[13px] font-medium">{t}</p><p className="text-white/50 text-[11.5px]">{s}</p></div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Right — the form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-[#F8FAFC]">
-        <div className="w-full max-w-sm" style={{ perspective: "1200px" }} onMouseMove={handleMouseMove} onMouseLeave={() => { setTiltX(0); setTiltY(0); }}>
-          {/* Mobile brand — only on small screens */}
-          <div className="flex lg:hidden flex-col items-center mb-8">
-            <svg width="48" height="55" viewBox="0 0 120 140" className="mb-2">
-              <defs><linearGradient id="mlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#4ADE80"/><stop offset="100%" stopColor="#16A34A"/></linearGradient></defs>
-              <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="url(#mlg)"/>
-              <text x="60" y="76" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="52" fontWeight="900" fontFamily="Poppins,sans-serif">S</text>
-            </svg>
-            <p className="font-bold text-[#111827] text-[18px]" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
-          </div>
-
-          <div style={{ transform: `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`, transition: "transform 0.12s ease-out" }}>
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8">
-              <div className="mb-7">
-                <h1 className="text-[22px] font-bold text-[#111827] mb-1" style={{ fontFamily: "Poppins,sans-serif" }}>Welcome back</h1>
-                <p className="text-[13px] text-slate-500">Sign in to your account to continue</p>
-              </div>
-
-              {error && <div className="mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-100 text-[12.5px] text-red-700"><AlertCircle size={13} className="shrink-0" />{error}</div>}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Email address</label>
-                  <input type="text" value={identifier} autoComplete="email" onChange={(e) => setIdentifier(e.target.value)} placeholder="you@company.com"
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[13.5px] text-[#111827] placeholder-slate-300 outline-none focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 transition-all" />
-                </div>
-                <div>
-                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Password</label>
-                  <div className="relative">
-                    <input type={showPassword ? "text" : "password"} value={password} autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-                      className="w-full border border-slate-200 rounded-xl px-4 py-3 pr-11 text-[13.5px] text-[#111827] placeholder-slate-300 outline-none focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 transition-all" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                      {showPassword ? <EyeOff size={15}/> : <Eye size={15}/>}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-end">
-                  <button type="button" onClick={onForgotPassword} className="text-[12px] font-semibold text-[#0B5D3B] transition hover:text-[#084B30] hover:underline">Forgot password?</button>
-                </div>
-                <button type="submit" disabled={busy || !identifier.trim() || !password}
-                  className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white transition-all disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.35)" }}>
-                  {busy ? "Signing in…" : "Sign in"}
-                </button>
-              </form>
-
-              {IS_CONFIGURED && (
-                <div className="mt-5">
-                  <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-wide text-slate-400"><span className="h-px flex-1 bg-slate-100" />or continue with<span className="h-px flex-1 bg-slate-100" /></div>
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("google")} className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"><GoogleGlyph size={14} />Google</button>
-                    <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("azure")} className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"><MicrosoftGlyph size={14} />Microsoft</button>
-                    <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("apple")} className="rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50">Apple</button>
-                  </div>
-                  <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">If you first joined with Google, Microsoft, or Apple, continue with that same provider.</p>
-                </div>
-              )}
-
-              <p className="text-center text-[12.5px] text-slate-500 mt-5">
-                Don't have an account? <button type="button" onClick={onSwitchToSignup} className="font-semibold text-[#16A34A] hover:underline">Create one</button>
-              </p>
-              {!IS_CONFIGURED && <button type="button" onClick={() => { DEMO_OVERRIDE = true; onAuthenticated({ demo: true }); }}
-                className="w-full mt-3 flex items-center justify-center gap-2 text-[12.5px] font-medium text-slate-500 hover:text-[#16A34A] border border-slate-200 rounded-xl py-2.5 transition-colors">
-                <Sparkles size={13} className="text-[#16A34A]" /> Preview demo — no account needed
-              </button>}
-              {!IS_CONFIGURED && <p className="text-center text-[11px] text-slate-400 mt-3">Demo mode — any credentials continue to the sample company.</p>}
-            </div>
-          </div>
-          <p className="text-center text-[11px] text-slate-400 mt-4">© {new Date().getFullYear()} Smart Manager · Enterprise Business Ecosystem</p>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // Real inline brand glyphs — not a lucide icon standing in for a brand
@@ -52139,7 +52044,7 @@ function SmartManager() {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   // Role-based access and session state initialized first to prevent temporal dead zones
   const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
-  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
+  const currentRole = roleDefinitionFor(currentUser.role);
   const canManage = currentRole.writeAccess === "full";
 
   const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
@@ -52322,7 +52227,7 @@ function SmartManager() {
     navigateAuthView("login");
   }, [session]);
 
-  const isAdministrativeSession = Boolean(session?.accessToken && !session?.demo && PASSKEY_READINESS_ROLES.has(currentUser.role));
+  const isAdministrativeSession = Boolean(session?.accessToken && !session?.demo && PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role)));
   useEffect(() => {
     if (!isAdministrativeSession) {
       setIdleWarningOpen(false);
@@ -52467,7 +52372,7 @@ function SmartManager() {
 
   // Role-based access state initialized at the top of SmartManager to prevent temporal dead zones.
   const roleChangeApprovalsQuery = trpc.listRoleChangeApprovals.useQuery(undefined, {
-    enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id && PASSKEY_READINESS_ROLES.has(currentUser.role)),
+    enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id && PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role))),
     retry: false,
     refetchInterval: 10000,
   });
@@ -52781,10 +52686,10 @@ function SmartManager() {
   // to just this customer's own data comes from the RLS policies added
   // alongside profiles.customer_ref, not from this branch — this is only
   // deciding which UI to show, the database decides what data comes back.
-  if (currentRole.category === "External Portal" && currentUser.role === "External Client") {
+  if (currentRole.category === "External Portal" && currentRole.id === "External Client") {
     return <CustomerPortal currentUser={currentUser} invoices={invoices} filesHook={files} onSignOut={handleSignOut} />;
   }
-  if (currentRole.category === "External Portal" && currentUser.role === "Supplier") {
+  if (currentRole.category === "External Portal" && currentRole.id === "Supplier") {
     return <ExternalSupplierPortal currentUser={currentUser} onSignOut={handleSignOut} />;
   }
 

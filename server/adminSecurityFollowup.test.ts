@@ -18,7 +18,7 @@ describe("administrator security follow-up", () => {
 
   it("keeps the quarterly review administrator-only and local rather than presenting it as compliance evidence", () => {
     expect(dashboard).toContain("QuarterlySecurityReviewChecklist");
-    expect(dashboard).toContain("PASSKEY_READINESS_ROLES.has(currentUser.role)");
+    expect(dashboard).toContain("PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role))");
     expect(dashboard).toContain("not presented as compliance evidence");
   });
 });

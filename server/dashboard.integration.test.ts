@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, canonicalRoleId, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, roleDefinitionFor, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 import { setGuardedPersistenceCompanyId } from "../client/src/lib/guardedPersistenceClient";
 
 const jsonResponse = (body: unknown, status = 200) => ({
@@ -106,10 +106,10 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps reload-session and provider-specific OAuth routes in the dashboard", () => {
     expect(dashboardSource).toContain('window.localStorage.getItem("bs_access_token")');
     expect(dashboardSource).toContain("authGetUser(token)");
-    expect(dashboardSource).toContain('authSignInWithOAuth("google")');
-    expect(dashboardSource).toContain('authSignInWithOAuth("azure")');
-    expect(dashboardSource).toContain('authSignInWithOAuth("apple")');
-    expect(dashboardSource).toContain("/auth/v1/authorize?provider=${provider}");
+    expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("google")}');
+    expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("azure")}');
+    expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("apple")}');
+    expect(publicAuthSource).toContain("/auth/v1/authorize?provider=${encodeURIComponent(provider)}");
   });
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
@@ -131,7 +131,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps password-login failures truthful instead of collapsing them into a generic connection message", () => {
     expect(dashboardSource).toContain("toAuthUserMessage(loginError)");
     expect(dashboardSource).toContain("validatePasswordLogin(identifier, password)");
-    expect(dashboardSource).toContain("continue with that same provider");
+    expect(enterpriseAuthSource).toContain("Use the same provider you used when your workspace account was created.");
     expect(dashboardSource).not.toContain('setError("Something went wrong — check your connection.")');
   });
 
@@ -249,7 +249,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("keeps focused and minimal role home views inside each role's allowed module scope", () => {
-    expect(dashboardSource).toContain('const preferredTarget = currentUser.role === "Project Manager" ? "projects" : "support"');
+    expect(dashboardSource).toContain('const preferredTarget = currentRole.id === "Project Manager" ? "projects" : "support"');
     expect(dashboardSource).toContain("currentRole.allowedModules.includes(preferredTarget)");
     expect(dashboardSource).toContain('aria-label={`Open permitted ${targetLabel} workspace`}');
     expect(dashboardSource).toContain("does not duplicate that view or expose unrelated company-wide data");
@@ -815,7 +815,15 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(resolveDailyBriefingFetchState({ sources: [], usingDemoBriefing: true, previewState: "loading" }).loading).toBe(true);
     expect(resolveDailyBriefingFetchState({ sources: [], usingDemoBriefing: true, previewState: "error" }).error?.message).toBe("Daily Briefing preview fetch failed");
   });
-});
+
+  it("canonicalizes legacy lowercase roles without granting unknown profiles a higher-privilege fallback", () => {
+    expect(canonicalRoleId("owner")).toBe("Organization Owner");
+    expect(canonicalRoleId("ADMIN")).toBe("Super Administrator");
+    expect(canonicalRoleId("finance manager")).toBe("Finance Manager");
+    expect(canonicalRoleId("unrecognized-role")).toBe("Employee");
+    expect(roleDefinitionFor("owner").writeAccess).toBe("full");
+    expect(roleDefinitionFor("unrecognized-role").writeAccess).toBe("none");
+  });
 
   it("supports departmental budget thresholds, inline limit adjustments, alert status classification, and visual comparison bar chart", () => {
     const prefsContext = readFileSync(new URL("../client/src/contexts/DashboardPreferencesContext.tsx", import.meta.url), "utf8");
@@ -898,4 +906,6 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
   expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"');
   expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"');
   expect(dashboardSource).toContain('<LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated=');
+});
+
 });
