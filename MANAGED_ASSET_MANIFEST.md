@@ -9,7 +9,7 @@ The following media was moved from project-local storage to managed project stor
 | `client/public/brand/smart-manager-logo.png` | `/manus-storage/smart-manager-logo_ad2a1e4d.png` |
 | `client/public/brand/smart-manager-mark.png` | `/manus-storage/smart-manager-mark_aa277576.png` |
 
-The managed application configuration already uses a storage-hosted logo. No source file references to the removed local brand paths were found.
+The managed application configuration uses a storage-hosted logo. After project-local cleanup, the shared `BrandLogo` component and document shell were updated to use the managed logo and mark paths directly. The desktop landing-page header was verified after this correction; no source file references to the removed local brand paths remain.
 
 ## UI/UX Reference Pack
 

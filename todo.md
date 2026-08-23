@@ -331,3 +331,7 @@
 - [x] Verify the uploaded managed-storage asset locations and identify all active code references to blocked local media.
 - [x] Replace active brand media references with managed-storage URLs and retain the original asset names in the storage record. The managed application configuration already uses storage-hosted branding; no local source reference required replacement.
 - [x] Remove only confirmed duplicate local media from the project, validate deployment readiness, and save the recovered publication checkpoint. Verified the exact 22 deletions, clean diff, TypeScript check, and focused merged subscription contracts; the broader suite was memory-terminated before completion, so it was not treated as a passing result.
+
+## Header Logo Rendering Follow-up
+- [x] Diagnose the broken header-logo image observed after managed asset cleanup and identify a storage-backed replacement that preserves deployment limits.
+- [x] Apply the smallest safe logo rendering correction, verify the landing page at desktop and mobile widths, and publish the correction to GitHub and managed hosting. The shared logo component, document shell metadata, and managed application logo configuration all use the uploaded storage paths; desktop and mobile headers render correctly.
