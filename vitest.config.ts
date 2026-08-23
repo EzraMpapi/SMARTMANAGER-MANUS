@@ -14,6 +14,15 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Unit tests mock the network but still need syntactically valid configuration
+    // to exercise verified-session code paths. These values are intentionally non-secret.
+    env: {
+      VITE_SUPABASE_URL: "https://unit-test.supabase.invalid",
+      VITE_SUPABASE_ANON_KEY: "unit-test-anon-key",
+      SUPABASE_SECRET_KEY: "unit-test-service-key",
+      BUILT_IN_FORGE_API_URL: "https://unit-test-forge.invalid",
+      BUILT_IN_FORGE_API_KEY: "unit-test-forge-key",
+    },
     include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
   },
 });

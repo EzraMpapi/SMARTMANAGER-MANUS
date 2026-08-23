@@ -19,7 +19,7 @@ describe("Settings backend integration contracts", () => {
 
   it("prevents non-administrator Settings writes and disables duplicate profile submissions", () => {
     expect(settingsSource).toContain("const canManageCompanySettings");
-    expect(settingsSource).toContain('"owner"');
+    expect(settingsSource).toContain('canonicalRoleId(currentUser.role)');
     expect(settingsSource).toContain("{canManageCompanySettings && (");
     expect(settingsSource).toContain("disabled={!dirty || workspaceSettingsMutation.isPending}");
     expect(settingsServiceSource).toContain("Only an organization administrator can change company settings.");

@@ -13,6 +13,24 @@ describe("application bootstrap recovery", () => {
     expect(source).toContain("window.location.reload();");
   });
 
+  it("registers a publishable-only runtime auth configuration route", () => {
+    const source = readFileSync(resolve(process.cwd(), "server/_core/apiApp.ts"), "utf8");
+
+    expect(source).toContain('app.get("/api/config/public"');
+    expect(source).toContain("ENV.supabaseUrl");
+    expect(source).toContain("ENV.supabaseAnonKey");
+    expect(source).not.toContain("ENV.supabaseSecretKey");
+  });
+
+  it("falls back from blank legacy Supabase values to trimmed public Vite values", () => {
+    const source = readFileSync(resolve(process.cwd(), "server/_core/env.ts"), "utf8");
+
+    expect(source).toContain("const firstNonEmptyEnv");
+    expect(source).toContain("process.env.SUPABASE_URL, process.env.VITE_SUPABASE_URL");
+    expect(source).toContain("process.env.SUPABASE_ANON_KEY, process.env.VITE_SUPABASE_ANON_KEY");
+    expect(source).toContain("supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? \"\"");
+  });
+
   it("keeps auth route detection safe when browser storage is unavailable", () => {
     const source = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
 

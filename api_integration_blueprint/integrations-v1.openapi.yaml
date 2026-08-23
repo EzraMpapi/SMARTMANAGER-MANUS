@@ -1,0 +1,315 @@
+openapi: 3.2.0
+info:
+  title: SMART MANAGER External ERP Integration API
+  version: 1.0.0
+  description: |
+    Partner-facing, tenant-bound API for external ERP integrations.
+    Internal React workspace calls remain on tRPC; this facade is the stable
+    REST/OpenAPI contract for system-to-system integration.
+servers:
+  - url: https://api.smartmanager.tz/integrations/v1
+    description: Production
+  - url: https://sandbox-api.smartmanager.tz/integrations/v1
+    description: Sandbox
+security:
+  - oauth2Client: []
+  - hmacApiKey: []
+tags:
+  - name: Operations
+  - name: Parties
+  - name: Finance
+  - name: Inventory
+  - name: Webhooks
+paths:
+  /operations/{operationId}:
+    get:
+      tags: [Operations]
+      operationId: getOperation
+      parameters:
+        - $ref: '#/components/parameters/OperationId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Operation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /parties/upsert:
+    post:
+      tags: [Parties]
+      operationId: upsertParty
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ConnectionId'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyUpsertRequest'
+      responses:
+        '202':
+          description: Accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /finance/receipts:
+    post:
+      tags: [Finance]
+      operationId: submitReceipt
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ConnectionId'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptSubmitRequest'
+      responses:
+        '202':
+          description: Accepted; posting policy may require approval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /inventory/movements:
+    post:
+      tags: [Inventory]
+      operationId: submitInventoryMovement
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/ConnectionId'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryMovementRequest'
+      responses:
+        '202':
+          description: Accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /webhook-subscriptions:
+    post:
+      tags: [Webhooks]
+      operationId: createWebhookSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookSubscriptionRequest'
+      responses:
+        '201':
+          description: Subscription created
+        '400':
+          $ref: '#/components/responses/BadRequest'
+components:
+  parameters:
+    OperationId:
+      name: operationId
+      in: path
+      required: true
+      schema: {type: string}
+    ConnectionId:
+      name: X-Connection-Id
+      in: header
+      required: true
+      schema: {type: string}
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema: {type: string}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 8, maxLength: 200}
+  securitySchemes:
+    oauth2Client:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.smartmanager.tz/oauth/token
+          scopes:
+            customers:read: Read parties
+            customers:write: Create or update parties
+            finance:submit: Submit financial commands
+            finance:approve: Approve financial commands
+            finance:post: Post financial commands
+            inventory:write: Submit inventory movements
+            webhooks:manage: Manage webhook subscriptions
+    hmacApiKey:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+      description: Key identifier used with X-Signature, X-Request-Timestamp, and nonce replay protection.
+  schemas:
+    ExternalRef:
+      type: object
+      required: [system, type, id]
+      properties:
+        system: {type: string}
+        type: {type: string}
+        id: {type: string}
+        version: {type: string}
+    Money:
+      type: object
+      required: [value, currency]
+      properties:
+        value: {type: string, pattern: '^-?[0-9]+(\\.[0-9]{1,4})?$'}
+        currency: {type: string, minLength: 3, maxLength: 3, example: TZS}
+    PartyUpsertRequest:
+      type: object
+      required: [external_ref, party]
+      properties:
+        external_ref: {$ref: '#/components/schemas/ExternalRef'}
+        party:
+          type: object
+          required: [kind, legal_name]
+          properties:
+            kind: {type: string, enum: [customer, supplier, employee, member, organization]}
+            legal_name: {type: string}
+            display_name: {type: string}
+            tax_id: {type: string, nullable: true}
+            national_id: {type: string, nullable: true}
+            phone: {type: string, nullable: true}
+            email: {type: string, format: email, nullable: true}
+        source_updated_at: {type: string, format: date-time}
+    ReceiptSubmitRequest:
+      type: object
+      required: [external_ref, amount, occurred_at, lines]
+      properties:
+        external_ref: {$ref: '#/components/schemas/ExternalRef'}
+        amount: {$ref: '#/components/schemas/Money'}
+        occurred_at: {type: string, format: date-time}
+        branch_external_id: {type: string, nullable: true}
+        account_external_id: {type: string, nullable: true}
+        lines:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [account_external_id, side, amount]
+            properties:
+              account_external_id: {type: string}
+              side: {type: string, enum: [debit, credit]}
+              amount: {$ref: '#/components/schemas/Money'}
+              memo: {type: string, nullable: true}
+    InventoryMovementRequest:
+      type: object
+      required: [external_ref, movement_type, occurred_at, lines]
+      properties:
+        external_ref: {$ref: '#/components/schemas/ExternalRef'}
+        movement_type: {type: string, enum: [receipt, issue, transfer, adjustment, count]}
+        occurred_at: {type: string, format: date-time}
+        warehouse_external_id: {type: string}
+        lines:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [item_external_id, quantity, unit]
+            properties:
+              item_external_id: {type: string}
+              quantity: {type: string}
+              unit: {type: string}
+              unit_cost: {$ref: '#/components/schemas/Money'}
+    OperationResponse:
+      type: object
+      required: [operation]
+      properties:
+        operation:
+          type: object
+          required: [id, status, resource_type, idempotency_key]
+          properties:
+            id: {type: string}
+            status: {type: string, enum: [accepted, validating, pending_approval, processing, completed, rejected, failed, needs_review, cancelled, reconciled]}
+            resource_type: {type: string}
+            resource_id: {type: string, nullable: true}
+            idempotency_key: {type: string}
+            poll_url: {type: string}
+        meta:
+          type: object
+          properties:
+            correlation_id: {type: string}
+            connection_id: {type: string}
+    WebhookSubscriptionRequest:
+      type: object
+      required: [callback_url, event_types]
+      properties:
+        callback_url: {type: string, format: uri}
+        event_types:
+          type: array
+          minItems: 1
+          items: {type: string}
+        active: {type: boolean, default: true}
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: {type: string, format: uri}
+        title: {type: string}
+        status: {type: integer}
+        detail: {type: string}
+        instance: {type: string}
+        correlation_id: {type: string}
+        operation_id: {type: string}
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              pointer: {type: string}
+              code: {type: string}
+              detail: {type: string}
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    NotFound:
+      description: Resource not found within authorized tenant
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    Conflict:
+      description: Idempotency or state conflict
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+    ValidationError:
+      description: Domain validation failed
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}

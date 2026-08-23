@@ -1,6 +1,8 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
+import { ENV } from "./env";
+import { getBearerToken } from "./authHeaders";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -16,11 +18,10 @@ export async function createContext(
   try {
     user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
-    const authHeader = opts.req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.slice(7);
-      const supabaseUrl = process.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+    const token = getBearerToken(opts.req);
+    if (token) {
+      const supabaseUrl = ENV.supabaseUrl;
+      const supabaseAnonKey = ENV.supabaseAnonKey;
       if (token && supabaseUrl && supabaseAnonKey && token !== supabaseAnonKey) {
         try {
           const response = await fetch(`${supabaseUrl}/auth/v1/user`, {

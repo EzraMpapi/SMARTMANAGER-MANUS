@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { getBearerToken } from "./_core/authHeaders";
 import { createReportSchedule, deleteReportSchedule, listReportSchedules, sendReportScheduleNow, updateReportSchedule } from "./reportSchedules";
 import { listAuditLogs, recordAuditLog } from "./auditLogs";
 import { verifyDatabaseBackupStatus } from "./backupVerification";
@@ -18,7 +19,9 @@ import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } f
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { getWorkspaceSettings, saveWorkspaceSettings } from "./workspaceSettings";
+import { dashboardPreferencesInput, getDashboardPreferences, saveDashboardPreferences } from "./dashboardPreferences";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
+import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
@@ -37,7 +40,26 @@ import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePa
 import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPatientPortalReference, linkPatientPortalReferenceInput, listPortalReferenceReconciliation, portalReferenceListInput } from "./healthcarePortalReconciliation";
 import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceDeliveryHistory, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceDeliveryHistoryInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
 import { closeMicrofinanceCashSession, createMicrofinanceBorrower, createMicrofinanceCollateral, createMicrofinanceCollection, createMicrofinanceGroup, createMicrofinanceGuarantor, createMicrofinanceProduct, decideMicrofinanceApplication, disburseMicrofinanceLoan, getMicrofinanceCreditScoringSettings, getMicrofinanceEscalationSettings, listMicrofinanceAudit, listMicrofinanceDashboard, listMicrofinanceEscalationHistory, microfinanceApplicationInput, microfinanceBorrowerInput, microfinanceCashCloseInput, microfinanceCashOpenInput, microfinanceCollateralInput, microfinanceCollectionInput, microfinanceCreditScoringSettingsInput, microfinanceDecisionInput, microfinanceDisbursementInput, microfinanceEscalationSettingsInput, microfinanceGroupInput, microfinanceGuarantorInput, microfinanceListInput, microfinanceProductInput, microfinanceRepaymentInput, microfinanceSavingsInput, openMicrofinanceCashSession, recordMicrofinanceRepayment, recordMicrofinanceSavings, saveMicrofinanceCreditScoringSettings, saveMicrofinanceEscalationSettings, submitMicrofinanceApplication } from "./microfinanceOperations";
+import { getMoneyAgentCustomerSnapshot, getMoneyAgentSnapshot, moneyAgentActionInput, moneyAgentListInput, runMoneyAgentAction } from "./moneyAgentOperations";
+import { getPropertySnapshot, propertyActionInput, propertyDocumentUploadInput, propertyListInput, runPropertyAction, uploadPropertyDocument } from "./propertyManagementOperations";
 import { adjustPharmacyStock, archivePharmacyRecord, completePharmacySale, createPharmacyBrand, createPharmacyCategory, createPharmacyInsuranceClaim, createPharmacyMedicine, createPharmacyPurchaseOrder, createPharmacySupplier, createPharmacyTransfer, dispensePharmacyPrescription, getPharmacyAccess, getPharmacyClinicalQueue, getPharmacyDashboard, getPharmacyReports, listPharmacyAudit, listPharmacyRecords, markPharmacyNotificationRead, pharmacyAdjustmentInput, pharmacyArchiveInput, pharmacyBrandInput, pharmacyBrandUpdateInput, pharmacyCategoryInput, pharmacyCategoryUpdateInput, pharmacyClinicalQueueInput, pharmacyDispenseInput, pharmacyInsuranceClaimInput, pharmacyListInput, pharmacyMedicineInput, pharmacyMedicineUpdateInput, pharmacyNotificationInput, pharmacyPaymentInput, pharmacyPurchaseOrderInput, pharmacyReceiptInput, pharmacyReturnInput, pharmacySaleInput, pharmacySupplierInput, pharmacySupplierPaymentInput, pharmacySupplierUpdateInput, pharmacyTransferInput, receivePharmacyStock, recordPharmacySalePayment, recordPharmacySupplierPayment, returnPharmacySaleItems, updatePharmacyBrand, updatePharmacyCategory, updatePharmacyMedicine, updatePharmacySupplier } from "./pharmacyOperations";
+import { archiveSchoolRecord, assignSchoolService, createSchoolAcademicYear, createSchoolAdmission, createSchoolAnnouncement, createSchoolAssignment, createSchoolAssessment, createSchoolClass, createSchoolDepartment, createSchoolDisciplineRecord, createSchoolDocument, createSchoolFeeStructure, createSchoolGradingScale, createSchoolLibraryLoan, createSchoolServiceRecord, createSchoolStream, createSchoolSubject, createSchoolTeacher, createSchoolTeacherAssignment, createSchoolTerm, createSchoolTimetable, decideSchoolAdmission, decideSchoolApproval, decideSchoolScholarship, getSchoolAccess, getSchoolDashboard, getSchoolPortal, getSchoolReports, issueSchoolFeeInvoice, linkSchoolPortal, listSchoolAudit, listSchoolRecords, markSchoolNotificationRead, openSchoolAttendanceSession, publishSchoolReportCard, recordSchoolAssessmentScores, recordSchoolAttendance, recordSchoolInventoryMovement, recordSchoolPayment, requestSchoolApproval, requestSchoolScholarship, schoolAcademicYearInput, schoolAdmissionDecisionInput, schoolAdmissionInput, schoolAnnouncementInput, schoolApprovalDecisionInput, schoolApprovalRequestInput, schoolArchiveInput, schoolAssignmentInput, schoolAssignmentSubmissionInput, schoolAssessmentInput, schoolAttendanceInput, schoolAttendanceSessionInput, schoolClassInput, schoolDepartmentInput, schoolDisciplineInput, schoolDocumentInput, schoolDocumentUploadInput, schoolFeeStructureInput, schoolGradingScaleInput, schoolIdInput, schoolInventoryMovementInput, schoolInvoiceInput, schoolLibraryLoanInput, schoolListInput, schoolMessageInput, schoolPaymentInput, schoolPortalLinkInput, schoolReportCardInput, schoolScoreInput, schoolScholarshipDecisionInput, schoolScholarshipInput, schoolServiceAssignmentInput, schoolServiceInput, schoolStreamInput, schoolSubjectInput, schoolTeacherAssignmentInput, schoolTeacherInput, schoolTermInput, schoolTimetableInput, sendSchoolMessage, submitSchoolAssignment, uploadSchoolDocument } from "./schoolOperations";
+import { addBeneficiary, addCollateral, addGroupMember, addGuarantor, createAmlAlert, createGroup, createLoanProduct, createPaymentInstruction, createReconciliation, createStandingOrder, createAccountType as createBankAccountType, customerStatement, decideLoanApplication, disburseLoan, listBankMfiSnapshot, moveCash, recordSharePurchase, runStandingOrders, scoreLoanApplication, openAccount, postTransaction, recordRepayment, registerCustomer, resolveAmlAlert, restructureLoan, runDailyControls, setupInstitution, submitLoanApplication, updateKyc, writeOffLoan } from "./bankMfiOperations";
+import { getProfileIdentity, removeProfileAvatar, updateProfileIdentity, uploadProfileAvatar } from "./profileIdentity";
+import {
+  acceptPosSyncSequence,
+  completePosSale,
+  decideWorkforceRoleAssignment,
+  openPosShift,
+  posCashMovementInput,
+  posCompleteSaleInput,
+  posOpenShiftInput,
+  posSyncSequenceInput,
+  recordPosCashMovement,
+  requestWorkforceRoleAssignment,
+  workforceRoleAssignmentInput,
+  workforceRoleDecisionInput,
+} from "./posWorkforceRpcAdapters";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -145,6 +167,22 @@ export const appRouter = router({
       .input(microfinanceCollectionInput)
       .mutation(({ ctx, input }) => createMicrofinanceCollection(ctx.req, input)),
   }),
+  propertyManagement: router({
+    snapshot: protectedProcedure.input(propertyListInput).query(({ ctx, input }) => getPropertySnapshot(ctx.req, input)),
+    action: protectedProcedure.input(propertyActionInput).mutation(({ ctx, input }) => runPropertyAction(ctx.req, input)),
+    uploadDocument: protectedProcedure.input(propertyDocumentUploadInput).mutation(({ ctx, input }) => uploadPropertyDocument(ctx.req, input)),
+  }),
+  moneyAgent: router({
+    snapshot: protectedProcedure
+      .input(moneyAgentListInput)
+      .query(({ ctx, input }) => getMoneyAgentSnapshot(ctx.req, input)),
+    customerSnapshot: protectedProcedure
+      .input(moneyAgentListInput)
+      .query(({ ctx, input }) => getMoneyAgentCustomerSnapshot(ctx.req, input)),
+    action: protectedProcedure
+      .input(moneyAgentActionInput)
+      .mutation(({ ctx, input }) => runMoneyAgentAction(ctx.req, input)),
+  }),
   pharmacy: router({
     access: protectedProcedure.query(({ ctx }) => getPharmacyAccess(ctx.req)),
     dashboard: protectedProcedure.query(({ ctx }) => getPharmacyDashboard(ctx.req)),
@@ -172,6 +210,52 @@ export const appRouter = router({
     createInsuranceClaim: protectedProcedure.input(pharmacyInsuranceClaimInput).mutation(({ ctx, input }) => createPharmacyInsuranceClaim(ctx.req, input)),
     returnSaleItems: protectedProcedure.input(pharmacyReturnInput).mutation(({ ctx, input }) => returnPharmacySaleItems(ctx.req, input)),
     markNotificationRead: protectedProcedure.input(pharmacyNotificationInput).mutation(({ ctx, input }) => markPharmacyNotificationRead(ctx.req, input)),
+  }),
+  school: router({
+    access: protectedProcedure.query(({ ctx }) => getSchoolAccess(ctx.req)),
+    dashboard: protectedProcedure.query(({ ctx }) => getSchoolDashboard(ctx.req)),
+    reports: protectedProcedure.query(({ ctx }) => getSchoolReports(ctx.req)),
+    portal: protectedProcedure.query(({ ctx }) => getSchoolPortal(ctx.req)),
+    list: protectedProcedure.input(schoolListInput).query(({ ctx, input }) => listSchoolRecords(ctx.req, input)),
+    audit: protectedProcedure.input(schoolListInput).query(({ ctx, input }) => listSchoolAudit(ctx.req, input)),
+    createAcademicYear: protectedProcedure.input(schoolAcademicYearInput).mutation(({ ctx, input }) => createSchoolAcademicYear(ctx.req, input)),
+    createTerm: protectedProcedure.input(schoolTermInput).mutation(({ ctx, input }) => createSchoolTerm(ctx.req, input)),
+    createDepartment: protectedProcedure.input(schoolDepartmentInput).mutation(({ ctx, input }) => createSchoolDepartment(ctx.req, input)),
+    createSubject: protectedProcedure.input(schoolSubjectInput).mutation(({ ctx, input }) => createSchoolSubject(ctx.req, input)),
+    createClass: protectedProcedure.input(schoolClassInput).mutation(({ ctx, input }) => createSchoolClass(ctx.req, input)),
+    createStream: protectedProcedure.input(schoolStreamInput).mutation(({ ctx, input }) => createSchoolStream(ctx.req, input)),
+    createGradingScale: protectedProcedure.input(schoolGradingScaleInput).mutation(({ ctx, input }) => createSchoolGradingScale(ctx.req, input)),
+    createTeacher: protectedProcedure.input(schoolTeacherInput).mutation(({ ctx, input }) => createSchoolTeacher(ctx.req, input)),
+    createAdmission: protectedProcedure.input(schoolAdmissionInput).mutation(({ ctx, input }) => createSchoolAdmission(ctx.req, input)),
+    decideAdmission: protectedProcedure.input(schoolAdmissionDecisionInput).mutation(({ ctx, input }) => decideSchoolAdmission(ctx.req, input)),
+    createTeacherAssignment: protectedProcedure.input(schoolTeacherAssignmentInput).mutation(({ ctx, input }) => createSchoolTeacherAssignment(ctx.req, input)),
+    createTimetable: protectedProcedure.input(schoolTimetableInput).mutation(({ ctx, input }) => createSchoolTimetable(ctx.req, input)),
+    openAttendanceSession: protectedProcedure.input(schoolAttendanceSessionInput).mutation(({ ctx, input }) => openSchoolAttendanceSession(ctx.req, input)),
+    recordAttendance: protectedProcedure.input(schoolAttendanceInput).mutation(({ ctx, input }) => recordSchoolAttendance(ctx.req, input)),
+    createAssessment: protectedProcedure.input(schoolAssessmentInput).mutation(({ ctx, input }) => createSchoolAssessment(ctx.req, input)),
+    recordAssessmentScores: protectedProcedure.input(schoolScoreInput).mutation(({ ctx, input }) => recordSchoolAssessmentScores(ctx.req, input)),
+    publishReportCard: protectedProcedure.input(schoolReportCardInput).mutation(({ ctx, input }) => publishSchoolReportCard(ctx.req, input)),
+    createAssignment: protectedProcedure.input(schoolAssignmentInput).mutation(({ ctx, input }) => createSchoolAssignment(ctx.req, input)),
+    submitAssignment: protectedProcedure.input(schoolAssignmentSubmissionInput).mutation(({ ctx, input }) => submitSchoolAssignment(ctx.req, input)),
+    createFeeStructure: protectedProcedure.input(schoolFeeStructureInput).mutation(({ ctx, input }) => createSchoolFeeStructure(ctx.req, input)),
+    issueFeeInvoice: protectedProcedure.input(schoolInvoiceInput).mutation(({ ctx, input }) => issueSchoolFeeInvoice(ctx.req, input)),
+    recordPayment: protectedProcedure.input(schoolPaymentInput).mutation(({ ctx, input }) => recordSchoolPayment(ctx.req, input)),
+    requestScholarship: protectedProcedure.input(schoolScholarshipInput).mutation(({ ctx, input }) => requestSchoolScholarship(ctx.req, input)),
+    decideScholarship: protectedProcedure.input(schoolScholarshipDecisionInput).mutation(({ ctx, input }) => decideSchoolScholarship(ctx.req, input)),
+    createServiceRecord: protectedProcedure.input(schoolServiceInput).mutation(({ ctx, input }) => createSchoolServiceRecord(ctx.req, input)),
+    assignService: protectedProcedure.input(schoolServiceAssignmentInput).mutation(({ ctx, input }) => assignSchoolService(ctx.req, input)),
+    createLibraryLoan: protectedProcedure.input(schoolLibraryLoanInput).mutation(({ ctx, input }) => createSchoolLibraryLoan(ctx.req, input)),
+    recordInventoryMovement: protectedProcedure.input(schoolInventoryMovementInput).mutation(({ ctx, input }) => recordSchoolInventoryMovement(ctx.req, input)),
+    createDisciplineRecord: protectedProcedure.input(schoolDisciplineInput).mutation(({ ctx, input }) => createSchoolDisciplineRecord(ctx.req, input)),
+    createAnnouncement: protectedProcedure.input(schoolAnnouncementInput).mutation(({ ctx, input }) => createSchoolAnnouncement(ctx.req, input)),
+    sendMessage: protectedProcedure.input(schoolMessageInput).mutation(({ ctx, input }) => sendSchoolMessage(ctx.req, input)),
+    linkPortal: protectedProcedure.input(schoolPortalLinkInput).mutation(({ ctx, input }) => linkSchoolPortal(ctx.req, input)),
+    createDocument: protectedProcedure.input(schoolDocumentInput).mutation(({ ctx, input }) => createSchoolDocument(ctx.req, input)),
+    uploadDocument: protectedProcedure.input(schoolDocumentUploadInput).mutation(({ ctx, input }) => uploadSchoolDocument(ctx.req, input)),
+    requestApproval: protectedProcedure.input(schoolApprovalRequestInput).mutation(({ ctx, input }) => requestSchoolApproval(ctx.req, input)),
+    decideApproval: protectedProcedure.input(schoolApprovalDecisionInput).mutation(({ ctx, input }) => decideSchoolApproval(ctx.req, input)),
+    markNotificationRead: protectedProcedure.input(schoolIdInput).mutation(({ ctx, input }) => markSchoolNotificationRead(ctx.req, input)),
+    archive: protectedProcedure.input(schoolArchiveInput).mutation(({ ctx, input }) => archiveSchoolRecord(ctx.req, input)),
   }),
   healthcare: router({
     access: protectedProcedure
@@ -793,6 +877,33 @@ export const appRouter = router({
     test: protectedProcedure.mutation(({ ctx }) => testEmailTemplateWorkflowWebhook(ctx.req)),
   }),
 
+  profileIdentity: router({
+    get: protectedProcedure.query(({ ctx }) => getProfileIdentity(ctx.req)),
+    update: protectedProcedure.input(z.object({
+      preferredName: z.string().trim().max(120).nullable().optional(),
+      firstName: z.string().trim().max(120).nullable().optional(),
+      middleName: z.string().trim().max(120).nullable().optional(),
+      lastName: z.string().trim().max(120).nullable().optional(),
+      fullName: z.string().trim().min(1).max(240).nullable().optional(),
+      dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      gender: z.string().trim().max(40).nullable().optional(),
+      phone: z.string().trim().max(40).regex(/^[+()\d\s.-]*$/).nullable().optional(),
+      address: z.string().trim().max(500).nullable().optional(),
+      country: z.string().trim().max(80).nullable().optional(),
+      preferredLanguage: z.string().trim().max(12).nullable().optional(),
+      currencyDisplay: z.string().trim().length(3).toUpperCase().nullable().optional(),
+      timezone: z.string().trim().max(100).nullable().optional(),
+      dateFormat: z.enum(["dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd"]).nullable().optional(),
+      theme: z.enum(["system", "light", "dark"]).nullable().optional(),
+      notificationPreferences: z.object({ email: z.boolean().optional(), push: z.boolean().optional(), sms: z.boolean().optional() }).strict().nullable().optional(),
+    }).strict()).mutation(({ ctx, input }) => updateProfileIdentity(ctx.req, input)),
+    uploadAvatar: protectedProcedure.input(z.object({
+      mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+      base64: z.string().min(1).max(2_800_000),
+    }).strict()).mutation(({ ctx, input }) => uploadProfileAvatar(ctx.req, input)),
+    removeAvatar: protectedProcedure.mutation(({ ctx }) => removeProfileAvatar(ctx.req)),
+  }),
+
   workspaceSettings: router({
     get: protectedProcedure.query(({ ctx }) => getWorkspaceSettings(ctx.req)),
     save: protectedProcedure.input(z.object({
@@ -817,6 +928,34 @@ export const appRouter = router({
     })).mutation(({ ctx, input }) => saveWorkspaceSettings(ctx.req, input)),
   }),
 
+  dashboardPreferences: router({
+    get: protectedProcedure.query(({ ctx }) => getDashboardPreferences(ctx.req)),
+    save: protectedProcedure.input(dashboardPreferencesInput).mutation(({ ctx, input }) => saveDashboardPreferences(ctx.req, input)),
+  }),
+
+  teamWorkforce: router({
+    snapshot: protectedProcedure.query(({ ctx }) => getTeamWorkforceSnapshot(ctx.req)),
+    requestRoleAssignment: protectedProcedure
+      .input(workforceRoleAssignmentInput)
+      .mutation(({ ctx, input }) => requestWorkforceRoleAssignment(ctx.req, input)),
+    decideRoleAssignment: protectedProcedure
+      .input(workforceRoleDecisionInput)
+      .mutation(({ ctx, input }) => decideWorkforceRoleAssignment(ctx.req, input)),
+  }),
+  pos: router({
+    openShift: protectedProcedure
+      .input(posOpenShiftInput)
+      .mutation(({ ctx, input }) => openPosShift(ctx.req, input)),
+    recordCashMovement: protectedProcedure
+      .input(posCashMovementInput)
+      .mutation(({ ctx, input }) => recordPosCashMovement(ctx.req, input)),
+    acceptSyncSequence: protectedProcedure
+      .input(posSyncSequenceInput)
+      .mutation(({ ctx, input }) => acceptPosSyncSequence(ctx.req, input)),
+    completeSale: protectedProcedure
+      .input(posCompleteSaleInput)
+      .mutation(({ ctx, input }) => completePosSale(ctx.req, input)),
+  }),
   teamInvitations: router({
     list: publicProcedure.query(({ ctx }) => listTeamInvitations(ctx.req)),
     create: publicProcedure.input(z.object({ fullName: z.string().min(2).max(120), email: z.string().email().max(320), role: z.string().min(2).max(80) })).mutation(({ ctx, input }) => createTeamInvitation(ctx.req, input)),
@@ -996,8 +1135,43 @@ export const appRouter = router({
     }),
   }),
 
+  bankMfi: router({
+    snapshot: protectedProcedure.query(({ ctx }) => listBankMfiSnapshot(ctx.req)),
+    createAccountType: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createBankAccountType(ctx.req, input.payload)),
+    createLoanProduct: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createLoanProduct(ctx.req, input.payload)),
+    setupInstitution: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => setupInstitution(ctx.req, input.payload)),
+    registerCustomer: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => registerCustomer(ctx.req, input.payload)),
+    updateKyc: protectedProcedure.input(z.object({ customerId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => updateKyc(ctx.req, input.customerId, input.payload)),
+    openAccount: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => openAccount(ctx.req, input.payload)),
+    postTransaction: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => postTransaction(ctx.req, input.payload)),
+    submitLoanApplication: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => submitLoanApplication(ctx.req, input.payload)),
+    scoreLoanApplication: protectedProcedure.input(z.object({ applicationId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => scoreLoanApplication(ctx.req, input.applicationId, input.payload)),
+    decideLoanApplication: protectedProcedure.input(z.object({ applicationId: z.string().uuid(), decision: z.enum(["APPROVED", "REJECTED"]), note: z.string().max(1000).optional() })).mutation(({ ctx, input }) => decideLoanApplication(ctx.req, input.applicationId, input.decision, input.note)),
+    disburseLoan: protectedProcedure.input(z.object({ applicationId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => disburseLoan(ctx.req, input.applicationId, input.payload)),
+    recordRepayment: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => recordRepayment(ctx.req, input.payload)),
+    addBeneficiary: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => addBeneficiary(ctx.req, input.payload)),
+    addGuarantor: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => addGuarantor(ctx.req, input.payload)),
+    addCollateral: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => addCollateral(ctx.req, input.payload)),
+    recordSharePurchase: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => recordSharePurchase(ctx.req, input.payload)),
+    customerStatement: protectedProcedure.input(z.object({ accountId: z.string().uuid(), from: z.string().date().optional(), to: z.string().date().optional() })).query(({ ctx, input }) => customerStatement(ctx.req, input.accountId, input.from, input.to)),
+    createPaymentInstruction: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createPaymentInstruction(ctx.req, input.payload)),
+    createStandingOrder: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createStandingOrder(ctx.req, input.payload)),
+    createGroup: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createGroup(ctx.req, input.payload)),
+    addGroupMember: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => addGroupMember(ctx.req, input.payload)),
+    createReconciliation: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createReconciliation(ctx.req, input.payload)),
+    createAmlAlert: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createAmlAlert(ctx.req, input.payload)),
+    resolveAmlAlert: protectedProcedure.input(z.object({ alertId: z.string().uuid(), decision: z.string().min(1).max(100), note: z.string().max(1000).optional() })).mutation(({ ctx, input }) => resolveAmlAlert(ctx.req, input.alertId, input.decision, input.note)),
+    writeOffLoan: protectedProcedure.input(z.object({ loanId: z.string().uuid(), note: z.string().min(1).max(1000) })).mutation(({ ctx, input }) => writeOffLoan(ctx.req, input.loanId, input.note)),
+    restructureLoan: protectedProcedure.input(z.object({ loanId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => restructureLoan(ctx.req, input.loanId, input.payload)),
+    moveCash: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => moveCash(ctx.req, input.payload)),
+    runDailyControls: protectedProcedure.mutation(({ ctx }) => runDailyControls(ctx.req)),
+    runStandingOrders: protectedProcedure.mutation(({ ctx }) => runStandingOrders(ctx.req)),
+  }),
   admin: router({
-    verifyBackup: protectedProcedure.query(() => verifyDatabaseBackupStatus()),
+    verifyBackup: protectedProcedure.query(({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can verify backup connectivity." });
+      return verifyDatabaseBackupStatus();
+    }),
     getSchemaDriftMonitor: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       return getSchemaDriftMonitor();
@@ -1058,11 +1232,10 @@ export const appRouter = router({
   }),
 });
 
-function getSessionToken(req: { headers: { cookie?: string; authorization?: string } }): string {
+function getSessionToken(req: { headers: { cookie?: string; authorization?: string | string[]; "x-supabase-authorization"?: string | string[] } }): string {
   const cookieToken = parseCookie(req.headers.cookie ?? "")[COOKIE_NAME];
   if (cookieToken) return cookieToken;
-  const authorization = req.headers.authorization;
-  return authorization?.startsWith("Bearer ") ? authorization.slice(7) : "";
+  return getBearerToken(req) || "";
 }
 
 export type AppRouter = typeof appRouter;

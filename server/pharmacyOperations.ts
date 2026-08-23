@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { z } from "zod";
 import { ENV } from "./_core/env";
-import { resolveVerifiedProfile } from "./aiApprovals";
+import { canonicalVerifiedRole, resolveVerifiedProfile } from "./aiApprovals";
 
 export const PHARMACY_TABLES = [
   "phm_categories", "phm_brands", "phm_drugs", "phm_suppliers", "phm_purchase_orders", "phm_purchase_order_items",
@@ -39,9 +39,10 @@ const permissions: Record<PharmacyAction, readonly string[]> = {
 };
 
 export function pharmacyAccessForRole(role: string) {
-  const groups = groupForRole[role] ?? [];
-  const can = (action: PharmacyAction) => adminRoles.has(role) || permissions[action].some((group) => groups.includes(group));
-  return { role, canRead: can("read"), canCatalog: can("catalog"), canPurchase: can("purchase"), canStock: can("stock"), canDispense: can("dispense"), canControlled: can("controlled"), canSale: can("sale"), canFinance: can("finance"), canGovern: can("governance") };
+  const canonicalRole = canonicalVerifiedRole(role);
+  const groups = groupForRole[canonicalRole] ?? [];
+  const can = (action: PharmacyAction) => adminRoles.has(canonicalRole) || permissions[action].some((group) => groups.includes(group));
+  return { role: canonicalRole, canRead: can("read"), canCatalog: can("catalog"), canPurchase: can("purchase"), canStock: can("stock"), canDispense: can("dispense"), canControlled: can("controlled"), canSale: can("sale"), canFinance: can("finance"), canGovern: can("governance") };
 }
 
 function ensure(role: string, action: PharmacyAction) {

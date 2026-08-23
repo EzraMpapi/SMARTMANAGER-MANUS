@@ -1,0 +1,25 @@
+---
+title: Smart Manager — Runtime and Data Architecture (Evidence-Bounded)
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#fff7ed'
+    primaryBorderColor: '#ea580c'
+    lineColor: '#64748b'
+---
+flowchart LR
+  BROWSER["Browser\nReact/Vite client"]
+  ROUTER["Workspace routing\npublic gate → lazy dashboard"]
+  SERVER["Application server / API\nimplementation inferred from supplied project context"]
+  SUPA["Supabase business data\nimplementation inferred from supplied project context"]
+  RLS["Tenant isolation / RLS\nimplementation inferred from supplied project context"]
+  STORAGE["Document/object storage\nimplementation inferred from supplied project context"]
+  BROWSER --> ROUTER
+  ROUTER --> SERVER
+  SERVER --> SUPA
+  SERVER --> STORAGE
+  SUPA --> RLS
+  classDef verified fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.8px;
+  classDef inferred fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.8px;
+  class BROWSER,ROUTER verified;
+  class SERVER,SUPA,RLS,STORAGE inferred;

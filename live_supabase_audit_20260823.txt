@@ -1,0 +1,25 @@
+Live Supabase audit evidence — 2026-08-23
+
+Project selected from the connected Supabase connector:
+- Project ID/ref: rlhngsrihahhyxnjxrxm
+- Name: EzraMpapi's Project
+- Region: ap-southeast-1
+- Status: ACTIVE_HEALTHY
+- Database engine/version: PostgreSQL 17.6.1.155
+- Project listing source: task-local Supabase connector result captured on 2026-08-23 13:02 UTC
+
+Applied migrations source:
+- Pre-apply: task-local Supabase connector result captured on 2026-08-23 13:02 UTC
+- Post-apply: task-local Supabase connector result captured on 2026-08-23 13:04 UTC
+- The connected database includes the foundation, business-table, tenant, RLS, authentication/workspace, healthcare, microfinance, pharmacy, employee portal, payroll, school, hospitality, subscription billing, fleet, restaurant, banking/MFI, community groups, Money Agent, and Property Management migrations.
+- Pre-apply recent migrations were community_groups cleanup (20260823102436), money_agent_core (20260823103924), property_management_core (20260823123739), and fix_money_agent_snapshot_reconciliation_created_at (20260823123817). Post-apply history records `fin_foundation` (20260823130419), `profile_identity_center` (20260823130430), and `fin_journal_core` (20260823130441).
+- The source-ready profile migration `20260823_045_profile_identity_center.sql` was applied successfully through the connected Supabase migration operation as `profile_identity_center`, live version `20260823130430`.
+
+Live table inventory source:
+- Complete verbose public-table inventory: task-local Supabase connector result captured on 2026-08-23 13:03 UTC
+- This is the complete verbose public-schema list_tables response with columns, primary keys, foreign keys, RLS flags, and row counts. The beginning of the response confirms public.approval_signatures and public.bank_accounts are present and RLS-enabled; use the source file for the complete 72k-line inventory. A post-apply migration-history read confirmed the profile migration and also showed finance migrations applied independently after the pre-apply inventory.
+
+Repository evidence already available:
+- SUPABASE_SCHEMA_COMPLETE.md records the prior full live inventory as 110 dashboard-referenced tables with zero missing referenced tables, with public.audit_log.updated_at as the only verified variance already repaired.
+- server/verifySupabaseSchema.mjs is the repository’s live OpenAPI verifier and should be run against the connected project after any DDL.
+- User explicitly authorized applying the needed database changes. Only the validated profile identity schema gap was applied; no unrelated or already-applied table migration was replayed. A subsequent connector timeout prevented a second full verbose table snapshot, so the pre-apply complete inventory plus successful migration result and post-apply migration history are the available evidence for this run.

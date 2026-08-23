@@ -287,9 +287,42 @@
 - [x] Add navigation, role-aware access, Healthcare/Inventory/Finance cross-links, and privacy-safe notification and audit visibility.
 - [x] Add unit, protected-router, schema-drift, browser, TypeScript, and production-build coverage; fix regressions; publish the completed Pharmacy Module.
 
+## School Management Module
+- [x] Audit the existing ERP architecture, reusable workspace patterns, permissions, and cross-module contracts for school integration.
+- [x] Define tenant-safe School Management domain models, academic configuration, role permissions, audit rules, and Tanzania-ready finance and date boundaries.
+- [x] Deploy RLS-protected database schema and protected backend workflows for admissions, learner profiles, guardians, academics, and staff teaching assignments.
+- [x] Implement connected admissions, student records, classes, streams, subjects, timetables, attendance, examinations, assessments, grading, report cards, and assignments.
+- [x] Implement fees, invoices, payments, scholarships, transport, hostel, library, school inventory, disciplinary records, documents, and linked Finance/HR/Payroll workflows.
+- [x] Implement protected parent, teacher, and student portal workflows; announcements, communication, approval, notification, search, bulk, dashboard, report, and audit experiences.
+- [x] Build the responsive School Management Command Center with real loading, empty, error, validation, permission, and cross-module navigation states.
+- [x] Add unit, protected-router, schema-drift, calculation, browser, TypeScript, and production-build verification; fix regressions and publish the completed module.
+
+## GitHub Synchronization and Vercel Deployment Review
+- [x] Inspect the requested GitHub repository remote, local unpushed commits, repository protections, and Vercel integration availability.
+- [x] Commit and push all verified BusinessSphere ERP changes that are not yet present in `EzraMpapi/SMARTMANAGER-MANUS`.
+- [x] Diagnose the Vercel deployment block and apply any safe repository-level configuration correction that makes the synchronized changes deployable.
+- [x] Verify the pushed commit and deployment status, then document any Vercel account-level action that cannot be completed from the repository.
+- [x] Make the Vercel build schema check skip safely only when server-only Supabase credentials are unavailable, while retaining the verified managed-deployment schema gate.
+
+## Live Vercel and School Management Verification
+- [x] Confirm the latest Vercel Production deployment and public application availability.
+- [x] Verify the live School Management Module navigation, access controls, and non-destructive operational views.
+- [x] Run safe regression checks and report the verified live deployment outcome.
+- [x] Diagnose and correct the Vercel output routing defect that currently serves the server bundle source at the public application root.
+- [x] Redeploy and confirm the Vercel public root renders the browser application before continuing School Management validation.
+- [x] Diagnose and correct the live owner-role denial that prevents authorized workspace owners from opening School Management.
+
+## Repository-Based Change Tracking
+- [x] Verify the requested repository remote, branch state, and non-destructive synchronization baseline.
+- [x] Document the per-change tracking and GitHub synchronization workflow in the project repository.
+- [x] Verify the tracking record is committed and pushed to the requested repository at `fef5e28`.
+
 ## GitHub Quality Visibility and Release Notes
-- [x] Add the GitHub Actions status badge for the primary quality workflow and automated release-note generation from tagged commit history.
-- [x] Preserve the repository as private and document the GitHub plan limitation that prevents branch-protection enforcement without changing visibility or billing.
+- [x] Inspect current GitHub Actions workflow names, repository README, and available branch-protection controls. The GitHub API confirms that required branch protection needs GitHub Pro or a public repository for this private repository.
+- [x] Add a GitHub Actions status badge for the primary quality workflow.
+- [x] Add automated release-note generation from merged commit history and document how to use it.
+- [x] Preserve the repository as private rather than changing visibility or billing; document that GitHub does not permit required-check enforcement for this repository plan, while CI remains active as a visible merge-quality gate.
+- [x] Document the private-repository main-branch quality policy and the exact future required-check configuration to apply if GitHub branch protections become available.
 - [x] Scope schema verification and the production-build precheck to the protected GitHub environment without exposing credential values.
 - [ ] Align the GitHub job named Browser Signup Journey with the isolated signup specification and verify its end-to-end run.
 - [ ] Verify the active GitHub Actions workflow registration, commit the CI remediation record, push it to the requested repository, and publish the completed quality improvements.

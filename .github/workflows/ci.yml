@@ -10,6 +10,7 @@ jobs:
   validate:
     name: Unit, Schema, Type and Production Build
     runs-on: ubuntu-latest
+    environment: Production – smatimeneja
 
     steps:
       - name: Checkout Repository
@@ -23,7 +24,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 10.4.1
+          version: 10.34.2
           run_install: false
 
       - name: Get pnpm store directory
@@ -43,6 +44,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify Supabase schema contract
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: pnpm run verify:supabase-schema
 
       - name: Run Type Check
@@ -52,9 +56,12 @@ jobs:
         run: pnpm test -- --coverage --reporter=verbose
 
       - name: Run Automated Dependency Vulnerability Audit
-        run: pnpm audit --prod || true
+        run: pnpm audit --prod --audit-level high
 
       - name: Run Production Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: NODE_OPTIONS="--max-old-space-size=4096" pnpm build
 
       - name: Notify Slack on Success
@@ -94,7 +101,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 10.4.1
+          version: 10.34.2
           run_install: false
 
       - name: Restore pnpm cache

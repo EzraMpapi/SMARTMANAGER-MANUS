@@ -1,0 +1,244 @@
+erDiagram
+  COOP_PROFILES ||--o{ COOP_BRANCHES : has
+  COOP_BRANCHES ||--o{ COOP_GROUPS : serves
+  COOP_GROUPS ||--o{ COOP_MEMBERSHIPS : contains
+  COOP_MEMBERS ||--o{ COOP_MEMBERSHIPS : joins
+  COOP_MEMBERS ||--o{ COOP_KYC_DOCUMENTS : owns
+  COOP_MEMBERS ||--o{ COOP_ACCOUNTS : owns
+  COOP_PRODUCTS ||--o{ COOP_ACCOUNTS : defines
+  COOP_GROUPS ||--o{ COOP_CONTRIBUTION_PLANS : schedules
+  COOP_CONTRIBUTION_PLANS ||--o{ COOP_CONTRIBUTIONS : bills
+  COOP_MEMBERS ||--o{ COOP_CONTRIBUTIONS : pays
+  COOP_SHARE_CLASSES ||--o{ COOP_SHARE_HOLDINGS : defines
+  COOP_MEMBERS ||--o{ COOP_SHARE_HOLDINGS : holds
+  COOP_GROUPS ||--o{ COOP_MEETINGS : holds
+  COOP_MEETINGS ||--o{ COOP_MEETING_ATTENDANCE : records
+  COOP_MEMBERS ||--o{ COOP_MEETING_ATTENDANCE : attends
+  COOP_MEETINGS ||--o{ COOP_RESOLUTIONS : approves
+  COOP_RESOLUTIONS ||--o{ COOP_RESOLUTION_VOTES : receives
+  COOP_MEMBERS ||--o{ COOP_RESOLUTION_VOTES : casts
+  COOP_LOAN_PRODUCTS ||--o{ COOP_LOAN_APPLICATIONS : offered
+  COOP_MEMBERS ||--o{ COOP_LOAN_APPLICATIONS : submits
+  COOP_LOAN_APPLICATIONS ||--o{ COOP_LOAN_GUARANTORS : requires
+  COOP_LOAN_APPLICATIONS ||--o{ COOP_COLLATERAL : secures
+  COOP_LOAN_APPLICATIONS ||--o| COOP_LOANS : becomes
+  COOP_LOANS ||--|{ COOP_LOAN_SCHEDULE_LINES : schedules
+  COOP_LOANS ||--o{ COOP_LOAN_REPAYMENTS : receives
+  COOP_LOANS ||--o{ COOP_LOAN_RESTRUCTURES : may_restructure
+  COOP_LOANS ||--o{ COOP_LOAN_WRITEOFFS : may_writeoff
+  COOP_DIVIDEND_RUNS ||--|{ COOP_DIVIDEND_ALLOCATIONS : allocates
+  COOP_MEMBERS ||--o{ COOP_DIVIDEND_ALLOCATIONS : receives
+  COOP_TELLERS ||--o{ COOP_CASH_SESSIONS : opens
+  COOP_CASH_SESSIONS ||--o{ COOP_CASH_MOVEMENTS : records
+  COOP_ACCOUNTS ||--o{ COOP_CASH_MOVEMENTS : affects
+  COOP_CASH_MOVEMENTS }o--o| INTEGRATION_PROVIDER_TRANSACTIONS : routes
+  COOP_ACCOUNTS }o--o{ FIN_JOURNAL_LINES : statement_source
+  COOP_LOANS }o--o{ FIN_POSTING_LINKS : posts
+  COOP_CONTRIBUTIONS }o--o{ FIN_POSTING_LINKS : posts
+  COOP_DIVIDEND_RUNS }o--o{ FIN_POSTING_LINKS : posts
+
+  COOP_PROFILES {
+    uuid id PK
+    uuid company_id UK
+    text legal_name
+    text cooperative_type
+    text registration_number
+    text tin
+    text timezone
+    text default_currency
+    text status
+  }
+  COOP_BRANCHES {
+    uuid id PK
+    uuid company_id FK
+    text branch_code UK
+    text region
+    text district
+    text status
+  }
+  COOP_GROUPS {
+    uuid id PK
+    uuid company_id FK
+    uuid branch_id FK
+    uuid legacy_community_group_id FK
+    text group_number UK
+    text group_type
+    text status
+  }
+  COOP_MEMBERS {
+    uuid id PK
+    uuid company_id FK
+    uuid contact_id FK
+    text member_number UK
+    text national_id
+    text kyc_status
+    text member_status
+  }
+  COOP_MEMBERSHIPS {
+    uuid id PK
+    uuid company_id FK
+    uuid member_id FK
+    uuid group_id FK
+    text membership_number UK
+    text status
+  }
+  COOP_ACCOUNTS {
+    uuid id PK
+    uuid company_id FK
+    uuid member_id FK
+    uuid product_id FK
+    text account_number UK
+    numeric ledger_balance
+    numeric available_balance
+    numeric hold_amount
+    text status
+  }
+  COOP_PRODUCTS {
+    uuid id PK
+    uuid company_id FK
+    text product_code UK
+    text product_type
+    numeric interest_rate
+    uuid gl_account_id FK
+    text status
+  }
+  COOP_CONTRIBUTIONS {
+    uuid id PK
+    uuid company_id FK
+    uuid member_id FK
+    uuid group_id FK
+    numeric amount_due
+    numeric amount_paid
+    text status
+    uuid journal_batch_id FK
+  }
+  COOP_SHARE_HOLDINGS {
+    uuid id PK
+    uuid company_id FK
+    uuid member_id FK
+    uuid share_class_id FK
+    integer quantity
+    numeric unit_value
+    text status
+  }
+  COOP_MEETINGS {
+    uuid id PK
+    uuid company_id FK
+    uuid group_id FK
+    date meeting_date
+    text status
+  }
+  COOP_RESOLUTIONS {
+    uuid id PK
+    uuid company_id FK
+    uuid meeting_id FK
+    text resolution_type
+    text decision
+    boolean quorum_met
+  }
+  COOP_LOAN_APPLICATIONS {
+    uuid id PK
+    uuid company_id FK
+    uuid member_id FK
+    uuid product_id FK
+    numeric requested_principal
+    numeric decision_amount
+    text status
+  }
+  COOP_LOANS {
+    uuid id PK
+    uuid company_id FK
+    uuid application_id FK
+    uuid member_id FK
+    numeric approved_principal
+    numeric outstanding_principal
+    text status
+  }
+  COOP_LOAN_SCHEDULE_LINES {
+    uuid id PK
+    uuid company_id FK
+    uuid loan_id FK
+    integer installment_no
+    date due_on
+    numeric principal_due
+    numeric interest_due
+    numeric principal_paid
+    numeric interest_paid
+    text status
+  }
+  COOP_LOAN_REPAYMENTS {
+    uuid id PK
+    uuid company_id FK
+    uuid loan_id FK
+    numeric amount
+    numeric principal_amount
+    numeric interest_amount
+    text status
+    uuid journal_batch_id FK
+  }
+  COOP_DIVIDEND_RUNS {
+    uuid id PK
+    uuid company_id FK
+    integer financial_year
+    numeric distributable_profit
+    text status
+    uuid journal_batch_id FK
+  }
+  COOP_DIVIDEND_ALLOCATIONS {
+    uuid id PK
+    uuid company_id FK
+    uuid run_id FK
+    uuid member_id FK
+    numeric allocation_amount
+    text status
+  }
+  COOP_TELLERS {
+    uuid id PK
+    uuid company_id FK
+    uuid user_id FK
+    text teller_code UK
+    text status
+  }
+  COOP_CASH_SESSIONS {
+    uuid id PK
+    uuid company_id FK
+    uuid teller_id FK
+    numeric opening_float
+    numeric counted_cash
+    numeric variance
+    text status
+  }
+  COOP_CASH_MOVEMENTS {
+    uuid id PK
+    uuid company_id FK
+    uuid cash_session_id FK
+    uuid account_id FK
+    numeric amount
+    text payment_method
+    text status
+    uuid journal_batch_id FK
+  }
+  FIN_JOURNAL_LINES {
+    uuid id PK
+    uuid company_id FK
+    uuid journal_batch_id FK
+    uuid member_id FK
+    uuid account_id FK
+    numeric debit
+    numeric credit
+  }
+  FIN_POSTING_LINKS {
+    uuid id PK
+    uuid company_id FK
+    uuid journal_batch_id FK
+    text source_table
+    uuid source_id
+  }
+  INTEGRATION_PROVIDER_TRANSACTIONS {
+    uuid id PK
+    uuid company_id FK
+    text provider
+    text client_reference
+    text provider_reference
+    text status
+  }

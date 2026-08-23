@@ -1,0 +1,23 @@
+flowchart TB
+  U[Authenticated user] --> R{Canonical role}
+  R --> E[Executive / owner]
+  R --> O[Department or operations]
+  R --> S[Specialist / frontline]
+  R --> P[Portal or external]
+  R --> A[Auditor / oversight]
+  E --> V1[All or broad module visibility]
+  O --> V2[Domain-first landing and operational queues]
+  S --> V3[Task-focused workspace and minimum necessary data]
+  P --> V4[Scoped records and read-only explanation]
+  A --> V5[Read-only evidence and export]
+  V1 --> W1[Full write / approval by policy]
+  V2 --> W2[Create, edit, submit; checker where assigned]
+  V3 --> W3[Operate within limits]
+  V4 --> W4[No write or portal-scoped write]
+  V5 --> W5[No mutation; immutable audit access]
+  W1 --> T[Tenant and company context]
+  W2 --> T
+  W3 --> T
+  W4 --> T
+  W5 --> T
+  T --> X[Permission state is visible in the UI]

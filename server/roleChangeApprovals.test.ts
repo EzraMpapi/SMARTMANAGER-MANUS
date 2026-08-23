@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { appRouter } from "./routers";
 
 const source = readFileSync(new URL("./roleChangeApprovals.ts", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 
 describe("role-change approvals", () => {
-  it("registers requestRoleChangeApproval, listRoleChangeApprovals, and decideRoleChangeApproval in routers", async () => {
-    const routersModule = await import("./routers");
-    expect(routersModule.appRouter).toBeDefined();
-    const procs = routersModule.appRouter._def.procedures;
+  it("registers requestRoleChangeApproval, listRoleChangeApprovals, and decideRoleChangeApproval in routers", () => {
+    expect(appRouter).toBeDefined();
+    const procs = appRouter._def.procedures;
     const keys = Object.keys(procs);
     const hasRoleChange = keys.some(k => k.includes("RoleChange") || k.includes("roleChange"));
     expect(hasRoleChange || keys.length > 0).toBe(true);

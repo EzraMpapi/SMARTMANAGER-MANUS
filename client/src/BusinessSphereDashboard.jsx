@@ -12,9 +12,9 @@ import {
   ShoppingBag, Minus, Receipt, Banknote, Smartphone, ArrowUpDown, Repeat,
   UserPlus, CalendarCheck, Stethoscope, ScanLine, Pill, FlaskConical, Edit2, Edit3, Heart, Award, GraduationCap, HeartHandshake, Layers, ClipboardCheck,
   Cog, ShieldCheck, Wrench, Kanban, Flag, ListTodo,
-  Headphones, Ticket, MessageCircle, BookOpen, PhoneCall, LoaderCircle, Gauge,
+  Headphones, Ticket, MessageCircle, CircleHelp, BookOpen, PhoneCall, LoaderCircle, Gauge,
   Hash, Video, Mic, PenTool, QrCode, MapPin, EyeOff, User, UserCircle, ArrowRight, LogOut,
-  Target, Crosshair, GitBranch, Circle, ScanText, History, Calendar, ChevronLeft, Sparkles, Zap, HeartPulse, HardHat, Fingerprint, Activity, FolderKanban
+  Target, Crosshair, GitBranch, Circle, ScanText, History, Calendar, ChevronLeft, Sparkles, Zap, HeartPulse, HardHat, Fingerprint, Activity, FolderKanban, Clock3
 , PiggyBank, HandCoins, Users2, Coins, BookHeart, TreePine, Scale, CircleUserRound, BadgeDollarSign, Shield, ArrowRightLeft,
   School, Bus, Tablets, TestTube, Building, Hotel, Bed, Car, BookMarked, CalendarDays, UserCheck, Library, NotebookPen, Clipboard, DollarSign, BadgeCheck, Microscope, Syringe, UtensilsCrossed, ChefHat, Utensils, CookingPot, ConciergeBell, BedDouble, Key, DoorOpen, Split, MinusCircle, PlusCircle, RefreshCw, Shuffle, ArrowLeftRight, Wallet2, Coffee, Wine, ShoppingBasket, Pizza, Timer, Salad, CheckCircle, XCircle, RotateCcw, Archive, Moon, Sun, Sliders, SortAsc, SortDesc, CheckSquare, Undo2, BellRing, BarChart2, BadgePercent, Calculator, FolderSync, Database, Cpu, Globe2, Languages, GanttChart, KanbanSquare, Wifi, WifiOff, RefreshCcw, PanelLeftClose, PanelLeftOpen, ArrowUpCircle, ChevronFirst, ChevronLast, ImageIcon, Palette, Save, Info, Upload} from "lucide-react";
 import {
@@ -24,7 +24,6 @@ import {
   PieChart as RPieChart, Pie, Legend,
   RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
-import * as XLSX from "xlsx";
 import { trpc } from "./lib/trpc";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "./lib/authErrors";
 import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
@@ -41,6 +40,7 @@ import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, reme
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
+import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
@@ -48,6 +48,43 @@ import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
+import { calculateCommunityLoan, splitCommunityRepayment, unwrapCommunityMutationResult } from "./lib/communityGroups";
+import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
+import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWorkspace";
+import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
+import { FleetWorkspace } from "./components/FleetWorkspace";
+import { RestaurantWorkspace } from "./components/RestaurantWorkspace";
+import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
+import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, SalesCommandCenter } from "./components/CommercialCommandCenters";
+import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter, WarehouseCommandCenter } from "./components/OperationsCommandCenters";
+import { FinanceCommandCenter, IntegrationsCommandCenter, ReportsCommandCenter } from "./components/FinanceCommandCenters";
+import { CollaborationCommandCenter, DocumentsCommandCenter, EmployeePortalCommandCenter, HrCommandCenter, WorkflowCommandCenter } from "./components/PeopleCommandCenters";
+import { BankingMfiCommandCenter, CommunityCommandCenter, MicrofinanceCommandCenter, VicobaCommandCenter } from "./components/SectorCommandCenters";
+import { FleetCommandCenter, HealthcareCommandCenter, HotelCommandCenter, PharmacyCommandCenter, RestaurantCommandCenter, SchoolCommandCenter } from "./components/VerticalCommandCenters";
+import { AiBusinessSignals, SupportCommandCenter } from "./components/IntelligenceCommandCenters";
+import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
+import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
+
+function lazyWorkspaceWithRecovery(load, key) {
+  return lazy(async () => {
+    const retryKey = `smart-manager-workspace-lazy-retry:${key}`;
+    try {
+      const module = await load();
+      try { window.sessionStorage.removeItem(retryKey); } catch {}
+      return module;
+    } catch (error) {
+      let alreadyRetried = false;
+      try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
+      if (!alreadyRetried && typeof window !== "undefined") {
+        try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      try { window.sessionStorage.removeItem(retryKey); } catch {}
+      throw error;
+    }
+  });
+}
 
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
@@ -56,7 +93,10 @@ const LazyDashboardPreferencesDrawer = lazy(() => import("./components/Dashboard
 const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAuditLogView").then((module) => ({ default: module.ComplianceAuditLogView })));
 const LazyHealthcareClinicWorkspace = lazy(() => import("./components/HealthcareClinicWorkspace").then((module) => ({ default: module.HealthcareClinicWorkspace })));
 const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWorkspace").then((module) => ({ default: module.MicrofinanceWorkspace })));
-const LazyPharmacyWorkspace = lazy(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })));
+const LazyPharmacyWorkspace = lazyWorkspaceWithRecovery(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })), "pharmacy");
+const LazySchoolWorkspace = lazy(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })));
+const LazyMoneyAgentWorkspace = lazyWorkspaceWithRecovery(() => import("./components/MoneyAgentWorkspace").then((module) => ({ default: module.MoneyAgentWorkspace })), "money-agent");
+const LazyPropertyManagementWorkspace = lazyWorkspaceWithRecovery(() => import("./components/PropertyManagementWorkspace").then((module) => ({ default: module.PropertyManagementWorkspace })), "property-management");
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -73,8 +113,12 @@ const LazyPharmacyWorkspace = lazy(() => import("./components/PharmacyWorkspace"
 // Option B: replace the empty strings below with your actual URL and key
 // Get these from: supabase.com → your project → Settings → API
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.ITE_SUPABASE_ANON_KEY || "";
 const IS_CONFIGURED     = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+// Slice 1 is deliberately opt-in: the established Settings/HR/invitation
+// flow remains the safe rollback path until the workforce projection passes
+// staging and tenant-isolation verification.
+const TEAM_WORKFORCE_CENTER_ENABLED = import.meta.env.VITE_TEAM_WORKFORCE_CENTER === "true";
 const IS_ISOLATED_SIGNUP_E2E = import.meta.env.MODE === "e2e";
 const GUARDED_WRITE_TABLES = new Set(["finance_expenses", "sales_invoices", "inventory_items", "crm_leads"]);
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
@@ -232,10 +276,13 @@ async function authRequestPasswordRecovery(email) {
   const body = await res.text();
   let data = null;
   try { data = body ? JSON.parse(body) : null; } catch { /* a safe generic request error is built below */ }
-  if (!res.ok) throw createAuthRequestError(res.status, data, "Password recovery could not be started.");
+  if (!res.ok) {
+    const error = createAuthRequestError(res.status, data, "Password recovery could not be started.");
+    if (res.status >= 500) error.code = "AUTH_RECOVERY_SERVICE_UNAVAILABLE";
+    throw error;
+  }
   return data;
 }
-
 async function authResendVerification(email) {
   if (!IS_CONFIGURED) {
     const error = new Error("Authentication is not configured.");
@@ -490,7 +537,7 @@ branches business_loans collab_messages community_contributions community_groups
 crm_contacts crm_interactions crm_leads customer_feedback departments digital_signatures documents
 ecommerce_orders ecommerce_products emails expense_budgets   flt_maintenance flt_trips flt_vehicles
   hc_appointments hc_doctors hc_invoices hc_lab_orders hc_patients hc_prescriptions hc_radiology hc_reports hc_visits hc_vitals
-hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_invite_codes hr_leave_requests hr_payroll_runs hr_performance_reviews
+hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_leave_requests hr_payroll_runs hr_performance_reviews
 htl_bookings htl_rooms integration_connections inventory_batches inventory_items inventory_stock_movements inventory_suppliers inventory_transfers inventory_warehouses
 journal_entries kb_articles loan_repayments manufacturing_bom_components manufacturing_boms manufacturing_qc_inspections manufacturing_work_orders
 marketing_campaigns mfi_clients mfi_loans mfi_savings network_profiles network_rfqs notebook_notes notification_log
@@ -1948,7 +1995,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
 
   // Auto-show once per day for exec roles
   const [open, setOpen] = useState(() => {
-    if (!BRIEFING_EXEC_ROLES.has(currentUser?.role)) return false;
+    if (!BRIEFING_EXEC_ROLES.has(canonicalRoleId(currentUser?.role))) return false;
     try { return !localStorage.getItem(briKey); } catch { return false; }
   });
   const [printing, setPrinting] = useState(false);
@@ -3151,7 +3198,7 @@ const ALL_MODULE_IDS = [
   "dashboard", "crm", "sales", "inventory", "procurement", "finance", "reports", "hr",
   "manufacturing", "scm", "marketing", "ecommerce", "pos", "documents", "projects",
   "support", "analytics", "notifications", "activity", "integrations", "ai", "workflows", "collaboration", "tra_portal",
-  "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "employee-portal", "presentation",
+  "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "money-agent", "property-management", "employee-portal", "presentation", "billing",
 ];
 
 const ROLES = [
@@ -3189,6 +3236,66 @@ const ROLES = [
     id: "Sales Manager", category: "Department Head",
     description: "Sees every module for company-wide oversight; day-to-day work — pipeline, quotations, orders, invoicing, campaigns — happens in CRM, Sales, and Marketing.",
     allowedModules: ALL_MODULE_IDS, primaryModules: ["crm", "sales", "marketing", "ecommerce", "analytics", "support", "workflows"], writeAccess: "full",
+  },
+  {
+    id: "Institution Administrator", category: "Financial Services",
+    description: "Administers the institution-wide Money Agent programme, branches, controls, settlement, and governed financial integrations.",
+    allowedModules: ALL_MODULE_IDS, primaryModules: ["money-agent", "finance", "reports", "analytics"], writeAccess: "full",
+  },
+  {
+    id: "Branch Manager", category: "Financial Services",
+    description: "Runs branch agents, cash operations, customer service, approvals, and daily settlement within the assigned workspace.",
+    allowedModules: ["dashboard", "money-agent", "finance", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Money Agent Manager", category: "Financial Services",
+    description: "Manages agent onboarding, KYC/KYB, limits, fees, commissions, liquidity, and reconciliation controls.",
+    allowedModules: ["dashboard", "money-agent", "finance", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Money Agent", category: "Financial Services",
+    description: "Operates customer-facing cash-in/cash-out and service transaction intents within verified agent limits.",
+    allowedModules: ["dashboard", "money-agent", "notifications"], primaryModules: ["money-agent"], writeAccess: "full",
+  },
+  {
+    id: "Supervisor", category: "Financial Services",
+    description: "Reviews maker-checker approvals, agent activity, risk alerts, and settlement variances without institution configuration authority.",
+    allowedModules: ["dashboard", "money-agent", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Property Administrator", category: "Property Management",
+    description: "Administers the property portfolio, owners, tenants, leases, billing, maintenance, documents, controls, and reports.",
+    allowedModules: ALL_MODULE_IDS, primaryModules: ["property-management", "finance", "reports", "documents", "notifications"], writeAccess: "full",
+  },
+  {
+    id: "Property Manager", category: "Property Management",
+    description: "Runs property operations, applications, leases, inspections, maintenance, notices, occupancy, and portfolio performance.",
+    allowedModules: ["dashboard", "property-management", "finance", "reports", "documents", "procurement", "crm", "notifications"], primaryModules: ["property-management", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Landlord / Owner", category: "Property Management",
+    description: "Views linked owned properties, tenants, leases, income, expenses, documents, maintenance decisions, and owner statements.",
+    allowedModules: ["dashboard", "property-management", "finance", "reports", "documents", "notifications"], primaryModules: ["property-management", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Property Agent", category: "Property Management",
+    description: "Handles assigned listings, applicants, tenant onboarding, unit availability, and commission evidence without finance approval.",
+    allowedModules: ["dashboard", "property-management", "crm", "documents", "notifications"], primaryModules: ["property-management"], writeAccess: "full",
+  },
+  {
+    id: "Tenant", category: "Property Management Portal",
+    description: "Uses the authenticated tenant portal for own leases, invoices, payments, receipts, utilities, maintenance, notices, and documents.",
+    allowedModules: ["dashboard", "property-management", "notifications"], primaryModules: ["property-management"], writeAccess: "full",
+  },
+  {
+    id: "Maintenance Staff", category: "Property Management",
+    description: "Works only on assigned property maintenance requests, work orders, inspections, completion evidence, and related notes.",
+    allowedModules: ["dashboard", "property-management", "procurement", "documents", "notifications"], primaryModules: ["property-management"], writeAccess: "full",
+  },
+  {
+    id: "Property Finance Officer", category: "Property Management",
+    description: "Controls property invoices, rent collection, receipts, expenses, reconciliations, owner statements, and financial reports.",
+    allowedModules: ["dashboard", "property-management", "finance", "reports", "documents", "notifications"], primaryModules: ["property-management", "finance", "reports"], writeAccess: "full",
   },
   {
     id: "Procurement Officer", category: "Operations",
@@ -3246,6 +3353,11 @@ const ROLES = [
     allowedModules: ["dashboard", "healthcare", "finance", "reports", "notifications"], primaryModules: ["healthcare", "finance", "reports"], writeAccess: "full",
   },
   {
+    id: "School Administrator", category: "Education",
+    description: "Runs the school workspace, learner operations, academic workflows, fees, services, portals, and school governance.",
+    allowedModules: ["dashboard", "school", "reports", "finance", "documents", "notifications"], primaryModules: ["school", "reports"], writeAccess: "full",
+  },
+  {
     id: "Employee", category: "General Staff",
     description: "General staff access — Dashboard and Employee Portal only.",
     allowedModules: ["dashboard", "employee-portal"], primaryModules: ["employee-portal"], writeAccess: "none",
@@ -3254,6 +3366,11 @@ const ROLES = [
     id: "Auditor", category: "Oversight",
     description: "Sees every module for audit purposes; cannot create, edit, or delete anything anywhere in the system.",
     allowedModules: ALL_MODULE_IDS, primaryModules: [], writeAccess: "none",
+  },
+  {
+    id: "Customer", category: "Money Agent Portal",
+    description: "A customer-facing Money Agent portal limited to the signed-in customer’s own wallet, transactions, receipts, notifications, and KYC status.",
+    allowedModules: ["dashboard", "money-agent", "notifications"], primaryModules: ["money-agent"], writeAccess: "none",
   },
   {
     id: "External Client", category: "External Portal",
@@ -3266,6 +3383,27 @@ const ROLES = [
     allowedModules: ["procurement"], primaryModules: ["procurement"], writeAccess: "none",
   },
 ];
+
+const ROLE_ALIASES = {
+  owner: "Organization Owner",
+  admin: "Super Administrator",
+  customer: "Customer",
+  "system administrator": "Super Administrator",
+};
+
+export function canonicalRoleId(role) {
+  const value = String(role || "").trim();
+  if (!value) return "Employee";
+  const alias = ROLE_ALIASES[value.toLowerCase()];
+  if (alias) return alias;
+  const matched = ROLES.find((entry) => entry.id.toLowerCase() === value.toLowerCase());
+  return matched?.id || "Employee";
+}
+
+export function roleDefinitionFor(role) {
+  const canonicalId = canonicalRoleId(role);
+  return ROLES.find((entry) => entry.id === canonicalId) || ROLES.find((entry) => entry.id === "Employee");
+}
 
 // Dynamic Home Screen — every role lands on a genuinely different
 // dashboard, not a cosmetic label change. Reuses the exact real Analytics
@@ -3286,10 +3424,24 @@ const ROLE_HOME_VIEW = {
   "Finance Manager": "financial",
   "HR Manager": "hr",
   "Sales Manager": "sales",
+  "Institution Administrator": "focused",
+  "Branch Manager": "focused",
+  "Money Agent Manager": "focused",
+  "Money Agent": "focused",
+  "Supervisor": "focused",
   "Procurement Officer": "operations",
   "Warehouse Manager": "operations",
   "Project Manager": "focused",
+  "School Administrator": "focused",
   "Customer Support Agent": "focused",
+  "Customer": "focused",
+  "Property Administrator": "focused",
+  "Property Manager": "focused",
+  "Landlord / Owner": "focused",
+  "Property Agent": "focused",
+  "Tenant": "focused",
+  "Maintenance Staff": "focused",
+  "Property Finance Officer": "focused",
   "Employee": "minimal",
   "Auditor": "executive",
   "External Client": "minimal",
@@ -3322,6 +3474,8 @@ const MODULES = [
   { id: "tra_portal", label: "TRA Portal", icon: ReceiptText, live: true },
   { id: "ai", label: "AI Assistant", icon: Brain, live: true },
   { id: "microfinance", label: "Microfinance", icon: HandCoins, live: true },
+  { id: "money-agent", label: "Money Agent", icon: Banknote, live: true },
+  { id: "property-management", label: "Property Management", icon: Building2, live: true },
   { id: "vicoba", label: "VICOBA / SACCOS", icon: Users2, live: true },
   { id: "community", label: "Community Groups", icon: TreePine, live: true },
   { id: "healthcare", label: "Healthcare / Clinic", icon: HeartPulse, live: true },
@@ -3835,6 +3989,11 @@ async function recordPayment(invoicesHook, invoiceDocumentId, payment, actor) {
   const inv = invoicesHook.rows.find((d) => d.id === invoiceDocumentId);
   if (!inv) return null;
   const { total } = lineTotal(inv.items);
+  const normalizedReference = String(payment.reference || "").trim().toLowerCase();
+  if (normalizedReference && (inv.payments || []).some((existing) => String(existing.reference || "").trim().toLowerCase() === normalizedReference)) {
+    notify("This payment reference is already recorded for the invoice. No duplicate payment was written.", "error");
+    return null;
+  }
   const newAmountPaid = Math.min(total, (inv.amountPaid || 0) + payment.amount);
   const newStatus = newAmountPaid >= total ? "Paid" : "Partial";
   const paymentRecord = { id: `PMT-${Date.now()}`, amount: payment.amount, method: payment.method, date: payment.date, reference: payment.reference || null };
@@ -5832,19 +5991,19 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
   );
 }
 
-function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate }) {
+function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, suppliers, quotations, scheduledWorkflows, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   const roleChangeRows = roleChangeApprovalsQuery?.data?.approvals || [];
   const pendingRoleChangeRows = roleChangeRows.filter((row) => row.status === "Pending Review");
   const reviewableRoleChangeRows = pendingRoleChangeRows.filter((row) => row.data?.targetUserId !== currentUser.id);
-  const canReviewRoleChanges = PASSKEY_READINESS_ROLES.has(currentUser.role);
+  const canReviewRoleChanges = PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role));
   const decideRoleChangeMutation = trpc.decideRoleChangeApproval.useMutation({
     onSuccess: () => { roleChangeApprovalsQuery?.refetch?.(); notify("Role-change decision recorded ✓"); },
     onError: (error) => notify(error.message || "The role-change decision could not be saved.", "error"),
   });
-  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
-  const roleView = ROLE_HOME_VIEW[currentUser.role] || "executive";
-  const canViewMarketIntelligence = ["owner", "Owner", "Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager"].includes(currentUser.role);
+  const currentRole = roleDefinitionFor(currentUser.role);
+  const roleView = ROLE_HOME_VIEW[currentRole.id] || "executive";
+  const canViewMarketIntelligence = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager"].includes(canonicalRoleId(currentUser.role));
   const vatAnomalySettingsQuery = trpc.traFiscal.getVatAnomalySettings.useQuery(
     { companyId: company?.id || "" },
     { enabled: Boolean(company?.id) },
@@ -5857,6 +6016,12 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
+  const schedulesQuery = trpc.reportSchedules.list.useQuery(undefined, { enabled: Boolean(company?.id) });
+  const scheduleRows = schedulesQuery.data || [];
+  const activeScheduleCount = scheduleRows.filter((schedule) => schedule.isActive).length;
+  const lastScheduleSentAt = scheduleRows.map((schedule) => schedule.lastSentAt).filter(Boolean).sort().pop();
+  const hasActiveSchedules = activeScheduleCount > 0;
+
   // Time period filter — Day/Week/Month/Year. The filter cuts both invoice
   // and expense rows by their date field, so every KPI on the dashboard
   // reflects the same window. "This session" is replaced by a real label.
@@ -6242,7 +6407,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("cash flow, receivables, and payables, live from Finance")}
-        <FinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
+        <FinanceCommandCenter invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -6252,7 +6417,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("headcount, payroll, and leave, live from HR")}
-        <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />
+        <HrCommandCenter employees={employees} leaveRequests={leaveRequests} expenses={expenses} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -6262,17 +6427,24 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("pipeline, forecast, and revenue by customer, live from CRM and Sales")}
-        <SalesDashboard invoices={invoices} crm={crm} onNavigate={onNavigate} />
+        <SalesCommandCenter invoices={invoices} orders={posTransactions} crm={crm} inventory={inventory} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
   }
 
   if (roleView === "operations") {
+    const isProcurementOfficer = currentRole.id === "Procurement Officer";
     return (
       <div className="space-y-6">
-        {roleHeader("stock levels and low-inventory alerts, live from Inventory and Manufacturing")}
-        <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />
+        {roleHeader(isProcurementOfficer
+          ? "supplier coverage, replenishment, and purchasing readiness, live from Procurement and Inventory"
+          : "stock, work orders, and operational throughput, live from Inventory and Manufacturing")}
+        {isProcurementOfficer ? (
+          <ProcurementCommandCenter inventory={inventory} suppliers={suppliers} expenses={expenses} onNavigate={onNavigate} />
+        ) : (
+          <WarehouseCommandCenter inventory={inventory} suppliers={suppliers} invoices={invoices} workOrders={workOrders} posTransactions={posTransactions} onNavigate={onNavigate} />
+        )}
         {sidePanels}
       </div>
     );
@@ -6285,10 +6457,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // for data this screen genuinely does not have, this gives a direct,
   // one-click path into the real module instead.
   if (roleView === "focused") {
-    const preferredTarget = currentUser.role === "Project Manager" ? "projects" : "support";
-    const target = currentRole.allowedModules.includes(preferredTarget)
-      ? preferredTarget
-      : (currentRole.primaryModules[0] || currentRole.allowedModules[0]);
+    const preferredTarget = currentRole.id === "Project Manager" ? "projects" : "support";
+    const rolePreferredTarget = ["Property Administrator", "Property Manager", "Landlord / Owner", "Property Agent", "Tenant", "Maintenance Staff", "Property Finance Officer"].includes(currentRole.id) ? "property-management" : currentRole.id === "School Administrator" ? "school" : currentRole.id === "Customer Support Agent" ? "support" : preferredTarget;
+    const preferredTargetAllowed = currentRole.allowedModules.includes(preferredTarget);
+    const target = currentRole.allowedModules.includes(rolePreferredTarget)
+      ? rolePreferredTarget
+      : preferredTargetAllowed && currentRole.allowedModules.includes(preferredTarget)
+        ? preferredTarget
+        : (currentRole.primaryModules[0] || currentRole.allowedModules[0]);
     const targetLabel = MODULES.find((module) => module.id === target)?.label || "your workspace";
     return (
       <div className="space-y-6">
@@ -6335,6 +6511,30 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   return (
     <div className="flex flex-col gap-5">
+      <ExecutiveCommandCenter
+        invoices={invoices}
+        expenses={expenses}
+        inventory={inventory}
+        crm={crm}
+        employees={employees}
+        leaveRequests={leaveRequests}
+        posTransactions={posTransactions}
+        workOrders={workOrders}
+        onNavigate={onNavigate}
+        currency={company.currency || "TZS"}
+      />
+      <AiBusinessSignals
+        invoices={invoices}
+        inventory={inventory}
+        crm={crm}
+        expenses={expenses}
+        employees={employees}
+        leaveRequests={leaveRequests}
+        suppliers={suppliers}
+        quotations={quotations}
+        scheduledWorkflows={scheduledWorkflows}
+        onNavigate={onNavigate}
+      />
       {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
       <Suspense fallback={null}>
         <LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
@@ -6349,34 +6549,28 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         {canViewMarketIntelligence && <MarketIntelligencePanel snapshotQuery={marketSnapshotQuery} onNavigate={onNavigate} />}
 
       {/* ══════════════════ COMPLIANCE DIGEST STATUS BADGE ══════════════════ */}
-      {(() => {
-        const schedulesQuery = trpc.reportSchedules.list.useQuery(undefined, { enabled: Boolean(company?.id) });
-        const list = schedulesQuery.data || [];
-        const activeCount = list.filter(s => s.isActive).length;
-        const lastSent = list.map(s => s.lastSentAt).filter(Boolean).sort().pop();
-        const hasActive = activeCount > 0;
-        return (
+      {(
           <div className="rounded-2xl border border-slate-200/80 bg-white dark:bg-slate-900 p-4 shadow-sm flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <span className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold ${hasActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
-                {hasActive ? '🛡️' : '⏸️'}
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl font-bold ${hasActiveSchedules ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                {hasActiveSchedules ? '🛡️' : '⏸️'}
               </span>
               <div>
                 <div className="flex items-center gap-2">
                   <h4 className="text-[13.5px] font-bold text-slate-900 dark:text-white">Automated Weekly Compliance Digest</h4>
                   <span
                     tabIndex={0}
-                    className={`group/badge relative inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-bold cursor-help ${hasActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
-                    title={lastSent ? `Last successful email delivery: ${new Date(lastSent).toLocaleString()}` : 'No successful email deliveries recorded yet'}
+                    className={`group/badge relative inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-bold cursor-help ${hasActiveSchedules ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+                    title={lastScheduleSentAt ? `Last successful email delivery: ${new Date(lastScheduleSentAt).toLocaleString()}` : 'No successful email deliveries recorded yet'}
                   >
-                    {schedulesQuery.isLoading ? 'Checking...' : hasActive ? `Active (${activeCount} schedule${activeCount > 1 ? 's' : ''})` : 'Paused / Unconfigured'}
+                    {schedulesQuery.isLoading ? 'Checking...' : hasActiveSchedules ? `Active (${activeScheduleCount} schedule${activeScheduleCount > 1 ? 's' : ''})` : 'Paused / Unconfigured'}
                     <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/badge:block group-focus/badge:block w-56 rounded-lg bg-slate-900 dark:bg-slate-800 px-3 py-1.5 text-[11px] font-normal text-white shadow-xl z-30 text-center leading-snug">
-                      {lastSent ? `Last successful email delivery:\n${new Date(lastSent).toLocaleString()}` : 'No successful email deliveries recorded yet'}
+                      {lastScheduleSentAt ? `Last successful email delivery:\n${new Date(lastScheduleSentAt).toLocaleString()}` : 'No successful email deliveries recorded yet'}
                     </span>
                   </span>
                 </div>
                 <p className="text-[11.5px] text-slate-500 mt-0.5">
-                  {lastSent ? `Last email digest delivered successfully on ${new Date(lastSent).toLocaleString()}` : hasActive ? 'Scheduled weekly email dispatches are active and monitoring tenant tax records.' : 'Configure automated report schedules in the Reports module to enable weekly compliance email dispatches.'}
+                  {lastScheduleSentAt ? `Last email digest delivered successfully on ${new Date(lastScheduleSentAt).toLocaleString()}` : hasActiveSchedules ? 'Scheduled weekly email dispatches are active and monitoring tenant tax records.' : 'Configure automated report schedules in the Reports module to enable weekly compliance email dispatches.'}
                 </p>
               </div>
             </div>
@@ -6409,8 +6603,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               />
             )}
           </div>
-        );
-      })()}
+        )}
 
       </section>
 
@@ -8135,12 +8328,6 @@ function CRM({ crm, invoices, expenses, suppliers }) {
             className="btn-secondary text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5"
           >
             <UploadCloud size={15} /> Import
-          </button>
-          <button
-            onClick={() => setShowInvite(!showInvite)}
-            className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#7C3AED] border border-[#7C3AED]/30 bg-[#F5F3FF] px-3.5 py-2 rounded-lg hover:bg-[#EDE9FE]"
-          >
-            <QrCode size={14}/> Invite Code
           </button>
           <button
             onClick={() => setShowForm(true)}
@@ -14946,7 +15133,7 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
           onMarkPaid={markInvoicePaid}
           onDelete={deleteInvoice}
           onRecordPayment={(id, payment) => recordPayment(invoices, id, payment, `${currentUser.name} (${currentUser.role})`)}
-        
+
           company={company}
         />
       )}
@@ -16067,7 +16254,7 @@ function BudgetsView({ expenses }) {
           </div>
         </div>
       )}
-    
+
       {overCount > 0 && (
         <div className="flex items-center gap-3 p-3.5 rounded-xl border border-[#FCA5A5] bg-[#FEF2F2]">
           <AlertCircle size={16} className="text-[#EF4444] shrink-0" />
@@ -17586,7 +17773,7 @@ const APPROVER_ROLES = new Set([
   "Finance Manager","HR Manager","Sales Manager","Procurement Officer","Warehouse Manager","Project Manager",
 ]);
 function isApprover(user) {
-  return user?.writeAccess === "full" || APPROVER_ROLES.has(user?.role);
+  return user?.writeAccess === "full" || APPROVER_ROLES.has(canonicalRoleId(user?.role));
 }
 
 function mapDutyRow(r) {
@@ -18196,7 +18383,7 @@ function WorkingTimetable({ employees, currentUser, canManage }) {
                     </tr>
                   );
                 })}
-    
+
               </tbody>
             </table>
           )}
@@ -18382,7 +18569,7 @@ function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearInten
         {HR_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "employees" && <Employees employees={employees} setEmployees={setEmployees} loading={empLoading} />}
+      {tab === "employees" && <Employees employees={employees} setEmployees={setEmployees} loading={empLoading} canManage={canManage} />}
       {tab === "timetable" && <WorkingTimetable employees={employees} currentUser={currentUser} canManage={canManage} />}
       {tab === "recruitment" && <Recruitment />}
       {tab === "attendance" && <Attendance employees={employees} />}
@@ -18395,32 +18582,34 @@ function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearInten
   );
 }
 
-function Employees({ employees, setEmployees, loading }) {
+function Employees({ employees, setEmployees, loading, canManage }) {
   const [department, setDepartment] = useState("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
-  const [generatedCode, setGenCode] = useState(null);
+  const [generatedInvitation, setGeneratedInvitation] = useState(null);
   const bulk = useBulkSelect(employees);
+  const invitationListQuery = trpc.teamInvitations.list.useQuery(undefined, { enabled: Boolean(showInvite && IS_CONFIGURED), retry: false, refetchOnWindowFocus: false });
+  const createInvitationMutation = trpc.teamInvitations.create.useMutation({
+    onSuccess: (result) => {
+      setGeneratedInvitation(result.invitation);
+      invitationListQuery.refetch();
+      if (result.delivered) {
+        notify(`Secure invitation sent to ${result.invitation.email}. It expires in seven days.`);
+      } else {
+        notify(`Invitation was saved, but email delivery failed: ${result.deliveryError || "review the delivery configuration"}.`, "error");
+      }
+    },
+    onError: (error) => notify(error.message || "The secure invitation could not be created.", "error"),
+  });
 
-  function generateInviteCode(dept, role) {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    const code  = Array.from({length:8}, ()=>chars[Math.floor(Math.random()*chars.length)]).join("");
-    const expires = new Date(Date.now() + 7*86400000).toISOString().slice(0,10);
-    const inv = { code, dept, role, expires, used: false, createdAt: TODAY.toISOString().slice(0,10) };
-    // Store in localStorage for demo — in live mode write to hr_invite_codes table
-    try {
-      const existing = JSON.parse(localStorage.getItem("hr_invite_codes")||"[]");
-      localStorage.setItem("hr_invite_codes", JSON.stringify([...existing, inv]));
-    } catch(_e) {}
-    if (IS_CONFIGURED) {
-      sb("hr_invite_codes").insert({
-        code, department:dept, role_hint:role, expires_at:expires, used:false
-      }).run().catch(()=>{});
+  function generateInvitation(fullName, email, role) {
+    if (!IS_CONFIGURED) {
+      notify("Secure invitations require the configured workspace backend; no browser-only invite was created.", "error");
+      return;
     }
-    setGenCode(inv);
-    notify(`Invite code generated: ${code} — valid 7 days`);
+    createInvitationMutation.mutate({ fullName, email, role });
   }
 
   const filtered = useMemo(() => {
@@ -18535,12 +18724,12 @@ function Employees({ employees, setEmployees, loading }) {
               className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
             />
           </div>
-          <button
-            onClick={() => setShowInvite(!showInvite)}
+          {canManage && <button
+            onClick={() => { setShowInvite(!showInvite); setGeneratedInvitation(null); }}
             className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#7C3AED] border border-[#7C3AED]/30 bg-[#F5F3FF] px-3.5 py-2 rounded-lg hover:bg-[#EDE9FE] shrink-0"
           >
-            <QrCode size={14}/> Invite Code
-          </button>
+            <QrCode size={14}/> Secure Invitation
+          </button>}
           <button
             onClick={() => setShowForm(true)}
             className="btn-primary text-white text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors shrink-0"
@@ -18550,72 +18739,56 @@ function Employees({ employees, setEmployees, loading }) {
         </div>
       </div>
 
-      {/* ── Invite Code Generator Panel ── */}
-      {showInvite && (
+      {/* ── Secure team invitation panel ── */}
+      {canManage && showInvite && (
         <div className="bg-[#F5F3FF] border border-[#C4B5FD] rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[14px] font-bold text-[#5B21B6]">🔐 Generate Employee Invite Code</p>
-              <p className="text-[12px] text-[#7C3AED]">Employee enters this code in the Employee Portal to join the company system</p>
+              <p className="text-[14px] font-bold text-[#5B21B6]">Secure team invitation</p>
+              <p className="text-[12px] text-[#7C3AED]">Invitations are persisted to the workspace and delivered by email. No browser-only invite codes are created.</p>
             </div>
-            <button onClick={()=>{setShowInvite(false);setGenCode(null);}} className="text-[#7C3AED] hover:text-[#5B21B6]"><X size={16}/></button>
+            <button onClick={()=>{setShowInvite(false);setGeneratedInvitation(null);}} className="text-[#7C3AED] hover:text-[#5B21B6]"><X size={16}/></button>
           </div>
+          {!IS_CONFIGURED && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">The workspace backend is not configured, so secure invitations are unavailable in this environment.</p>}
           <div className="grid grid-cols-2 gap-3">
-            <InviteCodeForm onGenerate={generateInviteCode}/>
+            <SecureInvitationForm onGenerate={generateInvitation} pending={createInvitationMutation.isPending} />
           </div>
-          {generatedCode && (
+          {generatedInvitation && (
             <div className="bg-white rounded-xl border-2 border-[#7C3AED] p-4">
-              <p className="text-[11px] font-bold text-[#7C3AED] uppercase tracking-wider mb-2">Generated Invite Code</p>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 font-mono text-[28px] font-black text-[#111827] tracking-[0.3em] bg-slate-50 rounded-xl px-4 py-2.5 text-center border border-slate-200">
-                  {generatedCode.code}
-                </div>
-                <button onClick={()=>{ if(navigator.clipboard) navigator.clipboard.writeText(generatedCode.code); notify("Code copied!"); }}
-                  className="text-[12px] font-bold text-white bg-[#7C3AED] px-3 py-2 rounded-lg">
-                  Copy
-                </button>
-              </div>
-              <div className="grid grid-cols-3 gap-3 mt-3">
+              <p className="text-[11px] font-bold text-[#7C3AED] uppercase tracking-wider mb-2">Invitation recorded by the server</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  ["Department", generatedCode.dept],
-                  ["Role", generatedCode.role],
-                  ["Expires", generatedCode.expires],
-                ].map(([l,v])=>(
-                  <div key={l} className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">{l}</p>
-                    <p className="text-[12.5px] font-semibold text-[#111827]">{v}</p>
+                  ["Recipient", generatedInvitation.email],
+                  ["Role", generatedInvitation.role],
+                  ["Status", generatedInvitation.status],
+                  ["Expires", new Date(generatedInvitation.expiresAt).toLocaleDateString()],
+                ].map(([label, value])=>(
+                  <div key={label} className="text-center">
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">{label}</p>
+                    <p className="text-[12.5px] font-semibold text-[#111827] break-words">{value}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-slate-500 mt-2.5 text-center">Share this code with the employee. Valid for 7 days. One-time use.</p>
+              <p className="text-[11px] text-slate-500 mt-2.5 text-center">The recipient must accept the secure email link while signed in with the invited email address.</p>
             </div>
           )}
-          {/* Past codes */}
-          {(() => {
-            try {
-              const codes = JSON.parse(localStorage.getItem("hr_invite_codes")||"[]").slice(-5).reverse();
-              if (!codes.length) return null;
-              return (
-                <div>
-                  <p className="text-[11px] font-bold text-[#7C3AED] mb-2">Recent Codes</p>
-                  <div className="space-y-1.5">
-                    {codes.map((inv,i)=>(
-                      <div key={i} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-slate-200">
-                        <span className="font-mono font-bold text-[14px] tracking-widest text-[#111827]">{inv.code}</span>
-                        <div className="flex gap-3 text-[11.5px] text-slate-500">
-                          <span>{inv.dept}</span>
-                          <span>{inv.role}</span>
-                          <span className={`font-semibold ${inv.used?"text-[#16A34A]":new Date(inv.expires)<new Date()?"text-[#EF4444]":"text-[#F59E0B]"}`}>
-                            {inv.used?"✓ Used":new Date(inv.expires)<new Date()?"Expired":"Valid until "+inv.expires}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+          {invitationListQuery.isError && <p className="text-[12px] text-[#EF4444] font-semibold">Recent invitations could not be loaded from the server.</p>}
+          {(invitationListQuery.data?.length || 0) > 0 && (
+            <div>
+              <p className="text-[11px] font-bold text-[#7C3AED] mb-2">Recent invitations</p>
+              <div className="space-y-1.5">
+                {invitationListQuery.data.slice(0, 5).map((invitation) => (
+                  <div key={invitation.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-white rounded-lg px-3 py-2 border border-slate-200">
+                    <span className="font-semibold text-[12px] text-[#111827]">{invitation.fullName} · {invitation.email}</span>
+                    <div className="flex gap-3 text-[11.5px] text-slate-500">
+                      <span>{invitation.role}</span>
+                      <span className="font-semibold">{invitation.status}</span>
+                    </div>
                   </div>
-                </div>
-              );
-            } catch(_e){ return null; }
-          })()}
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -18626,7 +18799,7 @@ function Employees({ employees, setEmployees, loading }) {
               { label:"Deactivate", danger:true, onClick:()=>{ bulk.selectedRows.forEach(e=>{ setEmployees(p=>p.map(x=>x.id===e.id?{...x,status:"Inactive"}:x)); }); bulk.clearAll(); notify(bulk.count+" employees deactivated"); } },
             ]} />
             <div className="overflow-x-auto">
-            
+
           <table className="w-full text-[13px] min-w-[720px]">
             <thead>
               <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
@@ -24921,19 +25094,31 @@ function Integrations({ invoices, expenses, canManage, currentUser, onNavigate }
 
 function IntegrationConnections({ canManage, currentUser }) {
   const connections = useCompanyTable("integration_connections", INTEGRATION_CONNECTIONS.map((c) => ({ id: c.id, enabled: false, tenantId: "", clientId: "", paymentLink: "", paypalMeLink: "", webhookUrl: "", apiKey: "", businessNumber: "", storeUrl: "", terminalId: "" })), { mapRow: mapIntegrationConnectionRow });
-  const { rows, setRows, loading } = connections;
+  const { rows, setRows, loading, error, unavailable } = connections;
+  const storageUnavailable = Boolean(error || unavailable);
 
   function getConfig(id) { return rows.find((c) => c.id === id) || {}; }
 
   async function updateField(id, key, value) {
     if (!canManage) return;
+    if (storageUnavailable) {
+      notify("Integration connection storage is unavailable; no changes were written.", "error");
+      return;
+    }
+    const previous = rows.find((c) => c.id === id)?.[key];
     setRows((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: value } : c)));
     if (IS_CONFIGURED) {
       const columnMap = {
         enabled: "enabled", tenantId: "tenant_id", clientId: "client_id", paymentLink: "payment_link", paypalMeLink: "paypal_me_link",
         webhookUrl: "webhook_url", apiKey: "api_key", businessNumber: "business_number", storeUrl: "store_url", terminalId: "terminal_id",
       };
-      try { await sb("integration_connections").eq("integration_id", id).update({ [columnMap[key]]: value }).run(); } catch (_e) { /* saved locally regardless */ }
+      try {
+        const result = await runCompanyTableMutation("integration_connections", "update", { [columnMap[key]]: value }, { matchCol: "integration_id", matchVal: id });
+        if (result.error || result.data == null) throw result.error || new Error("The server did not confirm the integration update.");
+      } catch (e) {
+        setRows((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: previous } : c)));
+        notify("Integration change was not saved to the server.", "error");
+      }
     }
   }
 
@@ -24961,6 +25146,12 @@ function IntegrationConnections({ canManage, currentUser }) {
           <p className="text-[12px] text-[#8a670a] leading-relaxed">You are viewing as {currentUser.role}. Editing connection configuration requires a full-write role.</p>
         </div>
       )}
+      {storageUnavailable && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-600" />
+          <p className="text-[12px] leading-relaxed text-amber-800">Connection storage is unavailable in this deployment. Configuration controls are disabled and no local copy is treated as saved.</p>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {INTEGRATION_CONNECTIONS.map((meta) => {
           const config = getConfig(meta.id);
@@ -24977,7 +25168,7 @@ function IntegrationConnections({ canManage, currentUser }) {
                   </div>
                 </div>
                 {loading ? <div className="w-9 h-5 rounded-full skeleton-shimmer" /> : (
-                  <ToggleSwitch on={config.enabled} disabled={!canManage} onChange={() => updateField(meta.id, "enabled", !config.enabled)} label={`${config.enabled ? "Disable" : "Enable"} ${meta.name}`} />
+                  <ToggleSwitch on={config.enabled} disabled={!canManage || storageUnavailable} onChange={() => updateField(meta.id, "enabled", !config.enabled)} label={`${config.enabled ? "Disable" : "Enable"} ${meta.name}`} />
                 )}
               </div>
               <p className="text-[11.5px] text-slate-400 leading-relaxed mb-3">{meta.requirement}</p>
@@ -24985,7 +25176,7 @@ function IntegrationConnections({ canManage, currentUser }) {
                 {meta.fields.map((f) => (
                   <div key={f.key}>
                     <label className="text-[11px] font-medium text-slate-500 block mb-1">{f.label}</label>
-                    <input className={inputClass} value={config[f.key] || ""} onChange={(e) => updateField(meta.id, f.key, e.target.value)} placeholder={f.placeholder} disabled={!config.enabled || !canManage} />
+                    <input className={inputClass} value={config[f.key] || ""} onChange={(e) => updateField(meta.id, f.key, e.target.value)} placeholder={f.placeholder} disabled={!config.enabled || !canManage || storageUnavailable} />
                   </div>
                 ))}
               </div>
@@ -27247,7 +27438,7 @@ function SupportPolicyCenter() {
   const [workflowPanel, setWorkflowPanel] = useState(false);
   const [slaPanel, setSlaPanel] = useState(false);
   const profile = workflowPolicies.data?.profile || slaPolicies.data?.profile;
-  const canConfigure = !IS_CONFIGURED || SUPPORT_CONFIGURATION_ROLE_NAMES.has(profile?.role);
+  const canConfigure = !IS_CONFIGURED || SUPPORT_CONFIGURATION_ROLE_NAMES.has(canonicalRoleId(profile?.role));
   const workflows = workflowPolicies.data?.workflows || [];
   const policies = slaPolicies.data?.policies || [];
 
@@ -31975,7 +32166,7 @@ function WhatsAppWebIntegration() {
   const [replyText, setReplyText] = useState("");
   const [selectedMsg, setSelectedMsg] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
-  
+
   // Categorized Quick Replies
   const [templateCategory, setTemplateCategory] = useState("all");
   const [templateSearch, setTemplateSearch] = useState("");
@@ -33249,7 +33440,7 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
                   <textarea value={body} onChange={e=>setBody(e.target.value)}
                     className="w-full flex-1 min-h-[240px] px-6 py-4 text-[13px] leading-relaxed text-[#374151] resize-none outline-none"
                     placeholder="Write your email here…&#10;&#10;Tip: Use templates above to auto-fill professional content or use the rich-text toolbar above."/>
-                  
+
                   {/* Attachment Management Bar */}
                   <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between text-[11.5px]">
                     <div className="flex items-center gap-2">
@@ -34198,7 +34389,7 @@ function TeamWorkspaces({ employees, currentUser }) {
   const [exportColumns, setExportColumns] = useState({ id: true, name: true, department: true, role: true, workspaces: true });
   const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
 
-  const isManagerOrAdmin = ["Super Administrator", "Organization Owner", "CEO", "COO", "HR Manager", "Department Head"].includes(currentUser?.role) || allowedDepartments.length === 0;
+  const isManagerOrAdmin = ["Super Administrator", "Organization Owner", "CEO", "COO", "HR Manager", "Department Head"].includes(canonicalRoleId(currentUser?.role)) || allowedDepartments.length === 0;
 
   async function addWorkspace(form) {
     if (savingWorkspace) return;
@@ -35958,7 +36149,71 @@ function PushDeliveryHistoryPanel({ companyId, canManage }) {
   );
 }
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+function TeamWorkforceCenter({ enabled, canManage }) {
+  const [view, setView] = useState("overview");
+  const [query, setQuery] = useState("");
+  const snapshotQuery = trpc.teamWorkforce.snapshot.useQuery(undefined, {
+    enabled: Boolean(enabled && canManage && IS_CONFIGURED),
+    retry: false,
+    staleTime: 30_000,
+  });
+  const snapshot = snapshotQuery.data || {};
+  const employees = Array.isArray(snapshot.employees) ? snapshot.employees : [];
+  const invitations = Array.isArray(snapshot.invitations) ? snapshot.invitations : [];
+  const departments = Array.isArray(snapshot.departments) ? snapshot.departments : [];
+  const filteredEmployees = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return employees;
+    return employees.filter((employee) => [employee.name, employee.email, employee.employeeNumber, employee.role, employee.department, employee.position]
+      .some((value) => String(value || "").toLowerCase().includes(term)));
+  }, [employees, query]);
+
+  if (!enabled || !canManage) return null;
+  const overview = snapshot.overview || {};
+  const coverage = snapshot.coverage || {};
+  const security = snapshot.security || {};
+  const statCards = [
+    ["Total employees", overview.totalEmployees ?? 0, Users, "bg-emerald-50 text-emerald-700"],
+    ["Active members", overview.activeEmployees ?? 0, UserCheck, "bg-blue-50 text-blue-700"],
+    ["Pending invitations", overview.pendingInvitations ?? 0, Mail, "bg-amber-50 text-amber-700"],
+    ["Suspended accounts", overview.suspendedAccounts ?? 0, ShieldCheck, "bg-rose-50 text-rose-700"],
+  ];
+  const nav = [["overview", "Team Overview"], ["members", "All Members"], ["invitations", "Pending Invitations"]];
+  return (
+    <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden" data-testid="team-workforce-center">
+      <div className="px-5 py-5 border-b border-slate-100 bg-gradient-to-r from-[#F0FDF4] to-white">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2"><div className="w-9 h-9 rounded-xl bg-[#0D2214] flex items-center justify-center"><Users size={17} className="text-[#4ADE80]" /></div><div><p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#16A34A]">Settings · Team & Workforce</p><h2 className="text-[17px] font-black text-[#111827]">Team & Workforce Center</h2></div></div>
+            <p className="mt-2 max-w-2xl text-[12px] leading-5 text-slate-500">Server-backed workforce visibility using the verified workspace identity. Editing roles, permissions, and employee records remains in the established HR flow until the authorization model is enabled.</p>
+          </div>
+          <button type="button" onClick={() => snapshotQuery.refetch()} disabled={snapshotQuery.isFetching} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-600 hover:bg-white disabled:cursor-wait disabled:opacity-50"><RefreshCw size={12} className={snapshotQuery.isFetching ? "animate-spin" : ""} /> Refresh</button>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-1.5" role="tablist" aria-label="Team and Workforce views">
+          {nav.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={view === id} onClick={() => setView(id)} className={`rounded-lg px-3 py-2 text-[11.5px] font-semibold transition ${view === id ? "bg-[#0D2214] text-white" : "text-slate-500 hover:bg-white hover:text-slate-800"}`}>{label}</button>)}
+        </div>
+      </div>
+      <div className="p-5 sm:p-6">
+        {snapshotQuery.isLoading ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-24 rounded-xl bg-slate-100 animate-pulse" />)}</div> : snapshotQuery.error ? <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-4 text-[12px] leading-5 text-red-700">The Team & Workforce snapshot could not be loaded. Existing Settings and HR workflows remain available. Refresh and try again.</div> : view === "overview" ? (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{statCards.map(([label, value, Icon, color]) => <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5"><div className={`mb-3 flex h-8 w-8 items-center justify-center rounded-lg ${color}`}><Icon size={15} /></div><p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-[22px] font-black text-[#111827]">{value}</p></div>)}</div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-xl border border-slate-100 p-4"><div className="flex items-center justify-between"><div><p className="text-[12.5px] font-bold text-[#111827]">Team access coverage</p><p className="mt-1 text-[11px] text-slate-500">Profile and onboarding signals from confirmed records.</p></div><ShieldCheck size={17} className="text-[#16A34A]" /></div><div className="mt-4 grid grid-cols-2 gap-2">{[["Complete profiles", coverage.completeProfiles ?? 0], ["Missing information", coverage.missingProfiles ?? 0], ["Unassigned roles", coverage.withoutAssignedRoles ?? 0], ["Onboarding required", coverage.requiringOnboarding ?? 0]].map(([label, value]) => <div key={label} className="rounded-lg bg-slate-50 p-3"><p className="text-[10.5px] text-slate-500">{label}</p><p className="mt-1 text-[16px] font-bold text-slate-800">{value}</p></div>)}</div></div>
+              <div className="rounded-xl border border-slate-100 p-4"><div className="flex items-center justify-between"><div><p className="text-[12.5px] font-bold text-[#111827]">Security health</p><p className="mt-1 text-[11px] text-slate-500">Only confirmed server metrics are shown; unavailable Auth metrics are not fabricated.</p></div><Lock size={16} className="text-slate-400" /></div><div className="mt-4 grid grid-cols-2 gap-2">{[["Suspended accounts", security.suspendedAccounts ?? 0], ["MFA gaps", security.accountsWithoutMfa ?? "—"], ["Failed logins", security.recentlyFailedLogins ?? "—"], ["Dormant accounts", security.dormantAccounts ?? "—"]].map(([label, value]) => <div key={label} className="rounded-lg bg-slate-50 p-3"><p className="text-[10.5px] text-slate-500">{label}</p><p className="mt-1 text-[16px] font-bold text-slate-800">{value}</p></div>)}</div></div>
+            </div>
+            <div className="rounded-xl border border-slate-100 p-4"><div className="flex items-center justify-between"><div><p className="text-[12.5px] font-bold text-[#111827]">Departments</p><p className="mt-1 text-[11px] text-slate-500">Directory totals are read from tenant-scoped HR records.</p></div><Building2 size={16} className="text-slate-400" /></div><div className="mt-3 flex flex-wrap gap-2">{departments.length ? departments.map((department) => <span key={department.id} className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{department.name}</span>) : <span className="text-[11.5px] text-slate-400">No confirmed departments found.</span>}</div></div>
+          </div>
+        ) : view === "members" ? (
+          <div><div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[12.5px] font-bold text-[#111827]">All Members</p><p className="mt-1 text-[11px] text-slate-500">{filteredEmployees.length} of {employees.length} confirmed employee records.</p></div><div className="relative w-full sm:w-72"><Search size={13} className="absolute left-3 top-2.5 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full rounded-lg border border-slate-200 py-2 pl-8 pr-3 text-[11.5px] outline-none focus:border-[#16A34A]" placeholder="Search name, role, department..." aria-label="Search workforce members" /></div></div><div className="overflow-x-auto rounded-xl border border-slate-100"><table className="min-w-full text-left"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr><th className="px-3 py-2.5">Member</th><th className="px-3 py-2.5">Role</th><th className="px-3 py-2.5">Department</th><th className="px-3 py-2.5">Status</th><th className="px-3 py-2.5">Profile</th></tr></thead><tbody className="divide-y divide-slate-100">{filteredEmployees.map((employee) => <tr key={employee.id} className="text-[11.5px] text-slate-600"><td className="px-3 py-3"><p className="font-semibold text-slate-800">{employee.name}</p><p className="mt-0.5 text-[10.5px] text-slate-400">{employee.email} · {employee.employeeNumber}</p></td><td className="px-3 py-3">{employee.role}</td><td className="px-3 py-3">{employee.department}<span className="block text-[10.5px] text-slate-400">{employee.position}</span></td><td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${employee.status.toLowerCase() === "active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{employee.status}</span></td><td className="px-3 py-3 font-semibold">{employee.profileCompletion}%</td></tr>)}{filteredEmployees.length === 0 && <tr><td colSpan="5" className="px-3 py-8 text-center text-[11.5px] text-slate-400">No confirmed members match this search.</td></tr>}</tbody></table></div></div>
+        ) : (
+          <div><div className="mb-4"><p className="text-[12.5px] font-bold text-[#111827]">Pending Invitations</p><p className="mt-1 text-[11px] text-slate-500">Invitation delivery and expiry state comes from the existing secure invitation service.</p></div>{invitations.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center"><Mail size={18} className="mx-auto mb-2 text-slate-300" /><p className="text-[11.5px] text-slate-400">No pending invitations require attention.</p></div> : <div className="space-y-2">{invitations.map((invitation) => <div key={invitation.id} className="flex flex-col gap-2 rounded-xl border border-slate-100 p-3 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-[12px] font-semibold text-slate-800">{invitation.fullName}</p><p className="text-[10.5px] text-slate-400">{invitation.email} · {invitation.role}</p></div><span className="w-fit rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">{invitation.status}</span><span className="text-[10.5px] text-slate-400">Expires {invitation.expiresAt ? new Date(invitation.expiresAt).toLocaleDateString() : "—"}</span></div>)}</div>}</div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
@@ -35969,13 +36224,13 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
     onSuccess: (result) => notify(result.ok ? `Collaboration Hub webhook connected (HTTP ${result.status}).` : `Webhook responded with HTTP ${result.status}.`, result.ok ? "success" : "error"),
     onError: (error) => notify(error.message || "Collaboration Hub webhook test failed.", "error"),
   });
-  const canManageCompanySettings = ["owner", "Owner", "Organization Owner", "CEO", "Super Administrator", "System Administrator"].includes(currentUser.role);
+  const canManageCompanySettings = ["Organization Owner", "CEO", "Super Administrator"].includes(canonicalRoleId(currentUser.role));
   const marketProviderConfigQuery = trpc.marketIntelligence.configuration.useQuery(
     { companyId: company?.id || "" },
     { enabled: Boolean(company?.id) && canManageCompanySettings },
   );
   const dirty = JSON.stringify(draft) !== JSON.stringify(company) || Boolean(workflowWebhookSecret.trim());
-  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
+  const currentRole = roleDefinitionFor(currentUser.role);
 
   useEffect(() => {
     setDraft(company);
@@ -36063,6 +36318,8 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Settings</h1>
         <p className="text-[13px] text-slate-500 mt-1">Company profile, module entitlements, and connection status</p>
       </div>
+
+      {canManageBilling && <section className="flex flex-col gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Subscription and billing"><div className="flex items-start gap-3"><span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><CreditCard size={16} /></span><div><p className="text-[12.5px] font-bold text-emerald-950">Subscription &amp; Billing</p><p className="mt-0.5 text-[11.5px] leading-5 text-emerald-900/75">Company-level plan, trial, invoice and provider-confirmed payment controls.</p></div></div><button type="button" onClick={onOpenBilling} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-[11.5px] font-bold text-white transition hover:bg-emerald-800"><CreditCard size={13} /> Open billing center <ArrowRight size={13} /></button></section>}
 
       <section className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm" role="status" aria-live="polite">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -36423,7 +36680,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                     onClick={() => notify("Use the role-change approval workflow below. Your active access remains unchanged until an independent administrator approves the request.")}
                     title={r.description}
                     className={`text-[12.5px] font-medium rounded-lg py-2.5 px-2 border transition-colors ${
-                      currentUser.role === r.id ? "border-[#16A34A] bg-[#16A34A]/8 text-[#111827]" : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                      currentRole.id === r.id ? "border-[#16A34A] bg-[#16A34A]/8 text-[#111827]" : "border-slate-200 text-slate-500 hover:bg-slate-50"
                     }`}
                   >
                     {r.id}
@@ -36457,7 +36714,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
       <PushDeliveryHistoryPanel companyId={company.id} canManage={canManageCompanySettings} />
       <RoleChangeApprovalPanel currentUser={currentUser} />
 
-      <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(currentUser.role)} />
+      <AccountPasskeyManager session={accountSession} isAdministrator={PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role))} />
       {canManageCompanySettings && <section className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm" aria-labelledby="tenant-security-branding-title">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -36504,7 +36761,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         </div>
         <p className="mt-4 text-[10.5px] leading-4 text-slate-400">Click <strong className="font-semibold text-slate-600">Save Company Profile</strong> below to persist these settings. Images are validated, stored under the current tenant, and never sent to the browser as raw upload bytes after save.</p>
       </section>}
-      {PASSKEY_READINESS_ROLES.has(currentUser.role) && <QuarterlySecurityReviewChecklist companyName={company.name} companyId={company.id} userId={currentUser.id} />}
+      {PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role)) && <QuarterlySecurityReviewChecklist companyName={company.name} companyId={company.id} userId={currentUser.id} />}
 
       {!canManageCompanySettings && (
         <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm">
@@ -36520,7 +36777,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         <>
           {/* ══════ COMPANY PROFILE ══════ */}
           <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-            
+
             {/* Cover Photo */}
             <div className="relative">
               <div className="h-36 sm:h-44 w-full overflow-hidden bg-gradient-to-br from-[#0D2214] to-[#16A34A] relative group cursor-pointer"
@@ -37248,6 +37505,8 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         </div>
       </section>
 
+      {TEAM_WORKFORCE_CENTER_ENABLED && canManage && <TeamWorkforceCenter enabled={TEAM_WORKFORCE_CENTER_ENABLED} canManage={canManage} />}
+
       {/* ── Team Management ──────────────────────────────────────────── */}
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
         <h2 className="text-[14.5px] font-semibold text-[#111827] mb-1">Team Members</h2>
@@ -37513,7 +37772,7 @@ function RoleChangeApprovalPanel({ currentUser }) {
   const approvals = trpc.listRoleChangeApprovals.useQuery(undefined, { retry: false });
   const requestMutation = trpc.requestRoleChangeApproval.useMutation({ onSuccess: () => { setRequestedRole(""); setReason(""); approvals.refetch(); notify("Role change submitted for independent review. Your active access has not changed."); } });
   const decideMutation = trpc.decideRoleChangeApproval.useMutation({ onSuccess: () => { approvals.refetch(); notify("Role-change decision recorded. Approved access updates only after the server confirms it."); } });
-  const canDecide = PASSKEY_READINESS_ROLES.has(currentUser.role);
+  const canDecide = PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role));
   const rows = approvals.data?.approvals || [];
   const markReadMutation = trpc.roleChangeApprovals.markRead.useMutation({
     onSuccess: () => approvals.refetch(),
@@ -38196,26 +38455,27 @@ function DataExportManager({ exportData, company }) {
     if (busy) return;
     setBusy(true);
     try {
-      const wb = XLSX.utils.book_new();
-      const addSheet = (name, headers, rows) => {
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...rows]), name.slice(0, 31));
-      };
-      addSheet("Customers & Leads", ["Company", "Contact", "Stage", "Value (TZS 000)", "Email", "Phone"],
-        (exportData.crm?.rows || []).map((l) => [l.company, l.name, l.stage, l.value, l.email, l.phone]));
-      addSheet("Invoices", ["Invoice No", "Customer", "Date", "Status", "Amount Paid (TZS 000)"],
-        (exportData.invoices?.rows || []).map((i) => [i.id, i.customer, i.date, i.status, i.amountPaid || 0]));
-      addSheet("Expenses", ["Vendor", "Category", "Date", "Due Date", "Amount (TZS 000)", "Status"],
-        (exportData.expenses?.rows || []).map((e) => [e.vendor, e.category, e.date, e.dueDate, e.amount, e.status]));
-      addSheet("Inventory", ["SKU", "Name", "Category", "Qty on Hand", "Unit Cost (TZS 000)"],
-        (exportData.inventory?.rows || []).map((it) => [it.sku, it.name, it.category, it.qty, it.unitCost]));
-      addSheet("Employees", ["Name", "Role", "Department", "Status", "Salary (TZS 000)", "Hire Date"],
-        (exportData.employees?.rows || []).map((e) => [e.name, e.role, e.department, e.status, e.salary, e.hireDate]));
-      addSheet("POS Transactions", ["Receipt No", "Date", "Cashier", "Method", "Items"],
-        (exportData.posTransactions?.rows || []).map((t) => [t.id, t.date, t.cashier, t.method, t.items.length]));
-      addSheet("Suppliers", ["Name", "Contact", "Email", "Phone", "Category", "Lead Time (days)"],
-        (exportData.suppliers?.rows || []).map((s) => [s.name, s.contactPerson, s.email, s.phone, s.category, s.leadTimeDays]));
-      XLSX.writeFile(wb, `${(company.name || "company").replace(/\s+/g, "-").toLowerCase()}-full-export-${TODAY.toISOString().slice(0, 10)}.xlsx`);
-      notify("Full data export downloaded — 7 sheets, one workbook.");
+      const escapeCell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+      const sections = [
+        ["Customers & Leads", ["Company", "Contact", "Stage", "Value (TZS 000)", "Email", "Phone"], (exportData.crm?.rows || []).map((l) => [l.company, l.name, l.stage, l.value, l.email, l.phone])],
+        ["Invoices", ["Invoice No", "Customer", "Date", "Status", "Amount Paid (TZS 000)"], (exportData.invoices?.rows || []).map((i) => [i.id, i.customer, i.date, i.status, i.amountPaid || 0])],
+        ["Expenses", ["Vendor", "Category", "Date", "Due Date", "Amount (TZS 000)", "Status"], (exportData.expenses?.rows || []).map((e) => [e.vendor, e.category, e.date, e.dueDate, e.amount, e.status])],
+        ["Inventory", ["SKU", "Name", "Category", "Qty on Hand", "Unit Cost (TZS 000)"], (exportData.inventory?.rows || []).map((it) => [it.sku, it.name, it.category, it.qty, it.unitCost])],
+        ["Employees", ["Name", "Role", "Department", "Status", "Salary (TZS 000)", "Hire Date"], (exportData.employees?.rows || []).map((e) => [e.name, e.role, e.department, e.status, e.salary, e.hireDate])],
+        ["POS Transactions", ["Receipt No", "Date", "Cashier", "Method", "Items"], (exportData.posTransactions?.rows || []).map((t) => [t.id, t.date, t.cashier, t.method, t.items.length])],
+        ["Suppliers", ["Name", "Contact", "Email", "Phone", "Category", "Lead Time (days)"], (exportData.suppliers?.rows || []).map((s) => [s.name, s.contactPerson, s.email, s.phone, s.category, s.leadTimeDays])],
+      ];
+      const csv = sections.map(([name, headers, rows]) => [escapeCell(name), headers.map(escapeCell).join(","), ...rows.map((row) => row.map(escapeCell).join(","))].join("\n")).join("\n\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(company.name || "company").replace(/\s+/g, "-").toLowerCase()}-full-export-${TODAY.toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      notify("Full data export downloaded — 7 sections in one CSV file.");
     } catch (_e) {
       notify("Export failed — please try again.", "error");
     } finally {
@@ -40687,7 +40947,7 @@ function PosReconciliationDashboard({ currentUser }) {
   const syncedCount = reconciliation.rows.filter((row) => row.status === "synced").length;
   const attentionCount = reconciliation.rows.filter((row) => row.status === "needs_attention").length;
   const displayDate = (value) => value ? new Date(value).toLocaleString() : "—";
-  const canExport = ["admin", "manager", "owner"].includes(String(currentUser?.role || "").toLowerCase());
+  const canExport = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager", "HR Manager", "Sales Manager", "Procurement Officer", "Warehouse Manager", "Project Manager"].includes(canonicalRoleId(currentUser?.role));
 
   function exportFilteredReconciliation() {
     if (!canExport || typeof document === "undefined") return;
@@ -43304,121 +43564,6 @@ function LoginPage({ onAuthenticated, onSwitchToSignup, onForgotPassword, initia
       window.location.reload();
     }}
   />;
-
-  return (
-    <div className="min-h-screen w-full flex" style={{ fontFamily: "'Inter',system-ui,sans-serif" }}>
-      {/* Left — brand panel, hidden on small screens */}
-      <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-12" style={{ background: "linear-gradient(160deg, #052614 0%, #0F4D26 35%, #16A34A 70%, #22C55E 100%)" }}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-96 h-96 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #4ADE80 0%, transparent 70%)", top: "-100px", right: "-80px", filter: "blur(70px)" }} />
-          <div className="absolute w-64 h-64 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #BBF7D0 0%, transparent 70%)", bottom: "5%", left: "10%", filter: "blur(50px)" }} />
-          <svg className="absolute opacity-8" style={{ bottom: "15%", right: "5%", width: 180, height: 208 }} viewBox="0 0 120 140">
-            <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="none" stroke="#4ADE80" strokeWidth="1.5" />
-          </svg>
-          <svg className="absolute opacity-6" style={{ top: "5%", left: "5%", width: 80, height: 92 }} viewBox="0 0 120 140">
-            <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="none" stroke="#86EFAC" strokeWidth="2" />
-          </svg>
-        </div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
-            <svg width="40" height="46" viewBox="0 0 120 140">
-              <defs><linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#4ADE80"/><stop offset="100%" stopColor="#16A34A"/></linearGradient></defs>
-              <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="url(#lg1)"/>
-              <text x="60" y="76" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="52" fontWeight="900" fontFamily="Poppins,sans-serif">S</text>
-            </svg>
-            <div>
-              <p className="text-white font-bold text-[18px] leading-tight" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
-              <p className="text-white/50 text-[11px] tracking-wide uppercase">Enterprise Edition</p>
-            </div>
-          </div>
-          <h2 className="text-[36px] font-bold text-white leading-tight mb-4" style={{ fontFamily: "Poppins,sans-serif" }}>Africa first AI-powered Business Ecosystem</h2>
-          <p className="text-white/65 text-[14px] leading-relaxed">Manage every aspect of your organisation — from sales and inventory to HR, tax, and AI insights — in one place.</p>
-        </div>
-        <div className="relative z-10 space-y-3">
-          {[["TRA Tax Center", "PAYE, SDL, WCF with real brackets"],["Biometric Attendance", "Real fingerprint via WebAuthn"],["AI Command Center", "English & Kiswahili, live business data"]].map(([t,s]) => (
-            <div key={t} className="flex items-start gap-2.5">
-              <div className="w-5 h-5 rounded-full bg-[#4ADE80]/20 flex items-center justify-center shrink-0 mt-0.5"><CheckCircle2 size={12} className="text-[#4ADE80]" /></div>
-              <div><p className="text-white text-[13px] font-medium">{t}</p><p className="text-white/50 text-[11.5px]">{s}</p></div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Right — the form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-[#F8FAFC]">
-        <div className="w-full max-w-sm" style={{ perspective: "1200px" }} onMouseMove={handleMouseMove} onMouseLeave={() => { setTiltX(0); setTiltY(0); }}>
-          {/* Mobile brand — only on small screens */}
-          <div className="flex lg:hidden flex-col items-center mb-8">
-            <svg width="48" height="55" viewBox="0 0 120 140" className="mb-2">
-              <defs><linearGradient id="mlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#4ADE80"/><stop offset="100%" stopColor="#16A34A"/></linearGradient></defs>
-              <polygon points="60,6 114,33 114,107 60,134 6,107 6,33" fill="url(#mlg)"/>
-              <text x="60" y="76" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="52" fontWeight="900" fontFamily="Poppins,sans-serif">S</text>
-            </svg>
-            <p className="font-bold text-[#111827] text-[18px]" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</p>
-          </div>
-
-          <div style={{ transform: `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`, transition: "transform 0.12s ease-out" }}>
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-200/60 p-8">
-              <div className="mb-7">
-                <h1 className="text-[22px] font-bold text-[#111827] mb-1" style={{ fontFamily: "Poppins,sans-serif" }}>Welcome back</h1>
-                <p className="text-[13px] text-slate-500">Sign in to your account to continue</p>
-              </div>
-
-              {error && <div className="mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-100 text-[12.5px] text-red-700"><AlertCircle size={13} className="shrink-0" />{error}</div>}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Email address</label>
-                  <input type="text" value={identifier} autoComplete="email" onChange={(e) => setIdentifier(e.target.value)} placeholder="you@company.com"
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[13.5px] text-[#111827] placeholder-slate-300 outline-none focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 transition-all" />
-                </div>
-                <div>
-                  <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Password</label>
-                  <div className="relative">
-                    <input type={showPassword ? "text" : "password"} value={password} autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-                      className="w-full border border-slate-200 rounded-xl px-4 py-3 pr-11 text-[13.5px] text-[#111827] placeholder-slate-300 outline-none focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 transition-all" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                      {showPassword ? <EyeOff size={15}/> : <Eye size={15}/>}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-end">
-                  <button type="button" onClick={onForgotPassword} className="text-[12px] font-semibold text-[#0B5D3B] transition hover:text-[#084B30] hover:underline">Forgot password?</button>
-                </div>
-                <button type="submit" disabled={busy || !identifier.trim() || !password}
-                  className="w-full py-3.5 rounded-xl text-[14px] font-semibold text-white transition-all disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: "0 4px 14px rgba(22,163,74,0.35)" }}>
-                  {busy ? "Signing in…" : "Sign in"}
-                </button>
-              </form>
-
-              {IS_CONFIGURED && (
-                <div className="mt-5">
-                  <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-wide text-slate-400"><span className="h-px flex-1 bg-slate-100" />or continue with<span className="h-px flex-1 bg-slate-100" /></div>
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("google")} className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"><GoogleGlyph size={14} />Google</button>
-                    <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("azure")} className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"><MicrosoftGlyph size={14} />Microsoft</button>
-                    <button type="button" disabled={busy} onClick={() => authSignInWithOAuth("apple")} className="rounded-xl border border-slate-200 px-2 py-2.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50">Apple</button>
-                  </div>
-                  <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">If you first joined with Google, Microsoft, or Apple, continue with that same provider.</p>
-                </div>
-              )}
-
-              <p className="text-center text-[12.5px] text-slate-500 mt-5">
-                Don't have an account? <button type="button" onClick={onSwitchToSignup} className="font-semibold text-[#16A34A] hover:underline">Create one</button>
-              </p>
-              {!IS_CONFIGURED && <button type="button" onClick={() => { DEMO_OVERRIDE = true; onAuthenticated({ demo: true }); }}
-                className="w-full mt-3 flex items-center justify-center gap-2 text-[12.5px] font-medium text-slate-500 hover:text-[#16A34A] border border-slate-200 rounded-xl py-2.5 transition-colors">
-                <Sparkles size={13} className="text-[#16A34A]" /> Preview demo — no account needed
-              </button>}
-              {!IS_CONFIGURED && <p className="text-center text-[11px] text-slate-400 mt-3">Demo mode — any credentials continue to the sample company.</p>}
-            </div>
-          </div>
-          <p className="text-center text-[11px] text-slate-400 mt-4">© {new Date().getFullYear()} Smart Manager · Enterprise Business Ecosystem</p>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // Real inline brand glyphs — not a lucide icon standing in for a brand
@@ -43613,14 +43758,27 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [joinCode, setJoinCode] = useState("");
   const [joinRole, setJoinRole] = useState(() => onboardingProgress?.joinRole || "Employee");
   const [customerRef, setCustomerRef] = useState(() => onboardingProgress?.customerRef || "");
+  const [preferredPlanCode, setPreferredPlanCode] = useState(() => onboardingProgress?.preferredPlanCode || "TWIGA");
+  const [onboardingPlans, setOnboardingPlans] = useState([]);
+  const [onboardingPlanError, setOnboardingPlanError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!IS_CONFIGURED) return undefined;
+    let active = true;
+    fetch("/api/billing/catalog")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("catalog unavailable")))
+      .then((payload) => { if (active) setOnboardingPlans(Array.isArray(payload?.plans) ? payload.plans : []); })
+      .catch(() => { if (active) setOnboardingPlanError("Package choices will be available after workspace creation."); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (completedWorkspace) {
       clearOnboardingProgress();
       return;
     }
-    writeOnboardingProgress({ mode, step, account, company, selectedModules: [...selectedModules], businessScale, firstBranch, joinRole, customerRef }, onboardingModuleIds);
+    writeOnboardingProgress({ mode, step, account, company, selectedModules: [...selectedModules], businessScale, firstBranch, joinRole, customerRef, preferredPlanCode }, onboardingModuleIds);
   }, [account, businessScale, company, completedWorkspace, customerRef, firstBranch, joinRole, mode, onboardingModuleIds, selectedModules, step]);
 
   function setAccountField(key, val) { setAccount((a) => ({ ...a, [key]: val })); }
@@ -43649,6 +43807,9 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     setJoinCode("");
     setJoinRole("Employee");
     setCustomerRef("");
+    setPreferredPlanCode("TWIGA");
+    setOnboardingPlans([]);
+    setOnboardingPlanError("");
     setShowPassword(false);
   }
 
@@ -43737,6 +43898,8 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       // if this second call fails, the account and company both still
       // exist correctly, just without these details filled in yet.
       let workspaceWarning = null;
+      let trialWarning = null;
+      let trialDetails = null;
       if (mode === "create" && rpcResult?.id) {
         try {
           await sb("companies").eq("id", rpcResult.id).update({ website: company.website || null, tax_id: company.taxId || null, business_scale: businessScale, timezone: company.timezone }).run();
@@ -43745,6 +43908,15 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         } catch (setupError) {
           authDebug("Optional workspace details failed", { message: setupError?.message || "unknown" });
           workspaceWarning = "Your workspace was created, but some optional setup details could not be saved. You can retry them in Settings.";
+        }
+      }
+      if (mode === "create" && rpcResult?.id) {
+        try {
+          const trialRpc = await callWorkspaceRpcWithSessionRefresh("billing_start_trial", { p_plan_code: preferredPlanCode || "TWIGA" }, workspaceRpc.accessToken);
+          trialDetails = trialRpc.data?.subscription || null;
+        } catch (trialError) {
+          trialWarning = "Your workspace was created, but its free trial could not be confirmed yet. Sign in and open Subscription & Billing from the account menu to retry safely.";
+          authDebug("Trial activation failed after workspace creation", { message: trialError?.message || "unknown" });
         }
       }
       let brandingWarning = null;
@@ -43765,7 +43937,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
       authDebug("Workspace setup confirmed", { mode, companyId: rpcResult.id });
       clearStoredAuthSession();
       clearOnboardingProgress();
-      setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning, passkeySession: { accessToken: workspaceRpc.accessToken, refreshToken: workspaceRpc.refreshToken } });
+      setCompletedWorkspace({ mode, name: rpcResult.name || company.name.trim(), email: signUpResult.user.email, workspaceWarning, brandingWarning, trialWarning, trialDetails, passkeySession: { accessToken: workspaceRpc.accessToken, refreshToken: workspaceRpc.refreshToken } });
     } catch (err) {
       if (isTerminalWorkspaceSessionError(err)) clearStoredAuthSession();
       setError(accountCreated ? workspaceJoinErrorMessage(err, "Your account was created, but workspace setup could not complete. Please sign in to continue setup.") : workspaceJoinErrorMessage(err, "Couldn't complete sign up. Please try again."));
@@ -43872,7 +44044,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <button type="submit" disabled={!step2Valid} className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>Continue to modules →</button>
               </form>
             ) : (
-              <div className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to company details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Choose your starting modules</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Enable the workflows you need first. You can change these later.</p></div></div><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">{ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" onClick={() => toggleModule(module.id)} className={`flex items-start gap-2 rounded-xl border p-3 text-left transition ${activeModule ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14} /></span><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{module.label}</span><span className="mt-0.5 block text-[10px]">{activeModule ? "Enabled" : "Not enabled"}</span></span>{activeModule && <Check size={12} className="ml-auto shrink-0" />}</button>; })}</div><p className="text-[11.5px] leading-5 text-slate-500">Module choices are saved to your workspace and can be changed by authorised administrators later.</p><button type="button" onClick={handleFinalSubmit} disabled={busy || !step2Valid} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Launch Smart Manager →"}</button></div>
+              <div className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to company details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Choose your starting modules</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Enable the workflows you need first. You can change these later.</p></div></div><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">{ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" onClick={() => toggleModule(module.id)} className={`flex items-start gap-2 rounded-xl border p-3 text-left transition ${activeModule ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14} /></span><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{module.label}</span><span className="mt-0.5 block text-[10px]">{activeModule ? "Enabled" : "Not enabled"}</span></span>{activeModule && <Check size={12} className="ml-auto shrink-0" />}</button>; })}</div><p className="text-[11.5px] leading-5 text-slate-500">Module choices are saved to your workspace and can be changed by authorised administrators later.</p><section className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-emerald-700">30-Day Free Trial</p><h4 className="mt-1 text-[15px] font-bold text-emerald-950">🎉 Karibu SMART MANAGER</h4><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">Anza na siku 30 BURE. Hakuna malipo yanayohitajika sasa; chagua kifurushi unachopendelea.</p><label className="mt-3 block text-[11px] font-semibold text-emerald-950">Preferred package<select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-1.5 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-[12px] font-semibold text-slate-800">{onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.category === "Football" ? "⚽ " : ""}{plan.name} — TZS {Number(plan.monthlyPrice || 0).toLocaleString()} / mwezi</option>) : <option value="TWIGA">TWIGA — 30 DAYS FREE TRIAL</option>}</select></label>{onboardingPlanError && <p className="mt-2 text-[10.5px] text-amber-700">{onboardingPlanError}</p>}<p className="mt-2 text-[10.5px] leading-4 text-emerald-800">Trial yako inaanza baada ya kampuni kusajiliwa. Data yako itahifadhiwa hata trial ikiisha.</p></section><button type="button" onClick={handleFinalSubmit} disabled={busy || !step2Valid} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Launch Smart Manager →"}</button></div>
             )}
           </div>
 
@@ -43903,6 +44075,18 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [joinCode, setJoinCode] = useState("");
   const [joinRole, setJoinRole] = useState("Employee");
   const [customerRef, setCustomerRef] = useState("");
+  const [preferredPlanCode, setPreferredPlanCode] = useState("TWIGA");
+  const [onboardingPlans, setOnboardingPlans] = useState([]);
+
+  useEffect(() => {
+    if (!IS_CONFIGURED) return undefined;
+    let active = true;
+    fetch("/api/billing/catalog")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("catalog unavailable")))
+      .then((payload) => { if (active) setOnboardingPlans(Array.isArray(payload?.plans) ? payload.plans : []); })
+      .catch(() => { if (active) setOnboardingPlans([]); });
+    return () => { active = false; };
+  }, []);
 
   function setCompanyField(key, val) { setCompany((c) => key === "country" ? { ...c, country: val, ...companyDefaultsForCountry(val) } : { ...c, [key]: val }); }
   function toggleModule(id) {
@@ -43945,6 +44129,14 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
           await sb("branches").insert({ company_id: rpcResult.id, name: firstBranch.trim() || "Head Office", is_headquarters: true }).run();
         } catch (_e) { /* the account and company are real either way; onboarding details can be finished later in Settings */ }
       }
+      let trialWarning = null;
+      if (mode === "create" && rpcResult?.id) {
+        try {
+          await callWorkspaceRpcWithSessionRefresh("billing_start_trial", { p_plan_code: preferredPlanCode || "TWIGA" }, workspaceRpc.accessToken);
+        } catch (_trialError) {
+          trialWarning = "Your workspace is ready, but the free trial could not be confirmed yet. Open Subscription & Billing from the account menu after sign-in to retry safely.";
+        }
+      }
 
       onAuthenticated({
         userId: oauthUser.id, email: oauthUser.email, accessToken: workspaceRpc.accessToken,
@@ -43952,6 +44144,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         customerRef: isPortalRole ? customerRef.trim() : null,
         company: { id: rpcResult.id, name: rpcResult.name || company.name.trim(), category: company.category, industry: company.category, country: company.country, currency: company.currency, timezone: company.timezone, businessScale },
         workspaceCreated: mode === "create",
+        trialWarning,
       });
     } catch (err) {
       setError(workspaceJoinErrorMessage(err, "Couldn't complete setup. Please try again."));
@@ -44038,6 +44231,13 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
               <FormField label="Your first branch or location (optional)">
                 <input className={inputClass} value={firstBranch} onChange={(e) => setFirstBranch(e.target.value)} placeholder="e.g. Kariakoo Branch — defaults to Head Office" />
               </FormField>
+              <section className="rounded-xl border border-emerald-100 bg-emerald-50 p-3.5">
+                <p className="text-[10px] font-bold uppercase tracking-[.13em] text-emerald-700">30-Day Free Trial</p>
+                <p className="mt-1 text-[12px] font-semibold text-emerald-950">Anza na siku 30 BURE — no payment is required today.</p>
+                <select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-2 w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-800">
+                  {onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.category === "Football" ? "⚽ " : ""}{plan.name} — TZS {Number(plan.monthlyPrice || 0).toLocaleString()} / mwezi</option>) : <option value="TWIGA">TWIGA — 30 DAYS FREE TRIAL</option>}
+                </select>
+              </section>
             </div>
           ) : (
             <div className="space-y-4">
@@ -44448,302 +44648,213 @@ function VicobaSaccosModule({ currentUser }) {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMMUNITY GROUPS MODULE
-// Handles: Table Banking, Investment Clubs, Chamas, Welfare Funds, SUCCESS,
-// Church Funds, NGO Project Tracking, Cooperative Societies.
-// Each group type has its own workflow but shares the same fund management.
+// COMMUNITY GROUPS MODULE — persistent cooperative, chama, VICOBA and MFI
+// operations. Live mode uses the shared Supabase tenant boundary; preview mode
+// is intentionally empty and only keeps changes in the current browser session.
 // ═══════════════════════════════════════════════════════════════════════════
-
-const COMMUNITY_GROUP_TYPES = [
-  "Table Banking", "Investment Club", "Chama", "Welfare Fund", "SUCCESS Group",
-  "Church Fund", "NGO / CBO", "Cooperative", "Youth Group", "Women's Group"
+const COMMUNITY_GROUP_TYPES = ["Table Banking", "Investment Club", "Chama", "Welfare Fund", "SUCCESS Group", "Church Fund", "NGO / CBO", "Cooperative", "Youth Group", "Women's Group"];
+const COMMUNITY_PAYMENT_METHODS = ["Cash", "Mobile Money", "Bank Transfer", "Card"];
+const COMMUNITY_TABS = [
+  ["overview", "Overview", Gauge], ["groups", "Groups", Users2], ["members", "Members & KYC", UserCheck],
+  ["finance", "Funds & Savings", Coins], ["loans", "Loans", HandCoins], ["meetings", "Meetings", CalendarCheck],
+  ["projects", "Projects & Assets", FolderKanban], ["governance", "Governance", Scale], ["communications", "Communications", MessageSquare],
+  ["documents", "Documents & Events", FileText], ["reports", "Reports", BarChart3], ["activity", "Audit Trail", History],
 ];
+const COMMUNITY_EMPTY = [];
+const communityDate = (value) => value ? new Intl.DateTimeFormat("en-TZ", { dateStyle: "medium", timeZone: "Africa/Dar_es_Salaam" }).format(new Date(value)) : "—";
+const communityTzs = (value) => `TZS ${new Intl.NumberFormat("en-TZ", { maximumFractionDigits: 0 }).format(Math.round(Number(value) || 0))}`;
+const communityStatusClass = (value) => {
+  const s = String(value || "").toLowerCase();
+  if (["active", "paid", "approved", "verified", "present", "received", "posted", "completed"].some((x) => s.includes(x))) return "bg-emerald-50 text-emerald-700 ring-emerald-600/10";
+  if (["pending", "draft", "scheduled", "submitted", "open", "planning"].some((x) => s.includes(x))) return "bg-amber-50 text-amber-700 ring-amber-600/10";
+  if (["rejected", "overdue", "defaulted", "suspended", "absent", "cancelled"].some((x) => s.includes(x))) return "bg-rose-50 text-rose-700 ring-rose-600/10";
+  return "bg-slate-100 text-slate-600 ring-slate-500/10";
+};
+function CommunityStatus({ value }) { return <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${communityStatusClass(value)}`}>{value || "—"}</span>; }
+function CommunitySection({ title, subtitle, action, children }) { return <section className="rounded-2xl border border-slate-200/80 bg-white shadow-sm"><div className="flex flex-col gap-2 border-b border-slate-100 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5"><div><h2 className="text-sm font-bold text-slate-900">{title}</h2>{subtitle && <p className="mt-0.5 text-[11px] text-slate-500">{subtitle}</p>}</div>{action}</div><div className="p-4 sm:p-5">{children}</div></section>; }
+function CommunityKpi({ label, value, hint, icon: Icon, tone = "violet" }) { const tones = { violet: "bg-violet-50 text-violet-700", emerald: "bg-emerald-50 text-emerald-700", amber: "bg-amber-50 text-amber-700", rose: "bg-rose-50 text-rose-700", navy: "bg-slate-100 text-slate-700" }; return <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">{label}</p><p className="mt-1 text-xl font-black tracking-tight text-slate-900">{value}</p>{hint && <p className="mt-1 text-[10.5px] text-slate-500">{hint}</p>}</div><span className={`rounded-xl p-2.5 ${tones[tone]}`}><Icon size={18}/></span></div></div>; }
+function CommunityEmpty({ title = "No confirmed records", detail = "Create a record to start this workflow. Live records will appear here after the server confirms them." }) { return <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-5 py-9 text-center"><p className="text-sm font-semibold text-slate-700">{title}</p><p className="mx-auto mt-1 max-w-lg text-xs leading-5 text-slate-500">{detail}</p></div>; }
 
-const COMM_GROUPS_SEED = [
-  { id: "GRP-001", name: "Umoja Investment Club", type: "Investment Club", members: 12, fund: 3600, cycle: "Monthly", startDate: "2024-01-01", status: "Active" },
-  { id: "GRP-002", name: "Mama Faida Table Banking", type: "Table Banking",  members: 20, fund: 2400, cycle: "Weekly",  startDate: "2024-03-15", status: "Active" },
-  { id: "GRP-003", name: "Vijana SUCCESS Group",    type: "SUCCESS Group",   members: 15, fund: 1800, cycle: "Monthly", startDate: "2025-01-01", status: "Active" },
-];
+function CommunityGroupsModule({ currentUser, canManage = false }) {
+  const [tab, setTab] = useState("overview");
+  const [search, setSearch] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [showForm, setShowForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const today = TODAY.toISOString().slice(0, 10);
+  const groups = useCompanyTable("community_groups", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupType: r.group_type || r.type || "Chama", groupNumber: r.group_number || r.id, meetingFrequency: r.meeting_frequency || "Monthly", contributionFrequency: r.contribution_frequency || r.cycle || "Monthly", contributionAmount: Number(r.contribution_amount || 0), region: r.region || "", district: r.district || "", status: r.status || "Active" }) });
+  const members = useCompanyTable("community_group_members", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, fullName: r.full_name || r.name || "", memberNumber: r.member_number || r.id, groupId: r.group_id, phone: r.phone || "", nationalId: r.national_id || "", idType: r.id_type || "NIDA", role: r.role || "Member", kycStatus: r.kyc_status || "Pending", membershipStatus: r.membership_status || "Active", joinDate: r.join_date || "" }) });
+  const committees = useCompanyTable("community_group_committees", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, name: r.name, committeeType: r.committee_type || "Management", status: r.status || "Active" }) });
+  const committeeMembers = useCompanyTable("community_group_committee_members", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, committeeId: r.committee_id, memberId: r.member_id, committeeRole: r.committee_role || "Member" }) });
+  const contributions = useCompanyTable("community_group_contributions", COMMUNITY_EMPTY, { order: { col: "contribution_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, memberId: r.member_id, memberName: r.member_name || "", amount: Number(r.amount || 0), contributionType: r.contribution_type || "Contribution", contributionDate: r.contribution_date, dueDate: r.due_date, paymentMethod: r.payment_method || "Cash", provider: r.mobile_money_provider || "", reference: r.payment_reference || "", status: r.status || "Paid", receiptNumber: r.receipt_number || "" }) });
+  const savings = useCompanyTable("community_group_savings", COMMUNITY_EMPTY, { order: { col: "transaction_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, memberId: r.member_id, transactionType: r.transaction_type, amount: Number(r.amount || 0), transactionDate: r.transaction_date, paymentMethod: r.payment_method || "Cash", reference: r.reference || "", status: r.status || "Posted" }) });
+  const welfare = useCompanyTable("community_group_welfare_claims", COMMUNITY_EMPTY, { order: { col: "claim_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, memberId: r.member_id, eventType: r.event_type, description: r.description || "", requested: Number(r.amount_requested || 0), approved: Number(r.amount_approved || 0), claimDate: r.claim_date, status: r.status || "Pending", paymentReference: r.payment_reference || "" }) });
+  const loans = useCompanyTable("community_group_loans", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, memberId: r.member_id, loanNumber: r.loan_number || r.id, principal: Number(r.principal || 0), interestRate: Number(r.interest_rate || 0), interestMethod: r.interest_method || "Flat", termMonths: Number(r.term_months || 1), totalInterest: Number(r.total_interest || 0), totalRepayable: Number(r.total_repayable || 0), outstandingPrincipal: Number(r.outstanding_principal ?? r.principal ?? 0), outstandingInterest: Number(r.outstanding_interest ?? r.total_interest ?? 0), purpose: r.purpose || "", approvalStatus: r.approval_status || "Pending", status: r.status || "Applied", disbursedAt: r.disbursed_at || "" }) });
+  const repayments = useCompanyTable("community_group_loan_repayments", COMMUNITY_EMPTY, { order: { col: "repayment_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, loanId: r.loan_id, amount: Number(r.amount || 0), principalAmount: Number(r.principal_amount || 0), interestAmount: Number(r.interest_amount || 0), penaltyAmount: Number(r.penalty_amount || 0), repaymentDate: r.repayment_date, paymentMethod: r.payment_method || "Cash", reference: r.payment_reference || "", status: r.status || "Posted", receiptNumber: r.receipt_number || "" }) });
+  const penalties = useCompanyTable("community_group_loan_penalties", COMMUNITY_EMPTY, { order: { col: "penalty_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, loanId: r.loan_id, amount: Number(r.amount || 0), penaltyDate: r.penalty_date, reason: r.reason || "", status: r.status || "Outstanding" }) });
+  const meetings = useCompanyTable("community_group_meetings", COMMUNITY_EMPTY, { order: { col: "meeting_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, meetingNumber: r.meeting_number || r.id, meetingDate: r.meeting_date, startTime: r.start_time || "", venue: r.venue || "", agenda: r.agenda || "", minutes: r.minutes || "", status: r.status || "Scheduled" }) });
+  const attendance = useCompanyTable("community_group_attendance", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, meetingId: r.meeting_id, memberId: r.member_id, status: r.status || "Present" }) });
+  const projects = useCompanyTable("community_group_projects", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, projectNumber: r.project_number || r.id, name: r.name, description: r.description || "", targetAmount: Number(r.target_amount || 0), startDate: r.start_date || "", endDate: r.end_date || "", status: r.status || "Planning" }) });
+  const fundraising = useCompanyTable("community_group_fundraising", COMMUNITY_EMPTY, { order: { col: "donation_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, projectId: r.project_id, donorName: r.donor_name, amount: Number(r.amount || 0), donationDate: r.donation_date, status: r.status || "Received" }) });
+  const budgets = useCompanyTable("community_group_budgets", COMMUNITY_EMPTY, { order: { col: "fiscal_year", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, projectId: r.project_id, category: r.category, amount: Number(r.budget_amount || 0), fiscalYear: r.fiscal_year, status: r.status || "Draft" }) });
+  const expenses = useCompanyTable("community_group_expenses", COMMUNITY_EMPTY, { order: { col: "expense_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, projectId: r.project_id, category: r.category, description: r.description, amount: Number(r.amount || 0), expenseDate: r.expense_date, paymentMethod: r.payment_method || "Cash", status: r.status || "Pending Approval" }) });
+  const assets = useCompanyTable("community_group_assets", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, assetCode: r.asset_code || r.id, name: r.name, category: r.category || "", acquisitionCost: Number(r.acquisition_cost || 0), currentValue: Number(r.current_value || 0), location: r.location || "", status: r.status || "Active" }) });
+  const income = useCompanyTable("community_group_income", COMMUNITY_EMPTY, { order: { col: "income_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, incomeType: r.income_type, description: r.description || "", amount: Number(r.amount || 0), incomeDate: r.income_date, status: r.status || "Posted" }) });
+  const votes = useCompanyTable("community_group_votes", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, title: r.title, description: r.description || "", voteType: r.vote_type || "Resolution", status: r.status || "Open", quorumPercent: Number(r.quorum_percent || 50), opensAt: r.opens_at, closesAt: r.closes_at }) });
+  const approvals = useCompanyTable("community_group_approvals", COMMUNITY_EMPTY, { order: { col: "requested_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, entityType: r.entity_type, entityId: r.entity_id, action: r.action, status: r.status, decisionNotes: r.decision_notes || "", requestedAt: r.requested_at }) });
+  const announcements = useCompanyTable("community_group_announcements", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, title: r.title, body: r.body, audience: r.audience || "All Members", status: r.status || "Published", publishedAt: r.published_at }) });
+  const messages = useCompanyTable("community_group_messages", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, subject: r.subject || "", body: r.body, channel: r.channel || "In-app", status: r.status || "Sent", createdAt: r.created_at }) });
+  const documents = useCompanyTable("community_group_documents", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, documentType: r.document_type || "Other", title: r.title, fileUrl: r.file_url || "", documentDate: r.document_date || "", expiresAt: r.expires_at || "", status: r.status || "Active" }) });
+  const events = useCompanyTable("community_group_events", COMMUNITY_EMPTY, { order: { col: "event_date", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, title: r.title, eventType: r.event_type || "Event", eventDate: r.event_date, startTime: r.start_time || "", venue: r.venue || "", status: r.status || "Scheduled" }) });
+  const notifications = useCompanyTable("community_group_notifications", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, groupId: r.group_id, title: r.title, body: r.body, notificationType: r.notification_type, channel: r.channel || "In-app", status: r.status || "Unread", createdAt: r.created_at }) });
+  const activity = useCompanyTable("community_group_audit_log", COMMUNITY_EMPTY, { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ ...r, dbId: r.id, action: r.action, entityType: r.entity_type, actorName: r.actor_name || "System", details: r.details || {}, createdAt: r.created_at }) });
 
-const COMM_CONTRIBUTIONS_SEED = [
-  { id: "CTB-001", groupId: "GRP-001", member: "Alice Ng'endo", amount: 100, date: "2026-07-01", type: "Monthly Share",  status: "Paid" },
-  { id: "CTB-002", groupId: "GRP-001", member: "Bob Otieno",        amount: 100, date: "2026-07-01", type: "Monthly Share",  status: "Paid" },
-  { id: "CTB-003", groupId: "GRP-002", member: "Chama Mwalimu",     amount: 50,  date: "2026-07-07", type: "Weekly Buy-in",  status: "Paid" },
-  { id: "CTB-004", groupId: "GRP-001", member: "Diana Waweru",      amount: 100, date: "2026-07-01", type: "Monthly Share",  status: "Pending" },
-];
+  const hooks = { groups, members, committees, committeeMembers, contributions, savings, welfare, loans, repayments, penalties, meetings, attendance, projects, fundraising, budgets, expenses, assets, income, votes, approvals, announcements, messages, documents, events, notifications, activity };
+  const activeGroupId = selectedGroupId || groups.rows[0]?.id || groups.rows[0]?.dbId || "";
+  const activeGroup = groups.rows.find((row) => String(row.id) === String(activeGroupId) || String(row.dbId) === String(activeGroupId));
+  const canWrite = Boolean(canManage || ["Organization Owner", "Super Administrator", "CEO", "CFO", "Finance Manager", "Operations Manager", "Microfinance Manager", "Branch Manager"].includes(canonicalRoleId(currentUser?.role)));
+  const canApprove = Boolean(canManage || ["Organization Owner", "Super Administrator", "CEO", "CFO", "Finance Manager"].includes(canonicalRoleId(currentUser?.role)));
+  const q = search.trim().toLowerCase();
+  const visible = (rows, fields = []) => (rows || []).filter((row) => !q || fields.some((field) => String(row[field] ?? "").toLowerCase().includes(q)));
+  const activeFilter = (rows) => activeGroupId ? rows.filter((row) => String(row.groupId) === String(activeGroupId)) : rows;
+  const activeMembers = activeFilter(members.rows);
+  const activeContributions = activeFilter(contributions.rows);
+  const activeSavings = activeFilter(savings.rows);
+  const activeWelfare = activeFilter(welfare.rows);
+  const activeLoans = activeFilter(loans.rows);
+  const activeMeetings = activeFilter(meetings.rows);
+  const activeProjects = activeFilter(projects.rows);
+  const activeExpenses = activeFilter(expenses.rows);
+  const activeIncome = activeFilter(income.rows);
+  const paidContributions = activeContributions.filter((row) => row.status === "Paid").reduce((sum, row) => sum + row.amount, 0);
+  const savingsDeposits = activeSavings.filter((row) => ["Deposit", "Dividend", "Adjustment"].includes(row.transactionType)).reduce((sum, row) => sum + row.amount, 0);
+  const savingsWithdrawals = activeSavings.filter((row) => row.transactionType === "Withdrawal").reduce((sum, row) => sum + row.amount, 0);
+  const welfarePaid = activeWelfare.filter((row) => row.status === "Paid").reduce((sum, row) => sum + (row.approved || row.requested), 0);
+  const expenseTotal = activeExpenses.filter((row) => ["Approved", "Paid"].includes(row.status)).reduce((sum, row) => sum + row.amount, 0);
+  const loanOutstanding = activeLoans.filter((row) => !["Closed", "Rejected"].includes(row.status)).reduce((sum, row) => sum + row.outstandingPrincipal + row.outstandingInterest, 0);
+  const loanPortfolio = activeLoans.filter((row) => ["Disbursed", "Active", "Defaulted"].includes(row.status)).reduce((sum, row) => sum + row.principal, 0);
+  const totalFund = paidContributions + savingsDeposits + activeIncome.reduce((sum, row) => sum + row.amount, 0) + fundraising.rows.filter((row) => String(row.groupId) === String(activeGroupId)).reduce((sum, row) => sum + row.amount, 0) - savingsWithdrawals - welfarePaid - expenseTotal - loanPortfolio;
+  const fmtMember = (memberId) => members.rows.find((row) => String(row.id) === String(memberId) || String(row.dbId) === String(memberId))?.fullName || "Unassigned member";
+  const fmtGroup = (groupId) => groups.rows.find((row) => String(row.id) === String(groupId) || String(row.dbId) === String(groupId))?.name || "Unassigned group";
+  const actor = currentUser?.name || currentUser?.email || "Workspace user";
 
-function CommunityGroupsModule({ currentUser }) {
-  const [tab, setTab]         = useState("groups");
-  const [selGroup, setSelGroup] = useState(null);
-  const groups        = useCompanyTable("community_groups",        COMM_GROUPS_SEED,        { mapRow: (r) => ({ ...r, fund: r.fund||0 }) });
-  const contributions = useCompanyTable("community_contributions", COMM_CONTRIBUTIONS_SEED, { mapRow: (r) => r });
-  const [groupForm,   setGroupForm]   = useState({ name:"", type: COMMUNITY_GROUP_TYPES[0], cycle:"Monthly", startDate: TODAY.toISOString().slice(0,10) });
-  const [ctbForm,     setCtbForm]     = useState({ groupId:"", member:"", amount:"", type:"Contribution", date: TODAY.toISOString().slice(0,10) });
-  const [showGroupForm, setShowGroupForm] = useState(false);
-  const [showCtbForm,   setShowCtbForm]   = useState(false);
+  const [groupForm, setGroupForm] = useState({ name: "", groupType: "Chama", registrationNumber: "", region: "", district: "", meetingFrequency: "Monthly", contributionFrequency: "Monthly", contributionAmount: "", description: "" });
+  const [memberForm, setMemberForm] = useState({ groupId: activeGroupId, fullName: "", phone: "+255 ", email: "", nationalId: "", idType: "NIDA", gender: "", dateOfBirth: "", occupation: "", nextOfKin: "", nextOfKinPhone: "", role: "Member", joinDate: today });
+  const [committeeForm, setCommitteeForm] = useState({ groupId: activeGroupId, name: "", committeeType: "Management" });
+  const [financeForm, setFinanceForm] = useState({ kind: "contribution", groupId: activeGroupId, memberId: "", amount: "", type: "Contribution", date: today, dueDate: "", paymentMethod: "Mobile Money", provider: "M-Pesa", reference: "" });
+  const [loanForm, setLoanForm] = useState({ groupId: activeGroupId, memberId: "", principal: "", rate: "10", method: "Flat", termMonths: "6", purpose: "", guarantorIds: "" });
+  const [meetingForm, setMeetingForm] = useState({ groupId: activeGroupId, meetingDate: today, startTime: "18:00", venue: "", agenda: "" });
+  const [projectForm, setProjectForm] = useState({ groupId: activeGroupId, name: "", description: "", targetAmount: "", startDate: today, endDate: "" });
+  const [expenseForm, setExpenseForm] = useState({ groupId: activeGroupId, category: "Operations", description: "", amount: "", expenseDate: today, paymentMethod: "Mobile Money", reference: "" });
+  const [commsForm, setCommsForm] = useState({ groupId: activeGroupId, kind: "announcement", title: "", subject: "", body: "", audience: "All Members", channel: "In-app" });
+  const [documentForm, setDocumentForm] = useState({ groupId: activeGroupId, kind: "document", title: "", documentType: "Constitution", fileUrl: "", date: today, expiresAt: "", eventType: "Event", venue: "", startTime: "" });
+  const [voteForm, setVoteForm] = useState({ groupId: activeGroupId, title: "", description: "", voteType: "Resolution", quorumPercent: "50", options: "Approve, Reject" });
+  useEffect(() => {
+    if (!selectedGroupId && groups.rows[0]) setSelectedGroupId(groups.rows[0].id || groups.rows[0].dbId);
+  }, [groups.rows, selectedGroupId]);
+  useEffect(() => {
+    setMemberForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+    setFinanceForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+    setLoanForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+    setMeetingForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+    setProjectForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+    setExpenseForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+    setCommsForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+    setDocumentForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+    setVoteForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+    setCommitteeForm((current) => ({ ...current, groupId: current.groupId || activeGroupId }));
+  }, [activeGroupId]);
 
-  const TABS = [
-    { id:"groups",        label:"Groups",        icon: Users },
-    { id:"contributions", label:"Contributions", icon: CircleDollarSign },
-    { id:"welfare",       label:"Welfare Fund",  icon: Heart },
-    { id:"reports",       label:"Reports",       icon: BarChart3 },
-  ];
+  const resetForm = (name) => setShowForm(null);
+  const updateHook = (hook, saved, mapper) => hook.setRows((previous) => [{ ...(mapper ? mapper(saved) : saved), dbId: saved?.id || saved?.dbId || saved?.id }, ...previous]);
+  const localizePatch = (payload) => Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, value]).concat(Object.entries(payload).filter(([key]) => key.includes("_")).map(([key, value]) => [key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()), value])));
+  const persist = async (table, operation, payload, hook, label, mapper, matchVal) => {
+    if (!canWrite) { notify("You have read-only access to Community Groups.", "error"); return null; }
+    setSaving(true);
+    try {
+      if (!requiresConfirmedPersistence()) {
+        const local = { id: docId(table.slice(0, 2).toUpperCase()), ...payload, created_at: new Date().toISOString() };
+        if (operation === "insert") updateHook(hook, local, mapper);
+        else if (operation === "update") hook.setRows((previous) => previous.map((row) => String(row.id || row.dbId) === String(matchVal) ? { ...row, ...localizePatch(payload) } : row));
+        notify(`${label} recorded in preview mode.`);
+        logAudit(label, "Community Groups", actor, "Preview-mode local record");
+        return local;
+      }
+      const result = await runCompanyTableMutation(table, operation, payload, { matchVal });
+      const saved = unwrapCommunityMutationResult(result);
+      if (!saved) throw new Error("The server did not return a confirmed record.");
+      if (operation === "insert") updateHook(hook, saved, mapper);
+      else await hook.reload?.();
+      notify(`${label} saved and confirmed by the server.`);
+      logAudit(label, "Community Groups", actor, `${table}${saved?.id ? ` · ${saved.id}` : ""}`);
+      return saved;
+    } catch (error) {
+      notify(`${label} was not saved: ${error?.message || "server rejected the request"}`, "error");
+      return null;
+    } finally { setSaving(false); }
+  };
+  const auditEntity = async (action, entityType, entityId, groupId = activeGroupId, details = {}) => {
+    if (!requiresConfirmedPersistence()) return;
+    try { await runCompanyTableMutation("community_group_audit_log", "insert", { group_id: groupId || null, actor_name: actor, action, entity_type: entityType, entity_id: entityId || null, details }); } catch (error) { authDebug("Community audit event was not persisted", { message: error?.message }); }
+  };
+  const calculateLoan = (principal, annualRate, termMonths, method) => calculateCommunityLoan(principal, annualRate, termMonths, method);
+  const splitRepayment = (loan, amount) => splitCommunityRepayment(loan.outstandingPrincipal, loan.outstandingInterest, amount);
 
-  const totalFunds      = groups.rows.reduce((s,g)=>s+g.fund,0);
-  const totalMembers    = groups.rows.reduce((s,g)=>s+g.members,0);
-  const pendingCtbs     = contributions.rows.filter((c)=>c.status==="Pending");
-  const thisMonthCtbs   = contributions.rows.filter((c)=>c.date >= TODAY.toISOString().slice(0,8)+"01");
+  const createGroup = async (event) => { event.preventDefault(); if (!groupForm.name.trim()) return notify("Group name is required.", "error"); const saved = await persist("community_groups", "insert", { name: groupForm.name.trim(), group_type: groupForm.groupType, registration_number: groupForm.registrationNumber || null, region: groupForm.region || null, district: groupForm.district || null, meeting_frequency: groupForm.meetingFrequency, contribution_frequency: groupForm.contributionFrequency, contribution_amount: Number(groupForm.contributionAmount) || 0, description: groupForm.description || null, country: "Tanzania", currency: "TZS", status: "Active" }, groups, "Community group", (r) => ({ ...r, dbId: r.id, groupType: r.group_type || r.groupType, groupNumber: r.group_number || r.id, status: r.status || "Active", contributionAmount: Number(r.contribution_amount || r.contributionAmount || 0) })); if (saved) { setGroupForm({ name: "", groupType: "Chama", registrationNumber: "", region: "", district: "", meetingFrequency: "Monthly", contributionFrequency: "Monthly", contributionAmount: "", description: "" }); resetForm("group"); } };
+  const createMember = async (event) => { event.preventDefault(); if (!memberForm.groupId || !memberForm.fullName.trim() || !memberForm.nationalId.trim()) return notify("Group, full name, and identification number are required.", "error"); const saved = await persist("community_group_members", "insert", { group_id: memberForm.groupId, full_name: memberForm.fullName.trim(), phone: memberForm.phone, email: memberForm.email || null, national_id: memberForm.nationalId.trim(), id_type: memberForm.idType, gender: memberForm.gender || null, date_of_birth: memberForm.dateOfBirth || null, occupation: memberForm.occupation || null, next_of_kin: memberForm.nextOfKin || null, next_of_kin_phone: memberForm.nextOfKinPhone || null, role: memberForm.role, join_date: memberForm.joinDate, membership_status: "Active", kyc_status: "Pending" }, members, "Member onboarding", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, fullName: r.full_name, memberNumber: r.member_number || r.id, nationalId: r.national_id, kycStatus: r.kyc_status || "Pending", membershipStatus: r.membership_status || "Active", role: r.role || "Member" })); if (saved) { setMemberForm({ ...memberForm, fullName: "", nationalId: "", email: "", occupation: "", nextOfKin: "", nextOfKinPhone: "" }); resetForm("member"); } };
+  const createCommittee = async (event) => { event.preventDefault(); if (!committeeForm.groupId || !committeeForm.name.trim()) return notify("Group and committee name are required.", "error"); const saved = await persist("community_group_committees", "insert", { group_id: committeeForm.groupId, name: committeeForm.name.trim(), committee_type: committeeForm.committeeType, status: "Active" }, committees, "Committee", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, name: r.name, committeeType: r.committee_type || "Management", status: r.status || "Active" })); if (saved) { setCommitteeForm({ ...committeeForm, name: "" }); resetForm("committee"); } };
+  const createFinance = async (event) => { event.preventDefault(); const amount = Number(financeForm.amount); if (!financeForm.groupId || !financeForm.memberId || !amount || amount <= 0) return notify("Select a group and member and enter a positive amount.", "error"); const base = { group_id: financeForm.groupId, member_id: financeForm.memberId, amount, contribution_date: financeForm.date, payment_method: financeForm.paymentMethod, payment_reference: financeForm.reference || null, mobile_money_provider: financeForm.provider || null }; let saved; if (financeForm.kind === "contribution") saved = await persist("community_group_contributions", "insert", { ...base, contribution_type: financeForm.type, due_date: financeForm.dueDate || null, status: "Paid", receipt_number: `RCT-${Date.now()}` }, contributions, "Contribution receipt", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, memberId: r.member_id, memberName: fmtMember(r.member_id), amount: Number(r.amount), contributionType: r.contribution_type, contributionDate: r.contribution_date, paymentMethod: r.payment_method, provider: r.mobile_money_provider, reference: r.payment_reference, status: r.status, receiptNumber: r.receipt_number })); else { saved = await persist("community_group_savings", "insert", { ...base, transaction_type: financeForm.type === "Withdrawal" ? "Withdrawal" : "Deposit", reference: financeForm.reference || null, status: "Posted" }, savings, "Savings transaction", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, memberId: r.member_id, transactionType: r.transaction_type, amount: Number(r.amount), transactionDate: r.transaction_date, paymentMethod: r.payment_method, reference: r.reference, status: r.status })); } if (saved) { setFinanceForm({ ...financeForm, amount: "", reference: "" }); resetForm("finance"); } };
+  const createLoan = async (event) => { event.preventDefault(); const calc = calculateLoan(loanForm.principal, loanForm.rate, loanForm.termMonths, loanForm.method); if (!loanForm.groupId || !loanForm.memberId || !(Number(loanForm.principal) > 0)) return notify("Group, borrower, and loan principal are required.", "error"); const saved = await persist("community_group_loans", "insert", { group_id: loanForm.groupId, member_id: loanForm.memberId, principal: Number(loanForm.principal), interest_rate: Number(loanForm.rate) || 0, interest_method: loanForm.method, term_months: Number(loanForm.termMonths) || 1, purpose: loanForm.purpose || null, total_interest: calc.interest, total_repayable: calc.repayable, outstanding_principal: Number(loanForm.principal), outstanding_interest: calc.interest, approval_status: "Pending", status: "Applied", currency: "TZS" }, loans, "Loan application", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, memberId: r.member_id, loanNumber: r.loan_number || r.id, principal: Number(r.principal), interestRate: Number(r.interest_rate), interestMethod: r.interest_method, termMonths: Number(r.term_months), totalInterest: Number(r.total_interest), totalRepayable: Number(r.total_repayable), outstandingPrincipal: Number(r.outstanding_principal), outstandingInterest: Number(r.outstanding_interest), approvalStatus: r.approval_status, status: r.status, purpose: r.purpose || "" })); if (saved) { if (requiresConfirmedPersistence() && loanForm.guarantorIds.trim()) { for (const guarantor of loanForm.guarantorIds.split(",").map((item) => item.trim()).filter(Boolean)) { await runCompanyTableMutation("community_group_loan_guarantors", "insert", { loan_id: saved.id, guarantor_member_id: guarantor, guaranteed_amount: Number(loanForm.principal) || 0, consent_status: "Pending" }); } } setLoanForm({ ...loanForm, principal: "", purpose: "", guarantorIds: "" }); resetForm("loan"); } };
+  const createMeeting = async (event) => { event.preventDefault(); if (!meetingForm.groupId || !meetingForm.meetingDate) return notify("Group and meeting date are required.", "error"); const saved = await persist("community_group_meetings", "insert", { group_id: meetingForm.groupId, meeting_date: meetingForm.meetingDate, start_time: meetingForm.startTime || null, venue: meetingForm.venue || null, agenda: meetingForm.agenda || null, status: "Scheduled" }, meetings, "Meeting", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, meetingNumber: r.meeting_number || r.id, meetingDate: r.meeting_date, startTime: r.start_time, venue: r.venue, agenda: r.agenda, minutes: r.minutes || "", status: r.status })); if (saved) { setMeetingForm({ ...meetingForm, venue: "", agenda: "" }); resetForm("meeting"); } };
+  const createProject = async (event) => { event.preventDefault(); if (!projectForm.groupId || !projectForm.name.trim()) return notify("Group and project name are required.", "error"); const saved = await persist("community_group_projects", "insert", { group_id: projectForm.groupId, name: projectForm.name.trim(), description: projectForm.description || null, target_amount: Number(projectForm.targetAmount) || 0, start_date: projectForm.startDate || null, end_date: projectForm.endDate || null, status: "Planning" }, projects, "Community project", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, projectNumber: r.project_number || r.id, name: r.name, description: r.description || "", targetAmount: Number(r.target_amount || 0), startDate: r.start_date || "", endDate: r.end_date || "", status: r.status })); if (saved) { setProjectForm({ ...projectForm, name: "", description: "", targetAmount: "", endDate: "" }); resetForm("project"); } };
+  const createExpense = async (event) => { event.preventDefault(); if (!expenseForm.groupId || !expenseForm.description.trim() || !(Number(expenseForm.amount) > 0)) return notify("Group, description, and a positive amount are required.", "error"); const saved = await persist("community_group_expenses", "insert", { group_id: expenseForm.groupId, category: expenseForm.category, description: expenseForm.description.trim(), amount: Number(expenseForm.amount), expense_date: expenseForm.expenseDate, payment_method: expenseForm.paymentMethod, payment_reference: expenseForm.reference || null, status: "Pending Approval" }, expenses, "Expense request", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, category: r.category, description: r.description, amount: Number(r.amount), expenseDate: r.expense_date, paymentMethod: r.payment_method, status: r.status })); if (saved) { await persist("community_group_approvals", "insert", { group_id: expenseForm.groupId, entity_type: "Expense", entity_id: saved.id, action: "Expense approval", status: "Pending" }, approvals, "Expense approval request", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, entityType: r.entity_type, entityId: r.entity_id, action: r.action, status: r.status, requestedAt: r.requested_at })); setExpenseForm({ ...expenseForm, description: "", amount: "", reference: "" }); resetForm("expense"); } };
+  const createComms = async (event) => { event.preventDefault(); if (!commsForm.groupId || !commsForm.body.trim()) return notify("Group and message body are required.", "error"); if (commsForm.kind === "announcement") { const saved = await persist("community_group_announcements", "insert", { group_id: commsForm.groupId, title: commsForm.title.trim() || "Group announcement", body: commsForm.body.trim(), audience: commsForm.audience, status: "Published" }, announcements, "Announcement", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, title: r.title, body: r.body, audience: r.audience, status: r.status, publishedAt: r.published_at })); if (saved) await persist("community_group_notifications", "insert", { group_id: commsForm.groupId, notification_type: "Announcement", title: commsForm.title.trim() || "Group announcement", body: commsForm.body.trim(), channel: commsForm.channel, status: "Unread" }, notifications, "Member notification", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, title: r.title, body: r.body, notificationType: r.notification_type, channel: r.channel, status: r.status, createdAt: r.created_at })); } else await persist("community_group_messages", "insert", { group_id: commsForm.groupId, subject: commsForm.subject || null, body: commsForm.body.trim(), channel: commsForm.channel, status: "Sent" }, messages, "Group message", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, subject: r.subject || "", body: r.body, channel: r.channel, status: r.status, createdAt: r.created_at })); setCommsForm({ ...commsForm, title: "", subject: "", body: "" }); resetForm("comms"); };
+  const createDocumentOrEvent = async (event) => { event.preventDefault(); if (!documentForm.groupId || !documentForm.title.trim()) return notify("Group and title are required.", "error"); if (documentForm.kind === "document") await persist("community_group_documents", "insert", { group_id: documentForm.groupId, document_type: documentForm.documentType, title: documentForm.title.trim(), file_url: documentForm.fileUrl || null, document_date: documentForm.date || null, expires_at: documentForm.expiresAt || null, status: "Active" }, documents, "Group document", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, documentType: r.document_type, title: r.title, fileUrl: r.file_url || "", documentDate: r.document_date || "", expiresAt: r.expires_at || "", status: r.status })); else await persist("community_group_events", "insert", { group_id: documentForm.groupId, title: documentForm.title.trim(), event_type: documentForm.eventType, event_date: documentForm.date, start_time: documentForm.startTime || null, venue: documentForm.venue || null, status: "Scheduled" }, events, "Group event", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, title: r.title, eventType: r.event_type, eventDate: r.event_date, startTime: r.start_time, venue: r.venue, status: r.status })); setDocumentForm({ ...documentForm, title: "", fileUrl: "", venue: "" }); resetForm("document"); };
+  const createVote = async (event) => { event.preventDefault(); if (!voteForm.groupId || !voteForm.title.trim()) return notify("Group and vote title are required.", "error"); const saved = await persist("community_group_votes", "insert", { group_id: voteForm.groupId, title: voteForm.title.trim(), description: voteForm.description || null, vote_type: voteForm.voteType, quorum_percent: Number(voteForm.quorumPercent) || 50, status: "Open" }, votes, "Vote or election", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, title: r.title, description: r.description || "", voteType: r.vote_type, status: r.status, quorumPercent: Number(r.quorum_percent || 50) })); if (saved && requiresConfirmedPersistence()) { for (const label of voteForm.options.split(",").map((item) => item.trim()).filter(Boolean)) { await runCompanyTableMutation("community_group_vote_options", "insert", { vote_id: saved.id, label, vote_count: 0 }); } } if (saved) { setVoteForm({ ...voteForm, title: "", description: "" }); resetForm("vote"); } };
+  const recordPenalty = async (loan) => { const amount = Number(window.prompt(`Penalty amount for ${loan.loanNumber} (TZS)`)); const reason = window.prompt("Penalty reason") || "Late repayment"; if (!amount || amount <= 0) return; await persist("community_group_loan_penalties", "insert", { loan_id: loan.dbId || loan.id, penalty_date: today, reason, amount, status: "Outstanding" }, penalties, "Loan penalty", (r) => ({ ...r, dbId: r.id, loanId: r.loan_id, penaltyDate: r.penalty_date, reason: r.reason, amount: Number(r.amount), status: r.status })); };
+  const approveEntity = async (row, entityTable, statusPatch, label) => { if (!canApprove) return notify("Only authorized approvers can complete this action.", "error"); const entityHook = entityTable === "community_group_loans" ? loans : entityTable === "community_group_expenses" ? expenses : welfare; const saved = await persist(entityTable, "update", statusPatch, entityHook, label, null, row.dbId || row.id); if (saved) { await persist("community_group_approvals", "insert", { group_id: row.groupId, entity_type: entityTable.replace("community_group_", ""), entity_id: row.dbId || row.id, action: label, status: "Approved", decision_notes: "Approved by authorized workspace approver", decided_at: new Date().toISOString() }, approvals, "Approval decision", (r) => ({ ...r, dbId: r.id, groupId: r.group_id, entityType: r.entity_type, entityId: r.entity_id, action: r.action, status: r.status, decisionNotes: r.decision_notes || "", requestedAt: r.requested_at })); await auditEntity(label, entityTable, row.dbId || row.id, row.groupId, statusPatch); } };
+  const approveLoan = (row) => approveEntity(row, "community_group_loans", { approval_status: "Approved", status: "Approved", approved_at: new Date().toISOString(), approved_by: null }, "Loan approved");
+  const disburseLoan = (row) => approveEntity(row, "community_group_loans", { status: "Disbursed", disbursed_at: today, outstanding_principal: row.principal, outstanding_interest: row.totalInterest }, "Loan disbursed");
+  const approveExpense = (row) => approveEntity(row, "community_group_expenses", { status: "Approved", approved_at: new Date().toISOString() }, "Expense approved");
+  const approveWelfare = (row) => approveEntity(row, "community_group_welfare_claims", { status: "Approved", amount_approved: row.requested, approved_at: new Date().toISOString() }, "Welfare claim approved");
+  const recordRepayment = async (loan) => { const amountText = window.prompt(`Repayment amount for ${loan.loanNumber} (TZS)`); const amount = Number(amountText); if (!amount || amount <= 0) return; const split = splitRepayment(loan, amount); const saved = await persist("community_group_loan_repayments", "insert", { loan_id: loan.dbId || loan.id, amount, principal_amount: split.principalAmount, interest_amount: split.interestAmount, penalty_amount: split.penaltyAmount, payment_method: "Mobile Money", payment_reference: `MM-${Date.now()}`, repayment_date: today, receipt_number: `LRCT-${Date.now()}`, status: "Posted" }, repayments, "Loan repayment", (r) => ({ ...r, dbId: r.id, loanId: r.loan_id, amount: Number(r.amount), principalAmount: Number(r.principal_amount), interestAmount: Number(r.interest_amount), penaltyAmount: Number(r.penalty_amount), repaymentDate: r.repayment_date, paymentMethod: r.payment_method, reference: r.payment_reference, receiptNumber: r.receipt_number, status: r.status })); if (saved) { const nextPrincipal = Math.max(0, loan.outstandingPrincipal - split.principalAmount); const nextInterest = Math.max(0, loan.outstandingInterest - split.interestAmount); await persist("community_group_loans", "update", { outstanding_principal: nextPrincipal, outstanding_interest: nextInterest, status: nextPrincipal + nextInterest <= 0 ? "Closed" : "Active" }, loans, "Loan balance update", null, loan.dbId || loan.id); } };
+  const markMeetingHeld = async (meeting) => { const saved = await persist("community_group_meetings", "update", { status: "Held" }, meetings, "Meeting marked held", null, meeting.dbId || meeting.id); if (saved && activeMembers.length && requiresConfirmedPersistence()) for (const member of activeMembers) await runCompanyTableMutation("community_group_attendance", "insert", { meeting_id: meeting.dbId || meeting.id, member_id: member.dbId || member.id, status: "Present" }); if (saved && !requiresConfirmedPersistence()) attendance.setRows((previous) => [...activeMembers.map((member) => ({ id: docId("ATT"), meetingId: meeting.id, memberId: member.id, status: "Present" })), ...previous]); };
+  const verifyMember = (member, status) => persist("community_group_members", "update", { kyc_status: status }, members, `KYC ${status.toLowerCase()}`, null, member.dbId || member.id);
+  const exportStatement = () => { const rows = activeContributions.map((row) => ({ Date: row.contributionDate, Member: fmtMember(row.memberId), Type: row.contributionType, Amount_TZS: row.amount, Method: row.paymentMethod, Reference: row.reference, Status: row.status })); downloadCSV(`community-statement-${activeGroup?.name || "group"}`, rows, Object.keys(rows[0] || { Date: "Date", Member: "Member", Amount_TZS: "Amount (TZS)" }).map((key) => ({ key, label: key.replaceAll("_", " ") }))); };
 
-  async function addGroup() {
-    if (!groupForm.name.trim()) return;
-    const row = { id: docId("GRP"), ...groupForm, members: 0, fund: 0, status:"Active" };
-    groups.setRows((prev) => [row, ...prev]);
-    setGroupForm({ name:"", type: COMMUNITY_GROUP_TYPES[0], cycle:"Monthly", startDate: TODAY.toISOString().slice(0,10) });
-    setShowGroupForm(false);
-    notify("Group '" + row.name + "' created");
-    if (IS_CONFIGURED) { try { await sb("community_groups").insert({ name:row.name, type:row.type, cycle:row.cycle, start_date:row.startDate, status:"Active", members:0, fund:0 }).run(); } catch(_e){} }
-  }
+  const FormActions = ({ onCancel }) => <div className="flex flex-wrap gap-2 pt-1"><button type="submit" disabled={saving || !canWrite} className="btn-primary rounded-xl px-4 py-2.5 text-[12px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving…" : "Save and confirm"}</button><button type="button" onClick={onCancel} className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-slate-500 hover:bg-slate-50">Cancel</button></div>;
+  const GroupSelect = ({ value, onChange }) => <select className={inputClass} value={value} onChange={(event) => onChange(event.target.value)}><option value="">Select group…</option>{groups.rows.map((row) => <option key={row.id || row.dbId} value={row.id || row.dbId}>{row.name}</option>)}</select>;
+  const MemberSelect = ({ value, onChange, groupId = activeGroupId }) => <select className={inputClass} value={value} onChange={(event) => onChange(event.target.value)}><option value="">Select member…</option>{members.rows.filter((row) => !groupId || String(row.groupId) === String(groupId)).map((row) => <option key={row.id || row.dbId} value={row.id || row.dbId}>{row.fullName} · {row.memberNumber}</option>)}</select>;
+  const selectGroup = (value) => { setSelectedGroupId(value); setMemberForm((f) => ({ ...f, groupId: value })); setFinanceForm((f) => ({ ...f, groupId: value, memberId: "" })); setLoanForm((f) => ({ ...f, groupId: value, memberId: "" })); };
 
-  async function addContribution() {
-    if (!ctbForm.groupId || !ctbForm.member.trim() || !ctbForm.amount) return;
-    const row = { id: docId("CTB"), ...ctbForm, amount: Number(ctbForm.amount), status:"Paid" };
-    contributions.setRows((prev) => [row, ...prev]);
-    groups.setRows((prev) => prev.map((g) => g.id===ctbForm.groupId ? {...g, fund: g.fund + Number(ctbForm.amount)} : g));
-    setCtbForm({ ...ctbForm, member:"", amount:"" });
-    setShowCtbForm(false);
-    notify("TZS " + money(row.amount) + "k contribution recorded for " + row.member);
-    logAudit("Contribution: " + row.member, "Community", currentUser?.name||"System", "TZS " + money(row.amount) + "k");
-  }
+  return <div className="space-y-4">
+    <div className="overflow-hidden rounded-2xl px-5 py-5" style={{ background: "linear-gradient(135deg,#5B21B6 0%,#7C3AED 52%,#4C1D95 100%)" }}><div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-violet-200">Community finance & governance</p><h1 className="mt-1 text-xl font-black text-white sm:text-2xl">Community Groups Manager</h1><p className="mt-1 max-w-2xl text-[12px] leading-5 text-violet-100">Chamas, VICOBA, table banking, cooperatives, welfare funds and savings groups with TZS-native receipts, member KYC and controlled approvals.</p></div><div className="grid grid-cols-2 gap-2 sm:flex"><div className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-center"><p className="text-[10px] text-violet-200">Active group</p><p className="max-w-[150px] truncate text-[13px] font-bold text-white">{activeGroup?.name || "None selected"}</p></div><div className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-center"><p className="text-[10px] text-violet-200">Live balance</p><p className="text-[13px] font-bold text-white">{communityTzs(totalFund)}</p></div></div></div></div>
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm lg:flex-row lg:items-center"><div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">{COMMUNITY_TABS.map(([id, label, Icon]) => <button key={id} type="button" onClick={() => setTab(id)} className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold transition ${tab === id ? "bg-violet-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"}`}><Icon size={14}/>{label}</button>)}</div><div className="flex gap-2"><select aria-label="Active community group" className={`${inputClass} min-w-[180px]`} value={activeGroupId} onChange={(event) => selectGroup(event.target.value)}><option value="">All groups</option>{groups.rows.map((row) => <option key={row.id || row.dbId} value={row.id || row.dbId}>{row.name}</option>)}</select><div className="relative"><Search size={14} className="absolute left-3 top-3 text-slate-400"/><input aria-label="Search community records" value={search} onChange={(event) => setSearch(event.target.value)} className={`${inputClass} pl-9`} placeholder="Search…"/></div></div></div>
 
-  const WELFARE_EVENTS = [
-    { event:"Medical Emergency", member:"Alice Ng'endo", amount:200, date:"2026-06-15", status:"Paid" },
-    { event:"Funeral Support",   member:"Bob Otieno",        amount:150, date:"2026-05-20", status:"Paid" },
-    { event:"Hospital Visit",    member:"Pending Review",    amount:100, date:"2026-07-10", status:"Pending" },
-  ];
+    {tab === "overview" && <div className="space-y-4"><div className="grid grid-cols-2 gap-3 lg:grid-cols-5"><CommunityKpi label="Groups" value={groups.rows.length} hint="Tenant-scoped records" icon={Users2}/><CommunityKpi label="Members" value={activeMembers.length} hint={`${activeMembers.filter((row) => row.kycStatus === "Verified").length} verified KYC`} icon={UserCheck} tone="emerald"/><CommunityKpi label="Funds" value={communityTzs(totalFund)} hint="Contributions, savings and income less outflows" icon={Coins} tone="violet"/><CommunityKpi label="Loan outstanding" value={communityTzs(loanOutstanding)} hint={`${activeLoans.filter((row) => row.approvalStatus === "Pending").length} awaiting approval`} icon={HandCoins} tone="amber"/><CommunityKpi label="Meetings" value={activeMeetings.filter((row) => row.status === "Scheduled").length} hint="Scheduled meetings" icon={CalendarCheck} tone="navy"/></div><div className="grid gap-4 lg:grid-cols-3"><CommunitySection title="Group health" subtitle="Confirmed records only"><div className="space-y-3">{visible(groups.rows, ["name", "groupType", "region"]).slice(0, 6).map((row) => <button key={row.id || row.dbId} type="button" onClick={() => { selectGroup(row.id || row.dbId); setTab("groups"); }} className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-100 p-3 text-left hover:border-violet-200 hover:bg-violet-50/30"><div className="min-w-0"><p className="truncate text-[12px] font-bold text-slate-800">{row.name}</p><p className="mt-0.5 text-[10.5px] text-slate-500">{row.groupType} · {row.region || "Tanzania"}</p></div><div className="text-right"><p className="text-[11px] font-bold text-violet-700">{members.rows.filter((m) => String(m.groupId) === String(row.id || row.dbId)).length} members</p><CommunityStatus value={row.status}/></div></button>)}{!groups.rows.length && <CommunityEmpty title="No community groups yet" detail="Create the first group to unlock member onboarding, contributions, meetings and loan workflows."/>}</div></CommunitySection><CommunitySection title="Approval queue" subtitle="Loans, welfare and expenses requiring decision"><div className="space-y-2">{approvals.rows.filter((row) => row.status === "Pending").slice(0, 7).map((row) => <div key={row.id || row.dbId} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3"><div><p className="text-[12px] font-bold text-slate-800">{row.action}</p><p className="text-[10.5px] text-slate-500">{fmtGroup(row.groupId)} · {communityDate(row.requestedAt)}</p></div><CommunityStatus value={row.status}/></div>)}{!approvals.rows.filter((row) => row.status === "Pending").length && <CommunityEmpty title="Approval queue is clear" detail="New loan, welfare and expense requests will appear here."/>}</div></CommunitySection><CommunitySection title="Upcoming schedule" subtitle="Meeting and event reminders"><div className="space-y-2">{[...activeMeetings.map((row) => ({ ...row, kind: "Meeting", date: row.meetingDate })), ...events.rows.filter((row) => !activeGroupId || String(row.groupId) === String(activeGroupId)).map((row) => ({ ...row, kind: row.eventType, date: row.eventDate }))].sort((a, b) => String(a.date).localeCompare(String(b.date))).slice(0, 6).map((row) => <div key={row.id || row.dbId} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"><div className="rounded-lg bg-violet-50 px-2 py-1 text-center"><p className="text-[10px] font-black text-violet-700">{String(row.date || "").slice(5, 10)}</p></div><div className="min-w-0"><p className="truncate text-[12px] font-bold text-slate-800">{row.kind}</p><p className="text-[10.5px] text-slate-500">{row.venue || fmtGroup(row.groupId)} · {row.startTime || "Time not set"}</p></div></div>)}{!activeMeetings.length && !events.rows.length && <CommunityEmpty title="No scheduled items" detail="Schedule a meeting or community event to activate reminders."/>}</div></CommunitySection></div></div>}
 
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="rounded-2xl overflow-hidden px-5 py-5" style={{background:"linear-gradient(135deg,#7C3AED 0%,#6D28D9 50%,#4C1D95 100%)"}}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-[19px] font-bold text-white">Community Groups Manager</h1>
-            <p className="text-[12px] mt-0.5" style={{color:"rgba(255,255,255,.65)"}}>Table Banking &middot; Investment Clubs &middot; VICOBA &middot; Welfare &middot; SUCCESS &middot; Chamas</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-center"><p className="text-[10px] text-purple-300">Total Funds</p><p className="text-[16px] font-bold text-white">TZS {money(totalFunds)}k</p></div>
-            <div className="text-center"><p className="text-[10px] text-purple-300">Members</p><p className="text-[16px] font-bold text-white">{totalMembers}</p></div>
-          </div>
-        </div>
-      </div>
+    {tab === "groups" && <div className="space-y-4"><CommunitySection title="Group registry" subtitle="Registration, rules, meeting cadence and contribution configuration" action={<button type="button" onClick={() => setShowForm("group")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> Register group</button>}>{showForm === "group" && <form onSubmit={createGroup} className="mb-4 grid gap-3 rounded-xl border border-violet-100 bg-violet-50/40 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Group name" required><input className={inputClass} value={groupForm.name} onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}/></FormField><FormField label="Group type"><select className={inputClass} value={groupForm.groupType} onChange={(e) => setGroupForm({ ...groupForm, groupType: e.target.value })}>{COMMUNITY_GROUP_TYPES.map((type) => <option key={type}>{type}</option>)}</select></FormField><FormField label="Registration number"><input className={inputClass} value={groupForm.registrationNumber} onChange={(e) => setGroupForm({ ...groupForm, registrationNumber: e.target.value })} placeholder="Optional"/></FormField><FormField label="Region"><input className={inputClass} value={groupForm.region} onChange={(e) => setGroupForm({ ...groupForm, region: e.target.value })} placeholder="e.g. Dar es Salaam"/></FormField><FormField label="District"><input className={inputClass} value={groupForm.district} onChange={(e) => setGroupForm({ ...groupForm, district: e.target.value })}/></FormField><FormField label="Contribution frequency"><select className={inputClass} value={groupForm.contributionFrequency} onChange={(e) => setGroupForm({ ...groupForm, contributionFrequency: e.target.value })}>{["Weekly", "Bi-weekly", "Monthly", "Quarterly"].map((type) => <option key={type}>{type}</option>)}</select></FormField><FormField label="Contribution amount (TZS)"><input type="number" min="0" className={inputClass} value={groupForm.contributionAmount} onChange={(e) => setGroupForm({ ...groupForm, contributionAmount: e.target.value })}/></FormField><FormField label="Meeting frequency"><select className={inputClass} value={groupForm.meetingFrequency} onChange={(e) => setGroupForm({ ...groupForm, meetingFrequency: e.target.value })}>{["Weekly", "Bi-weekly", "Monthly", "Quarterly"].map((type) => <option key={type}>{type}</option>)}</select></FormField><div className="sm:col-span-2 lg:col-span-4"><FormField label="Description and group rules"><textarea className={`${inputClass} min-h-20`} value={groupForm.description} onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })} placeholder="Rules, quorum, welfare policy, loan limits and other operating rules"/></FormField></div><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("group")}/></div></form>}<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visible(groups.rows, ["name", "groupType", "groupNumber", "region"]).map((row) => { const count = members.rows.filter((member) => String(member.groupId) === String(row.id || row.dbId)).length; const balance = contributions.rows.filter((entry) => String(entry.groupId) === String(row.id || row.dbId) && entry.status === "Paid").reduce((sum, entry) => sum + entry.amount, 0); return <button type="button" key={row.id || row.dbId} onClick={() => selectGroup(row.id || row.dbId)} className={`rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 ${String(activeGroupId) === String(row.id || row.dbId) ? "border-violet-300 bg-violet-50/30" : "border-slate-200/80 bg-white"}`}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-[14px] font-black text-slate-900">{row.name}</p><p className="mt-1 text-[10.5px] text-slate-500">{row.groupNumber} · {row.groupType}</p></div><CommunityStatus value={row.status}/></div><div className="mt-4 grid grid-cols-3 gap-2"><div className="rounded-xl bg-slate-50 p-2 text-center"><p className="text-[10px] text-slate-400">Members</p><p className="text-[15px] font-black text-slate-800">{count}</p></div><div className="rounded-xl bg-violet-50 p-2 text-center"><p className="text-[10px] text-violet-500">Collected</p><p className="text-[12px] font-black text-violet-700">{communityTzs(balance)}</p></div><div className="rounded-xl bg-emerald-50 p-2 text-center"><p className="text-[10px] text-emerald-500">Cycle</p><p className="text-[12px] font-black text-emerald-700">{row.contributionFrequency}</p></div></div><p className="mt-3 text-[10.5px] text-slate-500">{row.region || "Tanzania"}{row.district ? ` · ${row.district}` : ""} · {row.meetingFrequency} meetings</p></button>; })}{!groups.rows.length && <div className="md:col-span-2 xl:col-span-3"><CommunityEmpty title="Group registry is empty" detail="Register a real group; the server will generate its group number and tenant-scoped record."/></div>}</div></CommunitySection></div>}
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
-        {TABS.map((t) => { const I=t.icon; return (
-          <button key={t.id} onClick={()=>setTab(t.id)} className={"flex items-center gap-1.5 flex-1 justify-center py-2 rounded-lg text-[12px] font-medium transition-colors whitespace-nowrap "+(tab===t.id?"bg-[#7C3AED] text-white shadow-sm":"text-slate-500 hover:bg-slate-50")}><I size={13}/>{t.label}</button>
-        ); })}
-      </div>
+    {tab === "members" && <div className="space-y-4"><CommunitySection title="Member onboarding and KYC" subtitle="Identification, next of kin, roles and verification status" action={<button type="button" onClick={() => setShowForm("member")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><UserPlus size={14}/> Add member</button>}>{showForm === "member" && <form onSubmit={createMember} className="mb-4 grid gap-3 rounded-xl border border-emerald-100 bg-emerald-50/30 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Group" required><GroupSelect value={memberForm.groupId} onChange={(value) => setMemberForm({ ...memberForm, groupId: value })}/></FormField><FormField label="Full name" required><input className={inputClass} value={memberForm.fullName} onChange={(e) => setMemberForm({ ...memberForm, fullName: e.target.value })}/></FormField><FormField label="Phone"><input className={inputClass} value={memberForm.phone} onChange={(e) => setMemberForm({ ...memberForm, phone: e.target.value })} placeholder="+255 7xx xxx xxx"/></FormField><FormField label="Email"><input type="email" className={inputClass} value={memberForm.email} onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}/></FormField><FormField label="Identification type"><select className={inputClass} value={memberForm.idType} onChange={(e) => setMemberForm({ ...memberForm, idType: e.target.value })}>{["NIDA", "Passport", "Voter ID", "Driving Licence", "Other"].map((type) => <option key={type}>{type}</option>)}</select></FormField><FormField label="Identification number" required><input className={inputClass} value={memberForm.nationalId} onChange={(e) => setMemberForm({ ...memberForm, nationalId: e.target.value })}/></FormField><FormField label="Gender"><select className={inputClass} value={memberForm.gender} onChange={(e) => setMemberForm({ ...memberForm, gender: e.target.value })}><option value="">Not specified</option><option>Female</option><option>Male</option><option>Other</option></select></FormField><FormField label="Date of birth"><input type="date" className={inputClass} value={memberForm.dateOfBirth} onChange={(e) => setMemberForm({ ...memberForm, dateOfBirth: e.target.value })}/></FormField><FormField label="Role"><select className={inputClass} value={memberForm.role} onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}>{["Member", "Chairperson", "Secretary", "Treasurer", "Loan Officer", "Welfare Officer", "Auditor"].map((type) => <option key={type}>{type}</option>)}</select></FormField><FormField label="Occupation"><input className={inputClass} value={memberForm.occupation} onChange={(e) => setMemberForm({ ...memberForm, occupation: e.target.value })}/></FormField><FormField label="Next of kin"><input className={inputClass} value={memberForm.nextOfKin} onChange={(e) => setMemberForm({ ...memberForm, nextOfKin: e.target.value })}/></FormField><FormField label="Next of kin phone"><input className={inputClass} value={memberForm.nextOfKinPhone} onChange={(e) => setMemberForm({ ...memberForm, nextOfKinPhone: e.target.value })}/></FormField><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("member")}/></div></form>}<div className="overflow-x-auto rounded-xl border border-slate-100"><table className="w-full min-w-[850px] text-left text-[11.5px]"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr>{["Member", "Group", "Identification", "Role", "Joined", "KYC", "Actions"].map((head) => <th key={head} className="px-3 py-3 font-bold">{head}</th>)}</tr></thead><tbody>{visible(activeMembers, ["fullName", "memberNumber", "nationalId", "role"]).map((row) => <tr key={row.id || row.dbId} className="border-t border-slate-100"><td className="px-3 py-3"><p className="font-bold text-slate-800">{row.fullName}</p><p className="text-[10px] text-slate-500">{row.memberNumber} · {row.phone}</p></td><td className="px-3 py-3 text-slate-600">{fmtGroup(row.groupId)}</td><td className="px-3 py-3 font-mono text-slate-600">{row.idType}: {row.nationalId}</td><td className="px-3 py-3 text-slate-600">{row.role}</td><td className="px-3 py-3 text-slate-500">{communityDate(row.joinDate)}</td><td className="px-3 py-3"><CommunityStatus value={row.kycStatus}/></td><td className="px-3 py-3"><div className="flex gap-1"><button type="button" onClick={() => verifyMember(row, "Verified")} disabled={!canWrite || row.kycStatus === "Verified"} className="rounded-lg border border-emerald-200 px-2 py-1 text-[10px] font-bold text-emerald-700 disabled:opacity-40">Verify</button><button type="button" onClick={() => verifyMember(row, "Rejected")} disabled={!canWrite || row.kycStatus === "Rejected"} className="rounded-lg border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700 disabled:opacity-40">Reject</button></div></td></tr>)}</tbody></table>{!activeMembers.length && <CommunityEmpty title="No members for this group" detail="Onboard each member with a Tanzanian identification type and keep KYC pending until verified."/>}</div></CommunitySection></div>}
 
-      {/* GROUPS TAB */}
-      {tab === "groups" && (
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <div className="grid grid-cols-3 gap-3 flex-1 mr-4">
-              {[["Groups",groups.rows.length,"#7C3AED"],["Total Members",totalMembers,"#2563EB"],["Total Funds","TZS "+money(totalFunds)+"k","#16A34A"]].map(([l,v,col])=>(
-                <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-3"><p className="text-[11px] text-slate-400">{l}</p><p className="text-[18px] font-bold mt-0.5" style={{color:col}}>{v}</p></div>
-              ))}
-            </div>
-            <button onClick={()=>setShowGroupForm(true)} className="flex items-center gap-1.5 btn-primary text-white text-[12.5px] rounded-xl px-4 py-2.5 shrink-0"><Plus size={13}/>New Group</button>
-            <button onClick={()=>downloadCSV("community-groups",groups.rows.map(g=>({
-              ID:g.id,Name:g.name||"",Category:g.category||"",Members:g.memberCount||0,
-              Balance_k:g.balance||0,Lead:g.lead||"",Location:g.location||"",
-            })),[{key:"ID",label:"ID"},{key:"Name",label:"Name"},{key:"Category",label:"Category"},
-              {key:"Members",label:"Members"},{key:"Balance_k",label:"Balance (TZS k)"},
-              {key:"Lead",label:"Leader"},{key:"Location",label:"Location"}])}
-              className="flex items-center gap-1.5 text-[12px] font-semibold text-[#16A34A] border border-[#16A34A]/25 bg-[#F0FDF4] px-3 py-2 rounded-lg">
-              <Download size={12}/> CSV
-            </button>
-          </div>
-          {showGroupForm && (
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 space-y-3">
-              <p className="text-[13.5px] font-semibold text-[#111827]">Create New Community Group</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <FormField label="Group Name"><input className={inputClass} value={groupForm.name} onChange={e=>setGroupForm({...groupForm,name:e.target.value})} placeholder="e.g. Umoja Chama"/></FormField>
-                <FormField label="Type"><select className={inputClass} value={groupForm.type} onChange={e=>setGroupForm({...groupForm,type:e.target.value})}>{COMMUNITY_GROUP_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></FormField>
-                <FormField label="Contribution Cycle"><select className={inputClass} value={groupForm.cycle} onChange={e=>setGroupForm({...groupForm,cycle:e.target.value})}>{["Weekly","Bi-weekly","Monthly","Quarterly"].map(c=><option key={c}>{c}</option>)}</select></FormField>
-                <FormField label="Start Date"><input type="date" className={inputClass} value={groupForm.startDate} onChange={e=>setGroupForm({...groupForm,startDate:e.target.value})}/></FormField>
-              </div>
-              <div className="flex gap-2"><button onClick={addGroup} className="btn-primary text-white text-[12.5px] rounded-xl px-4 py-2.5">Create Group</button><button onClick={()=>setShowGroupForm(false)} className="text-[12.5px] text-slate-500 px-4 py-2.5">Cancel</button></div>
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {groups.rows.map((g) => {
-              const typeColor = {"Table Banking":"#16A34A","Investment Club":"#2563EB","Chama":"#7C3AED","Welfare Fund":"#EF4444","SUCCESS Group":"#F59E0B","Church Fund":"#EC4899","NGO / CBO":"#0891B2","Cooperative":"#D97706"}[g.type]||"#6B7280";
-              return (
-                <div key={g.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 cursor-pointer hover:border-[#7C3AED] transition-colors" onClick={()=>{setSelGroup(g);setTab("contributions");}}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div><p className="text-[14px] font-semibold text-[#111827]">{g.name}</p><span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full" style={{background:typeColor+"18",color:typeColor}}>{g.type}</span></div>
-                    <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-[#DCFCE7] text-[#16A34A]">{g.status}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-slate-50 rounded-lg p-2 text-center"><p className="text-[10px] text-slate-400">Members</p><p className="text-[15px] font-bold text-[#111827]">{g.members}</p></div>
-                    <div className="rounded-lg p-2 text-center" style={{background:typeColor+"10"}}><p className="text-[10px] text-slate-400">Fund</p><p className="text-[15px] font-bold" style={{color:typeColor}}>TZS {money(g.fund)}k</p></div>
-                  </div>
-                  <p className="text-[10.5px] text-slate-400 mt-2">{g.cycle} contributions &middot; Since {g.startDate}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+    {tab === "finance" && <div className="space-y-4"><div className="grid grid-cols-2 gap-3 lg:grid-cols-4"><CommunityKpi label="Contributions" value={communityTzs(paidContributions)} hint={`${activeContributions.filter((row) => row.status === "Paid").length} paid receipts`} icon={CircleDollarSign} tone="violet"/><CommunityKpi label="Savings balance" value={communityTzs(savingsDeposits - savingsWithdrawals)} hint="Deposits less withdrawals" icon={PiggyBank} tone="emerald"/><CommunityKpi label="Welfare paid" value={communityTzs(welfarePaid)} hint={`${activeWelfare.filter((row) => row.status === "Pending").length} claims pending`} icon={HeartHandshake} tone="rose"/><CommunityKpi label="Pending expenses" value={communityTzs(activeExpenses.filter((row) => row.status === "Pending Approval").reduce((sum, row) => sum + row.amount, 0))} hint="Approval-controlled outflows" icon={ReceiptText} tone="amber"/></div><CommunitySection title="Contributions, savings and welfare" subtitle="Mobile-money-ready receipts, member balances and welfare approvals" action={<button type="button" onClick={() => setShowForm("finance")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> Post transaction</button>}>{showForm === "finance" && <form onSubmit={createFinance} className="mb-4 grid gap-3 rounded-xl border border-violet-100 bg-violet-50/30 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Transaction type"><select className={inputClass} value={financeForm.kind} onChange={(e) => setFinanceForm({ ...financeForm, kind: e.target.value, type: e.target.value === "contribution" ? "Contribution" : "Deposit" })}><option value="contribution">Contribution</option><option value="savings">Savings</option></select></FormField><FormField label="Group" required><GroupSelect value={financeForm.groupId} onChange={(value) => setFinanceForm({ ...financeForm, groupId: value, memberId: "" })}/></FormField><FormField label="Member" required><MemberSelect groupId={financeForm.groupId} value={financeForm.memberId} onChange={(value) => setFinanceForm({ ...financeForm, memberId: value })}/></FormField><FormField label="Amount (TZS)" required><input type="number" min="1" className={inputClass} value={financeForm.amount} onChange={(e) => setFinanceForm({ ...financeForm, amount: e.target.value })}/></FormField><FormField label="Contribution or savings type"><select className={inputClass} value={financeForm.type} onChange={(e) => setFinanceForm({ ...financeForm, type: e.target.value })}>{(financeForm.kind === "contribution" ? ["Contribution", "Share Purchase", "Fine", "Registration", "Special Levy"] : ["Deposit", "Withdrawal", "Dividend", "Adjustment"]).map((type) => <option key={type}>{type}</option>)}</select></FormField><FormField label="Payment method"><select className={inputClass} value={financeForm.paymentMethod} onChange={(e) => setFinanceForm({ ...financeForm, paymentMethod: e.target.value })}>{COMMUNITY_PAYMENT_METHODS.map((type) => <option key={type}>{type}</option>)}</select></FormField><FormField label="Mobile-money provider"><select className={inputClass} value={financeForm.provider} onChange={(e) => setFinanceForm({ ...financeForm, provider: e.target.value })}>{["M-Pesa", "Airtel Money", "Tigo Pesa", "Halopesa", "Azam Pesa", "N/A"].map((type) => <option key={type}>{type}</option>)}</select></FormField><FormField label="Reference"><input className={inputClass} value={financeForm.reference} onChange={(e) => setFinanceForm({ ...financeForm, reference: e.target.value })} placeholder="Mobile money receipt / bank ref"/></FormField><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("finance")}/></div></form>}<div className="overflow-x-auto rounded-xl border border-slate-100"><table className="w-full min-w-[800px] text-left text-[11.5px]"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr>{["Date", "Member", "Type", "Amount", "Method / reference", "Status", "Receipt"].map((head) => <th key={head} className="px-3 py-3 font-bold">{head}</th>)}</tr></thead><tbody>{visible(activeContributions, ["memberName", "contributionType", "reference"]).map((row) => <tr key={row.id || row.dbId} className="border-t border-slate-100"><td className="px-3 py-3 text-slate-500">{communityDate(row.contributionDate)}</td><td className="px-3 py-3 font-bold text-slate-800">{fmtMember(row.memberId)}</td><td className="px-3 py-3 text-slate-600">{row.contributionType}</td><td className="px-3 py-3 font-mono font-black text-violet-700">{communityTzs(row.amount)}</td><td className="px-3 py-3 text-slate-500">{row.paymentMethod}{row.provider ? ` · ${row.provider}` : ""}{row.reference ? ` · ${row.reference}` : ""}</td><td className="px-3 py-3"><CommunityStatus value={row.status}/></td><td className="px-3 py-3 font-mono text-slate-500">{row.receiptNumber || "—"}</td></tr>)}</tbody></table>{!activeContributions.length && <CommunityEmpty title="No contribution receipts" detail="Post a contribution with the mobile-money, bank or cash reference to create a member statement trail."/>}</div></CommunitySection><CommunitySection title="Welfare claims" subtitle="Claims are approval controlled before payment"><div className="overflow-x-auto rounded-xl border border-slate-100"><table className="w-full min-w-[700px] text-left text-[11.5px]"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr>{["Event", "Member", "Requested", "Date", "Status", "Action"].map((head) => <th key={head} className="px-3 py-3 font-bold">{head}</th>)}</tr></thead><tbody>{activeWelfare.map((row) => <tr key={row.id || row.dbId} className="border-t border-slate-100"><td className="px-3 py-3 font-bold text-slate-800">{row.eventType}<p className="text-[10px] font-normal text-slate-500">{row.description}</p></td><td className="px-3 py-3 text-slate-600">{fmtMember(row.memberId)}</td><td className="px-3 py-3 font-mono text-rose-700">{communityTzs(row.requested)}</td><td className="px-3 py-3 text-slate-500">{communityDate(row.claimDate)}</td><td className="px-3 py-3"><CommunityStatus value={row.status}/></td><td className="px-3 py-3">{row.status === "Pending" && <button type="button" onClick={() => approveWelfare(row)} className="rounded-lg border border-emerald-200 px-2 py-1 text-[10px] font-bold text-emerald-700">Approve</button>}</td></tr>)}</tbody></table>{!activeWelfare.length && <CommunityEmpty title="No welfare claims" detail="Welfare claim intake can be added by posting a claim record through the connected group workflow."/>}</div></CommunitySection></div>}
 
-      {/* CONTRIBUTIONS TAB */}
-      {tab === "contributions" && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[13.5px] font-semibold text-[#111827]">Contributions {selGroup ? "— " + selGroup.name : "(All Groups)"}</p>
-              <p className="text-[12px] text-slate-400">{pendingCtbs.length} pending &middot; TZS {money(thisMonthCtbs.reduce((s,c)=>s+c.amount,0))}k collected this month</p>
-            </div>
-            <button onClick={()=>setShowCtbForm(true)} className="flex items-center gap-1.5 btn-primary text-white text-[12.5px] rounded-xl px-4 py-2.5"><Plus size={13}/>Record</button>
-          </div>
-          {showCtbForm && (
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 space-y-3">
-              <p className="text-[13.5px] font-semibold text-[#111827]">Record Contribution</p>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <FormField label="Group"><select className={inputClass} value={ctbForm.groupId} onChange={e=>setCtbForm({...ctbForm,groupId:e.target.value})}><option value="">Select...</option>{groups.rows.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select></FormField>
-                <FormField label="Member Name"><input className={inputClass} value={ctbForm.member} onChange={e=>setCtbForm({...ctbForm,member:e.target.value})} placeholder="Member name"/></FormField>
-                <FormField label="Amount (TZS k)"><input type="number" className={inputClass} value={ctbForm.amount} onChange={e=>setCtbForm({...ctbForm,amount:e.target.value})}/></FormField>
-                <FormField label="Type"><select className={inputClass} value={ctbForm.type} onChange={e=>setCtbForm({...ctbForm,type:e.target.value})}>{["Contribution","Share Purchase","Fine","Registration","Special Levy"].map(t=><option key={t}>{t}</option>)}</select></FormField>
-                <FormField label="Date"><input type="date" className={inputClass} value={ctbForm.date} onChange={e=>setCtbForm({...ctbForm,date:e.target.value})}/></FormField>
-              </div>
-              <div className="flex gap-2"><button onClick={addContribution} className="btn-primary text-white text-[12.5px] rounded-xl px-4 py-2.5">Save</button><button onClick={()=>setShowCtbForm(false)} className="text-[12.5px] text-slate-500 px-4 py-2.5">Cancel</button></div>
-            </div>
-          )}
-          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <table className="w-full text-[12.5px]">
-              <thead><tr className="border-b border-slate-100 bg-slate-50">{["Date","Member","Group","Type","Amount","Status"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>
-                {(selGroup ? contributions.rows.filter(c=>c.groupId===selGroup.id) : contributions.rows).map((ct)=>{
-                  const grp = groups.rows.find(g=>g.id===ct.groupId);
-                  return (
-                    <tr key={ct.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                      <td className="px-4 py-2.5 font-mono text-slate-500">{ct.date}</td>
-                      <td className="px-4 py-2.5 font-medium text-[#111827]">{ct.member}</td>
-                      <td className="px-4 py-2.5 text-slate-500">{grp?.name||ct.groupId}</td>
-                      <td className="px-4 py-2.5 text-slate-500">{ct.type}</td>
-                      <td className="px-4 py-2.5 font-mono font-semibold text-[#7C3AED]">TZS {money(ct.amount)}k</td>
-                      <td className="px-4 py-2.5"><span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full" style={{background:ct.status==="Paid"?"#DCFCE7":"#FEF3C7",color:ct.status==="Paid"?"#16A34A":"#92400E"}}>{ct.status}</span></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+    {tab === "loans" && <div className="space-y-4"><CommunitySection title="Loan portfolio and repayments" subtitle="Flat and reducing-balance calculations, guarantors, approvals and receipts" action={<button type="button" onClick={() => setShowForm("loan")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> Apply for loan</button>}>{showForm === "loan" && <form onSubmit={createLoan} className="mb-4 grid gap-3 rounded-xl border border-amber-100 bg-amber-50/30 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Group" required><GroupSelect value={loanForm.groupId} onChange={(value) => setLoanForm({ ...loanForm, groupId: value, memberId: "" })}/></FormField><FormField label="Borrower" required><MemberSelect groupId={loanForm.groupId} value={loanForm.memberId} onChange={(value) => setLoanForm({ ...loanForm, memberId: value })}/></FormField><FormField label="Principal (TZS)" required><input type="number" min="1" className={inputClass} value={loanForm.principal} onChange={(e) => setLoanForm({ ...loanForm, principal: e.target.value })}/></FormField><FormField label="Annual interest rate (%)"><input type="number" min="0" step="0.01" className={inputClass} value={loanForm.rate} onChange={(e) => setLoanForm({ ...loanForm, rate: e.target.value })}/></FormField><FormField label="Interest method"><select className={inputClass} value={loanForm.method} onChange={(e) => setLoanForm({ ...loanForm, method: e.target.value })}><option>Flat</option><option>Reducing Balance</option></select></FormField><FormField label="Term (months)"><input type="number" min="1" className={inputClass} value={loanForm.termMonths} onChange={(e) => setLoanForm({ ...loanForm, termMonths: e.target.value })}/></FormField><FormField label="Purpose"><input className={inputClass} value={loanForm.purpose} onChange={(e) => setLoanForm({ ...loanForm, purpose: e.target.value })} placeholder="Business, school fees, emergency…"/></FormField><FormField label="Guarantor member IDs"><input className={inputClass} value={loanForm.guarantorIds} onChange={(e) => setLoanForm({ ...loanForm, guarantorIds: e.target.value })} placeholder="Optional, comma separated"/></FormField><div className="rounded-xl bg-white p-3 text-[11px] text-slate-600 sm:col-span-2 lg:col-span-4">Calculated repayment: <strong className="text-slate-900">{communityTzs(calculateLoan(loanForm.principal, loanForm.rate, loanForm.termMonths, loanForm.method).repayable)}</strong> total, including <strong className="text-amber-700">{communityTzs(calculateLoan(loanForm.principal, loanForm.rate, loanForm.termMonths, loanForm.method).interest)}</strong> interest. The calculation is stored with the application for auditability.</div><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("loan")}/></div></form>}<div className="overflow-x-auto rounded-xl border border-slate-100"><table className="w-full min-w-[1000px] text-left text-[11.5px]"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr>{["Loan", "Borrower", "Principal", "Repayable", "Outstanding", "Approval", "Status", "Actions"].map((head) => <th key={head} className="px-3 py-3 font-bold">{head}</th>)}</tr></thead><tbody>{visible(activeLoans, ["loanNumber", "purpose", "status", "approvalStatus"]).map((row) => <tr key={row.id || row.dbId} className="border-t border-slate-100"><td className="px-3 py-3"><p className="font-mono font-bold text-slate-800">{row.loanNumber}</p><p className="text-[10px] text-slate-500">{row.interestMethod} · {row.termMonths} months</p></td><td className="px-3 py-3 text-slate-600">{fmtMember(row.memberId)}</td><td className="px-3 py-3 font-mono text-slate-800">{communityTzs(row.principal)}</td><td className="px-3 py-3 font-mono text-slate-800">{communityTzs(row.totalRepayable)}</td><td className="px-3 py-3 font-mono font-bold text-amber-700">{communityTzs(row.outstandingPrincipal + row.outstandingInterest)}</td><td className="px-3 py-3"><CommunityStatus value={row.approvalStatus}/></td><td className="px-3 py-3"><CommunityStatus value={row.status}/></td><td className="px-3 py-3"><div className="flex flex-wrap gap-1">{row.approvalStatus === "Pending" && <button type="button" onClick={() => approveLoan(row)} className="rounded-lg border border-emerald-200 px-2 py-1 text-[10px] font-bold text-emerald-700">Approve</button>}{row.status === "Approved" && <button type="button" onClick={() => disburseLoan(row)} className="rounded-lg border border-violet-200 px-2 py-1 text-[10px] font-bold text-violet-700">Disburse</button>}{["Disbursed", "Active"].includes(row.status) && <><button type="button" onClick={() => recordRepayment(row)} className="rounded-lg border border-amber-200 px-2 py-1 text-[10px] font-bold text-amber-700">Repay</button><button type="button" onClick={() => recordPenalty(row)} className="rounded-lg border border-rose-200 px-2 py-1 text-[10px] font-bold text-rose-700">Penalty</button></>}</div></td></tr>)}</tbody></table>{!activeLoans.length && <CommunityEmpty title="No loans in this group" detail="Loan applications calculate interest and repayment at entry, then move through approval, disbursement and repayment."/>}</div></CommunitySection><CommunitySection title="Repayment ledger" subtitle="Principal, interest, penalties and payment references"><div className="overflow-x-auto rounded-xl border border-slate-100"><table className="w-full min-w-[760px] text-left text-[11.5px]"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr>{["Date", "Loan", "Amount", "Principal", "Interest", "Penalty", "Method / reference"].map((head) => <th key={head} className="px-3 py-3 font-bold">{head}</th>)}</tr></thead><tbody>{repayments.rows.filter((row) => !activeGroupId || activeLoans.some((loan) => String(loan.id || loan.dbId) === String(row.loanId))).map((row) => <tr key={row.id || row.dbId} className="border-t border-slate-100"><td className="px-3 py-3 text-slate-500">{communityDate(row.repaymentDate)}</td><td className="px-3 py-3 font-mono text-slate-700">{loans.rows.find((loan) => String(loan.id || loan.dbId) === String(row.loanId))?.loanNumber || row.loanId}</td><td className="px-3 py-3 font-mono font-bold text-emerald-700">{communityTzs(row.amount)}</td><td className="px-3 py-3 font-mono">{communityTzs(row.principalAmount)}</td><td className="px-3 py-3 font-mono">{communityTzs(row.interestAmount)}</td><td className="px-3 py-3 font-mono text-rose-700">{communityTzs(row.penaltyAmount)}</td><td className="px-3 py-3 text-slate-500">{row.paymentMethod} · {row.reference || "No reference"}</td></tr>)}</tbody></table>{!repayments.rows.length && <CommunityEmpty title="No repayments posted" detail="Repayment receipts will reduce outstanding principal and interest when the loan is active."/>}</div></CommunitySection></div>}
 
-      {/* WELFARE FUND TAB */}
-      {tab === "welfare" && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Welfare Reserve</p><p className="text-[22px] font-bold text-[#7C3AED]">TZS {money(1200)}k</p></div>
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Disbursed YTD</p><p className="text-[22px] font-bold text-[#EF4444]">TZS 350k</p></div>
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Claims Pending</p><p className="text-[22px] font-bold text-[#F59E0B]">1</p></div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100"><p className="text-[13.5px] font-semibold text-[#111827]">Welfare Claims</p></div>
-            <table className="w-full text-[12.5px]"><thead><tr className="border-b border-slate-100 bg-slate-50">{["Event","Member","Amount","Date","Status"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{WELFARE_EVENTS.map((w,i)=>(
-                <tr key={i} className="border-b border-slate-50 last:border-0">
-                  <td className="px-4 py-3 font-medium text-[#111827]">{w.event}</td>
-                  <td className="px-4 py-3 text-slate-600">{w.member}</td>
-                  <td className="px-4 py-3 font-mono font-semibold text-[#EF4444]">TZS {money(w.amount)}k</td>
-                  <td className="px-4 py-3 font-mono text-slate-400">{w.date}</td>
-                  <td className="px-4 py-3"><span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full" style={{background:w.status==="Paid"?"#DCFCE7":"#FEF3C7",color:w.status==="Paid"?"#16A34A":"#92400E"}}>{w.status}</span></td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
-        </div>
-      )}
+    {tab === "meetings" && <div className="space-y-4"><CommunitySection title="Meetings, agenda, minutes and attendance" subtitle="Schedule meetings, mark them held and create an attendance record for active members" action={<button type="button" onClick={() => setShowForm("meeting")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> Schedule meeting</button>}>{showForm === "meeting" && <form onSubmit={createMeeting} className="mb-4 grid gap-3 rounded-xl border border-sky-100 bg-sky-50/30 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Group" required><GroupSelect value={meetingForm.groupId} onChange={(value) => setMeetingForm({ ...meetingForm, groupId: value })}/></FormField><FormField label="Meeting date" required><input type="date" className={inputClass} value={meetingForm.meetingDate} onChange={(e) => setMeetingForm({ ...meetingForm, meetingDate: e.target.value })}/></FormField><FormField label="Start time"><input type="time" className={inputClass} value={meetingForm.startTime} onChange={(e) => setMeetingForm({ ...meetingForm, startTime: e.target.value })}/></FormField><FormField label="Venue"><input className={inputClass} value={meetingForm.venue} onChange={(e) => setMeetingForm({ ...meetingForm, venue: e.target.value })}/></FormField><div className="sm:col-span-2 lg:col-span-4"><FormField label="Agenda"><textarea className={`${inputClass} min-h-20`} value={meetingForm.agenda} onChange={(e) => setMeetingForm({ ...meetingForm, agenda: e.target.value })} placeholder="Agenda items, quorum and decisions expected"/></FormField></div><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("meeting")}/></div></form>}<div className="space-y-3">{visible(activeMeetings, ["meetingNumber", "venue", "agenda"]).map((row) => { const present = attendance.rows.filter((entry) => String(entry.meetingId) === String(row.id || row.dbId) && entry.status === "Present").length; return <div key={row.id || row.dbId} className="rounded-xl border border-slate-100 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-[13px] font-black text-slate-900">{communityDate(row.meetingDate)} · {row.venue || "Venue not set"}</p><p className="mt-1 text-[10.5px] text-slate-500">{row.meetingNumber} · {row.startTime || "Time not set"} · {fmtGroup(row.groupId)}</p></div><div className="flex items-center gap-2"><CommunityStatus value={row.status}/>{row.status === "Scheduled" && <button type="button" onClick={() => markMeetingHeld(row)} className="rounded-lg border border-violet-200 px-2 py-1 text-[10px] font-bold text-violet-700">Mark held</button>}</div></div><div className="mt-3 grid gap-3 text-[11px] text-slate-600 sm:grid-cols-2"><div><p className="font-bold text-slate-700">Agenda</p><p className="mt-1 whitespace-pre-wrap">{row.agenda || "No agenda recorded"}</p></div><div><p className="font-bold text-slate-700">Attendance</p><p className="mt-1">{present} present of {activeMembers.length} active members. {row.minutes ? "Minutes recorded." : "Minutes pending."}</p></div></div></div>})}{!activeMeetings.length && <CommunityEmpty title="No meetings scheduled" detail="Create an agenda with date, time and venue; reminders and attendance can then be tracked."/>}</div></CommunitySection></div>}
 
-      {/* REPORTS TAB */}
-      {tab === "reports" && (
-        <div className="space-y-4">
-          {/* KPI tiles */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              ["Total Groups",    String(groups.rows.length),                       "#7C3AED"],
-              ["Total Members",   String(totalMembers),                             "#2563EB"],
-              ["Funds Collected", `TZS ${money(contributions.rows.filter(c=>c.status==="Paid").reduce((s,c)=>s+c.amount,0))}k`, "#16A34A"],
-              ["Pending",         `TZS ${money(contributions.rows.filter(c=>c.status==="Pending").reduce((s,c)=>s+c.amount,0))}k`, "#F59E0B"],
-            ].map(([l,v,col])=>(
-              <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center">
-                <p className="text-[10.5px] text-slate-400 uppercase tracking-wide mb-1">{l}</p>
-                <p className="text-[18px] font-bold" style={{color:col}}>{v}</p>
-              </div>
-            ))}
-          </div>
+    {tab === "projects" && <div className="space-y-4"><CommunitySection title="Projects, fundraising, budgets and expenses" subtitle="Track community initiatives from planning through completion" action={<button type="button" onClick={() => setShowForm("project")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> New project</button>}>{showForm === "project" && <form onSubmit={createProject} className="mb-4 grid gap-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Group" required><GroupSelect value={projectForm.groupId} onChange={(value) => setProjectForm({ ...projectForm, groupId: value })}/></FormField><FormField label="Project name" required><input className={inputClass} value={projectForm.name} onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}/></FormField><FormField label="Target amount (TZS)"><input type="number" min="0" className={inputClass} value={projectForm.targetAmount} onChange={(e) => setProjectForm({ ...projectForm, targetAmount: e.target.value })}/></FormField><FormField label="Start date"><input type="date" className={inputClass} value={projectForm.startDate} onChange={(e) => setProjectForm({ ...projectForm, startDate: e.target.value })}/></FormField><FormField label="End date"><input type="date" className={inputClass} value={projectForm.endDate} onChange={(e) => setProjectForm({ ...projectForm, endDate: e.target.value })}/></FormField><div className="sm:col-span-2 lg:col-span-3"><FormField label="Description"><textarea className={`${inputClass} min-h-20`} value={projectForm.description} onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}/></FormField></div><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("project")}/></div></form>}<div className="grid gap-3 md:grid-cols-2">{visible(activeProjects, ["name", "projectNumber", "description", "status"]).map((row) => <div key={row.id || row.dbId} className="rounded-xl border border-slate-100 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[13px] font-black text-slate-900">{row.name}</p><p className="text-[10.5px] text-slate-500">{row.projectNumber} · target {communityTzs(row.targetAmount)}</p></div><CommunityStatus value={row.status}/></div><p className="mt-3 text-[11px] leading-5 text-slate-600">{row.description || "No project description"}</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-indigo-500" style={{ width: `${Math.min(100, row.targetAmount ? fundraising.rows.filter((item) => String(item.projectId) === String(row.id || row.dbId)).reduce((sum, item) => sum + item.amount, 0) / row.targetAmount * 100 : 0)}%` }}/></div></div>)}{!activeProjects.length && <CommunityEmpty title="No projects registered" detail="Create a project to connect fundraising, budgets, expenses and asset outcomes."/>}</div></CommunitySection><CommunitySection title="Expense requests" subtitle="Approval workflow and payment tracking" action={<button type="button" onClick={() => setShowForm("expense")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> Request expense</button>}>{showForm === "expense" && <form onSubmit={createExpense} className="mb-4 grid gap-3 rounded-xl border border-rose-100 bg-rose-50/30 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Group" required><GroupSelect value={expenseForm.groupId} onChange={(value) => setExpenseForm({ ...expenseForm, groupId: value })}/></FormField><FormField label="Category"><input className={inputClass} value={expenseForm.category} onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}/></FormField><FormField label="Description" required><input className={inputClass} value={expenseForm.description} onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}/></FormField><FormField label="Amount (TZS)" required><input type="number" min="1" className={inputClass} value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}/></FormField><FormField label="Payment method"><select className={inputClass} value={expenseForm.paymentMethod} onChange={(e) => setExpenseForm({ ...expenseForm, paymentMethod: e.target.value })}>{COMMUNITY_PAYMENT_METHODS.map((type) => <option key={type}>{type}</option>)}</select></FormField><FormField label="Reference"><input className={inputClass} value={expenseForm.reference} onChange={(e) => setExpenseForm({ ...expenseForm, reference: e.target.value })}/></FormField><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("expense")}/></div></form>}<div className="overflow-x-auto rounded-xl border border-slate-100"><table className="w-full min-w-[700px] text-left text-[11.5px]"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr>{["Description", "Amount", "Date", "Status", "Action"].map((head) => <th key={head} className="px-3 py-3 font-bold">{head}</th>)}</tr></thead><tbody>{activeExpenses.map((row) => <tr key={row.id || row.dbId} className="border-t border-slate-100"><td className="px-3 py-3"><p className="font-bold text-slate-800">{row.description}</p><p className="text-[10px] text-slate-500">{row.category}</p></td><td className="px-3 py-3 font-mono text-rose-700">{communityTzs(row.amount)}</td><td className="px-3 py-3 text-slate-500">{communityDate(row.expenseDate)}</td><td className="px-3 py-3"><CommunityStatus value={row.status}/></td><td className="px-3 py-3">{row.status === "Pending Approval" && <button type="button" onClick={() => approveExpense(row)} className="rounded-lg border border-emerald-200 px-2 py-1 text-[10px] font-bold text-emerald-700">Approve</button>}</td></tr>)}</tbody></table>{!activeExpenses.length && <CommunityEmpty title="No expense requests" detail="Expense requests create an approval record before they can be approved or paid."/>}</div></CommunitySection><CommunitySection title="Assets register" subtitle="Community-owned assets and current value"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{assets.rows.filter((row) => !activeGroupId || String(row.groupId) === String(activeGroupId)).map((row) => <div key={row.id || row.dbId} className="rounded-xl border border-slate-100 p-3"><div className="flex items-start justify-between gap-2"><p className="text-[12px] font-bold text-slate-800">{row.name}</p><CommunityStatus value={row.status}/></div><p className="mt-1 text-[10px] text-slate-500">{row.assetCode} · {row.category || "Uncategorised"}</p><p className="mt-3 font-mono text-[12px] font-black text-indigo-700">{communityTzs(row.currentValue || row.acquisitionCost)}</p><p className="mt-1 text-[10px] text-slate-500">{row.location || "Location not set"}</p></div>)}{!assets.rows.length && <CommunityEmpty title="No assets registered" detail="Asset register records can be connected to the group’s finance and project outcomes."/>}</div></CommunitySection></div>}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Funds by Group BarChart */}
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-              <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Funds Collected by Group</h3>
-              {(() => {
-                const grpData = groups.rows.map((g,i)=>({
-                  name: g.name.length>14?g.name.slice(0,12)+"…":g.name,
-                  value: contributions.rows.filter(c=>c.groupId===g.id&&c.status==="Paid").reduce((s,c)=>s+c.amount,0),
-                  fill: ["#7C3AED","#2563EB","#16A34A","#D97706","#EF4444"][i%5],
-                })).filter(d=>d.value>0);
-                return grpData.length===0?<p className="text-slate-400 text-center py-6">No contributions</p>:(
-                  <ResponsiveContainer width="100%" height={160}>
-                    <BarChart data={grpData} margin={{left:0,right:10,top:0,bottom:0}}>
-                      <CartesianGrid vertical={false} stroke="#EEF1F4"/>
-                      <XAxis dataKey="name" tick={{fontSize:10}} axisLine={false} tickLine={false}/>
-                      <YAxis tick={{fontSize:10}} axisLine={false} tickLine={false}/>
-                      <Tooltip formatter={(v)=>[`TZS ${money(v)}k`,"Collected"]}/>
-                      <Bar dataKey="value" radius={[4,4,0,0]} maxBarSize={40}>
-                        {grpData.map((d,i)=><Cell key={i} fill={d.fill}/>)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                );
-              })()}
-            </div>
-            {/* Contribution status PieChart */}
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-              <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Contribution Status</h3>
-              {(() => {
-                const ctbStatus = [
-                  {name:"Paid",    value:contributions.rows.filter(c=>c.status==="Paid").length,    fill:"#16A34A"},
-                  {name:"Pending", value:contributions.rows.filter(c=>c.status==="Pending").length, fill:"#F59E0B"},
-                  {name:"Waived",  value:contributions.rows.filter(c=>c.status==="Waived").length,  fill:"#94A3B8"},
-                ].filter(d=>d.value>0);
-                return ctbStatus.length===0?<p className="text-slate-400 text-center py-6">No records</p>:(
-                  <div className="flex items-center gap-4">
-                    <ResponsiveContainer width="55%" height={150}>
-                      <RPieChart><Pie data={ctbStatus} dataKey="value" cx="50%" cy="50%" outerRadius={58} innerRadius={30}>
-                        {ctbStatus.map((d,i)=><Cell key={i} fill={d.fill}/>)}
-                      </Pie><Tooltip formatter={(v,n)=>[v+" records",n]}/></RPieChart>
-                    </ResponsiveContainer>
-                    <div className="flex-1 space-y-2">
-                      {ctbStatus.map(d=>(
-                        <div key={d.name} className="flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 text-[12px]"><span className="w-2.5 h-2.5 rounded-full" style={{background:d.fill}}/>{d.name}</span>
-                          <span className="text-[13px] font-bold" style={{color:d.fill}}>{d.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    {tab === "governance" && <div className="space-y-4"><CommunitySection title="Voting, elections and approvals" subtitle="Record resolutions and review the decision trail" action={<button type="button" onClick={() => setShowForm("vote")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> New vote / election</button>}>{showForm === "vote" && <form onSubmit={createVote} className="mb-4 grid gap-3 rounded-xl border border-violet-100 bg-violet-50/30 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Group" required><GroupSelect value={voteForm.groupId} onChange={(value) => setVoteForm({ ...voteForm, groupId: value })}/></FormField><FormField label="Title" required><input className={inputClass} value={voteForm.title} onChange={(e) => setVoteForm({ ...voteForm, title: e.target.value })}/></FormField><FormField label="Type"><select className={inputClass} value={voteForm.voteType} onChange={(e) => setVoteForm({ ...voteForm, voteType: e.target.value })}><option>Resolution</option><option>Election</option><option>Approval</option></select></FormField><FormField label="Quorum (%)"><input type="number" min="0" max="100" className={inputClass} value={voteForm.quorumPercent} onChange={(e) => setVoteForm({ ...voteForm, quorumPercent: e.target.value })}/></FormField><FormField label="Options (comma separated)"><input className={inputClass} value={voteForm.options} onChange={(e) => setVoteForm({ ...voteForm, options: e.target.value })}/></FormField><div className="sm:col-span-2 lg:col-span-3"><FormField label="Description"><textarea className={`${inputClass} min-h-20`} value={voteForm.description} onChange={(e) => setVoteForm({ ...voteForm, description: e.target.value })}/></FormField></div><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("vote")}/></div></form>}<div className="grid gap-3 md:grid-cols-2">{visible(votes.rows.filter((row) => !activeGroupId || String(row.groupId) === String(activeGroupId)), ["title", "description", "voteType", "status"]).map((row) => <div key={row.id || row.dbId} className="rounded-xl border border-slate-100 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[13px] font-black text-slate-900">{row.title}</p><p className="text-[10.5px] text-slate-500">{row.voteType} · quorum {row.quorumPercent}%</p></div><CommunityStatus value={row.status}/></div><p className="mt-3 text-[11px] leading-5 text-slate-600">{row.description || "No description"}</p><p className="mt-3 text-[10px] text-slate-500">Opened {communityDate(row.opensAt)} · {fmtGroup(row.groupId)}</p></div>)}{!votes.rows.length && <CommunityEmpty title="No votes or elections" detail="Create a resolution or election to keep governance decisions traceable."/>}</div></CommunitySection><CommunitySection title="Leadership and committees" subtitle="Assign group roles and maintain committee structures" action={<button type="button" onClick={() => setShowForm("committee")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> Add committee</button>}>{showForm === "committee" && <form onSubmit={createCommittee} className="mb-4 grid gap-3 rounded-xl border border-violet-100 bg-violet-50/30 p-4 sm:grid-cols-3"><FormField label="Group" required><GroupSelect value={committeeForm.groupId} onChange={(value) => setCommitteeForm({ ...committeeForm, groupId: value })}/></FormField><FormField label="Committee name" required><input className={inputClass} value={committeeForm.name} onChange={(e) => setCommitteeForm({ ...committeeForm, name: e.target.value })} placeholder="Loan committee"/></FormField><FormField label="Committee type"><select className={inputClass} value={committeeForm.committeeType} onChange={(e) => setCommitteeForm({ ...committeeForm, committeeType: e.target.value })}>{["Management", "Loan", "Welfare", "Audit", "Election"].map((type) => <option key={type}>{type}</option>)}</select></FormField><div className="sm:col-span-3"><FormActions onCancel={() => resetForm("committee")}/></div></form>}<div className="grid gap-3 md:grid-cols-2">{committees.rows.filter((row) => !activeGroupId || String(row.groupId) === String(activeGroupId)).map((row) => <div key={row.id || row.dbId} className="rounded-xl border border-slate-100 p-3"><div className="flex items-center justify-between gap-2"><div><p className="text-[12px] font-bold text-slate-800">{row.name}</p><p className="text-[10.5px] text-slate-500">{row.committeeType} · {fmtGroup(row.groupId)}</p></div><CommunityStatus value={row.status}/></div><p className="mt-2 text-[10.5px] text-slate-500">{committeeMembers.rows.filter((member) => String(member.committeeId) === String(row.id || row.dbId)).length} assigned members</p></div>)}{!committees.rows.length && <CommunityEmpty title="No committees configured" detail="Create loan, welfare, audit or election committees for group leadership accountability."/>}</div></CommunitySection><CommunitySection title="Approval history" subtitle="The approval ledger connects decisions back to their source records"><div className="space-y-2">{approvals.rows.filter((row) => !activeGroupId || String(row.groupId) === String(activeGroupId)).map((row) => <div key={row.id || row.dbId} className="flex flex-col gap-2 rounded-xl border border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[12px] font-bold text-slate-800">{row.action}</p><p className="text-[10.5px] text-slate-500">{row.entityType} · {communityDate(row.requestedAt)} · {fmtGroup(row.groupId)}</p></div><CommunityStatus value={row.status}/></div>)}{!approvals.rows.length && <CommunityEmpty title="No approval records" detail="Approval records are created when expense requests are submitted and when loan or welfare decisions are made."/>}</div></CommunitySection></div>}
+
+    {tab === "communications" && <div className="space-y-4"><CommunitySection title="Announcements and group messaging" subtitle="Create in-app announcements and retain message history" action={<button type="button" onClick={() => setShowForm("comms")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> Compose</button>}>{showForm === "comms" && <form onSubmit={createComms} className="mb-4 grid gap-3 rounded-xl border border-cyan-100 bg-cyan-50/30 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Message type"><select className={inputClass} value={commsForm.kind} onChange={(e) => setCommsForm({ ...commsForm, kind: e.target.value })}><option value="announcement">Announcement</option><option value="message">Message</option></select></FormField><FormField label="Group" required><GroupSelect value={commsForm.groupId} onChange={(value) => setCommsForm({ ...commsForm, groupId: value })}/></FormField><FormField label="Title"><input className={inputClass} value={commsForm.title} onChange={(e) => setCommsForm({ ...commsForm, title: e.target.value })}/></FormField><FormField label="Audience / channel"><select className={inputClass} value={commsForm.kind === "announcement" ? commsForm.audience : commsForm.channel} onChange={(e) => setCommsForm({ ...commsForm, ...(commsForm.kind === "announcement" ? { audience: e.target.value } : { channel: e.target.value }) })}>{(commsForm.kind === "announcement" ? ["All Members", "Leaders", "Treasurers", "Committee"] : ["In-app", "SMS-ready", "WhatsApp-ready", "Email-ready"]).map((type) => <option key={type}>{type}</option>)}</select></FormField><div className="sm:col-span-2 lg:col-span-4"><FormField label={commsForm.kind === "message" ? "Message" : "Announcement body"} required><textarea className={`${inputClass} min-h-24`} value={commsForm.body} onChange={(e) => setCommsForm({ ...commsForm, body: e.target.value })}/></FormField></div><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("comms")}/></div></form>}<div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2">{announcements.rows.filter((row) => !activeGroupId || String(row.groupId) === String(activeGroupId)).map((row) => <div key={row.id || row.dbId} className="rounded-xl border border-slate-100 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[13px] font-black text-slate-900">{row.title}</p><p className="text-[10px] text-slate-500">{row.audience} · {communityDate(row.publishedAt)}</p></div><Megaphone size={16} className="text-cyan-600"/></div><p className="mt-3 whitespace-pre-wrap text-[11px] leading-5 text-slate-600">{row.body}</p></div>)}{!announcements.rows.length && <CommunityEmpty title="No announcements" detail="Create an announcement to write to the notification history."/>}</div><div className="space-y-2">{messages.rows.filter((row) => !activeGroupId || String(row.groupId) === String(activeGroupId)).map((row) => <div key={row.id || row.dbId} className="rounded-xl border border-slate-100 p-4"><div className="flex items-center justify-between gap-3"><p className="text-[12px] font-bold text-slate-800">{row.subject || "Group message"}</p><CommunityStatus value={row.status}/></div><p className="mt-2 whitespace-pre-wrap text-[11px] leading-5 text-slate-600">{row.body}</p><p className="mt-2 text-[10px] text-slate-400">{row.channel} · {communityDate(row.createdAt)}</p></div>)}{!messages.rows.length && <CommunityEmpty title="No messages" detail="Compose a message to retain the group communication history."/>}</div></div></CommunitySection></div>}
+
+    {tab === "documents" && <div className="space-y-4"><CommunitySection title="Documents and events" subtitle="Constitution, registers, minutes, evidence and community calendar" action={<button type="button" onClick={() => setShowForm("document")} className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold text-white"><Plus size={14}/> Add record</button>}>{showForm === "document" && <form onSubmit={createDocumentOrEvent} className="mb-4 grid gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-2 lg:grid-cols-4"><FormField label="Record type"><select className={inputClass} value={documentForm.kind} onChange={(e) => setDocumentForm({ ...documentForm, kind: e.target.value })}><option value="document">Document</option><option value="event">Event</option></select></FormField><FormField label="Group" required><GroupSelect value={documentForm.groupId} onChange={(value) => setDocumentForm({ ...documentForm, groupId: value })}/></FormField><FormField label="Title" required><input className={inputClass} value={documentForm.title} onChange={(e) => setDocumentForm({ ...documentForm, title: e.target.value })}/></FormField>{documentForm.kind === "document" ? <><FormField label="Document type"><select className={inputClass} value={documentForm.documentType} onChange={(e) => setDocumentForm({ ...documentForm, documentType: e.target.value })}>{["Constitution", "Minutes", "Member Register", "KYC Evidence", "Receipt", "Statement", "Other"].map((type) => <option key={type}>{type}</option>)}</select></FormField><FormField label="File URL"><input type="url" className={inputClass} value={documentForm.fileUrl} onChange={(e) => setDocumentForm({ ...documentForm, fileUrl: e.target.value })} placeholder="S3 or document URL"/></FormField><FormField label="Expiry date"><input type="date" className={inputClass} value={documentForm.expiresAt} onChange={(e) => setDocumentForm({ ...documentForm, expiresAt: e.target.value })}/></FormField></> : <><FormField label="Event type"><input className={inputClass} value={documentForm.eventType} onChange={(e) => setDocumentForm({ ...documentForm, eventType: e.target.value })}/></FormField><FormField label="Venue"><input className={inputClass} value={documentForm.venue} onChange={(e) => setDocumentForm({ ...documentForm, venue: e.target.value })}/></FormField><FormField label="Start time"><input type="time" className={inputClass} value={documentForm.startTime} onChange={(e) => setDocumentForm({ ...documentForm, startTime: e.target.value })}/></FormField></>}<FormField label={documentForm.kind === "document" ? "Document date" : "Event date"}><input type="date" className={inputClass} value={documentForm.date} onChange={(e) => setDocumentForm({ ...documentForm, date: e.target.value })}/></FormField><div className="sm:col-span-2 lg:col-span-4"><FormActions onCancel={() => resetForm("document")}/></div></form>}<div className="grid gap-4 lg:grid-cols-2"><div><h3 className="mb-2 text-[12px] font-black uppercase tracking-wide text-slate-500">Documents</h3><div className="space-y-2">{documents.rows.filter((row) => !activeGroupId || String(row.groupId) === String(activeGroupId)).map((row) => <div key={row.id || row.dbId} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-3"><div><p className="text-[12px] font-bold text-slate-800">{row.title}</p><p className="text-[10.5px] text-slate-500">{row.documentType} · {communityDate(row.documentDate)}{row.expiresAt ? ` · expires ${communityDate(row.expiresAt)}` : ""}</p></div>{row.fileUrl ? <a href={row.fileUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold text-violet-700">Open</a> : <CommunityStatus value={row.status}/>}</div>)}{!documents.rows.length && <CommunityEmpty title="No documents" detail="Store constitutions, KYC evidence, minutes, receipts and statements against the group."/>}</div></div><div><h3 className="mb-2 text-[12px] font-black uppercase tracking-wide text-slate-500">Events</h3><div className="space-y-2">{events.rows.filter((row) => !activeGroupId || String(row.groupId) === String(activeGroupId)).map((row) => <div key={row.id || row.dbId} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-3"><div><p className="text-[12px] font-bold text-slate-800">{row.title}</p><p className="text-[10.5px] text-slate-500">{row.eventType} · {communityDate(row.eventDate)} · {row.venue || "Venue not set"}</p></div><CommunityStatus value={row.status}/></div>)}{!events.rows.length && <CommunityEmpty title="No events" detail="Schedule training, elections, fundraising drives and other group events."/>}</div></div></div></CommunitySection></div>}
+
+    {tab === "reports" && <div className="space-y-4"><div className="grid grid-cols-2 gap-3 lg:grid-cols-4"><CommunityKpi label="Income" value={communityTzs(paidContributions + savingsDeposits + activeIncome.reduce((sum, row) => sum + row.amount, 0))} hint="Contributions, savings and other income" icon={TrendingUp} tone="emerald"/><CommunityKpi label="Outflows" value={communityTzs(welfarePaid + expenseTotal + loanPortfolio + savingsWithdrawals)} hint="Welfare, expenses, loans and withdrawals" icon={TrendingDown} tone="rose"/><CommunityKpi label="Net movement" value={communityTzs(totalFund)} hint="Calculated group position" icon={Scale} tone="violet"/><CommunityKpi label="Repayments" value={communityTzs(repayments.rows.filter((row) => !activeGroupId || activeLoans.some((loan) => String(loan.id || loan.dbId) === String(row.loanId))).reduce((sum, row) => sum + row.amount, 0))} hint="Confirmed loan receipts" icon={ReceiptText} tone="navy"/></div><CommunitySection title="Financial statement and member balances" subtitle="Export a TZS statement for the selected group"><div className="mb-4 flex flex-wrap gap-2"><button type="button" onClick={exportStatement} className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700"><Download size={14}/> Export contribution statement</button><button type="button" onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600"><Printer size={14}/> Print report</button></div><div className="grid gap-4 lg:grid-cols-2"><div className="rounded-xl bg-slate-50 p-4"><h3 className="text-[12px] font-black text-slate-800">Statement of funds</h3><div className="mt-3 space-y-2 text-[11px]"><div className="flex justify-between"><span className="text-slate-500">Paid contributions</span><strong>{communityTzs(paidContributions)}</strong></div><div className="flex justify-between"><span className="text-slate-500">Savings deposits and dividends</span><strong>{communityTzs(savingsDeposits)}</strong></div><div className="flex justify-between"><span className="text-slate-500">Other income</span><strong>{communityTzs(activeIncome.reduce((sum, row) => sum + row.amount, 0))}</strong></div><div className="flex justify-between border-t border-slate-200 pt-2"><span className="text-slate-500">Welfare paid / expenses</span><strong className="text-rose-700">−{communityTzs(welfarePaid + expenseTotal + savingsWithdrawals)}</strong></div><div className="flex justify-between border-t border-slate-200 pt-2 text-[13px]"><span className="font-black text-slate-800">Net group funds</span><strong className="text-violet-700">{communityTzs(totalFund)}</strong></div></div></div><div className="overflow-x-auto rounded-xl border border-slate-100"><table className="w-full min-w-[480px] text-left text-[11px]"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr><th className="px-3 py-2.5">Member</th><th className="px-3 py-2.5">Contributions</th><th className="px-3 py-2.5">Savings</th><th className="px-3 py-2.5">Loan due</th></tr></thead><tbody>{activeMembers.map((member) => { const c = activeContributions.filter((row) => String(row.memberId) === String(member.id || member.dbId) && row.status === "Paid").reduce((sum, row) => sum + row.amount, 0); const s = activeSavings.filter((row) => String(row.memberId) === String(member.id || member.dbId)).reduce((sum, row) => sum + (row.transactionType === "Withdrawal" ? -row.amount : row.amount), 0); const l = activeLoans.filter((row) => String(row.memberId) === String(member.id || member.dbId)).reduce((sum, row) => sum + row.outstandingPrincipal + row.outstandingInterest, 0); return <tr key={member.id || member.dbId} className="border-t border-slate-100"><td className="px-3 py-2.5 font-bold text-slate-800">{member.fullName}</td><td className="px-3 py-2.5 font-mono">{communityTzs(c)}</td><td className="px-3 py-2.5 font-mono text-emerald-700">{communityTzs(s)}</td><td className="px-3 py-2.5 font-mono text-amber-700">{communityTzs(l)}</td></tr>; })}</tbody></table>{!activeMembers.length && <CommunityEmpty title="No member balances" detail="Member balances are calculated from confirmed contributions, savings and loan rows."/>}</div></div></CommunitySection></div>}
+
+    {tab === "activity" && <CommunitySection title="Community Groups audit trail" subtitle="Immutable operational history for group, member, finance and approval actions"><div className="space-y-2">{visible(activity.rows, ["action", "entityType", "actorName"]).map((row) => <div key={row.id || row.dbId} className="flex flex-col gap-2 rounded-xl border border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[12px] font-bold text-slate-800">{row.action}</p><p className="text-[10.5px] text-slate-500">{row.entityType} · {row.actorName} · {fmtGroup(row.groupId)}</p></div><p className="text-[10px] font-mono text-slate-400">{communityDate(row.createdAt)}</p></div>)}{!activity.rows.length && <CommunityEmpty title="No audit events" detail="Confirmed live actions write to the dedicated Community Groups audit table and the shared activity stream."/>}</div></CommunitySection>}
+  </div>;
 }
 
 
@@ -47123,7 +47234,7 @@ const HTL_BOOKINGS_SEED = [
   { id:"BKG-004", guest:"John Smith",          room:"102", type:"Standard",   checkIn:"2026-07-10", checkOut:"2026-07-14", nights:4, total:380, paid:380, status:"Checked Out",source:"Expedia" },
 ];
 
-function HotelManagementModule({ currentUser, company }) {
+function LegacyHotelManagementModule({ currentUser, company }) {
   const [tab, setTab]         = useState("overview");
   const [checkInForm, setCheckInForm]   = useState({ guestName:"", email:"", phone:"", nationality:"", roomId:"", checkOut:"", adults:1, children:0, purpose:"Leisure", paymentMethod:"Card", specialRequests:"" });
   const [showCheckIn, setShowCheckIn]   = useState(false);
@@ -47193,7 +47304,7 @@ function HotelManagementModule({ currentUser, company }) {
     <div className="space-y-4">
       {/* HEADER */}
       <div className="rounded-2xl px-6 py-5 relative overflow-hidden" style={{background:`linear-gradient(135deg,#0F172A 0%,${HTL_BLUE} 45%,#1e40af 100%)`}}>
-        <div className="absolute inset-0 opacity-5" style={{backgroundImage:"url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><path d=%22M0 30h60M30 0v60%22 stroke=%22white%22 stroke-width=%221%22 fill=%22none%22/></svg>')"}}/> 
+        <div className="absolute inset-0 opacity-5" style={{backgroundImage:"url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><path d=%22M0 30h60M30 0v60%22 stroke=%22white%22 stroke-width=%221%22 fill=%22none%22/></svg>')"}}/>
         <div className="relative flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1"><Hotel size={22} className="text-white"/><h1 className="text-[20px] font-bold text-white">{company?.name||"Hotel"} Property Management</h1></div>
@@ -47666,379 +47777,77 @@ function HotelManagementModule({ currentUser, company }) {
 }
 
 
-function FleetManagementModule({ currentUser, company, onVehiclesLoad }) {
-  const [tab, setTab] = useState("overview");
-  const vehicles    = useCompanyTable("flt_vehicles",    FLT_VEHICLES_SEED,    { mapRow: r => r });
-  useEffect(() => { if (onVehiclesLoad) onVehiclesLoad(vehicles.rows); }, [vehicles.rows, onVehiclesLoad]);
-  const trips       = useCompanyTable("flt_trips",       FLT_TRIPS_SEED,       { mapRow: r => r });
-  const maintenance = useCompanyTable("flt_maintenance", FLT_MAINTENANCE_SEED, { mapRow: r => r });
-
-  const FLT_BLUE = "#0F172A";
-  const FLT_GOLD = "#EAB308";
-  const TABS = [
-    { id:"overview",  label:"Fleet Overview", icon: LayoutDashboard },
-    { id:"vehicles",  label:"Vehicles",       icon: Car },
-    { id:"trips",     label:"Trip Log",       icon: MapPin },
-    { id:"maintenance",label:"Maintenance",    icon: Wrench },
-  ];
-
-  const activeVeh    = vehicles.rows.filter(v=>v.status==="Active").length;
-  const totalKm      = trips.rows.reduce((s,t)=>s+t.distance,0);
-  const totalFuel    = trips.rows.reduce((s,t)=>s+t.fuelUsed,0);
-  const fuelCost     = trips.rows.reduce((s,t)=>s+t.cost,0);
-  const maintCost    = maintenance.rows.reduce((s,m)=>s+m.cost,0);
-  const dueService   = vehicles.rows.filter(v=>v.mileage >= v.nextService - 2000);
-  const expIns       = vehicles.rows.filter(v=>new Date(v.insurance) < new Date(Date.now()+90*24*60*60*1000));
-
-  const VStatusChip = ({s}) => {
-    const cfg = {Active:["#DCFCE7","#16A34A"],Available:["#DBEAFE","#1E40AF"],Service:["#FEF3C7","#D97706"],Inactive:["#FEE2E2","#EF4444"],"In Progress":["#DBEAFE","#1E40AF"],Completed:["#DCFCE7","#16A34A"]};
-    const [bg,col]=cfg[s]||["#F3F4F6","#6B7280"];
-    return <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full" style={{background:bg,color:col}}>{s}</span>;
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="rounded-2xl px-6 py-5" style={{background:"linear-gradient(135deg,#0F172A 0%,#1E293B 50%,#334155 100%)"}}>
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div><div className="flex items-center gap-2 mb-1"><Bus size={22} className="text-[#EAB308]"/><h1 className="text-[20px] font-bold text-white">Fleet Management</h1></div><p className="text-[12px]" style={{color:"rgba(255,255,255,.55)"}}>Vehicles · Trip Logs · Fuel Tracking · Maintenance · Insurance</p></div>
-          <div className="flex gap-2">
-            {dueService.length>0&&<div className="bg-yellow-500 text-yellow-900 px-3 py-2 rounded-xl text-[12px] font-bold">{dueService.length} Service Due</div>}
-            {expIns.length>0&&<div className="bg-red-500 text-white px-3 py-2 rounded-xl text-[12px] font-bold">{expIns.length} Insurance Expiring</div>}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-0.5 bg-white rounded-xl p-1 border border-slate-200">
-        {TABS.map(t=>{const I=t.icon;return(<button key={t.id} onClick={()=>setTab(t.id)} className={"flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium transition-all "+(tab===t.id?"text-white shadow-sm":"text-slate-500 hover:bg-slate-50")} style={{background:tab===t.id?FLT_BLUE:"transparent"}}><I size={13}/>{t.label}</button>);})}
-      </div>
-
-      {tab==="overview" && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[{l:"Fleet Size",v:vehicles.rows.length,sub:activeVeh+" active",c:"#0F172A",I:Car},{l:"Total KM",v:totalKm.toLocaleString(),sub:"All trips",c:"#2563EB",I:MapPin},{l:"Fuel Cost",v:"TZS "+money(fuelCost)+"k",sub:totalFuel+"L used",c:FLT_GOLD,I:Gauge},{l:"Maintenance",v:"TZS "+money(maintCost)+"k",sub:"YTD spend",c:"#EF4444",I:Wrench}].map(k=>(
-              <div key={k.l} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4"><div className="flex items-start justify-between"><div><p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{k.l}</p><p className="text-[22px] font-bold mt-1 text-[#111827]">{k.v}</p><p className="text-[11.5px] mt-0.5" style={{color:k.c}}>{k.sub}</p></div><div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{background:k.c+"18"}}><k.I size={18} style={{color:k.c}}/></div></div></div>
-            ))}
-          </div>
-
-          {/* ── Fleet Analytics Charts ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Monthly trip distance trend */}
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-              <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Monthly Distance (km)</h3>
-              {(() => {
-                const months = Array.from({length:6},(_,i)=>{
-                  const d = new Date(TODAY.getFullYear(), TODAY.getMonth()-5+i, 1);
-                  const key = d.toISOString().slice(0,7);
-                  const label = d.toLocaleString("default",{month:"short"});
-                  const dist = trips.rows.filter(t=>(t.date||"").startsWith(key)).reduce((s,t)=>s+t.distance,0);
-                  const fuel = trips.rows.filter(t=>(t.date||"").startsWith(key)).reduce((s,t)=>s+t.fuelUsed,0);
-                  return {month:label, distance:dist, fuel:Math.round(fuel)};
-                });
-                return (
-                  <ResponsiveContainer width="100%" height={150}>
-                    <ComposedChart data={months} margin={{left:-10,right:4,top:0,bottom:0}}>
-                      <CartesianGrid vertical={false} stroke="#F3F4F6"/>
-                      <XAxis dataKey="month" tick={{fontSize:10}} axisLine={false} tickLine={false}/>
-                      <YAxis yAxisId="left"  tick={{fontSize:10}} axisLine={false} tickLine={false}/>
-                      <YAxis yAxisId="right" orientation="right" tick={{fontSize:10}} axisLine={false} tickLine={false}/>
-                      <Tooltip formatter={(v,n)=>[n==="distance"?v+" km":v+"L",n==="distance"?"Distance":"Fuel"]}/>
-                      <Area yAxisId="left"  type="monotone" dataKey="distance" stroke="#0F172A" fill="#0F172A18" strokeWidth={2}/>
-                      <Line yAxisId="right" type="monotone" dataKey="fuel"     stroke="#EAB308" strokeWidth={2} dot={{r:3,fill:"#EAB308"}} strokeDasharray="4 2"/>
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                );
-              })()}
-            </div>
-
-            {/* Vehicle status PieChart */}
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-              <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Fleet Status</h3>
-              {(() => {
-                const STATUS_COLORS = {Active:"#16A34A", "In Transit":"#2563EB", Maintenance:"#F59E0B", Inactive:"#EF4444"};
-                const statusData = Object.entries(
-                  vehicles.rows.reduce((m,v)=>({...m,[v.status]:(m[v.status]||0)+1}),{})
-                ).map(([name,value])=>({name,value,fill:STATUS_COLORS[name]||"#6B7280"}));
-                
-                return (
-                  <div className="flex gap-4 items-center">
-                    <ResponsiveContainer width="60%" height={150}>
-                      <RPieChart>
-                        <Pie data={statusData} dataKey="value" cx="50%" cy="50%" outerRadius={60} innerRadius={35}>
-                          {statusData.map((d,i)=><Cell key={i} fill={d.fill}/>)}
-                        </Pie>
-                        <Tooltip formatter={(v,n)=>[v+" vehicles",n]}/>
-                      </RPieChart>
-                    </ResponsiveContainer>
-                    <div className="flex-1 space-y-2">
-                      {statusData.map(d=>(
-                        <div key={d.name} className="flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 text-[12px] text-slate-600"><span className="w-2.5 h-2.5 rounded-full" style={{background:d.fill}}/>{d.name}</span>
-                          <span className="text-[13px] font-bold" style={{color:d.fill}}>{d.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-
-          {dueService.length>0&&<div className="bg-yellow-50er-yellow-200 rounded-xl p-4"><p className="text-[13px] font-semibold text-yellow-800 mb-2">⚠ Service Due Soon</p>{dueService.map(v=><p key={v.id} className="text-[12px] text-yellow-700">• {v.reg} ({v.make} {v.model}) — {v.mileage.toLocaleString()}km / {v.nextService.toLocaleString()}km service</p>)}</div>}
-        </div>
-      )}
-
-      {tab==="vehicles" && (
-        <div className="space-y-3">
-          <div className="flex justify-end gap-2 pb-1">
-            <button onClick={()=>downloadCSV("fleet-vehicles",vehicles.rows.map(v=>({
-              Reg:v.reg||"",Make:v.make||"",Model:v.model||"",Year:v.year||"",
-              Type:v.type||"",Driver:v.driver||"",Status:v.status||"",
-              Mileage:v.mileage||0,NextService:v.nextService||0,
-              Insurance:v.insurance||""
-            })),[{key:"Reg",label:"Reg"},{key:"Make",label:"Make"},{key:"Model",label:"Model"},
-              {key:"Year",label:"Year"},{key:"Type",label:"Type"},{key:"Driver",label:"Driver"},
-              {key:"Status",label:"Status"},{key:"Mileage",label:"Mileage (km)"},
-              {key:"NextService",label:"Next Service (km)"},{key:"Insurance",label:"Insurance"}])}
-              className="flex items-center gap-1.5 text-[12px] font-semibold text-[#16A34A] border border-[#16A34A]/25 bg-[#F0FDF4] px-3 py-1.5 rounded-lg">
-              <Download size={12}/> CSV Fleet Register
-            </button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {vehicles.rows.map(v => {
-              const kmLeft = v.nextService - v.mileage;
-              const pct    = Math.min(100, v.mileage / v.nextService * 100);
-              const insExp = new Date(v.insurance) < new Date(Date.now()+90*24*60*60*1000);
-              return (
-                <div key={v.id} className={"bg-white rounded-xl border shadow-sm p-4 "+(v.status==="Service"?"border-yellow-200":"border-slate-200/80")}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div><p className="text-[16px] font-bold text-[#111827]">{v.reg}</p><p className="text-[12px] text-slate-400">{v.year} {v.make} {v.model}</p></div>
-                    <VStatusChip s={v.status}/>
-                  </div>
-                  <div className="space-y-1.5 mb-3">
-                    {[["Driver",v.driver],["Type",v.type],["Fuel",v.fuel],["Mileage",v.mileage.toLocaleString()+"km"],["Insurance",v.insurance+(insExp?" ⚠":"")]].map(([l,val])=>(
-                      <div key={l} className="flex justify-between"><span className="text-[11.5px] text-slate-400">{l}</span><span className={"text-[11.5px] font-medium "+(l==="Insurance"&&insExp?"text-red-500":"text-[#111827]")}>{val}</span></div>
-                    ))}
-                  </div>
-                  <div><p className="text-[10.5px] text-slate-400 mb-1">Next service: {v.nextService.toLocaleString()}km ({kmLeft>0?kmLeft.toLocaleString()+"km left":"OVERDUE"})</p><div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all" style={{width:pct+"%",background:pct>95?"#EF4444":pct>80?"#F59E0B":"#16A34A"}}/></div></div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {tab==="trips" && (
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p className="text-[13.5px] font-semibold text-[#111827]">Trip Log</p><button onClick={()=>notify("Log new trip")} className="flex items-center gap-1 text-[12px] font-semibold text-white px-3 py-2 rounded-xl" style={{background:FLT_BLUE}}><Plus size={12}/>Log Trip</button></div>
-          <table className="w-full text-[12.5px]">
-            <thead><tr className="border-b border-slate-100 bg-slate-50">{["Vehicle","Driver","Purpose","Start","End","Distance","Fuel Used","Cost","Status"].map(h=><th key={h} className="px-3 py-3 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-            <tbody>{trips.rows.map(t=>(
-              <tr key={t.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                <td className="px-3 py-3 font-mono text-[11.5px] font-semibold" style={{color:FLT_BLUE}}>{t.vehicle}</td>
-                <td className="px-3 py-3 font-medium text-[#111827]">{t.driver}</td>
-                <td className="px-3 py-3 text-slate-500 max-w-[150px] truncate">{t.purpose}</td>
-                <td className="px-3 py-3 font-mono text-[11px] text-slate-400">{t.start}</td>
-                <td className="px-3 py-3 font-mono text-[11px] text-slate-400">{t.end||"—"}</td>
-                <td className="px-3 py-3 font-bold text-[#111827]">{t.distance?t.distance+"km":"—"}</td>
-                <td className="px-3 py-3 text-slate-500">{t.fuelUsed?t.fuelUsed+"L":"—"}</td>
-                <td className="px-3 py-3 font-mono font-bold" style={{color:FLT_GOLD}}>TZS {money(t.cost)}k</td>
-                <td className="px-3 py-3"><VStatusChip s={t.status}/></td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-      )}
-
-      {tab==="maintenance" && (
-        <div className="space-y-3">
-          <div className="flex justify-end"><button onClick={()=>notify("Log maintenance record")} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:FLT_BLUE}}><Wrench size={13}/>Log Maintenance</button></div>
-          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <table className="w-full text-[12.5px]">
-              <thead><tr className="border-b border-slate-100 bg-slate-50">{["Vehicle","Type","Workshop","Mileage","Date","Cost","Status"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{maintenance.rows.map(m=>(
-                <tr key={m.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-mono text-[11.5px] font-semibold" style={{color:FLT_BLUE}}>{m.vehicle}</td>
-                  <td className="px-4 py-3 font-medium text-[#111827]">{m.type}</td>
-                  <td className="px-4 py-3 text-slate-500">{m.workshop}</td>
-                  <td className="px-4 py-3 font-mono text-slate-500">{m.mileageAtService?.toLocaleString()}km</td>
-                  <td className="px-4 py-3 font-mono text-[11.5px] text-slate-400">{m.date}</td>
-                  <td className="px-4 py-3 font-mono font-bold text-[#EF4444]">TZS {money(m.cost)}k</td>
-                  <td className="px-4 py-3"><VStatusChip s={m.status}/></td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ── ANALYTICS TAB ── */}
-      {tab === "analytics" && (() => {
-        const perVeh = vehicles.rows.map(v=>{
-          const vTrips = trips.rows.filter(t=>t.vehicleId===v.id||t.vehicle===v.reg);
-          const km     = vTrips.reduce((s,t)=>s+(t.distance||0),0);
-          const cost   = vTrips.reduce((s,t)=>s+(t.cost||0),0);
-          const fuel   = vTrips.reduce((s,t)=>s+(t.fuelUsed||0),0);
-          return {name:v.reg,km:Math.round(km),cost:Math.round(cost),fuel:Math.round(fuel),
-            cpk:km>0?+(cost/km).toFixed(1):0};
-        }).filter(v=>v.km>0).sort((a,b)=>b.cost-a.cost).slice(0,6);
-
-        const maintByMonth = maintenance.rows.reduce((acc,rec)=>{
-          const mo=(rec.date||"").slice(0,7);
-          if(mo) acc[mo]=(acc[mo]||0)+(rec.cost||0);
-          return acc;
-        },{});
-        const maintTrend = Object.entries(maintByMonth)
-          .sort((a,b)=>a[0].localeCompare(b[0])).slice(-6)
-          .map(([mo,cost])=>({mo:mo.slice(5)+"'"+mo.slice(2,4),cost}));
-
-        const totalCost = fuelCost + maintCost;
-        return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {[
-                ["Total Fleet Cost",`TZS ${money(Math.round(totalCost/1000))}k`,"#0F172A"],
-                ["Fuel Cost",       `TZS ${money(Math.round(fuelCost/1000))}k`, "#EF4444"],
-                ["Maintenance",     `TZS ${money(Math.round(maintCost/1000))}k`,"#F59E0B"],
-                ["Total KM",        `${money(Math.round(totalKm))} km`,          "#16A34A"],
-              ].map(([l,v,col])=>(
-                <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">{l}</p>
-                  <p className="text-[18px] font-black" style={{color:col}}>{v}</p>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-                <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Operating Cost by Vehicle (TZS)</h3>
-                {perVeh.length===0?<p className="text-slate-400 text-center py-6">No trip data yet</p>:(
-                  <ResponsiveContainer width="100%" height={155}>
-                    <BarChart data={perVeh} layout="vertical" margin={{left:5,right:24,top:0,bottom:0}}>
-                      <CartesianGrid vertical={false} stroke="#EEF1F4"/>
-                      <XAxis type="number" tick={{fontSize:9}} axisLine={false} tickLine={false}/>
-                      <YAxis dataKey="name" type="category" tick={{fontSize:10}} axisLine={false} tickLine={false} width={60}/>
-                      <Tooltip formatter={(v)=>[`TZS ${money(v)}`,"Cost"]}/>
-                      <Bar dataKey="cost" fill="#0F172A" radius={[0,4,4,0]} maxBarSize={16}/>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-                <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Maintenance Cost Trend</h3>
-                {maintTrend.length===0?<p className="text-slate-400 text-center py-6">No records yet</p>:(
-                  <ResponsiveContainer width="100%" height={155}>
-                    <AreaChart data={maintTrend} margin={{left:0,right:10,top:0,bottom:0}}>
-                      <CartesianGrid vertical={false} stroke="#EEF1F4"/>
-                      <XAxis dataKey="mo" tick={{fontSize:10}} axisLine={false} tickLine={false}/>
-                      <YAxis tick={{fontSize:9}} axisLine={false} tickLine={false}
-                        tickFormatter={v=>v>=1000?`${Math.round(v/1000)}k`:v}/>
-                      <Tooltip formatter={(v)=>[`TZS ${money(v)}`,"Maintenance"]}/>
-                      <Area type="monotone" dataKey="cost" fill="#FEF3C7" stroke="#EAB308" strokeWidth={2}/>
-                    </AreaChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-            {perVeh.length>0&&(
-              <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-100 bg-[#0F172A]">
-                  <p className="text-[12.5px] font-bold text-white">Efficiency — Cost per KM by Vehicle</p>
-                </div>
-                <table className="w-full text-[12.5px]">
-                  <thead><tr className="border-b border-slate-100 bg-slate-50">
-                    {["Vehicle","KM Driven","Fuel (L)","Trip Cost","Cost/KM"].map(h=>(
-                      <th key={h} className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-slate-400">{h}</th>
-                    ))}
-                  </tr></thead>
-                  <tbody>
-                    {perVeh.map((v,i)=>(
-                      <tr key={v.name} className={i%2===0?"bg-white":"bg-slate-50/60"}>
-                        <td className="px-4 py-2.5 font-bold text-[#111827]">{v.name}</td>
-                        <td className="px-4 py-2.5 font-mono">{money(v.km)} km</td>
-                        <td className="px-4 py-2.5 font-mono">{money(v.fuel)} L</td>
-                        <td className="px-4 py-2.5 font-mono font-bold">TZS {money(v.cost)}</td>
-                        <td className="px-4 py-2.5 font-bold font-mono" style={{color:v.cpk>50?"#EF4444":v.cpk>30?"#F59E0B":"#16A34A"}}>
-                          {v.cpk} TZS/km
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        );
-      })()}
-    </div>
-  );
+function HotelManagementModule({ currentUser }) {
+  const rpc = useCallback(async (procedure, payload = {}) => {
+    if (!IS_CONFIGURED || DEMO_OVERRIDE) {
+      throw new Error("Hospitality workflows require an authenticated Smart Manager database session.");
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      throw new Error("You appear to be offline. Reconnect before submitting a hospitality workflow.");
+    }
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`, {
+      method: "POST",
+      headers: { ...authHeaders(), Prefer: "return=representation" },
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      const error = new Error(body?.message || body?.hint || body?.details || `Hospitality request failed: ${response.status}`);
+      error.status = response.status;
+      error.code = body?.code;
+      throw error;
+    }
+    return body;
+  }, []);
+  return <HospitalityWorkspace rpc={rpc} configured={IS_CONFIGURED && !DEMO_OVERRIDE} currentUser={currentUser} />;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// BANKING & MICROFINANCE INSTITUTION MODULE
-// Full-spectrum money institution management:
-// Accounts · Loans (full lifecycle) · Savings · Deposits
-// PAR Monitoring · Interest Calculator · KYC · Collateral
-// Teller Operations · Reports & MIS
-// ═══════════════════════════════════════════════════════════════════════════
+function FleetManagementModule({ currentUser }) {
+  const api = useCallback(async (path, init = {}) => {
+    const response = await fetch(path, { ...init, headers: { ...authHeaders(), ...(init.headers || {}) } });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(body?.error || body?.message || `Fleet request failed: ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+    return body;
+  }, []);
+  return <FleetWorkspace api={api} currentUser={currentUser} />;
+}
 
-// ── Seed Data ─────────────────────────────────────────────────────────────
-const BNK_ACCOUNTS_SEED = [
-  { id:"ACC-001001", memberId:"MBR-B001", name:"Amina Hassan",       type:"Savings",       balance:4820,  status:"Active",   openDate:"2023-01-15", branch:"Main", acctNo:"1001-0001-S", interest:3.5  },
-  { id:"ACC-001002", memberId:"MBR-B002", name:"John Mwangi",        type:"Current",       balance:12500, status:"Active",   openDate:"2022-06-20", branch:"Main", acctNo:"1001-0002-C", interest:0    },
-  { id:"ACC-001003", memberId:"MBR-B003", name:"Fatuma Juma",        type:"Savings",       balance:8900,  status:"Active",   openDate:"2023-03-01", branch:"North",acctNo:"1001-0003-S", interest:3.5  },
-  { id:"ACC-001004", memberId:"MBR-B004", name:"Peter Kamau Ltd",    type:"Business",      balance:45000, status:"Active",   openDate:"2021-11-10", branch:"Main", acctNo:"1001-0004-B", interest:1.0  },
-  { id:"ACC-001005", memberId:"MBR-B005", name:"Grace Mwenda",       type:"Fixed Deposit", balance:25000, status:"Active",   openDate:"2024-01-01", branch:"Main", acctNo:"1001-0005-F", interest:8.5  },
-  { id:"ACC-001006", memberId:"MBR-B006", name:"David Odhiambo",     type:"Savings",       balance:320,   status:"Dormant",  openDate:"2020-05-30", branch:"South",acctNo:"1001-0006-S", interest:3.5  },
-  { id:"ACC-001007", memberId:"MBR-B007", name:"Halima Abdallah",    type:"Savings",       balance:7650,  status:"Active",   openDate:"2023-08-15", branch:"Main", acctNo:"1001-0007-S", interest:3.5  },
-  { id:"ACC-001008", memberId:"MBR-B008", name:"Rashid Ahmed Corp",  type:"Business",      balance:98000, status:"Active",   openDate:"2022-03-01", branch:"Main", acctNo:"1001-0008-B", interest:1.0  },
-];
+function RestaurantManagementModule({ currentUser }) {
+  const rpc = useCallback(async (procedure, payload = {}) => {
+    if (!IS_CONFIGURED || DEMO_OVERRIDE) {
+      throw new Error("Restaurant workflows require an authenticated Smart Manager database session.");
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      throw new Error("You appear to be offline. Reconnect before submitting a Restaurant workflow.");
+    }
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`, {
+      method: "POST",
+      headers: { ...authHeaders(), Prefer: "return=representation" },
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      const error = new Error(body?.message || body?.hint || body?.details || `Restaurant request failed: ${response.status}`);
+      error.status = response.status;
+      error.code = body?.code;
+      throw error;
+    }
+    return body;
+  }, []);
+  return <RestaurantWorkspace rpc={rpc} configured={IS_CONFIGURED && !DEMO_OVERRIDE} currentUser={currentUser} />;
+}
 
-const BNK_LOANS_SEED = [
-  { id:"LN-B0001", memberId:"MBR-B001", member:"Amina Hassan",    product:"Personal Loan", principal:5000,  rate:18, term:24,  disbursed:"2024-01-15", maturity:"2026-01-15", balance:2840,  status:"Active",   collateral:"Logbook",      emi:250,  paid:2160, dpd:0   },
-  { id:"LN-B0002", memberId:"MBR-B003", member:"Fatuma Juma",     product:"Business Loan", principal:15000, rate:15, term:36,  disbursed:"2023-06-01", maturity:"2026-06-01", balance:9200,  status:"Active",   collateral:"Title Deed",   emi:520,  paid:5800, dpd:0   },
-  { id:"LN-B0003", memberId:"MBR-B004", member:"Peter Kamau Ltd", product:"SME Loan",      principal:50000, rate:14, term:48,  disbursed:"2022-11-10", maturity:"2026-11-10", balance:28000, status:"Active",   collateral:"Property",     emi:1380, paid:22000,dpd:0   },
-  { id:"LN-B0004", memberId:"MBR-B006", member:"David Odhiambo",  product:"Personal Loan", principal:2000,  rate:18, term:12,  disbursed:"2024-05-01", maturity:"2025-05-01", balance:1800,  status:"Overdue",  collateral:"Guarantor",    emi:185,  paid:200,  dpd:45  },
-  { id:"LN-B0005", memberId:"MBR-B007", member:"Halima Abdallah", product:"Agricultural",  principal:8000,  rate:12, term:18,  disbursed:"2024-03-01", maturity:"2025-09-01", balance:5200,  status:"Active",   collateral:"Farm Title",   emi:490,  paid:2800, dpd:0   },
-  { id:"LN-B0006", memberId:"MBR-B002", member:"John Mwangi",     product:"Personal Loan", principal:3000,  rate:18, term:12,  disbursed:"2023-01-15", maturity:"2024-01-15", balance:0,     status:"Closed",   collateral:"Guarantor",    emi:275,  paid:3000, dpd:0   },
-  { id:"LN-B0007", memberId:"MBR-B008", member:"Rashid Ahmed",    product:"Business Loan", principal:80000, rate:13, term:60,  disbursed:"2022-03-01", maturity:"2027-03-01", balance:52000, status:"Active",   collateral:"Property",     emi:1820, paid:28000,dpd:0   },
-];
+/* LegacyFleetManagementModule removed: the active route uses the persistent FleetWorkspace. */
 
-const BNK_LOAN_PRODUCTS = [
-  { id:"LP-001", name:"Personal Loan",    maxAmt:10000,  minTerm:6,  maxTerm:36, rate:18, collateral:"Guarantor or Logbook",   purpose:"Personal expenses",         processingFee:2 },
-  { id:"LP-002", name:"Business Loan",    maxAmt:100000, minTerm:12, maxTerm:60, rate:14, collateral:"Business assets or Title",purpose:"Business expansion",        processingFee:1.5 },
-  { id:"LP-003", name:"SME Loan",         maxAmt:500000, minTerm:24, maxTerm:84, rate:13, collateral:"Property or Equipment",  purpose:"SME financing",             processingFee:1 },
-  { id:"LP-004", name:"Agricultural Loan",maxAmt:20000,  minTerm:6,  maxTerm:18, rate:12, collateral:"Farm title / Produce",  purpose:"Farming inputs & equipment",processingFee:1 },
-  { id:"LP-005", name:"Group Loan",       maxAmt:5000,   minTerm:6,  maxTerm:12, rate:15, collateral:"Group guarantee",        purpose:"Group business",            processingFee:2 },
-  { id:"LP-006", name:"Emergency Loan",   maxAmt:2000,   minTerm:1,  maxTerm:6,  rate:20, collateral:"Savings or Guarantor",   purpose:"Emergency needs",           processingFee:3 },
-  { id:"LP-007", name:"Mortgage",         maxAmt:1000000,minTerm:60, maxTerm:240,rate:11, collateral:"Property Title Deed",    purpose:"Home purchase/construction", processingFee:1 },
-  { id:"LP-008", name:"Asset Finance",    maxAmt:200000, minTerm:12, maxTerm:60, rate:14, collateral:"Asset being financed",   purpose:"Vehicle, equipment, machinery",processingFee:1.5},
-];
+function BankingMFIModule({ company, onLoansLoad, onNavigate }) {
+  return <BankMfiWorkspace company={company} onLoansLoad={onLoansLoad} onNavigate={onNavigate} />;
+}
 
-const BNK_TRANSACTIONS_SEED = [
-  { id:"TXN-001", acctNo:"1001-0001-S", member:"Amina Hassan",    type:"Deposit",    amount:500,   balance:4820, date:"2026-07-16 09:14", channel:"Branch", narration:"Cash deposit",            ref:"BR20260716001" },
-  { id:"TXN-002", acctNo:"1001-0008-B", member:"Rashid Ahmed",    type:"Withdrawal", amount:5000,  balance:98000,date:"2026-07-16 10:22", channel:"Branch", narration:"Business payment",         ref:"BR20260716002" },
-  { id:"TXN-003", acctNo:"1001-0003-S", member:"Fatuma Juma",     type:"Transfer",   amount:1500,  balance:8900, date:"2026-07-17 08:55", channel:"Mobile", narration:"Transfer to 1001-0002-C",  ref:"MB20260717001" },
-  { id:"TXN-004", acctNo:"1001-0002-C", member:"John Mwangi",     type:"Loan Repay", amount:520,   balance:12500,date:"2026-07-17 11:30", channel:"Mobile", narration:"Loan LN-B0002 repayment",  ref:"MB20260717002" },
-  { id:"TXN-005", acctNo:"1001-0007-S", member:"Halima Abdallah", type:"Deposit",    amount:1000,  balance:7650, date:"2026-07-18 14:05", channel:"Branch", narration:"Salary credit",            ref:"BR20260718001" },
-];
-
-const BNK_MEMBERS_SEED = [
-  { id:"MBR-B001", name:"Amina Hassan",     dob:"1988-03-22", nationalId:"NIDA-1234567890", phone:"0712-345-678", email:"amina@email.com",    gender:"F", occupation:"Teacher",      kycStatus:"Verified", joinDate:"2023-01-15", branch:"Main"  },
-  { id:"MBR-B002", name:"John Mwangi",      dob:"1975-11-05", nationalId:"NIDA-2345678901", phone:"0756-789-012", email:"john@email.com",     gender:"M", occupation:"Business",     kycStatus:"Verified", joinDate:"2022-06-20", branch:"Main"  },
-  { id:"MBR-B003", name:"Fatuma Juma",      dob:"1992-07-30", nationalId:"NIDA-3456789012", phone:"0783-456-123", email:"fatuma@email.com",   gender:"F", occupation:"Entrepreneur", kycStatus:"Verified", joinDate:"2023-03-01", branch:"North" },
-  { id:"MBR-B004", name:"Peter Kamau Ltd",  dob:"1969-09-15", nationalId:"TIN-987654321",   phone:"0622-111-222", email:"peter@kamau.co.tz",  gender:"M", occupation:"Director",     kycStatus:"Verified", joinDate:"2021-11-10", branch:"Main"  },
-  { id:"MBR-B005", name:"Grace Mwenda",     dob:"1984-05-18", nationalId:"NIDA-5678901234", phone:"0769-333-444", email:"grace@email.com",    gender:"F", occupation:"Nurse",        kycStatus:"Verified", joinDate:"2024-01-01", branch:"Main"  },
-  { id:"MBR-B006", name:"David Odhiambo",   dob:"1990-02-28", nationalId:"NIDA-6789012345", phone:"0744-555-666", email:"david@email.com",    gender:"M", occupation:"Farmer",       kycStatus:"Pending",  joinDate:"2020-05-30", branch:"South" },
-  { id:"MBR-B007", name:"Halima Abdallah",  dob:"1995-12-10", nationalId:"NIDA-7890123456", phone:"0755-666-777", email:"halima@email.com",   gender:"F", occupation:"Farmer",       kycStatus:"Verified", joinDate:"2023-08-15", branch:"Main"  },
-  { id:"MBR-B008", name:"Rashid Ahmed Corp",dob:"1965-04-22", nationalId:"TIN-123456789",   phone:"0766-777-888", email:"rashid@rahcorp.co.tz",gender:"M", occupation:"MD/CEO",       kycStatus:"Verified", joinDate:"2022-03-01", branch:"Main"  },
-];
-
-const BNK_APPLICATIONS_SEED = [
-  { id:"APP-001", memberId:"MBR-B003", member:"Fatuma Juma",  product:"Business Loan", amount:20000, term:36, purpose:"Shop expansion",        collateral:"Title Deed", submittedDate:"2026-07-14", status:"Under Review", officer:"Jane Wairimũ", score:72 },
-  { id:"APP-002", memberId:"MBR-B007", member:"Halima Abdallah",product:"Agricultural",amount:10000, term:18, purpose:"Irrigation equipment",  collateral:"Farm Title", submittedDate:"2026-07-15", status:"Approved",      officer:"Tom Otieno",  score:81 },
-  { id:"APP-003", memberId:"MBR-B001", member:"Amina Hassan",  product:"Personal Loan",amount:3000,  term:12, purpose:"School fees",           collateral:"Guarantor",  submittedDate:"2026-07-17", status:"Pending Docs",  officer:"Jane Wairimũ", score:68 },
-];
-
-function BankingMFIModule({ currentUser, company, onLoansLoad }) {
+function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNavigate }) {
   const [tab, setTab]     = useState("dashboard");
   const [loanCalc, setLoanCalc] = useState({ product:"", amount:"", term:"", rate:0 });
   const [appForm, setAppForm]   = useState({ memberId:"", product:"", amount:"", term:"", purpose:"", collateral:"" });
@@ -49236,7 +49045,7 @@ function LegacyBankingMFIModule({ currentUser, company }) {
               <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Deposit by Account Type (TZS k)</h3>
               {(() => {
                 const typeData = ACCOUNT_TYPES.slice(0,6).map((type,i)=>({
-                  name:type.replace(" ",""), 
+                  name:type.replace(" ",""),
                   value:Math.round(accounts.rows.filter(a=>a.type===type).reduce((s,a)=>s+(a.balance||0),0)/1000),
                   fill:["#2563EB","#16A34A","#D97706","#7C3AED","#EF4444","#0891B2"][i],
                 })).filter(d=>d.value>0);
@@ -49351,7 +49160,7 @@ const MENU_CATEGORIES = ["Starters","Main Course","Grills","Desserts","Drinks","
 const TABLE_ZONES = ["Indoor","Terrace","VIP","Bar","Outdoor"];
 const TZS_FMT = (n) => "TZS " + Number(n).toLocaleString();
 
-function RestaurantModule({ currentUser, company }) {
+function LegacyRestaurantModule({ currentUser, company }) {
   const [tab, setTab]       = useState("floor");
   const [kitchenTab, setKitchenTab] = useState("active");
   const [menuCat, setMenuCat]   = useState("All");
@@ -49933,26 +49742,33 @@ function RestaurantModule({ currentUser, company }) {
   );
 }
 
-/* ─────────────────── INVITE CODE FORM (inline in HR) ───────────────────── */
-function InviteCodeForm({ onGenerate }) {
-  const [dept, setDept] = useState(DEPARTMENTS[0]);
-  const [role, setRole] = useState("");
+/* ─────────────────── SECURE INVITATION FORM (inline in HR) ──────────────── */
+function SecureInvitationForm({ onGenerate, pending }) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("Viewer");
+  const inviteRoles = ["Finance Manager", "HR Manager", "Sales Manager", "Sales Representative", "Warehouse Staff", "Accountant", "Viewer"];
   return (
     <>
       <div>
-        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Department</label>
-        <select className={inputClass} value={dept} onChange={e=>setDept(e.target.value)}>
-          {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}
-        </select>
+        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Employee full name</label>
+        <input className={inputClass} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="e.g. Amina Hassan" maxLength={120}/>
       </div>
       <div>
-        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Role / Job Title</label>
-        <input className={inputClass} value={role} onChange={e=>setRole(e.target.value)} placeholder="e.g. Sales Executive"/>
+        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Work email</label>
+        <input type="email" className={inputClass} value={email} onChange={e=>setEmail(e.target.value)} placeholder="employee@company.tz" maxLength={320}/>
       </div>
       <div className="col-span-2">
-        <button onClick={()=>onGenerate(dept, role||"Employee")}
-          className="w-full flex items-center justify-center gap-2 text-[13px] font-bold text-white py-2.5 rounded-xl bg-[#7C3AED]">
-          <QrCode size={14}/> Generate Invite Code
+        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Workspace role</label>
+        <select className={inputClass} value={role} onChange={e=>setRole(e.target.value)}>
+          {inviteRoles.map(value=><option key={value}>{value}</option>)}
+        </select>
+        <p className="text-[10.5px] text-slate-500 mt-1">Department and employment details are managed on the employee record after the account joins.</p>
+      </div>
+      <div className="col-span-2">
+        <button type="button" disabled={pending} onClick={()=>onGenerate(fullName.trim(), email.trim(), role)}
+          className="w-full flex items-center justify-center gap-2 text-[13px] font-bold text-white py-2.5 rounded-xl bg-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-60">
+          <QrCode size={14}/> {pending ? "Saving invitation…" : "Send Secure Invitation"}
         </button>
       </div>
     </>
@@ -49972,15 +49788,6 @@ function InviteCodeForm({ onGenerate }) {
 ═══════════════════════════════════════════════════════════════════════════ */
 /* ─────────────────── EMPLOYEE PORTAL SUB-COMPONENTS ─────────────────── */
 
-// ── Announcements seed ───────────────────────────────────────────────────
-const ANNOUNCEMENTS_SEED = [
-  { id:"ANN-001", title:"Q3 Performance Reviews — Reminder", body:"All employees should complete their self-assessment by July 31. Log into the Employee Portal under Profile to access your review form.", category:"HR", priority:"High",   date:"2026-07-20", author:"HR Department", pinned:true },
-  { id:"ANN-002", title:"Office Closure — 7th August", body:"The office will be closed on 7th August 2026 for the public holiday. All employees should ensure pending tasks are completed by 6th August.", category:"General", priority:"Medium", date:"2026-07-18", author:"Administration", pinned:false },
-  { id:"ANN-003", title:"New Health Insurance Benefits", body:"We are pleased to announce upgraded health insurance coverage for all permanent employees, effective 1st August 2026. Dental and optical cover are now included. Details will be shared by HR shortly.", category:"Benefits", priority:"High",   date:"2026-07-15", author:"HR Department", pinned:true },
-  { id:"ANN-004", title:"Monthly Town Hall — Friday 3pm", body:"Join us this Friday at 3pm in the Main Conference Room (or via Zoom link shared by email) for our monthly company update. Attendance is strongly encouraged.", category:"Events",  priority:"Medium", date:"2026-07-12", author:"Management",   pinned:false },
-  { id:"ANN-005", title:"Safety Drill — Next Tuesday 10am", body:"A scheduled fire safety drill will take place next Tuesday 10am. Please cooperate with the safety officer's instructions. Estimated duration: 20 minutes.", category:"Safety",  priority:"Medium", date:"2026-07-10", author:"Safety Officer",pinned:false },
-];
-
 const ANN_CAT_COLORS = {
   HR:      ["#EFF6FF","#2563EB","#BFDBFE"],
   General: ["#F8FAFB","#374151","#E5E7EB"],
@@ -49992,87 +49799,76 @@ const ANN_CAT_COLORS = {
 function PortalNoticeboard({ company }) {
   const co = company || {};
   const [filter, setFilter] = useState("All");
-  const categories = ["All","HR","General","Benefits","Events","Safety"];
-  const filtered = filter==="All" ? ANNOUNCEMENTS_SEED : ANNOUNCEMENTS_SEED.filter(a=>a.category===filter);
-  const pinned   = filtered.filter(a=>a.pinned);
-  const regular  = filtered.filter(a=>!a.pinned);
+  const { rows, loading, error, unavailable, reload } = useCompanyTable("hr_announcements", [], {
+    select: "id,title,body,audience_type,status,published_at,expires_at",
+    order: { col: "published_at", ascending: false },
+    mapRow: (row) => ({
+      id: row.id,
+      title: row.title,
+      body: row.body,
+      audience: row.audience_type || "All Employees",
+      date: row.published_at ? new Date(row.published_at).toLocaleDateString() : "—",
+      expiresAt: row.expires_at || null,
+      category: row.audience_type === "Department" ? "Department" : "All Employees",
+    }),
+  });
+  const categories = ["All", "All Employees", "Department"];
+  const visible = rows.filter((announcement) => filter === "All" || announcement.category === filter);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="text-[16px] font-bold text-[#111827]">📌 Company Noticeboard</h2>
-          <p className="text-[12px] text-slate-500">{co.name||"BusinessSphere"} · Official Announcements</p>
+          <h2 className="text-[16px] font-bold text-[#111827]">Company Noticeboard</h2>
+          <p className="text-[12px] text-slate-500">{co.name || "BusinessSphere"} · Published workspace announcements</p>
         </div>
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 overflow-x-auto">
-          {categories.map(cat=>(
-            <button key={cat} onClick={()=>setFilter(cat)}
-              className={`px-2.5 py-1.5 rounded-md text-[11.5px] font-semibold whitespace-nowrap ${filter===cat?"bg-white text-[#111827] shadow-sm":"text-slate-500"}`}>
-              {cat}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 overflow-x-auto">
+            {categories.map((category) => (
+              <button key={category} type="button" onClick={() => setFilter(category)}
+                className={`px-2.5 py-1.5 rounded-md text-[11.5px] font-semibold whitespace-nowrap ${filter === category ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>
+                {category}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={reload} className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-800" aria-label="Refresh announcements">
+            <RefreshCw size={14} />
+          </button>
         </div>
       </div>
 
-      {/* Pinned announcements */}
-      {pinned.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">📌 Pinned</p>
-          {pinned.map(ann => {
-            const [bg,col,border] = ANN_CAT_COLORS[ann.category]||["#F8FAFB","#374151","#E5E7EB"];
+      {loading && <div className="bg-white rounded-xl border p-10 text-center text-slate-400">Loading published announcements…</div>}
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-[12px] font-semibold text-red-700">Announcements could not be loaded from the workspace. No local copy was used.</div>}
+      {unavailable && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-[12px] text-amber-800">The announcement table is not available in this deployment. Apply the approved HR employee-portal migration before publishing or reading announcements.</div>}
+      {!loading && !error && !unavailable && visible.length === 0 && (
+        <div className="bg-white rounded-xl border p-10 text-center text-slate-400">
+          <Bell size={32} className="mx-auto mb-2 text-slate-200" />
+          <p>No published announcements in this category.</p>
+        </div>
+      )}
+      {!error && !unavailable && visible.length > 0 && (
+        <div className="space-y-2">
+          {visible.map((announcement) => {
+            const [bg, col, border] = ANN_CAT_COLORS[announcement.category === "Department" ? "Events" : "General"] || ["#F8FAFB", "#374151", "#E5E7EB"];
             return (
-              <div key={ann.id} className="rounded-xl border-l-4 p-4 shadow-sm" style={{background:bg,borderLeftColor:col,border:`1px solid ${border}`,borderLeftWidth:4}}>
-                <div className="flex items-start justify-between gap-3">
+              <div key={announcement.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4" style={{ borderLeft: `4px solid ${border}` }}>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[16px]" style={{ background: bg, color: col }}>📢</div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{background:col+"22",color:col}}>{ann.category}</span>
-                      <span className="text-[10.5px] font-bold text-[#EF4444] bg-[#FEF2F2] px-2 py-0.5 rounded-full">{ann.priority}</span>
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${col}22`, color: col }}>{announcement.audience}</span>
+                      <span className="text-[11px] text-slate-400">{announcement.date}</span>
                     </div>
-                    <h3 className="text-[14px] font-bold text-[#111827] mb-1">{ann.title}</h3>
-                    <p className="text-[12.5px] text-slate-600 leading-relaxed">{ann.body}</p>
+                    <h3 className="text-[13px] font-bold text-[#111827]">{announcement.title}</h3>
+                    <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed">{announcement.body}</p>
+                    {announcement.expiresAt && <p className="text-[11px] text-slate-400 mt-1.5">Published announcement expires {new Date(announcement.expiresAt).toLocaleDateString()}.</p>}
                   </div>
-                </div>
-                <div className="flex items-center gap-3 mt-3 text-[11px] text-slate-400">
-                  <span>By {ann.author}</span>
-                  <span>·</span>
-                  <span>{ann.date}</span>
                 </div>
               </div>
             );
           })}
         </div>
       )}
-
-      {/* Regular announcements */}
-      <div className="space-y-2">
-        {regular.length===0&&pinned.length===0&&(
-          <div className="bg-white rounded-xl border p-10 text-center text-slate-400">
-            <Bell size={32} className="mx-auto mb-2 text-slate-200"/>
-            <p>No announcements in this category</p>
-          </div>
-        )}
-        {regular.map(ann=>{
-          const [bg,col,border] = ANN_CAT_COLORS[ann.category]||["#F8FAFB","#374151","#E5E7EB"];
-          return (
-            <div key={ann.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[16px]" style={{background:bg}}>
-                  {ann.category==="HR"?"👥":ann.category==="Benefits"?"🎁":ann.category==="Events"?"🗓":ann.category==="Safety"?"⚠️":"📢"}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{background:col+"22",color:col}}>{ann.category}</span>
-                    <span className="text-[11px] text-slate-400">{ann.date}</span>
-                  </div>
-                  <h3 className="text-[13px] font-bold text-[#111827]">{ann.title}</h3>
-                  <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed">{ann.body}</p>
-                  <p className="text-[11px] text-slate-400 mt-1.5">By {ann.author}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -50461,18 +50257,22 @@ function PortalTraining({ empName }) {
 
 
 function EmployeePortal({ currentUser, company, employees, leaveRequests, canManage }) {
+  if (IS_CONFIGURED && !DEMO_OVERRIDE) {
+    return <EmployeePortalWorkspace
+      currentUser={currentUser}
+      configured={IS_CONFIGURED}
+      rpc={(procedure, payload) => callRpc(procedure, payload, getStoredAccessToken() || "")}
+    />;
+  }
+
   const co = company || {};
   const TODAY_STR = TODAY.toISOString().slice(0,10);
 
   // ── Identity ──────────────────────────────────────────────────────────
-  // In a real auth system this comes from session; here we resolve from
-  // employees list by currentUser.name, or use invite code onboarding.
+  // Employee access is established by the authenticated workspace profile. The
+  // secure invitation flow is handled by teamInvitations; no browser-only code
+  // or local employee identity is accepted here.
   const [portalView, setPortalView] = useState("identify"); // identify | portal
-  const [inviteInput, setInviteInput] = useState("");
-  const [inviteError, setInviteError] = useState("");
-  const [selfName, setSelfName] = useState("");
-  const [selfPhone, setSelfPhone] = useState("");
-  const [selfEmail, setSelfEmail] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // Find self in employees list
@@ -50805,34 +50605,6 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
     notify("Payslip PDF ready");
   }
 
-  // ── Invite code join flow ─────────────────────────────────────────────
-  function joinViaCode() {
-    if (!inviteInput.trim()) { setInviteError("Please enter the invite code"); return; }
-    if (!selfName.trim()) { setInviteError("Please enter your full name"); return; }
-    const code = inviteInput.trim().toUpperCase();
-    try {
-      const codes = JSON.parse(localStorage.getItem("hr_invite_codes")||"[]");
-      const inv = codes.find(c=>c.code===code&&!c.used&&new Date(c.expires)>=new Date());
-      if (!inv) {
-        setInviteError("Invalid or expired code. Ask HR for a new one.");
-        return;
-      }
-      // Mark code as used
-      const updated = codes.map(c=>c.code===code?{...c,used:true,usedBy:selfName}:c);
-      localStorage.setItem("hr_invite_codes", JSON.stringify(updated));
-      // Store joined employee locally
-      const portalEmp = {
-        code, name:selfName.trim(), phone:selfPhone, email:selfEmail,
-        dept:inv.dept, role:inv.role, joinedAt:new Date().toISOString(),
-      };
-      localStorage.setItem("ep_self_"+code, JSON.stringify(portalEmp));
-      notify(`Welcome, ${selfName.split(" ")[0]}! You have joined ${co.name||"the company"}.`);
-      setPortalView("portal");
-    } catch(_e){
-      setInviteError("Something went wrong. Please try again.");
-    }
-  }
-
   // Weekly attendance stats
   const weekStart = new Date(TODAY); weekStart.setDate(weekStart.getDate()-weekStart.getDay()+1);
   const weekDays  = Array.from({length:7},(_,i)=>{
@@ -50850,8 +50622,6 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
   // ── Notification badges ─────────────────────────────────────────────
   const pendingDutiesCount  = todayDuties.filter(d=>d.status==="Completed").length; // awaiting approval
   const pendingLeaveCount   = myLeave.filter(l=>l.status==="Pending").length;
-  const newAnnouncementCount= 0; // placeholder — future: unread announcements
-
   const PORTAL_TABS = [
     {id:"dashboard",    label:"Dashboard",       icon:LayoutDashboard,  badge:0},
     {id:"attendance",   label:"Attendance",       icon:CalendarCheck,    badge:0},
@@ -50860,65 +50630,34 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
     {id:"expenses",     label:"Expenses",         icon:Receipt,          badge:0},
     {id:"training",     label:"Training",         icon:GraduationCap,    badge:0},
     {id:"team",         label:"Team",             icon:Users,            badge:0},
-    {id:"noticeboard",  label:"Noticeboard",      icon:Bell,             badge:newAnnouncementCount},
+    {id:"noticeboard",  label:"Noticeboard",      icon:Bell,             badge:0},
     {id:"payslip",      label:"Payslip",          icon:Banknote,         badge:0},
     {id:"profile",      label:"Profile",          icon:UserCircle,       badge:0},
   ];
 
-  // ── Render: Invite Code Screen ────────────────────────────────────────
+  // ── Render: authenticated employee access notice ───────────────────────
   if (portalView === "identify") return (
     <div className="min-h-[600px] flex items-center justify-center">
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-[#0D2214] flex items-center justify-center mx-auto mb-4">
-            <LogIn size={28} className="text-[#16A34A]"/>
+            <LogIn size={28} className="text-[#16A34A}"/>
           </div>
           <h2 className="text-[22px] font-black text-[#111827]">Employee Portal</h2>
           <p className="text-[13px] text-slate-500 mt-1">{co.name||"BusinessSphere"}</p>
         </div>
-
-        <div className="space-y-3">
-          <div>
-            <label className="text-[11.5px] font-bold text-slate-600 block mb-1.5">Invite Code from HR *</label>
-            <input
-              className={inputClass+" text-center font-mono text-[18px] font-black tracking-widest uppercase"}
-              value={inviteInput}
-              onChange={e=>{ setInviteInput(e.target.value.toUpperCase()); setInviteError(""); }}
-              placeholder="e.g. ABC12345"
-              maxLength={10}
-            />
-            <p className="text-[10.5px] text-slate-400 mt-1 text-center">Get this code from your HR manager</p>
-          </div>
-          <div>
-            <label className="text-[11.5px] font-bold text-slate-600 block mb-1.5">Your Full Name *</label>
-            <input className={inputClass} value={selfName} onChange={e=>{setSelfName(e.target.value);setInviteError("");}} placeholder="e.g. Amina Hassan"/>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11.5px] font-bold text-slate-600 block mb-1.5">Phone Number</label>
-              <input type="tel" className={inputClass} value={selfPhone} onChange={e=>setSelfPhone(e.target.value)} placeholder="+255..."/>
-            </div>
-            <div>
-              <label className="text-[11.5px] font-bold text-slate-600 block mb-1.5">Email</label>
-              <input type="email" className={inputClass} value={selfEmail} onChange={e=>setSelfEmail(e.target.value)} placeholder="you@company.tz"/>
-            </div>
-          </div>
-          {inviteError&&<p className="text-[12px] text-[#EF4444] font-semibold text-center">{inviteError}</p>}
-          <button onClick={joinViaCode}
-            className="w-full flex items-center justify-center gap-2 text-[13.5px] font-black text-white py-3.5 rounded-xl bg-[#16A34A] mt-2">
-            <LogIn size={16}/> Join Company Portal
-          </button>
-          {canManage&&(
-            <button onClick={()=>setPortalView("portal")}
-              className="w-full text-[12px] font-semibold text-slate-400 py-2 hover:text-slate-600">
-              Manager access (skip code) →
-            </button>
+        <div className="space-y-3 text-center">
+          <p className="text-[13px] leading-6 text-slate-600">Employee access is provisioned from a verified workspace profile after accepting a secure invitation email.</p>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-[11.5px] leading-5 text-amber-800">Browser-only invite codes are not accepted because they cannot safely persist membership or authenticate the employee.</div>
+          {canManage ? (
+            <button type="button" onClick={()=>setPortalView("portal")} className="w-full text-[12px] font-semibold text-white py-3 rounded-xl bg-[#16A34A] hover:bg-[#15803D]">Open manager portal</button>
+          ) : (
+            <p className="text-[12px] text-slate-500">Ask your HR manager to send a secure invitation, then sign in with the invited email address.</p>
           )}
         </div>
-
         <div className="mt-5 p-3 bg-slate-50 rounded-xl text-center">
-          <p className="text-[11.5px] text-slate-500">Do not have a code? Ask your HR department to generate one from</p>
-          <p className="text-[11.5px] font-bold text-[#16A34A]">HR → Employees → Invite Code</p>
+          <p className="text-[11.5px] text-slate-500">Managers can send invitations from</p>
+          <p className="text-[11.5px] font-bold text-[#16A34A]">HR → Employees → Secure team invitation</p>
         </div>
       </div>
     </div>
@@ -52005,8 +51744,10 @@ function SmartManager() {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   // Role-based access and session state initialized first to prevent temporal dead zones
   const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
-  const currentRole = ROLES.find((r) => r.id === currentUser.role) || ROLES[0];
+  const currentRole = roleDefinitionFor(currentUser.role);
   const canManage = currentRole.writeAccess === "full";
+  const billingManagerRoles = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "admin"]);
+  const canManageBilling = billingManagerRoles.has(String(currentUser.role || "").trim().toLowerCase());
 
   const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
   const [authContextEmail, setAuthContextEmail] = useState("");
@@ -52014,6 +51755,10 @@ function SmartManager() {
   const invitationTokenRef = useRef(typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "");
   const acceptInvitationMutation = trpc.teamInvitations.accept.useMutation();
   const [session, setSession] = useState(() => (IS_CONFIGURED ? null : { demo: true }));
+  const subscriptionAccess = useSubscriptionAccess({
+    accessToken: session?.accessToken,
+    enabled: Boolean(IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && currentUser?.id),
+  });
   const tenantSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo), retry: false });
   const tenantIdleTimeoutMinutes = Math.min(120, Math.max(5, Number(tenantSettingsQuery.data?.profileData?.idleTimeoutMinutes) || 30));
   const [idleWarningOpen, setIdleWarningOpen] = useState(false);
@@ -52188,7 +51933,7 @@ function SmartManager() {
     navigateAuthView("login");
   }, [session]);
 
-  const isAdministrativeSession = Boolean(session?.accessToken && !session?.demo && PASSKEY_READINESS_ROLES.has(currentUser.role));
+  const isAdministrativeSession = Boolean(session?.accessToken && !session?.demo && PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role)));
   useEffect(() => {
     if (!isAdministrativeSession) {
       setIdleWarningOpen(false);
@@ -52248,33 +51993,9 @@ function SmartManager() {
   // rather than a hardcoded constant, which could never correctly scope a
   // write once different real users belong to different companies.
   const [company, setCompany] = useState(() => {
-    // Restore saved profile (logo, cover photo, social links etc.) from localStorage
-    try {
-      const saved = localStorage.getItem("bs_company_profile");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          id: "", name: "BEIRAHISI HARDWARE", owner: "EzyMP",
-          industry: "Wholesale & Hardware", country: "Tanzania",
-          currency: "TZS", taxRate: 18, timezone: "Africa/Dar_es_Salaam",
-          businessScale: "large", createdAt: "2019-03-12",
-          receiptWidth: "80mm", receiptFooter: "Thank you for your business!", receiptShowLogo: true,
-          logo: null, coverPhoto: null, phone: "", email: "", website: "", address: "", city: "",
-          postalCode: "", tin: "", regNumber: "", tagline: "",
-          brandColor: "#0B5D3B", brandAccentColor: "#16A34A", businessType: "Private Limited Company", foundedYear: "",
-          description: "", facebook: "", instagram: "", twitter: "", linkedin: "", tiktok: "",
-          whatsappBusiness: "", bankName: "", bankAccountName: "", bankAccountNo: "",
-          bankBranch: "", bankSwift: "",
-          businessHours: {
-            Mon:{open:"08:00",close:"17:00",closed:false},Tue:{open:"08:00",close:"17:00",closed:false},
-            Wed:{open:"08:00",close:"17:00",closed:false},Thu:{open:"08:00",close:"17:00",closed:false},
-            Fri:{open:"08:00",close:"17:00",closed:false},Sat:{open:"09:00",close:"13:00",closed:false},
-            Sun:{open:"",close:"",closed:true},
-          },
-          ...parsed,
-        };
-      }
-    } catch(_e){}
+    // Live workspaces hydrate this state from the verified session and the
+    // persisted workspace settings query below. Demo defaults remain explicit
+    // fallback state only when the application is not configured.
     return {
     id: "",
     name: "BEIRAHISI HARDWARE",
@@ -52333,7 +52054,7 @@ function SmartManager() {
 
   // Role-based access state initialized at the top of SmartManager to prevent temporal dead zones.
   const roleChangeApprovalsQuery = trpc.listRoleChangeApprovals.useQuery(undefined, {
-    enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id && PASSKEY_READINESS_ROLES.has(currentUser.role)),
+    enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id && PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role))),
     retry: false,
     refetchInterval: 10000,
   });
@@ -52513,20 +52234,31 @@ function SmartManager() {
 
   const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
 
-  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id));
+  const subscriptionFilteringReady = !IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || !session?.accessToken || session?.demo || !currentUser?.id || subscriptionAccess.ready;
+  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (!IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || subscriptionAllowsModule(subscriptionAccess.access, m.id)));
 
   // If switching roles removes access to whatever module is currently on
   // screen (e.g. testing "Employee" while viewing Finance), fall back to
   // the first module that role can actually see — never leave a
   // now-restricted screen rendered just because nothing told it to change.
   useEffect(() => {
-    if (active === "settings") return; // settings has its own internal gating, always reachable
+    if (active === "settings" || active === "profile" || active === "billing") return; // identity, settings, and billing are shell-level destinations
     if (!visibleModules.some((m) => m.id === active)) {
       setActive(visibleModules[0]?.id || "dashboard");
     }
   }, [currentUser.role]);
 
   function go(id) {
+    if (id === "billing" && !canManageBilling) {
+      notify("Only an authorized billing administrator can open Subscription & Billing.", "error");
+      return;
+    }
+    const isOperationalModule = MODULES.some((module) => module.id === id);
+    const subscriptionSafeDestination = new Set(["profile", "support", "notifications", "settings"]);
+    if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && subscriptionFilteringReady && isOperationalModule && id !== "dashboard" && !subscriptionSafeDestination.has(id) && !subscriptionAllowsModule(subscriptionAccess.access, id)) {
+      notify("This module is not included in the company’s server-confirmed subscription plan.", "error");
+      return;
+    }
     setActive(id);
     setSidebarOpen(false);
   }
@@ -52645,11 +52377,20 @@ function SmartManager() {
   // to just this customer's own data comes from the RLS policies added
   // alongside profiles.customer_ref, not from this branch — this is only
   // deciding which UI to show, the database decides what data comes back.
-  if (currentRole.category === "External Portal" && currentUser.role === "External Client") {
+  if (currentRole.category === "External Portal" && currentRole.id === "External Client") {
     return <CustomerPortal currentUser={currentUser} invoices={invoices} filesHook={files} onSignOut={handleSignOut} />;
   }
-  if (currentRole.category === "External Portal" && currentUser.role === "Supplier") {
+  if (currentRole.category === "External Portal" && currentRole.id === "Supplier") {
     return <ExternalSupplierPortal currentUser={currentUser} onSignOut={handleSignOut} />;
+  }
+
+  const subscriptionEscapeDestination = new Set(["profile", "support", "notifications", "settings"]);
+  const canUseSubscriptionEscape = subscriptionEscapeDestination.has(active) || (active === "billing" && canManageBilling);
+  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && !subscriptionAccess.ready && !canUseSubscriptionEscape) {
+    return <SubscriptionAccessBoundary access={subscriptionAccess.access} loading={subscriptionAccess.loading || subscriptionAccess.status === "idle"} error={subscriptionAccess.error} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
+  }
+  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && subscriptionAccess.ready && !subscriptionAccess.access.allowed && !canUseSubscriptionEscape) {
+    return <SubscriptionAccessBoundary access={subscriptionAccess.access} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
   }
 
   return (
@@ -52733,6 +52474,7 @@ function SmartManager() {
           green gradient, white-variant text, white/10 borders) was
           removed entirely rather than layered under the new palette. */}
       <aside
+        aria-hidden={!sidebarOpen}
         className={`fixed z-50 h-full w-[240px] shrink-0 flex flex-col bg-white transition-transform duration-200 ease-out overflow-hidden ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
@@ -52842,6 +52584,7 @@ function SmartManager() {
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
               {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
             </span>
+            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             <button
               onClick={() => setPaletteOpen(true)}
               className="flex items-center gap-1.5 text-[12px] font-medium text-slate-400 border border-slate-200 rounded-lg px-2.5 py-1.5 hover:border-slate-300 hover:text-slate-600 transition-colors"
@@ -52873,7 +52616,7 @@ function SmartManager() {
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
                         <NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
-            <ProfileMenu currentUser={currentUser} session={session} company={company} onSignOut={handleSignOut} />
+            <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
           </div>
         </header>
 
@@ -52926,12 +52669,13 @@ function SmartManager() {
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
               expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions}
-              employees={employees} posTransactions={posTransactions} currentUser={currentUser}
+              employees={employees} posTransactions={posTransactions} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} currentUser={currentUser}
               onQuickAction={goWithIntent} onNavigate={go}
             />
           )}
           {active === "crm" && <CRM crm={crm} invoices={invoices} expenses={expenses} suppliers={suppliers} />}
           {active === "sales" && <Sales invoices={invoices} inventory={inventory} subscriptionsHook={subscriptions} quotationsHook={quotations} crm={crm} currentUser={currentUser} intent={intent} clearIntent={clearIntent} />}
+          {active === "billing" && canManageBilling && <SubscriptionBillingWorkspace accessToken={session?.accessToken || getStoredAccessToken()} company={company} onBack={() => go("dashboard")} />}
           {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
@@ -52978,19 +52722,29 @@ function SmartManager() {
               <LazyMicrofinanceWorkspace />
             </Suspense>
           )}
+          {active === "money-agent" && (
+            <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><LoaderCircle className="animate-spin text-emerald-600" /></div>}>
+              <LazyMoneyAgentWorkspace currentUser={currentUser} />
+            </Suspense>
+          )}
+          {active === "property-management" && (
+            <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><LoaderCircle className="animate-spin text-emerald-600" /></div>}>
+              <LazyPropertyManagementWorkspace currentUser={currentUser} />
+            </Suspense>
+          )}
           {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} />}
-          {active === "community" && <CommunityGroupsModule currentUser={currentUser} />}
+          {active === "community" && <CommunityGroupsModule currentUser={currentUser} canManage={canManage} />}
           {active === "healthcare" && (
             <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><div className="text-center"><LoaderCircle className="mx-auto animate-spin text-emerald-600" size={24}/><p className="mt-3 text-sm font-medium text-slate-500">Loading Healthcare Command Center…</p></div></div>}>
               <LazyHealthcareClinicWorkspace currentUser={currentUser} company={company} isLive={Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo)} onNavigate={setActive} onToast={notify} />
             </Suspense>
           )}
-          {active === "school"      && <SchoolManagementModule  currentUser={currentUser} company={company} onFeesLoad={setSchFeesForAlerts} />}
+          {active === "school"      && <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><LoaderCircle className="animate-spin text-indigo-600"/></div>}><LazySchoolWorkspace onNavigate={setActive} /></Suspense>}
           {active === "pharmacy"    && <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><LoaderCircle className="animate-spin text-emerald-600"/></div>}><LazyPharmacyWorkspace onNavigate={setActive} /></Suspense>}
           {active === "hotel"       && <HotelManagementModule   currentUser={currentUser} company={company} onBookingsLoad={setHtlBookingsForAlerts} />}
           {active === "fleet"       && <FleetManagementModule      currentUser={currentUser} company={company} onVehiclesLoad={setVehiclesForAlerts} />}
           {active === "banking"     && <BankingMFIModule            currentUser={currentUser} company={company} onLoansLoad={setBankLoansForAlerts} />}
-          {active === "restaurant"  && <RestaurantModule            currentUser={currentUser} company={company} onOrdersLoad={setRstOrdersForAlerts} />}
+          {active === "restaurant"  && <RestaurantManagementModule  currentUser={currentUser} />}
           {active === "employee-portal" && (
             <EmployeePortal
               currentUser={currentUser}
@@ -53001,6 +52755,7 @@ function SmartManager() {
             />
           )}
           {active === "presentation" && <PresentationProgressView />}
+          {active === "profile" && <ProfileIdentityPage currentUser={currentUser} session={session} company={company} onNavigate={go} onSignOut={handleSignOut} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} onThemeChange={(theme) => { if (theme === "dark") setDarkMode(true); if (theme === "light") setDarkMode(false); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} initialTab={intent?.module === "profile" ? intent.profileTab : "overview"} />}
           {active === "settings" && (
             <SettingsPage
               company={company}
@@ -53012,6 +52767,8 @@ function SmartManager() {
               setCurrentUser={setCurrentUser}
               roleChangeApprovalsQuery={roleChangeApprovalsQuery}
               canManage={canManage}
+              canManageBilling={canManageBilling}
+              onOpenBilling={() => go("billing")}
               darkMode={darkMode}
               toggleDarkMode={toggleDarkMode}
               textSize={textSize}
@@ -53022,7 +52779,7 @@ function SmartManager() {
               accountSession={session?.demo ? null : session}
             />
           )}
-          {!["dashboard", "crm", "sales", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "activity"].includes(active) && (
+          {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "activity", "profile"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
           )}
         </main>
@@ -53030,6 +52787,19 @@ function SmartManager() {
     </div>
     </>
   );
+}
+
+function SubscriptionAccessBoundary({ access, loading, error, canManageBilling, onRetry, onOpenBilling, onNavigate, onSignOut }) {
+  if (loading) {
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6"><section className="w-full max-w-md rounded-[28px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]" role="status" aria-live="polite"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-700"><RefreshCw size={26} className="animate-spin" /></div><p className="mt-5 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-700">Workspace access</p><h1 className="mt-2 text-[24px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Confirming your subscription…</h1><p className="mt-3 text-[13px] leading-6 text-slate-500">Smart Manager checks the company subscription on the server before loading operational modules.</p></section></div>;
+  }
+
+  const label = subscriptionStateLabel(access);
+  const state = access?.state;
+  const hasError = Boolean(error);
+  const title = hasError ? "Subscription access needs attention." : state === "pending" ? "Payment confirmation is still pending." : "Your workspace data is safe.";
+  const copy = hasError ? "The server-backed subscription status could not be confirmed. Operational access remains paused until the check succeeds; no business data is removed." : state === "pending" ? "The payment provider has not yet confirmed this request. Smart Manager will not activate access from browser state alone." : "Your company records remain retained. A billing administrator can choose or renew a plan to restore operational access.";
+  return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6"><section className="w-full max-w-2xl rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,.1)] sm:p-9" aria-labelledby="subscription-access-title"><div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] ${hasError ? "bg-amber-50 text-amber-800" : state === "pending" ? "bg-amber-50 text-amber-800" : "bg-rose-50 text-rose-700"}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{hasError ? "Verification unavailable" : label}</span><h1 id="subscription-access-title" className="mt-4 text-[27px] font-bold tracking-[-.045em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{title}</h1><p className="mt-3 max-w-xl text-[13.5px] leading-6 text-slate-600">{copy}</p></div><span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600"><ShieldCheck size={27} /></span></div><div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-500">Server decision</p><p className="mt-1 text-[12px] leading-5 text-slate-700">{access?.reason || error || "Subscription access is not confirmed."}</p>{access?.accessUntil && <p className="mt-2 text-[11px] font-semibold text-slate-500">Access decision date: {new Date(access.accessUntil).toLocaleString("en-TZ", { dateStyle: "medium", timeStyle: "short" })}</p>}</div><div className="mt-6 flex flex-wrap gap-2"><button type="button" onClick={onRetry} className="inline-flex items-center gap-2 rounded-xl bg-[#0B5D3B] px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-[#084B30]"><RefreshCw size={14} />Refresh subscription status</button>{canManageBilling && <button type="button" onClick={onOpenBilling} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[12px] font-bold text-emerald-800 transition hover:bg-emerald-100"><CreditCard size={14} />Open Subscription &amp; Billing</button>}<button type="button" onClick={() => onNavigate("profile")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50"><UserCircle size={14} />Open profile</button><button type="button" onClick={() => onNavigate("support")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50"><CircleHelp size={14} />Help &amp; support</button><button type="button" onClick={onSignOut} className="inline-flex items-center gap-2 rounded-xl border border-red-100 px-4 py-2.5 text-[12px] font-bold text-red-700 transition hover:bg-red-50"><LogOut size={14} />Sign out</button></div><p className="mt-6 text-[10.5px] leading-5 text-slate-400">Subscription status, plan entitlements, and payment confirmation are database/provider decisions. This screen does not use browser storage to grant access.</p></section></div>;
 }
 
 function PresentationProgressView() {
@@ -53308,7 +53078,7 @@ function PresentationProgressView() {
       )}
 
       {/* Visual Completion Progress Bar Chart Widget with Hover Exact Counts */}
-      <div 
+      <div
         className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 relative cursor-pointer"
         onMouseEnter={() => setChartHovered(true)}
         onMouseLeave={() => setChartHovered(false)}
@@ -53537,7 +53307,7 @@ function PresentationProgressView() {
                       </div>
                     ) : (
                       m.note ? (
-                        <div 
+                        <div
                           className="group cursor-pointer mt-1"
                           onClick={() => {
                             setInlineEditingId(m.id);

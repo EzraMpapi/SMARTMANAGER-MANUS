@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, canonicalRoleId, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, roleDefinitionFor, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 import { setGuardedPersistenceCompanyId } from "../client/src/lib/guardedPersistenceClient";
 
 const jsonResponse = (body: unknown, status = 200) => ({
@@ -11,6 +11,7 @@ const jsonResponse = (body: unknown, status = 200) => ({
 
 afterEach(() => {
   setGuardedPersistenceCompanyId(null);
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -56,9 +57,11 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/brand/smart-manager-logo.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_MARK_URL = "/brand/smart-manager-mark.png"');
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
-    expect(brandLogoSource).toContain('width={1536} height={1024}');
+    expect(brandLogoSource).toContain('width={variant === "compact" ? 768 : 1536}');
+    expect(brandLogoSource).toContain('height={variant === "compact" ? 768 : 1024}');
     expect(brandLogoSource).toContain('variant?: "full" | "compact"');
     expect(homeSource).toContain('import { BrandLogo } from "../components/BrandLogo"');
     expect(homeSource).toContain('<BrandLogo variant="compact" priority');
@@ -71,7 +74,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
     expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
-    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
+    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/brand/smart-manager-logo.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
   });
 
@@ -106,10 +109,10 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps reload-session and provider-specific OAuth routes in the dashboard", () => {
     expect(dashboardSource).toContain('window.localStorage.getItem("bs_access_token")');
     expect(dashboardSource).toContain("authGetUser(token)");
-    expect(dashboardSource).toContain('authSignInWithOAuth("google")');
-    expect(dashboardSource).toContain('authSignInWithOAuth("azure")');
-    expect(dashboardSource).toContain('authSignInWithOAuth("apple")');
-    expect(dashboardSource).toContain("/auth/v1/authorize?provider=${provider}");
+    expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("google")}');
+    expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("azure")}');
+    expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("apple")}');
+    expect(publicAuthSource).toContain("/auth/v1/authorize?provider=${encodeURIComponent(provider)}");
   });
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
@@ -131,7 +134,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   it("keeps password-login failures truthful instead of collapsing them into a generic connection message", () => {
     expect(dashboardSource).toContain("toAuthUserMessage(loginError)");
     expect(dashboardSource).toContain("validatePasswordLogin(identifier, password)");
-    expect(dashboardSource).toContain("continue with that same provider");
+    expect(enterpriseAuthSource).toContain("Use the same provider you used when your workspace account was created.");
     expect(dashboardSource).not.toContain('setError("Something went wrong — check your connection.")');
   });
 
@@ -249,7 +252,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("keeps focused and minimal role home views inside each role's allowed module scope", () => {
-    expect(dashboardSource).toContain('const preferredTarget = currentUser.role === "Project Manager" ? "projects" : "support"');
+    expect(dashboardSource).toContain('const preferredTarget = currentRole.id === "Project Manager" ? "projects" : "support"');
     expect(dashboardSource).toContain("currentRole.allowedModules.includes(preferredTarget)");
     expect(dashboardSource).toContain('aria-label={`Open permitted ${targetLabel} workspace`}');
     expect(dashboardSource).toContain("does not duplicate that view or expose unrelated company-wide data");
@@ -466,6 +469,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("retries a transient network failure once and emits a reconnect-success toast", async () => {
+    vi.useFakeTimers();
     const fetchMock = vi.fn()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValueOnce(jsonResponse([{ id: "lead-1" }]));
@@ -475,7 +479,9 @@ describe("BusinessSphere launch and live-data integration", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     try {
-      const result = await runCompanyTableQuery("crm_leads");
+      const query = runCompanyTableQuery("crm_leads");
+      await vi.runAllTimersAsync();
+      const result = await query;
       expect(result.rows).toEqual([{ id: "lead-1" }]);
       expect(result.recoveredAfterRetry).toBe(true);
     } finally {
@@ -589,10 +595,13 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("handles runCompanyTableMutation transient retry and missing table errors", async () => {
+    vi.useFakeTimers();
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ message: "Network gateway timeout" }, 502)).mockResolvedValueOnce(jsonResponse({ id: "loan-uuid-99" }, 201));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await runCompanyTableMutation("business_loans", "insert", { lender: "CRDB Bank", principal: 2000000 });
+    const mutation = runCompanyTableMutation("business_loans", "insert", { lender: "CRDB Bank", principal: 2000000 });
+    await vi.runAllTimersAsync();
+    const result = await mutation;
     expect(result.error).toBeNull();
     expect(result.data).toMatchObject({ id: "loan-uuid-99" });
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -815,7 +824,17 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(resolveDailyBriefingFetchState({ sources: [], usingDemoBriefing: true, previewState: "loading" }).loading).toBe(true);
     expect(resolveDailyBriefingFetchState({ sources: [], usingDemoBriefing: true, previewState: "error" }).error?.message).toBe("Daily Briefing preview fetch failed");
   });
-});
+
+  it("canonicalizes legacy lowercase roles without granting unknown profiles a higher-privilege fallback", () => {
+    expect(canonicalRoleId("owner")).toBe("Organization Owner");
+    expect(canonicalRoleId("ADMIN")).toBe("Super Administrator");
+    expect(canonicalRoleId("finance manager")).toBe("Finance Manager");
+    expect(canonicalRoleId("School Administrator")).toBe("School Administrator");
+    expect(roleDefinitionFor("School Administrator").allowedModules).toContain("school");
+    expect(canonicalRoleId("unrecognized-role")).toBe("Employee");
+    expect(roleDefinitionFor("owner").writeAccess).toBe("full");
+    expect(roleDefinitionFor("unrecognized-role").writeAccess).toBe("none");
+  });
 
   it("supports departmental budget thresholds, inline limit adjustments, alert status classification, and visual comparison bar chart", () => {
     const prefsContext = readFileSync(new URL("../client/src/contexts/DashboardPreferencesContext.tsx", import.meta.url), "utf8");
@@ -898,4 +917,6 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
   expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"');
   expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"');
   expect(dashboardSource).toContain('<LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated=');
+});
+
 });

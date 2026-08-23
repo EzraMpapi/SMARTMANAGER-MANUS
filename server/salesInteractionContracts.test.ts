@@ -69,6 +69,12 @@ describe("Sales interaction and persistence contracts", () => {
     expect(dashboardSource).toContain('quotationsHook={quotations} crm={crm} currentUser={currentUser}');
   });
 
+  it("rejects a duplicate payment reference before any payment write", () => {
+    expect(dashboardSource).toContain("This payment reference is already recorded for the invoice. No duplicate payment was written.");
+    expect(dashboardSource).toContain("normalizedReference");
+    expect(dashboardSource).toContain("return null;");
+  });
+
   it("keeps the repaired typed Invoice contract out of generic JSON normalization", () => {
     expect(dashboardSource).toContain('sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"])');
     expect(dashboardSource).toContain('sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"])');
