@@ -25,3 +25,9 @@ The zero-row exception query completed successfully at `2026-08-13 03:50 UTC` wi
 | 2026-08-23 13:04 | `rlhngsrihahhyxnjxrxm` | `profile_identity_center` | Succeeded through the connected Supabase migration operation (`success: true`; version `20260823130430`). | Additive profile identity/preference columns, scoped avatar references, and authenticated self-service RPCs; no table drops or data deletion. |
 
 The post-apply migration inventory confirmed `profile_identity_center` is recorded in the project. The complete verbose public-table inventory contained 475 tables, all reported RLS-enabled, and the repository comparison found zero missing referenced tables. The profile row now has the added identity columns required by the Profile Identity Center.
+
+| 2026-08-23 13:54 | `rlhngsrihahhyxnjxrxm` | `rls_policy_helper_execute_grants` | Succeeded through the connected Supabase migration operation (`success: true`; version `20260823135437`). | Pins six reviewed RLS policy helpers to `pg_catalog, public, auth`; revokes `PUBLIC`/`anon`; grants `authenticated` execution only. No table data, policies, or broad RPC grants changed. |
+
+Post-apply verification confirmed all six helpers have `authenticated` `EXECUTE=true`, `anon`/`PUBLIC` `EXECUTE=false`, and the pinned search path. Reversible transaction-scoped authenticated probes over billing, banking, fleet, HR, subscription, and profiles completed without the prior helper permission errors and rolled back without data changes.
+
+The source migration is `supabase/migrations/20260823_047_rls_policy_helper_execute_grants.sql`; its focused contract test is `server/supabasePolicyHelperGrants.test.ts`.
