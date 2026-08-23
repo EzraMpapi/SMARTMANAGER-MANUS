@@ -1,0 +1,141 @@
+{
+  "generated_at": "2026-08-23T21:06:00Z",
+  "supabase": {
+    "project_id": "rlhngsrihahhyxnjxrxm",
+    "application": {
+      "authorized_scope": "exactly five P0 CREATE INDEX IF NOT EXISTS statements",
+      "remote_migration_name": "fk_index_optimization_p0_review_20260823",
+      "remote_migration_version": "20260823204324",
+      "success": true,
+      "p1_p2_applied": false
+    },
+    "preflight_before_application": {
+      "captured_at": "2026-08-23T20:43:06Z",
+      "target_indexes_present": 0,
+      "workforce_role_permissions": {
+        "estimated_rows": 469,
+        "seq_scan": 8,
+        "idx_scan": 480,
+        "n_tup_ins": 471,
+        "n_tup_upd": 0,
+        "n_tup_del": 0
+      },
+      "workforce_permissions": {
+        "estimated_rows": 140,
+        "seq_scan": 9,
+        "idx_scan": 1168,
+        "n_tup_ins": 142,
+        "n_tup_upd": 0,
+        "n_tup_del": 0
+      },
+      "source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23_20-43-06.367123948_supabase_execute_sql_d7c4a09a.json"
+    },
+    "post_application_audit": {
+      "captured_at": "2026-08-23T20:47:31Z",
+      "foreign_keys": 1097,
+      "covered": 462,
+      "uncovered": 635,
+      "coverage_rule": "valid, non-partial index whose leading columns exactly match the foreign-key child columns; primary and unique indexes count",
+      "target_indexes_present": 5,
+      "workforce_role_permissions": {
+        "estimated_rows": 469,
+        "seq_scan": 15,
+        "idx_scan": 486,
+        "n_tup_ins": 471,
+        "n_tup_upd": 0,
+        "n_tup_del": 0
+      },
+      "workforce_permissions": {
+        "estimated_rows": 140,
+        "seq_scan": 14,
+        "idx_scan": 1170,
+        "n_tup_ins": 142,
+        "n_tup_upd": 0,
+        "n_tup_del": 0
+      },
+      "indexes": [
+        {"name": "ix_workforce_role_permissions_company_id_approval_request_id_fk", "table": "workforce_role_permissions", "columns": ["company_id", "approval_request_id"]},
+        {"name": "ix_workforce_role_permissions_granted_by_fk", "table": "workforce_role_permissions", "columns": ["granted_by"]},
+        {"name": "ix_workforce_role_permissions_revoked_by_fk", "table": "workforce_role_permissions", "columns": ["revoked_by"]},
+        {"name": "ix_workforce_permissions_created_by_fk", "table": "workforce_permissions", "columns": ["created_by"]},
+        {"name": "ix_workforce_permissions_updated_by_fk", "table": "workforce_permissions", "columns": ["updated_by"]}
+      ],
+      "source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23_20-47-31.436810352_supabase_execute_sql_51e5ee58.json"
+    },
+    "benchmarks": {
+      "format": "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)",
+      "pre_application_source_window": "2026-08-23T14:48:04Z to 2026-08-23T14:49:25Z",
+      "entries": [
+        {
+          "case": "workforce_role_permissions company_id + approval_request_id",
+          "predicate": "company_id = 0d550b0b-8f57-45d2-8d1b-df1a0f7a5ec6 AND approval_request_id = 00000000-0000-0000-0000-000000000001",
+          "pre": {"node": "Bitmap Heap Scan", "index": "workforce_role_permissions_company_role_status_idx", "actual_rows": 0, "execution_ms": 0.166, "planning_ms": 0.994, "shared_hit_blocks": 16, "shared_read_blocks": 0},
+          "post": {"node": "Index Scan", "index": "ix_workforce_role_permissions_company_id_approval_request_id_fk", "actual_rows": 0, "execution_ms": 0.105, "planning_ms": 2.557, "shared_hit_blocks": 1, "shared_read_blocks": 0},
+          "pre_source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23_14-48-06.401321191_supabase_execute_sql_d14cbec8.json",
+          "post_source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23_20-51-07.069164536_supabase_execute_sql_98acda99.json"
+        },
+        {
+          "case": "workforce_role_permissions company_id + granted_by",
+          "predicate": "company_id = 0d550b0b-8f57-45d2-8d1b-df1a0f7a5ec6 AND granted_by = cfa31225-6481-4cc3-9af3-6f009a9259cb ORDER BY granted_at DESC LIMIT 10",
+          "pre": {"node": "Bitmap Heap Scan under Sort", "index": "workforce_role_permissions_company_role_status_idx", "actual_rows": 67, "execution_ms": 0.25, "planning_ms": 0.969, "shared_hit_blocks": 19, "shared_read_blocks": 0},
+          "post": {"node": "Bitmap Heap Scan under Sort", "index": "ix_workforce_role_permissions_granted_by_fk plus company_id bitmap", "actual_rows": 10, "execution_ms": 1.558, "planning_ms": 1.975, "shared_hit_blocks": 20, "shared_read_blocks": 0},
+          "pre_source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23_14-48-25.691723531_supabase_execute_sql_581a0fdc.json",
+          "post_source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23_20-51-27.554141336_supabase_execute_sql_2f65c270.json"
+        },
+        {
+          "case": "workforce_permissions company_id + created_by",
+          "predicate": "company_id = 0d550b0b-8f57-45d2-8d1b-df1a0f7a5ec6 AND created_by = cfa31225-6481-4cc3-9af3-6f009a9259cb ORDER BY created_at DESC LIMIT 10",
+          "pre": {"node": "Bitmap Heap Scan under Sort", "index": "workforce_permissions_company_module_idx", "actual_rows": 20, "execution_ms": 0.183, "planning_ms": 0.719, "shared_hit_blocks": 5, "shared_read_blocks": 0},
+          "post": {"node": "Bitmap Heap Scan under Sort", "index": "ix_workforce_permissions_created_by_fk plus company_id bitmap", "actual_rows": 10, "execution_ms": 0.893, "planning_ms": 1.113, "shared_hit_blocks": 6, "shared_read_blocks": 0},
+          "pre_source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23T14-49-27.683230842_supabase_execute_sql_f3645c29.json",
+          "post_source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23_20-51-37.851178085_supabase_execute_sql_d7bbbdd7.json"
+        },
+        {
+          "case": "workforce_role_permissions revoked_by IS NULL",
+          "predicate": "revoked_by IS NULL LIMIT 100",
+          "pre": null,
+          "post": {"node": "Seq Scan", "index": null, "actual_rows": 100, "execution_ms": 0.154, "planning_ms": 0.888, "shared_hit_blocks": 5, "shared_read_blocks": 0},
+          "post_source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23_20-46-28.989432122_supabase_execute_sql_03c4dec6.json",
+          "limitation": "No historical pre result was captured for this predicate; no non-null revoked_by sample was available in the current live table, and the table is small."
+        },
+        {
+          "case": "workforce_permissions updated_by IS NULL",
+          "predicate": "updated_by IS NULL LIMIT 100",
+          "pre": null,
+          "post": {"node": "Seq Scan", "index": null, "actual_rows": 100, "execution_ms": 0.213, "planning_ms": 0.751, "shared_hit_blocks": 5, "shared_read_blocks": 0},
+          "post_source_result": "/home/ubuntu/.mcp/tool-results/2026-08-23_20-46-54.071212740_supabase_execute_sql_393d28cc.json",
+          "limitation": "No historical pre result was captured for this predicate; no non-null updated_by sample was available in the current live table, and the table is small."
+        }
+      ],
+      "interpretation": "The new composite and actor indexes are selected for exact predicates in representative plans where the planner expects selective access. The two NULL-heavy audit columns remain sequential scans because all observed rows match the NULL predicate and the relations are small. These are plan observations, not a controlled speedup claim. Parent-side FK enforcement was not benchmarked with destructive DELETE/UPDATE operations."
+    }
+  },
+  "schema_reconciliation": {
+    "repository_migration_files": 76,
+    "repository_declared_tables": 285,
+    "live_public_tables": 519,
+    "missing_repository_declared_tables": [],
+    "production_migration_count": 130,
+    "latest_production_migration": {"name": "fk_index_optimization_p0_review_20260823", "version": "20260823204324"},
+    "unapplied_local_migration_names": ["complete_erp_schema_baseline", "fix_pos_return_audit_format", "fix_pos_sale_audit_format", "fk_index_optimization_p0_review", "global_admin_control_center", "harden_pos_rpc_privileges", "sales_document_contract_repair", "sales_order_acceptance_followup"],
+    "action": "no table DDL executed; all repository-declared tables are already present; local ledger-name differences were not blindly replayed",
+    "source_result": "/tmp/repository_live_table_reconciliation_20260823.json"
+  },
+  "ci": {"final_commit": "96e4fc959d32b450cc094a2c4fe27a25cbd3ee80", "run_id": 32666171009, "status": "completed", "conclusion": "success", "jobs": ["Unit, Schema, Type and Production Build", "Browser Signup Journey"]},
+  "vercel": {
+    "team_id": "team_4wJsmnbcklDGcpeMu7Onld7v",
+    "project_id": "prj_R6b8nLQWSUUshxHW5O0rj8dDOyw2",
+    "project_name": "menejajanja",
+    "required_domain": "https://menejajanja.vercel.app",
+    "configured_domains": ["menejajanja.vercel.app", "menejajanja-ezra-mpapi.vercel.app", "menejajanja-git-main-ezra-mpapi.vercel.app"],
+    "latest_ready_production": {"deployment_id": "dpl_9uXhzRjFYfZFpbjy5PJffuQFpNaW", "sha": "a4a72ce18846e54fc426a9c4d13a562ef93f1e7c", "url": "menejajanja-64dfvvaun-ezra-mpapi.vercel.app"},
+    "requested_sha": "a273450c200b8041bab45682d6c49f3b4c362171",
+    "requested_sha_is_ancestor_of_latest_ready": true,
+    "final_pushed_sha": "96e4fc959d32b450cc094a2c4fe27a25cbd3ee80",
+    "latest_ready_is_ancestor_of_final_pushed": true,
+    "domain_fetch": {"captured_at": "2026-08-23T21:05:51Z", "status": 200, "content_type": "text/html; charset=utf-8", "success": true, "x_vercel_cache": "HIT", "last_modified": "2026-08-23T20:59:33Z"},
+    "application_changes_live_via_descendant": true,
+    "audit_only_commit_deployed_independently": false,
+    "status": "verified: READY production deployment a4a72ce is a descendant of a273450 and an ancestor of final commit 96e4fc9; the final commits contain audit/migration evidence only, so no separate runtime deployment was required; no alternate project/domain or manual deployment was created"
+  }
+}

@@ -1,15 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.resolve(root, file), "utf8");
 const migration = read("supabase/migrations/20260823_062_subscription_free_plan_model.sql");
 const service = read("server/subscriptionBilling.ts");
 const routes = read("server/_core/apiApp.ts");
-const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+const dashboardSourceText = dashboardSource;
 const profile = read("client/src/components/ProfileIdentityCenter.jsx");
 const billing = read("client/src/components/SubscriptionBillingWorkspace.jsx");
+const dashboard = [dashboardSourceText, billing].join("\n");
 const adapter = read("client/src/lib/subscriptionAccess.js");
 
 describe("platform subscription access contracts", () => {
@@ -51,7 +53,7 @@ describe("platform subscription access contracts", () => {
     expect(dashboard).toContain('callWorkspaceRpcWithSessionRefresh("billing_start_free_plan"');
     expect(dashboard).toContain("from the account menu");
     expect(dashboard).toContain("FREE_15");
-    expect(dashboard).toContain("FREE kwa siku 15");
+    expect(dashboard).toContain("Anza na siku 15 BURE");
   });
 
   it("fails closed when access is unknown, pending, expired, required, or not server-allowed", () => {
