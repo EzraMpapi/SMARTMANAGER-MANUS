@@ -49,7 +49,9 @@ test("loads the Property Management workspace and submits a guarded portfolio fo
   if (await tour.count()) await expect(tour).toHaveCount(0);
   const closeMenu = page.getByRole("button", { name: "Close menu" }); if (await closeMenu.count()) await closeMenu.click();
   const openMenu = page.getByRole("button", { name: "Open menu" }); if (await openMenu.count()) await openMenu.click();
-  await page.locator("aside nav button").filter({ hasText: "Property Management" }).click({ force: true });
+  const propertyNavigation = page.locator("aside nav button").filter({ hasText: "Property Management" });
+  await expect(propertyNavigation).toHaveCount(1);
+  await propertyNavigation.evaluate((node) => (node as HTMLButtonElement).click());
   await expect(page.getByRole("heading", { name: "Portfolio, leases, rent, and property operations" })).toBeVisible();
   await expect(page.getByText("50.00%", { exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Portfolio", exact: true }).click();
