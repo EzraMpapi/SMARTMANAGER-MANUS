@@ -48,8 +48,8 @@ describe("foreign-key index migration plan generator", () => {
     const manifest = JSON.parse(fs.readFileSync("supabase/generated/fk-index-optimization/fk-index-plan.json", "utf8"));
     expect(manifest.rows).toHaveLength(640);
     expect(manifest.tierCounts.P0_POPULATED_OR_HOT).toBe(5);
-    expect(manifest.tierCounts.P1_ADVISOR_TRANSACTION).toBe(1);
-    expect(manifest.tierCounts.P2_REVIEW_BACKLOG).toBe(634);
+    expect(manifest.tierCounts.P1_ADVISOR_TRANSACTION).toBe(19);
+    expect(manifest.tierCounts.P2_REVIEW_BACKLOG).toBe(616);
     const p0Sql = fs.readFileSync("supabase/generated/fk-index-optimization/fk-index-optimization-p0.sql", "utf8");
     expect((p0Sql.match(/CREATE INDEX IF NOT EXISTS/g) ?? []).length).toBe(5);
     expect(p0Sql).not.toContain("CREATE INDEX CONCURRENTLY");
