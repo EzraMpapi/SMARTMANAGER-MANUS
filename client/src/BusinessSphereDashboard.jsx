@@ -73,6 +73,7 @@ const LazyHealthcareClinicWorkspace = lazy(() => import("./components/Healthcare
 const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWorkspace").then((module) => ({ default: module.MicrofinanceWorkspace })));
 const LazyPharmacyWorkspace = lazy(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })));
 const LazySchoolWorkspace = lazy(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })));
+const LazyMoneyAgentWorkspace = lazy(() => import("./components/MoneyAgentWorkspace").then((module) => ({ default: module.MoneyAgentWorkspace })));
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
@@ -3167,7 +3168,7 @@ const ALL_MODULE_IDS = [
   "dashboard", "crm", "sales", "inventory", "procurement", "finance", "reports", "hr",
   "manufacturing", "scm", "marketing", "ecommerce", "pos", "documents", "projects",
   "support", "analytics", "notifications", "activity", "integrations", "ai", "workflows", "collaboration", "tra_portal",
-  "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "employee-portal", "presentation", "billing",
+  "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "money-agent", "employee-portal", "presentation", "billing",
 ];
 
 const ROLES = [
@@ -3205,6 +3206,31 @@ const ROLES = [
     id: "Sales Manager", category: "Department Head",
     description: "Sees every module for company-wide oversight; day-to-day work — pipeline, quotations, orders, invoicing, campaigns — happens in CRM, Sales, and Marketing.",
     allowedModules: ALL_MODULE_IDS, primaryModules: ["crm", "sales", "marketing", "ecommerce", "analytics", "support", "workflows"], writeAccess: "full",
+  },
+  {
+    id: "Institution Administrator", category: "Financial Services",
+    description: "Administers the institution-wide Money Agent programme, branches, controls, settlement, and governed financial integrations.",
+    allowedModules: ALL_MODULE_IDS, primaryModules: ["money-agent", "finance", "reports", "analytics"], writeAccess: "full",
+  },
+  {
+    id: "Branch Manager", category: "Financial Services",
+    description: "Runs branch agents, cash operations, customer service, approvals, and daily settlement within the assigned workspace.",
+    allowedModules: ["dashboard", "money-agent", "finance", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Money Agent Manager", category: "Financial Services",
+    description: "Manages agent onboarding, KYC/KYB, limits, fees, commissions, liquidity, and reconciliation controls.",
+    allowedModules: ["dashboard", "money-agent", "finance", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
+  },
+  {
+    id: "Money Agent", category: "Financial Services",
+    description: "Operates customer-facing cash-in/cash-out and service transaction intents within verified agent limits.",
+    allowedModules: ["dashboard", "money-agent", "notifications"], primaryModules: ["money-agent"], writeAccess: "full",
+  },
+  {
+    id: "Supervisor", category: "Financial Services",
+    description: "Reviews maker-checker approvals, agent activity, risk alerts, and settlement variances without institution configuration authority.",
+    allowedModules: ["dashboard", "money-agent", "reports", "notifications"], primaryModules: ["money-agent", "reports"], writeAccess: "full",
   },
   {
     id: "Procurement Officer", category: "Operations",
@@ -3277,6 +3303,11 @@ const ROLES = [
     allowedModules: ALL_MODULE_IDS, primaryModules: [], writeAccess: "none",
   },
   {
+    id: "Customer", category: "Money Agent Portal",
+    description: "A customer-facing Money Agent portal limited to the signed-in customer’s own wallet, transactions, receipts, notifications, and KYC status.",
+    allowedModules: ["dashboard", "money-agent", "notifications"], primaryModules: ["money-agent"], writeAccess: "none",
+  },
+  {
     id: "External Client", category: "External Portal",
     description: "A customer-facing role, scoped to Customer Support only. Honest limitation: this build has no real customer authentication, so this view is not filtered to one client's own records — see the handover doc.",
     allowedModules: ["support"], primaryModules: ["support"], writeAccess: "none",
@@ -3291,6 +3322,7 @@ const ROLES = [
 const ROLE_ALIASES = {
   owner: "Organization Owner",
   admin: "Super Administrator",
+  customer: "Customer",
   "system administrator": "Super Administrator",
 };
 
@@ -3327,11 +3359,17 @@ const ROLE_HOME_VIEW = {
   "Finance Manager": "financial",
   "HR Manager": "hr",
   "Sales Manager": "sales",
+  "Institution Administrator": "focused",
+  "Branch Manager": "focused",
+  "Money Agent Manager": "focused",
+  "Money Agent": "focused",
+  "Supervisor": "focused",
   "Procurement Officer": "operations",
   "Warehouse Manager": "operations",
   "Project Manager": "focused",
   "School Administrator": "focused",
   "Customer Support Agent": "focused",
+  "Customer": "focused",
   "Employee": "minimal",
   "Auditor": "executive",
   "External Client": "minimal",
@@ -3365,6 +3403,7 @@ const MODULES = [
   { id: "tra_portal", label: "TRA Portal", icon: ReceiptText, live: true },
   { id: "ai", label: "AI Assistant", icon: Brain, live: true },
   { id: "microfinance", label: "Microfinance", icon: HandCoins, live: true },
+  { id: "money-agent", label: "Money Agent", icon: Banknote, live: true },
   { id: "vicoba", label: "VICOBA / SACCOS", icon: Users2, live: true },
   { id: "community", label: "Community Groups", icon: TreePine, live: true },
   { id: "healthcare", label: "Healthcare / Clinic", icon: HeartPulse, live: true },
@@ -52948,6 +52987,11 @@ function SmartManager() {
           {active === "microfinance" && (
             <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><div className="text-center"><LoaderCircle className="mx-auto animate-spin text-emerald-600" size={24}/><p className="mt-3 text-sm font-medium text-slate-500">Loading Microfinance Command Center…</p></div></div>}>
               <LazyMicrofinanceWorkspace />
+            </Suspense>
+          )}
+          {active === "money-agent" && (
+            <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><div className="text-center"><LoaderCircle className="mx-auto animate-spin text-emerald-600" size={24}/><p className="mt-3 text-sm font-medium text-slate-500">Loading Money Agent Command Center…</p></div></div>}>
+              <LazyMoneyAgentWorkspace currentUser={currentUser} />
             </Suspense>
           )}
           {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} />}
