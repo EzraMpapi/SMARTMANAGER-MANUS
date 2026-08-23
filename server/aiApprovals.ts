@@ -8,6 +8,29 @@ const EXPIRY_MS = 24 * 60 * 60 * 1000;
 type VerifiedProfile = { id: string; company_id: string; role: string; full_name: string | null; customer_ref: string | null };
 type ApprovalRow = { id: string; name?: string; status?: string; notes?: string | null; data?: unknown };
 
+const VERIFIED_ROLE_ALIASES: Record<string, string> = {
+  owner: "Organization Owner",
+  "organization owner": "Organization Owner",
+  admin: "Super Administrator",
+  administrator: "Super Administrator",
+  "system administrator": "System Administrator",
+};
+
+const VERIFIED_ROLE_NAMES = [
+  "Super Administrator", "Organization Owner", "CEO", "CFO", "COO", "HR Manager", "Sales Manager",
+  "Procurement Officer", "Warehouse Manager", "Project Manager", "Customer Support Agent", "Support Manager", "Support Agent",
+  "Clinic Administrator", "Doctor", "Nurse", "Laboratory Technician", "Pharmacist", "Receptionist", "Billing Officer",
+  "School Administrator", "Employee", "Auditor", "External Client", "Supplier", "Finance Manager", "Cashier",
+  "Pharmacy Manager", "Pharmacy Technician", "Inventory Manager", "Support Administrator",
+];
+
+export function canonicalVerifiedRole(role: string) {
+  const normalized = String(role || "").trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  if (!normalized) return "Employee";
+  if (VERIFIED_ROLE_ALIASES[normalized]) return VERIFIED_ROLE_ALIASES[normalized];
+  return VERIFIED_ROLE_NAMES.find((name) => name.toLowerCase() === normalized) || String(role).trim();
+}
+
 const ACTION_RULES: Record<string, { label: string; module: string; roles: string[] }> = {
   create_lead: { label: "Create CRM lead", module: "crm", roles: ["Sales Manager", "Organization Owner", "CEO", "Super Administrator"] },
   adjust_stock: { label: "Adjust inventory stock", module: "inventory", roles: ["Warehouse Manager", "Organization Owner", "CEO", "Super Administrator"] },
@@ -50,7 +73,7 @@ export async function resolveVerifiedProfile(req: CreateExpressContextOptions["r
   const rows = await supabaseRequest(`profiles?select=id,company_id,role,full_name,customer_ref&id=eq.${encodeURIComponent(user.id)}&limit=1`, token) as VerifiedProfile[];
   const profile = rows[0];
   if (!profile?.company_id || !profile.role) throw new TRPCError({ code: "FORBIDDEN", message: "Your workspace role is not configured for AI approval." });
-  return { profile, token };
+  return { profile: { ...profile, role: canonicalVerifiedRole(profile.role) }, token };
 }
 
 export function actionRule(operation: string) {

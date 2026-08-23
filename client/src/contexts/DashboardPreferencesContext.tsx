@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { trpc } from "../lib/trpc";
 
 interface DashboardPreferences {
   compactDensity: boolean;
@@ -18,6 +19,8 @@ interface DashboardPreferencesContextType {
   resetPreferences: () => void;
   formatMoney: (amountInTzs: number, overrideCurrency?: "TZS" | "USD") => string;
   formatLocalDate: (dateStringOrTimestamp: string | number | Date) => string;
+  isPersisting: boolean;
+  persistenceError: string | null;
 }
 
 const defaultDepartmentBudgets: Record<string, number> = {
@@ -40,39 +43,90 @@ const defaultPreferences: DashboardPreferences = {
   departmentBudgets: defaultDepartmentBudgets,
 };
 
+function hasStoredSupabaseSession() {
+  if (typeof window === "undefined") return false;
+  try {
+    return Boolean(window.localStorage.getItem("bs_access_token") || window.sessionStorage.getItem("bs_session_access_token"));
+  } catch {
+    return false;
+  }
+}
+
+function normalizePreferences(value: Partial<DashboardPreferences> | null | undefined): DashboardPreferences {
+  return {
+    ...defaultPreferences,
+    ...(value || {}),
+    accentColor: value?.accentColor === "emerald" ? "emerald" : "gold",
+    currency: value?.currency === "USD" ? "USD" : "TZS",
+    timezone: typeof value?.timezone === "string" && value.timezone.trim() ? value.timezone.trim() : defaultPreferences.timezone,
+    fxRateOverride: Number.isFinite(Number(value?.fxRateOverride)) && Number(value?.fxRateOverride) > 0 ? Number(value?.fxRateOverride) : defaultPreferences.fxRateOverride,
+    departmentBudgets: { ...defaultDepartmentBudgets, ...(value?.departmentBudgets || {}) },
+  };
+}
+
 const DashboardPreferencesContext = createContext<DashboardPreferencesContextType | undefined>(undefined);
 
 export function DashboardPreferencesProvider({ children }: { children: React.ReactNode }) {
+  const liveSession = hasStoredSupabaseSession();
+  const persistedQuery = trpc.dashboardPreferences.get.useQuery(undefined, { enabled: liveSession, retry: false, staleTime: 5 * 60 * 1000 });
+  const saveMutation = trpc.dashboardPreferences.save.useMutation();
+  const hydratedRef = useRef(false);
   const [preferences, setPreferences] = useState<DashboardPreferences>(() => {
-    if (typeof window !== "undefined") {
+    if (!liveSession && typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("smart_manager_dashboard_prefs");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          return {
-            ...defaultPreferences,
-            ...parsed,
-            departmentBudgets: { ...defaultDepartmentBudgets, ...(parsed.departmentBudgets || {}) },
-          };
-        }
+        if (stored) return normalizePreferences(JSON.parse(stored));
       } catch (_e) {
-        // fallback
+        // Isolated preview fallback remains intentionally best-effort.
       }
     }
     return defaultPreferences;
   });
+  const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("smart_manager_dashboard_prefs", JSON.stringify(preferences));
-    }
-  }, [preferences]);
+    if (!liveSession || !persistedQuery.data || hydratedRef.current) return;
+    hydratedRef.current = true;
+    setPreferences(normalizePreferences(persistedQuery.data.preferences));
+  }, [liveSession, persistedQuery.data]);
 
-  const updatePreference = <K extends keyof DashboardPreferences>(key: K, value: DashboardPreferences[K]) => {
-    setPreferences(prev => ({ ...prev, [key]: value }));
+  useEffect(() => {
+    if (!liveSession && typeof window !== "undefined") {
+      try {
+        localStorage.setItem("smart_manager_dashboard_prefs", JSON.stringify(preferences));
+      } catch (_e) {
+        // Isolated preview fallback remains intentionally best-effort.
+      }
+    }
+  }, [liveSession, preferences]);
+
+  const persist = (next: DashboardPreferences, previous: DashboardPreferences) => {
+    if (!liveSession) return;
+    setPersistenceError(null);
+    saveMutation.mutate(next, {
+      onError: (error) => {
+        setPreferences(previous);
+        setPersistenceError(error.message || "Dashboard preferences could not be saved.");
+      },
+      onSuccess: () => setPersistenceError(null),
+    });
   };
 
-  const resetPreferences = () => setPreferences(defaultPreferences);
+  const updatePreference = <K extends keyof DashboardPreferences>(key: K, value: DashboardPreferences[K]) => {
+    setPreferences((previous) => {
+      const next = normalizePreferences({ ...previous, [key]: value });
+      persist(next, previous);
+      return next;
+    });
+  };
+
+  const resetPreferences = () => {
+    setPreferences((previous) => {
+      const next = normalizePreferences(defaultPreferences);
+      persist(next, previous);
+      return next;
+    });
+  };
 
   const formatMoney = (amountInTzs: number, overrideCurrency?: "TZS" | "USD") => {
     const cur = overrideCurrency || preferences.currency || "TZS";
@@ -103,7 +157,7 @@ export function DashboardPreferencesProvider({ children }: { children: React.Rea
   };
 
   return (
-    <DashboardPreferencesContext.Provider value={{ preferences, updatePreference, resetPreferences, formatMoney, formatLocalDate }}>
+    <DashboardPreferencesContext.Provider value={{ preferences, updatePreference, resetPreferences, formatMoney, formatLocalDate, isPersisting: saveMutation.isPending, persistenceError }}>
       {children}
     </DashboardPreferencesContext.Provider>
   );

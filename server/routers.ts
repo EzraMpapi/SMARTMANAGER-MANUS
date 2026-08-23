@@ -18,6 +18,7 @@ import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } f
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { getWorkspaceSettings, saveWorkspaceSettings } from "./workspaceSettings";
+import { dashboardPreferencesInput, getDashboardPreferences, saveDashboardPreferences } from "./dashboardPreferences";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
@@ -881,6 +882,11 @@ export const appRouter = router({
         collaborationWorkflowWebhookEnabled: z.boolean().optional(), collaborationWorkflowWebhookUrl: z.string().url().max(2_000).or(z.literal("")).optional(), collaborationWorkflowWebhookSecret: z.string().max(512).optional(),
       }),
     })).mutation(({ ctx, input }) => saveWorkspaceSettings(ctx.req, input)),
+  }),
+
+  dashboardPreferences: router({
+    get: protectedProcedure.query(({ ctx }) => getDashboardPreferences(ctx.req)),
+    save: protectedProcedure.input(dashboardPreferencesInput).mutation(({ ctx, input }) => saveDashboardPreferences(ctx.req, input)),
   }),
 
   teamInvitations: router({
