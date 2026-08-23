@@ -78,7 +78,7 @@ The browser suite verified authentication/recovery and signup journeys, role-res
 | P0 | Atomic and concurrent-safe legacy invoice payments | Current implementation uses two separate database writes and has no repository-proven durable idempotency key/RPC | Design, review, and apply an additive tenant-scoped migration with a unique idempotency constraint and atomic RPC; then update the client to call it |
 | P1 | Full authenticated module CRUD coverage | The legacy dashboard has a very large role- and data-dependent surface | Expand isolated Playwright journeys by role and workflow, then repeat against controlled staging data |
 | P2 | Main dashboard bundle size | The legacy monolithic component remains a large chunk | Decompose or safely code-split after persistence and live-environment blockers are addressed |
-| P0 | Push and CI verification | The final remote synchronization attempt was rejected because the configured GitHub CLI credentials are invalid | Re-authenticate the GitHub CLI, fetch/rebase `main`, stage only reviewed changes, push normally, and monitor the resulting CI run |
+The reviewed audit commit [`ea06776`](https://github.com/EzraMpapi/SMARTMANAGER-MANUS/commit/ea06776) is pushed to `main`. GitHub Actions run [`32637158184`](https://github.com/EzraMpapi/SMARTMANAGER-MANUS/actions/runs/32637158184) completed successfully: the unit/schema/type/build job and browser job both passed.
 
 No migration, payment, provider call, or deployment was performed merely to turn any of these rows green.
 
