@@ -84,12 +84,11 @@ export function useSubscriptionAccess({ accessToken, enabled = true } = {}) {
   }, [refresh]);
 
   useEffect(() => {
-    const refreshAfterSubscriptionUpdate = () => {
-      void refresh();
-    };
-    window.addEventListener("smart-manager:subscription-updated", refreshAfterSubscriptionUpdate);
-    return () => window.removeEventListener("smart-manager:subscription-updated", refreshAfterSubscriptionUpdate);
-  }, [refresh]);
+    if (!enabled || !accessToken || typeof window === "undefined") return undefined;
+    const refreshAfterActivation = () => { void refresh(); };
+    window.addEventListener("smart-manager:subscription-updated", refreshAfterActivation);
+    return () => window.removeEventListener("smart-manager:subscription-updated", refreshAfterActivation);
+  }, [accessToken, enabled, refresh]);
 
   const access = useMemo(() => normalizeSubscriptionAccess(request.payload), [request.payload]);
   return {
