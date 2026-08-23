@@ -114,6 +114,10 @@ const LazyPropertyManagementWorkspace = lazyWorkspaceWithRecovery(() => import("
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.ITE_SUPABASE_ANON_KEY || "";
 const IS_CONFIGURED     = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+// Slice 1 is deliberately opt-in: the established Settings/HR/invitation
+// flow remains the safe rollback path until the workforce projection passes
+// staging and tenant-isolation verification.
+const TEAM_WORKFORCE_CENTER_ENABLED = import.meta.env.VITE_TEAM_WORKFORCE_CENTER === "true";
 const IS_ISOLATED_SIGNUP_E2E = import.meta.env.MODE === "e2e";
 const GUARDED_WRITE_TABLES = new Set(["finance_expenses", "sales_invoices", "inventory_items", "crm_leads"]);
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
@@ -15126,7 +15130,7 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
           onMarkPaid={markInvoicePaid}
           onDelete={deleteInvoice}
           onRecordPayment={(id, payment) => recordPayment(invoices, id, payment, `${currentUser.name} (${currentUser.role})`)}
-        
+
           company={company}
         />
       )}
@@ -16247,7 +16251,7 @@ function BudgetsView({ expenses }) {
           </div>
         </div>
       )}
-    
+
       {overCount > 0 && (
         <div className="flex items-center gap-3 p-3.5 rounded-xl border border-[#FCA5A5] bg-[#FEF2F2]">
           <AlertCircle size={16} className="text-[#EF4444] shrink-0" />
@@ -18376,7 +18380,7 @@ function WorkingTimetable({ employees, currentUser, canManage }) {
                     </tr>
                   );
                 })}
-    
+
               </tbody>
             </table>
           )}
@@ -18792,7 +18796,7 @@ function Employees({ employees, setEmployees, loading, canManage }) {
               { label:"Deactivate", danger:true, onClick:()=>{ bulk.selectedRows.forEach(e=>{ setEmployees(p=>p.map(x=>x.id===e.id?{...x,status:"Inactive"}:x)); }); bulk.clearAll(); notify(bulk.count+" employees deactivated"); } },
             ]} />
             <div className="overflow-x-auto">
-            
+
           <table className="w-full text-[13px] min-w-[720px]">
             <thead>
               <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
@@ -32159,7 +32163,7 @@ function WhatsAppWebIntegration() {
   const [replyText, setReplyText] = useState("");
   const [selectedMsg, setSelectedMsg] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
-  
+
   // Categorized Quick Replies
   const [templateCategory, setTemplateCategory] = useState("all");
   const [templateSearch, setTemplateSearch] = useState("");
@@ -33433,7 +33437,7 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
                   <textarea value={body} onChange={e=>setBody(e.target.value)}
                     className="w-full flex-1 min-h-[240px] px-6 py-4 text-[13px] leading-relaxed text-[#374151] resize-none outline-none"
                     placeholder="Write your email here…&#10;&#10;Tip: Use templates above to auto-fill professional content or use the rich-text toolbar above."/>
-                  
+
                   {/* Attachment Management Bar */}
                   <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between text-[11.5px]">
                     <div className="flex items-center gap-2">
@@ -36142,6 +36146,70 @@ function PushDeliveryHistoryPanel({ companyId, canManage }) {
   );
 }
 
+function TeamWorkforceCenter({ enabled, canManage }) {
+  const [view, setView] = useState("overview");
+  const [query, setQuery] = useState("");
+  const snapshotQuery = trpc.teamWorkforce.snapshot.useQuery(undefined, {
+    enabled: Boolean(enabled && canManage && IS_CONFIGURED),
+    retry: false,
+    staleTime: 30_000,
+  });
+  const snapshot = snapshotQuery.data || {};
+  const employees = Array.isArray(snapshot.employees) ? snapshot.employees : [];
+  const invitations = Array.isArray(snapshot.invitations) ? snapshot.invitations : [];
+  const departments = Array.isArray(snapshot.departments) ? snapshot.departments : [];
+  const filteredEmployees = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return employees;
+    return employees.filter((employee) => [employee.name, employee.email, employee.employeeNumber, employee.role, employee.department, employee.position]
+      .some((value) => String(value || "").toLowerCase().includes(term)));
+  }, [employees, query]);
+
+  if (!enabled || !canManage) return null;
+  const overview = snapshot.overview || {};
+  const coverage = snapshot.coverage || {};
+  const security = snapshot.security || {};
+  const statCards = [
+    ["Total employees", overview.totalEmployees ?? 0, Users, "bg-emerald-50 text-emerald-700"],
+    ["Active members", overview.activeEmployees ?? 0, UserCheck, "bg-blue-50 text-blue-700"],
+    ["Pending invitations", overview.pendingInvitations ?? 0, Mail, "bg-amber-50 text-amber-700"],
+    ["Suspended accounts", overview.suspendedAccounts ?? 0, ShieldCheck, "bg-rose-50 text-rose-700"],
+  ];
+  const nav = [["overview", "Team Overview"], ["members", "All Members"], ["invitations", "Pending Invitations"]];
+  return (
+    <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden" data-testid="team-workforce-center">
+      <div className="px-5 py-5 border-b border-slate-100 bg-gradient-to-r from-[#F0FDF4] to-white">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2"><div className="w-9 h-9 rounded-xl bg-[#0D2214] flex items-center justify-center"><Users size={17} className="text-[#4ADE80]" /></div><div><p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#16A34A]">Settings · Team & Workforce</p><h2 className="text-[17px] font-black text-[#111827]">Team & Workforce Center</h2></div></div>
+            <p className="mt-2 max-w-2xl text-[12px] leading-5 text-slate-500">Server-backed workforce visibility using the verified workspace identity. Editing roles, permissions, and employee records remains in the established HR flow until the authorization model is enabled.</p>
+          </div>
+          <button type="button" onClick={() => snapshotQuery.refetch()} disabled={snapshotQuery.isFetching} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-600 hover:bg-white disabled:cursor-wait disabled:opacity-50"><RefreshCw size={12} className={snapshotQuery.isFetching ? "animate-spin" : ""} /> Refresh</button>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-1.5" role="tablist" aria-label="Team and Workforce views">
+          {nav.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={view === id} onClick={() => setView(id)} className={`rounded-lg px-3 py-2 text-[11.5px] font-semibold transition ${view === id ? "bg-[#0D2214] text-white" : "text-slate-500 hover:bg-white hover:text-slate-800"}`}>{label}</button>)}
+        </div>
+      </div>
+      <div className="p-5 sm:p-6">
+        {snapshotQuery.isLoading ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-24 rounded-xl bg-slate-100 animate-pulse" />)}</div> : snapshotQuery.error ? <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-4 text-[12px] leading-5 text-red-700">The Team & Workforce snapshot could not be loaded. Existing Settings and HR workflows remain available. Refresh and try again.</div> : view === "overview" ? (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{statCards.map(([label, value, Icon, color]) => <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5"><div className={`mb-3 flex h-8 w-8 items-center justify-center rounded-lg ${color}`}><Icon size={15} /></div><p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-[22px] font-black text-[#111827]">{value}</p></div>)}</div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-xl border border-slate-100 p-4"><div className="flex items-center justify-between"><div><p className="text-[12.5px] font-bold text-[#111827]">Team access coverage</p><p className="mt-1 text-[11px] text-slate-500">Profile and onboarding signals from confirmed records.</p></div><ShieldCheck size={17} className="text-[#16A34A]" /></div><div className="mt-4 grid grid-cols-2 gap-2">{[["Complete profiles", coverage.completeProfiles ?? 0], ["Missing information", coverage.missingProfiles ?? 0], ["Unassigned roles", coverage.withoutAssignedRoles ?? 0], ["Onboarding required", coverage.requiringOnboarding ?? 0]].map(([label, value]) => <div key={label} className="rounded-lg bg-slate-50 p-3"><p className="text-[10.5px] text-slate-500">{label}</p><p className="mt-1 text-[16px] font-bold text-slate-800">{value}</p></div>)}</div></div>
+              <div className="rounded-xl border border-slate-100 p-4"><div className="flex items-center justify-between"><div><p className="text-[12.5px] font-bold text-[#111827]">Security health</p><p className="mt-1 text-[11px] text-slate-500">Only confirmed server metrics are shown; unavailable Auth metrics are not fabricated.</p></div><Lock size={16} className="text-slate-400" /></div><div className="mt-4 grid grid-cols-2 gap-2">{[["Suspended accounts", security.suspendedAccounts ?? 0], ["MFA gaps", security.accountsWithoutMfa ?? "—"], ["Failed logins", security.recentlyFailedLogins ?? "—"], ["Dormant accounts", security.dormantAccounts ?? "—"]].map(([label, value]) => <div key={label} className="rounded-lg bg-slate-50 p-3"><p className="text-[10.5px] text-slate-500">{label}</p><p className="mt-1 text-[16px] font-bold text-slate-800">{value}</p></div>)}</div></div>
+            </div>
+            <div className="rounded-xl border border-slate-100 p-4"><div className="flex items-center justify-between"><div><p className="text-[12.5px] font-bold text-[#111827]">Departments</p><p className="mt-1 text-[11px] text-slate-500">Directory totals are read from tenant-scoped HR records.</p></div><Building2 size={16} className="text-slate-400" /></div><div className="mt-3 flex flex-wrap gap-2">{departments.length ? departments.map((department) => <span key={department.id} className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{department.name}</span>) : <span className="text-[11.5px] text-slate-400">No confirmed departments found.</span>}</div></div>
+          </div>
+        ) : view === "members" ? (
+          <div><div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[12.5px] font-bold text-[#111827]">All Members</p><p className="mt-1 text-[11px] text-slate-500">{filteredEmployees.length} of {employees.length} confirmed employee records.</p></div><div className="relative w-full sm:w-72"><Search size={13} className="absolute left-3 top-2.5 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full rounded-lg border border-slate-200 py-2 pl-8 pr-3 text-[11.5px] outline-none focus:border-[#16A34A]" placeholder="Search name, role, department..." aria-label="Search workforce members" /></div></div><div className="overflow-x-auto rounded-xl border border-slate-100"><table className="min-w-full text-left"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr><th className="px-3 py-2.5">Member</th><th className="px-3 py-2.5">Role</th><th className="px-3 py-2.5">Department</th><th className="px-3 py-2.5">Status</th><th className="px-3 py-2.5">Profile</th></tr></thead><tbody className="divide-y divide-slate-100">{filteredEmployees.map((employee) => <tr key={employee.id} className="text-[11.5px] text-slate-600"><td className="px-3 py-3"><p className="font-semibold text-slate-800">{employee.name}</p><p className="mt-0.5 text-[10.5px] text-slate-400">{employee.email} · {employee.employeeNumber}</p></td><td className="px-3 py-3">{employee.role}</td><td className="px-3 py-3">{employee.department}<span className="block text-[10.5px] text-slate-400">{employee.position}</span></td><td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${employee.status.toLowerCase() === "active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{employee.status}</span></td><td className="px-3 py-3 font-semibold">{employee.profileCompletion}%</td></tr>)}{filteredEmployees.length === 0 && <tr><td colSpan="5" className="px-3 py-8 text-center text-[11.5px] text-slate-400">No confirmed members match this search.</td></tr>}</tbody></table></div></div>
+        ) : (
+          <div><div className="mb-4"><p className="text-[12.5px] font-bold text-[#111827]">Pending Invitations</p><p className="mt-1 text-[11px] text-slate-500">Invitation delivery and expiry state comes from the existing secure invitation service.</p></div>{invitations.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center"><Mail size={18} className="mx-auto mb-2 text-slate-300" /><p className="text-[11.5px] text-slate-400">No pending invitations require attention.</p></div> : <div className="space-y-2">{invitations.map((invitation) => <div key={invitation.id} className="flex flex-col gap-2 rounded-xl border border-slate-100 p-3 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-[12px] font-semibold text-slate-800">{invitation.fullName}</p><p className="text-[10.5px] text-slate-400">{invitation.email} · {invitation.role}</p></div><span className="w-fit rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">{invitation.status}</span><span className="text-[10.5px] text-slate-400">Expires {invitation.expiresAt ? new Date(invitation.expiresAt).toLocaleDateString() : "—"}</span></div>)}</div>}</div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
   const [draft, setDraft] = useState(company);
@@ -36704,7 +36772,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         <>
           {/* ══════ COMPANY PROFILE ══════ */}
           <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-            
+
             {/* Cover Photo */}
             <div className="relative">
               <div className="h-36 sm:h-44 w-full overflow-hidden bg-gradient-to-br from-[#0D2214] to-[#16A34A] relative group cursor-pointer"
@@ -37431,6 +37499,8 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
           </div>
         </div>
       </section>
+
+      {TEAM_WORKFORCE_CENTER_ENABLED && canManage && <TeamWorkforceCenter enabled={TEAM_WORKFORCE_CENTER_ENABLED} canManage={canManage} />}
 
       {/* ── Team Management ──────────────────────────────────────────── */}
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
@@ -47229,7 +47299,7 @@ function LegacyHotelManagementModule({ currentUser, company }) {
     <div className="space-y-4">
       {/* HEADER */}
       <div className="rounded-2xl px-6 py-5 relative overflow-hidden" style={{background:`linear-gradient(135deg,#0F172A 0%,${HTL_BLUE} 45%,#1e40af 100%)`}}>
-        <div className="absolute inset-0 opacity-5" style={{backgroundImage:"url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><path d=%22M0 30h60M30 0v60%22 stroke=%22white%22 stroke-width=%221%22 fill=%22none%22/></svg>')"}}/> 
+        <div className="absolute inset-0 opacity-5" style={{backgroundImage:"url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><path d=%22M0 30h60M30 0v60%22 stroke=%22white%22 stroke-width=%221%22 fill=%22none%22/></svg>')"}}/>
         <div className="relative flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1"><Hotel size={22} className="text-white"/><h1 className="text-[20px] font-bold text-white">{company?.name||"Hotel"} Property Management</h1></div>
@@ -48970,7 +49040,7 @@ function LegacyBankingMFIModule({ currentUser, company }) {
               <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Deposit by Account Type (TZS k)</h3>
               {(() => {
                 const typeData = ACCOUNT_TYPES.slice(0,6).map((type,i)=>({
-                  name:type.replace(" ",""), 
+                  name:type.replace(" ",""),
                   value:Math.round(accounts.rows.filter(a=>a.type===type).reduce((s,a)=>s+(a.balance||0),0)/1000),
                   fill:["#2563EB","#16A34A","#D97706","#7C3AED","#EF4444","#0891B2"][i],
                 })).filter(d=>d.value>0);
@@ -52963,7 +53033,7 @@ function PresentationProgressView() {
       )}
 
       {/* Visual Completion Progress Bar Chart Widget with Hover Exact Counts */}
-      <div 
+      <div
         className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 relative cursor-pointer"
         onMouseEnter={() => setChartHovered(true)}
         onMouseLeave={() => setChartHovered(false)}
@@ -53192,7 +53262,7 @@ function PresentationProgressView() {
                       </div>
                     ) : (
                       m.note ? (
-                        <div 
+                        <div
                           className="group cursor-pointer mt-1"
                           onClick={() => {
                             setInlineEditingId(m.id);

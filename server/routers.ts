@@ -21,6 +21,7 @@ import { saveWorkspaceBranding } from "./workspaceBranding";
 import { getWorkspaceSettings, saveWorkspaceSettings } from "./workspaceSettings";
 import { dashboardPreferencesInput, getDashboardPreferences, saveDashboardPreferences } from "./dashboardPreferences";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
+import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
@@ -45,6 +46,20 @@ import { adjustPharmacyStock, archivePharmacyRecord, completePharmacySale, creat
 import { archiveSchoolRecord, assignSchoolService, createSchoolAcademicYear, createSchoolAdmission, createSchoolAnnouncement, createSchoolAssignment, createSchoolAssessment, createSchoolClass, createSchoolDepartment, createSchoolDisciplineRecord, createSchoolDocument, createSchoolFeeStructure, createSchoolGradingScale, createSchoolLibraryLoan, createSchoolServiceRecord, createSchoolStream, createSchoolSubject, createSchoolTeacher, createSchoolTeacherAssignment, createSchoolTerm, createSchoolTimetable, decideSchoolAdmission, decideSchoolApproval, decideSchoolScholarship, getSchoolAccess, getSchoolDashboard, getSchoolPortal, getSchoolReports, issueSchoolFeeInvoice, linkSchoolPortal, listSchoolAudit, listSchoolRecords, markSchoolNotificationRead, openSchoolAttendanceSession, publishSchoolReportCard, recordSchoolAssessmentScores, recordSchoolAttendance, recordSchoolInventoryMovement, recordSchoolPayment, requestSchoolApproval, requestSchoolScholarship, schoolAcademicYearInput, schoolAdmissionDecisionInput, schoolAdmissionInput, schoolAnnouncementInput, schoolApprovalDecisionInput, schoolApprovalRequestInput, schoolArchiveInput, schoolAssignmentInput, schoolAssignmentSubmissionInput, schoolAssessmentInput, schoolAttendanceInput, schoolAttendanceSessionInput, schoolClassInput, schoolDepartmentInput, schoolDisciplineInput, schoolDocumentInput, schoolDocumentUploadInput, schoolFeeStructureInput, schoolGradingScaleInput, schoolIdInput, schoolInventoryMovementInput, schoolInvoiceInput, schoolLibraryLoanInput, schoolListInput, schoolMessageInput, schoolPaymentInput, schoolPortalLinkInput, schoolReportCardInput, schoolScoreInput, schoolScholarshipDecisionInput, schoolScholarshipInput, schoolServiceAssignmentInput, schoolServiceInput, schoolStreamInput, schoolSubjectInput, schoolTeacherAssignmentInput, schoolTeacherInput, schoolTermInput, schoolTimetableInput, sendSchoolMessage, submitSchoolAssignment, uploadSchoolDocument } from "./schoolOperations";
 import { addBeneficiary, addCollateral, addGroupMember, addGuarantor, createAmlAlert, createGroup, createLoanProduct, createPaymentInstruction, createReconciliation, createStandingOrder, createAccountType as createBankAccountType, customerStatement, decideLoanApplication, disburseLoan, listBankMfiSnapshot, moveCash, recordSharePurchase, runStandingOrders, scoreLoanApplication, openAccount, postTransaction, recordRepayment, registerCustomer, resolveAmlAlert, restructureLoan, runDailyControls, setupInstitution, submitLoanApplication, updateKyc, writeOffLoan } from "./bankMfiOperations";
 import { getProfileIdentity, removeProfileAvatar, updateProfileIdentity, uploadProfileAvatar } from "./profileIdentity";
+import {
+  acceptPosSyncSequence,
+  completePosSale,
+  decideWorkforceRoleAssignment,
+  openPosShift,
+  posCashMovementInput,
+  posCompleteSaleInput,
+  posOpenShiftInput,
+  posSyncSequenceInput,
+  recordPosCashMovement,
+  requestWorkforceRoleAssignment,
+  workforceRoleAssignmentInput,
+  workforceRoleDecisionInput,
+} from "./posWorkforceRpcAdapters";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -918,6 +933,29 @@ export const appRouter = router({
     save: protectedProcedure.input(dashboardPreferencesInput).mutation(({ ctx, input }) => saveDashboardPreferences(ctx.req, input)),
   }),
 
+  teamWorkforce: router({
+    snapshot: protectedProcedure.query(({ ctx }) => getTeamWorkforceSnapshot(ctx.req)),
+    requestRoleAssignment: protectedProcedure
+      .input(workforceRoleAssignmentInput)
+      .mutation(({ ctx, input }) => requestWorkforceRoleAssignment(ctx.req, input)),
+    decideRoleAssignment: protectedProcedure
+      .input(workforceRoleDecisionInput)
+      .mutation(({ ctx, input }) => decideWorkforceRoleAssignment(ctx.req, input)),
+  }),
+  pos: router({
+    openShift: protectedProcedure
+      .input(posOpenShiftInput)
+      .mutation(({ ctx, input }) => openPosShift(ctx.req, input)),
+    recordCashMovement: protectedProcedure
+      .input(posCashMovementInput)
+      .mutation(({ ctx, input }) => recordPosCashMovement(ctx.req, input)),
+    acceptSyncSequence: protectedProcedure
+      .input(posSyncSequenceInput)
+      .mutation(({ ctx, input }) => acceptPosSyncSequence(ctx.req, input)),
+    completeSale: protectedProcedure
+      .input(posCompleteSaleInput)
+      .mutation(({ ctx, input }) => completePosSale(ctx.req, input)),
+  }),
   teamInvitations: router({
     list: publicProcedure.query(({ ctx }) => listTeamInvitations(ctx.req)),
     create: publicProcedure.input(z.object({ fullName: z.string().min(2).max(120), email: z.string().email().max(320), role: z.string().min(2).max(80) })).mutation(({ ctx, input }) => createTeamInvitation(ctx.req, input)),
