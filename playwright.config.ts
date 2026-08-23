@@ -1,4 +1,6 @@
-import { defineConfig } from "playwright/test";
+import { defineConfig } from "@playwright/test";
+
+const remoteBaseURL = process.env.E2E_BASE_URL?.trim();
 
 export default defineConfig({
   testDir: "./browser-tests",
@@ -7,7 +9,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: remoteBaseURL || "http://127.0.0.1:4173",
     headless: true,
     viewport: { width: 1280, height: 800 },
     screenshot: "only-on-failure",
@@ -17,10 +19,14 @@ export default defineConfig({
       args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--renderer-process-limit=1"],
     },
   },
-  webServer: {
-    command: "pnpm exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
-    url: "http://127.0.0.1:4173",
-    timeout: 30000,
-    reuseExistingServer: false,
-  },
+  ...(remoteBaseURL
+    ? {}
+    : {
+        webServer: {
+          command: "pnpm exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
+          url: "http://127.0.0.1:4173",
+          timeout: 30000,
+          reuseExistingServer: false,
+        },
+      }),
 });

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background-color: #F0F4F8; background-image: radial-gradient(#C9D6E2 1px, transparent 1px); background-size: 20px 20px; color: #34495E; font-family: Arial, Helvetica, sans-serif; }
+    .frame { min-height: 720px; padding-top: 54px; padding-left: 72px; padding-right: 72px; display: flex; flex-direction: column; }
+    .eyebrow { color: #2ECC71; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    h1 { margin: 14px 0 0; color: #0F4C81; font-size: 42px; line-height: 1.08; letter-spacing: -0.8px; }
+    .thesis { margin: 14px 0 0; max-width: 860px; font-size: 20px; line-height: 1.35; font-weight: 300; }
+
+    .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; flex: 1; padding-top: 24px; }
+    .status-box { border-top: 3px solid #0F4C81; background: rgba(255,255,255,0.6); padding-top: 16px; padding-left: 18px; padding-right: 18px; min-height: 280px; }
+    .status-box.success { border-top-color: #2ECC71; }
+    .status-box.warning { border-top-color: #8A4E3A; }
+
+    .status-box h3 { color: #0F4C81; font-size: 22px; margin: 0 0 16px 0; }
+    .status-box ul { list-style: none; padding: 0; margin: 0; }
+    .status-box li { position: relative; padding-left: 18px; font-size: 15px; line-height: 1.4; margin-top: 12px; }
+    .status-box li::before { content: "■"; position: absolute; left: 0; top: 2px; color: #0F4C81; font-size: 10px; }
+    .status-box.success li::before { color: #2ECC71; }
+    .status-box.warning li::before { color: #8A4E3A; }
+
+    .footer { display: flex; justify-content: space-between; border-top: 1px dashed #8EA8BC; padding-top: 14px; margin-top: 20px; min-height: 40px; font-size: 12px; color: #60798C; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">07 / CURRENT STATUS</div>
+      <h1>Safe to review; not yet applied or deployed</h1>
+      <p class="thesis">The implementation is complete and verified via source contracts, but awaits environment readiness for live execution.</p>
+
+      <div class="status-grid">
+        <div class="status-box success">
+          <h3>Passed Evidence</h3>
+          <ul>
+            <li><strong>Focused Vitest suite:</strong> 3 files and 10 tests passed successfully.</li>
+            <li><strong>Migration contract:</strong> Verified additive, security-definer, and fail-closed properties.</li>
+            <li><strong>AuthProvider contract:</strong> Verified single-RPC hydration and removal of browser-side permission joins.</li>
+          </ul>
+        </div>
+
+        <div class="status-box warning">
+          <h3>Unavailable Prerequisites</h3>
+          <ul>
+            <li><strong>Local Environment:</strong> Supabase CLI, Docker, and PostgreSQL client are not available in the sandbox.</li>
+            <li><strong>Preview Environment:</strong> <code>.env.test</code> contains placeholders; lacks real preview URL and disposable fixtures.</li>
+            <li><strong>Root Cause:</strong> Management branch <code>MIGRATIONS_FAILED</code> exact action remains unknown.</li>
+          </ul>
+        </div>
+
+        <div class="status-box">
+          <h3>Next Validation Gate</h3>
+          <ul>
+            <li>Start an isolated local or staging Supabase environment.</li>
+            <li>Apply and verify the identity snapshot migration.</li>
+            <li>Populate disposable test fixtures and preview URLs.</li>
+            <li>Run the guarded remote Playwright suite.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer"><span>Status summary · Next steps</span><span>08</span></div>
+    </div>
+  </div>
+</body>
+</html>

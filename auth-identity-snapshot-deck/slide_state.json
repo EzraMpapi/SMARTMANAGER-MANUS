@@ -1,0 +1,93 @@
+{
+  "project_info": {
+    "title": "Secure identity hydration",
+    "created": 1787509950.429,
+    "last_updated": 1787510341.956,
+    "total_slides": 8
+  },
+  "slides": [
+    {
+      "id": "secure_identity_hydration",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "previous_gap",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "additive_migration",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "identity_gates",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "permission_evaluation",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "frontend_state_machine",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "verification_workflow",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "current_status",
+      "state": "edited",
+      "pageNum": 8
+    }
+  ],
+  "outline": [
+    {
+      "id": "secure_identity_hydration",
+      "title": "Secure identity hydration",
+      "summary": "Introduce the single server-side snapshot RPC and the goal of fail-closed authorization while preserving the existing SMART MANAGER architecture."
+    },
+    {
+      "id": "previous_gap",
+      "title": "The previous gap: fragmented browser authority",
+      "summary": "Explain the risk of fragmented browser-side session, tenant, workspace, and permission hydration."
+    },
+    {
+      "id": "additive_migration",
+      "title": "Additive database change",
+      "summary": "Summarize the new auth_identity_snapshot function, its security-definer posture, and the fact that it changes no tables or data."
+    },
+    {
+      "id": "identity_gates",
+      "title": "Fail-closed identity gates",
+      "summary": "Show the ordered identity and tenant gates that must pass before the RPC reports authorized=true.",
+      "image_plan": "/home/ubuntu/SMARTMANAGER-MANUS/auth_identity_snapshot_authorization_flow.png - Image 1 is a detailed flowchart of the fail-closed identity gates and authorization evaluation logic described in Slide 4."
+    },
+    {
+      "id": "permission_evaluation",
+      "title": "Permissions are calculated in PostgreSQL",
+      "summary": "Explain active workforce assignments, effective windows, allow paths, and Deny precedence."
+    },
+    {
+      "id": "frontend_state_machine",
+      "title": "Session and identity states remain explicit",
+      "summary": "Map snapshot outcomes to AUTHORIZED, INCOMPLETE_IDENTITY, AUTH_ERROR, and the protected shell gate."
+    },
+    {
+      "id": "verification_workflow",
+      "title": "Test strategy and evidence",
+      "summary": "Summarize focused Vitest source contracts, reducer tests, and the guarded real-auth Playwright scenarios."
+    },
+    {
+      "id": "current_status",
+      "title": "Safe to review; not yet applied or deployed",
+      "summary": "Close with passed test evidence, unavailable local and preview prerequisites, and the next safe validation gate."
+    }
+  ]
+}

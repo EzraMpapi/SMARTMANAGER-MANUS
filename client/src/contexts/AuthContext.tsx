@@ -3,7 +3,7 @@ import type { AuthChangeEvent, Session, SupabaseClient, User } from "@supabase/s
 import { clearStoredAuthSession, readStoredAuthSession } from "../lib/authSessionStorage";
 import { loadPublicSupabaseConfig, type PublicSupabaseConfig } from "../lib/publicSupabaseConfig";
 import { getSupabaseAuthClient } from "../lib/supabaseAuthClient";
-import { authReducer, AUTH_STATES, emptyIdentity, initialAuthState, isAuthLoading, type AuthIdentity, type AuthMachineState } from "../lib/authStateMachine";
+import { authReducer, AUTH_STATES, initialAuthState, isAuthLoading, type AuthIdentity, type AuthMachineState } from "../lib/authStateMachine";
 
 type AuthContextValue = AuthMachineState & {
   configured: boolean;
@@ -32,66 +32,78 @@ function authError(error: unknown, fallback: string) {
   return { message: fallback };
 }
 
-function firstRow<T>(result: { data: T[] | null; error: { message?: string } | null }) {
-  if (result.error) throw result.error;
-  return result.data?.[0] || null;
+type IdentitySnapshotPayload = {
+  authorized?: unknown;
+  reason?: unknown;
+  profile?: unknown;
+  company?: unknown;
+  membership?: unknown;
+  workspace?: unknown;
+  role?: unknown;
+  permissions?: unknown;
+};
+
+type LoadedIdentitySnapshot = {
+  authorized: boolean;
+  reason: string | null;
+  identity: AuthIdentity;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-async function loadTenantIdentity(client: SupabaseClient, session: Session, profile: Record<string, unknown>): Promise<AuthIdentity> {
-  const userId = session.user.id;
-  const companyId = typeof profile.company_id === "string" ? profile.company_id : null;
-  if (!companyId) throw new Error("Your authenticated profile is not assigned to a workspace.");
+function stringArray(value: unknown) {
+  return Array.isArray(value) ? Array.from(new Set(value.filter((item): item is string => typeof item === "string" && item.length > 0))) : [];
+}
 
-  const companyResult = await client.from("companies").select("*").eq("id", companyId).limit(1);
-  const company = firstRow(companyResult);
-  if (!company) throw new Error("The assigned workspace is not available to this verified account.");
+async function loadTenantIdentity(client: SupabaseClient): Promise<LoadedIdentitySnapshot> {
+  const result = await client.rpc("auth_identity_snapshot");
+  if (result.error) throw result.error;
+  if (!isRecord(result.data)) throw new Error("The authenticated identity snapshot was empty or malformed.");
 
-  const membershipResult = await client.from("company_memberships").select("*").eq("user_id", userId).eq("company_id", companyId).limit(1);
-  const membership = membershipResult.error ? null : membershipResult.data?.[0] || null;
+  const payload = result.data as IdentitySnapshotPayload;
+  const identity: AuthIdentity = {
+    profile: isRecord(payload.profile) ? payload.profile : null,
+    company: isRecord(payload.company) ? payload.company : null,
+    workspace: isRecord(payload.workspace) ? payload.workspace : null,
+    membership: isRecord(payload.membership) ? payload.membership : null,
+    role: typeof payload.role === "string" && payload.role.length > 0 ? payload.role : null,
+    permissions: stringArray(payload.permissions),
+  };
 
-  const workspaceResult = await client.from("workspaces").select("*").eq("company_id", companyId).order("created_at", { ascending: true }).limit(1);
-  const workspace = workspaceResult.error ? null : workspaceResult.data?.[0] || null;
-
-  const role = typeof profile.role === "string" && profile.role ? profile.role : null;
-  const permissions: string[] = [];
-  if (role) {
-    const roleResult = await client.from("workforce_roles").select("id,code,name").eq("company_id", companyId).eq("status", "Active").or(`name.eq.${role},code.eq.${role.toLowerCase()}`).limit(5);
-    const roleIds = (roleResult.error ? [] : roleResult.data || []).map((item) => item.id).filter(Boolean);
-    if (roleIds.length) {
-      const grantResult = await client.from("workforce_role_permissions").select("effect,status,workforce_permissions(code)").eq("company_id", companyId).eq("status", "Active").in("role_id", roleIds);
-      if (!grantResult.error) {
-        for (const grant of grantResult.data || []) {
-          const permission = Array.isArray(grant.workforce_permissions) ? grant.workforce_permissions[0] : grant.workforce_permissions;
-          if (grant.effect !== "Deny" && typeof permission?.code === "string") permissions.push(permission.code);
-        }
-      }
-    }
-  }
-
-  return { profile, company, workspace, membership, role, permissions: Array.from(new Set(permissions)) };
+  return {
+    authorized: payload.authorized === true,
+    reason: typeof payload.reason === "string" && payload.reason.length > 0 ? payload.reason : null,
+    identity,
+  };
 }
 
 async function hydrateIdentity(client: SupabaseClient, session: Session, dispatch: Dispatch<Parameters<typeof authReducer>[1]>, generation: MutableRefObject<number>) {
   const currentGeneration = ++generation.current;
   dispatch({ type: "SESSION_ESTABLISHED", session, user: session.user });
   dispatch({ type: "PROFILE_LOADING" });
-  const profileResult = await client.from("profiles").select("*").eq("id", session.user.id).limit(1);
+  let snapshot: LoadedIdentitySnapshot;
+  try {
+    snapshot = await loadTenantIdentity(client);
+  } catch (error) {
+    if (currentGeneration === generation.current) dispatch({ type: "AUTH_ERROR", error, reason: "IDENTITY_SNAPSHOT_FAILED" });
+    throw error;
+  }
   if (currentGeneration !== generation.current) return;
-  if (profileResult.error) throw profileResult.error;
-  const profile = profileResult.data?.[0] || null;
-  if (!profile) {
-    dispatch({ type: "INCOMPLETE_IDENTITY", session, user: session.user, profile: null, reason: "PROFILE_MISSING" });
+  if (!snapshot.authorized) {
+    dispatch({
+      type: "INCOMPLETE_IDENTITY",
+      session,
+      user: session.user,
+      profile: snapshot.identity.profile,
+      reason: snapshot.reason || "IDENTITY_INCOMPLETE",
+    });
     return;
   }
-  dispatch({ type: "WORKSPACE_LOADING", profile });
-  try {
-    const identity = await loadTenantIdentity(client, session, profile);
-    if (currentGeneration !== generation.current) return;
-    dispatch({ type: "AUTHORIZED", session, user: session.user, identity });
-  } catch (error) {
-    if (currentGeneration !== generation.current) return;
-    dispatch({ type: "INCOMPLETE_IDENTITY", session, user: session.user, profile, reason: authError(error, "Workspace authorization is not available.").message });
-  }
+  dispatch({ type: "WORKSPACE_LOADING", profile: snapshot.identity.profile || {} });
+  if (currentGeneration !== generation.current) return;
+  dispatch({ type: "AUTHORIZED", session, user: session.user, identity: snapshot.identity });
 }
 
 function redirectUri(screen: string) {

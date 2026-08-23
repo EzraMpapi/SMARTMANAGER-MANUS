@@ -96,7 +96,7 @@ function ProtectedSurface({ children }: { children: ReactNode }) {
 
   if (auth.loading) return <DashboardRouteFallback />;
   if (auth.status === "AUTH_ERROR") return <AuthenticationUnavailable />;
-  if (auth.status === "UNAUTHORIZED" && !auth.profile) return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} />;
+  if (auth.status === "UNAUTHORIZED") return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} />;
   if (authScreen === "forgot" || authScreen === "reset" || (isPublicAuthScreen() && !auth.isAuthenticated)) return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
   if (!auth.configured && !auth.isAuthenticated) {
     if (requestedSignup && import.meta.env.MODE === "e2e") return <Suspense fallback={<DashboardRouteFallback />}><BusinessSphereDashboard /></Suspense>;
