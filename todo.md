@@ -346,3 +346,6 @@
 - [ ] Review the Global Admin control center against the current Platform Administrator authorization boundary without changing roles, user data, or tenant data.
 - [x] Verify or run the available full validation workflow in CI and record its outcome without changing the CI runner configuration. The user-approved GitHub-hosted full quality-gate rerun passed, including the production build and Browser Signup Journey.
 - [x] Document release-tag readiness and retain the release tag until explicit stakeholder acceptance is provided. No release tag has been created.
+
+## Vercel Global Admin Review
+- [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.

@@ -29,3 +29,7 @@ Subsequent concurrent commits advanced `main` after this rerun. Their history wa
 ## Release-Tag Readiness
 
 The verified CI rerun satisfies the repository validation prerequisite for a release tag. No release tag was created because explicit stakeholder acceptance has not yet been provided. The remaining acceptance action is a read-only Global Admin review by an authenticated Platform Administrator; it must not change a role, tenant, or control-plane record.
+
+## Specified Vercel Deployment
+
+The requested `https://menejajanja.vercel.com` address returned Vercel’s `DEPLOYMENT_NOT_FOUND` response at the root path. It therefore cannot currently serve the Global Admin experience or reach a protected application data path. No Vercel configuration, custom domain, deployment, user role, tenant data, or control-plane record was changed during this read-only availability check.
