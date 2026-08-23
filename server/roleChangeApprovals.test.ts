@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { appRouter } from "./routers";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const source = readFileSync(new URL("./roleChangeApprovals.ts", import.meta.url), "utf8");
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 
 describe("role-change approvals", () => {
   it("registers requestRoleChangeApproval, listRoleChangeApprovals, and decideRoleChangeApproval in routers", () => {

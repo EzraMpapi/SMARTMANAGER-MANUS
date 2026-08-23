@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
-const tour = source.slice(source.indexOf("const ONBOARDING_TOUR_STEPS"), source.indexOf("function SmartManager()"));
+const tour = dashboardSource;
 
 describe("interactive onboarding tour", () => {
   it("introduces the verified high-value ERP modules with Kiswahili support", () => {
