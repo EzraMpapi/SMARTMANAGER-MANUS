@@ -188,6 +188,15 @@ export async function subscriptionBillingCatalogHandler(_req: Request, res: Resp
   }
 }
 
+export async function subscriptionBillingAccessHandler(req: Request, res: Response) {
+  try {
+    const { token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    return res.status(200).json({ access: await userRpc("billing_access_snapshot", token, {}) });
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Subscription access could not be loaded.");
+  }
+}
+
 export async function subscriptionBillingSnapshotHandler(req: Request, res: Response) {
   try {
     const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);

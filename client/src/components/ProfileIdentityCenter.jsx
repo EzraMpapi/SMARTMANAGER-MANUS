@@ -9,6 +9,7 @@ import {
   ChevronRight,
   CircleHelp,
   Clock3,
+  CreditCard,
   ImagePlus,
   KeyRound,
   Laptop2,
@@ -137,7 +138,7 @@ function useProfileIdentity(session, onUpdated) {
   return { query, update, upload, remove, enabled };
 }
 
-function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onOpenPasswordRecovery, roleChangeApprovalsQuery, onProfileUpdated }) {
+function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onOpenPasswordRecovery, roleChangeApprovalsQuery, onProfileUpdated, canManageBilling = false }) {
   const [open, setOpen] = useState(false);
   const onProfileUpdatedRef = useRef(onProfileUpdated);
   onProfileUpdatedRef.current = onProfileUpdated;
@@ -168,7 +169,7 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
             {(!session || session.demo) && <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] leading-4 text-amber-900"><AlertCircle size={15} className="mt-0.5 shrink-0" />Demo session — server-backed profile actions are disabled until you sign in.</div>}
             <div className="mt-3 grid gap-1.5"><ActionButton icon={UserRound} label="View My Profile" description="Identity, work details, preferences and activity" onClick={() => go("profile")} /><ActionButton icon={Pencil} label="Edit personal details" description={profileCenter.query.data?.capabilities?.extendedFieldsAvailable ? "Update fields you are authorized to own" : "Available after the identity-center migration is applied"} onClick={() => go("profile", { profileTab: "personal" })} disabled={!profileCenter.query.data?.capabilities?.extendedFieldsAvailable && Boolean(session?.accessToken)} /><ActionButton icon={LockKeyhole} label="Security & access" description="Session verification and secure account recovery" onClick={() => go("profile", { profileTab: "security" })} /><ActionButton icon={Mail} label="Notifications" description="Open the existing workspace notification center" onClick={() => go("notifications")} /><ActionButton icon={Settings2} label="Preferences" description="Personal language, currency, date and display settings" onClick={() => go("profile", { profileTab: "preferences" })} /><ActionButton icon={Activity} label="Activity" description={pendingApprovals ? `${pendingApprovals} pending approval${pendingApprovals === 1 ? "" : "s"} in the workspace` : "Recent account activity returned by the workspace"} onClick={() => go("profile", { profileTab: "activity" })} /></div>
             <div className="my-3 border-t border-slate-100" />
-            <div className="grid gap-1.5"><ActionButton icon={Building2} label="Workspace settings" description="Open the existing permission-controlled workspace settings" onClick={() => go("settings")} /><ActionButton icon={KeyRound} label="Password recovery" description="Use the existing verified recovery flow; passwords never appear here" onClick={() => { setOpen(false); onOpenPasswordRecovery?.(); }} disabled={!onOpenPasswordRecovery} /><ActionButton icon={CircleHelp} label="Help & support" description="Open the existing support workspace" onClick={() => go("support")} /><ActionButton icon={ArrowRight} label={session && !session.demo ? "Sign out" : "Exit demo"} description="End this session on this device" onClick={onSignOut} tone="danger" /></div>
+            <div className="grid gap-1.5">{canManageBilling && <ActionButton icon={CreditCard} label="Subscription & Billing" description="Manage the company plan, trial, invoices and provider-confirmed payments" onClick={() => go("billing")} />}<ActionButton icon={Building2} label="Workspace settings" description="Open the existing permission-controlled workspace settings" onClick={() => go("settings")} /><ActionButton icon={KeyRound} label="Password recovery" description="Use the existing verified recovery flow; passwords never appear here" onClick={() => { setOpen(false); onOpenPasswordRecovery?.(); }} disabled={!onOpenPasswordRecovery} /><ActionButton icon={CircleHelp} label="Help & support" description="Open the existing support workspace" onClick={() => go("support")} /><ActionButton icon={ArrowRight} label={session && !session.demo ? "Sign out" : "Exit demo"} description="End this session on this device" onClick={onSignOut} tone="danger" /></div>
             <p className="px-2 pb-1 pt-3 text-[10px] leading-4 text-slate-400">Workspace switching and device/session listing are not enabled by the current backend contract, so no unverified selectors are shown.</p>
           </section>
         </>

@@ -26,8 +26,16 @@ The zero-row exception query completed successfully at `2026-08-13 03:50 UTC` wi
 
 The post-apply migration inventory confirmed `profile_identity_center` is recorded in the project. The complete verbose public-table inventory contained 475 tables, all reported RLS-enabled, and the repository comparison found zero missing referenced tables. The profile row now has the added identity columns required by the Profile Identity Center.
 
-| 2026-08-23 13:54 | `rlhngsrihahhyxnjxrxm` | `rls_policy_helper_execute_grants` | Succeeded through the connected Supabase migration operation (`success: true`; version `20260823135437`). | Pins six reviewed RLS policy helpers to `pg_catalog, public, auth`; revokes `PUBLIC`/`anon`; grants `authenticated` execution only. No table data, policies, or broad RPC grants changed. |
+| 2026-08-23 13:54 | `rlhngsrihahhyxnjxrxm` | `rls_policy_helper_execute_grants` | Succeeded through the connected Supabase migration operation (`success: true`; version `20260823135435`). | Pins six reviewed RLS policy helpers to `pg_catalog, public, auth`; revokes `PUBLIC`/`anon`; grants `authenticated` execution only. No table data, policies, or broad RPC grants changed. |
 
 Post-apply verification confirmed all six helpers have `authenticated` `EXECUTE=true`, `anon`/`PUBLIC` `EXECUTE=false`, and the pinned search path. Reversible transaction-scoped authenticated probes over billing, banking, fleet, HR, subscription, and profiles completed without the prior helper permission errors and rolled back without data changes.
 
 The source migration is `supabase/migrations/20260823_047_rls_policy_helper_execute_grants.sql`; its focused contract test is `server/supabasePolicyHelperGrants.test.ts`.
+
+| 2026-08-23 14:28 | `rlhngsrihahhyxnjxrxm` | `subscription_access_snapshot` | Succeeded through the connected Supabase migration operation (`success: true`; version `20260823142807`). | Adds the authenticated-only `billing_access_snapshot()` RPC over existing `profiles`, `tenant_subscriptions`, and `billing_plans` data; returns server-derived status, expiry, billing-admin capability, and module entitlements without duplicating billing tables. No payment activation or data deletion is performed. |
+
+Post-apply ACL verification confirmed `billing_access_snapshot()` has `authenticated` `EXECUTE=true`, `anon` `EXECUTE=false`, and `search_path=pg_catalog, public, auth`. The same verification confirmed the six 047 policy helpers retain authenticated-only execution and the pinned search path.
+
+The post-047 authenticated read sweep covered 511 company-scoped tables: 473 completed without execution error, with zero cross-tenant rows observed. The 38 remaining errors were the intentionally direct-denied `money_agent_pin_credentials` table and 37 intentionally locked Property Management tables; no reviewed SECURITY DEFINER helper permission errors remained. The sweep was transaction-scoped and rolled back.
+
+A transaction-scoped authenticated call to `billing_access_snapshot()` using the existing audit fixture returned `Required`, `allowed=false`, no subscription, no plan, and `canManageBilling=true` for the fixture owner. This confirms fail-closed behavior without creating or modifying a live subscription.

@@ -23,6 +23,7 @@ import {
   harakaPayCollectHandler,
   harakaPayStatusHandler,
   harakaPayWebhookHandler,
+  subscriptionBillingAccessHandler,
   subscriptionBillingCatalogHandler,
   subscriptionBillingPlanHandler,
   subscriptionBillingProfileHandler,
@@ -51,6 +52,7 @@ export function createApiApp() {
     res.set("Cache-Control", "no-store").json({ url: ENV.supabaseUrl, anonKey: ENV.supabaseAnonKey });
   });
   app.get("/api/billing/catalog", subscriptionBillingCatalogHandler);
+  app.get("/api/billing/access", subscriptionBillingAccessHandler);
   app.get("/api/billing/subscription", subscriptionBillingSnapshotHandler);
   app.get("/api/fleet/snapshot", fleetSnapshotHandler);
   app.post("/api/fleet/action", fleetActionHandler);

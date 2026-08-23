@@ -40,6 +40,7 @@ import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, reme
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
+import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
@@ -3451,7 +3452,6 @@ const MODULES = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, live: true },
   { id: "crm", label: "CRM", icon: Users, live: true },
   { id: "sales", label: "Sales", icon: ShoppingCart, live: true },
-  { id: "billing", label: "Subscription Billing", icon: CreditCard, live: true },
   { id: "inventory", label: "Inventory", icon: Package, live: true },
   { id: "procurement", label: "Procurement", icon: ClipboardCheck, live: true },
   { id: "finance", label: "Finance", icon: Wallet, live: true },
@@ -36213,7 +36213,7 @@ function TeamWorkforceCenter({ enabled, canManage }) {
   );
 }
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
@@ -36318,6 +36318,8 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Settings</h1>
         <p className="text-[13px] text-slate-500 mt-1">Company profile, module entitlements, and connection status</p>
       </div>
+
+      {canManageBilling && <section className="flex flex-col gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Subscription and billing"><div className="flex items-start gap-3"><span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><CreditCard size={16} /></span><div><p className="text-[12.5px] font-bold text-emerald-950">Subscription &amp; Billing</p><p className="mt-0.5 text-[11.5px] leading-5 text-emerald-900/75">Company-level plan, trial, invoice and provider-confirmed payment controls.</p></div></div><button type="button" onClick={onOpenBilling} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-[11.5px] font-bold text-white transition hover:bg-emerald-800"><CreditCard size={13} /> Open billing center <ArrowRight size={13} /></button></section>}
 
       <section className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm" role="status" aria-live="polite">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -43913,7 +43915,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           const trialRpc = await callWorkspaceRpcWithSessionRefresh("billing_start_trial", { p_plan_code: preferredPlanCode || "TWIGA" }, workspaceRpc.accessToken);
           trialDetails = trialRpc.data?.subscription || null;
         } catch (trialError) {
-          trialWarning = "Your workspace was created, but its free trial could not be confirmed yet. Sign in and open Subscription Billing to retry safely.";
+          trialWarning = "Your workspace was created, but its free trial could not be confirmed yet. Sign in and open Subscription & Billing from the account menu to retry safely.";
           authDebug("Trial activation failed after workspace creation", { message: trialError?.message || "unknown" });
         }
       }
@@ -44132,7 +44134,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         try {
           await callWorkspaceRpcWithSessionRefresh("billing_start_trial", { p_plan_code: preferredPlanCode || "TWIGA" }, workspaceRpc.accessToken);
         } catch (_trialError) {
-          trialWarning = "Your workspace is ready, but the free trial could not be confirmed yet. Open Subscription Billing after sign-in to retry safely.";
+          trialWarning = "Your workspace is ready, but the free trial could not be confirmed yet. Open Subscription & Billing from the account menu after sign-in to retry safely.";
         }
       }
 
@@ -51744,6 +51746,8 @@ function SmartManager() {
   const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
   const currentRole = roleDefinitionFor(currentUser.role);
   const canManage = currentRole.writeAccess === "full";
+  const billingManagerRoles = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "admin"]);
+  const canManageBilling = billingManagerRoles.has(String(currentUser.role || "").trim().toLowerCase());
 
   const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
   const [authContextEmail, setAuthContextEmail] = useState("");
@@ -51751,6 +51755,10 @@ function SmartManager() {
   const invitationTokenRef = useRef(typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "");
   const acceptInvitationMutation = trpc.teamInvitations.accept.useMutation();
   const [session, setSession] = useState(() => (IS_CONFIGURED ? null : { demo: true }));
+  const subscriptionAccess = useSubscriptionAccess({
+    accessToken: session?.accessToken,
+    enabled: Boolean(IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && currentUser?.id),
+  });
   const tenantSettingsQuery = trpc.workspaceSettings.get.useQuery(undefined, { enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo), retry: false });
   const tenantIdleTimeoutMinutes = Math.min(120, Math.max(5, Number(tenantSettingsQuery.data?.profileData?.idleTimeoutMinutes) || 30));
   const [idleWarningOpen, setIdleWarningOpen] = useState(false);
@@ -52226,22 +52234,31 @@ function SmartManager() {
 
   const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
 
-  const billingManagerRoles = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "admin"]);
-  const canManageBilling = billingManagerRoles.has(String(currentUser.role || "").trim().toLowerCase());
-  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (m.id !== "billing" || canManageBilling));
+  const subscriptionFilteringReady = !IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || !session?.accessToken || session?.demo || !currentUser?.id || subscriptionAccess.ready;
+  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (!IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || subscriptionAllowsModule(subscriptionAccess.access, m.id)));
 
   // If switching roles removes access to whatever module is currently on
   // screen (e.g. testing "Employee" while viewing Finance), fall back to
   // the first module that role can actually see — never leave a
   // now-restricted screen rendered just because nothing told it to change.
   useEffect(() => {
-    if (active === "settings" || active === "profile") return; // identity/settings are shell-level destinations
+    if (active === "settings" || active === "profile" || active === "billing") return; // identity, settings, and billing are shell-level destinations
     if (!visibleModules.some((m) => m.id === active)) {
       setActive(visibleModules[0]?.id || "dashboard");
     }
   }, [currentUser.role]);
 
   function go(id) {
+    if (id === "billing" && !canManageBilling) {
+      notify("Only an authorized billing administrator can open Subscription & Billing.", "error");
+      return;
+    }
+    const isOperationalModule = MODULES.some((module) => module.id === id);
+    const subscriptionSafeDestination = new Set(["profile", "support", "notifications", "settings"]);
+    if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && subscriptionFilteringReady && isOperationalModule && id !== "dashboard" && !subscriptionSafeDestination.has(id) && !subscriptionAllowsModule(subscriptionAccess.access, id)) {
+      notify("This module is not included in the company’s server-confirmed subscription plan.", "error");
+      return;
+    }
     setActive(id);
     setSidebarOpen(false);
   }
@@ -52365,6 +52382,15 @@ function SmartManager() {
   }
   if (currentRole.category === "External Portal" && currentRole.id === "Supplier") {
     return <ExternalSupplierPortal currentUser={currentUser} onSignOut={handleSignOut} />;
+  }
+
+  const subscriptionEscapeDestination = new Set(["profile", "support", "notifications", "settings"]);
+  const canUseSubscriptionEscape = subscriptionEscapeDestination.has(active) || (active === "billing" && canManageBilling);
+  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && !subscriptionAccess.ready && !canUseSubscriptionEscape) {
+    return <SubscriptionAccessBoundary access={subscriptionAccess.access} loading={subscriptionAccess.loading || subscriptionAccess.status === "idle"} error={subscriptionAccess.error} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
+  }
+  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && subscriptionAccess.ready && !subscriptionAccess.access.allowed && !canUseSubscriptionEscape) {
+    return <SubscriptionAccessBoundary access={subscriptionAccess.access} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
   }
 
   return (
@@ -52558,6 +52584,7 @@ function SmartManager() {
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
               {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
             </span>
+            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             <button
               onClick={() => setPaletteOpen(true)}
               className="flex items-center gap-1.5 text-[12px] font-medium text-slate-400 border border-slate-200 rounded-lg px-2.5 py-1.5 hover:border-slate-300 hover:text-slate-600 transition-colors"
@@ -52589,7 +52616,7 @@ function SmartManager() {
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
                         <NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
-            <PremiumProfileMenu currentUser={currentUser} session={session} company={company} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+            <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
           </div>
         </header>
 
@@ -52740,6 +52767,8 @@ function SmartManager() {
               setCurrentUser={setCurrentUser}
               roleChangeApprovalsQuery={roleChangeApprovalsQuery}
               canManage={canManage}
+              canManageBilling={canManageBilling}
+              onOpenBilling={() => go("billing")}
               darkMode={darkMode}
               toggleDarkMode={toggleDarkMode}
               textSize={textSize}
@@ -52758,6 +52787,19 @@ function SmartManager() {
     </div>
     </>
   );
+}
+
+function SubscriptionAccessBoundary({ access, loading, error, canManageBilling, onRetry, onOpenBilling, onNavigate, onSignOut }) {
+  if (loading) {
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6"><section className="w-full max-w-md rounded-[28px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]" role="status" aria-live="polite"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-700"><RefreshCw size={26} className="animate-spin" /></div><p className="mt-5 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-700">Workspace access</p><h1 className="mt-2 text-[24px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Confirming your subscription…</h1><p className="mt-3 text-[13px] leading-6 text-slate-500">Smart Manager checks the company subscription on the server before loading operational modules.</p></section></div>;
+  }
+
+  const label = subscriptionStateLabel(access);
+  const state = access?.state;
+  const hasError = Boolean(error);
+  const title = hasError ? "Subscription access needs attention." : state === "pending" ? "Payment confirmation is still pending." : "Your workspace data is safe.";
+  const copy = hasError ? "The server-backed subscription status could not be confirmed. Operational access remains paused until the check succeeds; no business data is removed." : state === "pending" ? "The payment provider has not yet confirmed this request. Smart Manager will not activate access from browser state alone." : "Your company records remain retained. A billing administrator can choose or renew a plan to restore operational access.";
+  return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6"><section className="w-full max-w-2xl rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,.1)] sm:p-9" aria-labelledby="subscription-access-title"><div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] ${hasError ? "bg-amber-50 text-amber-800" : state === "pending" ? "bg-amber-50 text-amber-800" : "bg-rose-50 text-rose-700"}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{hasError ? "Verification unavailable" : label}</span><h1 id="subscription-access-title" className="mt-4 text-[27px] font-bold tracking-[-.045em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{title}</h1><p className="mt-3 max-w-xl text-[13.5px] leading-6 text-slate-600">{copy}</p></div><span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600"><ShieldCheck size={27} /></span></div><div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-500">Server decision</p><p className="mt-1 text-[12px] leading-5 text-slate-700">{access?.reason || error || "Subscription access is not confirmed."}</p>{access?.accessUntil && <p className="mt-2 text-[11px] font-semibold text-slate-500">Access decision date: {new Date(access.accessUntil).toLocaleString("en-TZ", { dateStyle: "medium", timeStyle: "short" })}</p>}</div><div className="mt-6 flex flex-wrap gap-2"><button type="button" onClick={onRetry} className="inline-flex items-center gap-2 rounded-xl bg-[#0B5D3B] px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-[#084B30]"><RefreshCw size={14} />Refresh subscription status</button>{canManageBilling && <button type="button" onClick={onOpenBilling} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[12px] font-bold text-emerald-800 transition hover:bg-emerald-100"><CreditCard size={14} />Open Subscription &amp; Billing</button>}<button type="button" onClick={() => onNavigate("profile")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50"><UserCircle size={14} />Open profile</button><button type="button" onClick={() => onNavigate("support")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50"><CircleHelp size={14} />Help &amp; support</button><button type="button" onClick={onSignOut} className="inline-flex items-center gap-2 rounded-xl border border-red-100 px-4 py-2.5 text-[12px] font-bold text-red-700 transition hover:bg-red-50"><LogOut size={14} />Sign out</button></div><p className="mt-6 text-[10.5px] leading-5 text-slate-400">Subscription status, plan entitlements, and payment confirmation are database/provider decisions. This screen does not use browser storage to grant access.</p></section></div>;
 }
 
 function PresentationProgressView() {

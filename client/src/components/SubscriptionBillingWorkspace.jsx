@@ -249,13 +249,13 @@ export function SubscriptionBillingWorkspace({ accessToken, company, onBack }) {
   if (error) return <BillingError error={error} onRetry={refresh} onBack={onBack} />;
 
   return (
-    <section className="min-h-full space-y-5 bg-[#F7F8FA] p-3 sm:p-5 lg:p-7">
+    <section data-testid="subscription-billing-center" className="min-h-full space-y-5 bg-[#F7F8FA] p-3 sm:p-5 lg:p-7">
       <header className="overflow-hidden rounded-[26px] bg-[#15191F] px-5 py-6 text-white shadow-[0_20px_50px_rgba(17,24,39,.18)] sm:px-7">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
-            <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-[#D4AF37]"><Sparkles size={13} /> Smart Manager Billing</div>
-            <h1 className="text-[25px] font-bold tracking-[-.045em] sm:text-[32px]">Subscription control, without compromise.</h1>
-            <p className="mt-2 max-w-2xl text-[13px] leading-6 text-slate-300">Manage your workspace plan, HarakaPay USSD payments, invoices, and plan usage through server-verified tenant controls.</p>
+            <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-[#D4AF37]"><Sparkles size={13} /> Platform subscription control center</div>
+            <h1 className="text-[25px] font-bold tracking-[-.045em] sm:text-[32px]">Company access, plans and payments.</h1>
+            <p className="mt-2 max-w-2xl text-[13px] leading-6 text-slate-300">Manage the company subscription, trial, invoices and HarakaPay USSD requests through server-verified tenant controls. This is an account-level platform capability, not an ERP operating module.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {onBack && <button type="button" onClick={onBack} className="rounded-xl border border-white/15 px-3.5 py-2 text-[12px] font-semibold text-white transition hover:bg-white/10">Back to workspace</button>}
