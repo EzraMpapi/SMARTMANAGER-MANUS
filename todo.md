@@ -330,4 +330,4 @@
 ## Managed Asset Publication Recovery
 - [x] Verify the uploaded managed-storage asset locations and identify all active code references to blocked local media.
 - [x] Replace active brand media references with managed-storage URLs and retain the original asset names in the storage record. The managed application configuration already uses storage-hosted branding; no local source reference required replacement.
-- [ ] Remove only confirmed duplicate local media from the project, validate deployment readiness, and save the recovered publication checkpoint.
+- [x] Remove only confirmed duplicate local media from the project, validate deployment readiness, and save the recovered publication checkpoint. Verified the exact 22 deletions, clean diff, TypeScript check, and focused merged subscription contracts; the broader suite was memory-terminated before completion, so it was not treated as a passing result.
