@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export const SUBSCRIPTION_ACCESS_STATES = Object.freeze(["trial", "active", "grace", "pending", "expired", "required", "unknown"]);
-const ACCESSIBLE_STATES = new Set(["trial", "active", "grace"]);
+export const SUBSCRIPTION_ACCESS_STATES = Object.freeze(["active", "grace", "pending", "expired", "required", "unknown"]);
+const ACCESSIBLE_STATES = new Set(["active", "grace"]);
 const MODULE_ALIASES = Object.freeze({ hotel: "hospitality", restaurant: "hospitality" });
 
 function normalizeState(value) {
@@ -46,7 +46,6 @@ export function subscriptionAllowsModule(access, moduleId) {
 export function subscriptionStateLabel(access) {
   const state = normalizeState(access?.state);
   return {
-    trial: "Trial",
     active: "Active",
     grace: "Grace period",
     pending: "Payment pending",
