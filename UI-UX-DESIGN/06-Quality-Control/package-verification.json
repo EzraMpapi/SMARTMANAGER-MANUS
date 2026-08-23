@@ -2,9 +2,9 @@
   "image_count": 23,
   "module_spec_count": 39,
   "zip_path": "/home/ubuntu/SMARTMANAGER-MANUS/UI-UX-DESIGN/SMART-MANAGER-UI-UX-DESIGN-PACKAGE.zip",
-  "zip_size_bytes": 95177559,
-  "zip_sha256": "81816e812d2cd50537e07217b119bd3129ee8ba7905eed3bb4a33d1c36a29979",
-  "zip_file_count": 96,
+  "zip_size_bytes": 95203009,
+  "zip_sha256": "85ad44eb0a6083f1182c53ca50b2394bbc135f5bec9413cdd94c4b70b574a168",
+  "zip_file_count": 98,
   "extracted_ok": true,
   "missing_required": [],
   "image_checks": [
