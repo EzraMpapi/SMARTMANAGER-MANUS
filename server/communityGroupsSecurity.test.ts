@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const hardening = readFileSync(new URL("../supabase/migrations/20260823_036_community_groups_security_hardening.sql", import.meta.url), "utf8");
 const insertGuard = readFileSync(new URL("../supabase/migrations/20260823_043_community_groups_relationship_guard_approval_fix.sql", import.meta.url), "utf8");
+const documentGuard = readFileSync(new URL("../supabase/migrations/20260823_044_community_groups_document_creator_guard.sql", import.meta.url), "utf8");
 const base = readFileSync(new URL("../supabase/migrations/20260823_035_community_groups_module.sql", import.meta.url), "utf8");
 const tables = [
   "community_groups", "community_group_members", "community_group_committees", "community_group_committee_members",
@@ -44,6 +45,12 @@ describe("Community Groups security hardening contract", () => {
     expect(insertGuard).toContain("auth.uid() IS NULL OR NEW.company_id IS DISTINCT FROM c");
     expect(insertGuard).toContain("group_a := NEW.group_id;");
     expect(insertGuard).not.toContain("group_a := public.community_groups_parent_group(TG_TABLE_NAME, NEW.id, c);");
+  });
+
+  it("stamps documents through uploaded_by without changing other creator columns", () => {
+    expect(documentGuard).toContain("IF TG_TABLE_NAME = 'community_group_documents' THEN");
+    expect(documentGuard).toContain("NEW.uploaded_by := auth.uid();");
+    expect(documentGuard).toContain("NEW.created_by := auth.uid();");
   });
 
   it("makes audit history append-only and normalizes the actor server-side", () => {
