@@ -5958,7 +5958,7 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
   );
 }
 
-function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate }) {
+function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, suppliers, quotations, scheduledWorkflows, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   const roleChangeRows = roleChangeApprovalsQuery?.data?.approvals || [];
   const pendingRoleChangeRows = roleChangeRows.filter((row) => row.status === "Pending Review");
@@ -6374,7 +6374,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("cash flow, receivables, and payables, live from Finance")}
-        <FinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
+        <FinanceCommandCenter invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -6384,7 +6384,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("headcount, payroll, and leave, live from HR")}
-        <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />
+        <HrCommandCenter employees={employees} leaveRequests={leaveRequests} expenses={expenses} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -6394,7 +6394,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("pipeline, forecast, and revenue by customer, live from CRM and Sales")}
-        <SalesDashboard invoices={invoices} crm={crm} onNavigate={onNavigate} />
+        <SalesCommandCenter invoices={invoices} orders={posTransactions} crm={crm} inventory={inventory} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -6404,7 +6404,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     return (
       <div className="space-y-6">
         {roleHeader("stock levels and low-inventory alerts, live from Inventory and Manufacturing")}
-        <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />
+        <InventoryCommandCenter inventory={inventory} suppliers={suppliers} onNavigate={onNavigate} />
         {sidePanels}
       </div>
     );
@@ -6471,6 +6471,30 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   return (
     <div className="flex flex-col gap-5">
+      <ExecutiveCommandCenter
+        invoices={invoices}
+        expenses={expenses}
+        inventory={inventory}
+        crm={crm}
+        employees={employees}
+        leaveRequests={leaveRequests}
+        posTransactions={posTransactions}
+        workOrders={workOrders}
+        onNavigate={onNavigate}
+        currency={company.currency || "TZS"}
+      />
+      <AiBusinessSignals
+        invoices={invoices}
+        inventory={inventory}
+        crm={crm}
+        expenses={expenses}
+        employees={employees}
+        leaveRequests={leaveRequests}
+        suppliers={suppliers}
+        quotations={quotations}
+        scheduledWorkflows={scheduledWorkflows}
+        onNavigate={onNavigate}
+      />
       {scheduleDialogOpen && <ScheduleReportDialog company={company} currentUser={currentUser} modules={exportModules} dateRange={{ start: exportStartDate, end: exportEndDate }} onClose={() => setScheduleDialogOpen(false)} onSaved={() => { setScheduleDialogOpen(false); notify("Recurring dashboard report scheduled."); }} />}
       <Suspense fallback={null}>
         <LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
@@ -52615,7 +52639,7 @@ function SmartManager() {
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
               expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions}
-              employees={employees} posTransactions={posTransactions} currentUser={currentUser}
+              employees={employees} posTransactions={posTransactions} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} currentUser={currentUser}
               onQuickAction={goWithIntent} onNavigate={go}
             />
           )}
