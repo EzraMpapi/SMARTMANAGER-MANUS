@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { getBearerToken } from "./_core/authHeaders";
 import { createReportSchedule, deleteReportSchedule, listReportSchedules, sendReportScheduleNow, updateReportSchedule } from "./reportSchedules";
 import { listAuditLogs, recordAuditLog } from "./auditLogs";
 import { verifyDatabaseBackupStatus } from "./backupVerification";
@@ -1101,7 +1102,10 @@ export const appRouter = router({
     runStandingOrders: protectedProcedure.mutation(({ ctx }) => runStandingOrders(ctx.req)),
   }),
   admin: router({
-    verifyBackup: protectedProcedure.query(() => verifyDatabaseBackupStatus()),
+    verifyBackup: protectedProcedure.query(({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can verify backup connectivity." });
+      return verifyDatabaseBackupStatus();
+    }),
     getSchemaDriftMonitor: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       return getSchemaDriftMonitor();
@@ -1162,11 +1166,10 @@ export const appRouter = router({
   }),
 });
 
-function getSessionToken(req: { headers: { cookie?: string; authorization?: string } }): string {
+function getSessionToken(req: { headers: { cookie?: string; authorization?: string | string[]; "x-supabase-authorization"?: string | string[] } }): string {
   const cookieToken = parseCookie(req.headers.cookie ?? "")[COOKIE_NAME];
   if (cookieToken) return cookieToken;
-  const authorization = req.headers.authorization;
-  return authorization?.startsWith("Bearer ") ? authorization.slice(7) : "";
+  return getBearerToken(req) || "";
 }
 
 export type AppRouter = typeof appRouter;

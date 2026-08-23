@@ -24,7 +24,6 @@ import {
   PieChart as RPieChart, Pie, Legend,
   RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
-import * as XLSX from "xlsx";
 import { trpc } from "./lib/trpc";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "./lib/authErrors";
 import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
@@ -508,7 +507,7 @@ branches business_loans collab_messages community_contributions community_groups
 crm_contacts crm_interactions crm_leads customer_feedback departments digital_signatures documents
 ecommerce_orders ecommerce_products emails expense_budgets   flt_maintenance flt_trips flt_vehicles
   hc_appointments hc_doctors hc_invoices hc_lab_orders hc_patients hc_prescriptions hc_radiology hc_reports hc_visits hc_vitals
-hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_invite_codes hr_leave_requests hr_payroll_runs hr_performance_reviews
+hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_leave_requests hr_payroll_runs hr_performance_reviews
 htl_bookings htl_rooms integration_connections inventory_batches inventory_items inventory_stock_movements inventory_suppliers inventory_transfers inventory_warehouses
 journal_entries kb_articles loan_repayments manufacturing_bom_components manufacturing_boms manufacturing_qc_inspections manufacturing_work_orders
 marketing_campaigns mfi_clients mfi_loans mfi_savings network_profiles network_rfqs notebook_notes notification_log
@@ -3961,6 +3960,11 @@ async function recordPayment(invoicesHook, invoiceDocumentId, payment, actor) {
   const inv = invoicesHook.rows.find((d) => d.id === invoiceDocumentId);
   if (!inv) return null;
   const { total } = lineTotal(inv.items);
+  const normalizedReference = String(payment.reference || "").trim().toLowerCase();
+  if (normalizedReference && (inv.payments || []).some((existing) => String(existing.reference || "").trim().toLowerCase() === normalizedReference)) {
+    notify("This payment reference is already recorded for the invoice. No duplicate payment was written.", "error");
+    return null;
+  }
   const newAmountPaid = Math.min(total, (inv.amountPaid || 0) + payment.amount);
   const newStatus = newAmountPaid >= total ? "Paid" : "Partial";
   const paymentRecord = { id: `PMT-${Date.now()}`, amount: payment.amount, method: payment.method, date: payment.date, reference: payment.reference || null };
@@ -8288,12 +8292,6 @@ function CRM({ crm, invoices, expenses, suppliers }) {
             className="btn-secondary text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5"
           >
             <UploadCloud size={15} /> Import
-          </button>
-          <button
-            onClick={() => setShowInvite(!showInvite)}
-            className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#7C3AED] border border-[#7C3AED]/30 bg-[#F5F3FF] px-3.5 py-2 rounded-lg hover:bg-[#EDE9FE]"
-          >
-            <QrCode size={14}/> Invite Code
           </button>
           <button
             onClick={() => setShowForm(true)}
@@ -18535,7 +18533,7 @@ function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearInten
         {HR_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "employees" && <Employees employees={employees} setEmployees={setEmployees} loading={empLoading} />}
+      {tab === "employees" && <Employees employees={employees} setEmployees={setEmployees} loading={empLoading} canManage={canManage} />}
       {tab === "timetable" && <WorkingTimetable employees={employees} currentUser={currentUser} canManage={canManage} />}
       {tab === "recruitment" && <Recruitment />}
       {tab === "attendance" && <Attendance employees={employees} />}
@@ -18548,32 +18546,34 @@ function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearInten
   );
 }
 
-function Employees({ employees, setEmployees, loading }) {
+function Employees({ employees, setEmployees, loading, canManage }) {
   const [department, setDepartment] = useState("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
-  const [generatedCode, setGenCode] = useState(null);
+  const [generatedInvitation, setGeneratedInvitation] = useState(null);
   const bulk = useBulkSelect(employees);
+  const invitationListQuery = trpc.teamInvitations.list.useQuery(undefined, { enabled: Boolean(showInvite && IS_CONFIGURED), retry: false, refetchOnWindowFocus: false });
+  const createInvitationMutation = trpc.teamInvitations.create.useMutation({
+    onSuccess: (result) => {
+      setGeneratedInvitation(result.invitation);
+      invitationListQuery.refetch();
+      if (result.delivered) {
+        notify(`Secure invitation sent to ${result.invitation.email}. It expires in seven days.`);
+      } else {
+        notify(`Invitation was saved, but email delivery failed: ${result.deliveryError || "review the delivery configuration"}.`, "error");
+      }
+    },
+    onError: (error) => notify(error.message || "The secure invitation could not be created.", "error"),
+  });
 
-  function generateInviteCode(dept, role) {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    const code  = Array.from({length:8}, ()=>chars[Math.floor(Math.random()*chars.length)]).join("");
-    const expires = new Date(Date.now() + 7*86400000).toISOString().slice(0,10);
-    const inv = { code, dept, role, expires, used: false, createdAt: TODAY.toISOString().slice(0,10) };
-    // Store in localStorage for demo — in live mode write to hr_invite_codes table
-    try {
-      const existing = JSON.parse(localStorage.getItem("hr_invite_codes")||"[]");
-      localStorage.setItem("hr_invite_codes", JSON.stringify([...existing, inv]));
-    } catch(_e) {}
-    if (IS_CONFIGURED) {
-      sb("hr_invite_codes").insert({
-        code, department:dept, role_hint:role, expires_at:expires, used:false
-      }).run().catch(()=>{});
+  function generateInvitation(fullName, email, role) {
+    if (!IS_CONFIGURED) {
+      notify("Secure invitations require the configured workspace backend; no browser-only invite was created.", "error");
+      return;
     }
-    setGenCode(inv);
-    notify(`Invite code generated: ${code} — valid 7 days`);
+    createInvitationMutation.mutate({ fullName, email, role });
   }
 
   const filtered = useMemo(() => {
@@ -18688,12 +18688,12 @@ function Employees({ employees, setEmployees, loading }) {
               className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
             />
           </div>
-          <button
-            onClick={() => setShowInvite(!showInvite)}
+          {canManage && <button
+            onClick={() => { setShowInvite(!showInvite); setGeneratedInvitation(null); }}
             className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#7C3AED] border border-[#7C3AED]/30 bg-[#F5F3FF] px-3.5 py-2 rounded-lg hover:bg-[#EDE9FE] shrink-0"
           >
-            <QrCode size={14}/> Invite Code
-          </button>
+            <QrCode size={14}/> Secure Invitation
+          </button>}
           <button
             onClick={() => setShowForm(true)}
             className="btn-primary text-white text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors shrink-0"
@@ -18703,72 +18703,56 @@ function Employees({ employees, setEmployees, loading }) {
         </div>
       </div>
 
-      {/* ── Invite Code Generator Panel ── */}
-      {showInvite && (
+      {/* ── Secure team invitation panel ── */}
+      {canManage && showInvite && (
         <div className="bg-[#F5F3FF] border border-[#C4B5FD] rounded-xl p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[14px] font-bold text-[#5B21B6]">🔐 Generate Employee Invite Code</p>
-              <p className="text-[12px] text-[#7C3AED]">Employee enters this code in the Employee Portal to join the company system</p>
+              <p className="text-[14px] font-bold text-[#5B21B6]">Secure team invitation</p>
+              <p className="text-[12px] text-[#7C3AED]">Invitations are persisted to the workspace and delivered by email. No browser-only invite codes are created.</p>
             </div>
-            <button onClick={()=>{setShowInvite(false);setGenCode(null);}} className="text-[#7C3AED] hover:text-[#5B21B6]"><X size={16}/></button>
+            <button onClick={()=>{setShowInvite(false);setGeneratedInvitation(null);}} className="text-[#7C3AED] hover:text-[#5B21B6]"><X size={16}/></button>
           </div>
+          {!IS_CONFIGURED && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">The workspace backend is not configured, so secure invitations are unavailable in this environment.</p>}
           <div className="grid grid-cols-2 gap-3">
-            <InviteCodeForm onGenerate={generateInviteCode}/>
+            <SecureInvitationForm onGenerate={generateInvitation} pending={createInvitationMutation.isPending} />
           </div>
-          {generatedCode && (
+          {generatedInvitation && (
             <div className="bg-white rounded-xl border-2 border-[#7C3AED] p-4">
-              <p className="text-[11px] font-bold text-[#7C3AED] uppercase tracking-wider mb-2">Generated Invite Code</p>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 font-mono text-[28px] font-black text-[#111827] tracking-[0.3em] bg-slate-50 rounded-xl px-4 py-2.5 text-center border border-slate-200">
-                  {generatedCode.code}
-                </div>
-                <button onClick={()=>{ if(navigator.clipboard) navigator.clipboard.writeText(generatedCode.code); notify("Code copied!"); }}
-                  className="text-[12px] font-bold text-white bg-[#7C3AED] px-3 py-2 rounded-lg">
-                  Copy
-                </button>
-              </div>
-              <div className="grid grid-cols-3 gap-3 mt-3">
+              <p className="text-[11px] font-bold text-[#7C3AED] uppercase tracking-wider mb-2">Invitation recorded by the server</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  ["Department", generatedCode.dept],
-                  ["Role", generatedCode.role],
-                  ["Expires", generatedCode.expires],
-                ].map(([l,v])=>(
-                  <div key={l} className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">{l}</p>
-                    <p className="text-[12.5px] font-semibold text-[#111827]">{v}</p>
+                  ["Recipient", generatedInvitation.email],
+                  ["Role", generatedInvitation.role],
+                  ["Status", generatedInvitation.status],
+                  ["Expires", new Date(generatedInvitation.expiresAt).toLocaleDateString()],
+                ].map(([label, value])=>(
+                  <div key={label} className="text-center">
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">{label}</p>
+                    <p className="text-[12.5px] font-semibold text-[#111827] break-words">{value}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-slate-500 mt-2.5 text-center">Share this code with the employee. Valid for 7 days. One-time use.</p>
+              <p className="text-[11px] text-slate-500 mt-2.5 text-center">The recipient must accept the secure email link while signed in with the invited email address.</p>
             </div>
           )}
-          {/* Past codes */}
-          {(() => {
-            try {
-              const codes = JSON.parse(localStorage.getItem("hr_invite_codes")||"[]").slice(-5).reverse();
-              if (!codes.length) return null;
-              return (
-                <div>
-                  <p className="text-[11px] font-bold text-[#7C3AED] mb-2">Recent Codes</p>
-                  <div className="space-y-1.5">
-                    {codes.map((inv,i)=>(
-                      <div key={i} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-slate-200">
-                        <span className="font-mono font-bold text-[14px] tracking-widest text-[#111827]">{inv.code}</span>
-                        <div className="flex gap-3 text-[11.5px] text-slate-500">
-                          <span>{inv.dept}</span>
-                          <span>{inv.role}</span>
-                          <span className={`font-semibold ${inv.used?"text-[#16A34A]":new Date(inv.expires)<new Date()?"text-[#EF4444]":"text-[#F59E0B]"}`}>
-                            {inv.used?"✓ Used":new Date(inv.expires)<new Date()?"Expired":"Valid until "+inv.expires}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+          {invitationListQuery.isError && <p className="text-[12px] text-[#EF4444] font-semibold">Recent invitations could not be loaded from the server.</p>}
+          {(invitationListQuery.data?.length || 0) > 0 && (
+            <div>
+              <p className="text-[11px] font-bold text-[#7C3AED] mb-2">Recent invitations</p>
+              <div className="space-y-1.5">
+                {invitationListQuery.data.slice(0, 5).map((invitation) => (
+                  <div key={invitation.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-white rounded-lg px-3 py-2 border border-slate-200">
+                    <span className="font-semibold text-[12px] text-[#111827]">{invitation.fullName} · {invitation.email}</span>
+                    <div className="flex gap-3 text-[11.5px] text-slate-500">
+                      <span>{invitation.role}</span>
+                      <span className="font-semibold">{invitation.status}</span>
+                    </div>
                   </div>
-                </div>
-              );
-            } catch(_e){ return null; }
-          })()}
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -25074,19 +25058,31 @@ function Integrations({ invoices, expenses, canManage, currentUser, onNavigate }
 
 function IntegrationConnections({ canManage, currentUser }) {
   const connections = useCompanyTable("integration_connections", INTEGRATION_CONNECTIONS.map((c) => ({ id: c.id, enabled: false, tenantId: "", clientId: "", paymentLink: "", paypalMeLink: "", webhookUrl: "", apiKey: "", businessNumber: "", storeUrl: "", terminalId: "" })), { mapRow: mapIntegrationConnectionRow });
-  const { rows, setRows, loading } = connections;
+  const { rows, setRows, loading, error, unavailable } = connections;
+  const storageUnavailable = Boolean(error || unavailable);
 
   function getConfig(id) { return rows.find((c) => c.id === id) || {}; }
 
   async function updateField(id, key, value) {
     if (!canManage) return;
+    if (storageUnavailable) {
+      notify("Integration connection storage is unavailable; no changes were written.", "error");
+      return;
+    }
+    const previous = rows.find((c) => c.id === id)?.[key];
     setRows((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: value } : c)));
     if (IS_CONFIGURED) {
       const columnMap = {
         enabled: "enabled", tenantId: "tenant_id", clientId: "client_id", paymentLink: "payment_link", paypalMeLink: "paypal_me_link",
         webhookUrl: "webhook_url", apiKey: "api_key", businessNumber: "business_number", storeUrl: "store_url", terminalId: "terminal_id",
       };
-      try { await sb("integration_connections").eq("integration_id", id).update({ [columnMap[key]]: value }).run(); } catch (_e) { /* saved locally regardless */ }
+      try {
+        const result = await runCompanyTableMutation("integration_connections", "update", { [columnMap[key]]: value }, { matchCol: "integration_id", matchVal: id });
+        if (result.error || result.data == null) throw result.error || new Error("The server did not confirm the integration update.");
+      } catch (e) {
+        setRows((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: previous } : c)));
+        notify("Integration change was not saved to the server.", "error");
+      }
     }
   }
 
@@ -25114,6 +25110,12 @@ function IntegrationConnections({ canManage, currentUser }) {
           <p className="text-[12px] text-[#8a670a] leading-relaxed">You are viewing as {currentUser.role}. Editing connection configuration requires a full-write role.</p>
         </div>
       )}
+      {storageUnavailable && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-600" />
+          <p className="text-[12px] leading-relaxed text-amber-800">Connection storage is unavailable in this deployment. Configuration controls are disabled and no local copy is treated as saved.</p>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {INTEGRATION_CONNECTIONS.map((meta) => {
           const config = getConfig(meta.id);
@@ -25130,7 +25132,7 @@ function IntegrationConnections({ canManage, currentUser }) {
                   </div>
                 </div>
                 {loading ? <div className="w-9 h-5 rounded-full skeleton-shimmer" /> : (
-                  <ToggleSwitch on={config.enabled} disabled={!canManage} onChange={() => updateField(meta.id, "enabled", !config.enabled)} label={`${config.enabled ? "Disable" : "Enable"} ${meta.name}`} />
+                  <ToggleSwitch on={config.enabled} disabled={!canManage || storageUnavailable} onChange={() => updateField(meta.id, "enabled", !config.enabled)} label={`${config.enabled ? "Disable" : "Enable"} ${meta.name}`} />
                 )}
               </div>
               <p className="text-[11.5px] text-slate-400 leading-relaxed mb-3">{meta.requirement}</p>
@@ -25138,7 +25140,7 @@ function IntegrationConnections({ canManage, currentUser }) {
                 {meta.fields.map((f) => (
                   <div key={f.key}>
                     <label className="text-[11px] font-medium text-slate-500 block mb-1">{f.label}</label>
-                    <input className={inputClass} value={config[f.key] || ""} onChange={(e) => updateField(meta.id, f.key, e.target.value)} placeholder={f.placeholder} disabled={!config.enabled || !canManage} />
+                    <input className={inputClass} value={config[f.key] || ""} onChange={(e) => updateField(meta.id, f.key, e.target.value)} placeholder={f.placeholder} disabled={!config.enabled || !canManage || storageUnavailable} />
                   </div>
                 ))}
               </div>
@@ -38349,26 +38351,27 @@ function DataExportManager({ exportData, company }) {
     if (busy) return;
     setBusy(true);
     try {
-      const wb = XLSX.utils.book_new();
-      const addSheet = (name, headers, rows) => {
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...rows]), name.slice(0, 31));
-      };
-      addSheet("Customers & Leads", ["Company", "Contact", "Stage", "Value (TZS 000)", "Email", "Phone"],
-        (exportData.crm?.rows || []).map((l) => [l.company, l.name, l.stage, l.value, l.email, l.phone]));
-      addSheet("Invoices", ["Invoice No", "Customer", "Date", "Status", "Amount Paid (TZS 000)"],
-        (exportData.invoices?.rows || []).map((i) => [i.id, i.customer, i.date, i.status, i.amountPaid || 0]));
-      addSheet("Expenses", ["Vendor", "Category", "Date", "Due Date", "Amount (TZS 000)", "Status"],
-        (exportData.expenses?.rows || []).map((e) => [e.vendor, e.category, e.date, e.dueDate, e.amount, e.status]));
-      addSheet("Inventory", ["SKU", "Name", "Category", "Qty on Hand", "Unit Cost (TZS 000)"],
-        (exportData.inventory?.rows || []).map((it) => [it.sku, it.name, it.category, it.qty, it.unitCost]));
-      addSheet("Employees", ["Name", "Role", "Department", "Status", "Salary (TZS 000)", "Hire Date"],
-        (exportData.employees?.rows || []).map((e) => [e.name, e.role, e.department, e.status, e.salary, e.hireDate]));
-      addSheet("POS Transactions", ["Receipt No", "Date", "Cashier", "Method", "Items"],
-        (exportData.posTransactions?.rows || []).map((t) => [t.id, t.date, t.cashier, t.method, t.items.length]));
-      addSheet("Suppliers", ["Name", "Contact", "Email", "Phone", "Category", "Lead Time (days)"],
-        (exportData.suppliers?.rows || []).map((s) => [s.name, s.contactPerson, s.email, s.phone, s.category, s.leadTimeDays]));
-      XLSX.writeFile(wb, `${(company.name || "company").replace(/\s+/g, "-").toLowerCase()}-full-export-${TODAY.toISOString().slice(0, 10)}.xlsx`);
-      notify("Full data export downloaded — 7 sheets, one workbook.");
+      const escapeCell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+      const sections = [
+        ["Customers & Leads", ["Company", "Contact", "Stage", "Value (TZS 000)", "Email", "Phone"], (exportData.crm?.rows || []).map((l) => [l.company, l.name, l.stage, l.value, l.email, l.phone])],
+        ["Invoices", ["Invoice No", "Customer", "Date", "Status", "Amount Paid (TZS 000)"], (exportData.invoices?.rows || []).map((i) => [i.id, i.customer, i.date, i.status, i.amountPaid || 0])],
+        ["Expenses", ["Vendor", "Category", "Date", "Due Date", "Amount (TZS 000)", "Status"], (exportData.expenses?.rows || []).map((e) => [e.vendor, e.category, e.date, e.dueDate, e.amount, e.status])],
+        ["Inventory", ["SKU", "Name", "Category", "Qty on Hand", "Unit Cost (TZS 000)"], (exportData.inventory?.rows || []).map((it) => [it.sku, it.name, it.category, it.qty, it.unitCost])],
+        ["Employees", ["Name", "Role", "Department", "Status", "Salary (TZS 000)", "Hire Date"], (exportData.employees?.rows || []).map((e) => [e.name, e.role, e.department, e.status, e.salary, e.hireDate])],
+        ["POS Transactions", ["Receipt No", "Date", "Cashier", "Method", "Items"], (exportData.posTransactions?.rows || []).map((t) => [t.id, t.date, t.cashier, t.method, t.items.length])],
+        ["Suppliers", ["Name", "Contact", "Email", "Phone", "Category", "Lead Time (days)"], (exportData.suppliers?.rows || []).map((s) => [s.name, s.contactPerson, s.email, s.phone, s.category, s.leadTimeDays])],
+      ];
+      const csv = sections.map(([name, headers, rows]) => [escapeCell(name), headers.map(escapeCell).join(","), ...rows.map((row) => row.map(escapeCell).join(","))].join("\n")).join("\n\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(company.name || "company").replace(/\s+/g, "-").toLowerCase()}-full-export-${TODAY.toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      notify("Full data export downloaded — 7 sections in one CSV file.");
     } catch (_e) {
       notify("Export failed — please try again.", "error");
     } finally {
@@ -49635,26 +49638,33 @@ function LegacyRestaurantModule({ currentUser, company }) {
   );
 }
 
-/* ─────────────────── INVITE CODE FORM (inline in HR) ───────────────────── */
-function InviteCodeForm({ onGenerate }) {
-  const [dept, setDept] = useState(DEPARTMENTS[0]);
-  const [role, setRole] = useState("");
+/* ─────────────────── SECURE INVITATION FORM (inline in HR) ──────────────── */
+function SecureInvitationForm({ onGenerate, pending }) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("Viewer");
+  const inviteRoles = ["Finance Manager", "HR Manager", "Sales Manager", "Sales Representative", "Warehouse Staff", "Accountant", "Viewer"];
   return (
     <>
       <div>
-        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Department</label>
-        <select className={inputClass} value={dept} onChange={e=>setDept(e.target.value)}>
-          {DEPARTMENTS.map(d=><option key={d}>{d}</option>)}
-        </select>
+        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Employee full name</label>
+        <input className={inputClass} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="e.g. Amina Hassan" maxLength={120}/>
       </div>
       <div>
-        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Role / Job Title</label>
-        <input className={inputClass} value={role} onChange={e=>setRole(e.target.value)} placeholder="e.g. Sales Executive"/>
+        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Work email</label>
+        <input type="email" className={inputClass} value={email} onChange={e=>setEmail(e.target.value)} placeholder="employee@company.tz" maxLength={320}/>
       </div>
       <div className="col-span-2">
-        <button onClick={()=>onGenerate(dept, role||"Employee")}
-          className="w-full flex items-center justify-center gap-2 text-[13px] font-bold text-white py-2.5 rounded-xl bg-[#7C3AED]">
-          <QrCode size={14}/> Generate Invite Code
+        <label className="text-[11px] font-bold text-[#5B21B6] uppercase tracking-wide block mb-1">Workspace role</label>
+        <select className={inputClass} value={role} onChange={e=>setRole(e.target.value)}>
+          {inviteRoles.map(value=><option key={value}>{value}</option>)}
+        </select>
+        <p className="text-[10.5px] text-slate-500 mt-1">Department and employment details are managed on the employee record after the account joins.</p>
+      </div>
+      <div className="col-span-2">
+        <button type="button" disabled={pending} onClick={()=>onGenerate(fullName.trim(), email.trim(), role)}
+          className="w-full flex items-center justify-center gap-2 text-[13px] font-bold text-white py-2.5 rounded-xl bg-[#7C3AED] disabled:cursor-not-allowed disabled:opacity-60">
+          <QrCode size={14}/> {pending ? "Saving invitation…" : "Send Secure Invitation"}
         </button>
       </div>
     </>
@@ -49674,15 +49684,6 @@ function InviteCodeForm({ onGenerate }) {
 ═══════════════════════════════════════════════════════════════════════════ */
 /* ─────────────────── EMPLOYEE PORTAL SUB-COMPONENTS ─────────────────── */
 
-// ── Announcements seed ───────────────────────────────────────────────────
-const ANNOUNCEMENTS_SEED = [
-  { id:"ANN-001", title:"Q3 Performance Reviews — Reminder", body:"All employees should complete their self-assessment by July 31. Log into the Employee Portal under Profile to access your review form.", category:"HR", priority:"High",   date:"2026-07-20", author:"HR Department", pinned:true },
-  { id:"ANN-002", title:"Office Closure — 7th August", body:"The office will be closed on 7th August 2026 for the public holiday. All employees should ensure pending tasks are completed by 6th August.", category:"General", priority:"Medium", date:"2026-07-18", author:"Administration", pinned:false },
-  { id:"ANN-003", title:"New Health Insurance Benefits", body:"We are pleased to announce upgraded health insurance coverage for all permanent employees, effective 1st August 2026. Dental and optical cover are now included. Details will be shared by HR shortly.", category:"Benefits", priority:"High",   date:"2026-07-15", author:"HR Department", pinned:true },
-  { id:"ANN-004", title:"Monthly Town Hall — Friday 3pm", body:"Join us this Friday at 3pm in the Main Conference Room (or via Zoom link shared by email) for our monthly company update. Attendance is strongly encouraged.", category:"Events",  priority:"Medium", date:"2026-07-12", author:"Management",   pinned:false },
-  { id:"ANN-005", title:"Safety Drill — Next Tuesday 10am", body:"A scheduled fire safety drill will take place next Tuesday 10am. Please cooperate with the safety officer's instructions. Estimated duration: 20 minutes.", category:"Safety",  priority:"Medium", date:"2026-07-10", author:"Safety Officer",pinned:false },
-];
-
 const ANN_CAT_COLORS = {
   HR:      ["#EFF6FF","#2563EB","#BFDBFE"],
   General: ["#F8FAFB","#374151","#E5E7EB"],
@@ -49694,87 +49695,76 @@ const ANN_CAT_COLORS = {
 function PortalNoticeboard({ company }) {
   const co = company || {};
   const [filter, setFilter] = useState("All");
-  const categories = ["All","HR","General","Benefits","Events","Safety"];
-  const filtered = filter==="All" ? ANNOUNCEMENTS_SEED : ANNOUNCEMENTS_SEED.filter(a=>a.category===filter);
-  const pinned   = filtered.filter(a=>a.pinned);
-  const regular  = filtered.filter(a=>!a.pinned);
+  const { rows, loading, error, unavailable, reload } = useCompanyTable("hr_announcements", [], {
+    select: "id,title,body,audience_type,status,published_at,expires_at",
+    order: { col: "published_at", ascending: false },
+    mapRow: (row) => ({
+      id: row.id,
+      title: row.title,
+      body: row.body,
+      audience: row.audience_type || "All Employees",
+      date: row.published_at ? new Date(row.published_at).toLocaleDateString() : "—",
+      expiresAt: row.expires_at || null,
+      category: row.audience_type === "Department" ? "Department" : "All Employees",
+    }),
+  });
+  const categories = ["All", "All Employees", "Department"];
+  const visible = rows.filter((announcement) => filter === "All" || announcement.category === filter);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="text-[16px] font-bold text-[#111827]">📌 Company Noticeboard</h2>
-          <p className="text-[12px] text-slate-500">{co.name||"BusinessSphere"} · Official Announcements</p>
+          <h2 className="text-[16px] font-bold text-[#111827]">Company Noticeboard</h2>
+          <p className="text-[12px] text-slate-500">{co.name || "BusinessSphere"} · Published workspace announcements</p>
         </div>
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 overflow-x-auto">
-          {categories.map(cat=>(
-            <button key={cat} onClick={()=>setFilter(cat)}
-              className={`px-2.5 py-1.5 rounded-md text-[11.5px] font-semibold whitespace-nowrap ${filter===cat?"bg-white text-[#111827] shadow-sm":"text-slate-500"}`}>
-              {cat}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 overflow-x-auto">
+            {categories.map((category) => (
+              <button key={category} type="button" onClick={() => setFilter(category)}
+                className={`px-2.5 py-1.5 rounded-md text-[11.5px] font-semibold whitespace-nowrap ${filter === category ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}>
+                {category}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={reload} className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-800" aria-label="Refresh announcements">
+            <RefreshCw size={14} />
+          </button>
         </div>
       </div>
 
-      {/* Pinned announcements */}
-      {pinned.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">📌 Pinned</p>
-          {pinned.map(ann => {
-            const [bg,col,border] = ANN_CAT_COLORS[ann.category]||["#F8FAFB","#374151","#E5E7EB"];
+      {loading && <div className="bg-white rounded-xl border p-10 text-center text-slate-400">Loading published announcements…</div>}
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-[12px] font-semibold text-red-700">Announcements could not be loaded from the workspace. No local copy was used.</div>}
+      {unavailable && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-[12px] text-amber-800">The announcement table is not available in this deployment. Apply the approved HR employee-portal migration before publishing or reading announcements.</div>}
+      {!loading && !error && !unavailable && visible.length === 0 && (
+        <div className="bg-white rounded-xl border p-10 text-center text-slate-400">
+          <Bell size={32} className="mx-auto mb-2 text-slate-200" />
+          <p>No published announcements in this category.</p>
+        </div>
+      )}
+      {!error && !unavailable && visible.length > 0 && (
+        <div className="space-y-2">
+          {visible.map((announcement) => {
+            const [bg, col, border] = ANN_CAT_COLORS[announcement.category === "Department" ? "Events" : "General"] || ["#F8FAFB", "#374151", "#E5E7EB"];
             return (
-              <div key={ann.id} className="rounded-xl border-l-4 p-4 shadow-sm" style={{background:bg,borderLeftColor:col,border:`1px solid ${border}`,borderLeftWidth:4}}>
-                <div className="flex items-start justify-between gap-3">
+              <div key={announcement.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4" style={{ borderLeft: `4px solid ${border}` }}>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[16px]" style={{ background: bg, color: col }}>📢</div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{background:col+"22",color:col}}>{ann.category}</span>
-                      <span className="text-[10.5px] font-bold text-[#EF4444] bg-[#FEF2F2] px-2 py-0.5 rounded-full">{ann.priority}</span>
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${col}22`, color: col }}>{announcement.audience}</span>
+                      <span className="text-[11px] text-slate-400">{announcement.date}</span>
                     </div>
-                    <h3 className="text-[14px] font-bold text-[#111827] mb-1">{ann.title}</h3>
-                    <p className="text-[12.5px] text-slate-600 leading-relaxed">{ann.body}</p>
+                    <h3 className="text-[13px] font-bold text-[#111827]">{announcement.title}</h3>
+                    <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed">{announcement.body}</p>
+                    {announcement.expiresAt && <p className="text-[11px] text-slate-400 mt-1.5">Published announcement expires {new Date(announcement.expiresAt).toLocaleDateString()}.</p>}
                   </div>
-                </div>
-                <div className="flex items-center gap-3 mt-3 text-[11px] text-slate-400">
-                  <span>By {ann.author}</span>
-                  <span>·</span>
-                  <span>{ann.date}</span>
                 </div>
               </div>
             );
           })}
         </div>
       )}
-
-      {/* Regular announcements */}
-      <div className="space-y-2">
-        {regular.length===0&&pinned.length===0&&(
-          <div className="bg-white rounded-xl border p-10 text-center text-slate-400">
-            <Bell size={32} className="mx-auto mb-2 text-slate-200"/>
-            <p>No announcements in this category</p>
-          </div>
-        )}
-        {regular.map(ann=>{
-          const [bg,col,border] = ANN_CAT_COLORS[ann.category]||["#F8FAFB","#374151","#E5E7EB"];
-          return (
-            <div key={ann.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[16px]" style={{background:bg}}>
-                  {ann.category==="HR"?"👥":ann.category==="Benefits"?"🎁":ann.category==="Events"?"🗓":ann.category==="Safety"?"⚠️":"📢"}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style={{background:col+"22",color:col}}>{ann.category}</span>
-                    <span className="text-[11px] text-slate-400">{ann.date}</span>
-                  </div>
-                  <h3 className="text-[13px] font-bold text-[#111827]">{ann.title}</h3>
-                  <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed">{ann.body}</p>
-                  <p className="text-[11px] text-slate-400 mt-1.5">By {ann.author}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -50175,14 +50165,10 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
   const TODAY_STR = TODAY.toISOString().slice(0,10);
 
   // ── Identity ──────────────────────────────────────────────────────────
-  // In a real auth system this comes from session; here we resolve from
-  // employees list by currentUser.name, or use invite code onboarding.
+  // Employee access is established by the authenticated workspace profile. The
+  // secure invitation flow is handled by teamInvitations; no browser-only code
+  // or local employee identity is accepted here.
   const [portalView, setPortalView] = useState("identify"); // identify | portal
-  const [inviteInput, setInviteInput] = useState("");
-  const [inviteError, setInviteError] = useState("");
-  const [selfName, setSelfName] = useState("");
-  const [selfPhone, setSelfPhone] = useState("");
-  const [selfEmail, setSelfEmail] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // Find self in employees list
@@ -50515,34 +50501,6 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
     notify("Payslip PDF ready");
   }
 
-  // ── Invite code join flow ─────────────────────────────────────────────
-  function joinViaCode() {
-    if (!inviteInput.trim()) { setInviteError("Please enter the invite code"); return; }
-    if (!selfName.trim()) { setInviteError("Please enter your full name"); return; }
-    const code = inviteInput.trim().toUpperCase();
-    try {
-      const codes = JSON.parse(localStorage.getItem("hr_invite_codes")||"[]");
-      const inv = codes.find(c=>c.code===code&&!c.used&&new Date(c.expires)>=new Date());
-      if (!inv) {
-        setInviteError("Invalid or expired code. Ask HR for a new one.");
-        return;
-      }
-      // Mark code as used
-      const updated = codes.map(c=>c.code===code?{...c,used:true,usedBy:selfName}:c);
-      localStorage.setItem("hr_invite_codes", JSON.stringify(updated));
-      // Store joined employee locally
-      const portalEmp = {
-        code, name:selfName.trim(), phone:selfPhone, email:selfEmail,
-        dept:inv.dept, role:inv.role, joinedAt:new Date().toISOString(),
-      };
-      localStorage.setItem("ep_self_"+code, JSON.stringify(portalEmp));
-      notify(`Welcome, ${selfName.split(" ")[0]}! You have joined ${co.name||"the company"}.`);
-      setPortalView("portal");
-    } catch(_e){
-      setInviteError("Something went wrong. Please try again.");
-    }
-  }
-
   // Weekly attendance stats
   const weekStart = new Date(TODAY); weekStart.setDate(weekStart.getDate()-weekStart.getDay()+1);
   const weekDays  = Array.from({length:7},(_,i)=>{
@@ -50560,8 +50518,6 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
   // ── Notification badges ─────────────────────────────────────────────
   const pendingDutiesCount  = todayDuties.filter(d=>d.status==="Completed").length; // awaiting approval
   const pendingLeaveCount   = myLeave.filter(l=>l.status==="Pending").length;
-  const newAnnouncementCount= 0; // placeholder — future: unread announcements
-
   const PORTAL_TABS = [
     {id:"dashboard",    label:"Dashboard",       icon:LayoutDashboard,  badge:0},
     {id:"attendance",   label:"Attendance",       icon:CalendarCheck,    badge:0},
@@ -50570,65 +50526,34 @@ function EmployeePortal({ currentUser, company, employees, leaveRequests, canMan
     {id:"expenses",     label:"Expenses",         icon:Receipt,          badge:0},
     {id:"training",     label:"Training",         icon:GraduationCap,    badge:0},
     {id:"team",         label:"Team",             icon:Users,            badge:0},
-    {id:"noticeboard",  label:"Noticeboard",      icon:Bell,             badge:newAnnouncementCount},
+    {id:"noticeboard",  label:"Noticeboard",      icon:Bell,             badge:0},
     {id:"payslip",      label:"Payslip",          icon:Banknote,         badge:0},
     {id:"profile",      label:"Profile",          icon:UserCircle,       badge:0},
   ];
 
-  // ── Render: Invite Code Screen ────────────────────────────────────────
+  // ── Render: authenticated employee access notice ───────────────────────
   if (portalView === "identify") return (
     <div className="min-h-[600px] flex items-center justify-center">
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-[#0D2214] flex items-center justify-center mx-auto mb-4">
-            <LogIn size={28} className="text-[#16A34A]"/>
+            <LogIn size={28} className="text-[#16A34A}"/>
           </div>
           <h2 className="text-[22px] font-black text-[#111827]">Employee Portal</h2>
           <p className="text-[13px] text-slate-500 mt-1">{co.name||"BusinessSphere"}</p>
         </div>
-
-        <div className="space-y-3">
-          <div>
-            <label className="text-[11.5px] font-bold text-slate-600 block mb-1.5">Invite Code from HR *</label>
-            <input
-              className={inputClass+" text-center font-mono text-[18px] font-black tracking-widest uppercase"}
-              value={inviteInput}
-              onChange={e=>{ setInviteInput(e.target.value.toUpperCase()); setInviteError(""); }}
-              placeholder="e.g. ABC12345"
-              maxLength={10}
-            />
-            <p className="text-[10.5px] text-slate-400 mt-1 text-center">Get this code from your HR manager</p>
-          </div>
-          <div>
-            <label className="text-[11.5px] font-bold text-slate-600 block mb-1.5">Your Full Name *</label>
-            <input className={inputClass} value={selfName} onChange={e=>{setSelfName(e.target.value);setInviteError("");}} placeholder="e.g. Amina Hassan"/>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11.5px] font-bold text-slate-600 block mb-1.5">Phone Number</label>
-              <input type="tel" className={inputClass} value={selfPhone} onChange={e=>setSelfPhone(e.target.value)} placeholder="+255..."/>
-            </div>
-            <div>
-              <label className="text-[11.5px] font-bold text-slate-600 block mb-1.5">Email</label>
-              <input type="email" className={inputClass} value={selfEmail} onChange={e=>setSelfEmail(e.target.value)} placeholder="you@company.tz"/>
-            </div>
-          </div>
-          {inviteError&&<p className="text-[12px] text-[#EF4444] font-semibold text-center">{inviteError}</p>}
-          <button onClick={joinViaCode}
-            className="w-full flex items-center justify-center gap-2 text-[13.5px] font-black text-white py-3.5 rounded-xl bg-[#16A34A] mt-2">
-            <LogIn size={16}/> Join Company Portal
-          </button>
-          {canManage&&(
-            <button onClick={()=>setPortalView("portal")}
-              className="w-full text-[12px] font-semibold text-slate-400 py-2 hover:text-slate-600">
-              Manager access (skip code) →
-            </button>
+        <div className="space-y-3 text-center">
+          <p className="text-[13px] leading-6 text-slate-600">Employee access is provisioned from a verified workspace profile after accepting a secure invitation email.</p>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-[11.5px] leading-5 text-amber-800">Browser-only invite codes are not accepted because they cannot safely persist membership or authenticate the employee.</div>
+          {canManage ? (
+            <button type="button" onClick={()=>setPortalView("portal")} className="w-full text-[12px] font-semibold text-white py-3 rounded-xl bg-[#16A34A] hover:bg-[#15803D]">Open manager portal</button>
+          ) : (
+            <p className="text-[12px] text-slate-500">Ask your HR manager to send a secure invitation, then sign in with the invited email address.</p>
           )}
         </div>
-
         <div className="mt-5 p-3 bg-slate-50 rounded-xl text-center">
-          <p className="text-[11.5px] text-slate-500">Do not have a code? Ask your HR department to generate one from</p>
-          <p className="text-[11.5px] font-bold text-[#16A34A]">HR → Employees → Invite Code</p>
+          <p className="text-[11.5px] text-slate-500">Managers can send invitations from</p>
+          <p className="text-[11.5px] font-bold text-[#16A34A]">HR → Employees → Secure team invitation</p>
         </div>
       </div>
     </div>
@@ -51958,33 +51883,9 @@ function SmartManager() {
   // rather than a hardcoded constant, which could never correctly scope a
   // write once different real users belong to different companies.
   const [company, setCompany] = useState(() => {
-    // Restore saved profile (logo, cover photo, social links etc.) from localStorage
-    try {
-      const saved = localStorage.getItem("bs_company_profile");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          id: "", name: "BEIRAHISI HARDWARE", owner: "EzyMP",
-          industry: "Wholesale & Hardware", country: "Tanzania",
-          currency: "TZS", taxRate: 18, timezone: "Africa/Dar_es_Salaam",
-          businessScale: "large", createdAt: "2019-03-12",
-          receiptWidth: "80mm", receiptFooter: "Thank you for your business!", receiptShowLogo: true,
-          logo: null, coverPhoto: null, phone: "", email: "", website: "", address: "", city: "",
-          postalCode: "", tin: "", regNumber: "", tagline: "",
-          brandColor: "#0B5D3B", brandAccentColor: "#16A34A", businessType: "Private Limited Company", foundedYear: "",
-          description: "", facebook: "", instagram: "", twitter: "", linkedin: "", tiktok: "",
-          whatsappBusiness: "", bankName: "", bankAccountName: "", bankAccountNo: "",
-          bankBranch: "", bankSwift: "",
-          businessHours: {
-            Mon:{open:"08:00",close:"17:00",closed:false},Tue:{open:"08:00",close:"17:00",closed:false},
-            Wed:{open:"08:00",close:"17:00",closed:false},Thu:{open:"08:00",close:"17:00",closed:false},
-            Fri:{open:"08:00",close:"17:00",closed:false},Sat:{open:"09:00",close:"13:00",closed:false},
-            Sun:{open:"",close:"",closed:true},
-          },
-          ...parsed,
-        };
-      }
-    } catch(_e){}
+    // Live workspaces hydrate this state from the verified session and the
+    // persisted workspace settings query below. Demo defaults remain explicit
+    // fallback state only when the application is not configured.
     return {
     id: "",
     name: "BEIRAHISI HARDWARE",

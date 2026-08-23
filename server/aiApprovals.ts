@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { ENV } from "./_core/env";
+import { getBearerToken } from "./_core/authHeaders";
 
 const APPROVAL_TABLE = "approval_signatures";
 const EXPIRY_MS = 24 * 60 * 60 * 1000;
@@ -43,9 +44,7 @@ const ACTION_RULES: Record<string, { label: string; module: string; roles: strin
 };
 
 function accessToken(req: CreateExpressContextOptions["req"]) {
-  const candidate = req.headers["x-supabase-authorization"] || req.headers.authorization;
-  const raw = Array.isArray(candidate) ? candidate[0] : candidate;
-  return raw?.startsWith("Bearer ") ? raw.slice(7) : null;
+  return getBearerToken(req);
 }
 
 async function supabaseRequest(path: string, token: string, init: RequestInit = {}) {
