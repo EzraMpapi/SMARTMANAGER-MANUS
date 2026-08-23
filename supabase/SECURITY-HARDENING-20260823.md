@@ -10,6 +10,8 @@ The five targeted notices were remediated in production by migration `security_h
 
 The total advisor output decreased from **124** records in the targeted baseline to **119** records after the migration. The remaining records are unrelated to this request and are predominantly SECURITY DEFINER execute-grant notices; they require a separate access-contract review before any grants are changed.
 
+A separate, reviewed remediation was subsequently applied for helper functions that are directly called by authenticated company-scoped RLS policies. Migration `rls_policy_helper_execute_grants` recorded at version `20260823135437` grants `authenticated` execution only on six policy helpers, keeps `anon` and `PUBLIC` execution revoked, and pins each function to `pg_catalog, public, auth`. This resolves policy evaluation permission failures without broadening module RPC access.
+
 ## Findings and remediations
 
 | Baseline notice | Affected object | Production remediation | Verification result |
@@ -26,7 +28,9 @@ The function metadata query confirmed all four target functions are trigger func
 
 Money Agent PIN hashes remain behind the existing protected Money Agent workflow. The hardening migration did not add table grants, alter RPC grants, rewrite workflow functions, or create broad tenant-readable access. The explicit policy makes the intended direct-table denial visible to the advisor and to future maintainers while preserving the existing protected `SET_AGENT_PIN` workflow.
 
-The four trigger functions only use built-in operations and trigger-row values. The pinned path therefore uses `public, pg_temp`; it does not add `auth`, which is unnecessary for these function bodies. No function privilege changes were included because the advisor also reports many unrelated SECURITY DEFINER execute grants whose correctness depends on each endpoint's public or authenticated access contract.
+The four trigger functions only use built-in operations and trigger-row values. The pinned path therefore uses `public, pg_temp`; it does not add `auth`, which is unnecessary for these function bodies.
+
+The helper-grant remediation is intentionally narrower than the remaining advisor backlog. It covers only `bank_is_privileged()`, `billing_is_manager()`, `fleet_is_manager()`, `hr_current_employee_id()`, `hr_is_privileged()`, and `hr_can_manage_employee(uuid)`, because these are directly used by authenticated RLS policy expressions. It does not grant anonymous execution, does not grant all SECURITY DEFINER functions, and does not open the deliberately denied Property Management or Money Agent PIN tables.
 
 ## Verification performed
 
@@ -41,11 +45,16 @@ The following checks were completed against production and the repository:
 | Live RLS metadata | `money_agent_pin_credentials` has RLS enabled |
 | Live policy metadata | `money_agent_pin_credentials_no_direct_access`, `ALL`, `authenticated`, `false`, `false` |
 | Focused Vitest contracts | 4 files passed; 32 tests passed |
+| Helper-grant migration contract | 3 tests passed |
+| Live helper ACL verification | Six helpers: authenticated `EXECUTE=true`; anon/public `EXECUTE=false`; search path pinned |
+| Reversible authenticated policy probe | Billing, banking, fleet, HR, and profiles completed without helper permission errors |
 
 The migration and focused contract test are tracked as:
 
 - `supabase/migrations/20260823_046_security_hardening_search_paths_and_pin_rls.sql`
 - `server/supabaseSecurityHardening.test.ts`
+- `supabase/migrations/20260823_047_rls_policy_helper_execute_grants.sql`
+- `server/supabasePolicyHelperGrants.test.ts`
 
 ## Residual advisor findings
 
