@@ -275,10 +275,13 @@ async function authRequestPasswordRecovery(email) {
   const body = await res.text();
   let data = null;
   try { data = body ? JSON.parse(body) : null; } catch { /* a safe generic request error is built below */ }
-  if (!res.ok) throw createAuthRequestError(res.status, data, "Password recovery could not be started.");
+  if (!res.ok) {
+    const error = createAuthRequestError(res.status, data, "Password recovery could not be started.");
+    if (res.status >= 500) error.code = "AUTH_RECOVERY_SERVICE_UNAVAILABLE";
+    throw error;
+  }
   return data;
 }
-
 async function authResendVerification(email) {
   if (!IS_CONFIGURED) {
     const error = new Error("Authentication is not configured.");
