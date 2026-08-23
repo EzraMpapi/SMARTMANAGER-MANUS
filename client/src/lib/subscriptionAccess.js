@@ -83,6 +83,14 @@ export function useSubscriptionAccess({ accessToken, enabled = true } = {}) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    const refreshAfterSubscriptionUpdate = () => {
+      void refresh();
+    };
+    window.addEventListener("smart-manager:subscription-updated", refreshAfterSubscriptionUpdate);
+    return () => window.removeEventListener("smart-manager:subscription-updated", refreshAfterSubscriptionUpdate);
+  }, [refresh]);
+
   const access = useMemo(() => normalizeSubscriptionAccess(request.payload), [request.payload]);
   return {
     ...request,

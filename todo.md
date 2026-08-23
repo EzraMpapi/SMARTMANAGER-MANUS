@@ -350,3 +350,7 @@
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.
+
+## Concurrent Subscription Activation Regression Follow-up
+- [x] Restore the migration artifact expected by the merged subscription activation contract, validate the focused activation and billing suites, and preserve the intended database safety boundary. The repair replaces only the affected functions and privileges; it creates no tables or test data.
+- [x] Add the required safe subscription-update browser event listener so access state refreshes after Free-plan activation without relying on local storage. Verified with 26 focused tests across activation, billing, Global Admin, and managed-logo contracts plus TypeScript.
