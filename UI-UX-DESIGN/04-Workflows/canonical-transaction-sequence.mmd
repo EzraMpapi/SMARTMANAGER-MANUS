@@ -1,0 +1,30 @@
+sequenceDiagram
+  actor User
+  participant UI as Workspace UI
+  participant V as Validation and permission layer
+  participant API as Server mutation boundary
+  participant DB as Tenant-scoped database
+  participant A as Audit and notification layer
+  User->>UI: Entry and open form
+  UI-->>User: Form with required fields and context
+  User->>UI: Submit
+  UI->>V: Validate fields, role, tenant, totals, dependencies
+  alt Invalid input or insufficient authority
+    V-->>UI: Field errors or permission explanation
+    UI-->>User: Error state with correction path
+  else Valid request
+    V->>UI: Confirmation summary
+    User->>UI: Confirm action
+    UI->>API: Submit mutation
+    API->>DB: Persist tenant-scoped record
+    DB-->>API: Confirmed row or server error
+    alt Database error
+      API-->>UI: Error with retry and draft preservation
+      UI-->>User: Actionable failure state
+    else Confirmed
+      API->>A: Append audit event and trigger notification if needed
+      A-->>API: Evidence/notification result
+      API-->>UI: Confirmed record and result state
+      UI-->>User: Success and linked result
+    end
+  end

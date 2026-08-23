@@ -1,0 +1,6770 @@
+{
+  "project": "SMART MANAGER",
+  "architecture": {
+    "frontend": "React 19 + Vite 7",
+    "primary_dashboard": "client/src/BusinessSphereDashboard.jsx",
+    "backend": "Express + tRPC 11",
+    "database": "Supabase PostgreSQL + Drizzle ORM",
+    "styling": "Tailwind CSS utility classes with inline brand tokens",
+    "auth": "Supabase auth, OAuth, password recovery, WebAuthn/passkeys",
+    "localization": "English and Kiswahili labels in auth/onboarding surfaces; TZS-native operational context"
+  },
+  "modules": [
+    {
+      "id": "dashboard",
+      "label": "Dashboard",
+      "line": 3423
+    },
+    {
+      "id": "crm",
+      "label": "CRM",
+      "line": 3424
+    },
+    {
+      "id": "sales",
+      "label": "Sales",
+      "line": 3425
+    },
+    {
+      "id": "billing",
+      "label": "Subscription Billing",
+      "line": 3426
+    },
+    {
+      "id": "inventory",
+      "label": "Inventory",
+      "line": 3427
+    },
+    {
+      "id": "procurement",
+      "label": "Procurement",
+      "line": 3428
+    },
+    {
+      "id": "finance",
+      "label": "Finance",
+      "line": 3429
+    },
+    {
+      "id": "reports",
+      "label": "Reports",
+      "line": 3430
+    },
+    {
+      "id": "hr",
+      "label": "HR",
+      "line": 3431
+    },
+    {
+      "id": "manufacturing",
+      "label": "Manufacturing",
+      "line": 3432
+    },
+    {
+      "id": "scm",
+      "label": "Supply Chain",
+      "line": 3433
+    },
+    {
+      "id": "marketing",
+      "label": "Marketing",
+      "line": 3434
+    },
+    {
+      "id": "ecommerce",
+      "label": "E-Commerce",
+      "line": 3435
+    },
+    {
+      "id": "pos",
+      "label": "Point of Sale",
+      "line": 3436
+    },
+    {
+      "id": "documents",
+      "label": "Documents",
+      "line": 3437
+    },
+    {
+      "id": "projects",
+      "label": "Projects",
+      "line": 3438
+    },
+    {
+      "id": "support",
+      "label": "Customer Support",
+      "line": 3439
+    },
+    {
+      "id": "analytics",
+      "label": "Analytics",
+      "line": 3440
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+      "line": 3441
+    },
+    {
+      "id": "activity",
+      "label": "Activity Stream",
+      "line": 3442
+    },
+    {
+      "id": "integrations",
+      "label": "Integration Hub",
+      "line": 3443
+    },
+    {
+      "id": "workflows",
+      "label": "Workflow Studio",
+      "line": 3444
+    },
+    {
+      "id": "collaboration",
+      "label": "Collaboration Hub",
+      "line": 3445
+    },
+    {
+      "id": "tra_portal",
+      "label": "TRA Portal",
+      "line": 3446
+    },
+    {
+      "id": "ai",
+      "label": "AI Assistant",
+      "line": 3447
+    },
+    {
+      "id": "microfinance",
+      "label": "Microfinance",
+      "line": 3448
+    },
+    {
+      "id": "money-agent",
+      "label": "Money Agent",
+      "line": 3449
+    },
+    {
+      "id": "property-management",
+      "label": "Property Management",
+      "line": 3450
+    },
+    {
+      "id": "vicoba",
+      "label": "VICOBA / SACCOS",
+      "line": 3451
+    },
+    {
+      "id": "community",
+      "label": "Community Groups",
+      "line": 3452
+    },
+    {
+      "id": "healthcare",
+      "label": "Healthcare / Clinic",
+      "line": 3453
+    },
+    {
+      "id": "school",
+      "label": "School Management",
+      "line": 3454
+    },
+    {
+      "id": "pharmacy",
+      "label": "Pharmacy Management",
+      "line": 3455
+    },
+    {
+      "id": "hotel",
+      "label": "Hotel & Hospitality",
+      "line": 3456
+    },
+    {
+      "id": "fleet",
+      "label": "Fleet Management",
+      "line": 3457
+    },
+    {
+      "id": "banking",
+      "label": "Banking & MFI",
+      "line": 3458
+    },
+    {
+      "id": "restaurant",
+      "label": "Restaurant & F&B",
+      "line": 3459
+    },
+    {
+      "id": "employee-portal",
+      "label": "Employee Portal",
+      "line": 3460
+    },
+    {
+      "id": "presentation",
+      "label": "Presentation Progress",
+      "line": 3461
+    }
+  ],
+  "module_count": 39,
+  "roles": [
+    {
+      "id": "Super Administrator",
+      "category": "System",
+      "line": 3177
+    },
+    {
+      "id": "Organization Owner",
+      "category": "Executive",
+      "line": 3182
+    },
+    {
+      "id": "CEO",
+      "category": "Executive",
+      "line": 3187
+    },
+    {
+      "id": "CFO",
+      "category": "Executive",
+      "line": 3192
+    },
+    {
+      "id": "Finance Manager",
+      "category": "Department Head",
+      "line": 3197
+    },
+    {
+      "id": "HR Manager",
+      "category": "Department Head",
+      "line": 3202
+    },
+    {
+      "id": "Sales Manager",
+      "category": "Department Head",
+      "line": 3207
+    },
+    {
+      "id": "Institution Administrator",
+      "category": "Financial Services",
+      "line": 3212
+    },
+    {
+      "id": "Branch Manager",
+      "category": "Financial Services",
+      "line": 3217
+    },
+    {
+      "id": "Money Agent Manager",
+      "category": "Financial Services",
+      "line": 3222
+    },
+    {
+      "id": "Money Agent",
+      "category": "Financial Services",
+      "line": 3227
+    },
+    {
+      "id": "Supervisor",
+      "category": "Financial Services",
+      "line": 3232
+    },
+    {
+      "id": "Property Administrator",
+      "category": "Property Management",
+      "line": 3237
+    },
+    {
+      "id": "Property Manager",
+      "category": "Property Management",
+      "line": 3242
+    },
+    {
+      "id": "Landlord / Owner",
+      "category": "Property Management",
+      "line": 3247
+    },
+    {
+      "id": "Property Agent",
+      "category": "Property Management",
+      "line": 3252
+    },
+    {
+      "id": "Tenant",
+      "category": "Property Management Portal",
+      "line": 3257
+    },
+    {
+      "id": "Maintenance Staff",
+      "category": "Property Management",
+      "line": 3262
+    },
+    {
+      "id": "Property Finance Officer",
+      "category": "Property Management",
+      "line": 3267
+    },
+    {
+      "id": "Procurement Officer",
+      "category": "Operations",
+      "line": 3272
+    },
+    {
+      "id": "Warehouse Manager",
+      "category": "Operations",
+      "line": 3277
+    },
+    {
+      "id": "Project Manager",
+      "category": "Operations",
+      "line": 3282
+    },
+    {
+      "id": "Customer Support Agent",
+      "category": "Front Line",
+      "line": 3287
+    },
+    {
+      "id": "Clinic Administrator",
+      "category": "Healthcare",
+      "line": 3292
+    },
+    {
+      "id": "Doctor",
+      "category": "Healthcare",
+      "line": 3297
+    },
+    {
+      "id": "Nurse",
+      "category": "Healthcare",
+      "line": 3302
+    },
+    {
+      "id": "Laboratory Technician",
+      "category": "Healthcare",
+      "line": 3307
+    },
+    {
+      "id": "Pharmacist",
+      "category": "Healthcare",
+      "line": 3312
+    },
+    {
+      "id": "Receptionist",
+      "category": "Healthcare",
+      "line": 3317
+    },
+    {
+      "id": "Billing Officer",
+      "category": "Healthcare",
+      "line": 3322
+    },
+    {
+      "id": "School Administrator",
+      "category": "Education",
+      "line": 3327
+    },
+    {
+      "id": "Employee",
+      "category": "General Staff",
+      "line": 3332
+    },
+    {
+      "id": "Auditor",
+      "category": "Oversight",
+      "line": 3337
+    },
+    {
+      "id": "Customer",
+      "category": "Money Agent Portal",
+      "line": 3342
+    },
+    {
+      "id": "External Client",
+      "category": "External Portal",
+      "line": 3347
+    },
+    {
+      "id": "Supplier",
+      "category": "External Portal",
+      "line": 3352
+    }
+  ],
+  "role_count": 36,
+  "component_count": 924,
+  "components": [
+    {
+      "name": "DashboardRouteFallback",
+      "file": "client/src/App.tsx",
+      "line": 51
+    },
+    {
+      "name": "Router",
+      "file": "client/src/App.tsx",
+      "line": 74
+    },
+    {
+      "name": "App",
+      "file": "client/src/App.tsx",
+      "line": 93
+    },
+    {
+      "name": "LmsInsightsPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 1374
+    },
+    {
+      "name": "ActivityStream",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 1834
+    },
+    {
+      "name": "DailyBriefing",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 1959
+    },
+    {
+      "name": "PostCreateDispatch",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 2580
+    },
+    {
+      "name": "SendReceiptPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 2886
+    },
+    {
+      "name": "ConfirmDialog",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 3063
+    },
+    {
+      "name": "Toasts",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 3109
+    },
+    {
+      "name": "BulkActionBar",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 3748
+    },
+    {
+      "name": "DeltaBadge",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 3782
+    },
+    {
+      "name": "KpiCard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 5448
+    },
+    {
+      "name": "StagePill",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 5481
+    },
+    {
+      "name": "DocStatusPill",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 5493
+    },
+    {
+      "name": "SortableHeader",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 5510
+    },
+    {
+      "name": "ScheduleReportDialog",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 5699
+    },
+    {
+      "name": "MarketIntelligencePanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 5754
+    },
+    {
+      "name": "Dashboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 5960
+    },
+    {
+      "name": "GettingStartedChecklist",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 7678
+    },
+    {
+      "name": "AnalyticsReadiness",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 7724
+    },
+    {
+      "name": "BusinessHealthCard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 7780
+    },
+    {
+      "name": "IndustryInsights",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 7867
+    },
+    {
+      "name": "CxPulseCard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 7918
+    },
+    {
+      "name": "Customer360View",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 7935
+    },
+    {
+      "name": "CRM",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8095
+    },
+    {
+      "name": "LeadPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8429
+    },
+    {
+      "name": "FormField",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8510
+    },
+    {
+      "name": "CategoryPicker",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8529
+    },
+    {
+      "name": "DataImportPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8599
+    },
+    {
+      "name": "ConfirmDeleteButton",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8734
+    },
+    {
+      "name": "SkeletonRows",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8787
+    },
+    {
+      "name": "EmptyState",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8807
+    },
+    {
+      "name": "LeadFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8833
+    },
+    {
+      "name": "Opportunities",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8938
+    },
+    {
+      "name": "TopBuyers",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 9237
+    },
+    {
+      "name": "Customers",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 9846
+    },
+    {
+      "name": "PartiesLedger",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 9974
+    },
+    {
+      "name": "Contacts",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 10096
+    },
+    {
+      "name": "ContactFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 10250
+    },
+    {
+      "name": "Sales",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 10297
+    },
+    {
+      "name": "DocPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 11070
+    },
+    {
+      "name": "OrderReturnFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 11443
+    },
+    {
+      "name": "DocFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 11524
+    },
+    {
+      "name": "Subscriptions",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 11728
+    },
+    {
+      "name": "SubscriptionPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 11958
+    },
+    {
+      "name": "SubscriptionFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 12041
+    },
+    {
+      "name": "InventoryDashboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 12127
+    },
+    {
+      "name": "Inventory",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 12285
+    },
+    {
+      "name": "ItemPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 12678
+    },
+    {
+      "name": "ItemFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 12859
+    },
+    {
+      "name": "Warehouses",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 12959
+    },
+    {
+      "name": "WarehouseFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13054
+    },
+    {
+      "name": "Transfers",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13082
+    },
+    {
+      "name": "TransferFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13184
+    },
+    {
+      "name": "Batches",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13238
+    },
+    {
+      "name": "BatchFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13317
+    },
+    {
+      "name": "Suppliers",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13362
+    },
+    {
+      "name": "InventoryAnalysisView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13477
+    },
+    {
+      "name": "ReorderAlertsView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13682
+    },
+    {
+      "name": "StockAuditView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13850
+    },
+    {
+      "name": "SupplierFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 13954
+    },
+    {
+      "name": "Procurement",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14003
+    },
+    {
+      "name": "PurchaseOrders",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14065
+    },
+    {
+      "name": "PurchaseOrderPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14302
+    },
+    {
+      "name": "PurchaseOrderFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14372
+    },
+    {
+      "name": "Approvals",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14471
+    },
+    {
+      "name": "ProcurementContracts",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14545
+    },
+    {
+      "name": "ContractFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14605
+    },
+    {
+      "name": "VendorPayments",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14651
+    },
+    {
+      "name": "SupplierPortal",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14812
+    },
+    {
+      "name": "Finance",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 14873
+    },
+    {
+      "name": "FinanceOverview",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 15099
+    },
+    {
+      "name": "InlinePayForm",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 15175
+    },
+    {
+      "name": "Receivables",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 15193
+    },
+    {
+      "name": "Expenses",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 15414
+    },
+    {
+      "name": "ExpensePanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 15584
+    },
+    {
+      "name": "ExpenseFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 15671
+    },
+    {
+      "name": "GeneralLedger",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 15820
+    },
+    {
+      "name": "ChartOfAccountsView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 15950
+    },
+    {
+      "name": "BudgetsView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 16074
+    },
+    {
+      "name": "FinancialRatiosView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 16454
+    },
+    {
+      "name": "DocumentScannerView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 16554
+    },
+    {
+      "name": "LoansView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 16653
+    },
+    {
+      "name": "Banking",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 16840
+    },
+    {
+      "name": "OtherDebtorsView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 16926
+    },
+    {
+      "name": "OtherIncomeView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17039
+    },
+    {
+      "name": "TaxCenterView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17149
+    },
+    {
+      "name": "TRAReturnCard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17322
+    },
+    {
+      "name": "TaxSummary",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17367
+    },
+    {
+      "name": "Assets",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17410
+    },
+    {
+      "name": "AssetPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17528
+    },
+    {
+      "name": "AssetFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17591
+    },
+    {
+      "name": "WorkingTimetable",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17733
+    },
+    {
+      "name": "DutyFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 18366
+    },
+    {
+      "name": "HR",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 18452
+    },
+    {
+      "name": "Employees",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 18526
+    },
+    {
+      "name": "EmployeePanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 18834
+    },
+    {
+      "name": "EmployeeFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 18939
+    },
+    {
+      "name": "LeaveRequests",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 19028
+    },
+    {
+      "name": "Recruitment",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 19144
+    },
+    {
+      "name": "CandidatePanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 19305
+    },
+    {
+      "name": "CandidateFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 19342
+    },
+    {
+      "name": "BiometricClockPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 19470
+    },
+    {
+      "name": "Attendance",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 19613
+    },
+    {
+      "name": "AttendanceFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 19809
+    },
+    {
+      "name": "Performance",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 19846
+    },
+    {
+      "name": "PerformanceFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 20143
+    },
+    {
+      "name": "Training",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 20189
+    },
+    {
+      "name": "TrainingFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 20340
+    },
+    {
+      "name": "Benefits",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 20375
+    },
+    {
+      "name": "BenefitFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 20525
+    },
+    {
+      "name": "Payroll",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 20567
+    },
+    {
+      "name": "Manufacturing",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 20886
+    },
+    {
+      "name": "BOMs",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 21009
+    },
+    {
+      "name": "BOMPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 21084
+    },
+    {
+      "name": "BOMFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 21137
+    },
+    {
+      "name": "WorkOrders",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 21211
+    },
+    {
+      "name": "WorkOrderPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 21511
+    },
+    {
+      "name": "WorkOrderFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 21635
+    },
+    {
+      "name": "Machines",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 21711
+    },
+    {
+      "name": "MachineFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 21810
+    },
+    {
+      "name": "QualityControl",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 21844
+    },
+    {
+      "name": "QcFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22006
+    },
+    {
+      "name": "Maintenance",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22055
+    },
+    {
+      "name": "MaintenanceFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22215
+    },
+    {
+      "name": "SupplyChain",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22261
+    },
+    {
+      "name": "Shipments",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22418
+    },
+    {
+      "name": "ShipmentPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22613
+    },
+    {
+      "name": "ShipmentFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22673
+    },
+    {
+      "name": "Fleet",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22749
+    },
+    {
+      "name": "ECommerce",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22828
+    },
+    {
+      "name": "Storefront",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 22890
+    },
+    {
+      "name": "OnlineOrders",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23076
+    },
+    {
+      "name": "OnlineOrderPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23154
+    },
+    {
+      "name": "ExportMenu",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23397
+    },
+    {
+      "name": "AIInsights",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23435
+    },
+    {
+      "name": "Reports",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23478
+    },
+    {
+      "name": "ReportToolbar",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23555
+    },
+    {
+      "name": "SalesReport",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23642
+    },
+    {
+      "name": "ValuationReport",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23816
+    },
+    {
+      "name": "PnLReport",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23918
+    },
+    {
+      "name": "BalanceSheetReport",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24060
+    },
+    {
+      "name": "CashFlowReport",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24196
+    },
+    {
+      "name": "BusinessCreditProfile",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24391
+    },
+    {
+      "name": "ScheduledReports",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24528
+    },
+    {
+      "name": "LegacyLocalScheduledReports",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24583
+    },
+    {
+      "name": "ARAgingReport",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24718
+    },
+    {
+      "name": "TaxVATReport",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24816
+    },
+    {
+      "name": "ScheduleFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24918
+    },
+    {
+      "name": "Integrations",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24999
+    },
+    {
+      "name": "IntegrationConnections",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25050
+    },
+    {
+      "name": "MobileMoneyReconciliation",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25154
+    },
+    {
+      "name": "BankStatementImport",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25252
+    },
+    {
+      "name": "TaxIntegration",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25343
+    },
+    {
+      "name": "QRBarcodeTools",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25373
+    },
+    {
+      "name": "ESignature",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25417
+    },
+    {
+      "name": "Documents",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25525
+    },
+    {
+      "name": "FilePanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25802
+    },
+    {
+      "name": "VersionUploadPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25963
+    },
+    {
+      "name": "DocumentSignaturePad",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 25994
+    },
+    {
+      "name": "FileFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26055
+    },
+    {
+      "name": "Projects",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26151
+    },
+    {
+      "name": "ProjectFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26466
+    },
+    {
+      "name": "ProjectDetail",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26515
+    },
+    {
+      "name": "ProjectTasks",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26573
+    },
+    {
+      "name": "TaskPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26737
+    },
+    {
+      "name": "TaskFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26773
+    },
+    {
+      "name": "ProjectTimeline",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26813
+    },
+    {
+      "name": "ProjectMilestones",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26850
+    },
+    {
+      "name": "MilestoneFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26946
+    },
+    {
+      "name": "ProjectFiles",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 26979
+    },
+    {
+      "name": "ProjectTimeLog",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27015
+    },
+    {
+      "name": "ProjectBudget",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27133
+    },
+    {
+      "name": "ProjectExpenseFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27268
+    },
+    {
+      "name": "CustomerSupport",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27306
+    },
+    {
+      "name": "SupportPolicyCenter",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27369
+    },
+    {
+      "name": "SupportWorkflowPolicyPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27460
+    },
+    {
+      "name": "SupportSlaPolicyPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27469
+    },
+    {
+      "name": "Tickets",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27480
+    },
+    {
+      "name": "TicketPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27730
+    },
+    {
+      "name": "TicketFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27796
+    },
+    {
+      "name": "LiveChat",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27853
+    },
+    {
+      "name": "KnowledgeBase",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 27921
+    },
+    {
+      "name": "KbArticleFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 28020
+    },
+    {
+      "name": "CallCenter",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 28057
+    },
+    {
+      "name": "CallFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 28123
+    },
+    {
+      "name": "SupportAI",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 28169
+    },
+    {
+      "name": "ManualJournalView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 28273
+    },
+    {
+      "name": "PeriodClosesView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 28421
+    },
+    {
+      "name": "BankReconciliationView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 28614
+    },
+    {
+      "name": "MicrofinanceModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 28820
+    },
+    {
+      "name": "LegacyCommandPalette",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29192
+    },
+    {
+      "name": "DataQualityView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29354
+    },
+    {
+      "name": "FirstRunGuide",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29414
+    },
+    {
+      "name": "RiskCenterView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29474
+    },
+    {
+      "name": "Analytics",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29565
+    },
+    {
+      "name": "StatRow",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29627
+    },
+    {
+      "name": "BreakdownBars",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29651
+    },
+    {
+      "name": "ExecutiveDashboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29672
+    },
+    {
+      "name": "FinancialDashboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29850
+    },
+    {
+      "name": "HRDashboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 29966
+    },
+    {
+      "name": "SalesDashboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30104
+    },
+    {
+      "name": "OperationsDashboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30199
+    },
+    {
+      "name": "CustomKPIs",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30344
+    },
+    {
+      "name": "KpiFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30419
+    },
+    {
+      "name": "HeatMaps",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30458
+    },
+    {
+      "name": "MarketTrends",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30549
+    },
+    {
+      "name": "Benchmarking",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30661
+    },
+    {
+      "name": "BenchmarkFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30804
+    },
+    {
+      "name": "CompetitorFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30836
+    },
+    {
+      "name": "PredictiveIntelligence",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 30883
+    },
+    {
+      "name": "ScenarioPlanner",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 31155
+    },
+    {
+      "name": "WorkflowStudio",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 31329
+    },
+    {
+      "name": "WorkflowBuilder",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 31560
+    },
+    {
+      "name": "AutomationMarketplace",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 31749
+    },
+    {
+      "name": "PublishTemplatePanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 31800
+    },
+    {
+      "name": "ResourceSchedulerPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 31871
+    },
+    {
+      "name": "VideoMeetingBar",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 31930
+    },
+    {
+      "name": "DashboardWhatsAppFeed",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 32024
+    },
+    {
+      "name": "WhatsAppWebIntegration",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 32097
+    },
+    {
+      "name": "WhatsAppCenter",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 32472
+    },
+    {
+      "name": "EmailCenter",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 33029
+    },
+    {
+      "name": "CollaborationHub",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 33508
+    },
+    {
+      "name": "ChannelsView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 33559
+    },
+    {
+      "name": "ChannelFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 33900
+    },
+    {
+      "name": "SharedCalendar",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 33967
+    },
+    {
+      "name": "EventFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 34249
+    },
+    {
+      "name": "TeamWorkspaces",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 34314
+    },
+    {
+      "name": "WorkspaceFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 34571
+    },
+    {
+      "name": "CollabFileSharing",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 34611
+    },
+    {
+      "name": "NotebookView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 34681
+    },
+    {
+      "name": "Notifications",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 34838
+    },
+    {
+      "name": "NotificationChannels",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 35028
+    },
+    {
+      "name": "AlertRouting",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 35136
+    },
+    {
+      "name": "NotificationLog",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 35238
+    },
+    {
+      "name": "ToggleSwitch",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 35274
+    },
+    {
+      "name": "CongratulationsStudio",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 35347
+    },
+    {
+      "name": "CardPreview",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 35702
+    },
+    {
+      "name": "BusinessCardDesigner",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 35792
+    },
+    {
+      "name": "VatAnomalySettingsPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 36027
+    },
+    {
+      "name": "PushDeliveryHistoryPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 36077
+    },
+    {
+      "name": "SettingsPage",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 36089
+    },
+    {
+      "name": "TeamManagement",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 37434
+    },
+    {
+      "name": "AuditLogViewer",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 37542
+    },
+    {
+      "name": "RoleChangeApprovalPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 37638
+    },
+    {
+      "name": "AccountPasskeyManager",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 37657
+    },
+    {
+      "name": "QuarterlySecurityReviewChecklist",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 37803
+    },
+    {
+      "name": "BranchesManager",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 37822
+    },
+    {
+      "name": "DepartmentsManager",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 37930
+    },
+    {
+      "name": "AppLockManager",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 38015
+    },
+    {
+      "name": "BusinessNetworkSection",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 38134
+    },
+    {
+      "name": "SecurityDashboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 38230
+    },
+    {
+      "name": "MarketplaceSection",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 38285
+    },
+    {
+      "name": "DataExportManager",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 38320
+    },
+    {
+      "name": "AIAssistant",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 38712
+    },
+    {
+      "name": "ChatInterface",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 38784
+    },
+    {
+      "name": "DocumentGenerator",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 39446
+    },
+    {
+      "name": "AIMeetingAssistant",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 39563
+    },
+    {
+      "name": "Marketing",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 39754
+    },
+    {
+      "name": "Campaigns",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 39831
+    },
+    {
+      "name": "CampaignPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 40070
+    },
+    {
+      "name": "CampaignFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 40152
+    },
+    {
+      "name": "Segments",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 40215
+    },
+    {
+      "name": "BulkSmsView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 40261
+    },
+    {
+      "name": "PosShiftPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 40447
+    },
+    {
+      "name": "POS",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 40672
+    },
+    {
+      "name": "PosReconciliationDashboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 40810
+    },
+    {
+      "name": "Checkout",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 40876
+    },
+    {
+      "name": "ReceiptPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 41777
+    },
+    {
+      "name": "ReturnFormPanel",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 41951
+    },
+    {
+      "name": "RegisterHistory",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42044
+    },
+    {
+      "name": "NotificationCenter",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42284
+    },
+    {
+      "name": "CommandPalette",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42373
+    },
+    {
+      "name": "ProfileMenu",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42486
+    },
+    {
+      "name": "CustomerPortal",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42539
+    },
+    {
+      "name": "PortalFeedbackWidget",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42613
+    },
+    {
+      "name": "CustomerInvoicesTab",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42643
+    },
+    {
+      "name": "CustomerOrdersTab",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42712
+    },
+    {
+      "name": "CustomerDocumentsTab",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42747
+    },
+    {
+      "name": "CustomerSupportTab",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42771
+    },
+    {
+      "name": "CustomerAIChat",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42837
+    },
+    {
+      "name": "ExternalSupplierPortal",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42902
+    },
+    {
+      "name": "SupplierOrdersTab",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42966
+    },
+    {
+      "name": "SupplierInvoiceUploadTab",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 42997
+    },
+    {
+      "name": "SupplierPaymentsTab",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43054
+    },
+    {
+      "name": "SupplierContractsTab",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43084
+    },
+    {
+      "name": "SupplierDeliveriesTab",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43102
+    },
+    {
+      "name": "ComingSoon",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43151
+    },
+    {
+      "name": "BrandMark",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43350
+    },
+    {
+      "name": "AuthTextField",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43353
+    },
+    {
+      "name": "LoginPage",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43371
+    },
+    {
+      "name": "GoogleGlyph",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43442
+    },
+    {
+      "name": "MicrosoftGlyph",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43452
+    },
+    {
+      "name": "WorkspaceBrandingControls",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43496
+    },
+    {
+      "name": "SignupPage",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43598
+    },
+    {
+      "name": "OAuthCompanySetup",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 43935
+    },
+    {
+      "name": "VicobaSaccosModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44172
+    },
+    {
+      "name": "CommunityStatus",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44542
+    },
+    {
+      "name": "CommunitySection",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44543
+    },
+    {
+      "name": "CommunityKpi",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44544
+    },
+    {
+      "name": "CommunityEmpty",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44545
+    },
+    {
+      "name": "CommunityGroupsModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44546
+    },
+    {
+      "name": "VitalsTriageView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44805
+    },
+    {
+      "name": "RadiologyView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44921
+    },
+    {
+      "name": "HCBillingView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 45031
+    },
+    {
+      "name": "LegacyHealthcareClinicModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 45172
+    },
+    {
+      "name": "SchoolManagementModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 46097
+    },
+    {
+      "name": "PharmacyManagementModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 46597
+    },
+    {
+      "name": "LegacyHotelManagementModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 47105
+    },
+    {
+      "name": "HotelManagementModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 47647
+    },
+    {
+      "name": "FleetManagementModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 47673
+    },
+    {
+      "name": "RestaurantManagementModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 47687
+    },
+    {
+      "name": "LegacyFleetManagementModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 47712
+    },
+    {
+      "name": "BankingMFIModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 48084
+    },
+    {
+      "name": "LegacyBankingMfiSeededModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 48088
+    },
+    {
+      "name": "LegacyBankingMFIModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 48678
+    },
+    {
+      "name": "LegacyRestaurantModule",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 49401
+    },
+    {
+      "name": "InviteCodeForm",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 49985
+    },
+    {
+      "name": "PortalNoticeboard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 50039
+    },
+    {
+      "name": "PortalTeam",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 50129
+    },
+    {
+      "name": "PortalExpenses",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 50236
+    },
+    {
+      "name": "PortalTraining",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 50377
+    },
+    {
+      "name": "EmployeePortal",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 50509
+    },
+    {
+      "name": "OnboardingTour",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 51768
+    },
+    {
+      "name": "SmartManager",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 52059
+    },
+    {
+      "name": "PresentationProgressView",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 53104
+    },
+    {
+      "name": "MenuIcon",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 53787
+    },
+    {
+      "name": "GlobalStyles",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 53894
+    },
+    {
+      "name": "AppLock",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 54177
+    },
+    {
+      "name": "ComplianceDigestSettingsModal",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 54259
+    },
+    {
+      "name": "App",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 54458
+    },
+    {
+      "name": "SortHeader",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 874
+    },
+    {
+      "name": "DragCard",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 8982
+    },
+    {
+      "name": "Card",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17170
+    },
+    {
+      "name": "PAYE",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 17352
+    },
+    {
+      "name": "RatingBadge",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 19901
+    },
+    {
+      "name": "PAYE",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 20587
+    },
+    {
+      "name": "PAYE",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 20853
+    },
+    {
+      "name": "Row",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 23937
+    },
+    {
+      "name": "Row",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24088
+    },
+    {
+      "name": "Row",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 24263
+    },
+    {
+      "name": "Row",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 40572
+    },
+    {
+      "name": "FormActions",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44693
+    },
+    {
+      "name": "GroupSelect",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44695
+    },
+    {
+      "name": "MemberSelect",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 44696
+    },
+    {
+      "name": "StatusPill",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 45301
+    },
+    {
+      "name": "StatusChip",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 46163
+    },
+    {
+      "name": "StatusPill",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 46665
+    },
+    {
+      "name": "Chip",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 47144
+    },
+    {
+      "name": "VStatusChip",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 47736
+    },
+    {
+      "name": "Chip",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 48175
+    },
+    {
+      "name": "Chip",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 48731
+    },
+    {
+      "name": "StatusBadge",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 48733
+    },
+    {
+      "name": "AccStatement",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 48798
+    },
+    {
+      "name": "TZS_FMT",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 49400
+    },
+    {
+      "name": "PAYE",
+      "file": "client/src/BusinessSphereDashboard.jsx",
+      "line": 50803
+    },
+    {
+      "name": "AIChatBox",
+      "file": "client/src/components/AIChatBox.tsx",
+      "line": 113
+    },
+    {
+      "name": "AdminQualityDashboard",
+      "file": "client/src/components/AdminQualityDashboard.jsx",
+      "line": 3
+    },
+    {
+      "name": "AdminUserDirectoryView",
+      "file": "client/src/components/AdminUserDirectoryView.tsx",
+      "line": 5
+    },
+    {
+      "name": "AnimatedGoldMesh",
+      "file": "client/src/components/AnimatedGoldMesh.tsx",
+      "line": 2
+    },
+    {
+      "name": "Status",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 24
+    },
+    {
+      "name": "Panel",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 31
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 38
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 43
+    },
+    {
+      "name": "Input",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 45
+    },
+    {
+      "name": "Select",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 46
+    },
+    {
+      "name": "PrimaryButton",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 47
+    },
+    {
+      "name": "SecondaryButton",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 48
+    },
+    {
+      "name": "Table",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 49
+    },
+    {
+      "name": "Row",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 51
+    },
+    {
+      "name": "Cell",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 52
+    },
+    {
+      "name": "BankMfiWorkspace",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 53
+    },
+    {
+      "name": "Action",
+      "file": "client/src/components/BankMfiWorkspace.jsx",
+      "line": 201
+    },
+    {
+      "name": "BrandLogo",
+      "file": "client/src/components/BrandLogo.tsx",
+      "line": 14
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 12
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 13
+    },
+    {
+      "name": "SectionTitle",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 20
+    },
+    {
+      "name": "Source",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 21
+    },
+    {
+      "name": "Bars",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 22
+    },
+    {
+      "name": "ActionRow",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 23
+    },
+    {
+      "name": "SalesCommandCenter",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 24
+    },
+    {
+      "name": "CrmCommandCenter",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 40
+    },
+    {
+      "name": "MarketingCommandCenter",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 45
+    },
+    {
+      "name": "EcommerceCommandCenter",
+      "file": "client/src/components/CommercialCommandCenters.jsx",
+      "line": 51
+    },
+    {
+      "name": "ComplianceAuditLogView",
+      "file": "client/src/components/ComplianceAuditLogView.tsx",
+      "line": 10
+    },
+    {
+      "name": "DashboardLayout",
+      "file": "client/src/components/DashboardLayout.tsx",
+      "line": 39
+    },
+    {
+      "name": "DashboardLayoutContent",
+      "file": "client/src/components/DashboardLayout.tsx",
+      "line": 102
+    },
+    {
+      "name": "DashboardLayoutSkeleton",
+      "file": "client/src/components/DashboardLayoutSkeleton.tsx",
+      "line": 2
+    },
+    {
+      "name": "DashboardPreferencesDrawer",
+      "file": "client/src/components/DashboardPreferencesDrawer.tsx",
+      "line": 10
+    },
+    {
+      "name": "Status",
+      "file": "client/src/components/EmployeePortalWorkspace.jsx",
+      "line": 31
+    },
+    {
+      "name": "Empty",
+      "file": "client/src/components/EmployeePortalWorkspace.jsx",
+      "line": 33
+    },
+    {
+      "name": "Section",
+      "file": "client/src/components/EmployeePortalWorkspace.jsx",
+      "line": 34
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/EmployeePortalWorkspace.jsx",
+      "line": 35
+    },
+    {
+      "name": "FormModal",
+      "file": "client/src/components/EmployeePortalWorkspace.jsx",
+      "line": 36
+    },
+    {
+      "name": "EmployeePortalWorkspace",
+      "file": "client/src/components/EmployeePortalWorkspace.jsx",
+      "line": 37
+    },
+    {
+      "name": "PortalTable",
+      "file": "client/src/components/EmployeePortalWorkspace.jsx",
+      "line": 104
+    },
+    {
+      "name": "TanzaniaMark",
+      "file": "client/src/components/EnterpriseAuthViews.jsx",
+      "line": 69
+    },
+    {
+      "name": "AuthInput",
+      "file": "client/src/components/EnterpriseAuthViews.jsx",
+      "line": 73
+    },
+    {
+      "name": "EnterpriseAuthShell",
+      "file": "client/src/components/EnterpriseAuthViews.jsx",
+      "line": 96
+    },
+    {
+      "name": "AuthNotice",
+      "file": "client/src/components/EnterpriseAuthViews.jsx",
+      "line": 123
+    },
+    {
+      "name": "PasswordStrengthMeter",
+      "file": "client/src/components/EnterpriseAuthViews.jsx",
+      "line": 128
+    },
+    {
+      "name": "EnterpriseLoginView",
+      "file": "client/src/components/EnterpriseAuthViews.jsx",
+      "line": 134
+    },
+    {
+      "name": "PasswordRecoveryView",
+      "file": "client/src/components/EnterpriseAuthViews.jsx",
+      "line": 146
+    },
+    {
+      "name": "ResetPasswordView",
+      "file": "client/src/components/EnterpriseAuthViews.jsx",
+      "line": 154
+    },
+    {
+      "name": "EmailConfirmationView",
+      "file": "client/src/components/EnterpriseAuthViews.jsx",
+      "line": 160
+    },
+    {
+      "name": "EnterpriseColumnCustomizer",
+      "file": "client/src/components/EnterpriseColumnCustomizer.tsx",
+      "line": 12
+    },
+    {
+      "name": "EnterpriseModuleHeader",
+      "file": "client/src/components/EnterpriseLayout.tsx",
+      "line": 3
+    },
+    {
+      "name": "ScrollableModuleTabs",
+      "file": "client/src/components/EnterpriseLayout.tsx",
+      "line": 30
+    },
+    {
+      "name": "EnterpriseFilterBar",
+      "file": "client/src/components/EnterpriseLayout.tsx",
+      "line": 145
+    },
+    {
+      "name": "MetricCard",
+      "file": "client/src/components/ExecutiveCommandCenter.jsx",
+      "line": 90
+    },
+    {
+      "name": "HealthRow",
+      "file": "client/src/components/ExecutiveCommandCenter.jsx",
+      "line": 127
+    },
+    {
+      "name": "ExecutiveCommandCenter",
+      "file": "client/src/components/ExecutiveCommandCenter.jsx",
+      "line": 144
+    },
+    {
+      "name": "BarChart3Icon",
+      "file": "client/src/components/ExecutiveCommandCenter.jsx",
+      "line": 330
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 8
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 9
+    },
+    {
+      "name": "SectionTitle",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 10
+    },
+    {
+      "name": "Bars",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 11
+    },
+    {
+      "name": "Action",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 12
+    },
+    {
+      "name": "FinanceCommandCenter",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 13
+    },
+    {
+      "name": "ReportsCommandCenter",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 15
+    },
+    {
+      "name": "PackageIcon",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 17
+    },
+    {
+      "name": "IntegrationsCommandCenter",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 19
+    },
+    {
+      "name": "Source",
+      "file": "client/src/components/FinanceCommandCenters.jsx",
+      "line": 21
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/FleetWorkspace.jsx",
+      "line": 11
+    },
+    {
+      "name": "Section",
+      "file": "client/src/components/FleetWorkspace.jsx",
+      "line": 13
+    },
+    {
+      "name": "Empty",
+      "file": "client/src/components/FleetWorkspace.jsx",
+      "line": 14
+    },
+    {
+      "name": "DataTable",
+      "file": "client/src/components/FleetWorkspace.jsx",
+      "line": 15
+    },
+    {
+      "name": "Modal",
+      "file": "client/src/components/FleetWorkspace.jsx",
+      "line": 16
+    },
+    {
+      "name": "FleetWorkspace",
+      "file": "client/src/components/FleetWorkspace.jsx",
+      "line": 17
+    },
+    {
+      "name": "StatusPill",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 208
+    },
+    {
+      "name": "EmptyState",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 212
+    },
+    {
+      "name": "LoadingState",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 216
+    },
+    {
+      "name": "ErrorState",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 220
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 224
+    },
+    {
+      "name": "HealthcareEditor",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 356
+    },
+    {
+      "name": "StatCard",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 388
+    },
+    {
+      "name": "ListCard",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 393
+    },
+    {
+      "name": "RestrictedHealthcareState",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 397
+    },
+    {
+      "name": "InsuranceClaimsPanel",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 401
+    },
+    {
+      "name": "ClinicalNotificationsPanel",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 408
+    },
+    {
+      "name": "ClinicianAnalyticsPanel",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 413
+    },
+    {
+      "name": "PortalReferenceReconciliationPanel",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 420
+    },
+    {
+      "name": "PortalReferenceWorkflowPanel",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 437
+    },
+    {
+      "name": "PortalReferenceAuditPanel",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 444
+    },
+    {
+      "name": "PortalReferenceSchedulePanel",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 452
+    },
+    {
+      "name": "AppointmentRemindersPanel",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 458
+    },
+    {
+      "name": "HealthcareClinicWorkspace",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 464
+    },
+    {
+      "name": "DiagnosticPanel",
+      "file": "client/src/components/HealthcareClinicWorkspace.jsx",
+      "line": 778
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/HospitalityWorkspace.jsx",
+      "line": 10
+    },
+    {
+      "name": "Section",
+      "file": "client/src/components/HospitalityWorkspace.jsx",
+      "line": 11
+    },
+    {
+      "name": "Empty",
+      "file": "client/src/components/HospitalityWorkspace.jsx",
+      "line": 12
+    },
+    {
+      "name": "Table",
+      "file": "client/src/components/HospitalityWorkspace.jsx",
+      "line": 13
+    },
+    {
+      "name": "Modal",
+      "file": "client/src/components/HospitalityWorkspace.jsx",
+      "line": 14
+    },
+    {
+      "name": "HospitalityWorkspace",
+      "file": "client/src/components/HospitalityWorkspace.jsx",
+      "line": 15
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/IntelligenceCommandCenters.jsx",
+      "line": 5
+    },
+    {
+      "name": "Title",
+      "file": "client/src/components/IntelligenceCommandCenters.jsx",
+      "line": 6
+    },
+    {
+      "name": "Source",
+      "file": "client/src/components/IntelligenceCommandCenters.jsx",
+      "line": 7
+    },
+    {
+      "name": "SupportCommandCenter",
+      "file": "client/src/components/IntelligenceCommandCenters.jsx",
+      "line": 8
+    },
+    {
+      "name": "AiBusinessSignals",
+      "file": "client/src/components/IntelligenceCommandCenters.jsx",
+      "line": 9
+    },
+    {
+      "name": "ModuleNode",
+      "file": "client/src/components/LoginModuleEcosystem.jsx",
+      "line": 60
+    },
+    {
+      "name": "LoginModuleEcosystem",
+      "file": "client/src/components/LoginModuleEcosystem.jsx",
+      "line": 69
+    },
+    {
+      "name": "ManusDialog",
+      "file": "client/src/components/ManusDialog.tsx",
+      "line": 20
+    },
+    {
+      "name": "MapView",
+      "file": "client/src/components/Map.tsx",
+      "line": 118
+    },
+    {
+      "name": "DialogShell",
+      "file": "client/src/components/MicrofinanceGovernanceDialogs.jsx",
+      "line": 7
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/MicrofinanceGovernanceDialogs.jsx",
+      "line": 8
+    },
+    {
+      "name": "ErrorText",
+      "file": "client/src/components/MicrofinanceGovernanceDialogs.jsx",
+      "line": 9
+    },
+    {
+      "name": "CreditScoringSettingsDialog",
+      "file": "client/src/components/MicrofinanceGovernanceDialogs.jsx",
+      "line": 10
+    },
+    {
+      "name": "EscalationSettingsDialog",
+      "file": "client/src/components/MicrofinanceGovernanceDialogs.jsx",
+      "line": 19
+    },
+    {
+      "name": "EscalationGovernancePanel",
+      "file": "client/src/components/MicrofinanceGovernanceDialogs.jsx",
+      "line": 28
+    },
+    {
+      "name": "Button",
+      "file": "client/src/components/MicrofinanceGovernanceDialogs.jsx",
+      "line": 6
+    },
+    {
+      "name": "StatCard",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 24
+    },
+    {
+      "name": "Badge",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 28
+    },
+    {
+      "name": "Button",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 30
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 31
+    },
+    {
+      "name": "Input",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 32
+    },
+    {
+      "name": "Select",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 33
+    },
+    {
+      "name": "EmptyState",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 34
+    },
+    {
+      "name": "Panel",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 35
+    },
+    {
+      "name": "Modal",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 36
+    },
+    {
+      "name": "InlineError",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 37
+    },
+    {
+      "name": "MicrofinanceWorkspace",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 38
+    },
+    {
+      "name": "Overview",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 104
+    },
+    {
+      "name": "BorrowersTab",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 106
+    },
+    {
+      "name": "CreditTab",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 107
+    },
+    {
+      "name": "PortfolioTab",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 108
+    },
+    {
+      "name": "SavingsCashTab",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 109
+    },
+    {
+      "name": "CollectionsTab",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 110
+    },
+    {
+      "name": "GovernanceTab",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 111
+    },
+    {
+      "name": "BorrowerDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 112
+    },
+    {
+      "name": "GroupDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 114
+    },
+    {
+      "name": "ProductDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 115
+    },
+    {
+      "name": "GuarantorDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 116
+    },
+    {
+      "name": "CollateralDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 117
+    },
+    {
+      "name": "ApplicationDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 118
+    },
+    {
+      "name": "DecisionDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 119
+    },
+    {
+      "name": "DisbursementDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 120
+    },
+    {
+      "name": "RepaymentDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 121
+    },
+    {
+      "name": "SavingsDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 122
+    },
+    {
+      "name": "CashOpenDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 123
+    },
+    {
+      "name": "CashCloseDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 124
+    },
+    {
+      "name": "CollectionDialog",
+      "file": "client/src/components/MicrofinanceWorkspace.jsx",
+      "line": 125
+    },
+    {
+      "name": "Badge",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 35
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 36
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 37
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 38
+    },
+    {
+      "name": "Input",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 39
+    },
+    {
+      "name": "Select",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 40
+    },
+    {
+      "name": "ActionButton",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 41
+    },
+    {
+      "name": "TransactionForm",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 42
+    },
+    {
+      "name": "CustomerPortal",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 50
+    },
+    {
+      "name": "MoneyAgentWorkspace",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 66
+    },
+    {
+      "name": "Modal",
+      "file": "client/src/components/MoneyAgentWorkspace.jsx",
+      "line": 133
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 7
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 8
+    },
+    {
+      "name": "SectionTitle",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 9
+    },
+    {
+      "name": "Bars",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 10
+    },
+    {
+      "name": "ActionRow",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 11
+    },
+    {
+      "name": "Source",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 12
+    },
+    {
+      "name": "InventoryCommandCenter",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 13
+    },
+    {
+      "name": "ProcurementCommandCenter",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 15
+    },
+    {
+      "name": "SupplyChainCommandCenter",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 17
+    },
+    {
+      "name": "PosCommandCenter",
+      "file": "client/src/components/OperationsCommandCenters.jsx",
+      "line": 19
+    },
+    {
+      "name": "PatientSmsConsentSettings",
+      "file": "client/src/components/PatientSmsConsentSettings.jsx",
+      "line": 15
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 7
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 8
+    },
+    {
+      "name": "SectionTitle",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 9
+    },
+    {
+      "name": "Bars",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 10
+    },
+    {
+      "name": "Source",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 11
+    },
+    {
+      "name": "Action",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 12
+    },
+    {
+      "name": "HrCommandCenter",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 13
+    },
+    {
+      "name": "EmployeePortalCommandCenter",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 15
+    },
+    {
+      "name": "DocumentsCommandCenter",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 17
+    },
+    {
+      "name": "WorkflowCommandCenter",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 19
+    },
+    {
+      "name": "CollaborationCommandCenter",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 21
+    },
+    {
+      "name": "CalendarIcon",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 23
+    },
+    {
+      "name": "TargetIcon",
+      "file": "client/src/components/PeopleCommandCenters.jsx",
+      "line": 25
+    },
+    {
+      "name": "Panel",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 23
+    },
+    {
+      "name": "Empty",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 27
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 29
+    },
+    {
+      "name": "Input",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 30
+    },
+    {
+      "name": "Select",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 31
+    },
+    {
+      "name": "Textarea",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 32
+    },
+    {
+      "name": "Button",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 33
+    },
+    {
+      "name": "Status",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 37
+    },
+    {
+      "name": "SectionDenied",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 38
+    },
+    {
+      "name": "TableWrap",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 39
+    },
+    {
+      "name": "LoadingRows",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 40
+    },
+    {
+      "name": "PharmacyWorkspace",
+      "file": "client/src/components/PharmacyWorkspace.jsx",
+      "line": 41
+    },
+    {
+      "name": "PredictiveAnalyticsWorkspace",
+      "file": "client/src/components/PredictiveAnalyticsWorkspace.jsx",
+      "line": 3
+    },
+    {
+      "name": "InsightCard",
+      "file": "client/src/components/PredictiveAnalyticsWorkspace.jsx",
+      "line": 110
+    },
+    {
+      "name": "Row",
+      "file": "client/src/components/PredictiveAnalyticsWorkspace.jsx",
+      "line": 115
+    },
+    {
+      "name": "ScenarioPlanner",
+      "file": "client/src/components/PredictiveAnalyticsWorkspace.jsx",
+      "line": 117
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/PredictiveAnalyticsWorkspace.jsx",
+      "line": 139
+    },
+    {
+      "name": "Badge",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 14
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 15
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 16
+    },
+    {
+      "name": "Input",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 17
+    },
+    {
+      "name": "Select",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 18
+    },
+    {
+      "name": "ActionButton",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 19
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 20
+    },
+    {
+      "name": "Modal",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 21
+    },
+    {
+      "name": "CustomerPortal",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 22
+    },
+    {
+      "name": "BellIcon",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 37
+    },
+    {
+      "name": "Composer",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 38
+    },
+    {
+      "name": "UploadPanel",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 47
+    },
+    {
+      "name": "PropertyManagementWorkspace",
+      "file": "client/src/components/PropertyManagementWorkspace.jsx",
+      "line": 54
+    },
+    {
+      "name": "PublicAuthGateway",
+      "file": "client/src/components/PublicAuthGateway.jsx",
+      "line": 47
+    },
+    {
+      "name": "Badge",
+      "file": "client/src/components/RestaurantWorkspace.jsx",
+      "line": 9
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/RestaurantWorkspace.jsx",
+      "line": 11
+    },
+    {
+      "name": "Section",
+      "file": "client/src/components/RestaurantWorkspace.jsx",
+      "line": 12
+    },
+    {
+      "name": "DataTable",
+      "file": "client/src/components/RestaurantWorkspace.jsx",
+      "line": 13
+    },
+    {
+      "name": "Modal",
+      "file": "client/src/components/RestaurantWorkspace.jsx",
+      "line": 14
+    },
+    {
+      "name": "RestaurantWorkspace",
+      "file": "client/src/components/RestaurantWorkspace.jsx",
+      "line": 15
+    },
+    {
+      "name": "SalesDetailWorkspace",
+      "file": "client/src/components/SalesDetailWorkspace.jsx",
+      "line": 2
+    },
+    {
+      "name": "Panel",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 17
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 21
+    },
+    {
+      "name": "Input",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 22
+    },
+    {
+      "name": "Select",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 23
+    },
+    {
+      "name": "Textarea",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 24
+    },
+    {
+      "name": "Button",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 25
+    },
+    {
+      "name": "Notice",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 26
+    },
+    {
+      "name": "Denied",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 27
+    },
+    {
+      "name": "Loading",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 28
+    },
+    {
+      "name": "Status",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 29
+    },
+    {
+      "name": "Table",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 30
+    },
+    {
+      "name": "Options",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 31
+    },
+    {
+      "name": "SchoolDocumentManager",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 32
+    },
+    {
+      "name": "SchoolServiceWelfareManager",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 63
+    },
+    {
+      "name": "SchoolPortalView",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 85
+    },
+    {
+      "name": "SchoolNotificationCenter",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 102
+    },
+    {
+      "name": "SchoolWorkspace",
+      "file": "client/src/components/SchoolWorkspace.jsx",
+      "line": 115
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/SectorCommandCenters.jsx",
+      "line": 7
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/SectorCommandCenters.jsx",
+      "line": 8
+    },
+    {
+      "name": "Title",
+      "file": "client/src/components/SectorCommandCenters.jsx",
+      "line": 9
+    },
+    {
+      "name": "Bars",
+      "file": "client/src/components/SectorCommandCenters.jsx",
+      "line": 10
+    },
+    {
+      "name": "Source",
+      "file": "client/src/components/SectorCommandCenters.jsx",
+      "line": 11
+    },
+    {
+      "name": "MicrofinanceCommandCenter",
+      "file": "client/src/components/SectorCommandCenters.jsx",
+      "line": 12
+    },
+    {
+      "name": "BankingMfiCommandCenter",
+      "file": "client/src/components/SectorCommandCenters.jsx",
+      "line": 14
+    },
+    {
+      "name": "VicobaCommandCenter",
+      "file": "client/src/components/SectorCommandCenters.jsx",
+      "line": 16
+    },
+    {
+      "name": "CommunityCommandCenter",
+      "file": "client/src/components/SectorCommandCenters.jsx",
+      "line": 18
+    },
+    {
+      "name": "StatusBadge",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 42
+    },
+    {
+      "name": "SubscriptionBillingWorkspace",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 66
+    },
+    {
+      "name": "BillingLoading",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 298
+    },
+    {
+      "name": "BillingError",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 300
+    },
+    {
+      "name": "HeroMetric",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 301
+    },
+    {
+      "name": "Overview",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 302
+    },
+    {
+      "name": "StatCard",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 307
+    },
+    {
+      "name": "Plans",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 308
+    },
+    {
+      "name": "TrialBanner",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 316
+    },
+    {
+      "name": "PlanCard",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 337
+    },
+    {
+      "name": "CategorizedPlans",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 348
+    },
+    {
+      "name": "PaymentWaiting",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 355
+    },
+    {
+      "name": "Payments",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 357
+    },
+    {
+      "name": "Invoices",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 359
+    },
+    {
+      "name": "Usage",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 361
+    },
+    {
+      "name": "PlanSettings",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 363
+    },
+    {
+      "name": "NoData",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 365
+    },
+    {
+      "name": "Checkout",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 370
+    },
+    {
+      "name": "BillingProfile",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 372
+    },
+    {
+      "name": "PlanEditor",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 373
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 377
+    },
+    {
+      "name": "Modal",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 378
+    },
+    {
+      "name": "SubmitRow",
+      "file": "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "line": 379
+    },
+    {
+      "name": "StatusPill",
+      "file": "client/src/components/TraPortalModule.jsx",
+      "line": 95
+    },
+    {
+      "name": "TraPortalModule",
+      "file": "client/src/components/TraPortalModule.jsx",
+      "line": 106
+    },
+    {
+      "name": "VatTrendMiniPanel",
+      "file": "client/src/components/TraPortalModule.jsx",
+      "line": 299
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/TraPortalModule.jsx",
+      "line": 305
+    },
+    {
+      "name": "ReceiptTable",
+      "file": "client/src/components/TraPortalModule.jsx",
+      "line": 309
+    },
+    {
+      "name": "UserFeedbackModal",
+      "file": "client/src/components/UserFeedbackModal.jsx",
+      "line": 3
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 5
+    },
+    {
+      "name": "Metric",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 6
+    },
+    {
+      "name": "Title",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 7
+    },
+    {
+      "name": "Bars",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 8
+    },
+    {
+      "name": "Source",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 9
+    },
+    {
+      "name": "Action",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 10
+    },
+    {
+      "name": "HealthcareCommandCenter",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 11
+    },
+    {
+      "name": "PharmacyCommandCenter",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 12
+    },
+    {
+      "name": "SchoolCommandCenter",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 13
+    },
+    {
+      "name": "HotelCommandCenter",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 14
+    },
+    {
+      "name": "FleetCommandCenter",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 15
+    },
+    {
+      "name": "RestaurantCommandCenter",
+      "file": "client/src/components/VerticalCommandCenters.jsx",
+      "line": 16
+    },
+    {
+      "name": "WorkspacePresenceBadge",
+      "file": "client/src/components/WorkspacePresenceBadge.tsx",
+      "line": 10
+    },
+    {
+      "name": "Accordion",
+      "file": "client/src/components/ui/accordion.tsx",
+      "line": 6
+    },
+    {
+      "name": "AccordionItem",
+      "file": "client/src/components/ui/accordion.tsx",
+      "line": 12
+    },
+    {
+      "name": "AccordionTrigger",
+      "file": "client/src/components/ui/accordion.tsx",
+      "line": 25
+    },
+    {
+      "name": "AccordionContent",
+      "file": "client/src/components/ui/accordion.tsx",
+      "line": 47
+    },
+    {
+      "name": "AlertDialog",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 6
+    },
+    {
+      "name": "AlertDialogTrigger",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 12
+    },
+    {
+      "name": "AlertDialogPortal",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 20
+    },
+    {
+      "name": "AlertDialogOverlay",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 28
+    },
+    {
+      "name": "AlertDialogContent",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 44
+    },
+    {
+      "name": "AlertDialogHeader",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 63
+    },
+    {
+      "name": "AlertDialogFooter",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 76
+    },
+    {
+      "name": "AlertDialogTitle",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 92
+    },
+    {
+      "name": "AlertDialogDescription",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 105
+    },
+    {
+      "name": "AlertDialogAction",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 118
+    },
+    {
+      "name": "AlertDialogCancel",
+      "file": "client/src/components/ui/alert-dialog.tsx",
+      "line": 130
+    },
+    {
+      "name": "Alert",
+      "file": "client/src/components/ui/alert.tsx",
+      "line": 21
+    },
+    {
+      "name": "AlertTitle",
+      "file": "client/src/components/ui/alert.tsx",
+      "line": 36
+    },
+    {
+      "name": "AlertDescription",
+      "file": "client/src/components/ui/alert.tsx",
+      "line": 49
+    },
+    {
+      "name": "AspectRatio",
+      "file": "client/src/components/ui/aspect-ratio.tsx",
+      "line": 2
+    },
+    {
+      "name": "Avatar",
+      "file": "client/src/components/ui/avatar.tsx",
+      "line": 5
+    },
+    {
+      "name": "AvatarImage",
+      "file": "client/src/components/ui/avatar.tsx",
+      "line": 21
+    },
+    {
+      "name": "AvatarFallback",
+      "file": "client/src/components/ui/avatar.tsx",
+      "line": 34
+    },
+    {
+      "name": "Badge",
+      "file": "client/src/components/ui/badge.tsx",
+      "line": 27
+    },
+    {
+      "name": "Breadcrumb",
+      "file": "client/src/components/ui/breadcrumb.tsx",
+      "line": 6
+    },
+    {
+      "name": "BreadcrumbList",
+      "file": "client/src/components/ui/breadcrumb.tsx",
+      "line": 10
+    },
+    {
+      "name": "BreadcrumbItem",
+      "file": "client/src/components/ui/breadcrumb.tsx",
+      "line": 23
+    },
+    {
+      "name": "BreadcrumbLink",
+      "file": "client/src/components/ui/breadcrumb.tsx",
+      "line": 33
+    },
+    {
+      "name": "BreadcrumbPage",
+      "file": "client/src/components/ui/breadcrumb.tsx",
+      "line": 51
+    },
+    {
+      "name": "BreadcrumbSeparator",
+      "file": "client/src/components/ui/breadcrumb.tsx",
+      "line": 64
+    },
+    {
+      "name": "BreadcrumbEllipsis",
+      "file": "client/src/components/ui/breadcrumb.tsx",
+      "line": 82
+    },
+    {
+      "name": "ButtonGroup",
+      "file": "client/src/components/ui/button-group.tsx",
+      "line": 23
+    },
+    {
+      "name": "ButtonGroupText",
+      "file": "client/src/components/ui/button-group.tsx",
+      "line": 39
+    },
+    {
+      "name": "ButtonGroupSeparator",
+      "file": "client/src/components/ui/button-group.tsx",
+      "line": 59
+    },
+    {
+      "name": "Button",
+      "file": "client/src/components/ui/button.tsx",
+      "line": 38
+    },
+    {
+      "name": "Calendar",
+      "file": "client/src/components/ui/calendar.tsx",
+      "line": 11
+    },
+    {
+      "name": "CalendarDayButton",
+      "file": "client/src/components/ui/calendar.tsx",
+      "line": 172
+    },
+    {
+      "name": "Card",
+      "file": "client/src/components/ui/card.tsx",
+      "line": 4
+    },
+    {
+      "name": "CardHeader",
+      "file": "client/src/components/ui/card.tsx",
+      "line": 17
+    },
+    {
+      "name": "CardTitle",
+      "file": "client/src/components/ui/card.tsx",
+      "line": 30
+    },
+    {
+      "name": "CardDescription",
+      "file": "client/src/components/ui/card.tsx",
+      "line": 40
+    },
+    {
+      "name": "CardAction",
+      "file": "client/src/components/ui/card.tsx",
+      "line": 50
+    },
+    {
+      "name": "CardContent",
+      "file": "client/src/components/ui/card.tsx",
+      "line": 63
+    },
+    {
+      "name": "CardFooter",
+      "file": "client/src/components/ui/card.tsx",
+      "line": 73
+    },
+    {
+      "name": "Carousel",
+      "file": "client/src/components/ui/carousel.tsx",
+      "line": 42
+    },
+    {
+      "name": "CarouselContent",
+      "file": "client/src/components/ui/carousel.tsx",
+      "line": 132
+    },
+    {
+      "name": "CarouselItem",
+      "file": "client/src/components/ui/carousel.tsx",
+      "line": 153
+    },
+    {
+      "name": "CarouselPrevious",
+      "file": "client/src/components/ui/carousel.tsx",
+      "line": 171
+    },
+    {
+      "name": "CarouselNext",
+      "file": "client/src/components/ui/carousel.tsx",
+      "line": 201
+    },
+    {
+      "name": "ChartContainer",
+      "file": "client/src/components/ui/chart.tsx",
+      "line": 34
+    },
+    {
+      "name": "ChartTooltipContent",
+      "file": "client/src/components/ui/chart.tsx",
+      "line": 104
+    },
+    {
+      "name": "ChartLegendContent",
+      "file": "client/src/components/ui/chart.tsx",
+      "line": 252
+    },
+    {
+      "name": "ChartStyle",
+      "file": "client/src/components/ui/chart.tsx",
+      "line": 69
+    },
+    {
+      "name": "Checkbox",
+      "file": "client/src/components/ui/checkbox.tsx",
+      "line": 6
+    },
+    {
+      "name": "Collapsible",
+      "file": "client/src/components/ui/collapsible.tsx",
+      "line": 2
+    },
+    {
+      "name": "CollapsibleTrigger",
+      "file": "client/src/components/ui/collapsible.tsx",
+      "line": 8
+    },
+    {
+      "name": "CollapsibleContent",
+      "file": "client/src/components/ui/collapsible.tsx",
+      "line": 19
+    },
+    {
+      "name": "Command",
+      "file": "client/src/components/ui/command.tsx",
+      "line": 15
+    },
+    {
+      "name": "CommandDialog",
+      "file": "client/src/components/ui/command.tsx",
+      "line": 31
+    },
+    {
+      "name": "CommandInput",
+      "file": "client/src/components/ui/command.tsx",
+      "line": 62
+    },
+    {
+      "name": "CommandList",
+      "file": "client/src/components/ui/command.tsx",
+      "line": 84
+    },
+    {
+      "name": "CommandEmpty",
+      "file": "client/src/components/ui/command.tsx",
+      "line": 100
+    },
+    {
+      "name": "CommandGroup",
+      "file": "client/src/components/ui/command.tsx",
+      "line": 112
+    },
+    {
+      "name": "CommandSeparator",
+      "file": "client/src/components/ui/command.tsx",
+      "line": 128
+    },
+    {
+      "name": "CommandItem",
+      "file": "client/src/components/ui/command.tsx",
+      "line": 141
+    },
+    {
+      "name": "CommandShortcut",
+      "file": "client/src/components/ui/command.tsx",
+      "line": 157
+    },
+    {
+      "name": "ContextMenu",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 6
+    },
+    {
+      "name": "ContextMenuTrigger",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 12
+    },
+    {
+      "name": "ContextMenuGroup",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 20
+    },
+    {
+      "name": "ContextMenuPortal",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 28
+    },
+    {
+      "name": "ContextMenuSub",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 36
+    },
+    {
+      "name": "ContextMenuRadioGroup",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 42
+    },
+    {
+      "name": "ContextMenuSubTrigger",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 53
+    },
+    {
+      "name": "ContextMenuSubContent",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 77
+    },
+    {
+      "name": "ContextMenuContent",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 93
+    },
+    {
+      "name": "ContextMenuItem",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 111
+    },
+    {
+      "name": "ContextMenuCheckboxItem",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 134
+    },
+    {
+      "name": "ContextMenuRadioItem",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 160
+    },
+    {
+      "name": "ContextMenuLabel",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 184
+    },
+    {
+      "name": "ContextMenuSeparator",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 204
+    },
+    {
+      "name": "ContextMenuShortcut",
+      "file": "client/src/components/ui/context-menu.tsx",
+      "line": 217
+    },
+    {
+      "name": "Dialog",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 21
+    },
+    {
+      "name": "DialogTrigger",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 55
+    },
+    {
+      "name": "DialogPortal",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 61
+    },
+    {
+      "name": "DialogClose",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 67
+    },
+    {
+      "name": "DialogOverlay",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 73
+    },
+    {
+      "name": "DialogContent",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 91
+    },
+    {
+      "name": "DialogHeader",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 147
+    },
+    {
+      "name": "DialogFooter",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 157
+    },
+    {
+      "name": "DialogTitle",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 170
+    },
+    {
+      "name": "DialogDescription",
+      "file": "client/src/components/ui/dialog.tsx",
+      "line": 183
+    },
+    {
+      "name": "Drawer",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 5
+    },
+    {
+      "name": "DrawerTrigger",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 11
+    },
+    {
+      "name": "DrawerPortal",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 17
+    },
+    {
+      "name": "DrawerClose",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 23
+    },
+    {
+      "name": "DrawerOverlay",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 29
+    },
+    {
+      "name": "DrawerContent",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 45
+    },
+    {
+      "name": "DrawerHeader",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 72
+    },
+    {
+      "name": "DrawerFooter",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 85
+    },
+    {
+      "name": "DrawerTitle",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 95
+    },
+    {
+      "name": "DrawerDescription",
+      "file": "client/src/components/ui/drawer.tsx",
+      "line": 108
+    },
+    {
+      "name": "DropdownMenu",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 6
+    },
+    {
+      "name": "DropdownMenuPortal",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 12
+    },
+    {
+      "name": "DropdownMenuTrigger",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 20
+    },
+    {
+      "name": "DropdownMenuContent",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 31
+    },
+    {
+      "name": "DropdownMenuGroup",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 51
+    },
+    {
+      "name": "DropdownMenuItem",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 59
+    },
+    {
+      "name": "DropdownMenuCheckboxItem",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 82
+    },
+    {
+      "name": "DropdownMenuRadioGroup",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 108
+    },
+    {
+      "name": "DropdownMenuRadioItem",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 119
+    },
+    {
+      "name": "DropdownMenuLabel",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 143
+    },
+    {
+      "name": "DropdownMenuSeparator",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 163
+    },
+    {
+      "name": "DropdownMenuShortcut",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 176
+    },
+    {
+      "name": "DropdownMenuSub",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 192
+    },
+    {
+      "name": "DropdownMenuSubTrigger",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 198
+    },
+    {
+      "name": "DropdownMenuSubContent",
+      "file": "client/src/components/ui/dropdown-menu.tsx",
+      "line": 222
+    },
+    {
+      "name": "Empty",
+      "file": "client/src/components/ui/empty.tsx",
+      "line": 4
+    },
+    {
+      "name": "EmptyHeader",
+      "file": "client/src/components/ui/empty.tsx",
+      "line": 17
+    },
+    {
+      "name": "EmptyMedia",
+      "file": "client/src/components/ui/empty.tsx",
+      "line": 45
+    },
+    {
+      "name": "EmptyTitle",
+      "file": "client/src/components/ui/empty.tsx",
+      "line": 60
+    },
+    {
+      "name": "EmptyDescription",
+      "file": "client/src/components/ui/empty.tsx",
+      "line": 70
+    },
+    {
+      "name": "EmptyContent",
+      "file": "client/src/components/ui/empty.tsx",
+      "line": 83
+    },
+    {
+      "name": "FieldSet",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 7
+    },
+    {
+      "name": "FieldLegend",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 21
+    },
+    {
+      "name": "FieldGroup",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 41
+    },
+    {
+      "name": "Field",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 78
+    },
+    {
+      "name": "FieldContent",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 94
+    },
+    {
+      "name": "FieldLabel",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 107
+    },
+    {
+      "name": "FieldTitle",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 125
+    },
+    {
+      "name": "FieldDescription",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 138
+    },
+    {
+      "name": "FieldSeparator",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 153
+    },
+    {
+      "name": "FieldError",
+      "file": "client/src/components/ui/field.tsx",
+      "line": 183
+    },
+    {
+      "name": "FormItem",
+      "file": "client/src/components/ui/form.tsx",
+      "line": 75
+    },
+    {
+      "name": "FormLabel",
+      "file": "client/src/components/ui/form.tsx",
+      "line": 89
+    },
+    {
+      "name": "FormControl",
+      "file": "client/src/components/ui/form.tsx",
+      "line": 106
+    },
+    {
+      "name": "FormDescription",
+      "file": "client/src/components/ui/form.tsx",
+      "line": 125
+    },
+    {
+      "name": "FormMessage",
+      "file": "client/src/components/ui/form.tsx",
+      "line": 138
+    },
+    {
+      "name": "HoverCard",
+      "file": "client/src/components/ui/hover-card.tsx",
+      "line": 5
+    },
+    {
+      "name": "HoverCardTrigger",
+      "file": "client/src/components/ui/hover-card.tsx",
+      "line": 11
+    },
+    {
+      "name": "HoverCardContent",
+      "file": "client/src/components/ui/hover-card.tsx",
+      "line": 19
+    },
+    {
+      "name": "InputGroup",
+      "file": "client/src/components/ui/input-group.tsx",
+      "line": 8
+    },
+    {
+      "name": "InputGroupAddon",
+      "file": "client/src/components/ui/input-group.tsx",
+      "line": 57
+    },
+    {
+      "name": "InputGroupButton",
+      "file": "client/src/components/ui/input-group.tsx",
+      "line": 97
+    },
+    {
+      "name": "InputGroupText",
+      "file": "client/src/components/ui/input-group.tsx",
+      "line": 116
+    },
+    {
+      "name": "InputGroupInput",
+      "file": "client/src/components/ui/input-group.tsx",
+      "line": 128
+    },
+    {
+      "name": "InputGroupTextarea",
+      "file": "client/src/components/ui/input-group.tsx",
+      "line": 144
+    },
+    {
+      "name": "InputOTP",
+      "file": "client/src/components/ui/input-otp.tsx",
+      "line": 6
+    },
+    {
+      "name": "InputOTPGroup",
+      "file": "client/src/components/ui/input-otp.tsx",
+      "line": 26
+    },
+    {
+      "name": "InputOTPSlot",
+      "file": "client/src/components/ui/input-otp.tsx",
+      "line": 36
+    },
+    {
+      "name": "InputOTPSeparator",
+      "file": "client/src/components/ui/input-otp.tsx",
+      "line": 66
+    },
+    {
+      "name": "Input",
+      "file": "client/src/components/ui/input.tsx",
+      "line": 5
+    },
+    {
+      "name": "ItemGroup",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 7
+    },
+    {
+      "name": "ItemSeparator",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 18
+    },
+    {
+      "name": "Item",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 53
+    },
+    {
+      "name": "ItemMedia",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 90
+    },
+    {
+      "name": "ItemContent",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 105
+    },
+    {
+      "name": "ItemTitle",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 118
+    },
+    {
+      "name": "ItemDescription",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 131
+    },
+    {
+      "name": "ItemActions",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 145
+    },
+    {
+      "name": "ItemHeader",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 155
+    },
+    {
+      "name": "ItemFooter",
+      "file": "client/src/components/ui/item.tsx",
+      "line": 168
+    },
+    {
+      "name": "Kbd",
+      "file": "client/src/components/ui/kbd.tsx",
+      "line": 2
+    },
+    {
+      "name": "KbdGroup",
+      "file": "client/src/components/ui/kbd.tsx",
+      "line": 17
+    },
+    {
+      "name": "Label",
+      "file": "client/src/components/ui/label.tsx",
+      "line": 5
+    },
+    {
+      "name": "Menubar",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 6
+    },
+    {
+      "name": "MenubarMenu",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 22
+    },
+    {
+      "name": "MenubarGroup",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 28
+    },
+    {
+      "name": "MenubarPortal",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 34
+    },
+    {
+      "name": "MenubarRadioGroup",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 40
+    },
+    {
+      "name": "MenubarTrigger",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 48
+    },
+    {
+      "name": "MenubarContent",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 64
+    },
+    {
+      "name": "MenubarItem",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 88
+    },
+    {
+      "name": "MenubarCheckboxItem",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 111
+    },
+    {
+      "name": "MenubarRadioItem",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 137
+    },
+    {
+      "name": "MenubarLabel",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 161
+    },
+    {
+      "name": "MenubarSeparator",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 181
+    },
+    {
+      "name": "MenubarShortcut",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 194
+    },
+    {
+      "name": "MenubarSub",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 210
+    },
+    {
+      "name": "MenubarSubTrigger",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 216
+    },
+    {
+      "name": "MenubarSubContent",
+      "file": "client/src/components/ui/menubar.tsx",
+      "line": 240
+    },
+    {
+      "name": "NavigationMenu",
+      "file": "client/src/components/ui/navigation-menu.tsx",
+      "line": 7
+    },
+    {
+      "name": "NavigationMenuList",
+      "file": "client/src/components/ui/navigation-menu.tsx",
+      "line": 31
+    },
+    {
+      "name": "NavigationMenuItem",
+      "file": "client/src/components/ui/navigation-menu.tsx",
+      "line": 47
+    },
+    {
+      "name": "NavigationMenuTrigger",
+      "file": "client/src/components/ui/navigation-menu.tsx",
+      "line": 64
+    },
+    {
+      "name": "NavigationMenuContent",
+      "file": "client/src/components/ui/navigation-menu.tsx",
+      "line": 84
+    },
+    {
+      "name": "NavigationMenuViewport",
+      "file": "client/src/components/ui/navigation-menu.tsx",
+      "line": 101
+    },
+    {
+      "name": "NavigationMenuLink",
+      "file": "client/src/components/ui/navigation-menu.tsx",
+      "line": 123
+    },
+    {
+      "name": "NavigationMenuIndicator",
+      "file": "client/src/components/ui/navigation-menu.tsx",
+      "line": 139
+    },
+    {
+      "name": "Pagination",
+      "file": "client/src/components/ui/pagination.tsx",
+      "line": 10
+    },
+    {
+      "name": "PaginationContent",
+      "file": "client/src/components/ui/pagination.tsx",
+      "line": 22
+    },
+    {
+      "name": "PaginationItem",
+      "file": "client/src/components/ui/pagination.tsx",
+      "line": 35
+    },
+    {
+      "name": "PaginationLink",
+      "file": "client/src/components/ui/pagination.tsx",
+      "line": 44
+    },
+    {
+      "name": "PaginationPrevious",
+      "file": "client/src/components/ui/pagination.tsx",
+      "line": 67
+    },
+    {
+      "name": "PaginationNext",
+      "file": "client/src/components/ui/pagination.tsx",
+      "line": 84
+    },
+    {
+      "name": "PaginationEllipsis",
+      "file": "client/src/components/ui/pagination.tsx",
+      "line": 101
+    },
+    {
+      "name": "Popover",
+      "file": "client/src/components/ui/popover.tsx",
+      "line": 5
+    },
+    {
+      "name": "PopoverTrigger",
+      "file": "client/src/components/ui/popover.tsx",
+      "line": 11
+    },
+    {
+      "name": "PopoverContent",
+      "file": "client/src/components/ui/popover.tsx",
+      "line": 17
+    },
+    {
+      "name": "PopoverAnchor",
+      "file": "client/src/components/ui/popover.tsx",
+      "line": 39
+    },
+    {
+      "name": "Progress",
+      "file": "client/src/components/ui/progress.tsx",
+      "line": 5
+    },
+    {
+      "name": "RadioGroup",
+      "file": "client/src/components/ui/radio-group.tsx",
+      "line": 6
+    },
+    {
+      "name": "RadioGroupItem",
+      "file": "client/src/components/ui/radio-group.tsx",
+      "line": 19
+    },
+    {
+      "name": "ResizablePanelGroup",
+      "file": "client/src/components/ui/resizable.tsx",
+      "line": 6
+    },
+    {
+      "name": "ResizablePanel",
+      "file": "client/src/components/ui/resizable.tsx",
+      "line": 22
+    },
+    {
+      "name": "ResizableHandle",
+      "file": "client/src/components/ui/resizable.tsx",
+      "line": 28
+    },
+    {
+      "name": "ScrollArea",
+      "file": "client/src/components/ui/scroll-area.tsx",
+      "line": 5
+    },
+    {
+      "name": "ScrollBar",
+      "file": "client/src/components/ui/scroll-area.tsx",
+      "line": 28
+    },
+    {
+      "name": "Select",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 6
+    },
+    {
+      "name": "SelectGroup",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 12
+    },
+    {
+      "name": "SelectValue",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 18
+    },
+    {
+      "name": "SelectTrigger",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 24
+    },
+    {
+      "name": "SelectContent",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 50
+    },
+    {
+      "name": "SelectLabel",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 87
+    },
+    {
+      "name": "SelectItem",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 100
+    },
+    {
+      "name": "SelectSeparator",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 124
+    },
+    {
+      "name": "SelectScrollUpButton",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 137
+    },
+    {
+      "name": "SelectScrollDownButton",
+      "file": "client/src/components/ui/select.tsx",
+      "line": 155
+    },
+    {
+      "name": "Separator",
+      "file": "client/src/components/ui/separator.tsx",
+      "line": 5
+    },
+    {
+      "name": "Sheet",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 8
+    },
+    {
+      "name": "SheetTrigger",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 12
+    },
+    {
+      "name": "SheetClose",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 18
+    },
+    {
+      "name": "SheetPortal",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 24
+    },
+    {
+      "name": "SheetOverlay",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 30
+    },
+    {
+      "name": "SheetContent",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 46
+    },
+    {
+      "name": "SheetHeader",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 83
+    },
+    {
+      "name": "SheetFooter",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 93
+    },
+    {
+      "name": "SheetTitle",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 103
+    },
+    {
+      "name": "SheetDescription",
+      "file": "client/src/components/ui/sheet.tsx",
+      "line": 116
+    },
+    {
+      "name": "SidebarProvider",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 54
+    },
+    {
+      "name": "Sidebar",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 152
+    },
+    {
+      "name": "SidebarTrigger",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 262
+    },
+    {
+      "name": "SidebarRail",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 288
+    },
+    {
+      "name": "SidebarInset",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 313
+    },
+    {
+      "name": "SidebarInput",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 327
+    },
+    {
+      "name": "SidebarHeader",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 341
+    },
+    {
+      "name": "SidebarFooter",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 352
+    },
+    {
+      "name": "SidebarSeparator",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 363
+    },
+    {
+      "name": "SidebarContent",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 377
+    },
+    {
+      "name": "SidebarGroup",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 391
+    },
+    {
+      "name": "SidebarGroupLabel",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 402
+    },
+    {
+      "name": "SidebarGroupAction",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 423
+    },
+    {
+      "name": "SidebarGroupContent",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 446
+    },
+    {
+      "name": "SidebarMenu",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 460
+    },
+    {
+      "name": "SidebarMenuItem",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 471
+    },
+    {
+      "name": "SidebarMenuButton",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 504
+    },
+    {
+      "name": "SidebarMenuAction",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 554
+    },
+    {
+      "name": "SidebarMenuBadge",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 586
+    },
+    {
+      "name": "SidebarMenuSkeleton",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 608
+    },
+    {
+      "name": "SidebarMenuSub",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 646
+    },
+    {
+      "name": "SidebarMenuSubItem",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 661
+    },
+    {
+      "name": "SidebarMenuSubButton",
+      "file": "client/src/components/ui/sidebar.tsx",
+      "line": 675
+    },
+    {
+      "name": "Skeleton",
+      "file": "client/src/components/ui/skeleton.tsx",
+      "line": 2
+    },
+    {
+      "name": "Slider",
+      "file": "client/src/components/ui/slider.tsx",
+      "line": 5
+    },
+    {
+      "name": "Toaster",
+      "file": "client/src/components/ui/sonner.tsx",
+      "line": 3
+    },
+    {
+      "name": "Spinner",
+      "file": "client/src/components/ui/spinner.tsx",
+      "line": 4
+    },
+    {
+      "name": "Switch",
+      "file": "client/src/components/ui/switch.tsx",
+      "line": 5
+    },
+    {
+      "name": "Table",
+      "file": "client/src/components/ui/table.tsx",
+      "line": 4
+    },
+    {
+      "name": "TableHeader",
+      "file": "client/src/components/ui/table.tsx",
+      "line": 19
+    },
+    {
+      "name": "TableBody",
+      "file": "client/src/components/ui/table.tsx",
+      "line": 29
+    },
+    {
+      "name": "TableFooter",
+      "file": "client/src/components/ui/table.tsx",
+      "line": 39
+    },
+    {
+      "name": "TableRow",
+      "file": "client/src/components/ui/table.tsx",
+      "line": 52
+    },
+    {
+      "name": "TableHead",
+      "file": "client/src/components/ui/table.tsx",
+      "line": 65
+    },
+    {
+      "name": "TableCell",
+      "file": "client/src/components/ui/table.tsx",
+      "line": 78
+    },
+    {
+      "name": "TableCaption",
+      "file": "client/src/components/ui/table.tsx",
+      "line": 91
+    },
+    {
+      "name": "Tabs",
+      "file": "client/src/components/ui/tabs.tsx",
+      "line": 5
+    },
+    {
+      "name": "TabsList",
+      "file": "client/src/components/ui/tabs.tsx",
+      "line": 18
+    },
+    {
+      "name": "TabsTrigger",
+      "file": "client/src/components/ui/tabs.tsx",
+      "line": 34
+    },
+    {
+      "name": "TabsContent",
+      "file": "client/src/components/ui/tabs.tsx",
+      "line": 50
+    },
+    {
+      "name": "Textarea",
+      "file": "client/src/components/ui/textarea.tsx",
+      "line": 5
+    },
+    {
+      "name": "ToggleGroup",
+      "file": "client/src/components/ui/toggle-group.tsx",
+      "line": 16
+    },
+    {
+      "name": "ToggleGroupItem",
+      "file": "client/src/components/ui/toggle-group.tsx",
+      "line": 42
+    },
+    {
+      "name": "Toggle",
+      "file": "client/src/components/ui/toggle.tsx",
+      "line": 28
+    },
+    {
+      "name": "TooltipProvider",
+      "file": "client/src/components/ui/tooltip.tsx",
+      "line": 5
+    },
+    {
+      "name": "Tooltip",
+      "file": "client/src/components/ui/tooltip.tsx",
+      "line": 18
+    },
+    {
+      "name": "TooltipTrigger",
+      "file": "client/src/components/ui/tooltip.tsx",
+      "line": 28
+    },
+    {
+      "name": "TooltipContent",
+      "file": "client/src/components/ui/tooltip.tsx",
+      "line": 34
+    },
+    {
+      "name": "DashboardPreferencesProvider",
+      "file": "client/src/contexts/DashboardPreferencesContext.tsx",
+      "line": 44
+    },
+    {
+      "name": "LanguageProvider",
+      "file": "client/src/contexts/LanguageContext.tsx",
+      "line": 101
+    },
+    {
+      "name": "ThemeProvider",
+      "file": "client/src/contexts/ThemeContext.tsx",
+      "line": 18
+    },
+    {
+      "name": "ComponentsShowcase",
+      "file": "client/src/pages/ComponentShowcase.tsx",
+      "line": 175
+    },
+    {
+      "name": "Home",
+      "file": "client/src/pages/Home.tsx",
+      "line": 40
+    },
+    {
+      "name": "NotFound",
+      "file": "client/src/pages/NotFound.tsx",
+      "line": 6
+    }
+  ],
+  "render_routes": {
+    "crm": {
+      "component": "CRM",
+      "line": 52992
+    },
+    "sales": {
+      "component": "Sales",
+      "line": 52993
+    },
+    "inventory": {
+      "component": "Inventory",
+      "line": 52995
+    },
+    "procurement": {
+      "component": "Procurement",
+      "line": 52996
+    },
+    "finance": {
+      "component": "Finance",
+      "line": 52997
+    },
+    "reports": {
+      "component": "Reports",
+      "line": 52998
+    },
+    "scm": {
+      "component": "SupplyChain",
+      "line": 52999
+    },
+    "ecommerce": {
+      "component": "ECommerce",
+      "line": 53000
+    },
+    "pos": {
+      "component": "POS",
+      "line": 53001
+    },
+    "documents": {
+      "component": "Documents",
+      "line": 53002
+    },
+    "projects": {
+      "component": "Projects",
+      "line": 53003
+    },
+    "support": {
+      "component": "CustomerSupport",
+      "line": 53004
+    },
+    "activity": {
+      "component": "ActivityStream",
+      "line": 53015
+    },
+    "marketing": {
+      "component": "Marketing",
+      "line": 53030
+    },
+    "hr": {
+      "component": "HR",
+      "line": 53031
+    },
+    "manufacturing": {
+      "component": "Manufacturing",
+      "line": 53032
+    },
+    "vicoba": {
+      "component": "VicobaSaccosModule",
+      "line": 53051
+    },
+    "community": {
+      "component": "CommunityGroupsModule",
+      "line": 53052
+    },
+    "school": {
+      "component": "Suspense",
+      "line": 53058
+    },
+    "pharmacy": {
+      "component": "Suspense",
+      "line": 53059
+    },
+    "hotel": {
+      "component": "HotelManagementModule",
+      "line": 53060
+    },
+    "fleet": {
+      "component": "FleetManagementModule",
+      "line": 53061
+    },
+    "banking": {
+      "component": "BankingMFIModule",
+      "line": 53062
+    },
+    "restaurant": {
+      "component": "RestaurantManagementModule",
+      "line": 53063
+    },
+    "presentation": {
+      "component": "PresentationProgressView",
+      "line": 53073
+    }
+  },
+  "community_tabs": [
+    {
+      "id": "LC-01",
+      "label": "Biochemistry"
+    },
+    {
+      "id": "LC-02",
+      "label": "Diabetes"
+    },
+    {
+      "id": "LC-03",
+      "label": "Hematology (Blood)"
+    },
+    {
+      "id": "LC-04",
+      "label": "Lipid Profile"
+    },
+    {
+      "id": "LC-05",
+      "label": "Liver Function"
+    },
+    {
+      "id": "LC-06",
+      "label": "Kidney Function"
+    },
+    {
+      "id": "LC-07",
+      "label": "Thyroid"
+    },
+    {
+      "id": "LC-08",
+      "label": "Electrolytes"
+    },
+    {
+      "id": "LC-09",
+      "label": "Vitamins"
+    },
+    {
+      "id": "LC-10",
+      "label": "Inflammation"
+    },
+    {
+      "id": "LC-11",
+      "label": "Cardiac"
+    },
+    {
+      "id": "LC-12",
+      "label": "Urine"
+    }
+  ],
+  "subnav_label_candidates": [
+    "#15803D",
+    "#1D4ED8",
+    "#475569",
+    "#6D28D9",
+    "#991B1B",
+    "#B45309",
+    "#BAE6FD",
+    "#BBF7D0",
+    "#C2410C",
+    "#FECACA",
+    "1-year service contract",
+    "1\u201330 Days Overdue",
+    "1\u201330 days",
+    "2FA (TOTP)",
+    "31\u201360 Days Overdue",
+    "31\u201360 days",
+    "60+ days",
+    "61\u201390 Days Overdue",
+    "90+ Days Overdue",
+    "ABAC",
+    "AI Assistant",
+    "AI Assistant & Smart Intelligence",
+    "AI Meeting Assistant",
+    "AR Aging",
+    "AR Billed",
+    "Account No",
+    "Accountant",
+    "Accounts",
+    "Accounts Payable",
+    "Accounts Receivable",
+    "Accounts Receivable Aging",
+    "Acct No",
+    "Accumulated Depreciation",
+    "Action",
+    "Active",
+    "Active Business Alerts",
+    "Active Campaigns",
+    "Active Employees",
+    "Active Projects",
+    "Active SKUs",
+    "Active Shipments",
+    "Active employees missing email",
+    "Activity Stream",
+    "Activity Stream & Audit Evidence",
+    "Add Customer",
+    "Add Employee",
+    "Add Product to Inventory",
+    "Add Stock",
+    "Add Stock Item",
+    "Add your first customer",
+    "Add your first product or service",
+    "Adm No",
+    "Advanced Mathematics F4",
+    "Aging",
+    "Agricultural Loan",
+    "Agriculture Module",
+    "Airtel Money",
+    "Alert Routing",
+    "All",
+    "All (",
+    "Allergies",
+    "Amani Juma",
+    "Amara Mwakisisile",
+    "Amina Hassan",
+    "Amina Rashidi",
+    "Amlodipine 5mg",
+    "Amount",
+    "Amount (TZS k)",
+    "Amoxicillin 500mg",
+    "Analytics",
+    "Annual Financial Statement 2025.xlsx",
+    "Annual monitoring subscription",
+    "App (client) ID",
+    "App Lock",
+    "App Lock on this device",
+    "Applications",
+    "Appointments",
+    "Approvals",
+    "Approve Leave",
+    "Approved",
+    "Arrears",
+    "Arusha Trade Center",
+    "Arusha \u2014 Regional",
+    "Assembly Line Conveyor",
+    "Asset Finance",
+    "Asset Request Log",
+    "Assets",
+    "At risk",
+    "Atorvastatin 10mg",
+    "Attendance",
+    "Audit trail",
+    "Authentication & Secure Onboarding",
+    "Automation & SLA",
+    "Available",
+    "Avg Basket",
+    "Avg Click Rate",
+    "Avg Handle Time",
+    "Avg Open Rate",
+    "Avg Order Value",
+    "Awaiting Payment",
+    "Azithromycin 500mg",
+    "Azure AD Tenant ID",
+    "BEIRAHISI HARDWARE",
+    "BNR / Rwanda",
+    "BOT / Bank Rates",
+    "BOU / Uganda",
+    "Backwash basin",
+    "Backwash basins",
+    "Balance",
+    "Balance (TZS k)",
+    "Balance Sheet",
+    "Bank Recon",
+    "Bank rates",
+    "Banking",
+    "Banking & MFI",
+    "Banking \u2014 Loans",
+    "Banking \u2014 Teller",
+    "Banks",
+    "Baraka Enterprise Ltd",
+    "Baraka Enterprises",
+    "Baraka Hotels \u2014 Supply Agreement.pdf",
+    "Baraka Kimani",
+    "Baraka Mwita",
+    "Batches",
+    "Beauty Salon",
+    "Benchmarking",
+    "Benefits",
+    "Beta Healthcare",
+    "Bill of Materials",
+    "Billed",
+    "Billed (TZS k)",
+    "Billing",
+    "Biochemistry",
+    "Biology for Secondary",
+    "Blood Type",
+    "Bookings",
+    "Branch",
+    "Branding",
+    "Bronze",
+    "Budget",
+    "Budget (TZS k)",
+    "Budgets",
+    "Build the sales pipeline",
+    "Build your pipeline",
+    "Bulk SMS",
+    "Business Anniversary",
+    "Business Consultant",
+    "Business License \u2014 Renewal 2026.pdf",
+    "Business Loan",
+    "Business Partnership",
+    "Business tenure",
+    "BusinessSphere App Lock",
+    "BusinessSphere Approvals",
+    "BusinessSphere Attendance",
+    "BusinessSphere Employee Portal",
+    "CBK / Kenya",
+    "CNC Panel Cutter #1",
+    "CRITICAL",
+    "CRM",
+    "CRM & Customer Pipeline",
+    "CRM Pipeline by Stage",
+    "CRM \u2014 Pipeline",
+    "Call Center",
+    "Campaigns",
+    "Cancelled",
+    "Car Dealership",
+    "Cardiac",
+    "Cash",
+    "Cash & Bank",
+    "Cash Deposit",
+    "Cash Flow",
+    "Cash Runway",
+    "Cash Withdrawal",
+    "Category",
+    "Cement (50kg bag)",
+    "Cement 50kg bag",
+    "Channels",
+    "Channels Enabled",
+    "Chart of Accounts",
+    "Chat with AI",
+    "Check In",
+    "Check Out",
+    "Check-In Guest",
+    "Check-In/Out",
+    "Checkout",
+    "Chemistry Practical Guide",
+    "Chief Executive Officer",
+    "Church Module",
+    "CiplaQCIL Tanzania",
+    "Class",
+    "Classes",
+    "Clean White",
+    "Cleaning",
+    "Client",
+    "Client Registry",
+    "Client meeting \u2014 Uzuri",
+    "Clients",
+    "Closed",
+    "Coastal Building Supplies",
+    "Coastal Construction \u2014 Purchase Order.pdf",
+    "Coastal Steel & Hardware Ltd",
+    "Cold Chain Rollout",
+    "Cold Chain Rollout Team",
+    "Cold Chain Solutions \u2014 June Promo",
+    "Cold storage racking system",
+    "Cold-chain refrigeration units",
+    "Collaboration",
+    "Collaboration Hub",
+    "Collected",
+    "Collected (TZS k)",
+    "Collections",
+    "Commission refrigeration units",
+    "Committed Spend",
+    "Community Groups",
+    "Company",
+    "Complete company profile",
+    "Completed",
+    "Completed \u2014 awaiting approval",
+    "Compose",
+    "Configure monitoring dashboard",
+    "Connections",
+    "Consolata Peter",
+    "Construction Module",
+    "Construction, Manufacturing & Industrial",
+    "Consultation Summary",
+    "Contact",
+    "Contact Name",
+    "Contacts",
+    "Contract Approval Record",
+    "Contracts",
+    "Cooperative (SACCOS)",
+    "Copy Payment Link",
+    "Core workspace signals are in place",
+    "Create Invoice",
+    "Create your first invoice",
+    "Credit Profile",
+    "Critical",
+    "Current",
+    "Current (Not Yet Due)",
+    "Current Ratio",
+    "Current monthly revenue",
+    "Custom KPIs",
+    "Customer",
+    "Customer 360",
+    "Customer Follow-up",
+    "Customer Onboarding",
+    "Customer Support",
+    "Customer Support & Helpdesk",
+    "Customer Support Assistant",
+    "Customer complaint follow-up",
+    "Customers",
+    "Cut an Expense",
+    "DOB",
+    "DOCX",
+    "DPD",
+    "DSE Market",
+    "DSE market",
+    "DSO (days)",
+    "Daily Business Briefing",
+    "Dar es Salaam Warehouse Building",
+    "Dar es Salaam \u2014 Main",
+    "Dashboard",
+    "Data Quality",
+    "Data available",
+    "Date",
+    "David Chen",
+    "David Odhiambo",
+    "Days Overdue",
+    "Days Sales Outstanding",
+    "Deactivate",
+    "Deadline",
+    "Debt-to-Equity",
+    "Defaulted",
+    "Delete lead?",
+    "Delivered",
+    "Deliveries",
+    "Delivery and shipping timelines",
+    "Delivery run \u2014 Mwanza Rd",
+    "Department",
+    "Dept",
+    "Description",
+    "Design sign-off",
+    "Detail",
+    "Developing",
+    "Device management (this device)",
+    "Diabetes",
+    "Diazepam 5mg",
+    "Disbursed",
+    "Dispatch Log",
+    "Dispatches Logged",
+    "Dispense Drug",
+    "Dispensing",
+    "Dividends",
+    "Doctor",
+    "Doctor Review",
+    "Doctors",
+    "Document",
+    "Document Generator",
+    "Documents",
+    "Documents & Secure Files",
+    "Draft a Thank You / Follow-up Email",
+    "Drafts",
+    "Driver",
+    "Drug",
+    "Drug Catalog",
+    "Due",
+    "Due Date",
+    "Due date",
+    "Duplicate customers",
+    "Duties",
+    "E-Commerce",
+    "E-Commerce Platforms",
+    "E-Commerce Storefront",
+    "E-Signature",
+    "E-commerce & Distribution",
+    "Ecommerce",
+    "Electrolytes",
+    "Elias Rugambwa",
+    "Email",
+    "Emergency Loan",
+    "Employee",
+    "Employee Onboarding Kit",
+    "Employee Portal",
+    "Employees",
+    "Encryption",
+    "End-Term Exam 1",
+    "Enroll Student",
+    "Enterprise Analytics & BI",
+    "Enterprise Calendar",
+    "Enterprise Settings & Security Control Center",
+    "Enterprise login background",
+    "Equity",
+    "Examinations",
+    "Excellent",
+    "Executive",
+    "Executive Dashboard",
+    "Executive KPIs",
+    "Expense Reimbursement Watch",
+    "Expenses",
+    "Expenses (unchanged)",
+    "Expenses awaiting payment",
+    "Expiry",
+    "Expiry Alerts",
+    "Export Selected",
+    "External Client",
+    "EzyMP",
+    "Facebook",
+    "Fair",
+    "Fatuma Juma",
+    "Fatuma Saidi",
+    "Fatuma Salim",
+    "Fee Collection",
+    "File Sharing",
+    "Files",
+    "Final handover",
+    "Finalize equipment list",
+    "Finance",
+    "Finance & Accounting",
+    "Finance &#8250; Bank Recon",
+    "Finance &#8250; Banking",
+    "Finance &#8250; Budgets",
+    "Finance &#8250; General Ledger",
+    "Finance &#8250; Period Closes",
+    "Finance &#8250; Receivables",
+    "Finance &#8250; Tax Center",
+    "Finance Director",
+    "Finance records",
+    "Finance \u2014 Expenses",
+    "Finance \u2014 Journal",
+    "Finance \u2014 P&L",
+    "Financial",
+    "Financial Advisor",
+    "Financial Ratios",
+    "Financing",
+    "Fixed Assets",
+    "Fixed Assets (net)",
+    "Fixed Deposits",
+    "Fleet",
+    "Fleet Available",
+    "Fleet GPS Deployment",
+    "Fleet GPS tracking unit",
+    "Fleet GPS tracking units",
+    "Fleet Management",
+    "Fleet Overview",
+    "Fleet \u2014 Vehicles",
+    "Fleet-wide GPS live",
+    "Food & Hospitality",
+    "Forecasting",
+    "Form",
+    "Form 1A",
+    "Form 1B",
+    "Form 2A",
+    "Form 3A",
+    "Form 3B",
+    "Form 4A",
+    "Fresh Juice",
+    "From address",
+    "Fuel Station",
+    "Functional Channels On",
+    "Furniture Craft Tanzania",
+    "Gender",
+    "General",
+    "General Ledger",
+    "General Manager",
+    "Generate a Report",
+    "Generic",
+    "Go to AI Assistant",
+    "Go to Analytics",
+    "Go to CRM",
+    "Go to Dashboard",
+    "Go to Finance",
+    "Go to HR",
+    "Go to Inventory",
+    "Go to Manufacturing",
+    "Go to Point of Sale",
+    "Go to Procurement",
+    "Go to Projects",
+    "Go to Sales",
+    "Go to Settings",
+    "Gold",
+    "Gold Premium",
+    "Good",
+    "Google Workspace",
+    "Grace Mmbaga",
+    "Grace Mmbaga \u2014 Employment Contract.docx",
+    "Grace Mwenda",
+    "Grilled Tilapia",
+    "Gross (TZS k)",
+    "Gross Margin",
+    "Gross P&L",
+    "Group Fund",
+    "Group Loan",
+    "Groups",
+    "Guest",
+    "HIGH",
+    "HR",
+    "HR & Payroll",
+    "HR Officer",
+    "HR \u2014 Employees",
+    "HR \u2014 Leave",
+    "HR \u2014 Payroll",
+    "Halima Abdallah",
+    "Halima Juma",
+    "HaloPesa",
+    "Hardware Restock Reminder",
+    "Head Office",
+    "Headcount",
+    "Healthcare & Veterinary",
+    "Healthcare / Clinic",
+    "Healthcare \u2014 Patients",
+    "Healthy",
+    "Heat Maps",
+    "Hematology (Blood)",
+    "High",
+    "History of East Africa",
+    "Hospital Module",
+    "Hotel & Hospitality",
+    "Hotel Module",
+    "Hotel \u2014 Check-In",
+    "Hours",
+    "House Wine (Glass)",
+    "Housekeeping",
+    "How to request a bulk quote",
+    "Human Resources",
+    "Human Resources & Payroll",
+    "Hydraulic vehicle lift",
+    "Hydraulic vehicle lifts",
+    "ID",
+    "Ice Cream (3 scoops)",
+    "Idempotency Key",
+    "Identity",
+    "In Progress",
+    "In Stock",
+    "In Transit",
+    "Inbox",
+    "Incoming Webhook URL",
+    "Industrial water heater 50L",
+    "Industrial water heaters (50L)",
+    "Industry Gross Margin (Hardware Retail)",
+    "Inflammation",
+    "Inflows (TZS k)",
+    "Instagram",
+    "Install GPS units on fleet",
+    "Install racking system",
+    "Installation & commissioning",
+    "Insulin Glargine 3ml",
+    "Insurance",
+    "Integration Hub",
+    "Invalid phone numbers",
+    "Inventory",
+    "Inventory & Warehouse Management",
+    "Inventory Manager",
+    "Inventory Replenishment Alert",
+    "Inventory Valuation",
+    "Inventory Value by Category",
+    "Inventory audit \u2014 Aisle C",
+    "Inventory records",
+    "Investing",
+    "Invoice",
+    "Invoice Approval Alert",
+    "Invoice Paid Follow-up",
+    "Invoices",
+    "Item",
+    "Items",
+    "Items Count",
+    "Items Sold",
+    "Items without expiry dates",
+    "James Mutungi",
+    "John Makundi",
+    "John Mwangi",
+    "Joseph Mwakisisile",
+    "Juma Batenga",
+    "June Payroll Summary.xlsx",
+    "Kaimati (10 pcs)",
+    "Kenya (KRA)",
+    "Kidney Function",
+    "Kiswahili Fasili Form 3",
+    "Kitchen Display",
+    "Kitchen Refurbishment",
+    "Kitchen refrigeration overhaul",
+    "Knowledge Base",
+    "LOW",
+    "Lab Orders",
+    "Laboratory",
+    "Large Business",
+    "Last Error",
+    "Law Firm",
+    "Leads",
+    "Leave",
+    "Leave Approval Alert",
+    "Leave Requests",
+    "Leave Schedules",
+    "Leave requests awaiting approval",
+    "Legal Assistant",
+    "Liabilities",
+    "Library",
+    "LinkedIn",
+    "Lipid Profile",
+    "Live Chat",
+    "Liver Function",
+    "Loan Book",
+    "Loan Calculator",
+    "Loan ID",
+    "Loan Portfolio",
+    "Loans",
+    "Loans & Credit",
+    "Lock this period?",
+    "Log to Audit Trail",
+    "Logistics",
+    "Logistics, Transport & Agriculture",
+    "Lost",
+    "Low",
+    "Low Stock",
+    "Low stock",
+    "M-Pesa",
+    "MEDIUM",
+    "MFI Reports",
+    "MIS Reports",
+    "MRN",
+    "MRR",
+    "Machines",
+    "Maintenance",
+    "Make",
+    "Manager",
+    "Manual \u2014 run on demand",
+    "Manufacturer",
+    "Manufacturing",
+    "Manufacturing & Work Orders",
+    "Manufacturing Module",
+    "Mark On Leave",
+    "Market Trends",
+    "Marketing",
+    "Marketing Campaigns",
+    "Master Application Shell & Navigation",
+    "Medical Reports",
+    "Medium",
+    "Meetings",
+    "Meetings & Events",
+    "Member",
+    "Members",
+    "Members / KYC",
+    "Menu Manager",
+    "Meridian Logistics \u2014 Service Contract.pdf",
+    "Message",
+    "Metformin 500mg",
+    "Michael Fundi",
+    "Microfinance",
+    "Microfinance \u2014 Loans",
+    "Microsoft 365",
+    "Microsoft Teams",
+    "Mid-Term Exam 1",
+    "Mid-Term Exam 2",
+    "Mid-Year Wholesale Discount",
+    "Mileage (km)",
+    "Milestones",
+    "Mixed Grill Platter",
+    "Mobile Money",
+    "Model",
+    "Money Agent",
+    "Monthly Payroll",
+    "Monthly Payroll Reminder",
+    "Monthly Revenue Target",
+    "Monthly Town Hall \u2014 Friday 3pm",
+    "Morning stock count",
+    "Mortgage",
+    "Mr. Ahmed Hassan",
+    "Mr. Hassan Salim",
+    "Mr. John Owino",
+    "Mr. Kamau Njoroge",
+    "Ms. Fatuma Ally",
+    "Ms. Grace Mutua",
+    "Ms. Grace Waweru",
+    "Mwanza \u2014 Regional",
+    "NGO Module",
+    "NHIF",
+    "NSSF",
+    "Name",
+    "Needs attention",
+    "Needs review",
+    "Neema Kessy",
+    "Neema Mwangi",
+    "Net (TZS k)",
+    "Net Book Value",
+    "Net Cash Position",
+    "Net Change",
+    "Net Margin (YTD)",
+    "Net Pay",
+    "Net Profit",
+    "New Employee",
+    "New Expense",
+    "New Health Insurance Benefits",
+    "New Hire",
+    "New Hospitality Fixtures Launch",
+    "New Invoice",
+    "New Lead",
+    "New Purchase Order",
+    "New Quotation",
+    "New Table Order",
+    "New total monthly payroll",
+    "Next Service (km)",
+    "Night security check",
+    "Nights",
+    "No condition \u2014 always run",
+    "No confirmed data",
+    "Not Started",
+    "Not assessed",
+    "Note",
+    "Notebook",
+    "Notes",
+    "Noticeboard",
+    "Notifications",
+    "Notifications & Alerting",
+    "Notify via Microsoft Teams",
+    "Notify via Slack",
+    "Novo Nordisk EA",
+    "Nyama Choma (500g)",
+    "OAuth Client ID",
+    "Occupied",
+    "Ocean Blue",
+    "Office Closure \u2014 7th August",
+    "Office Furniture Set \u2014 HQ",
+    "Omeprazole 20mg",
+    "On Leave",
+    "On hand",
+    "Onboarding split-screen background",
+    "Online Revenue",
+    "Only if low-stock items exceed\u2026",
+    "Only if overdue invoices exceed\u2026",
+    "Only if unpaid expenses exceed\u2026 (TZS 000)",
+    "Open",
+    "Open Leads",
+    "Open Pipeline Value",
+    "Open Procurement",
+    "Open Projects",
+    "Open Purchase Orders",
+    "Open Settings",
+    "Open Tickets",
+    "Open Visits",
+    "Operating",
+    "Operations",
+    "Operations Director",
+    "Opportunities",
+    "Order ID",
+    "Orders",
+    "Other Debtors",
+    "Other Income",
+    "Out of Stock",
+    "Out of stock",
+    "Outflows (TZS k)",
+    "Outstanding (TZS k)",
+    "Outstanding Receivables",
+    "Overdue",
+    "Overdue AR",
+    "Overdue Milestones",
+    "Overdue invoices",
+    "Overview",
+    "Owner",
+    "Owners Equity",
+    "PAR & Risk",
+    "PAYE",
+    "PAYE & SDL remittance",
+    "PDF",
+    "PNG",
+    "POS Sale",
+    "POS Systems",
+    "Paid",
+    "Paid expenses missing payment method",
+    "Paracetamol 500mg",
+    "Parent",
+    "Partial",
+    "Parties",
+    "Pasta Arrabiata",
+    "Patient",
+    "Patients",
+    "Paused",
+    "PayPal",
+    "PayPal.me link",
+    "Payables",
+    "Payment Due Dates",
+    "Payment reliability",
+    "Payroll",
+    "Payroll Plugin",
+    "Payroll processing",
+    "Payslip",
+    "Pending",
+    "Pending Approval",
+    "Pending Leave",
+    "Performance",
+    "Period",
+    "Period Closes",
+    "Personal Care & Wellness",
+    "Personal Loan",
+    "Peter Kamau",
+    "Peter Kamau Ltd",
+    "Peter Mwangi",
+    "Peter Okoth",
+    "Pharmacy",
+    "Pharmacy Management",
+    "Pharmacy Module",
+    "Pharmacy display unit",
+    "Pharmacy display units",
+    "Pharmacy \u2014 Expiry",
+    "Pharmacy \u2014 Stock",
+    "Phase 1: Installation complete",
+    "Phone",
+    "Pipeline",
+    "Pipeline records",
+    "Planned",
+    "Platinum",
+    "Point of Sale",
+    "Point of Sale (POS)",
+    "Portfolio Overview",
+    "Post Journal Entry",
+    "Powder Coat Booth",
+    "Prawn Cocktail",
+    "Predictive Intelligence",
+    "Prescriptions",
+    "Presentation Progress",
+    "Price",
+    "Price Change",
+    "Principal",
+    "Principal (TZS k)",
+    "Print / Save PDF",
+    "Procurement",
+    "Procurement & Vendor Management",
+    "Procurement Assistant",
+    "Procurement Manager",
+    "Product",
+    "Product Name",
+    "Production Planning",
+    "Production Plans",
+    "Professional & Creative Services",
+    "Professional Fees",
+    "Profile",
+    "Profit",
+    "Profit & Loss",
+    "Profitability",
+    "Progress %",
+    "Project",
+    "Projected net position",
+    "Projects",
+    "Projects & Task Management",
+    "Property Management",
+    "Public Brand & Marketing Entry",
+    "Published Products",
+    "Purchase Orders",
+    "Push Notifications",
+    "Push server key",
+    "Q2 VAT Return.pdf",
+    "Q3 Logistics Partner Outreach",
+    "Q3 Performance Reviews \u2014 Reminder",
+    "QR & Barcode",
+    "Qty",
+    "Quality Control",
+    "Quantity",
+    "Quick Ratio",
+    "Quotation",
+    "Quotations",
+    "RBAC",
+    "Radiology",
+    "Rashid Ahmed Corp",
+    "Rate %",
+    "Rate%",
+    "Real Estate",
+    "Receipt Number",
+    "Receivables",
+    "Recency",
+    "Recipient email",
+    "Reconciliation",
+    "Record Expense",
+    "Record Payment",
+    "Record your first expense",
+    "Record your first payment or sale",
+    "Recruitment",
+    "Recurring",
+    "Reference",
+    "Reg",
+    "Register History",
+    "Register Patient",
+    "Rejected",
+    "Rent & Utilities",
+    "Reorder At",
+    "Repaid",
+    "Report type",
+    "Reporting Analyst",
+    "Reports",
+    "Reports & Scheduled Reporting",
+    "Reservations",
+    "Reserved",
+    "Resolution Rate",
+    "Restaurant & F&B",
+    "Restaurant Module",
+    "Restaurant \u2014 Order",
+    "Retail & Trade",
+    "Retail POS",
+    "Return and refund policy",
+    "Revenue",
+    "Revenue Collected",
+    "Revenue trend",
+    "Revenue vs Expenses Trend",
+    "Revenue weight",
+    "Review Leave",
+    "Revoke account passkey",
+    "Risk Center",
+    "Role",
+    "Room",
+    "Room Status",
+    "Royal Purple",
+    "Run Payroll",
+    "Rwanda (RRA)",
+    "SKU",
+    "SME Loan",
+    "SMS",
+    "Safety Drill \u2014 Next Tuesday 10am",
+    "Salaries",
+    "Salary",
+    "Salbutamol Inhaler",
+    "Sales",
+    "Sales & Billing",
+    "Sales & POS",
+    "Sales & Revenue",
+    "Sales Activities",
+    "Sales Coach",
+    "Sales Order",
+    "Sales Orders",
+    "Sales Revenue",
+    "Sales Win Rate",
+    "Sales Win Rate Target",
+    "Sales momentum",
+    "Sales \u2014 Invoices",
+    "Sales \u2014 Quotations",
+    "Salon Equipment Flash Sale",
+    "Salon styling chair",
+    "Salon styling chairs",
+    "Samosa (4 pcs)",
+    "Sarah Kileo",
+    "Savings",
+    "Savings (TZS k)",
+    "Scan Document",
+    "Scheduled Reports",
+    "School Fees Loan",
+    "School Management",
+    "School Module",
+    "School \u2014 Fee Collection",
+    "School \u2014 Students",
+    "Season",
+    "Segments",
+    "Send Message",
+    "Sender number",
+    "Sent",
+    "Server",
+    "Server & Networking Rack",
+    "Server backup verification",
+    "Server-to-Server OAuth Account ID",
+    "Set up inventory visibility",
+    "Settings",
+    "Shares",
+    "Shelys Pharma Ltd",
+    "Shipments",
+    "Silver",
+    "Site survey \u2014 cold storage bay",
+    "Slack",
+    "Slack Incoming Webhook URL",
+    "Small Business",
+    "Smart Analysis",
+    "Smart Manager",
+    "Smart Manager Customer Portal",
+    "Social Media",
+    "Softdrinks",
+    "Soup of the Day",
+    "Staff Achievement",
+    "Stage",
+    "Standing Orders",
+    "Starred",
+    "Start tracking revenue",
+    "Start with customer billing",
+    "Start with inventory",
+    "Status",
+    "Steak (200g)",
+    "Steel reinforcement bar 12mm (ton)",
+    "Steel reinforcement bars (12mm, ton)",
+    "Stock",
+    "Stock Audit",
+    "Stock Turnover",
+    "Stock Value",
+    "Stock levels",
+    "Store URL (e.g. Shopify, WooCommerce)",
+    "Storefront",
+    "Strength",
+    "Stripe",
+    "Stripe Payment Link URL",
+    "Strong",
+    "Student",
+    "Students",
+    "Subscription Billing",
+    "Subscription Billing Reminder",
+    "Subscriptions",
+    "Subscriptions due for billing",
+    "Supplier",
+    "Supplier Call \u2014 Tanzania Portland Cement",
+    "Supplier Portal",
+    "Supplier quality review",
+    "Suppliers",
+    "Supplies",
+    "Supply Chain",
+    "Supply Chain & Fleet",
+    "Support",
+    "Sync Attempts",
+    "TRA Portal",
+    "TRA VFD Fiscalization Portal",
+    "Table",
+    "Table Floor",
+    "Take Order",
+    "Tanzania (TRA)",
+    "Tanzania Portland Cement Co.",
+    "Tasks",
+    "Tasks Due Soon",
+    "Tax",
+    "Tax / VAT Report",
+    "Tax Authorities",
+    "Tax Deadlines",
+    "Teachers",
+    "Team",
+    "Team Chat",
+    "Team Workspaces",
+    "Teller",
+    "Templates",
+    "Term",
+    "Terminal / Merchant ID",
+    "Thyroid",
+    "Tickets",
+    "Tigo Pesa",
+    "TikTok",
+    "Time",
+    "Time Log",
+    "Timeline",
+    "Timetable",
+    "Today Sales",
+    "Top Buyer Award",
+    "Top Buyers",
+    "Top Customers by Billed Value",
+    "Total",
+    "Total (TZS k)",
+    "Total Asset Cost",
+    "Total Budget",
+    "Total Employees",
+    "Total Expenses",
+    "Total Members",
+    "Total Reach",
+    "Toyota Hilux \u2014 Delivery Truck",
+    "Track Payments",
+    "Training",
+    "Transactions",
+    "Transfers",
+    "Transport",
+    "Transport Module",
+    "Triage / Vitals",
+    "Trip Log",
+    "Tumaini Luvuno",
+    "Tusker Lager (500ml)",
+    "Type",
+    "Uganda (URA)",
+    "Understanding your invoice",
+    "Unit Cost",
+    "Unpaid",
+    "Unpaid invoices missing due date",
+    "Unusual expenses detected",
+    "Upload Invoices",
+    "Urgent",
+    "Urine",
+    "Uzuri Beauty Chain",
+    "VAT Filing Preparation",
+    "VAT return & payment",
+    "VICOBA / SACCOS",
+    "VICOBA Members",
+    "Value",
+    "Value (TZS k)",
+    "Vehicle Booking Notice",
+    "Vehicles",
+    "Vendor",
+    "Vendor Payments",
+    "View Reports",
+    "Visits",
+    "Vitamins",
+    "Voice Commands",
+    "WCF contribution",
+    "WIP Value",
+    "Warehouse",
+    "Warehouse Floor Plan.png",
+    "Warehouse Forklift",
+    "Warehouse Stock Count",
+    "Warehouse shelving unit",
+    "Warehouse shelving units",
+    "Warehouses",
+    "Weekly Sales Sync",
+    "Weekly team briefing",
+    "Welding Station A",
+    "What should it say?",
+    "WhatsApp",
+    "WhatsApp Business",
+    "WhatsApp Business number",
+    "WhatsApp Business number (with country code)",
+    "When a leave request needs approval",
+    "When a subscription is due for billing",
+    "When an item goes out of stock",
+    "When an unusual expense is detected",
+    "When overdue invoices are detected",
+    "When stock runs low",
+    "Win Rate",
+    "Won",
+    "Work Orders by Status",
+    "Work orders behind schedule",
+    "Workflow Studio",
+    "Workflow Studio & Marketplace",
+    "X / Twitter",
+    "XLSX",
+    "Year",
+    "Yusuph Mrema",
+    "Zambia (ZRA)",
+    "Zanzibar Biryani",
+    "Zanzibar Electronics Imports",
+    "Zawadi Ndosi",
+    "Zawadi Ochieng",
+    "Zenufa Laboratories",
+    "Zero-Trust data layer",
+    "Zoom",
+    "adjust_stock",
+    "approve_leave",
+    "create_invoice",
+    "create_lead",
+    "create_quotation",
+    "create_workflow",
+    "in",
+    "mark_invoice_paid",
+    "record_expense",
+    "show_chart",
+    "tt",
+    "\u23f0 Payment Reminder",
+    "\u2705 Payment Received",
+    "\u270f Compose",
+    "\u270f Custom Message",
+    "\ud83c\udfc6 Loyalty Award",
+    "\ud83c\udfc6 Loyalty Reward",
+    "\ud83d\udc4b Welcome",
+    "\ud83d\udcc4 Invoice",
+    "\ud83d\udcc4 Invoice Ready",
+    "\ud83d\udcca Account Statement",
+    "\ud83d\udce6 Order Confirmed",
+    "\ud83d\udee0 Support Update"
+  ],
+  "community_tables": [
+    "community_group_announcements",
+    "community_group_approvals",
+    "community_group_assets",
+    "community_group_attendance",
+    "community_group_audit_log",
+    "community_group_audit_log_group_created_idx",
+    "community_group_budgets",
+    "community_group_committee_members",
+    "community_group_committees",
+    "community_group_contributions",
+    "community_group_contributions_group_date_idx",
+    "community_group_documents",
+    "community_group_events",
+    "community_group_expenses",
+    "community_group_fundraising",
+    "community_group_income",
+    "community_group_loan_guarantors",
+    "community_group_loan_penalties",
+    "community_group_loan_repayments",
+    "community_group_loans",
+    "community_group_loans_group_status_idx",
+    "community_group_meetings",
+    "community_group_meetings_group_date_idx",
+    "community_group_members",
+    "community_group_members_group_status_idx",
+    "community_group_messages",
+    "community_group_notifications",
+    "community_group_projects",
+    "community_group_savings",
+    "community_group_vote_ballots",
+    "community_group_vote_options",
+    "community_group_votes",
+    "community_group_welfare_claims"
+  ],
+  "files_by_area": {
+    "client/src/components": [
+      "client/src/components/AIChatBox.tsx",
+      "client/src/components/AdminQualityDashboard.jsx",
+      "client/src/components/AdminUserDirectoryView.tsx",
+      "client/src/components/AnimatedGoldMesh.tsx",
+      "client/src/components/BankMfiWorkspace.jsx",
+      "client/src/components/BrandLogo.tsx",
+      "client/src/components/CommercialCommandCenters.jsx",
+      "client/src/components/ComplianceAuditLogView.tsx",
+      "client/src/components/DashboardLayout.tsx",
+      "client/src/components/DashboardLayoutSkeleton.tsx",
+      "client/src/components/DashboardPreferencesDrawer.tsx",
+      "client/src/components/EmployeePortalWorkspace.jsx",
+      "client/src/components/EnterpriseAuthViews.jsx",
+      "client/src/components/EnterpriseColumnCustomizer.tsx",
+      "client/src/components/EnterpriseLayout.tsx",
+      "client/src/components/ErrorBoundary.tsx",
+      "client/src/components/ExecutiveCommandCenter.jsx",
+      "client/src/components/FinanceCommandCenters.jsx",
+      "client/src/components/FleetWorkspace.jsx",
+      "client/src/components/HealthcareClinicWorkspace.jsx",
+      "client/src/components/HospitalityWorkspace.jsx",
+      "client/src/components/IntelligenceCommandCenters.jsx",
+      "client/src/components/LoginModuleEcosystem.jsx",
+      "client/src/components/ManusDialog.tsx",
+      "client/src/components/Map.tsx",
+      "client/src/components/MicrofinanceGovernanceDialogs.jsx",
+      "client/src/components/MicrofinanceWorkspace.jsx",
+      "client/src/components/MoneyAgentWorkspace.jsx",
+      "client/src/components/OperationsCommandCenters.jsx",
+      "client/src/components/PatientSmsConsentSettings.jsx",
+      "client/src/components/PeopleCommandCenters.jsx",
+      "client/src/components/PharmacyWorkspace.jsx",
+      "client/src/components/PredictiveAnalyticsWorkspace.jsx",
+      "client/src/components/PropertyManagementWorkspace.jsx",
+      "client/src/components/PublicAuthGateway.jsx",
+      "client/src/components/RestaurantWorkspace.jsx",
+      "client/src/components/SalesDetailWorkspace.jsx",
+      "client/src/components/SchoolWorkspace.jsx",
+      "client/src/components/SectorCommandCenters.jsx",
+      "client/src/components/SubscriptionBillingWorkspace.jsx",
+      "client/src/components/TraPortalModule.jsx",
+      "client/src/components/UserFeedbackModal.jsx",
+      "client/src/components/VerticalCommandCenters.jsx",
+      "client/src/components/WorkspacePresenceBadge.tsx",
+      "client/src/components/ui/accordion.tsx",
+      "client/src/components/ui/alert-dialog.tsx",
+      "client/src/components/ui/alert.tsx",
+      "client/src/components/ui/aspect-ratio.tsx",
+      "client/src/components/ui/avatar.tsx",
+      "client/src/components/ui/badge.tsx",
+      "client/src/components/ui/breadcrumb.tsx",
+      "client/src/components/ui/button-group.tsx",
+      "client/src/components/ui/button.tsx",
+      "client/src/components/ui/calendar.tsx",
+      "client/src/components/ui/card.tsx",
+      "client/src/components/ui/carousel.tsx",
+      "client/src/components/ui/chart.tsx",
+      "client/src/components/ui/checkbox.tsx",
+      "client/src/components/ui/collapsible.tsx",
+      "client/src/components/ui/command.tsx",
+      "client/src/components/ui/context-menu.tsx",
+      "client/src/components/ui/dialog.tsx",
+      "client/src/components/ui/drawer.tsx",
+      "client/src/components/ui/dropdown-menu.tsx",
+      "client/src/components/ui/empty.tsx",
+      "client/src/components/ui/field.tsx",
+      "client/src/components/ui/form.tsx",
+      "client/src/components/ui/hover-card.tsx",
+      "client/src/components/ui/input-group.tsx",
+      "client/src/components/ui/input-otp.tsx",
+      "client/src/components/ui/input.tsx",
+      "client/src/components/ui/item.tsx",
+      "client/src/components/ui/kbd.tsx",
+      "client/src/components/ui/label.tsx",
+      "client/src/components/ui/menubar.tsx",
+      "client/src/components/ui/navigation-menu.tsx",
+      "client/src/components/ui/pagination.tsx",
+      "client/src/components/ui/popover.tsx",
+      "client/src/components/ui/progress.tsx",
+      "client/src/components/ui/radio-group.tsx",
+      "client/src/components/ui/resizable.tsx",
+      "client/src/components/ui/scroll-area.tsx",
+      "client/src/components/ui/select.tsx",
+      "client/src/components/ui/separator.tsx",
+      "client/src/components/ui/sheet.tsx",
+      "client/src/components/ui/sidebar.tsx",
+      "client/src/components/ui/skeleton.tsx",
+      "client/src/components/ui/slider.tsx",
+      "client/src/components/ui/sonner.tsx",
+      "client/src/components/ui/spinner.tsx",
+      "client/src/components/ui/switch.tsx",
+      "client/src/components/ui/table.tsx",
+      "client/src/components/ui/tabs.tsx",
+      "client/src/components/ui/textarea.tsx",
+      "client/src/components/ui/toggle-group.tsx",
+      "client/src/components/ui/toggle.tsx",
+      "client/src/components/ui/tooltip.tsx"
+    ],
+    "client/src/pages": [
+      "client/src/pages/ComponentShowcase.tsx",
+      "client/src/pages/Home.tsx",
+      "client/src/pages/NotFound.tsx"
+    ],
+    "client/src/hooks": [
+      "client/src/hooks/useComposition.ts",
+      "client/src/hooks/useMobile.tsx",
+      "client/src/hooks/usePersistFn.ts",
+      "client/src/hooks/useSupabaseRealtime.ts"
+    ],
+    "client/src/lib": [
+      "client/src/lib/accountPasskeys.d.ts",
+      "client/src/lib/accountPasskeys.js",
+      "client/src/lib/auditEvidenceExport.js",
+      "client/src/lib/authErrors.ts",
+      "client/src/lib/authOnboarding.ts",
+      "client/src/lib/authSessionStorage.d.ts",
+      "client/src/lib/authSessionStorage.js",
+      "client/src/lib/communityGroups.ts",
+      "client/src/lib/complianceApprovalExport.ts",
+      "client/src/lib/emailTemplateSafety.ts",
+      "client/src/lib/guardedPersistenceClient.ts",
+      "client/src/lib/onboardingProgress.js",
+      "client/src/lib/organizationIndustryFocus.js",
+      "client/src/lib/posDeviceProfiles.js",
+      "client/src/lib/posPendingQueue.js",
+      "client/src/lib/posReconciliationExport.js",
+      "client/src/lib/posTransactionEngine.js",
+      "client/src/lib/proactiveSessionRenewal.js",
+      "client/src/lib/publicSupabaseConfig.ts",
+      "client/src/lib/runtimeTelemetry.js",
+      "client/src/lib/runtimeTelemetry.ts",
+      "client/src/lib/supportMetrics.js",
+      "client/src/lib/traPortalRoute.ts",
+      "client/src/lib/trpc.ts",
+      "client/src/lib/trpcAuthRecovery.ts",
+      "client/src/lib/utils.ts"
+    ],
+    "server": [
+      "server/_core/apiApp.ts",
+      "server/_core/context.ts",
+      "server/_core/cookies.ts",
+      "server/_core/dataApi.ts",
+      "server/_core/env.ts",
+      "server/_core/heartbeat.ts",
+      "server/_core/httpError.ts",
+      "server/_core/imageGeneration.ts",
+      "server/_core/index.ts",
+      "server/_core/llm.ts",
+      "server/_core/map.ts",
+      "server/_core/notification.ts",
+      "server/_core/oauth.ts",
+      "server/_core/sdk.ts",
+      "server/_core/storageProxy.ts",
+      "server/_core/systemRouter.ts",
+      "server/_core/trpc.ts",
+      "server/_core/types/cookie.d.ts",
+      "server/_core/types/manusTypes.ts",
+      "server/_core/vite.ts",
+      "server/_core/voiceTranscription.ts",
+      "server/accountPasskeys.test.ts",
+      "server/accountPasskeysUi.test.ts",
+      "server/adminQualityAndFeedback.test.ts",
+      "server/adminSecurityFollowup.test.ts",
+      "server/ai.router.test.ts",
+      "server/aiApprovals.test.ts",
+      "server/aiApprovals.ts",
+      "server/aiConfirmedMutation.test.ts",
+      "server/androidPackaging.test.ts",
+      "server/animatedLogoUi.test.ts",
+      "server/appBootstrap.test.ts",
+      "server/auditEvidenceExport.test.ts",
+      "server/auditLogs.test.ts",
+      "server/auditLogs.ts",
+      "server/auth.errors.test.ts",
+      "server/auth.logout.test.ts",
+      "server/authBrandLocalization.test.ts",
+      "server/authExperience.test.ts",
+      "server/authJourneySimulation.test.ts",
+      "server/authOnboarding.test.ts",
+      "server/authVisualRegression.test.ts",
+      "server/backupVerification.ts",
+      "server/backupWebhook.ts",
+      "server/bankMfiOperations.test.ts",
+      "server/bankMfiOperations.ts",
+      "server/bankMfiSecurity.test.ts",
+      "server/campaignIntegrity.test.ts",
+      "server/ciWorkflowContracts.test.ts",
+      "server/clientMutationContract.test.ts",
+      "server/collaborationEmailLinkCheck.test.ts",
+      "server/collaborationHub.test.ts",
+      "server/collaborationPersistenceBoundaries.test.ts",
+      "server/commandPaletteKeyboard.test.ts",
+      "server/commercialCommandCenters.test.ts",
+      "server/communityGroups.test.ts",
+      "server/communityGroupsRlsPenetration.test.ts",
+      "server/communityGroupsSchema.test.ts",
+      "server/communityGroupsSecurity.test.ts",
+      "server/complianceApprovalExport.test.ts",
+      "server/complianceApprovalRoute.test.ts",
+      "server/crmLeadTruthfulness.test.ts",
+      "server/crmPersistenceBoundaries.test.ts",
+      "server/dashboard.callback.test.ts",
+      "server/dashboard.httpHandler.test.ts",
+      "server/dashboard.integration.test.ts",
+      "server/dashboard.persistence.test.ts",
+      "server/dashboard.reportFlow.test.ts",
+      "server/dashboard.scheduled.test.ts",
+      "server/dashboardContracts.test.ts",
+      "server/dashboardQualityContracts.test.ts",
+      "server/dashboardReports.ts",
+      "server/dashboardTruthfulness.test.ts",
+      "server/db.ts",
+      "server/documentDownloadBoundaries.test.ts",
+      "server/documentsNotebookPersistence.test.ts",
+      "server/e2eUserJourney.test.ts",
+      "server/emailCenter.runtime.test.ts",
+      "server/emailLivePreview.test.ts",
+      "server/emailSignatureAndAttachments.test.ts",
+      "server/emailTemplateWorkflow.test.ts",
+      "server/emailTemplateWorkflow.ts",
+      "server/employeePortalContracts.test.ts",
+      "server/employeeSelfServiceWorkflowContracts.test.ts",
+      "server/enterpriseTableControls.test.ts",
+      "server/executiveCommandCenter.test.ts",
+      "server/financeCommandCenters.test.ts",
+      "server/financeLedgerContracts.test.ts",
+      "server/financePersistenceBoundaries.test.ts",
+      "server/fleetManagement.ts",
+      "server/fleetManagementContracts.test.ts",
+      "server/guardedClientMutation.test.ts",
+      "server/guardedServerBoundary.test.ts",
+      "server/healthcareInteroperability.test.ts",
+      "server/healthcareInteroperability.ts",
+      "server/healthcareOperations.test.ts",
+      "server/healthcareOperations.ts",
+      "server/healthcarePortalReconciliation.test.ts",
+      "server/healthcarePortalReconciliation.ts",
+      "server/healthcarePortalReconciliationWorkflow.test.ts",
+      "server/healthcarePortalReconciliationWorkflow.ts",
+      "server/healthcareReminderWebhook.test.ts",
+      "server/healthcareReminderWebhook.ts",
+      "server/healthcareReminders.test.ts",
+      "server/healthcareReminders.ts",
+      "server/healthcareRouter.integration.test.ts",
+      "server/healthcareSelfService.test.ts",
+      "server/healthcareSelfService.ts",
+      "server/hospitalityContracts.test.ts",
+      "server/hrPersistenceBoundaries.test.ts",
+      "server/httpError.test.ts",
+      "server/industryFocusOnboardingAudit.test.ts",
+      "server/intelligenceCommandCenters.test.ts",
+      "server/inventoryPersistenceBoundaries.test.ts",
+      "server/loginModuleEcosystem.test.ts",
+      "server/maintenancePersistenceBoundaries.test.ts",
+      "server/manufacturingPersistenceBoundaries.test.ts",
+      "server/marketGovernance.ts",
+      "server/marketIntelligence.test.ts",
+      "server/marketIntelligence.ts",
+      "server/microfinanceOperations.test.ts",
+      "server/microfinanceOperations.ts",
+      "server/microfinanceRouter.integration.test.ts",
+      "server/mobileAuthEvidence.test.ts",
+      "server/mobileAuthMatrix.test.ts",
+      "server/mobileDefectFixes.test.ts",
+      "server/mobileSignupVisualE2E.test.ts",
+      "server/moneyAgentContracts.test.ts",
+      "server/moneyAgentOperations.ts",
+      "server/notificationChannelPersistence.test.ts",
+      "server/notificationHistory.ts",
+      "server/offlineBoundaryUi.test.ts",
+      "server/onboardingTour.test.ts",
+      "server/operationsCommandCenters.test.ts",
+      "server/organizationIndustryFocus.test.ts",
+      "server/passkeyLogin.test.ts",
+      "server/passkeyLoginUi.test.ts",
+      "server/passkeyReadinessUi.test.ts",
+      "server/passkeyRegistrationNotification.ts",
+      "server/passwordAccountProvisioning.test.ts",
+      "server/passwordAccountProvisioning.ts",
+      "server/peopleCommandCenters.test.ts",
+      "server/persistenceBoundary.test.ts",
+      "server/pharmacyOperations.test.ts",
+      "server/pharmacyOperations.ts",
+      "server/posCashierAcceptance.test.ts",
+      "server/posCheckoutIntegration.test.ts",
+      "server/posCustomerCreditMigration.test.ts",
+      "server/posDeviceProfiles.test.ts",
+      "server/posHistoryFallback.test.ts",
+      "server/posOperationalTools.test.ts",
+      "server/posOperationalToolsUi.test.ts",
+      "server/posPendingQueue.test.ts",
+      "server/posPostConfirmationFallback.test.ts",
+      "server/posReceiptRefresh.test.ts",
+      "server/posReconciliationDashboard.test.ts",
+      "server/posReturnAuditFormatMigration.test.ts",
+      "server/posReturnMigration.test.ts",
+      "server/posRpcPrivilegeHardeningMigration.test.ts",
+      "server/posSaleAuditFormatMigration.test.ts",
+      "server/posStagingAcceptanceScript.test.ts",
+      "server/posSyncReconciliationMigration.test.ts",
+      "server/posTransactionEngine.test.ts",
+      "server/posTransactionMigration.test.ts",
+      "server/posUxEnhancements.test.ts",
+      "server/proactiveSessionRenewal.test.ts",
+      "server/procurementPersistenceBoundaries.test.ts",
+      "server/projectsPersistenceBoundaries.test.ts",
+      "server/propertyManagement.ts",
+      "server/propertyManagementContracts.test.ts",
+      "server/propertyManagementOperations.ts",
+      "server/protocolClosure.test.ts",
+      "server/publicAuthGatewayLexical.test.ts",
+      "server/publicInteractionContracts.test.ts",
+      "server/publicPasskeyEntry.test.ts",
+      "server/quarterlySecurityReminderScope.test.ts",
+      "server/reportDeliveryAvailability.test.ts",
+      "server/reportScheduleSessionToken.test.ts",
+      "server/reportSchedules.sendNow.test.ts",
+      "server/reportSchedules.service.test.ts",
+      "server/reportSchedules.ts",
+      "server/resendSenderConfiguration.test.ts",
+      "server/restaurantFnbContracts.test.ts",
+      "server/restaurantManagement.ts",
+      "server/roleChangeApprovals.test.ts",
+      "server/roleChangeApprovals.ts",
+      "server/routers.ts",
+      "server/runMigrations.mjs",
+      "server/salesInteractionContracts.test.ts",
+      "server/scheduledAppointmentReminders.ts",
+      "server/scheduledDashboardReport.ts",
+      "server/scheduledMarketHealthDigest.ts",
+      "server/scheduledMicrofinanceParCollectionsEscalation.test.ts",
+      "server/scheduledMicrofinanceParCollectionsEscalation.ts",
+      "server/scheduledPortalReferenceReconciliationDigest.test.ts",
+      "server/scheduledPortalReferenceReconciliationDigest.ts",
+      "server/scheduledSchemaDriftMonitor.ts",
+      "server/scheduledSubscriptionTrialLifecycle.ts",
+      "server/scheduledTraVatAnomaly.ts",
+      "server/scheduledTraZReportArchive.ts",
+      "server/schemaContracts.json",
+      "server/schemaDriftChecker.test.ts",
+      "server/schemaDriftChecker.ts",
+      "server/schemaDriftMonitor.test.ts",
+      "server/schemaDriftMonitor.ts",
+      "server/schemaDriftRouter.test.ts",
+      "server/schoolOperations.test.ts",
+      "server/schoolOperations.ts",
+      "server/sectorCommandCenters.test.ts",
+      "server/sessionRefreshTableReload.test.ts",
+      "server/settingsBackendContracts.test.ts",
+      "server/signupWizard.headless.test.ts",
+      "server/signupWizard.runtime.test.ts",
+      "server/smartAssistant.live.test.ts",
+      "server/smartAssistant.test.ts",
+      "server/smartAssistant.ts",
+      "server/stabilityProtocol.test.ts",
+      "server/staticHtmlCacheControl.test.ts",
+      "server/storage.ts",
+      "server/subscriptionBilling.ts",
+      "server/subscriptionBillingContracts.test.ts",
+      "server/supabase.authRls.test.ts",
+      "server/supabase.config.test.ts",
+      "server/supabase.credentials.test.ts",
+      "server/supabase.schemaContract.test.ts",
+      "server/supabasePersistence.ts",
+      "server/supplyChainPersistenceBoundaries.test.ts",
+      "server/supportInboxClient.test.ts",
+      "server/supportMetrics.test.ts",
+      "server/supportOperations.test.ts",
+      "server/supportOperations.ts",
+      "server/supportPersistenceBoundaries.test.ts",
+      "server/supportPolicyAuthenticatedRoles.test.ts",
+      "server/supportTicketPersistence.test.ts",
+      "server/supportWorkspaceContracts.test.ts",
+      "server/tanzaniaPayrollContracts.test.ts",
+      "server/teamInvitations.test.ts",
+      "server/teamInvitations.ts",
+      "server/tenantAuditViewer.test.ts",
+      "server/traBranchSummary.ts",
+      "server/traFiscal.provider.test.ts",
+      "server/traFiscal.ts",
+      "server/traFiscalRouter.ts",
+      "server/traGatewayAlerts.ts",
+      "server/traGovernance.test.ts",
+      "server/traPortalRoute.test.ts",
+      "server/traVatAnomaly.trend.test.ts",
+      "server/traVatAnomaly.ts",
+      "server/traZReportArchive.ts",
+      "server/transactionalEmail.test.ts",
+      "server/transactionalEmail.ts",
+      "server/trpcAuthRecovery.test.ts",
+      "server/vatReportTaxRate.test.ts",
+      "server/vercelConfig.test.ts",
+      "server/verifySupabaseSchema.mjs",
+      "server/verifySupabaseSchemaBuildGuard.test.ts",
+      "server/verticalCommandCenters.test.ts",
+      "server/vite.hmr.test.ts",
+      "server/webhooks.test.ts",
+      "server/webhooks.ts",
+      "server/whatsAppSecurity.test.ts",
+      "server/whatsappProvider.test.ts",
+      "server/whatsappProvider.ts",
+      "server/workspaceBranding.test.ts",
+      "server/workspaceBranding.ts",
+      "server/workspaceLexicalSafety.test.ts",
+      "server/workspaceSessionRecovery.test.ts",
+      "server/workspaceSettings.ts"
+    ],
+    "supabase/migrations": [
+      "supabase/migrations/20260812_001_complete_erp_schema_baseline.sql",
+      "supabase/migrations/20260814_002_guarded_first_tenant_bootstrap.sql",
+      "supabase/migrations/20260816_003_user_table_preferences.sql",
+      "supabase/migrations/20260816_004_pos_transaction_engine.sql",
+      "supabase/migrations/20260816_005_pos_return_engine.sql",
+      "supabase/migrations/20260816_006_pos_customer_credit.sql",
+      "supabase/migrations/20260816_007_pos_sync_reconciliation.sql",
+      "supabase/migrations/20260816_008_harden_pos_rpc_privileges.sql",
+      "supabase/migrations/20260816_009_fix_pos_sale_audit_format.sql",
+      "supabase/migrations/20260816_010_fix_pos_return_audit_format.sql",
+      "supabase/migrations/20260817_011_support_workflow_core.sql",
+      "supabase/migrations/20260817_012_support_policy_authenticated_roles.sql",
+      "supabase/migrations/20260817_sales_document_contract_repair.sql",
+      "supabase/migrations/20260817_sales_order_acceptance_followup.sql",
+      "supabase/migrations/20260821_013_employee_portal_core.sql",
+      "supabase/migrations/20260821_014_employee_portal_security_remediation.sql",
+      "supabase/migrations/20260822_015_tanzania_payroll_calculation_engine.sql",
+      "supabase/migrations/20260822_016_payroll_configuration_status_fix.sql",
+      "supabase/migrations/20260822_017_leave_decision_immutability.sql",
+      "supabase/migrations/20260822_018_hospitality_core.sql",
+      "supabase/migrations/20260822_019_hospitality_pos_and_services.sql",
+      "supabase/migrations/20260822_020_hospitality_guest_engagement.sql",
+      "supabase/migrations/20260822_021_hospitality_helper_access_remediation.sql",
+      "supabase/migrations/20260822_022_hospitality_finance_reconciliation.sql",
+      "supabase/migrations/20260822_023_subscription_billing_harakapay_core.sql",
+      "supabase/migrations/20260822_024_subscription_billing_plan_admin_visibility.sql",
+      "supabase/migrations/20260822_025_subscription_billing_function_execute_hardening.sql",
+      "supabase/migrations/20260822_026_subscription_billing_helper_execute_hardening.sql",
+      "supabase/migrations/20260822_027_subscription_billing_fk_indexes.sql",
+      "supabase/migrations/20260822_028_subscription_trials_and_official_catalog.sql",
+      "supabase/migrations/20260822_029_subscription_trial_function_execute_hardening.sql",
+      "supabase/migrations/20260822_030_subscription_plan_admin_controls.sql",
+      "supabase/migrations/20260822_031_fleet_management_core.sql",
+      "supabase/migrations/20260822_032_restaurant_fnb_management_core.sql",
+      "supabase/migrations/20260822_033_restaurant_fnb_operations_extension.sql",
+      "supabase/migrations/20260822_034_harden_restaurant_helper_privileges.sql",
+      "supabase/migrations/20260823_001_money_agent_core.sql",
+      "supabase/migrations/20260823_015_bank_mfi_core.sql",
+      "supabase/migrations/20260823_016_bank_mfi_security_hardening.sql",
+      "supabase/migrations/20260823_017_bank_mfi_internal_helper_hardening.sql",
+      "supabase/migrations/20260823_018_bank_mfi_credit_ledger_repair.sql",
+      "supabase/migrations/20260823_019_bank_mfi_disbursement_account.sql",
+      "supabase/migrations/20260823_020_bank_mfi_workflow_completion.sql",
+      "supabase/migrations/20260823_035_community_groups_module.sql",
+      "supabase/migrations/20260823_036_community_groups_security_hardening.sql",
+      "supabase/migrations/20260823_037_community_groups_schema_contract.sql",
+      "supabase/migrations/20260823_040_property_management_core.sql",
+      "supabase/migrations/20260823_041_community_groups_insert_relationship_guard.sql",
+      "supabase/migrations/20260823_042_community_groups_relationship_guard_insert_fix_v2.sql",
+      "supabase/migrations/20260823_043_community_groups_relationship_guard_approval_fix.sql",
+      "supabase/migrations/20260823_044_community_groups_document_creator_guard.sql"
+    ],
+    "browser-tests": [
+      "browser-tests/authGatewayButtons.spec.ts",
+      "browser-tests/communityGroupsWorkspace.spec.ts",
+      "browser-tests/healthcareWorkspace.spec.ts",
+      "browser-tests/microfinanceWorkspace.spec.ts",
+      "browser-tests/moneyAgentWorkspace.spec.ts",
+      "browser-tests/patientSmsConsent.spec.ts",
+      "browser-tests/pharmacyWorkspace.spec.ts",
+      "browser-tests/propertyManagementWorkspace.spec.ts",
+      "browser-tests/schoolWorkspace.spec.ts",
+      "browser-tests/sessionRecovery.spec.ts",
+      "browser-tests/signupWizard.spec.ts"
+    ]
+  }
+}
