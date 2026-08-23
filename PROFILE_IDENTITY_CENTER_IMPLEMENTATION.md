@@ -52,7 +52,7 @@ Self-service updates are scoped to `auth.uid()` and cannot change role, company,
 | Full Vitest suite | Passed; 189 files passed / 5 skipped; 766 tests passed / 13 skipped |
 | Configured production build | Passed with the existing non-fatal large dashboard chunk warning |
 | Profile browser suite | Passed; 2 tests covering popover, profile route, save confirmation, security/preferences, mobile layout, and sign-out |
-| Complete isolated Playwright suite | Passed; 21 tests |
+| Complete isolated Playwright suite | Passed; 23 tests |
 | Live migration/provider/deployment | Not performed by design |
 
 The browser suite runs in both the configured profile path and the repository’s isolated e2e/demo build. In the demo build, profile fields remain disabled and the test verifies the truthful migration-pending state; in the configured preview, it verifies server-confirmed identity hydration and personal save behavior through intercepted tRPC responses.
