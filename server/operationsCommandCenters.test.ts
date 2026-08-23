@@ -11,9 +11,20 @@ describe("operations command-center contracts", () => {
     for (const source of ["inventory_items", "inventory_suppliers", "finance_expenses"]) expect(workspace).toContain(source);
   });
 
+  it("covers the dedicated Warehouse Manager control tower", () => {
+    for (const text of ["Warehouse Manager command center", "Warehouse operations control tower", "Stock, work orders, and operational throughput", "Warehouse workload", "Warehouse action queue", "Supplier and POS coverage", "Open work orders", "Completed POS sales"]) expect(workspace).toContain(text);
+    for (const source of ["manufacturing_work_orders", "inventory_items", "inventory_suppliers", "pos_transactions"]) expect(workspace).toContain(source);
+  });
+
   it("covers Supply Chain and POS control towers", () => {
     for (const text of ["Supply chain control tower", "Deliveries, fleet readiness, and exceptions", "Shipment status", "Logistics exceptions", "POS command center", "Counter throughput and payment mix", "Payment mix", "Stock linkage"]) expect(workspace).toContain(text);
     for (const source of ["scm_shipments", "scm_vehicles", "pos_transactions", "pos_transaction_items"]) expect(workspace).toContain(source);
+  });
+
+  it("keeps operations roles routed to distinct command centers", () => {
+    expect(dashboard).toContain('const isProcurementOfficer = currentRole.id === "Procurement Officer"');
+    expect(dashboard).toContain('<ProcurementCommandCenter inventory={inventory} suppliers={suppliers} expenses={expenses} onNavigate={onNavigate} />');
+    expect(dashboard).toContain('<WarehouseCommandCenter inventory={inventory} suppliers={suppliers} workOrders={workOrders} posTransactions={posTransactions} onNavigate={onNavigate} />');
   });
 
   it("keeps all four centers wired through existing module routes", () => {

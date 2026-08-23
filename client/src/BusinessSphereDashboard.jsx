@@ -55,7 +55,7 @@ import { FleetWorkspace } from "./components/FleetWorkspace";
 import { RestaurantWorkspace } from "./components/RestaurantWorkspace";
 import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
 import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, SalesCommandCenter } from "./components/CommercialCommandCenters";
-import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter } from "./components/OperationsCommandCenters";
+import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter, WarehouseCommandCenter } from "./components/OperationsCommandCenters";
 import { FinanceCommandCenter, IntegrationsCommandCenter, ReportsCommandCenter } from "./components/FinanceCommandCenters";
 import { CollaborationCommandCenter, DocumentsCommandCenter, EmployeePortalCommandCenter, HrCommandCenter, WorkflowCommandCenter } from "./components/PeopleCommandCenters";
 import { BankingMfiCommandCenter, CommunityCommandCenter, MicrofinanceCommandCenter, VicobaCommandCenter } from "./components/SectorCommandCenters";
@@ -6405,10 +6405,17 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   }
 
   if (roleView === "operations") {
+    const isProcurementOfficer = currentRole.id === "Procurement Officer";
     return (
       <div className="space-y-6">
-        {roleHeader("stock levels and low-inventory alerts, live from Inventory and Manufacturing")}
-        <InventoryCommandCenter inventory={inventory} suppliers={suppliers} onNavigate={onNavigate} />
+        {roleHeader(isProcurementOfficer
+          ? "supplier coverage, replenishment, and purchasing readiness, live from Procurement and Inventory"
+          : "stock, work orders, and operational throughput, live from Inventory and Manufacturing")}
+        {isProcurementOfficer ? (
+          <ProcurementCommandCenter inventory={inventory} suppliers={suppliers} expenses={expenses} onNavigate={onNavigate} />
+        ) : (
+          <WarehouseCommandCenter inventory={inventory} suppliers={suppliers} workOrders={workOrders} posTransactions={posTransactions} onNavigate={onNavigate} />
+        )}
         {sidePanels}
       </div>
     );

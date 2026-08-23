@@ -21,11 +21,12 @@ describe("dashboard command-center integration", () => {
     expect(dashboardSource).toContain('scheduledWorkflows={scheduledWorkflows}');
   });
 
-  it("uses role-specific command centers for finance, HR, sales, and inventory operations", () => {
+  it("uses role-specific command centers for finance, HR, sales, procurement, and warehouse operations", () => {
     expect(dashboardSource).toContain('<FinanceCommandCenter');
     expect(dashboardSource).toContain('<HrCommandCenter');
     expect(dashboardSource).toContain('<SalesCommandCenter');
-    expect(dashboardSource).toContain('<InventoryCommandCenter');
+    expect(dashboardSource).toContain('<ProcurementCommandCenter');
+    expect(dashboardSource).toContain('<WarehouseCommandCenter');
   });
 
   it("passes real supplier, quotation, and scheduled-workflow hooks into the dashboard", () => {
