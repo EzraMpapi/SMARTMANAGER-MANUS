@@ -21,3 +21,7 @@ The corrected read-only policy listing succeeded at `2026-08-13 03:49 UTC`. The 
 The zero-row exception query was submitted at `2026-08-13 03:50 UTC`; it returns only company-scoped public tables with disabled RLS or no associated policy.
 
 The zero-row exception query completed successfully at `2026-08-13 03:50 UTC` with `Success. No rows returned`. No public company-scoped table lacks RLS or an associated policy.
+
+| 2026-08-23 13:04 | `rlhngsrihahhyxnjxrxm` | `profile_identity_center` | Succeeded through the connected Supabase migration operation (`success: true`; version `20260823130430`). | Additive profile identity/preference columns, scoped avatar references, and authenticated self-service RPCs; no table drops or data deletion. |
+
+The post-apply migration inventory confirmed `profile_identity_center` is recorded in the project. The complete verbose public-table inventory contained 475 tables, all reported RLS-enabled, and the repository comparison found zero missing referenced tables. The profile row now has the added identity columns required by the Profile Identity Center.

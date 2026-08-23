@@ -21,13 +21,13 @@ The implementation is deliberately vertical and evidence-driven. It provides a s
 
 ## Backend contract
 
-The source-ready migration is [`supabase/migrations/20260823_045_profile_identity_center.sql`](supabase/migrations/20260823_045_profile_identity_center.sql). It is additive and intentionally **not applied to a live Supabase project in this delivery**.
+The additive migration is [`supabase/migrations/20260823_045_profile_identity_center.sql`](supabase/migrations/20260823_045_profile_identity_center.sql). It was applied successfully to the connected Supabase project as migration `profile_identity_center`, live version `20260823130430`.
 
 The migration adds profile-owned identity and preference columns with `ADD COLUMN IF NOT EXISTS`, indexes the authenticated profile path, and defines three security-definer functions. `get_current_profile_identity()` and `update_current_profile_identity(jsonb)` require `auth.uid()`, lock and update only the current profile, and reject unknown or protected keys. Protected authority fields include role, company, email, customer reference, active status, and avatar references. `set_current_profile_avatar(text,text)` is the only avatar-reference mutation and also requires an authenticated, company-assigned profile.
 
-The server module [`server/profileIdentity.ts`](server/profileIdentity.ts) uses the established `resolveVerifiedProfile(req)` bearer/session and tenant verification boundary before every operation. The tRPC router exposes `get`, `update`, `uploadAvatar`, and `removeAvatar` under `profileIdentity`. Before the migration is available, extended reads and writes fail closed with a clear precondition error; the UI keeps fields disabled and states that the migration is pending rather than claiming a local-only save.
+The server module [`server/profileIdentity.ts`](server/profileIdentity.ts) uses the established `resolveVerifiedProfile(req)` bearer/session and tenant verification boundary before every operation. The tRPC router exposes `get`, `update`, `uploadAvatar`, and `removeAvatar` under `profileIdentity`. The application still fails closed with a clear precondition error if a deployment points at a database where the migration is not available; it never substitutes browser-only persistence.
 
-> **Controlled-live boundary:** applying the migration, validating the actual deployed OpenAPI schema, testing against a real tenant, and deploying provider/storage configuration require a separate controlled authorization and were not performed here.
+> **Controlled-live boundary:** the migration application was explicitly authorized and completed for the connected project. Real authenticated tenant CRUD/avatar persistence, provider configuration, and production deployment verification remain separate follow-up operations.
 
 ## Frontend behavior
 
@@ -49,14 +49,14 @@ Self-service updates are scoped to `auth.uid()` and cannot change role, company,
 | `pnpm audit --prod --audit-level high` | Passed |
 | `pnpm check` | Passed |
 | Focused profile service and source-contract tests | Passed; 11 tests |
-| Full Vitest suite | Passed; 189 files passed / 5 skipped; 766 tests passed / 13 skipped |
+| Full Vitest suite | Passed; 189 files passed / 5 skipped; 769 tests passed / 13 skipped |
 | Configured production build | Passed with the existing non-fatal large dashboard chunk warning |
 | Profile browser suite | Passed; 2 tests covering popover, profile route, save confirmation, security/preferences, mobile layout, and sign-out |
 | Complete isolated Playwright suite | Passed; 23 tests |
-| Live migration/provider/deployment | Not performed by design |
+| Live profile migration | Applied; migration history confirmed version `20260823130430` |
 
-The browser suite runs in both the configured profile path and the repository’s isolated e2e/demo build. In the demo build, profile fields remain disabled and the test verifies the truthful migration-pending state; in the configured preview, it verifies server-confirmed identity hydration and personal save behavior through intercepted tRPC responses.
+The browser suite runs in both the configured profile path and the repository’s isolated e2e/demo build. The demo build keeps the extended contract disabled and verifies the truthful unavailable state; the configured preview verifies server-confirmed identity hydration and personal save behavior through intercepted tRPC responses. These browser tests do not substitute for a real authenticated tenant CRUD test.
 
-## Follow-up after controlled migration
+## Follow-up after migration
 
-After a reviewed migration apply, run the repository schema verifier against the intended Supabase project, verify the actual `profiles`, `companies`, and `hr_employees` contracts, execute tenant-isolation CRUD tests with a staging user, and confirm the configured storage provider’s lifecycle and cache behavior. If branch or department membership becomes an approved canonical profile capability, add a separate authorized workspace-assignment workflow rather than expanding the self-service allowlist.
+Run the repository schema verifier against the connected Supabase project, verify the actual `profiles`, `companies`, and `hr_employees` contracts, execute tenant-isolation CRUD tests with a staging user, and confirm the configured storage provider’s lifecycle and cache behavior. If branch or department membership becomes an approved canonical profile capability, add a separate authorized workspace-assignment workflow rather than expanding the self-service allowlist. No provider or deployment operation was performed in this task.

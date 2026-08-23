@@ -91,12 +91,12 @@ The next safe engineering step is to continue module-by-module with isolated aut
 |---|---|---|
 | Premium responsive account popover | Implemented | `client/src/components/ProfileIdentityCenter.jsx`, integrated into the dashboard header while preserving search, theme, notifications, navigation, and mobile behavior |
 | Dedicated My Profile experience | Implemented | Shell-level `profile` route with Overview, Personal, Work, Security, Preferences, and Activity sections |
-| Verified profile read and self-only update contract | Source-ready / pending controlled migration | `server/profileIdentity.ts`, `profileIdentity` tRPC procedures, and `20260823_045_profile_identity_center.sql`; protected fields cannot be changed by the user |
-| Avatar upload, preview, persistence, and removal | Source-ready / pending controlled migration and storage verification | Server magic-byte validation, 2 MB limit, `storagePut`, scoped key, avatar-reference RPC, and confirmed refresh; no browser localStorage source of truth |
+| Verified profile read and self-only update contract | Implemented; live migration applied | `server/profileIdentity.ts`, `profileIdentity` tRPC procedures, and live migration `profile_identity_center` version `20260823130430`; protected fields cannot be changed by the user |
+| Avatar upload, preview, persistence, and removal | Implemented; live migration applied, storage verification pending | Server magic-byte validation, 2 MB limit, `storagePut`, scoped key, avatar-reference RPC, and confirmed refresh; no browser localStorage source of truth |
 | Work identity and HR linkage | Implemented with truthful empty state | Reads only tenant-scoped `hr_employees` linkage; does not infer branch, manager, title, or employee number |
 | Security, notifications, preferences, and activity actions | Implemented / explicit limitations | Routes to existing security/settings/notifications surfaces; only server-returned activity is shown; device/session listing and workspace switching are explicitly unavailable |
 | Focused profile tests | Passed | 7 service tests plus 4 source-contract tests |
-| Full validation | Passed | Frozen install, production audit, TypeScript, 779 Vitest tests with 13 skips, and 23 isolated Playwright tests |
-| Live migration or deployment | Controlled / not executed | Requires authorized migration review, schema verification, tenant staging persistence test, storage confirmation, and deployment approval |
+| Full validation | Passed | Frozen install, production audit, TypeScript, 769 Vitest tests with 13 skips, and 23 isolated Playwright tests |
+| Live profile migration | Applied | Connected project migration history confirms `profile_identity_center` version `20260823130430`; real authenticated tenant/avatar CRUD and deployment verification remain separate follow-up work |
 
-The profile implementation is not represented as live-complete until the controlled migration is applied and verified against the intended Supabase project. The source-ready contract is deliberately fail-closed before that point.
+The profile implementation’s schema contract is live in the connected Supabase project. The application remains fail-closed for deployments that do not contain the migration, and real authenticated tenant/avatar persistence plus deployment verification remain separate evidence requirements.
