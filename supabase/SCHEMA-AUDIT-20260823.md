@@ -54,3 +54,32 @@ The refreshed Supabase Security Advisor output contains 114 residual warnings: s
 ## Verification sources
 
 The audit is grounded in the connector results for `list_projects`, `get_project`, `list_tables` with verbose public-schema metadata, `list_migrations`, `get_advisors`, live PostgreSQL catalog privilege queries, the rollback-only authenticated RLS sweep, and repository source contracts under `client/`, `server/`, and `supabase/migrations/`. The current comparison found zero missing referenced tables and zero tenant-critical column issues, so no missing-table migration was applied.
+
+
+## Deep reconciliation update — 2026-08-23 17:06 UTC
+
+The complete live public-schema inventory reports **513 tables**, **1,173 indexes**, **714 RLS policies**, **200 public functions**, **499 triggers**, **4,683 check constraints**, and **266 unique constraints**. There are no public views, materialized views, enums, or sequences in the live catalog. Storage contains three buckets and three storage policies. Two active Edge Functions are present: `gate-keyring` and `issue-ticket`; the repository does not contain source files for either function, so they are treated as deployed operational assets rather than missing database objects.
+
+All **279 tables declared across the repository’s migration files** exist in production. All **38 table declarations** in future-dated migrations 050–057 were already present under reconciled live migration records, so those files were not replayed. The 177 repository-declared indexes are all present by name. No unvalidated public constraint was found. Public foreign-key targets are complete; the only cross-schema targets reported by the table inventory are intentional references to `auth.users`.
+
+One genuine schema drift was found: `public.bank_accounts` was missing the `created_by uuid DEFAULT auth.uid()` column defined by `20260823_015_bank_mfi_core.sql`. The table had zero rows. The additive repair `20260823_061_bank_accounts_created_by_repair.sql` was applied through the connector at version `20260823170540`, and the fresh inventory now confirms the column and default. No data, RLS policy, or privilege was removed or rewritten.
+
+The complete public-policy inventory contains **714 distinct policies across all 513 tables**: 626 authenticated-role policies and 88 public-role policies. Of these, 673 contain a company/tenant predicate, 12 contain an `auth.uid()` predicate, and 272 contain a reviewed capability helper predicate. There are no unrestricted `USING (true)` or `WITH CHECK (true)` predicates. Thirty-eight policies are intentionally fail-closed: the 37 Property Management direct-denial policies and `money_agent_pin_credentials_no_direct_access`. The 88 public-role policies are legacy/module-scoped predicates using `company_id = current_company_id()` and require separate contract review; they were not mass-rewritten.
+
+The post-repair Security Advisor remains unchanged at 114 warnings: six intentionally public SafariTiketi booking RPCs, 107 authenticated SECURITY DEFINER notices requiring endpoint-by-endpoint review, and one Auth leaked-password-protection configuration notice. The Performance Advisor remains at 843 notices: 622 unindexed foreign keys, 10 auth RLS init-plan notices, 59 unused-index notices, and 152 multiple-permissive-policy notices. These advisory notices are not proof of missing schema and no speculative privilege or index changes were applied.
+
+## Final audit classification
+
+| Category | Result |
+|---|---|
+| Required missing tables | None |
+| Required missing columns | Repaired: `bank_accounts.created_by` |
+| Required missing indexes | None of 177 repository-declared indexes |
+| Required missing public FK targets | None |
+| Unvalidated constraints | None |
+| Tables without RLS | None |
+| Tables without primary keys | None |
+| Unrestricted RLS predicates | None |
+| Data modifications | None except the explicitly recorded additive schema repair |
+| Duplicate tables created | None |
+| Destructive DDL executed | None |
