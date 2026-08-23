@@ -59,16 +59,13 @@ function harakaConfiguration() {
   return { apiKey, baseUrl, collectUrl };
 }
 
-async function parseProviderResponse(response: globalThis.Response): Promise<JsonRecord> {
+async function parseProviderResponse<T = unknown>(response: globalThis.Response): Promise<T> {
   const body = await response.text();
-  let parsed: unknown = null;
   try {
-    parsed = body ? JSON.parse(body) : null;
+    return (body ? JSON.parse(body) : null) as T;
   } catch {
-    parsed = null;
+    return { message: body.slice(0, 500) } as T;
   }
-  if (!isRecord(parsed)) return { message: body.slice(0, 500) };
-  return parsed;
 }
 
 async function userRpc<T>(functionName: string, accessToken: string, body: JsonRecord): Promise<T> {
@@ -82,9 +79,9 @@ async function userRpc<T>(functionName: string, accessToken: string, body: JsonR
     },
     body: JSON.stringify(body),
   });
-  const payload = await parseProviderResponse(response);
+  const payload = await parseProviderResponse<unknown>(response);
   if (!response.ok) {
-    const error = new Error(asString(payload.message) || "The billing request could not be completed.");
+    const error = new Error((isRecord(payload) && asString(payload.message)) || "The billing request could not be completed.");
     (error as Error & { status?: number }).status = response.status === 401 || response.status === 403 ? response.status : 400;
     throw error;
   }
@@ -98,8 +95,8 @@ async function publicRpc<T>(functionName: string, body: JsonRecord = {}): Promis
     headers: { apikey: ENV.supabaseAnonKey, "content-type": "application/json" },
     body: JSON.stringify(body),
   });
-  const payload = await parseProviderResponse(response);
-  if (!response.ok) throw new Error(asString(payload.message) || "The subscription catalog could not be loaded.");
+  const payload = await parseProviderResponse<unknown>(response);
+  if (!response.ok) throw new Error((isRecord(payload) && asString(payload.message)) || "The subscription catalog could not be loaded.");
   return payload as T;
 }
 
@@ -114,8 +111,8 @@ async function serviceRpc<T>(functionName: string, body: JsonRecord): Promise<T>
     },
     body: JSON.stringify(body),
   });
-  const payload = await parseProviderResponse(response);
-  if (!response.ok) throw new Error(asString(payload.message) || "The billing payment state could not be recorded.");
+  const payload = await parseProviderResponse<unknown>(response);
+  if (!response.ok) throw new Error((isRecord(payload) && asString(payload.message)) || "The billing payment state could not be recorded.");
   return payload as T;
 }
 
@@ -145,7 +142,7 @@ async function fetchHarakaStatus(orderId: string): Promise<JsonRecord> {
   const { apiKey, baseUrl } = harakaConfiguration();
   const statusUrl = new URL(`/api/v1/status/${encodeURIComponent(orderId)}`, baseUrl).toString();
   const response = await fetch(statusUrl, { headers: { "X-API-Key": apiKey, accept: "application/json" } });
-  const payload = await parseProviderResponse(response);
+  const payload = await parseProviderResponse<JsonRecord>(response);
   if (!response.ok) {
     const error = new Error("HarakaPay payment status could not be verified.");
     (error as Error & { status?: number }).status = 502;
@@ -278,7 +275,7 @@ export async function harakaPayCollectHandler(req: Request, res: Response) {
         reference: payment.reference,
       }),
     });
-    const providerPayload = await parseProviderResponse(providerResponse);
+    const providerPayload = await parseProviderResponse<JsonRecord>(providerResponse);
     const orderId = providerOrderId(providerPayload);
     if (!providerResponse.ok || providerPayload.success === false || !orderId) {
       await serviceRpc("billing_mark_payment_dispatch_failure", {
@@ -367,7 +364,7 @@ export async function harakaPayBalanceHandler(req: Request, res: Response) {
     ensureBillingManager(profile.role);
     const { apiKey, baseUrl } = harakaConfiguration();
     const response = await fetch(new URL("/api/v1/balance", baseUrl), { headers: { "X-API-Key": apiKey, accept: "application/json" } });
-    const payload = await parseProviderResponse(response);
+    const payload = await parseProviderResponse<JsonRecord>(response);
     if (!response.ok) return sendError(res, 502, "HarakaPay balance could not be retrieved.");
     return res.status(200).json({ walletBalance: payload.wallet_balance ?? payload.balance ?? null, floatBalance: payload.float_balance ?? payload.float ?? null, currency: payload.currency ?? "TZS" });
   } catch (error) {
