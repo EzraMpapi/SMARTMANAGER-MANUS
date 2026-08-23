@@ -110,6 +110,12 @@ describe("Subscription billing and HarakaPay contracts", () => {
     expect(dashboard).toContain('String(currentUser.role || "").trim().toLowerCase()');
   });
 
+  it("opens paid checkout for a new workspace without removing the trial option", () => {
+    expect(workspace).toContain('const cta = !subscription ? "Subscribe now"');
+    expect(workspace).toContain('if (!subscription) return onChoosePaidPlan(plan)');
+    expect(workspace).toContain('Start free trial instead');
+  });
+
   it("registers the protected billing API and the webhook endpoint", () => {
     [
       'app.get("/api/billing/catalog", subscriptionBillingCatalogHandler)',
