@@ -1,0 +1,27 @@
+---
+title: Smart Manager — Live Frontend Composition
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#ecfdf5'
+    primaryBorderColor: '#059669'
+    lineColor: '#64748b'
+---
+flowchart TB
+  MAIN["Vite production client bundle\nindex-FEZ4A8Vs.js"]
+  SHELL["React application shell\nApp.tsx · Home.tsx · NotFound.tsx"]
+  CONTEXTS["Shared contexts\ntheme · language · dashboard preferences"]
+  AUTH["PublicAuthGateway\nworkspace sign-in surface"]
+  FEATURE["Lazy-loaded BusinessSphereDashboard\nBusinessSphereDashboard-BeRa_oxu.js"]
+  UI["Shared UI primitives\nbuttons · cards · tooltips · notifications"]
+  MAIN --> SHELL
+  SHELL --> CONTEXTS
+  SHELL --> AUTH
+  SHELL --> FEATURE
+  SHELL --> UI
+  classDef runtime fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:1.8px;
+  classDef feature fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.8px;
+  classDef shared fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+  class MAIN,SHELL runtime;
+  class AUTH,FEATURE feature;
+  class CONTEXTS,UI shared;

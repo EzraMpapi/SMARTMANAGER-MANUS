@@ -1,0 +1,41 @@
+---
+title: Smart Manager — Live Workspace Module Map
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#eff6ff'
+    primaryBorderColor: '#2563eb'
+    lineColor: '#64748b'
+---
+flowchart TB
+  DASH["BusinessSphereDashboard\nshared command center"]
+  subgraph NAV["Visible workspace navigation"]
+    D["Dashboard"]
+    POS["Point of Sale"]
+    SALES["Sales"]
+    INV["Inventory"]
+    FIN["Finance"]
+    CRM["CRM"]
+    HR["Human Resources"]
+    REP["Reports"]
+    AI["AI Assistant"]
+  end
+  subgraph BUNDLE["Additional module vocabulary found in public lazy bundle"]
+    BANK["Bank"]
+    MICRO["Microfinance"]
+    VICOBA["VICOBA / SACCOS"]
+    HEALTH["Healthcare / Pharmacy"]
+    EDU["School"]
+    HOSP["Hotel / Restaurant"]
+    MFG["Manufacturing"]
+    OPS["Procurement / Supply Chain / Fleet"]
+    WORK["Workflow / Documents / Collaboration / Settings"]
+  end
+  DASH --> NAV
+  DASH --> BUNDLE
+  classDef shell fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:2px;
+  classDef visible fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
+  classDef bundle fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
+  class DASH shell;
+  class D,POS,SALES,INV,FIN,CRM,HR,REP,AI visible;
+  class BANK,MICRO,VICOBA,HEALTH,EDU,HOSP,MFG,OPS,WORK bundle;

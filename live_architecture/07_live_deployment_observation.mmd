@@ -1,0 +1,22 @@
+---
+title: Smart Manager — Live Deployment Observation
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#eff6ff'
+    primaryBorderColor: '#2563eb'
+    lineColor: '#64748b'
+---
+flowchart LR
+  URL["https://menejajanja.vercel.app\npublic HTTPS URL"]
+  HTML["Vercel-served HTML shell\nSmart Manager | Enterprise ERP"]
+  BUNDLE["Vite assets\nindex bundle + lazy chunks"]
+  LANDING["Landing page\npublicly verified"]
+  APP["/app sign-in page\npublicly verified"]
+  URL --> HTML --> BUNDLE
+  BUNDLE --> LANDING
+  BUNDLE --> APP
+  classDef edge fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:2px;
+  classDef asset fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.6px;
+  class URL,HTML edge;
+  class BUNDLE,LANDING,APP asset;
