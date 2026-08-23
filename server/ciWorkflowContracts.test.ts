@@ -28,6 +28,7 @@ describe("isolated signup and CI quality gates", () => {
     expect(workflow).toContain("pnpm test -- --coverage --reporter=verbose");
     expect(workflow).toContain('name: Browser Signup Journey');
     expect(workflow).toContain("pnpm exec playwright install --with-deps chromium");
-    expect(workflow).toContain("pnpm run test:browser");
+    expect(workflow).toContain("pnpm run pretest:browser");
+    expect(workflow).toContain("pnpm exec playwright test browser-tests/signupWizard.spec.ts");
   });
 });
