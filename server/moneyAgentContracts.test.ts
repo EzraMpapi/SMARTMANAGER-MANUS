@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const read = (relativePath: string) => fs.readFileSync(path.join(root, relativePath), "utf8");
 const migration = read("supabase/migrations/20260823_001_money_agent_core.sql");
+const snapshotFixMigration = read("supabase/migrations/20260823_041_fix_money_agent_snapshot_reconciliation_created_at.sql");
 const operations = read("server/moneyAgentOperations.ts");
 const router = read("server/routers.ts");
 const dashboard = read("client/src/BusinessSphereDashboard.jsx");
@@ -69,6 +70,12 @@ describe("Money Agent contracts", () => {
     expect(migration).toContain("providerConfigured',false");
     expect(workspace).toContain("No external provider call is made by this form.");
     expect(workspace).toContain("External mobile-money, bank, bill, airtime, and data services remain pending");
+  });
+
+  it("keeps reconciliation snapshot rows ordered by a selected createdAt alias", () => {
+    expect(snapshotFixMigration).toContain("r.created_at AS \"createdAt\"");
+    expect(snapshotFixMigration).toContain("ORDER BY x.\"createdAt\" DESC");
+    expect(snapshotFixMigration).toContain("CREATE OR REPLACE FUNCTION public.money_agent_snapshot");
   });
 
   it("registers protected tRPC snapshot, customer snapshot, and action procedures", () => {

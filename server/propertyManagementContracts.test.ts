@@ -105,6 +105,15 @@ describe("Property Management contracts", () => {
     expect(migration).toContain("TO service_role");
   });
 
+  it("keeps production failure states actionable and recovers stale workspace chunks", () => {
+    expect(workspace).toContain("Property Management data is temporarily unavailable.");
+    expect(workspace).toContain("Property Management access is restricted.");
+    expect(workspace).not.toContain("Apply the controlled migration");
+    expect(dashboard).toContain("lazyWorkspaceWithRecovery");
+    expect(dashboard).toContain("smart-manager-workspace-lazy-retry:${key}");
+    expect(dashboard).toContain('"property-management"');
+  });
+
   it("exposes the module through navigation and a responsive workspace", () => {
     expect(dashboard).toContain('id: "property-management"');
     expect(dashboard).toContain("LazyPropertyManagementWorkspace");

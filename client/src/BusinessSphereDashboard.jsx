@@ -64,6 +64,27 @@ import { AiBusinessSignals, SupportCommandCenter } from "./components/Intelligen
 import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
 import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
 
+function lazyWorkspaceWithRecovery(load, key) {
+  return lazy(async () => {
+    const retryKey = `smart-manager-workspace-lazy-retry:${key}`;
+    try {
+      const module = await load();
+      try { window.sessionStorage.removeItem(retryKey); } catch {}
+      return module;
+    } catch (error) {
+      let alreadyRetried = false;
+      try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
+      if (!alreadyRetried && typeof window !== "undefined") {
+        try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      try { window.sessionStorage.removeItem(retryKey); } catch {}
+      throw error;
+    }
+  });
+}
+
 const LazySalesDetailWorkspace = lazy(() => import("./components/SalesDetailWorkspace").then((module) => ({ default: module.SalesDetailWorkspace })));
 const LazyPredictiveAnalyticsWorkspace = lazy(() => import("./components/PredictiveAnalyticsWorkspace").then((module) => ({ default: module.PredictiveAnalyticsWorkspace })));
 const LazyTraPortalModule = lazy(() => import("./components/TraPortalModule").then((module) => ({ default: module.TraPortalModule })));
@@ -71,10 +92,10 @@ const LazyDashboardPreferencesDrawer = lazy(() => import("./components/Dashboard
 const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAuditLogView").then((module) => ({ default: module.ComplianceAuditLogView })));
 const LazyHealthcareClinicWorkspace = lazy(() => import("./components/HealthcareClinicWorkspace").then((module) => ({ default: module.HealthcareClinicWorkspace })));
 const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWorkspace").then((module) => ({ default: module.MicrofinanceWorkspace })));
-const LazyPharmacyWorkspace = lazy(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })));
+const LazyPharmacyWorkspace = lazyWorkspaceWithRecovery(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })), "pharmacy");
 const LazySchoolWorkspace = lazy(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })));
-const LazyMoneyAgentWorkspace = lazy(() => import("./components/MoneyAgentWorkspace").then((module) => ({ default: module.MoneyAgentWorkspace })));
-const LazyPropertyManagementWorkspace = lazy(() => import("./components/PropertyManagementWorkspace").then((module) => ({ default: module.PropertyManagementWorkspace })));
+const LazyMoneyAgentWorkspace = lazyWorkspaceWithRecovery(() => import("./components/MoneyAgentWorkspace").then((module) => ({ default: module.MoneyAgentWorkspace })), "money-agent");
+const LazyPropertyManagementWorkspace = lazyWorkspaceWithRecovery(() => import("./components/PropertyManagementWorkspace").then((module) => ({ default: module.PropertyManagementWorkspace })), "property-management");
 
 /* =============================================================================
    SUPABASE CLIENT — hand-rolled, fetch-based (no SDK, matches BEIRAHISI pattern)
