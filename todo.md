@@ -399,6 +399,12 @@
 - [x] Allow only verified Platform Administrator control-center access to bypass company-plan gating while retaining all tenant and ordinary-user module controls. The dedicated System role exposes a small control-center surface, while protected server procedures remain authoritative; the generic gate is unchanged for ordinary users.
 - [ ] Add regression coverage, validate the deployed behavior, synchronize the repair, and save the managed checkpoint.
 
+## GitHub and Supabase Synchronization Request
+- [x] Confirm GitHub main is synchronized with the current verified Platform Administrator entitlement correction.
+- [x] Inspect the configured Supabase project and repository migrations to identify only safe, pending schema changes. The reviewed compatibility migration was the only unapplied candidate.
+- [x] Preserve the migration safety boundary after its transaction rejected the legacy `company_memberships` table, which has no UUID `id` column. No schema or data change was committed by the rejected migration.
+- [x] Design and apply a non-destructive legacy membership compatibility migration through the Supabase connector, then verify the resulting schema state. The active production migration registered as `subscription_user_management_compatibility`; all seven membership records retain non-null UUID identifiers, and no membership data was deleted or rewritten.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.

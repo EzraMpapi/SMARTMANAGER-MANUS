@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS public.company_memberships (
 );
 
 ALTER TABLE public.company_memberships
+  ADD COLUMN IF NOT EXISTS id uuid NOT NULL DEFAULT gen_random_uuid(),
   ADD COLUMN IF NOT EXISTS company_id uuid,
   ADD COLUMN IF NOT EXISTS user_id uuid,
   ADD COLUMN IF NOT EXISTS role text NOT NULL DEFAULT 'Member',
@@ -117,7 +118,7 @@ BEGIN
     SELECT 1
     FROM pg_constraint c
     WHERE c.conrelid = 'public.company_memberships'::regclass
-      AND c.contype = 'u'
+      AND c.contype IN ('u', 'p')
       AND c.conkey = ARRAY[
         (SELECT a.attnum FROM pg_attribute a WHERE a.attrelid = c.conrelid AND a.attname = 'company_id' AND NOT a.attisdropped),
         (SELECT a.attnum FROM pg_attribute a WHERE a.attrelid = c.conrelid AND a.attname = 'user_id' AND NOT a.attisdropped)
