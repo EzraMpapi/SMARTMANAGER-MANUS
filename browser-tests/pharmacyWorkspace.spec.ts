@@ -35,10 +35,22 @@ async function mockAuthenticatedPharmacy(page: Parameters<typeof test>[0]["page"
 }
 
 async function openPharmacyWorkspace(page: Parameters<typeof test>[0]["page"]) {
-  const closeMenu = page.getByRole("button", { name: "Close menu" });
-  if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("aside nav button").filter({ hasText: "Pharmacy" }).click();
+  const closeTour = page.getByRole("button", { name: "Close onboarding tour", exact: true }).last();
+  if (await closeTour.count() && await closeTour.isVisible().catch(() => false)) await closeTour.click({ force: true });
+  const skipTour = page.getByRole("button", { name: "Skip tour", exact: true }).last();
+  if (await skipTour.count() && await skipTour.isVisible().catch(() => false)) await skipTour.click({ force: true });
+  const closeMenu = page.getByRole("button", { name: "Close menu", exact: true }).last();
+  if (await closeMenu.count() && await closeMenu.isVisible().catch(() => false)) await closeMenu.click({ force: true });
+  const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
+  if (await openMenu.count() && await openMenu.isVisible().catch(() => false)) await openMenu.click({ force: true });
+  const pharmacyNav = page.locator("aside nav button").filter({ hasText: "Pharmacy" }).last();
+  await pharmacyNav.scrollIntoViewIfNeeded();
+  await pharmacyNav.evaluate((element) => (element as HTMLElement).click());
+  await page.waitForTimeout(1200);
+  for (const name of ["Close onboarding tour", "Skip tour"]) {
+    const tourButton = page.getByRole("button", { name, exact: true }).last();
+    if (await tourButton.count() && await tourButton.isVisible().catch(() => false)) await tourButton.click({ force: true });
+  }
 }
 
 test("loads the Pharmacy Command Center and renders live catalogue signals responsively", async ({ page }, testInfo) => {

@@ -8,6 +8,8 @@ const inventory = dashboard.slice(dashboard.indexOf("function Inventory("), dash
 const itemPanel = dashboard.slice(dashboard.indexOf("function ItemPanel("), dashboard.indexOf("function ItemFormPanel("));
 const expensePanel = dashboard.slice(dashboard.indexOf("function ExpensePanel("), dashboard.indexOf("function ExpenseFormPanel("));
 const pharmacy = dashboard.slice(dashboard.indexOf("function PharmacyManagementModule("), dashboard.indexOf("function Healthcare"));
+const performance = dashboard.slice(dashboard.indexOf("function Performance("), dashboard.indexOf("function PerformanceFormPanel("));
+const school = dashboard.slice(dashboard.indexOf("function SchoolManagementModule("), dashboard.indexOf("function Hospitality"));
 
 describe("button action contracts", () => {
   it("persists inventory reorder requests through the existing procurement tables", () => {
@@ -46,5 +48,21 @@ describe("button action contracts", () => {
     expect(pharmacy).toContain('await sb("phm_stock").eq("id", currentStock.id).update({ qty: nextQty }).single().run()');
     expect(pharmacy).toContain("Drug could not be saved to Supabase. The catalog was not changed.");
     expect(pharmacy).toContain("Dispensing could not be saved to Supabase. Stock and dispensing records were not changed here.");
+  });
+
+  it("connects Add OKR to the existing HR performance table and reloadable JSON contract", () => {
+    expect(performance).toContain('await sb("hr_performance_reviews").insert(row).single().run()');
+    expect(performance).toContain('recordType: "okr"');
+    expect(performance).toContain("OKR could not be saved to Supabase. No local OKR was created.");
+    expect(performance).toContain("onClick={()=>setShowOkrForm((visible) => !visible)}");
+    expect(dashboard).toContain("recordType: data.recordType || \"review\"");
+  });
+
+  it("connects Schedule Exam to the existing school exam table with required validation", () => {
+    expect(school).toContain('await sb("sch_exams").insert(row).single().run()');
+    expect(school).toContain("async function scheduleExam()");
+    expect(school).toContain("Exam could not be saved to Supabase. The exam list was not changed.");
+    expect(school).toContain("onClick={()=>setShowExam((visible) => !visible)}");
+    expect(school).toContain("disabled={!examForm.name.trim() || !examForm.class.trim() || !examForm.subject.trim()}");
   });
 });

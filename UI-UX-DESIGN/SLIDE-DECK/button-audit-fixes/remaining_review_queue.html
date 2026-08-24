@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #334155; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            display: flex;
+            flex-direction: column;
+            padding: 60px 80px 40px;
+            background-color: #ffffff;
+            position: relative;
+        }
+        .header {
+            margin-bottom: 40px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .slide-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .slide-subtitle {
+            font-size: 20px;
+            color: #10b981;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 16px; /* reduced from 40 to shrink vertical spacing */
+            flex: 1;
+        }
+        .principle-block {
+            background-color: #fffbeb;
+            border-left: 6px solid #f59e0b;
+            padding: 16px 24px; /* reduced vertical padding from 24px to 16px */
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+        .principle-icon {
+            font-size: 36px;
+            color: #f59e0b;
+            margin-top: 0;
+        }
+        .principle-content h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: 12px;
+        }
+        .principle-content p {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #b45309;
+        }
+        .queue-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px; /* reduced from 24 to save vertical space between rows */
+        }
+        .queue-item {
+            background-color: #f8fafc;
+            border-top: 4px solid #3b82f6;
+            padding: 12px; /* reduced vertical padding from 24px to 12px */
+        }
+        .queue-item-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .queue-item-icon {
+            font-size: 24px;
+            color: #3b82f6;
+        }
+        .queue-item-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .queue-item-desc {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #475569;
+        }
+        .next-steps {
+            margin-top: auto;
+            background-color: #f1f5f9;
+            padding: 12px 24px; /* reduced vertical padding from 20px to 12px */
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .next-steps strong {
+            color: #0f172a;
+            font-size: 18px;
+        }
+        .next-steps span {
+            color: #475569;
+            font-size: 18px;
+        }
+        .footer-note {
+            position: absolute;
+            bottom: 40px;
+            left: 80px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1 class="slide-title">Remaining Review Queue</h1>
+            <div class="slide-subtitle">Pending Legacy Controls</div>
+        </div>
+
+        <div class="content-area">
+            <div class="principle-block">
+                <i class="fas fa-exclamation-triangle principle-icon"></i>
+                <div class="principle-content">
+                    <h2>Strict Implementation Standard</h2>
+                    <p>The remaining notification-only controls require feature-specific UX, validation, table-column mapping, and authorization review. <strong>They must not be wired to write arbitrary generic rows merely to make a button appear connected.</strong></p>
+                </div>
+            </div>
+
+            <div class="queue-grid">
+                <div class="queue-item">
+                    <div class="queue-item-header">
+                        <i class="fas fa-book queue-item-icon"></i>
+                        <h3 class="queue-item-title">Add Book</h3>
+                    </div>
+                    <p class="queue-item-desc">Requires school library schema mapping and specific validation rules before implementation.</p>
+                </div>
+                <div class="queue-item">
+                    <div class="queue-item-header">
+                        <i class="fas fa-boxes queue-item-icon"></i>
+                        <h3 class="queue-item-title">Receive Stock</h3>
+                    </div>
+                    <p class="queue-item-desc">Needs integration with existing inventory receipt workflows and warehouse location data.</p>
+                </div>
+                <div class="queue-item">
+                    <div class="queue-item-header">
+                        <i class="fas fa-tags queue-item-icon"></i>
+                        <h3 class="queue-item-title">New Category</h3>
+                    </div>
+                    <p class="queue-item-desc">Requires taxonomy validation and authorization checks for catalog management.</p>
+                </div>
+                <div class="queue-item">
+                    <div class="queue-item-header">
+                        <i class="fas fa-piggy-bank queue-item-icon"></i>
+                        <h3 class="queue-item-title">New Fixed Deposit</h3>
+                    </div>
+                    <p class="queue-item-desc">Pending financial transaction contract review and banking module integration.</p>
+                </div>
+                <div class="queue-item">
+                    <div class="queue-item-header">
+                        <i class="fas fa-file-invoice-dollar queue-item-icon"></i>
+                        <h3 class="queue-item-title">New Standing Order</h3>
+                    </div>
+                    <p class="queue-item-desc">Requires recurring schedule logic and financial authorization workflows.</p>
+                </div>
+            </div>
+
+            <div class="next-steps">
+                <i class="fas fa-arrow-right" style="color: #10b981; font-size: 20px;"></i>
+                <strong>Required Next Steps:</strong>
+                <span>Define owning persistence contract &rarr; Add real form &rarr; Implement server-confirmed mutation.</span>
+            </div>
+        </div>
+
+        <div class="footer-note">Source: BUTTON_ACTION_FOLLOWUP_20260824.md</div>
+    </div>
+</body>
+</html>

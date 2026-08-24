@@ -1,0 +1,80 @@
+{
+  "auditDate": "2026-08-24",
+  "repository": "EzraMpapi/SMARTMANAGER-MANUS",
+  "baseline": {
+    "trackedClientSourceFiles": 150,
+    "buttonTags": 3345,
+    "buttonLikeOnClickControls": 1780,
+    "note": "Static counts are conservative review queues, not runtime proof of defects."
+  },
+  "newlyConnectedControls": [
+    {
+      "control": "Add OKR",
+      "table": "hr_performance_reviews",
+      "recordType": "okr",
+      "fields": ["objective", "owner", "period", "keyResults", "target", "current", "unit"],
+      "confirmationBoundary": "Configured mode updates local UI state only after confirmed Supabase insert; reload mapping preserves persisted OKRs."
+    },
+    {
+      "control": "Schedule Exam",
+      "table": "sch_exams",
+      "fields": ["name", "className", "subject", "date", "maxMarks"],
+      "confirmationBoundary": "Configured mode updates local UI state only after confirmed Supabase insert; demo mode is explicit local fallback."
+    }
+  ],
+  "retainedRepairs": [
+    "Inventory reorder header and line persistence with partial-failure cleanup",
+    "Escaped printable Expense Receipt export",
+    "Real JSON manifest download for presentation progress archive action",
+    "Server-confirmed Pharmacy Add Drug and Dispense with stock availability checks"
+  ],
+  "liveSupabase": {
+    "projectId": "rlhngsrihahhyxnjxrxm",
+    "schema": "public",
+    "freshTableInventory": "verified",
+    "targetTablesPresentAndRlsEnabled": [
+      "hr_performance_reviews",
+      "sch_exams",
+      "sch_classes",
+      "procurement_purchase_orders",
+      "purchase_order_items",
+      "phm_drugs",
+      "phm_stock",
+      "phm_dispense",
+      "phm_purchase_orders",
+      "phm_stock_receipts",
+      "phm_batches",
+      "phm_stock_movements",
+      "phm_sales",
+      "phm_sale_items",
+      "phm_payments",
+      "phm_returns",
+      "phm_insurance_claims",
+      "phm_audit_logs"
+    ],
+    "ddlApplied": false,
+    "speculativeTablesCreated": false,
+    "migrationInventory": "verified separately"
+  },
+  "validation": {
+    "buttonActionContracts": {"testFiles": 1, "passed": 7},
+    "targetedServerSuites": {"testFiles": 4, "passed": 26},
+    "focusedBrowserJourneys": {"passed": 4},
+    "fullBrowserSuite": {"passed": 23},
+    "typeCheck": "passed",
+    "browserBuildStep": "passed with existing non-blocking large dashboard chunk warning"
+  },
+  "remainingReviewQueue": [
+    "Add Book",
+    "Receive Stock",
+    "New Category",
+    "New Fixed Deposit",
+    "New Standing Order"
+  ],
+  "sourceEvidence": [
+    "BUTTON_ACTION_AUDIT_20260824.md",
+    "server/buttonActionContracts.test.ts",
+    "server/procurementPersistenceBoundaries.test.ts",
+    "server/pharmacyOperations.test.ts"
+  ]
+}

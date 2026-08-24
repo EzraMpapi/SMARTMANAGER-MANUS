@@ -262,14 +262,14 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await expect(page.getByRole("dialog", { name: "Edit Clinician" })).toHaveCount(0);
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Archive clinician" }).click();
-  await expect(page.getByText("Healthcare record archived", { exact: true })).toBeVisible();
+  await expect(page.getByText("Healthcare record archived", { exact: true }).last()).toBeVisible();
 
   await page.getByRole("button", { name: "Patients" }).click();
   await page.getByRole("button", { name: "Edit Asha Mtemi" }).click();
   await expect(page.getByRole("dialog", { name: "Edit Patient" })).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Archive record" }).click();
-  await expect(page.getByText("Healthcare record archived", { exact: true })).toBeVisible();
+  await expect(page.getByText("Healthcare record archived", { exact: true }).last()).toBeVisible();
   await expect(page.getByRole("dialog", { name: "Edit Patient" })).toHaveCount(0);
 });
 

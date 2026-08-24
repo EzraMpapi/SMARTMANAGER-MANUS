@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #334155; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            display: flex;
+            flex-direction: column;
+            padding: 60px 80px 0px; /* No padding bottom */
+            background-color: #ffffff;
+            position: relative;
+        }
+        .header {
+            margin-bottom: 40px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .slide-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .slide-subtitle {
+            font-size: 20px;
+            color: #10b981;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .content-area {
+            display: flex;
+            gap: 60px;
+            flex: 1;
+        }
+        .workflow-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .workflow-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 16px 24px;
+        }
+        .workflow-icon {
+            font-size: 28px;
+            color: #10b981;
+        }
+        .workflow-title {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .details-table th, .details-table td {
+            padding: 20px 0;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            vertical-align: top;
+        }
+        .details-table th {
+            width: 160px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            padding-right: 20px;
+        }
+        .details-table td {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #475569;
+        }
+        .details-table td strong {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .footer-note {
+            position: absolute;
+            bottom: 40px;
+            left: 80px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1 class="slide-title">Legacy Workflow Repairs</h1>
+            <div class="slide-subtitle">Connecting Notification-Only Controls</div>
+        </div>
+
+        <div class="content-area">
+            <!-- Add OKR Column -->
+            <div class="workflow-col">
+                <div class="workflow-header">
+                    <i class="fas fa-bullseye workflow-icon"></i>
+                    <h2 class="workflow-title">Add OKR (HR Module)</h2>
+                </div>
+                <table class="details-table">
+                    <tbody>
+                        <tr>
+                            <th>Form &amp; Validation</th>
+                            <td>Requires objective, owner, period, key result, target, current value, and unit before submission.</td>
+                        </tr>
+                        <tr>
+                            <th>Persistence Contract</th>
+                            <td>Writes to the existing <strong>hr_performance_reviews</strong> table using a generic envelope with <code>data.recordType = "okr"</code>.</td>
+                        </tr>
+                        <tr>
+                            <th>State Update</th>
+                            <td>In configured mode, the OKR is added to local UI state <strong>only after</strong> the insert returns a confirmed row. Reload mapping preserves persisted OKRs alongside seeded records.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Schedule Exam Column -->
+            <div class="workflow-col">
+                <div class="workflow-header">
+                    <i class="fas fa-graduation-cap workflow-icon"></i>
+                    <h2 class="workflow-title">Schedule Exam (School Module)</h2>
+                </div>
+                <table class="details-table">
+                    <tbody>
+                        <tr>
+                            <th>Form &amp; Validation</th>
+                            <td>Requires exam name, class, subject, date, and maximum marks to be validated before submission.</td>
+                        </tr>
+                        <tr>
+                            <th>Persistence Contract</th>
+                            <td>Writes to the existing <strong>sch_exams</strong> table using a generic envelope with normalized exam fields stored in <code>data</code>.</td>
+                        </tr>
+                        <tr>
+                            <th>State Update</th>
+                            <td>In configured mode, the exam is added to local UI state <strong>only after</strong> the insert returns a confirmed row. Demo mode remains explicitly local-only.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer-note">Source: BUTTON_ACTION_FOLLOWUP_20260824.md</div>
+    </div>
+</body>
+</html>

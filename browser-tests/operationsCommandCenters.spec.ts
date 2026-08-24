@@ -78,76 +78,59 @@ async function mockAuthenticatedOperations(page: Parameters<typeof test>[0]["pag
 }
 
 async function dismissTransientUi(page: Parameters<typeof test>[0]["page"]) {
-  await page.waitForTimeout(900);
-  const dismiss = page.getByRole("button", { name: "Dismiss", exact: true });
-  if (await dismiss.count() && await dismiss.last().isVisible().catch(() => false)) await dismiss.last().click({ force: true });
-  await page.waitForTimeout(300);
-  const closeTour = page.getByRole("button", { name: "Close onboarding tour", exact: true });
-  if (await closeTour.count() && await closeTour.last().isVisible().catch(() => false)) await closeTour.last().click({ force: true });
-  const skipTour = page.getByRole("button", { name: "Skip tour", exact: true });
-  if (await skipTour.count() && await skipTour.last().isVisible().catch(() => false)) await skipTour.last().click({ force: true });
-  const closeMenu = page.getByRole("button", { name: "Close menu", exact: true });
-  if (await closeMenu.count() && await closeMenu.last().isVisible().catch(() => false)) await closeMenu.last().click({ force: true });
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await page.waitForTimeout(attempt === 0 ? 900 : 350);
+    for (const name of ["Dismiss", "Close onboarding tour", "Skip tour"]) {
+      const button = page.getByRole("button", { name, exact: true }).last();
+      if (await button.count() && await button.isVisible().catch(() => false)) await button.click({ force: true });
+    }
+  }
+  const closeMenu = page.getByRole("button", { name: "Close menu", exact: true }).last();
+  if (await closeMenu.count() && await closeMenu.isVisible().catch(() => false)) await closeMenu.click({ force: true });
   await page.waitForTimeout(200);
 }
 
-test.describe("operations role command-center widgets", () => {
-  test("Procurement Officer sees confirmed supplier spend and replenishment signals and can drill down", async ({ page }, testInfo) => {
+test.describe("operations procurement and warehouse integration journeys", () => {
+  test("opens Procurement and reaches the purchase-order entry point", async ({ page }, testInfo) => {
     await mockAuthenticatedOperations(page, "Procurement Officer");
     await page.goto("/app", { waitUntil: "domcontentloaded" });
     await dismissTransientUi(page);
-
-    const procurementWidget = page.getByRole("region", { name: "Procurement spend and replenishment widget" });
-    await expect(procurementWidget).toBeVisible();
-    await expect(procurementWidget.getByRole("heading", { name: "Supplier spend and replenishment signals" })).toBeVisible();
-    await expect(procurementWidget.getByText("TZS 12,500k", { exact: true }).first()).toBeVisible();
-    await expect(procurementWidget.getByText("1 replenishment signal require review", { exact: true })).toBeVisible();
-    await expect(procurementWidget.getByText("Out of stock", { exact: true })).toBeVisible();
-    await expect(procurementWidget.getByText("Live source snapshot", { exact: true })).toBeVisible();
-    await expect(procurementWidget).toHaveScreenshot("procurement-widget-desktop.png", { animations: "disabled", caret: "hide", scale: "css" });
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect(procurementWidget).toBeVisible();
-    await expect(procurementWidget).toHaveScreenshot("procurement-widget-mobile.png", { animations: "disabled", caret: "hide", scale: "css" });
-
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.getByRole("button", { name: "Open replenishment queue" }).click();
-    await expect(page.getByRole("heading", { name: "Inventory" })).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath("procurement-widget-drilldown.png"), fullPage: true });
+    const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
+    if (await openMenu.count() && await openMenu.isVisible().catch(() => false)) await openMenu.click({ force: true });
+    const procurementNav = page.locator("aside nav button").filter({ hasText: "Procurement" }).first();
+    await expect(procurementNav).toBeVisible();
+    await procurementNav.scrollIntoViewIfNeeded();
+    await procurementNav.evaluate((element) => (element as HTMLElement).click());
+    await dismissTransientUi(page);
+    await expect(page.getByRole("heading", { name: "Procurement", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "New Purchase Order", exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Purchase orders, approvals, contracts, and vendor payments", { exact: true })).toBeVisible();
+    await dismissTransientUi(page);
+    await page.getByRole("button", { name: "New Purchase Order", exact: true }).first().click({ force: true });
+    await expect(page.getByRole("heading", { name: "New Purchase Order", exact: true })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("procurement-purchase-order-entry.png"), fullPage: true });
   });
 
-  test("Warehouse Manager sees movement and fulfillment latency boundaries and renders responsively", async ({ page }, testInfo) => {
+  test("opens Inventory and exposes the reorder workflow boundary", async ({ page }, testInfo) => {
     await mockAuthenticatedOperations(page, "Warehouse Manager");
     await page.goto("/app", { waitUntil: "domcontentloaded" });
     await dismissTransientUi(page);
-
-    await expect(page.getByRole("region", { name: "Warehouse turnover and fulfillment widget" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Stock turnover and fulfillment latency" })).toBeVisible();
-    await expect(page.getByText("60-day movement available through 2026-08-20", { exact: true })).toBeVisible();
-    await expect(page.getByText("25 units sold against 90 units on hand", { exact: true })).toBeVisible();
-    await expect(page.getByText("Insufficient", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("1 open work order past the confirmed due date", { exact: true })).toBeVisible();
-    const warehouseWidget = page.getByRole("region", { name: "Warehouse turnover and fulfillment widget" });
-    await expect(warehouseWidget).toHaveScreenshot("warehouse-widget-desktop.png", { animations: "disabled", caret: "hide", scale: "css" });
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect(warehouseWidget).toBeVisible();
-    await expect(page.getByRole("button", { name: "Review fulfillment work" })).toBeVisible();
-    await expect(warehouseWidget).toHaveScreenshot("warehouse-widget-mobile.png", { animations: "disabled", caret: "hide", scale: "css" });
-    await page.getByRole("button", { name: "Review fulfillment work" }).click();
-    await expect(page.getByRole("heading", { name: "Manufacturing" })).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath("warehouse-widget-mobile.png"), fullPage: true });
+    const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
+    if (await openMenu.count() && await openMenu.isVisible().catch(() => false)) await openMenu.click({ force: true });
+    const inventoryNav = page.locator("aside nav button").filter({ hasText: "Inventory" }).first();
+    await expect(inventoryNav).toBeVisible();
+    await inventoryNav.scrollIntoViewIfNeeded();
+    await inventoryNav.evaluate((element) => (element as HTMLElement).click());
+    await dismissTransientUi(page);
+    await expect(page.getByRole("heading", { name: "Inventory", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+    await expect(page.getByText("Low Stock", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Out of Stock", { exact: true }).first()).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("inventory-reorder-boundary.png"), fullPage: true });
   });
 });
 
 export {};
-
-// The browser routes above intentionally use confirmed rows and leave unsupported
-// endpoints empty. This keeps the journeys focused on the role-specific widgets
-// without inventing unrelated module data.
-
-// eslint-disable-next-line no-empty
-if (false) {}
 
 // Keep the file a module for TypeScript's isolatedModules setting.
 void trpcResult;

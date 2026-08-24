@@ -1397,10 +1397,12 @@ function mapAttendanceRow(r) {
 }
 
 function mapPerformanceRow(r) {
+  const data = r.data && typeof r.data === "object" ? r.data : {};
   return {
     id: r.id, dbId: r.id,
     employee: r.hr_employees?.full_name || r.employee_name || "Unknown",
-    period: r.period, rating: r.rating, reviewer: r.reviewer, notes: r.notes || "", date: r.review_date,
+    period: r.period || data.period, rating: r.rating, reviewer: r.reviewer, notes: r.notes || "", date: r.review_date || r.created_at,
+    recordType: data.recordType || "review", objective: data.objective, owner: data.owner, keyResults: Array.isArray(data.keyResults) ? data.keyResults : [],
   };
 }
 
@@ -19861,7 +19863,9 @@ function Performance({ employees }) {
   const { rows, setRows, loading } = reviews;
   const [tab, setTab]     = useState("reviews");
   const [showForm, setShowForm] = useState(false);
+  const [showOkrForm, setShowOkrForm] = useState(false);
   const [form, setForm] = useState({ employee:"", period:"Q3 2026", rating:"", reviewer:"", goals:"", achievements:"", areas:"", score:"" });
+  const [okrForm, setOkrForm] = useState({ objective:"", owner:"", period:"Q3 2026", keyResult:"", target:"", current:"", unit:"%" });
 
   const RATINGS = ["Outstanding","Exceeds Expectations","Meets Expectations","Needs Improvement","Unsatisfactory"];
   const RATING_COLOR = {
@@ -19906,6 +19910,35 @@ function Performance({ employees }) {
     setShowForm(false);
     setForm({ employee:"", period:"Q3 2026", rating:"", reviewer:"", goals:"", achievements:"", areas:"", score:"" });
     notify("Performance review submitted for "+form.employee);
+  }
+
+  async function submitOkr() {
+    if (!okrForm.objective.trim() || !okrForm.owner.trim() || !okrForm.keyResult.trim()) return;
+    const keyResult = { kr: okrForm.keyResult.trim(), target: Number(okrForm.target) || 0, current: Number(okrForm.current) || 0, unit: okrForm.unit };
+    const row = {
+      id: docId("OKR"),
+      name: okrForm.objective.trim(),
+      status: "Draft",
+      notes: okrForm.owner.trim(),
+      data: { recordType: "okr", objective: okrForm.objective.trim(), owner: okrForm.owner.trim(), period: okrForm.period, keyResults: [keyResult] },
+    };
+    if (IS_CONFIGURED) {
+      try {
+        const saved = await sb("hr_performance_reviews").insert(row).single().run();
+        const confirmed = { ...row, ...(saved?.data || {}), id: saved?.id || row.id, recordType: "okr", objective: row.data.objective, owner: row.data.owner, period: row.data.period, keyResults: row.data.keyResults };
+        setRows((previous) => [confirmed, ...previous]);
+        setOkrForm({ objective:"", owner:"", period:"Q3 2026", keyResult:"", target:"", current:"", unit:"%" });
+        setShowOkrForm(false);
+        notify("OKR saved to Supabase: " + confirmed.objective, "success");
+      } catch (_error) {
+        notify("OKR could not be saved to Supabase. No local OKR was created.", "error");
+      }
+      return;
+    }
+    setRows((previous) => [{ ...row, recordType: "okr", objective: row.data.objective, owner: row.data.owner, period: row.data.period, keyResults: row.data.keyResults }, ...previous]);
+    setOkrForm({ objective:"", owner:"", period:"Q3 2026", keyResult:"", target:"", current:"", unit:"%" });
+    setShowOkrForm(false);
+    notify("OKR created: " + row.data.objective);
   }
 
   const avgScore = rows.length > 0 ? (rows.reduce((s,r)=>s+(r.score||3),0)/rows.length).toFixed(1) : 0;
@@ -20043,9 +20076,24 @@ function Performance({ employees }) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-[13px] font-semibold text-slate-700">Objectives & Key Results — Q3 2026</p>
-            <button onClick={()=>notify("Add OKR form")} className="flex items-center gap-1 text-[12px] font-semibold text-white px-3 py-2 rounded-xl bg-[#7C3AED]"><Plus size={12}/>Add OKR</button>
+            <button type="button" onClick={()=>setShowOkrForm((visible) => !visible)} className="flex items-center gap-1 text-[12px] font-semibold text-white px-3 py-2 rounded-xl bg-[#7C3AED]"><Plus size={12}/>{showOkrForm ? "Close OKR Form" : "Add OKR"}</button>
           </div>
-          {OKR_SEED.map(okr => {
+          {showOkrForm && (
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-3">
+              <p className="text-[14px] font-semibold text-[#111827]">Create Objective & Key Result</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <FormField label="Objective *"><input className={inputClass} value={okrForm.objective} onChange={e=>setOkrForm({...okrForm,objective:e.target.value})} placeholder="Improve customer retention" /></FormField>
+                <FormField label="Owner *"><input className={inputClass} value={okrForm.owner} onChange={e=>setOkrForm({...okrForm,owner:e.target.value})} placeholder="Sales Team" /></FormField>
+                <FormField label="Period"><select className={inputClass} value={okrForm.period} onChange={e=>setOkrForm({...okrForm,period:e.target.value})}>{PERIODS.map(p=><option key={p}>{p}</option>)}</select></FormField>
+                <FormField label="Unit"><select className={inputClass} value={okrForm.unit} onChange={e=>setOkrForm({...okrForm,unit:e.target.value})}>{["%","score","leads","clients","hours","days"].map(u=><option key={u}>{u}</option>)}</select></FormField>
+                <FormField label="Key Result *"><input className={inputClass} value={okrForm.keyResult} onChange={e=>setOkrForm({...okrForm,keyResult:e.target.value})} placeholder="Reach 80% retention" /></FormField>
+                <FormField label="Target"><input type="number" className={inputClass} value={okrForm.target} onChange={e=>setOkrForm({...okrForm,target:e.target.value})} /></FormField>
+                <FormField label="Current"><input type="number" className={inputClass} value={okrForm.current} onChange={e=>setOkrForm({...okrForm,current:e.target.value})} /></FormField>
+              </div>
+              <div className="flex gap-2"><button type="button" onClick={submitOkr} disabled={!okrForm.objective.trim() || !okrForm.owner.trim() || !okrForm.keyResult.trim()} className="text-[12.5px] font-semibold text-white px-5 py-2.5 rounded-xl bg-[#7C3AED] disabled:opacity-50">Save OKR</button><button type="button" onClick={()=>setShowOkrForm(false)} className="text-[12.5px] text-slate-500 px-4 py-2.5">Cancel</button></div>
+            </div>
+          )}
+          {[...OKR_SEED, ...rows.filter((record) => record.recordType === "okr").map((record) => ({ id: record.id, objective: record.objective || record.name, owner: record.owner || record.notes || "Unassigned", period: record.period || "Q3 2026", keyResults: record.keyResults || [] }))].map(okr => {
             const avgProgress = okr.keyResults.reduce((s,kr)=>{
               const pct = kr.unit==="hours"||kr.unit==="days"
                 ? Math.round((kr.target/kr.current)*100)  // lower is better
@@ -44515,6 +44563,8 @@ function SchoolManagementModule({ currentUser, company }) {
   const [feeForm, setFeeForm]   = useState({ studentId:"", term: TERMS[1], amount:"", paid:"" });
   const [showStu, setShowStu]   = useState(false);
   const [showFee, setShowFee]   = useState(false);
+  const [showExam, setShowExam] = useState(false);
+  const [examForm, setExamForm] = useState({ name:"", class:"", subject:"", date:TODAY.toISOString().slice(0,10), maxMarks:"100" });
   const [searchQ, setSearchQ]   = useState("");
 
   const SCH_BLUE = "#1E3A8A";
@@ -44563,6 +44613,28 @@ function SchoolManagementModule({ currentUser, company }) {
     setFeeForm({ studentId:"", term: TERMS[1], amount:"", paid:"" });
     setShowFee(false);
     notify("Fee record created for " + stu?.name);
+  }
+
+  async function scheduleExam() {
+    if (!examForm.name.trim() || !examForm.class.trim() || !examForm.subject.trim() || !examForm.date) return;
+    const row = { id: docId("EXM"), name: examForm.name.trim(), class: examForm.class.trim(), subject: examForm.subject.trim(), date: examForm.date, maxMarks: Number(examForm.maxMarks) || 100, avgScore: 0, passRate: 0, status: "Scheduled" };
+    if (IS_CONFIGURED) {
+      try {
+        const saved = await sb("sch_exams").insert(row).single().run();
+        const confirmed = { ...row, ...(saved?.data || {}), id: saved?.id || row.id };
+        exams.setRows((previous) => [confirmed, ...previous]);
+        setExamForm({ name:"", class:"", subject:"", date:TODAY.toISOString().slice(0,10), maxMarks:"100" });
+        setShowExam(false);
+        notify("Exam scheduled: " + confirmed.name, "success");
+      } catch (_error) {
+        notify("Exam could not be saved to Supabase. The exam list was not changed.", "error");
+      }
+      return;
+    }
+    exams.setRows((previous) => [row, ...previous]);
+    setExamForm({ name:"", class:"", subject:"", date:TODAY.toISOString().slice(0,10), maxMarks:"100" });
+    setShowExam(false);
+    notify("Exam scheduled: " + row.name);
   }
 
   const filteredStudents = students.rows.filter(s => !searchQ || s.name.toLowerCase().includes(searchQ.toLowerCase()) || s.admNo.includes(searchQ));
@@ -44816,8 +44888,24 @@ function SchoolManagementModule({ currentUser, company }) {
       {tab==="exams" && (
         <div className="space-y-3">
           <div className="flex justify-end">
-            <button onClick={()=>notify("Exam form — add via modal")} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:SCH_BLUE}}><Plus size={13}/>Schedule Exam</button>
+            <button type="button" onClick={()=>setShowExam((visible) => !visible)} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:SCH_BLUE}}><Plus size={13}/>{showExam ? "Close Exam Form" : "Schedule Exam"}</button>
           </div>
+          {showExam && (
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-3">
+              <p className="text-[14px] font-semibold text-[#111827]">Schedule Examination</p>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <FormField label="Exam Name *"><input className={inputClass} value={examForm.name} onChange={e=>setExamForm({...examForm,name:e.target.value})} placeholder="Mid-term Mathematics" /></FormField>
+                <FormField label="Class *"><input className={inputClass} value={examForm.class} onChange={e=>setExamForm({...examForm,class:e.target.value})} placeholder="Form 1A" /></FormField>
+                <FormField label="Subject *"><input className={inputClass} value={examForm.subject} onChange={e=>setExamForm({...examForm,subject:e.target.value})} placeholder="Mathematics" /></FormField>
+                <FormField label="Exam Date *"><input type="date" className={inputClass} value={examForm.date} onChange={e=>setExamForm({...examForm,date:e.target.value})} /></FormField>
+                <FormField label="Max Marks"><input type="number" min="1" className={inputClass} value={examForm.maxMarks} onChange={e=>setExamForm({...examForm,maxMarks:e.target.value})} /></FormField>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={scheduleExam} disabled={!examForm.name.trim() || !examForm.class.trim() || !examForm.subject.trim()} className="text-[12.5px] font-semibold text-white px-5 py-2.5 rounded-xl disabled:opacity-50" style={{background:SCH_BLUE}}>Save Exam</button>
+                <button type="button" onClick={()=>setShowExam(false)} className="text-[12.5px] text-slate-500 px-4 py-2.5">Cancel</button>
+              </div>
+            </div>
+          )}
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Exam","Class","Subject","Date","Max Marks","Avg Score","Pass Rate","Status"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
