@@ -535,6 +535,24 @@ function PresentationProgressView() {
     return sortAsc ? valA - valB : valB - valA;
   });
 
+  function downloadModuleManifest() {
+    const manifest = {
+      generatedAt: new Date().toISOString(),
+      source: "PresentationProgressView",
+      moduleCount: modules.length,
+      modules: modules.map(({ id, name, source, status, category, note, updatedAt }) => ({ id, name, source, status, category, note, updatedAt })),
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `smart-manager-module-manifest-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    notify(`Downloaded ${modules.length} module manifest records.`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1018,12 +1036,12 @@ function PresentationProgressView() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div>
                     <span className="text-xs font-mono font-semibold text-[#059669]">Export Manifest</span>
-                    <h3 className="text-lg font-bold text-[#111827]">Bulk Wireframe Archive Preview</h3>
+                    <h3 className="text-lg font-bold text-[#111827]">Bulk Wireframe Manifest Preview</h3>
                   </div>
                   <button onClick={() => setSelectedAsset(null)} className="text-slate-400 hover:text-slate-600 p-1">✕</button>
                 </div>
                 <p className="text-[13px] text-slate-600">
-                  Review the 40 inventoried module wireframes before downloading the complete ZIP package. All modules are mapped and verified against <code>BusinessSphereDashboard.jsx</code>.
+                  Review the 40 inventoried module records before downloading a structured JSON manifest. All modules are mapped and verified against <code>BusinessSphereDashboard.jsx</code>.
                 </p>
                 <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 text-[13px]">
                   {modules.map((m) => (
@@ -1038,7 +1056,7 @@ function PresentationProgressView() {
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
                   <button onClick={() => setSelectedAsset(null)} className="border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-slate-50">Close</button>
-                  <button onClick={() => { alert("Bulk wireframe export package queued for download upon quota reset."); setSelectedAsset(null); }} className="btn-primary text-white text-[13px] font-semibold px-4 py-2 rounded-lg">Download ZIP Archive</button>
+                  <button type="button" onClick={() => { downloadModuleManifest(); setSelectedAsset(null); }} className="btn-primary text-white text-[13px] font-semibold px-4 py-2 rounded-lg">Download JSON Manifest</button>
                 </div>
               </>
             ) : (

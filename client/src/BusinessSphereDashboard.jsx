@@ -12393,7 +12393,7 @@ function Inventory({ inventory, suppliersHook }) {
     return true;
   }
 
-  async function deleteItem(sku) {
+    async function deleteItem(sku) {
     if (IS_CONFIGURED) {
       try {
         await sb("inventory_items").eq("sku", sku).delete().single().run();
@@ -12408,6 +12408,52 @@ function Inventory({ inventory, suppliersHook }) {
     return true;
   }
 
+  async function raisePurchaseOrder(item) {
+    const supplier = (suppliersHook?.rows || []).find((candidate) => candidate.status !== "Inactive") || suppliersHook?.rows?.[0];
+    if (!supplier) {
+      notify("Add an active supplier before raising a purchase order.", "error");
+      return false;
+    }
+    const reorderQty = Math.max(Number(item.reorder || 0) - Number(item.qty || 0), 1);
+    const total = reorderQty * Number(item.unitCost || 0);
+    const status = total >= PO_APPROVAL_THRESHOLD ? "Pending Approval" : "Approved";
+    const documentNumber = docId("PO");
+    const orderData = {
+      orderNo: documentNumber, supplierName: supplier.name, supplierId: supplier.id,
+      expectedDate: null, requestedBy: "Inventory reorder", subtotal: total, total,
+      source: "inventory_item_detail", sourceSku: item.sku,
+    };
+    if (IS_CONFIGURED) {
+      try {
+        const header = await sb("procurement_purchase_orders").insert({
+          name: documentNumber, status, amount: total, notes: `Reorder for ${item.name}`,
+          data: orderData,
+        }).single().run();
+        try {
+          await sb("purchase_order_items").insert({
+            name: `${documentNumber} · ${item.name}`, status: "Ordered", amount: total,
+            notes: `Reorder for ${item.sku}`, data: {
+              purchaseOrderId: header.id, itemSku: item.sku, itemName: item.name,
+              qty: reorderQty, cost: Number(item.unitCost || 0), supplierId: supplier.id,
+            },
+          }).single().run();
+        } catch (lineError) {
+          try { await sb("procurement_purchase_orders").eq("id", header.id).delete().single().run(); } catch (_cleanupError) {
+            notify(`PO ${documentNumber} may have a server header without its line item. Reconcile it before retrying.`, "error");
+            return false;
+          }
+          throw lineError;
+        }
+        notify(`${documentNumber} created for ${item.name}${status === "Pending Approval" ? " and sent for approval" : " and auto-approved"}.`, "success");
+        return true;
+      } catch (_error) {
+        notify("Purchase order could not be saved to the server. Review supplier and stock details, then try again.", "error");
+        return false;
+      }
+    }
+    notify(`${documentNumber} prepared for ${item.name}. Connect Supabase to persist it.`, "info");
+    return true;
+  }
   return (
     <div className="space-y-5">
       {IS_CONFIGURED && error && (
@@ -12632,20 +12678,20 @@ function Inventory({ inventory, suppliersHook }) {
         </>
       )}
 
-      {selected && <ItemPanel item={selected} onClose={() => setSelected(null)} onAdjust={adjustStock} onDelete={deleteItem} warehouses={warehouses} />}
+      {selected && <ItemPanel item={selected} onClose={() => setSelected(null)} onAdjust={adjustStock} onDelete={deleteItem} onRaisePurchaseOrder={raisePurchaseOrder} warehouses={warehouses} />}
     </div>
   );
 }
 
-function ItemPanel({ item, onClose, onAdjust, onDelete, warehouses }) {
+function ItemPanel({ item, onClose, onAdjust, onDelete, onRaisePurchaseOrder, warehouses }) {
   const status = stockStatus(item.qty, item.reorder);
   const wh = warehouses.find((w) => w.id === item.warehouse);
   const movements = stockMovements[item.sku] || [];
   const value = Math.round(item.qty * item.unitCost);
   const [adjusting, setAdjusting] = useState(false);
   const [delta, setDelta] = useState("");
-  const [saving, setSaving] = useState(false);
-
+    const [saving, setSaving] = useState(false);
+  const [purchaseOrderSaving, setPurchaseOrderSaving] = useState(false);
   async function applyAdjustment() {
     const n = Number(delta);
     if (!n || saving) return;
@@ -12661,7 +12707,7 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, warehouses }) {
     }
   }
 
-  async function removeItem() {
+    async function removeItem() {
     if (saving) return;
     setSaving(true);
     try {
@@ -12671,7 +12717,16 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, warehouses }) {
       setSaving(false);
     }
   }
-
+  async function raisePurchaseOrder() {
+    if (!onRaisePurchaseOrder || purchaseOrderSaving || saving) return;
+    setPurchaseOrderSaving(true);
+    try {
+      const created = await onRaisePurchaseOrder(item);
+      if (created) onClose();
+    } finally {
+      setPurchaseOrderSaving(false);
+    }
+  }
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
@@ -12807,8 +12862,8 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, warehouses }) {
             >
               Adjust Stock
             </button>
-            <button className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors">
-              Raise Purchase Order
+            <button type="button" onClick={raisePurchaseOrder} disabled={saving || purchaseOrderSaving} className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">
+              {purchaseOrderSaving ? "Saving…" : "Raise Purchase Order"}
             </button>
           </div>
           <ConfirmDeleteButton label={saving ? "Saving…" : "Delete item"} onConfirm={removeItem} />
@@ -15557,7 +15612,7 @@ function ExpensePanel({ expense, onClose, onSetStatus, onDelete }) {
     }
   }
 
-  async function removeExpense() {
+    async function removeExpense() {
     if (saving) return;
     setSaving(true);
     try {
@@ -15567,7 +15622,20 @@ function ExpensePanel({ expense, onClose, onSetStatus, onDelete }) {
       setSaving(false);
     }
   }
-
+  function downloadReceipt() {
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>\"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;", "'": "&#39;" })[character]);
+    const receiptRows = [
+      ["Expense reference", escapeHtml(expense.id)],
+      ["Vendor", escapeHtml(expense.vendor)],
+      ["Category", escapeHtml(expense.category)],
+      ["Amount (TZS 000)", money(expense.amount)],
+      ["Payment method", escapeHtml(expense.method)],
+      ["Date", escapeHtml(expense.date)],
+      ["Status", escapeHtml(expense.status)],
+    ];
+    const body = `<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>${receiptRows.map(([label, value]) => `<tr><td>${label}</td><td>${value}</td></tr>`).join("")}</tbody></table>`;
+    printReport("Expense Receipt", body, window.__smartManagerCompany || {});
+  }
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
@@ -15610,7 +15678,7 @@ function ExpensePanel({ expense, onClose, onSetStatus, onDelete }) {
 
         <div className="border-t border-slate-100 pt-4 flex flex-col gap-2">
           <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
+            <button type="button" onClick={downloadReceipt} className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
               <Download size={13} /> Receipt
             </button>
             {nextStatus && (
@@ -44946,25 +45014,63 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
   async function addDrug() {
     if (!drugForm.name.trim()) return;
     const row = { ...drugForm, id: docId("DRG"), price: Number(drugForm.price), unitCost: Number(drugForm.unitCost) };
-    drugs.setRows(p => [row, ...p]);
+    if (IS_CONFIGURED) {
+      try {
+        const saved = await sb("phm_drugs").insert(row).single().run();
+        const confirmed = { ...row, ...(saved?.data || {}), id: saved?.id || row.id };
+        drugs.setRows((previous) => [confirmed, ...previous]);
+        setDrugForm({ name:"", genericName:"", category:"Antibiotic", form:"Tablet", strength:"", manufacturer:"", price:"", unitCost:"", requiresRx:true, controlled:false });
+        setShowDrug(false);
+        notify("Drug '" + confirmed.name + "' added to catalog", "success");
+      } catch (_error) {
+        notify("Drug could not be saved to Supabase. The catalog was not changed.", "error");
+      }
+      return;
+    }
+    drugs.setRows((previous) => [row, ...previous]);
     setDrugForm({ name:"", genericName:"", category:"Antibiotic", form:"Tablet", strength:"", manufacturer:"", price:"", unitCost:"", requiresRx:true, controlled:false });
     setShowDrug(false);
     notify("Drug '" + row.name + "' added to catalog");
-    if (IS_CONFIGURED) { try { await sb("phm_drugs").insert(row).run(); } catch(_e){} }
   }
 
   async function dispenseDrug() {
     if (!disForm.patient || !disForm.drugId || !disForm.qty) return;
     const drug = drugs.rows.find(d => d.id === disForm.drugId);
-    const total = drug ? drug.price * Number(disForm.qty) : 0;
-    const row = { ...disForm, id: docId("DIS"), drug: drug?.name||"", price: total, date: today.toISOString().slice(0,10), status: "Dispensed", prescriber: disForm.prescriber || currentUser?.name || "Pharmacist" };
-    dispense.setRows(p => [row, ...p]);
-    // Reduce stock
-    stock.setRows(p => p.map(s => s.drugId === disForm.drugId ? { ...s, qty: Math.max(0, s.qty - Number(disForm.qty)) } : s));
+    const quantity = Number(disForm.qty);
+    const total = drug ? drug.price * quantity : 0;
+    const row = { ...disForm, id: docId("DIS"), drug: drug?.name||"", price: total, qty: quantity, date: today.toISOString().slice(0,10), status: "Dispensed", prescriber: disForm.prescriber || currentUser?.name || "Pharmacist" };
+    const currentStock = stock.rows.find((entry) => entry.drugId === disForm.drugId);
+    if (IS_CONFIGURED && !currentStock) {
+      notify("No stock record exists for the selected drug.", "error");
+      return;
+    }
+    if (currentStock && quantity > Number(currentStock.qty || 0)) {
+      notify("The requested quantity exceeds available stock.", "error");
+      return;
+    }
+    const nextQty = Math.max(0, Number(currentStock?.qty || 0) - quantity);
+    if (IS_CONFIGURED) {
+      try {
+        const saved = await sb("phm_dispense").insert(row).single().run();
+        if (currentStock) await sb("phm_stock").eq("id", currentStock.id).update({ qty: nextQty }).single().run();
+        const confirmed = { ...row, ...(saved?.data || {}), id: saved?.id || row.id };
+        dispense.setRows((previous) => [confirmed, ...previous]);
+        if (currentStock) stock.setRows((previous) => previous.map((entry) => entry.id === currentStock.id ? { ...entry, qty: nextQty } : entry));
+        setDisForm({ patient:"", drugId:"", qty:"", dosage:"", prescriber:"", rxNo:"" });
+        setShowDis(false);
+        notify("Dispensed: " + drug?.name + " × " + quantity + " to " + row.patient, "success");
+        logAudit("Dispensed: " + drug?.name, "Pharmacy", currentUser?.name||"System", row.patient + " × " + quantity);
+      } catch (_error) {
+        notify("Dispensing could not be saved to Supabase. Stock and dispensing records were not changed here.", "error");
+      }
+      return;
+    }
+    dispense.setRows((previous) => [row, ...previous]);
+    stock.setRows((previous) => previous.map((entry) => entry.drugId === disForm.drugId ? { ...entry, qty: nextQty } : entry));
     setDisForm({ patient:"", drugId:"", qty:"", dosage:"", prescriber:"", rxNo:"" });
     setShowDis(false);
-    notify("Dispensed: " + drug?.name + " × " + disForm.qty + " to " + disForm.patient);
-    logAudit("Dispensed: " + drug?.name, "Pharmacy", currentUser?.name||"System", disForm.patient + " × " + disForm.qty);
+    notify("Dispensed: " + drug?.name + " × " + quantity + " to " + row.patient);
+    logAudit("Dispensed: " + drug?.name, "Pharmacy", currentUser?.name||"System", row.patient + " × " + quantity);
   }
 
   const filteredDrugs = drugs.rows.filter(d => !searchDrug || d.name.toLowerCase().includes(searchDrug.toLowerCase()) || d.genericName?.toLowerCase().includes(searchDrug.toLowerCase()) || d.category?.toLowerCase().includes(searchDrug.toLowerCase()));
