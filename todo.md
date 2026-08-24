@@ -341,3 +341,5 @@
 - [x] Correct the production PWA/Android icon path so the Vercel origin returns an image rather than the application shell.
 - [x] Replace the Vercel-unserved managed-storage icon URL with a production-deployable PWA/Android icon source and revise the regression contract.
 - [ ] Validate the production web contract and Android packaging configuration, then synchronize the verified changes safely.
+- [x] Update the pre-existing Vercel routing contract test for the narrowly scoped same-origin logo rewrite, then rerun the affected CI gate.
+- [x] Reconcile the remote Android TWA guide with the verified Vercel-origin source and rerun CI after the detected stale-document regression.
