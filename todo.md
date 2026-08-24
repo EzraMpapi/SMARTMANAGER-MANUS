@@ -384,6 +384,11 @@
 - [x] Correct the Supabase `msg`-field recognition path and re-run isolated regression coverage. The exact `msg` payload recovery, mounted signup, onboarding progression, TypeScript, and diff checks passed.
 - [ ] Validate, synchronize, and checkpoint the live-error repair.
 
+## Concurrent Master-Book Publication Recovery
+- [ ] Reconcile the approved remote master-book history without discarding staged local correction records.
+- [ ] Inventory and preserve only confirmed oversized master-book media outside the repository and in managed storage.
+- [ ] Update safe text references, remove only approved duplicate media, and revalidate publication readiness.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.
