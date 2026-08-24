@@ -32,7 +32,11 @@ The live source and migration inventory already contain `billing_plans`, `tenant
 
 ## Live Supabase status
 
-The Supabase connector was available during earlier project audits but is currently returning `permission_denied: The service is currently under maintenance` for project listing, tool discovery, and migration application. The prepared migration has not been claimed as live-applied while this connector state persists. The next safe step is to submit the exact prepared SQL through `apply_migration` once the connector returns, then verify the deployed function definitions, authenticated-only grants, and migration registry.
+The forward-only migration was applied successfully through the Supabase connector after the maintenance window cleared. The migration registry records version `20260824030201` with name `subscription_activation_flow_repair_20260824`.
+
+A bounded live verification confirmed that `billing_plans`, `tenant_subscriptions`, `subscription_payments`, `subscription_invoices`, `subscription_events`, and `subscription_notifications` all exist and have RLS enabled. The deployed `billing_snapshot()` and `billing_start_free_plan(text)` functions are executable by `authenticated`; `billing_apply_provider_status` remains service-bound and is not directly executable by ordinary authenticated clients, which preserves the provider-verification boundary. The deployed definitions show explicit `event_row`/`payment_row`/`invoice_row` aliases and the tenant-scoped advisory transaction lock for Free-plan activation.
+
+An authenticated end-to-end user transaction was not simulated with a service-role credential. The remaining production verification is to exercise Free activation and provider-confirmed paid activation with a real authorized test account when an authenticated test session is available.
 
 ## Security posture
 
