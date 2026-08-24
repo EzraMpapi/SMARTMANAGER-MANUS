@@ -3222,6 +3222,11 @@ const ROLES = [
     allowedModules: [...ALL_MODULE_IDS, "global-admin"], primaryModules: [...ALL_MODULE_IDS, "global-admin"], writeAccess: "full",
   },
   {
+    id: "Platform Administrator", category: "System",
+    description: "Platform control-center access for cross-company governance. This role does not receive a company subscription gate; protected server procedures remain authoritative.",
+    allowedModules: ["dashboard", "global-admin", "profile", "support", "notifications", "settings"], primaryModules: ["global-admin"], writeAccess: "full",
+  },
+  {
     id: "Organization Owner", category: "Executive",
     description: "Full business access — the owner's own view of everything the company runs.",
     allowedModules: ALL_MODULE_IDS, primaryModules: ALL_MODULE_IDS, writeAccess: "full",
@@ -3432,6 +3437,7 @@ export function roleDefinitionFor(role) {
 // fabricated widget standing in for data this screen does not have.
 const ROLE_HOME_VIEW = {
   "Super Administrator": "executive",
+  "Platform Administrator": "focused",
   "Organization Owner": "executive",
   "CEO": "executive",
   "CFO": "financial",
@@ -46863,6 +46869,7 @@ function SmartManager() {
   // Role-based access and session state initialized first to prevent temporal dead zones
   const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
   const currentRole = roleDefinitionFor(currentUser.role);
+  const isPlatformAdministrator = currentRole.id === "Platform Administrator";
   const canManage = currentRole.writeAccess === "full";
   const billingManagerRoles = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "admin"]);
   const canManageBilling = billingManagerRoles.has(String(currentUser.role || "").trim().toLowerCase());
@@ -47353,7 +47360,7 @@ function SmartManager() {
   const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
 
   const subscriptionFilteringReady = !IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || !session?.accessToken || session?.demo || !currentUser?.id || subscriptionAccess.ready;
-  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (!IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || subscriptionAllowsModule(subscriptionAccess.access, m.id)));
+  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (!IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || isPlatformAdministrator || subscriptionAllowsModule(subscriptionAccess.access, m.id)));
 
   // If switching roles removes access to whatever module is currently on
   // screen (e.g. testing "Employee" while viewing Finance), fall back to
@@ -47373,7 +47380,7 @@ function SmartManager() {
     }
     const isOperationalModule = MODULES.some((module) => module.id === id);
     const subscriptionSafeDestination = new Set(["profile", "support", "notifications", "settings"]);
-    if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && subscriptionFilteringReady && isOperationalModule && id !== "dashboard" && !subscriptionSafeDestination.has(id) && !subscriptionAllowsModule(subscriptionAccess.access, id)) {
+    if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && subscriptionFilteringReady && !isPlatformAdministrator && isOperationalModule && id !== "dashboard" && !subscriptionSafeDestination.has(id) && !subscriptionAllowsModule(subscriptionAccess.access, id)) {
       notify("This module is not included in the company’s server-confirmed subscription plan.", "error");
       return;
     }
@@ -47504,10 +47511,10 @@ function SmartManager() {
 
   const subscriptionEscapeDestination = new Set(["profile", "support", "notifications", "settings", "global-admin"]);
   const canUseSubscriptionEscape = subscriptionEscapeDestination.has(active) || (active === "billing" && canManageBilling);
-  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && !subscriptionAccess.ready && !canUseSubscriptionEscape) {
+  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && !subscriptionAccess.ready && !canUseSubscriptionEscape && !isPlatformAdministrator) {
     return <SubscriptionAccessBoundary access={subscriptionAccess.access} loading={subscriptionAccess.loading || subscriptionAccess.status === "idle"} error={subscriptionAccess.error} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
   }
-  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && subscriptionAccess.ready && !subscriptionAccess.access.allowed && !canUseSubscriptionEscape) {
+  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && subscriptionAccess.ready && !subscriptionAccess.access.allowed && !canUseSubscriptionEscape && !isPlatformAdministrator) {
     return <SubscriptionAccessBoundary access={subscriptionAccess.access} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
   }
 

@@ -394,6 +394,11 @@
 - [x] Update active owner-portrait references and remove only the two confirmed project-local duplicates. Active Typst and builder paths now resolve to preserved external storage; the managed path is recorded in the master-book manifest.
 - [x] Validate, synchronize, and save the recovered managed checkpoint. The managed checkpoint accepted the recovered master-book and signup correction at version `de981b45`.
 
+## Platform Administrator Subscription-Gate Correction
+- [x] Trace the Vercel-served Platform Administrator subscription denial without changing real company data or subscriptions. The dashboard lacked a Platform Administrator role definition and fell back to the Employee role before strict company-plan filtering ran.
+- [x] Allow only verified Platform Administrator control-center access to bypass company-plan gating while retaining all tenant and ordinary-user module controls. The dedicated System role exposes a small control-center surface, while protected server procedures remain authoritative; the generic gate is unchanged for ordinary users.
+- [ ] Add regression coverage, validate the deployed behavior, synchronize the repair, and save the managed checkpoint.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.
