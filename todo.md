@@ -389,6 +389,11 @@
 - [x] Inventory and preserve only confirmed oversized master-book media outside the repository and in managed storage. Two identical 1.4 MB logo copies were the only oversized master-book images; one preserved managed-storage copy now represents both.
 - [x] Update safe text references, remove only approved duplicate media, and revalidate publication readiness. Active Markdown, Typst, and builder references now use managed or preserved external paths; oversized-image, focused signup, TypeScript, and diff checks passed.
 
+## Master-Book Owner Portrait Publication Recovery
+- [x] Preserve and upload the two approved oversized owner-portrait duplicates to managed storage.
+- [x] Update active owner-portrait references and remove only the two confirmed project-local duplicates. Active Typst and builder paths now resolve to preserved external storage; the managed path is recorded in the master-book manifest.
+- [ ] Validate, synchronize, and save the recovered managed checkpoint.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.
