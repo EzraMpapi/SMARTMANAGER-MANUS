@@ -330,3 +330,13 @@
 - [x] Implement an executive dashboard with concise KPI cards, tenant health, operational queues, activity trends, accessible navigation, loading and error states, and action-safe controls inspired by the supplied reference.
 - [x] Apply the reviewed platform schema and configuration records through the Supabase connector, without fabricating customer reviews, ratings, or tenant financial transactions.
 - [ ] Add focused contract and interface coverage; validate responsive behavior; synchronize GitHub and save the managed checkpoint.
+
+## Live Server Disconnection and Blank-Load Follow-up
+- [x] Diagnose the reported live server-disconnection and blank-load state across the authenticated Vercel route and current-main preview without weakening authentication or tenant isolation.
+- [ ] Implement the narrowest verified repair, add regression coverage, validate the deployed runtime, and synchronize the fix safely.
+
+## Android APK and Production URL Readiness
+- [x] Inspect the existing Android APK/TWA package, trusted-web-activity configuration, and production web routing for `https://menejajanja.vercel.app`.
+- [x] Align the Android package and full-stack web configuration to the verified production URL without exposing secrets or weakening authentication, tenant isolation, or role controls.
+- [x] Correct the production PWA/Android icon path so the Vercel origin returns an image rather than the application shell.
+- [ ] Validate the production web contract and Android packaging configuration, then synchronize the verified changes safely.
