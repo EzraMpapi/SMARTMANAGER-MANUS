@@ -359,6 +359,11 @@
 - [x] Trace and correct the non-responsive Create Company continuation step without submitting a real account, company, or tenant record during verification. The form now gives an explicit terms-acceptance message instead of silently blocking the continuation action, then moves directly to company setup once the account details and acceptance are valid.
 - [x] Add focused regression coverage for the continuation guard, validate the safe browser journey, and synchronize the verified fix to GitHub and managed hosting. Unit coverage, the rebuilt isolated browser journey (desktop and mobile), TypeScript, and diff checks passed; no tenant-write action was exercised.
 
+## Documentation Asset Publication Recovery
+- [x] Preserve the supplied Smart Manager logo and owner-portrait source images outside the project and upload managed-storage copies for documentation use.
+- [x] Map each documentation reference to managed storage, record the locations in a non-sensitive manifest, and remove only the four confirmed oversized duplicate local files.
+- [ ] Revalidate the signup release, synchronize the cleanup to GitHub, and save the recovered managed publication checkpoint.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.

@@ -1,27 +1,38 @@
 from __future__ import annotations
 
+import os
+import sys
 from datetime import date
 from pathlib import Path
 from typing import Iterable
 
-from docx import Document
-from docx.enum.section import WD_SECTION
-from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
-from docx.shared import Inches, Pt, RGBColor
+try:
+    from docx import Document
+    from docx.enum.section import WD_SECTION
+    from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    from docx.shared import Inches, Pt, RGBColor
+except ModuleNotFoundError:
+    Document = None
 
 ROOT = Path(__file__).resolve().parent
 ASSETS = ROOT / "assets"
 FIGURES = ASSETS / "figures"
 OUT = ROOT / "deliverables"
 TYPST = ROOT / "typst"
+MANAGED_ASSET_SOURCE_ROOT = Path(
+    os.environ.get(
+        "SMART_MANAGER_BOOK_ASSET_ROOT",
+        "/home/ubuntu/webdev-static-assets/businesssphere-doc-assets",
+    )
+).expanduser()
 OUT.mkdir(exist_ok=True)
 TYPST.mkdir(exist_ok=True)
 
-OWNER = ASSETS / "ezra-mpapi-owner.png"
-LOGO = ASSETS / "smart-manager-logo.png"
+OWNER = MANAGED_ASSET_SOURCE_ROOT / "ezra-mpapi-owner.png"
+LOGO = MANAGED_ASSET_SOURCE_ROOT / "smart-manager-logo.png"
 TODAY = "23 August 2026"
 
 modules = [
@@ -289,6 +300,8 @@ def add_page_number(paragraph):
 
 
 def build_docx():
+    if Document is None:
+        raise RuntimeError("The python-docx package is required to rebuild the editable Word document.")
     doc = Document()
     section = doc.sections[0]
     section.top_margin = Inches(0.7)
@@ -576,11 +589,18 @@ def build_typst():
     lines.append('SMART MANAGER huwa na nguvu zaidi inapofanya kazi ipimwe, uwajibikaji uonekane na maamuzi yaelezeke. Thamani yake ni kuunganisha watu, rekodi, mitiririko, udhibiti, miunganisho na uelewa kwa nidhamu—si dai kwamba kila tatizo linatatuliwa kiotomatiki.')
     lines.append('SMART MANAGER est le plus utile lorsqu’il rend le travail mesurable, les responsabilités visibles et les décisions explicables. Sa valeur est la connexion disciplinée des personnes, données, processus, contrôles, intégrations et analyses—et non la promesse de résoudre automatiquement chaque problème.')
     lines.append('')
-    TYPST.joinpath('main.typ').write_text('\n\n'.join(lines) + '\n', encoding='utf-8')
+    document = '\n\n'.join(lines).rstrip() + '\n'
+    document = document.replace('image("assets/smart-manager-logo.png"', f'image("{LOGO.as_posix()}"')
+    document = document.replace('image("assets/ezra-mpapi-owner.png"', f'image("{OWNER.as_posix()}"')
+    TYPST.joinpath('main.typ').write_text(document, encoding='utf-8')
 
 
 if __name__ == "__main__":
-    build_docx()
-    build_typst()
-    print(f"Created {OUT / 'SMART_MANAGER_ERP_OFFICIAL_MANUAL.docx'}")
-    print(f"Created {TYPST / 'main.typ'}")
+    if "--typst-only" in sys.argv:
+        build_typst()
+        print(f"Created {TYPST / 'main.typ'}")
+    else:
+        build_docx()
+        build_typst()
+        print(f"Created {OUT / 'SMART_MANAGER_ERP_OFFICIAL_MANUAL.docx'}")
+        print(f"Created {TYPST / 'main.typ'}")
