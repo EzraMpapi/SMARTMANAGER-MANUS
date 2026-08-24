@@ -343,9 +343,17 @@
 - [x] Register the merged protected Global Admin tRPC procedures in the application router, preserve its authorization boundaries, and make its focused contract tests pass. Verified with the focused Global Admin and managed-logo suites (6 tests) plus TypeScript.
 
 ## Post-Publication Global Admin and Release Readiness
-- [ ] Complete the final read-only Global Admin control-center snapshot review with a verified Platform Administrator session. The authenticated Vercel tenant-owner session correctly remained outside this boundary and did not expose the control center.
+- [ ] Complete the final browser-level Global Admin control-center review after the provisioned account uses a verified sign-in recovery, passkey, or linked identity-provider flow. The protected server snapshot now verifies the Platform Administrator role, but the supplied browser credential was rejected.
 - [x] Verify or run the available full validation workflow in CI and record its outcome without changing the CI runner configuration. The user-approved GitHub-hosted full quality-gate rerun passed, including the production build and Browser Signup Journey.
 - [x] Document release-tag readiness and retain the release tag until explicit stakeholder acceptance is provided. No release tag has been created.
+
+## Secure Platform Administrator Sign-In Review
+- [x] Attempt the user-supplied account only in the active browser session and preserve the no-storage boundary. Authentication was rejected; the password was not stored, retried, or written to Supabase, project configuration, or logs.
+
+## Owner-Authorized Platform Administrator Provisioning
+- [x] Inspect the existing account and approved Platform Administrator authorization model, then grant only the minimal audited server-side role assignment after eligibility verification; no password was stored or written.
+- [x] Verify the provisioned account can enter the protected Global Admin server boundary, document the outcome, and retain release-tag creation until stakeholder acceptance is explicit. The snapshot guard returned the Platform Administrator viewer role in a rolled-back verification transaction.
+- [x] Align the profiles role constraint with the existing Global Admin guard and add a service-role-only, audit-recording initial Platform Administrator provisioning function; no tenant membership, password, subscription, or unrelated user data was altered.
 
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
