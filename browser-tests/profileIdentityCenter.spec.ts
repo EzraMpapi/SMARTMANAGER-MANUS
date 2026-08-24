@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 function trpcResult(data: unknown) { return { result: { data: { json: data } } }; }
 
@@ -36,10 +37,6 @@ const identity = {
 };
 
 async function setupIdentityPage(page: Page) {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "profile-e2e-access-token");
-    window.localStorage.setItem("bs_refresh_token", "profile-e2e-refresh-token");
-  });
   await page.route("**/auth/v1/user", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "profile-e2e-user", email: "profile@e2e.invalid", last_sign_in_at: "2026-08-23T08:00:00.000Z", user_metadata: { full_name: "Asha Mrema" } }) }));
   await page.route("**/rest/v1/**", async (route) => {
     const url = route.request().url();
@@ -57,6 +54,13 @@ async function setupIdentityPage(page: Page) {
       return trpcResult(null);
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
+  });
+  await installManagedAuth(page, {
+    id: "profile-e2e-user",
+    email: "profile@e2e.invalid",
+    fullName: "Asha Mrema",
+    profile: { id: "profile-e2e-user", company_id: "profile-e2e-company", full_name: "Asha Mrema", role: "Employee", customer_ref: null },
+    company: { id: "profile-e2e-company", name: "Mlimani Properties", category: "real_estate", region: "Dar es Salaam", country: "Tanzania" },
   });
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("button", { name: "Dashboard", exact: true })).toBeVisible();

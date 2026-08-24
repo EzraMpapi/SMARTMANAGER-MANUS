@@ -1,10 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 test("registers a group, onboards a member, and posts a TZS contribution", async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-community-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-community-refresh-token");
-  });
   await page.route("**/auth/v1/user", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "community-e2e-user", email: "owner@community.e2e", user_metadata: { full_name: "Community Owner" } }) }));
   let persistedGroup: Record<string, unknown> | null = null;
   let persistedMember: Record<string, unknown> | null = null;
@@ -22,6 +19,13 @@ test("registers a group, onboards a member, and posts a TZS contribution", async
     if (request.method() === "POST" && table === "community_group_members") { persistedMember = { id: "member-e2e-1", group_id: "group-e2e-1", member_number: "MB-E2E-1", full_name: "Amina Kweka", phone: "+255 712 000 001", national_id: "19900101-00000-00001-00", id_type: "NIDA", role: "Member", kyc_status: "Pending", membership_status: "Active", join_date: "2026-08-23" }; return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(persistedMember) }); }
     if (request.method() === "POST" && table === "community_group_contributions") { persistedContribution = { id: "contribution-e2e-1", group_id: "group-e2e-1", member_id: "member-e2e-1", contribution_type: "Contribution", amount: 25000, contribution_date: "2026-08-23", payment_method: "Mobile Money", mobile_money_provider: "M-Pesa", payment_reference: "MPESA-E2E-1", status: "Paid", receipt_number: "RCT-E2E-1" }; return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(persistedContribution) }); }
     return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+  });
+  await installManagedAuth(page, {
+    id: "community-e2e-user",
+    email: "owner@community.e2e",
+    fullName: "Community Owner",
+    profile: { id: "community-e2e-user", company_id: "community-e2e-company", full_name: "Community Owner", role: "Organization Owner" },
+    company: { id: "community-e2e-company", name: "Community Demo", timezone: "Africa/Dar_es_Salaam", category: "cooperative" },
   });
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });

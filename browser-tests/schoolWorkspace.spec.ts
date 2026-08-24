@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 function trpcResult(data: unknown) { return { result: { data: { json: data } } }; }
 
@@ -9,8 +10,6 @@ const reports = { learners: { activeStudents: 1, pendingAdmissions: 0, activeEnr
 
 async function mockAuthenticatedSchool(page: Parameters<typeof test>[0]["page"], access = schoolAccess, portal: unknown = null) {
   await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-school-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-school-refresh-token");
     window.localStorage.setItem("bs_brief_2026-07-02", "1");
     window.localStorage.setItem("bs_onboarding_tour_school-e2e-user_school-e2e-company", JSON.stringify({ status: "dismissed", completedAt: new Date().toISOString() }));
   });
@@ -33,6 +32,13 @@ async function mockAuthenticatedSchool(page: Parameters<typeof test>[0]["page"],
       return trpcResult(null);
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
+  });
+  await installManagedAuth(page, {
+    id: "school-e2e-user",
+    email: "school@e2e.invalid",
+    fullName: "School Test",
+    profile: { id: "school-e2e-user", company_id: "school-e2e-company", full_name: "School Test", role: "School Administrator", customer_ref: null },
+    company: { id: "school-e2e-company", name: "Mwanza Academy", category: "education", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
   });
 }
 

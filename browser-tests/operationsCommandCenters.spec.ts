@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 function trpcResult(data: unknown) {
   return { result: { data: { json: data } } };
@@ -44,8 +45,6 @@ const workOrderRows = [
 
 async function mockAuthenticatedOperations(page: Parameters<typeof test>[0]["page"], role: "Procurement Officer" | "Warehouse Manager") {
   await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "operations-e2e-access-token");
-    window.localStorage.setItem("bs_refresh_token", "operations-e2e-refresh-token");
     window.localStorage.setItem("bs_brief_2026-08-23", "1");
     window.localStorage.setItem("bs_onboarding_tour_operations-e2e-user_operations-e2e-company", JSON.stringify({ status: "dismissed", completedAt: new Date().toISOString() }));
   });
@@ -68,6 +67,14 @@ async function mockAuthenticatedOperations(page: Parameters<typeof test>[0]["pag
     else if (url.includes("/manufacturing_work_orders")) rows = workOrderRows;
     else if (url.includes("/pos_transactions")) rows = [];
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(rows) });
+  });
+  await installManagedAuth(page, {
+    id: "operations-e2e-user",
+    email: "operations@example.invalid",
+    fullName: role,
+    profile: { id: "operations-e2e-user", company_id: company.id, full_name: role, role, customer_ref: null },
+    company,
+    role,
   });
 
   await page.route("**/api/trpc/**", async (route) => {

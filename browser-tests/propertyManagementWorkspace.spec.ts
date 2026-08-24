@@ -1,4 +1,5 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 function trpcResult(data: unknown) { return { result: { data: { json: data } } }; }
 
@@ -17,10 +18,6 @@ const propertySnapshot = {
 };
 
 test("loads the Property Management workspace and submits a guarded portfolio form", async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-property-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-property-refresh-token");
-  });
   await page.route("**/auth/v1/user", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "property-e2e-user", email: "property@e2e.invalid", user_metadata: { full_name: "Property Administrator" } }) }));
   await page.route("**/rest/v1/**", async (route) => {
     const url = route.request().url();
@@ -38,6 +35,13 @@ test("loads the Property Management workspace and submits a guarded portfolio fo
       return trpcResult(null);
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
+  });
+  await installManagedAuth(page, {
+    id: "property-e2e-user",
+    email: "property@e2e.invalid",
+    fullName: "Property Administrator",
+    profile: { id: "property-e2e-user", company_id: "property-e2e-company", full_name: "Property Administrator", role: "Property Administrator", customer_ref: null },
+    company: { id: "property-e2e-company", name: "Mlimani Properties", category: "real_estate", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
   });
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });

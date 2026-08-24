@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 // This suite verifies isolated browser interaction and responsive UX. Tenant-scoped
 // server enforcement is exercised separately against appRouter in healthcareRouter.integration.test.ts.
@@ -45,10 +46,6 @@ function trpcResult(data: unknown) {
 
 test("opens the Healthcare Command Center and completes guarded patient registration", async ({ page }, testInfo) => {
   let reconciliationScheduleActive = false;
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-healthcare-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-healthcare-refresh-token");
-  });
   await page.route("**/auth/v1/user", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "e2e-user", email: "healthcare@e2e.invalid", user_metadata: { full_name: "Asha Mrema" } }) }));
   await page.route("**/rest/v1/**", async (route) => {
     const url = route.request().url();
@@ -88,10 +85,18 @@ test("opens the Healthcare Command Center and completes guarded patient registra
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
   });
+  await installManagedAuth(page, {
+    id: "e2e-user",
+    email: "healthcare@e2e.invalid",
+    fullName: "Asha Mrema",
+    profile: { id: "e2e-user", company_id: "e2e-company", full_name: "Asha Mrema", role: "Organization Owner", customer_ref: null },
+    company: { id: "e2e-company", name: "Kilimanjaro Clinic", category: "healthcare", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
+  });
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Workspace overview", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Dismiss", exact: true }).click();
+  const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
+  if (await dismissBriefing.count() && await dismissBriefing.last().isVisible().catch(() => false)) await dismissBriefing.last().click();
   await page.getByRole("button", { name: "Close menu" }).click();
   const skipTour = page.getByRole("button", { name: "Skip tour" });
   if (await skipTour.count()) await skipTour.click();
@@ -284,10 +289,6 @@ test("keeps a receptionist out of restricted clinical and report records without
     canArchive: Object.fromEntries(allTables.map((table) => [table, ["hc_patients", "hc_appointments"].includes(table)])),
   };
   const requestedTables = new Set<string>();
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-receptionist-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-receptionist-refresh-token");
-  });
   await page.route("**/auth/v1/user", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "e2e-receptionist", email: "reception@e2e.invalid", user_metadata: { full_name: "Rukia Said" } }) }));
   await page.route("**/rest/v1/**", async (route) => {
     const url = route.request().url();
@@ -310,9 +311,17 @@ test("keeps a receptionist out of restricted clinical and report records without
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
   });
+  await installManagedAuth(page, {
+    id: "e2e-receptionist",
+    email: "reception@e2e.invalid",
+    fullName: "Rukia Said",
+    profile: { id: "e2e-receptionist", company_id: "e2e-company", full_name: "Rukia Said", role: "Receptionist", customer_ref: null },
+    company: { id: "e2e-company", name: "Kilimanjaro Clinic", category: "healthcare", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
+  });
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Workspace overview", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Dismiss", exact: true }).click();
+  const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
+  if (await dismissBriefing.count() && await dismissBriefing.last().isVisible().catch(() => false)) await dismissBriefing.last().click();
   await page.getByRole("button", { name: "Close menu" }).click();
   const skipTour = page.getByRole("button", { name: "Skip tour" });
   if (await skipTour.count()) await skipTour.click();

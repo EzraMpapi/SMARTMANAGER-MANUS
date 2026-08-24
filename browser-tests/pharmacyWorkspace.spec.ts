@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 function trpcResult(data: unknown) { return { result: { data: { json: data } } }; }
 
@@ -7,8 +8,6 @@ const dashboard = { access: { canRead: true, canCatalog: true, canPurchase: true
 
 async function mockAuthenticatedPharmacy(page: Parameters<typeof test>[0]["page"], access = dashboard.access) {
   await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-pharmacy-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-pharmacy-refresh-token");
     window.localStorage.setItem("bs_brief_2026-07-02", "1");
     window.localStorage.setItem("bs_onboarding_tour_pharmacy-e2e-user_pharmacy-e2e-company", JSON.stringify({ status: "dismissed", completedAt: new Date().toISOString() }));
   });
@@ -31,6 +30,13 @@ async function mockAuthenticatedPharmacy(page: Parameters<typeof test>[0]["page"
       return trpcResult(null);
     });
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
+  });
+  await installManagedAuth(page, {
+    id: "pharmacy-e2e-user",
+    email: "pharmacy@e2e.invalid",
+    fullName: "Pharmacy Test",
+    profile: { id: "pharmacy-e2e-user", company_id: "pharmacy-e2e-company", full_name: "Pharmacy Test", role: "Pharmacist", customer_ref: null },
+    company: { id: "pharmacy-e2e-company", name: "Kilimanjaro Clinic", category: "healthcare", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
   });
 }
 

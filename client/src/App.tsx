@@ -1,6 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
+import { lazy, Suspense, useState, type ComponentType, type ReactNode } from "react";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -61,11 +61,18 @@ function DashboardRouteFallback() {
   </main>;
 }
 
-function AuthenticationUnavailable() {
+function AuthenticationUnavailable({ onRetry }: { onRetry?: () => Promise<void> }) {
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    if (!onRetry || retrying) return;
+    setRetrying(true);
+    try { await onRetry(); } finally { setRetrying(false); }
+  };
   return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6">
     <section className="w-full max-w-md rounded-2xl border border-red-400/20 bg-slate-900 p-7 text-center shadow-2xl" role="alert">
       <h1 className="text-lg font-semibold">Secure authentication is unavailable</h1>
-      <p className="mt-3 text-sm leading-6 text-slate-400">This workspace cannot verify an account because its public Supabase configuration is unavailable. Contact the workspace administrator instead of continuing in an unverified mode.</p>
+      <p className="mt-3 text-sm leading-6 text-slate-400">This workspace cannot verify the account identity required for tenant-scoped access. Retry secure recovery before signing out; no unverified workspace data is displayed.</p>
+      {onRetry && <button type="button" onClick={() => void retry()} disabled={retrying} className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60">{retrying ? "Recovering secure workspace…" : "Retry secure workspace recovery"}</button>}
     </section>
   </main>;
 }
@@ -95,7 +102,7 @@ function ProtectedSurface({ children }: { children: ReactNode }) {
   const requestedSignup = authScreen === "signup";
 
   if (auth.loading) return <DashboardRouteFallback />;
-  if (auth.status === "AUTH_ERROR") return <AuthenticationUnavailable />;
+  if (auth.status === "AUTH_ERROR") return <AuthenticationUnavailable onRetry={auth.session ? auth.refresh : undefined} />;
   if (auth.status === "UNAUTHORIZED") return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} />;
   if (authScreen === "forgot" || authScreen === "reset" || (isPublicAuthScreen() && !auth.isAuthenticated)) return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
   if (!auth.configured && !auth.isAuthenticated) {
