@@ -382,7 +382,7 @@
 - [x] Capture non-sensitive evidence without submitting a real account or tenant record. Production logs were unavailable through the managed log endpoint, and local registration secrets are intentionally absent; direct client-bundle string inspection could not prove a server-side error branch.
 - [x] Identify the existing-account recognition gap. Supabase can return `msg: "User already registered"`, but the recovery detector only read other error fields and fell through to the generic creation error.
 - [x] Correct the Supabase `msg`-field recognition path and re-run isolated regression coverage. The exact `msg` payload recovery, mounted signup, onboarding progression, TypeScript, and diff checks passed.
-- [ ] Validate, synchronize, and checkpoint the live-error repair.
+- [x] Validate, synchronize, and checkpoint the live-error repair. The GitHub-synchronized managed checkpoint version `de981b45` records the corrected server response handling and passed focused checks.
 
 ## Concurrent Master-Book Publication Recovery
 - [x] Reconcile the approved remote master-book history without discarding staged local correction records.
@@ -392,7 +392,7 @@
 ## Master-Book Owner Portrait Publication Recovery
 - [x] Preserve and upload the two approved oversized owner-portrait duplicates to managed storage.
 - [x] Update active owner-portrait references and remove only the two confirmed project-local duplicates. Active Typst and builder paths now resolve to preserved external storage; the managed path is recorded in the master-book manifest.
-- [ ] Validate, synchronize, and save the recovered managed checkpoint.
+- [x] Validate, synchronize, and save the recovered managed checkpoint. The managed checkpoint accepted the recovered master-book and signup correction at version `de981b45`.
 
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
