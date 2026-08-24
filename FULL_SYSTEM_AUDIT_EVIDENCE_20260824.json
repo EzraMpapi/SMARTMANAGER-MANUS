@@ -1,0 +1,98 @@
+{
+  "audit_date": "2026-08-24",
+  "repository": "EzraMpapi/SMARTMANAGER-MANUS",
+  "head_at_audit": "93a7d70626834fd38fb012f3bf3124306ae71467",
+  "application_checks": {
+    "schema_contract": "direct_local_check_blocked_by_missing_server_only_credential; vercel_mode_build_skip_is_expected",
+    "type_check": "passed",
+    "vitest_files_passed": 217,
+    "vitest_files_skipped": 6,
+    "vitest_tests_passed": 885,
+    "vitest_tests_skipped": 14,
+    "production_dependency_audit": "no_known_vulnerabilities",
+    "production_build": "passed",
+    "browser_end_to_end_tests_passed": 23,
+    "browser_end_to_end_duration": "1.7m",
+    "client_files_over_3_mib": [],
+    "non_blocking_build_warning": "BusinessSphereDashboard emitted approximately 4.37 MB minified chunk"
+  },
+  "supabase_integrity": {
+    "project_ref": "rlhngsrihahhyxnjxrxm",
+    "public_table_count": 521,
+    "rls_disabled_public_tables": 0,
+    "rls_enabled_without_policy": 2,
+    "policyless_tables": ["platform_admin_actions", "subscription_trial_expiry_notices"],
+    "invalid_indexes": 0,
+    "unvalidated_foreign_keys": 0,
+    "p0_index_presence": 5,
+    "table_ddl_executed": false
+  },
+  "security_advisor": {
+    "notice_count": 125,
+    "warn_count": 123,
+    "info_count": 2,
+    "anon_security_definer_function_executable": 6,
+    "authenticated_security_definer_function_executable": 116,
+    "auth_leaked_password_protection": 1,
+    "policyless_rls_table_notices": 2,
+    "remediation_wave_applied": false,
+    "reason": "Signature-specific access-contract review required; blanket revokes or policies could break intended workflows or widen access."
+  },
+  "performance_advisor": {
+    "unindexed_foreign_key_notice_count": 1012,
+    "p1_p2_indexes_applied": false
+  },
+  "schema_reconciliation": {
+    "repository_migration_files": 84,
+    "repository_declared_tables": 287,
+    "live_public_tables": 521,
+    "missing_repository_declared_tables": [],
+    "duplicate_repository_declarations": [
+      "billing_plan_audit_log",
+      "billing_plans",
+      "billing_profiles",
+      "subscription_events",
+      "subscription_invoices",
+      "subscription_notifications",
+      "subscription_payments",
+      "subscription_usage",
+      "tenant_subscriptions"
+    ],
+    "production_migration_count": 138,
+    "latest_production_migration": {
+      "name": "trial_expiry_notice_once",
+      "version": "20260824175351"
+    },
+    "unapplied_local_migrations_not_replayed": [
+      "complete_erp_schema_baseline",
+      "fix_billing_snapshot_event_alias",
+      "fix_pos_return_audit_format",
+      "fix_pos_sale_audit_format",
+      "fk_index_optimization_p0_apply",
+      "fk_index_optimization_p0_review",
+      "global_admin_control_center",
+      "harden_pos_rpc_privileges",
+      "sales_document_contract_repair",
+      "sales_order_acceptance_followup",
+      "subscription_activation_flow_repair"
+    ]
+  },
+  "attachment_review": {
+    "subject": "Global Admin Control Center requirements",
+    "treated_as": "architectural directive",
+    "speculative_tables_created": false,
+    "implementation_scope": "No unrelated Global Admin rewrite was performed during this audit pass."
+  },
+  "raw_capture_paths": [
+    "/tmp/full_system_audit_repo_20260824.log",
+    "/tmp/full_system_audit_static_20260824.log",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_18-17-50.642681546_supabase_get_advisors_db0c48fb.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_18-20-38.371366741_supabase_execute_sql_ae6c461a.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_18-21-40.037306945_supabase_execute_sql_ff53cc44.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_18-19-28.691563526_supabase_list_tables_8d9830a5.json",
+    "/home/ubuntu/.mcp/tool-results/2026-08-24_18-19-43.123200303_supabase_list_migrations_be631a95.json"
+  ],
+  "raw_browser_audit_log": "/tmp/full_system_audit_browser_20260824.log",
+  "fixes_applied": [],
+  "fix_decision": "No reproducible correctness defect was found by the executed repository and database checks; no speculative fix was applied."
+}

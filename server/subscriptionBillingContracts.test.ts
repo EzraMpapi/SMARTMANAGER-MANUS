@@ -15,6 +15,7 @@ const helperHardening = read("supabase/migrations/20260822_026_subscription_bill
 const trialCatalog = read("supabase/migrations/20260822_028_subscription_trials_and_official_catalog.sql");
 const trialHardening = read("supabase/migrations/20260822_029_subscription_trial_function_execute_hardening.sql");
 const planAdminControls = read("supabase/migrations/20260822_030_subscription_plan_admin_controls.sql");
+const billingSnapshotAliasFix = read("supabase/migrations/20260823_062_fix_billing_snapshot_event_alias.sql");
 const dashboard = read("client/src/BusinessSphereDashboard.jsx");
 
 describe("Subscription billing and HarakaPay contracts", () => {
@@ -102,7 +103,7 @@ describe("Subscription billing and HarakaPay contracts", () => {
       "REVOKE ALL ON FUNCTION public.billing_upsert_plan(jsonb) FROM PUBLIC, anon",
     ].forEach((marker) => expect(planAdminControls).toContain(marker));
     expect(trialCatalog).toContain("billing_plan_audit_log");
-    ["Feature flags JSON", "Module entitlements JSON", "Official global package", "Save audited plan"].forEach((marker) => expect(workspace).toContain(marker));
+    ["Feature flags JSON", "Module entitlements JSON", "Official global package", "Save audited package"].forEach((marker) => expect(workspace).toContain(marker));
   });
 
   it("keeps owner billing access consistent across frontend role casing", () => {
@@ -110,19 +111,27 @@ describe("Subscription billing and HarakaPay contracts", () => {
     expect(dashboard).toContain('String(currentUser.role || "").trim().toLowerCase()');
   });
 
-  it("opens paid checkout for a new workspace without removing the trial option", () => {
-    expect(workspace).toContain('const cta = !subscription ? "Subscribe now"');
-    expect(workspace).toContain('if (!subscription) return onChoosePaidPlan(plan)');
-    expect(workspace).toContain('Start free trial instead');
+  it("routes Free activation separately and keeps paid checkout server-confirmed", () => {
+    expect(workspace).toContain('const isFreePlan = plan.code === "FREE_15"');
+    expect(workspace).toContain('onStartFree(plan)');
+    expect(workspace).toContain('if (!subscription || expired) return onChoosePaidPlan(plan)');
+    expect(workspace).toContain("Pay with USSD Push");
+  });
+
+  it("replaces the fragile billing event alias with an explicit row alias and keeps the RPC authenticated-only", () => {
+    expect(billingSnapshotAliasFix).toContain("CREATE OR REPLACE FUNCTION public.billing_snapshot()");
+    expect(billingSnapshotAliasFix).toContain("AS event_row");
+    expect(billingSnapshotAliasFix).toContain("event_row.created_at DESC");
+    expect(billingSnapshotAliasFix).not.toContain("to_jsonb(e)");
+    expect(billingSnapshotAliasFix).toContain("REVOKE ALL ON FUNCTION public.billing_snapshot() FROM PUBLIC");
+    expect(billingSnapshotAliasFix).toContain("GRANT EXECUTE ON FUNCTION public.billing_snapshot() TO authenticated");
   });
 
   it("registers the protected billing API and the webhook endpoint", () => {
     [
       'app.get("/api/billing/catalog", subscriptionBillingCatalogHandler)',
       'app.get("/api/billing/subscription", subscriptionBillingSnapshotHandler)',
-      'app.post("/api/billing/trial/start", subscriptionBillingStartTrialHandler)',
-      'app.post("/api/billing/trial/select-plan", subscriptionBillingSelectTrialPlanHandler)',
-      'app.post("/api/scheduled/subscriptionTrialLifecycle", scheduledSubscriptionTrialLifecycleHandler)',
+      'app.post("/api/billing/free/start", subscriptionBillingStartFreePlanHandler)',
       'app.post("/api/billing/profile", subscriptionBillingProfileHandler)',
       'app.post("/api/billing/plans", subscriptionBillingPlanHandler)',
       'app.post("/api/payments/harakapay/collect", harakaPayCollectHandler)',
@@ -143,14 +152,14 @@ describe("Subscription billing and HarakaPay contracts", () => {
     ].forEach((marker) => expect(workspace).toContain(marker));
   });
 
-  it("presents a 30-day trial dashboard and separates the Football Fans Special catalog without unlicensed logos", () => {
+  it("presents Free-15 access and separates the Football Fans Special catalog without unlicensed logos", () => {
     [
-      "30-DAY FREE TRIAL", "Siku ${days} zimebaki", "Trial yako imekwisha", "Subscribe Now",
-      "SMART MANAGER BUSINESS PLANS", "FOOTBALL FANS SPECIAL", "Chagua timu yako. Furahia SMART MANAGER kwa bei maalum.",
-      "Abstract club-themed colors only", "Start Free Trial", "Upgrade / downgrade", "/ mwezi",
+      "FREE PLAN — 15 DAYS", "Free access has ended", "Choose Package",
+      "SMART MANAGER BUSINESS PACKAGES", "FOOTBALL FANS SPECIAL", "Chagua timu yako na upate ofa maalum ya SMART MANAGER.",
+      "Start Free", "Change package", "/ month",
     ].forEach((marker) => expect(workspace).toContain(marker));
     [
-      'fetch("/api/billing/catalog")', "billing_start_trial", "preferredPlanCode", "Anza na siku 30 BURE",
+      'fetch("/api/billing/catalog")', "billing_start_free_plan", "preferredPlanCode", "FREE PLAN — 15 DAYS",
     ].forEach((marker) => expect(dashboard).toContain(marker));
   });
 });

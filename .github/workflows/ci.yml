@@ -119,7 +119,9 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run isolated browser signup journey
-        run: pnpm run test:browser
+        run: |
+          pnpm run pretest:browser
+          pnpm exec playwright test browser-tests/signupWizard.spec.ts
 
       - name: Upload browser diagnostics
         if: failure()

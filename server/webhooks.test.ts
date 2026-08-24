@@ -3,6 +3,7 @@ import { dispatchWebhookEvent, getWebhookDeliveryHistory, retryWebhookDelivery, 
 
 describe("webhook delivery activity", () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     updateWebhookConfig({ url: "", enabled: false, secret: "" });
   });
@@ -19,19 +20,25 @@ describe("webhook delivery activity", () => {
   });
 
   it("records failures after retries so the dashboard can surface them", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503 }));
     updateWebhookConfig({ url: "https://example.test/audit", enabled: true });
 
-    await dispatchWebhookEvent({ action: "DELETE_INVOICE", module: "Finance", actor: "admin" });
+    const delivery = dispatchWebhookEvent({ action: "DELETE_INVOICE", module: "Finance", actor: "admin" });
+    await vi.runAllTimersAsync();
+    await delivery;
 
     const latest = getWebhookDeliveryHistory()[0];
     expect(latest).toMatchObject({ status: "failed", attempts: 3, responseCode: 503 });
   });
 
   it("replays a selected failed delivery through the protected retry path", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 502 }));
     updateWebhookConfig({ url: "https://example.test/audit", enabled: true });
-    await dispatchWebhookEvent({ action: "DELETE_INVOICE", module: "Finance", actor: "admin" });
+    const failedDelivery = dispatchWebhookEvent({ action: "DELETE_INVOICE", module: "Finance", actor: "admin" });
+    await vi.runAllTimersAsync();
+    await failedDelivery;
     const failedId = getWebhookDeliveryHistory()[0].id;
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 202 }));

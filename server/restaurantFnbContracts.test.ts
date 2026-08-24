@@ -1,15 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const migration = readFileSync(resolve(root, "supabase/migrations/20260822_032_restaurant_fnb_management_core.sql"), "utf8");
 const operationsMigration = readFileSync(resolve(root, "supabase/migrations/20260822_033_restaurant_fnb_operations_extension.sql"), "utf8");
 const hardeningMigration = readFileSync(resolve(root, "supabase/migrations/20260822_034_harden_restaurant_helper_privileges.sql"), "utf8");
-const serverRoutes = readFileSync(resolve(root, "server/_core/apiApp.ts"), "utf8");
+const tanzaniaMigration = readFileSync(resolve(root, "supabase/migrations/20260823_035_restaurant_tanzania_fiscal_configuration.sql"), "utf8");
+const tanzaniaTriggerHardening = readFileSync(resolve(root, "supabase/migrations/20260823_037_remove_restaurant_fiscal_trigger_rpc_access.sql"), "utf8");
+const routeFile = existsSync(resolve(root, "server/_core/apiApp.ts")) ? "server/_core/apiApp.ts" : "server/_core/index.ts";
+const serverRoutes = readFileSync(resolve(root, routeFile), "utf8");
 const restaurantServer = readFileSync(resolve(root, "server/restaurantManagement.ts"), "utf8");
 const dashboard = readFileSync(resolve(root, "client/src/BusinessSphereDashboard.jsx"), "utf8");
 const workspace = readFileSync(resolve(root, "client/src/components/RestaurantWorkspace.jsx"), "utf8");
+const tanzaniaPanel = readFileSync(resolve(root, "client/src/components/RestaurantTanzaniaFiscalPanel.jsx"), "utf8");
 
 describe("Restaurant and F&B contracts", () => {
   it("persists a typed tenant-scoped Restaurant and F&B domain instead of legacy seed state", () => {
@@ -65,11 +69,27 @@ describe("Restaurant and F&B contracts", () => {
     expect(hardeningMigration).toContain("REVOKE ALL ON FUNCTION public.restaurant_can_operate(text[]) FROM PUBLIC,anon,authenticated");
   });
 
+  it("persists Tanzania tax profiles, fiscal queue records, and mobile-money configuration without inventing official receipt identifiers", () => {
+    for (const table of ["restaurant_tax_profiles", "restaurant_fiscal_profiles", "restaurant_fiscal_receipts", "restaurant_mobile_money_profiles", "restaurant_mobile_money_intents"]) expect(tanzaniaMigration).toContain(`public.${table}`);
+    for (const action of ["TAX_PROFILE_SAVE", "FISCAL_PROFILE_SAVE", "MOBILE_MONEY_PROFILE_SAVE", "MOBILE_MONEY_INTENT_CREATE"]) expect(tanzaniaMigration).toContain(`p_action='${action}'`);
+    expect(tanzaniaMigration).toContain("official_receipt_number text");
+    expect(tanzaniaMigration).toContain("Official TRA/VFD receipt numbers are never synthesized locally");
+    expect(tanzaniaMigration).toContain("A taxable Tanzania standard VAT profile must use 18%%");
+    expect(tanzaniaMigration).toContain("A valid Tanzanian mobile number is required.");
+    expect(tanzaniaMigration).toContain("restaurant_enqueue_fiscal_receipt_trigger");
+    expect(tanzaniaMigration).toContain("GRANT EXECUTE ON FUNCTION public.restaurant_tanzania_action(text,jsonb) TO authenticated");
+    expect(tanzaniaTriggerHardening).toContain("REVOKE ALL ON FUNCTION public.restaurant_enqueue_fiscal_receipt() FROM PUBLIC,anon,authenticated,service_role");
+    expect(workspace).toContain("Tanzania fiscal");
+    expect(tanzaniaPanel).toContain('rpc("restaurant_tanzania_snapshot", {})');
+    expect(tanzaniaPanel).toContain('rpc("restaurant_tanzania_action"');
+    expect(tanzaniaPanel).toContain("Official TRA receipt numbers are never generated locally");
+  });
+
   it("replaces the live legacy Restaurant route with the authenticated persistent command center", () => {
     expect(dashboard).toContain('import { RestaurantWorkspace } from "./components/RestaurantWorkspace";');
     expect(dashboard).toContain("function RestaurantManagementModule");
     expect(dashboard).toContain('<RestaurantWorkspace rpc={rpc} configured={IS_CONFIGURED && !DEMO_OVERRIDE} currentUser={currentUser} />');
-    expect(dashboard).toContain('{active === "restaurant"  && <RestaurantManagementModule  currentUser={currentUser} />}');
+    expect(dashboard).toMatch(/\{active === "restaurant"\s+&& <RestaurantManagementModule\s+currentUser=\{currentUser\} \/>\}/);
     expect(workspace).toContain('rpc("restaurant_snapshot", {})');
     expect(workspace).toContain('rpc("restaurant_action"');
     expect(workspace).toContain("Kitchen display system");

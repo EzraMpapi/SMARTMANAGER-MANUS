@@ -69,16 +69,13 @@ function harakaConfiguration() {
   return { apiKey, baseUrl, collectUrl };
 }
 
-async function parseProviderResponse(response: globalThis.Response): Promise<JsonRecord> {
+async function parseProviderResponse<T = unknown>(response: globalThis.Response): Promise<T> {
   const body = await response.text();
-  let parsed: unknown = null;
   try {
-    parsed = body ? JSON.parse(body) : null;
+    return (body ? JSON.parse(body) : null) as T;
   } catch {
-    parsed = null;
+    return { message: body.slice(0, 500) } as T;
   }
-  if (!isRecord(parsed)) return { message: body.slice(0, 500) };
-  return parsed;
 }
 
 async function userRpc<T>(functionName: string, accessToken: string, body: JsonRecord): Promise<T> {
@@ -92,9 +89,9 @@ async function userRpc<T>(functionName: string, accessToken: string, body: JsonR
     },
     body: JSON.stringify(body),
   });
-  const payload = await parseProviderResponse(response);
+  const payload = await parseProviderResponse<unknown>(response);
   if (!response.ok) {
-    const error = new Error(asString(payload.message) || "The billing request could not be completed.");
+    const error = new Error((isRecord(payload) && asString(payload.message)) || "The billing request could not be completed.");
     (error as Error & { status?: number }).status = response.status === 401 || response.status === 403 ? response.status : 400;
     throw error;
   }
@@ -108,8 +105,8 @@ async function publicRpc<T>(functionName: string, body: JsonRecord = {}): Promis
     headers: { apikey: ENV.supabaseAnonKey, "content-type": "application/json" },
     body: JSON.stringify(body),
   });
-  const payload = await parseProviderResponse(response);
-  if (!response.ok) throw new Error(asString(payload.message) || "The subscription catalog could not be loaded.");
+  const payload = await parseProviderResponse<unknown>(response);
+  if (!response.ok) throw new Error((isRecord(payload) && asString(payload.message)) || "The subscription catalog could not be loaded.");
   return payload as T;
 }
 
@@ -124,8 +121,8 @@ async function serviceRpc<T>(functionName: string, body: JsonRecord): Promise<T>
     },
     body: JSON.stringify(body),
   });
-  const payload = await parseProviderResponse(response);
-  if (!response.ok) throw new Error(asString(payload.message) || "The billing payment state could not be recorded.");
+  const payload = await parseProviderResponse<unknown>(response);
+  if (!response.ok) throw new Error((isRecord(payload) && asString(payload.message)) || "The billing payment state could not be recorded.");
   return payload as T;
 }
 
@@ -155,7 +152,7 @@ async function fetchHarakaStatus(orderId: string): Promise<JsonRecord> {
   const { apiKey, baseUrl } = harakaConfiguration();
   const statusUrl = new URL(`/api/v1/status/${encodeURIComponent(orderId)}`, baseUrl).toString();
   const response = await fetch(statusUrl, { headers: { "X-API-Key": apiKey, accept: "application/json" } });
-  const payload = await parseProviderResponse(response);
+  const payload = await parseProviderResponse<JsonRecord>(response);
   if (!response.ok) {
     const error = new Error("HarakaPay payment status could not be verified.");
     (error as Error & { status?: number }).status = 502;
@@ -198,12 +195,21 @@ export async function subscriptionBillingCatalogHandler(_req: Request, res: Resp
   }
 }
 
+export async function subscriptionBillingAccessHandler(req: Request, res: Response) {
+  try {
+    const { token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    return res.status(200).json({ access: await userRpc("billing_access_snapshot", token, {}) });
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Subscription access could not be loaded.");
+  }
+}
+
 export async function subscriptionBillingSnapshotHandler(req: Request, res: Response) {
   try {
     const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
     ensureBillingManager(profile.role);
     if (typeof profile.company_id === "string" && profile.company_id) {
-      await serviceRpc("billing_reconcile_trial_expiry", { p_company_id: profile.company_id });
+      await serviceRpc("billing_reconcile_free_plan_expiry", { p_company_id: profile.company_id });
     }
     return res.status(200).json(await userRpc("billing_snapshot", token, {}));
   } catch (error) {
@@ -271,27 +277,17 @@ export async function trialExpiryNoticeAdminResetHandler(req: Request, res: Resp
 }
 
 export async function subscriptionBillingStartTrialHandler(req: Request, res: Response) {
-  try {
-    const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
-    ensureBillingManager(profile.role);
-    const payload = isRecord(req.body) ? req.body : {};
-    const planCode = asString(payload.planCode, 40) || "TWIGA";
-    return res.status(201).json(await userRpc("billing_start_trial", token, { p_plan_code: planCode }));
-  } catch (error) {
-    return sendError(res, httpStatusFromError(error), (error as Error).message || "The free trial could not be started.");
-  }
+  return subscriptionBillingStartFreePlanHandler(req, res);
 }
 
-export async function subscriptionBillingSelectTrialPlanHandler(req: Request, res: Response) {
+export async function subscriptionBillingStartFreePlanHandler(req: Request, res: Response) {
+
   try {
     const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
     ensureBillingManager(profile.role);
-    const payload = isRecord(req.body) ? req.body : {};
-    const planCode = asString(payload.planCode, 40);
-    if (!planCode) return sendError(res, 400, "A subscription package is required.");
-    return res.status(200).json(await userRpc("billing_select_trial_plan", token, { p_plan_code: planCode }));
+    return res.status(201).json(await userRpc("billing_start_free_plan", token, { p_plan_code: "FREE_15" }));
   } catch (error) {
-    return sendError(res, httpStatusFromError(error), (error as Error).message || "The selected trial package could not be saved.");
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The Free plan could not be started.");
   }
 }
 
@@ -324,11 +320,11 @@ export async function harakaPayCollectHandler(req: Request, res: Response) {
     ensureBillingManager(profile.role);
     const payload = isRecord(req.body) ? req.body : {};
     const planId = asString(payload.planId, 200);
-    const billingCycle = asString(payload.billingCycle, 20);
+    const billingCycle = "Monthly";
     const phone = asString(payload.phone, 30);
     const description = asString(payload.description, 250);
     const idempotencyKey = asString(payload.idempotencyKey, 200);
-    if (!planId || !billingCycle || !phone) return sendError(res, 400, "Plan, billing cycle, and Tanzanian mobile number are required.");
+    if (!planId || !phone) return sendError(res, 400, "Package and Tanzanian mobile number are required.");
     payment = await userRpc<PaymentIntent>("billing_create_payment_intent", token, {
       p_plan_id: planId,
       p_billing_cycle: billingCycle,
@@ -353,7 +349,7 @@ export async function harakaPayCollectHandler(req: Request, res: Response) {
         reference: payment.reference,
       }),
     });
-    const providerPayload = await parseProviderResponse(providerResponse);
+    const providerPayload = await parseProviderResponse<JsonRecord>(providerResponse);
     const orderId = providerOrderId(providerPayload);
     if (!providerResponse.ok || providerPayload.success === false || !orderId) {
       await serviceRpc("billing_mark_payment_dispatch_failure", {
@@ -442,7 +438,7 @@ export async function harakaPayBalanceHandler(req: Request, res: Response) {
     ensureBillingManager(profile.role);
     const { apiKey, baseUrl } = harakaConfiguration();
     const response = await fetch(new URL("/api/v1/balance", baseUrl), { headers: { "X-API-Key": apiKey, accept: "application/json" } });
-    const payload = await parseProviderResponse(response);
+    const payload = await parseProviderResponse<JsonRecord>(response);
     if (!response.ok) return sendError(res, 502, "HarakaPay balance could not be retrieved.");
     return res.status(200).json({ walletBalance: payload.wallet_balance ?? payload.balance ?? null, floatBalance: payload.float_balance ?? payload.float ?? null, currency: payload.currency ?? "TZS" });
   } catch (error) {

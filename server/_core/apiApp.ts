@@ -14,7 +14,7 @@ import { scheduledAppointmentRemindersHandler } from "../scheduledAppointmentRem
 import { healthcareReminderDeliveryWebhookHandler } from "../healthcareReminderWebhook";
 import { scheduledPortalReferenceReconciliationDigestHandler } from "../scheduledPortalReferenceReconciliationDigest";
 import { scheduledMicrofinanceParCollectionsEscalationHandler } from "../scheduledMicrofinanceParCollectionsEscalation";
-import { scheduledSubscriptionTrialLifecycleHandler } from "../scheduledSubscriptionTrialLifecycle";
+import { scheduledSubscriptionFreePlanLifecycleHandler } from "../scheduledSubscriptionFreePlanLifecycle";
 import { fleetActionHandler, fleetSnapshotHandler, fleetTelematicsWebhookHandler, scheduledFleetAlertsHandler } from "../fleetManagement";
 import { scheduledRestaurantAlertsHandler } from "../restaurantManagement";
 import { scheduledPropertyControlsHandler } from "../propertyManagement";
@@ -23,10 +23,11 @@ import {
   harakaPayCollectHandler,
   harakaPayStatusHandler,
   harakaPayWebhookHandler,
+  subscriptionBillingAccessHandler,
   subscriptionBillingCatalogHandler,
   subscriptionBillingPlanHandler,
+  subscriptionBillingStartFreePlanHandler,
   subscriptionBillingProfileHandler,
-  subscriptionBillingSelectTrialPlanHandler,
   subscriptionBillingSnapshotHandler,
   subscriptionBillingStartTrialHandler,
   trialExpiryNoticeAdminResetHandler,
@@ -55,6 +56,7 @@ export function createApiApp() {
     res.set("Cache-Control", "no-store").json({ url: ENV.supabaseUrl, anonKey: ENV.supabaseAnonKey });
   });
   app.get("/api/billing/catalog", subscriptionBillingCatalogHandler);
+  app.get("/api/billing/access", subscriptionBillingAccessHandler);
   app.get("/api/billing/subscription", subscriptionBillingSnapshotHandler);
   app.get("/api/billing/trial-expiry-notice/claim", trialExpiryNoticeClaimHandler);
   app.post("/api/billing/trial-expiry-notice/ack", trialExpiryNoticeAcknowledgeHandler);
@@ -63,8 +65,8 @@ export function createApiApp() {
   app.get("/api/fleet/snapshot", fleetSnapshotHandler);
   app.post("/api/fleet/action", fleetActionHandler);
   app.post("/api/webhooks/fleet-telematics", fleetTelematicsWebhookHandler);
+  app.post("/api/billing/free/start", subscriptionBillingStartFreePlanHandler);
   app.post("/api/billing/trial/start", subscriptionBillingStartTrialHandler);
-  app.post("/api/billing/trial/select-plan", subscriptionBillingSelectTrialPlanHandler);
   app.post("/api/billing/profile", subscriptionBillingProfileHandler);
   app.post("/api/billing/plans", subscriptionBillingPlanHandler);
   app.post("/api/payments/harakapay/collect", harakaPayCollectHandler);
@@ -80,7 +82,7 @@ export function createApiApp() {
   app.post("/api/scheduled/appointmentReminders", scheduledAppointmentRemindersHandler);
   app.post("/api/scheduled/portalReferenceReconciliationDigest", scheduledPortalReferenceReconciliationDigestHandler);
   app.post("/api/scheduled/microfinanceParCollectionsEscalation", scheduledMicrofinanceParCollectionsEscalationHandler);
-  app.post("/api/scheduled/subscriptionTrialLifecycle", scheduledSubscriptionTrialLifecycleHandler);
+  app.post("/api/scheduled/subscriptionFreePlanLifecycle", scheduledSubscriptionFreePlanLifecycleHandler);
   app.post("/api/scheduled/fleetAlerts", scheduledFleetAlertsHandler);
   app.post("/api/scheduled/restaurantAlerts", scheduledRestaurantAlertsHandler);
   app.post("/api/scheduled/propertyControls", scheduledPropertyControlsHandler);

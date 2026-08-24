@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildDashboardChartSections, buildDashboardExportFilterSummary, canonicalRoleId, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, roleDefinitionFor, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
 import { setGuardedPersistenceCompanyId } from "../client/src/lib/guardedPersistenceClient";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const jsonResponse = (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -11,13 +12,13 @@ const jsonResponse = (body: unknown, status = 200) => ({
 
 afterEach(() => {
   setGuardedPersistenceCompanyId(null);
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
 const homeSource = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const salesDetailSource = readFileSync(new URL("../client/src/components/SalesDetailWorkspace.jsx", import.meta.url), "utf8");
 const invitationServiceSource = readFileSync(new URL("./teamInvitations.ts", import.meta.url), "utf8");
 const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
@@ -57,9 +58,11 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-logo_ad2a1e4d.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_MARK_URL = "/manus-storage/smart-manager-mark_aa277576.png"');
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
-    expect(brandLogoSource).toContain('width={1536} height={1024}');
+    expect(brandLogoSource).toContain('width={variant === "compact" ? 768 : 1536}');
+    expect(brandLogoSource).toContain('height={variant === "compact" ? 768 : 1024}');
     expect(brandLogoSource).toContain('variant?: "full" | "compact"');
     expect(homeSource).toContain('import { BrandLogo } from "../components/BrandLogo"');
     expect(homeSource).toContain('<BrandLogo variant="compact" priority');
@@ -72,7 +75,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
     expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
-    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-official-logo-20260816_98336ac7.png"');
+    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-logo_ad2a1e4d.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
   });
 
@@ -468,6 +471,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("retries a transient network failure once and emits a reconnect-success toast", async () => {
+    vi.useFakeTimers();
     const fetchMock = vi.fn()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValueOnce(jsonResponse([{ id: "lead-1" }]));
@@ -477,7 +481,9 @@ describe("BusinessSphere launch and live-data integration", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     try {
-      const result = await runCompanyTableQuery("crm_leads");
+      const query = runCompanyTableQuery("crm_leads");
+      await vi.runAllTimersAsync();
+      const result = await query;
       expect(result.rows).toEqual([{ id: "lead-1" }]);
       expect(result.recoveredAfterRetry).toBe(true);
     } finally {
@@ -591,10 +597,13 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("handles runCompanyTableMutation transient retry and missing table errors", async () => {
+    vi.useFakeTimers();
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ message: "Network gateway timeout" }, 502)).mockResolvedValueOnce(jsonResponse({ id: "loan-uuid-99" }, 201));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await runCompanyTableMutation("business_loans", "insert", { lender: "CRDB Bank", principal: 2000000 });
+    const mutation = runCompanyTableMutation("business_loans", "insert", { lender: "CRDB Bank", principal: 2000000 });
+    await vi.runAllTimersAsync();
+    const result = await mutation;
     expect(result.error).toBeNull();
     expect(result.data).toMatchObject({ id: "loan-uuid-99" });
     expect(fetchMock).toHaveBeenCalledTimes(2);

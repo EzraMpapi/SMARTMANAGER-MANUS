@@ -30,6 +30,38 @@ async function readJson(response: Response) {
   return response.json().catch(() => ({})) as Promise<Record<string, unknown>>;
 }
 
+function responseText(payload: Record<string, unknown>) {
+  return [payload.message, payload.msg, payload.error, payload.error_description, payload.code]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ");
+}
+
+function indicatesExistingAccount(payload: Record<string, unknown>) {
+  return /already\s+(?:exists|registered)|user.*(?:exists|registered)|email.*(?:exists|registered)/i.test(responseText(payload));
+}
+
+async function createPasswordSession(email: string, password: string) {
+  let sessionResponse: Response;
+  try {
+    sessionResponse = await fetch(`${ENV.supabaseUrl}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: ENV.supabaseAnonKey, "content-type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    throw new TRPCError({ code: "BAD_GATEWAY", message: "Sign-in could not start. Please try again." });
+  }
+  const session = await readJson(sessionResponse);
+  if (!sessionResponse.ok || typeof session.access_token !== "string" || typeof session.refresh_token !== "string") {
+    throw new TRPCError({ code: "CONFLICT", message: "This email already has an account. Sign in with its existing password or use password recovery." });
+  }
+  const user = session.user as { id?: unknown; email?: unknown } | undefined;
+  if (typeof user?.id !== "string" || typeof user?.email !== "string") {
+    throw new TRPCError({ code: "BAD_GATEWAY", message: "Sign-in returned an incomplete account response. Please sign in manually." });
+  }
+  return { access_token: session.access_token, refresh_token: session.refresh_token, user };
+}
+
 export function resetPasswordAccountProvisioningRateLimit() {
   registrationWindows.clear();
 }
@@ -69,6 +101,14 @@ export async function provisionConfirmedPasswordAccount(input: PasswordAccountIn
   }
   const created = await readJson(createResponse);
   if (!createResponse.ok) {
+    if ((createResponse.status === 400 || createResponse.status === 422) && indicatesExistingAccount(created)) {
+      const session = await createPasswordSession(email, input.password);
+      return {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        user: { id: session.user.id, email: session.user.email },
+      };
+    }
     if (createResponse.status === 400 || createResponse.status === 422) {
       throw new TRPCError({ code: "CONFLICT", message: "This account could not be created. Sign in instead or use password recovery if you already have an account." });
     }
@@ -78,26 +118,9 @@ export async function provisionConfirmedPasswordAccount(input: PasswordAccountIn
     throw new TRPCError({ code: "BAD_GATEWAY", message: "The account service could not create this account. Please try again." });
   }
 
-  let sessionResponse: Response;
-  try {
-    sessionResponse = await fetch(`${ENV.supabaseUrl}/auth/v1/token?grant_type=password`, {
-      method: "POST",
-      headers: { apikey: ENV.supabaseAnonKey, "content-type": "application/json" },
-      body: JSON.stringify({ email, password: input.password }),
-    });
-  } catch {
-    throw new TRPCError({ code: "BAD_GATEWAY", message: "Your account was created, but sign-in could not start. Please sign in manually." });
-  }
-  const session = await readJson(sessionResponse);
-  if (!sessionResponse.ok || typeof session.access_token !== "string" || typeof session.refresh_token !== "string") {
-    throw new TRPCError({ code: "BAD_GATEWAY", message: "Your account was created, but sign-in could not start. Please sign in manually." });
-  }
-
-  const user = session.user as { id?: unknown; email?: unknown } | undefined;
+  const session = await createPasswordSession(email, input.password);
+  const user = session.user;
   const createdUser = created as { id?: unknown; email?: unknown };
-  if (typeof user?.id !== "string" || typeof user?.email !== "string") {
-    throw new TRPCError({ code: "BAD_GATEWAY", message: "Your account was created, but the authentication response was incomplete. Please sign in manually." });
-  }
 
   return {
     access_token: session.access_token,

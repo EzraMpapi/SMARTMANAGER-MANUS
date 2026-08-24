@@ -1,0 +1,10 @@
+{
+  "entry": "main.typ",
+  "metadata": {
+    "author": "Ezra Mpapi",
+    "subtitle": "The Official Enterprise Manual and Business Operations Guide",
+    "title": "SMART MANAGER ERP"
+  },
+  "mode": "report",
+  "theme": "report-theme.typ"
+}

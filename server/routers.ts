@@ -15,6 +15,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
+import { getGlobalAdminExecutiveSnapshot, getGlobalAdminSnapshot, globalAdminActionInput, recordGlobalAdminAction } from "./globalAdmin";
 import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
@@ -86,6 +87,15 @@ export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   traFiscal: traFiscalRouter,
+  globalAdmin: router({
+    snapshot: protectedProcedure
+      .query(({ ctx }) => getGlobalAdminSnapshot(ctx.req)),
+    executiveSnapshot: protectedProcedure
+      .query(({ ctx }) => getGlobalAdminExecutiveSnapshot(ctx.req)),
+    recordAction: protectedProcedure
+      .input(globalAdminActionInput)
+      .mutation(({ ctx, input }) => recordGlobalAdminAction(ctx.req, input)),
+  }),
   schemaContractAssertion: protectedProcedure
     .input(z.object({ tableName: z.string(), payload: z.record(z.string(), z.unknown()) }))
     .mutation(({ input }) => {

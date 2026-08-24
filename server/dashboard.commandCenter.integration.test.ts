@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
-const dashboardSource = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 describe("dashboard command-center integration", () => {
   it("mounts the executive command center from tenant-scoped workspace hooks", () => {

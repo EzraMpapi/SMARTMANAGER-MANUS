@@ -1,0 +1,22 @@
+{
+  "title": "SMART MANAGER ERP \u2014 Security and Database Compliance Report",
+  "audit_date": "24 August 2026",
+  "source_commit": "d20a9b922e8596d54f3c7538b6389f71f4aef869",
+  "supabase_project_id": "rlhngsrihahhyxnjxrxm",
+  "read_only_evidence": true,
+  "public_table_rows": 519,
+  "risk_count": 6,
+  "deliverables": [
+    "/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/compliance-report/SMART_MANAGER_COMPLIANCE_REPORT.md",
+    "/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/compliance-report/main.typ",
+    "/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/compliance-report/deliverables/SMART_MANAGER_COMPLIANCE_REPORT.docx",
+    "/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/compliance-report/deliverables/SMART_MANAGER_COMPLIANCE_REPORT.pdf"
+  ],
+  "sources": [
+    "/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/master-book/SMART_MANAGER_MASTER_BOOK_EN_SW.md",
+    "/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/master-book/evidence/live_supabase_tables_2026-08-24.json",
+    "/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/master-book/evidence/live_audit_metrics_2026-08-24.txt",
+    "/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/master-book/evidence/advisor_counts_2026-08-24.txt"
+  ],
+  "secrets_included": false
+}

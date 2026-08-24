@@ -321,8 +321,25 @@
 - [x] Inspect current GitHub Actions workflow names, repository README, and available branch-protection controls. The GitHub API confirms that required branch protection needs GitHub Pro or a public repository for this private repository.
 - [x] Add a GitHub Actions status badge for the primary quality workflow.
 - [x] Add automated release-note generation from merged commit history and document how to use it.
-- [x] Preserve the repository as private rather than changing visibility or billing; document that GitHub does not permit required-check enforcement for this repository plan, while CI remains active as a visible merge-quality gate.
+- [ ] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration.
 - [ ] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements.
-- [x] Document the private-repository main-branch quality policy and the exact future required-check configuration to apply if GitHub branch protections become available.
-- [ ] Verify the active GitHub Actions workflow registration after the privacy-preserving decision record is pushed.
-- [ ] Resolve the GitHub CI schema-verification configuration failure using an approved secret-management approach without exposing production credentials.
+
+## Platform Administrator Executive Control Center
+- [x] Inspect the restored Platform Administrator and Global Admin implementation, shared dashboard patterns, and current Supabase platform tables before extending the UI.
+- [x] Define a least-privilege Platform Administrator metric and operational-control data model, with server-side role verification and no tenant subscription bypass for ordinary users.
+- [x] Implement an executive dashboard with concise KPI cards, tenant health, operational queues, activity trends, accessible navigation, loading and error states, and action-safe controls inspired by the supplied reference.
+- [x] Apply the reviewed platform schema and configuration records through the Supabase connector, without fabricating customer reviews, ratings, or tenant financial transactions.
+- [ ] Add focused contract and interface coverage; validate responsive behavior; synchronize GitHub and save the managed checkpoint.
+
+## Live Server Disconnection and Blank-Load Follow-up
+- [x] Diagnose the reported live server-disconnection and blank-load state across the authenticated Vercel route and current-main preview without weakening authentication or tenant isolation.
+- [ ] Implement the narrowest verified repair, add regression coverage, validate the deployed runtime, and synchronize the fix safely.
+
+## Android APK and Production URL Readiness
+- [x] Inspect the existing Android APK/TWA package, trusted-web-activity configuration, and production web routing for `https://menejajanja.vercel.app`.
+- [x] Align the Android package and full-stack web configuration to the verified production URL without exposing secrets or weakening authentication, tenant isolation, or role controls.
+- [x] Correct the production PWA/Android icon path so the Vercel origin returns an image rather than the application shell.
+- [x] Replace the Vercel-unserved managed-storage icon URL with a production-deployable PWA/Android icon source and revise the regression contract.
+- [ ] Validate the production web contract and Android packaging configuration, then synchronize the verified changes safely.
+- [x] Update the pre-existing Vercel routing contract test for the narrowly scoped same-origin logo rewrite, then rerun the affected CI gate.
+- [x] Reconcile the remote Android TWA guide with the verified Vercel-origin source and rerun CI after the detected stale-document regression.
