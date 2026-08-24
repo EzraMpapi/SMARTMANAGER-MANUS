@@ -87,9 +87,19 @@ describe("Persistent trial-expiry notice contract", () => {
     expect(billingWorkspace).toContain("The notice was reset and the action was recorded in the audit log.");
   });
 
-  it("mounts the gate once in the authenticated shell rather than once per module", () => {
-    expect(dashboard).toContain('<TrialExpiryNoticeGate session={session} onChoosePlan={() => go("billing")} />');
+  it("mounts the gate in the shared authenticated root around internal and external portal returns", () => {
+    expect(dashboard).toContain("const sharedTrialNoticeGate = <TrialExpiryNoticeGate session={session}");
+    expect(dashboard).toContain("return <>{sharedTrialNoticeGate}<CustomerPortal");
+    expect(dashboard).toContain("return <>{sharedTrialNoticeGate}<ExternalSupplierPortal");
+    expect(dashboard).toContain("{sharedTrialNoticeGate}");
     expect(dashboard).toContain('import { TrialExpiryNoticeGate } from "./components/TrialExpiryNoticeGate";');
+  });
+
+  it("exposes a dedicated Global Admin dashboard panel using the audited support component", () => {
+    expect(dashboard).toContain('aria-label="Global Admin trial-expiry notice panel"');
+    expect(dashboard).toContain("<TrialNoticeAdmin api={dashboardTrialNoticeApi}");
+    expect(dashboard).toContain("const isGlobalAdmin = [\"Super Administrator\", \"Platform Administrator\"]");
+    expect(billingWorkspace).toContain("export function TrialNoticeAdmin");
   });
 });
 
