@@ -376,7 +376,7 @@
 ## Social Banner Publication Recovery
 - [x] Preserve and upload only the three approved oversized social-banner source images to managed storage.
 - [x] Update active banner references and the documentation manifest, then remove only the three approved project-local banner files. No active textual banner references existed; managed locations are recorded in the documentation manifest.
-- [ ] Validate, synchronize, and save the recovered managed checkpoint.
+- [x] Validate, synchronize, and save the recovered managed checkpoint. The three-file migration passed stale-reference, oversized-PNG, and diff checks; GitHub main and checkpoint version `125ea3e` are aligned.
 
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
