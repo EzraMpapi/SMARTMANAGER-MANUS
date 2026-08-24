@@ -6,6 +6,7 @@ const manifest = readFileSync(new URL("../client/public/manifest.webmanifest", i
 const packagingGuide = readFileSync(new URL("../ANDROID_TWA_PACKAGING.md", import.meta.url), "utf8");
 const squareIconHandoff = readFileSync(new URL("../SQUARE_APP_ICON_HANDOFF.md", import.meta.url), "utf8");
 const twaManifestTemplate = readFileSync(new URL("../android/twa-manifest.template.json", import.meta.url), "utf8");
+const vercelConfig = readFileSync(new URL("../vercel.json", import.meta.url), "utf8");
 
 describe("Android Trusted Web Activity delivery path", () => {
   it("exposes a production PWA manifest from the Smart Manager document head", () => {
@@ -14,7 +15,9 @@ describe("Android Trusted Web Activity delivery path", () => {
     expect(manifest).toContain('"name": "Smart Manager — Enterprise ERP"');
     expect(manifest).toContain('"display": "standalone"');
     expect(manifest).toContain('"purpose": "any maskable"');
-    expect(manifest).toContain('"src": "/manus-storage/smart-manager-logo_ad2a1e4d.png"');
+    expect(manifest).toContain('"src": "/brand/smart-manager-logo.png"');
+    expect(vercelConfig).toContain('"source": "/brand/smart-manager-logo.png"');
+    expect(vercelConfig).toContain("bserp-dashbo-xgm6fauw.manus.space/manus-storage/smart-manager-logo_ad2a1e4d.png");
   });
 
   it("documents Bubblewrap builds while keeping the release signing fingerprint out of the public site", () => {
@@ -35,8 +38,8 @@ describe("Android Trusted Web Activity delivery path", () => {
       startUrl: "/",
       webManifestUrl: "https://menejajanja.vercel.app/manifest.webmanifest",
       fallbackType: "customtabs",
-      iconUrl: "https://menejajanja.vercel.app/manus-storage/smart-manager-logo_ad2a1e4d.png",
-      maskableIconUrl: "https://menejajanja.vercel.app/manus-storage/smart-manager-logo_ad2a1e4d.png",
+      iconUrl: "https://menejajanja.vercel.app/brand/smart-manager-logo.png",
+      maskableIconUrl: "https://menejajanja.vercel.app/brand/smart-manager-logo.png",
     });
     expect(JSON.stringify(template)).toContain("REPLACE_WITH_ORGANIZATION_KEYSTORE_PATH");
     expect(JSON.stringify(template)).not.toContain("sha256_cert_fingerprints");
