@@ -51,6 +51,7 @@ import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { calculateCommunityLoan, splitCommunityRepayment, unwrapCommunityMutationResult } from "./lib/communityGroups";
 import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
 import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWorkspace";
+import { TrialExpiryNoticeGate } from "./components/TrialExpiryNoticeGate";
 import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
 import { FleetWorkspace } from "./components/FleetWorkspace";
 import { RestaurantWorkspace } from "./components/RestaurantWorkspace";
@@ -52387,6 +52388,7 @@ function SmartManager() {
 
   return (
     <>
+      <TrialExpiryNoticeGate session={session} onChoosePlan={() => go("billing")} />
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
     <div className={`h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#F8FAFC]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>

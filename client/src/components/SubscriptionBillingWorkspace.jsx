@@ -120,6 +120,7 @@ export function SubscriptionBillingWorkspace({ accessToken, company, onBack }) {
   const invoices = dataArray(snapshot?.invoices);
   const notifications = dataArray(snapshot?.notifications);
   const subscription = snapshot?.subscription && Object.keys(snapshot.subscription).length ? snapshot.subscription : null;
+  const isPlatformAdmin = Boolean(snapshot?.viewer?.isPlatformAdmin);
   const activePlan = plans.find((plan) => plan.id === subscription?.plan_id) || selectedPlan;
   const pendingPayment = payment || payments.find((item) => item.status === "Pending" && item.provider_order_id);
   const usage = usageEntries(subscription, activePlan);
@@ -279,6 +280,7 @@ export function SubscriptionBillingWorkspace({ accessToken, company, onBack }) {
       <div className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
         {[
           ["overview", "Overview", BarChart3], ["plans", "Plans", Sparkles], ["payments", "Payments", CreditCard], ["invoices", "Invoices", ReceiptText], ["usage", "Usage", Users], ["admin", "Plan settings", Settings2],
+          ...(isPlatformAdmin ? [["trial-notice-admin", "Trial notice support", ShieldCheck]] : []),
         ].map(([id, label, Icon]) => <button key={id} type="button" onClick={() => setTab(id)} className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-[12px] font-semibold transition ${tab === id ? "bg-[#15191F] text-white shadow-sm" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}><Icon size={14} />{label}</button>)}
       </div>
 
@@ -288,6 +290,7 @@ export function SubscriptionBillingWorkspace({ accessToken, company, onBack }) {
       {tab === "invoices" && <Invoices invoices={invoices} payments={payments} company={company} />}
       {tab === "usage" && <Usage usage={usage} plan={activePlan} />}
       {tab === "admin" && <PlanSettings plans={plans} onAdd={() => setPlanEditor(emptyPlan())} onEdit={(plan) => setPlanEditor(planToForm(plan))} />}
+      {tab === "trial-notice-admin" && isPlatformAdmin && <TrialNoticeAdmin api={api} />}
 
       {checkoutOpen && <Checkout plan={selectedPlan} cycle={cycle} setCycle={setCycle} values={checkout} setValues={setCheckout} submitting={submitting} onClose={() => setCheckoutOpen(false)} onSubmit={requestPayment} />}
       {editingProfile && <BillingProfile values={profileForm} setValues={setProfileForm} submitting={submitting} onClose={() => setEditingProfile(false)} onSubmit={saveProfile} />}
@@ -362,6 +365,44 @@ function Invoices({ invoices, payments, company }) { return <div className="over
 function Usage({ usage, plan }) { return <div className="space-y-4"><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-[17px] font-bold text-slate-950">Plan usage</h2><p className="mt-1 text-[12px] text-slate-500">Usage is displayed only when it has been recorded by the server. Limits come from the selected subscription plan.</p></div>{!plan ? <NoData icon={Users} title="Usage begins with an active plan" text="Select and verify a subscription plan to enable plan-limit monitoring for this workspace." /> : usage.length === 0 ? <NoData icon={BarChart3} title="No usage limits are configured" text="This plan does not yet define a measurable user, branch, transaction, or storage limit." /> : <div className="grid gap-4 md:grid-cols-2">{usage.map((item) => { const current = Number(item.current || 0); const limit = Number(item.limit || 0); const percent = limit > 0 ? Math.min(100, Math.round((current / limit) * 100)) : 0; return <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-end justify-between gap-3"><div><p className="text-[11px] font-bold uppercase tracking-[.13em] text-slate-400">{item.label}</p><p className="mt-2 text-[22px] font-bold tracking-[-.04em] text-slate-950">{item.current === undefined || item.current === null ? "Not recorded" : `${current.toLocaleString()} / ${limit.toLocaleString()}${item.unit || ""}`}</p></div><span className="text-[12px] font-bold text-slate-500">{item.current === undefined || item.current === null ? "—" : `${percent}%`}</span></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${percent >= 90 ? "bg-rose-500" : percent >= 75 ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${item.current === undefined || item.current === null ? 0 : percent}%` }} /></div></div>; })}</div>}</div>; }
 
 function PlanSettings({ plans, onAdd, onEdit }) { return <div className="space-y-4"><div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center"><div><h2 className="text-[17px] font-bold text-slate-950">Subscription plan settings</h2><p className="mt-1 text-[12px] text-slate-500">Create and publish real plans with actual prices, limits, and entitlements. Draft plans are intentionally hidden from checkout.</p></div><button onClick={onAdd} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#15191F] px-4 py-2.5 text-[12px] font-bold text-white"><Plus size={15} /> Add plan</button></div>{plans.length === 0 ? <NoData icon={Settings2} title="No active plans" text="Add a plan and set it to Active when its pricing and features are approved." /> : <div className="grid gap-4 lg:grid-cols-2">{plans.map((plan) => <button key={plan.id} onClick={() => onEdit(plan)} className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-[#D4AF37] hover:shadow-md"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.13em] text-slate-400">{plan.code}</p><h3 className="mt-1 text-[17px] font-bold text-slate-950">{plan.name}</h3></div><ChevronRight className="text-slate-300 transition group-hover:text-[#B88918]" size={18} /></div><div className="mt-4 flex flex-wrap gap-2 text-[11px]"><StatusBadge value={plan.status} /><span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">Monthly: {plan.monthly_price === null || plan.monthly_price === undefined ? "Not set" : money(plan.monthly_price, plan.currency)}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">Annual: {plan.annual_price === null || plan.annual_price === undefined ? "Not set" : money(plan.annual_price, plan.currency)}</span></div></button>)}</div>}</div>; }
+
+function TrialNoticeAdmin({ api }) {
+  const [filters, setFilters] = useState({ companyId: "", userId: "", subscriptionId: "" });
+  const [reason, setReason] = useState("");
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams(Object.entries(filters).filter(([, value]) => value.trim()).map(([key, value]) => [key, value.trim()]));
+      const result = await api(`/api/billing/admin/trial-expiry-notices${params.toString() ? `?${params.toString()}` : ""}`);
+      setRows(Array.isArray(result?.notices) ? result.notices : []);
+    } catch (nextError) {
+      setError(nextError.message || "Support data could not be loaded.");
+    } finally { setLoading(false); }
+  };
+
+  const reset = async (row) => {
+    const resetReason = reason.trim();
+    if (resetReason.length < 5) { setError("Enter a support/testing reason of at least five characters before resetting."); return; }
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      await api("/api/billing/admin/trial-expiry-notices/reset", { method: "POST", body: JSON.stringify({ companyId: row.company_id, userId: row.user_id, subscriptionId: row.subscription_id, reason: resetReason }) });
+      setMessage("The notice was reset and the action was recorded in the audit log.");
+      await load();
+    } catch (nextError) {
+      setError(nextError.message || "The notice could not be reset.");
+    } finally { setLoading(false); }
+  };
+
+  return <div className="space-y-4"><div className="rounded-2xl border border-amber-200 bg-amber-50 p-5"><div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 shrink-0 text-amber-700" size={19} /><div><h2 className="text-[17px] font-bold text-amber-950">Global Admin trial-notice support</h2><p className="mt-1 text-[12px] leading-5 text-amber-900">Inspect the durable per-user notice state or reset it only for a documented support/testing reason. Every reset writes a Subscription Billing audit event.</p></div></div></div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="grid gap-3 md:grid-cols-3"><Field label="Company ID"><input value={filters.companyId} onChange={(event) => setFilters({ ...filters, companyId: event.target.value })} className={inputClass} placeholder="Optional UUID" /></Field><Field label="User ID"><input value={filters.userId} onChange={(event) => setFilters({ ...filters, userId: event.target.value })} className={inputClass} placeholder="Optional Auth UUID" /></Field><Field label="Subscription ID"><input value={filters.subscriptionId} onChange={(event) => setFilters({ ...filters, subscriptionId: event.target.value })} className={inputClass} placeholder="Optional UUID" /></Field></div><Field label="Reset reason" hint="Required only when resetting a row; keep it specific and support-related."><input value={reason} onChange={(event) => setReason(event.target.value)} maxLength={1000} className={inputClass} placeholder="e.g. Disposable staging fixture reset" /></Field><button type="button" onClick={load} disabled={loading} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#15191F] px-4 py-2.5 text-[12px] font-bold text-white disabled:opacity-50"><RefreshCw size={14} /> {loading ? "Loading…" : "Inspect notice state"}</button></div>{message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12px] text-emerald-800">{message}</div>}{error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[12px] text-rose-800">{error}</div>}<div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 px-5 py-4"><h3 className="text-[15px] font-bold text-slate-950">Notice records</h3><p className="mt-1 text-[12px] text-slate-500">No row is changed by inspection.</p></div>{rows.length === 0 ? <NoData icon={ShieldCheck} title="No notice records loaded" text="Filter by a specific company, user, or subscription, then inspect the live server state." /> : <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left"><thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-[.13em] text-slate-400"><tr><th className="px-5 py-3">Company / user</th><th className="px-5 py-3">Subscription</th><th className="px-5 py-3">State</th><th className="px-5 py-3">Updated</th><th className="px-5 py-3 text-right">Action</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id} className="border-t border-slate-100 text-[12px]"><td className="px-5 py-4"><p className="font-mono text-[11px] text-slate-700">{row.company_id}</p><p className="mt-1 font-mono text-[11px] text-slate-500">{row.user_id}</p></td><td className="px-5 py-4 font-mono text-[11px] text-slate-600">{row.subscription_id}</td><td className="px-5 py-4"><StatusBadge value={row.notice_shown ? "Completed" : "Pending"} /><p className="mt-1 text-[10px] text-slate-500">Claims: {row.claim_count || 0} · Resets: {row.reset_count || 0}</p></td><td className="px-5 py-4 text-slate-500">{dateTime(row.updated_at)}</td><td className="px-5 py-4 text-right"><button type="button" onClick={() => reset(row)} disabled={loading || !row.notice_shown} className="rounded-lg border border-amber-300 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 disabled:cursor-not-allowed disabled:opacity-40">Reset notice</button></td></tr>)}</tbody></table></div>}</div></div>;
+}
 
 function NoData({ icon: Icon, title, text }) { return <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center"><div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-slate-100 text-slate-500"><Icon size={20} /></div><h3 className="mt-3 text-[15px] font-bold text-slate-900">{title}</h3><p className="mx-auto mt-2 max-w-md text-[12.5px] leading-5 text-slate-500">{text}</p></div>; }
 function normalizeProfile(profile) { return { legalName: profile?.legal_name || "", contactName: profile?.contact_name || "", email: profile?.email || "", phone: profile?.phone || "", taxIdentifier: profile?.tax_identifier || "", notes: profile?.notes || "", address: profile?.address || {} }; }

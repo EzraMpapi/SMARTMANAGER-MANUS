@@ -29,6 +29,10 @@ import {
   subscriptionBillingSelectTrialPlanHandler,
   subscriptionBillingSnapshotHandler,
   subscriptionBillingStartTrialHandler,
+  trialExpiryNoticeAdminResetHandler,
+  trialExpiryNoticeAdminSnapshotHandler,
+  trialExpiryNoticeAcknowledgeHandler,
+  trialExpiryNoticeClaimHandler,
 } from "../subscriptionBilling";
 
 /**
@@ -52,6 +56,10 @@ export function createApiApp() {
   });
   app.get("/api/billing/catalog", subscriptionBillingCatalogHandler);
   app.get("/api/billing/subscription", subscriptionBillingSnapshotHandler);
+  app.get("/api/billing/trial-expiry-notice/claim", trialExpiryNoticeClaimHandler);
+  app.post("/api/billing/trial-expiry-notice/ack", trialExpiryNoticeAcknowledgeHandler);
+  app.get("/api/billing/admin/trial-expiry-notices", trialExpiryNoticeAdminSnapshotHandler);
+  app.post("/api/billing/admin/trial-expiry-notices/reset", trialExpiryNoticeAdminResetHandler);
   app.get("/api/fleet/snapshot", fleetSnapshotHandler);
   app.post("/api/fleet/action", fleetActionHandler);
   app.post("/api/webhooks/fleet-telematics", fleetTelematicsWebhookHandler);
