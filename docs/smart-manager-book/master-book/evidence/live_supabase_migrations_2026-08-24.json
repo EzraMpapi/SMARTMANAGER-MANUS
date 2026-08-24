@@ -1,0 +1,536 @@
+{
+  "migrations": [
+    {
+      "name": "smart_manager_foundation",
+      "version": "20260731225613"
+    },
+    {
+      "name": "smart_manager_tables_01",
+      "version": "20260731225654"
+    },
+    {
+      "name": "smart_manager_tables_02_generic_a",
+      "version": "20260731225718"
+    },
+    {
+      "name": "smart_manager_tables_03_generic_b",
+      "version": "20260731225735"
+    },
+    {
+      "name": "smart_manager_tables_04_typed",
+      "version": "20260731225804"
+    },
+    {
+      "name": "smart_manager_reconcile_mapper_columns",
+      "version": "20260731225829"
+    },
+    {
+      "name": "smart_manager_harden_functions",
+      "version": "20260731225911"
+    },
+    {
+      "name": "safaritiketi_revoke_privileged_rpcs_from_public",
+      "version": "20260801173809"
+    },
+    {
+      "name": "safaritiketi_fix_hold_seats_ambiguous_column",
+      "version": "20260801173858"
+    },
+    {
+      "name": "safaritiketi_seed_reference_data",
+      "version": "20260801174005"
+    },
+    {
+      "name": "smart_manager_audit_log",
+      "version": "20260802003528"
+    },
+    {
+      "name": "smart_manager_company_id_default",
+      "version": "20260802003618"
+    },
+    {
+      "name": "smart_manager_rls_initplan",
+      "version": "20260802003805"
+    },
+    {
+      "name": "0001_foundation",
+      "version": "20260804171608"
+    },
+    {
+      "name": "0003_audit",
+      "version": "20260804171641"
+    },
+    {
+      "name": "business_tables_chunk_0",
+      "version": "20260804171718"
+    },
+    {
+      "name": "business_tables_chunk_1",
+      "version": "20260804171740"
+    },
+    {
+      "name": "business_tables_group_a",
+      "version": "20260804171848"
+    },
+    {
+      "name": "business_tables_group_b",
+      "version": "20260804171959"
+    },
+    {
+      "name": "0003_audit_final",
+      "version": "20260804172011"
+    },
+    {
+      "name": "missing_tables_a",
+      "version": "20260804211551"
+    },
+    {
+      "name": "missing_tables_b",
+      "version": "20260804211618"
+    },
+    {
+      "name": "enable_rls_gap_and_remove_unreferenced_tables",
+      "version": "20260804214726"
+    },
+    {
+      "name": "sm_audit_log_action_default",
+      "version": "20260807202145"
+    },
+    {
+      "name": "add_missing_erp_module_tables",
+      "version": "20260812042557"
+    },
+    {
+      "name": "mybuz_application_schema_reset",
+      "version": "20260813120112"
+    },
+    {
+      "name": "0001_foundation",
+      "version": "20260813120134"
+    },
+    {
+      "name": "0002_business_tables",
+      "version": "20260813120203"
+    },
+    {
+      "name": "0003_audit",
+      "version": "20260813120242"
+    },
+    {
+      "name": "0004_missing_tables",
+      "version": "20260813120309"
+    },
+    {
+      "name": "0005_cleanup",
+      "version": "20260813120341"
+    },
+    {
+      "name": "0006_harden_mybuz_functions",
+      "version": "20260813121044"
+    },
+    {
+      "name": "businesssphere_complete_public_erp_rebuild",
+      "version": "20260813131647"
+    },
+    {
+      "name": "guarded_first_tenant_bootstrap",
+      "version": "20260814042004"
+    },
+    {
+      "name": "add_company_brand_colors",
+      "version": "20260814114500"
+    },
+    {
+      "name": "repair_workspace_profile_upsert",
+      "version": "20260814123906"
+    },
+    {
+      "name": "harden_function_privileges_and_search_path",
+      "version": "20260815040251"
+    },
+    {
+      "name": "multi_workspace_memberships",
+      "version": "20260815082244"
+    },
+    {
+      "name": "grant_current_company_id_to_authenticated",
+      "version": "20260815101822"
+    },
+    {
+      "name": "workspace_membership_management",
+      "version": "20260815102825"
+    },
+    {
+      "name": "harden_workspace_membership_admin_bounds",
+      "version": "20260815103121"
+    },
+    {
+      "name": "whatsapp_ai_assistant",
+      "version": "20260815103522"
+    },
+    {
+      "name": "user_table_preferences",
+      "version": "20260816145332"
+    },
+    {
+      "name": "pos_transaction_engine",
+      "version": "20260816175316"
+    },
+    {
+      "name": "pos_return_engine",
+      "version": "20260816180009"
+    },
+    {
+      "name": "pos_customer_credit",
+      "version": "20260816180232"
+    },
+    {
+      "name": "pos_sync_reconciliation",
+      "version": "20260816185255"
+    },
+    {
+      "name": "pos_rpc_privilege_hardening",
+      "version": "20260816185639"
+    },
+    {
+      "name": "pos_sale_audit_format_repair",
+      "version": "20260816193847"
+    },
+    {
+      "name": "pos_return_audit_format_repair",
+      "version": "20260816195351"
+    },
+    {
+      "name": "support_workflow_core",
+      "version": "20260817042347"
+    },
+    {
+      "name": "add_company_profile_settings",
+      "version": "20260817114955"
+    },
+    {
+      "name": "repair_sales_document_contract",
+      "version": "20260817125339"
+    },
+    {
+      "name": "repair_sales_order_acceptance_metadata",
+      "version": "20260817130530"
+    },
+    {
+      "name": "support_policy_authenticated_roles",
+      "version": "20260817160539"
+    },
+    {
+      "name": "add_onboarding_tour_profile_state",
+      "version": "20260817190128"
+    },
+    {
+      "name": "add_healthcare_claims_and_notifications",
+      "version": "20260820091650"
+    },
+    {
+      "name": "healthcare_appointment_reminders",
+      "version": "20260821043126"
+    },
+    {
+      "name": "restrict_hc_patients_to_internal_roles",
+      "version": "20260821052030"
+    },
+    {
+      "name": "healthcare_portal_reference_reconciliation",
+      "version": "20260821062003"
+    },
+    {
+      "name": "healthcare_portal_reference_summary_settings",
+      "version": "20260821063719"
+    },
+    {
+      "name": "microfinance_production_workflows",
+      "version": "20260821090331"
+    },
+    {
+      "name": "microfinance_credit_scoring_escalations",
+      "version": "20260821092402"
+    },
+    {
+      "name": "pharmacy_module_tenant_safe_operations",
+      "version": "20260821123026"
+    },
+    {
+      "name": "employee_portal_core",
+      "version": "20260821131055"
+    },
+    {
+      "name": "employee_portal_security_remediation",
+      "version": "20260821131701"
+    },
+    {
+      "name": "tanzania_payroll_calculation_engine",
+      "version": "20260822042111"
+    },
+    {
+      "name": "payroll_configuration_status_fix",
+      "version": "20260822042225"
+    },
+    {
+      "name": "school_management_module",
+      "version": "20260822045411"
+    },
+    {
+      "name": "leave_decision_immutability",
+      "version": "20260822045700"
+    },
+    {
+      "name": "hospitality_core",
+      "version": "20260822050236"
+    },
+    {
+      "name": "hospitality_pos_and_services",
+      "version": "20260822050538"
+    },
+    {
+      "name": "hospitality_guest_engagement",
+      "version": "20260822050710"
+    },
+    {
+      "name": "hospitality_helper_access_remediation",
+      "version": "20260822050852"
+    },
+    {
+      "name": "hospitality_finance_reconciliation",
+      "version": "20260822073026"
+    },
+    {
+      "name": "subscription_billing_harakapay_core",
+      "version": "20260822082727"
+    },
+    {
+      "name": "subscription_billing_plan_admin_visibility",
+      "version": "20260822083123"
+    },
+    {
+      "name": "subscription_billing_function_execute_hardening",
+      "version": "20260822083256"
+    },
+    {
+      "name": "subscription_billing_helper_execute_hardening",
+      "version": "20260822083346"
+    },
+    {
+      "name": "subscription_billing_fk_indexes",
+      "version": "20260822083506"
+    },
+    {
+      "name": "subscription_trials_and_official_catalog",
+      "version": "20260822090031"
+    },
+    {
+      "name": "subscription_trial_function_execute_hardening",
+      "version": "20260822090354"
+    },
+    {
+      "name": "subscription_plan_admin_controls",
+      "version": "20260822090613"
+    },
+    {
+      "name": "fleet_management_core",
+      "version": "20260822093757"
+    },
+    {
+      "name": "restaurant_fnb_management_core",
+      "version": "20260822095929"
+    },
+    {
+      "name": "restaurant_fnb_operations_extension",
+      "version": "20260822100153"
+    },
+    {
+      "name": "harden_restaurant_helper_privileges",
+      "version": "20260822100704"
+    },
+    {
+      "name": "bank_mfi_core",
+      "version": "20260823071411"
+    },
+    {
+      "name": "bank_mfi_security_hardening",
+      "version": "20260823071718"
+    },
+    {
+      "name": "bank_mfi_internal_helper_hardening",
+      "version": "20260823071822"
+    },
+    {
+      "name": "bank_mfi_credit_ledger_repair",
+      "version": "20260823072006"
+    },
+    {
+      "name": "bank_mfi_disbursement_account",
+      "version": "20260823072156"
+    },
+    {
+      "name": "bank_mfi_workflow_completion",
+      "version": "20260823072414"
+    },
+    {
+      "name": "community_groups_module",
+      "version": "20260823084433"
+    },
+    {
+      "name": "community_groups_security_hardening",
+      "version": "20260823084459"
+    },
+    {
+      "name": "community_groups_schema_contract",
+      "version": "20260823084933"
+    },
+    {
+      "name": "community_groups_insert_relationship_guard",
+      "version": "20260823095640"
+    },
+    {
+      "name": "community_groups_relationship_guard_insert_fix_v2",
+      "version": "20260823095751"
+    },
+    {
+      "name": "community_groups_relationship_guard_insert_fix_v3",
+      "version": "20260823100450"
+    },
+    {
+      "name": "community_groups_document_creator_guard",
+      "version": "20260823102110"
+    },
+    {
+      "name": "cleanup_community_groups_e2e_20260823",
+      "version": "20260823102436"
+    },
+    {
+      "name": "money_agent_core",
+      "version": "20260823103924"
+    },
+    {
+      "name": "property_management_core",
+      "version": "20260823123739"
+    },
+    {
+      "name": "fix_money_agent_snapshot_reconciliation_created_at",
+      "version": "20260823123817"
+    },
+    {
+      "name": "fin_foundation",
+      "version": "20260823130419"
+    },
+    {
+      "name": "profile_identity_center",
+      "version": "20260823130430"
+    },
+    {
+      "name": "fin_journal_core",
+      "version": "20260823130441"
+    },
+    {
+      "name": "fin_reconciliation_core",
+      "version": "20260823130501"
+    },
+    {
+      "name": "pos_register_control",
+      "version": "20260823130526"
+    },
+    {
+      "name": "pos_register_control_hardening",
+      "version": "20260823130546"
+    },
+    {
+      "name": "pos_sales_returns",
+      "version": "20260823130606"
+    },
+    {
+      "name": "pos_pricing_loyalty",
+      "version": "20260823130847"
+    },
+    {
+      "name": "workforce_authorization",
+      "version": "20260823130909"
+    },
+    {
+      "name": "workforce_role_assignment_approval",
+      "version": "20260823130928"
+    },
+    {
+      "name": "community_groups_relationship_guard_approval_fix",
+      "version": "20260823131351"
+    },
+    {
+      "name": "new_routine_privilege_hardening",
+      "version": "20260823131454"
+    },
+    {
+      "name": "security_hardening_search_paths_and_pin_rls",
+      "version": "20260823133542"
+    },
+    {
+      "name": "workforce_permission_seed",
+      "version": "20260823133812"
+    },
+    {
+      "name": "rls_policy_helper_execute_grants",
+      "version": "20260823135435"
+    },
+    {
+      "name": "subscription_access_snapshot",
+      "version": "20260823142807"
+    },
+    {
+      "name": "sensitive_rpc_execute_hardening",
+      "version": "20260823151641"
+    },
+    {
+      "name": "bank_accounts_created_by_repair",
+      "version": "20260823170540"
+    },
+    {
+      "name": "restaurant_tanzania_fiscal_configuration",
+      "version": "20260823175527"
+    },
+    {
+      "name": "harden_restaurant_tanzania_fiscal_trigger",
+      "version": "20260823175808"
+    },
+    {
+      "name": "remove_restaurant_fiscal_trigger_rpc_access",
+      "version": "20260823175857"
+    },
+    {
+      "name": "auth_identity_snapshot",
+      "version": "20260823184420"
+    },
+    {
+      "name": "subscription_free_plan_model",
+      "version": "20260823193058"
+    },
+    {
+      "name": "subscription_monthly_constraint_correction",
+      "version": "20260823193854"
+    },
+    {
+      "name": "global_admin_control_center_20260823",
+      "version": "20260823195156"
+    },
+    {
+      "name": "fk_index_optimization_p0_review_20260823",
+      "version": "20260823204324"
+    },
+    {
+      "name": "fix_billing_snapshot_event_alias_20260823",
+      "version": "20260823204948"
+    },
+    {
+      "name": "subscription_activation_flow_repair_20260824",
+      "version": "20260824030201"
+    },
+    {
+      "name": "platform_admin_initial_provisioning",
+      "version": "20260824041535"
+    }
+  ]
+}
