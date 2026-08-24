@@ -1,4 +1,4 @@
-VERIFY PASS pass=6 warn=0 fail=0 unknown=0 report=/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/compliance-report/deliverables/SMART_MANAGER_COMPLIANCE_REPORT.verify.json
+VERIFY PASS pass=6 warn=0 fail=0 unknown=0 report=/home/ubuntu/SMARTMANAGER-MANUS-audit/docs/smart-manager-book/master-book/deliverables/SMART_MANAGER_MASTER_BOOK_EN_SW.verify.json
 cument",
   "overall": "PASS",
   "checks": [
@@ -19,15 +19,15 @@ cument",
     {
       "name": "page-count",
       "status": "PASS",
-      "message": "pages=48",
+      "message": "pages=305",
       "evidence": {
-        "pages": 48
+        "pages": 305
       }
     },
     {
       "name": "text-presence",
       "status": "PASS",
-      "message": "characters=101389",
+      "message": "characters=576767",
       "evidence": {}
     },
     {
@@ -41,7 +41,7 @@ cument",
     {
       "name": "fonts",
       "status": "PASS",
-      "message": "font_records=3",
+      "message": "font_records=4",
       "evidence": {}
     }
   ]

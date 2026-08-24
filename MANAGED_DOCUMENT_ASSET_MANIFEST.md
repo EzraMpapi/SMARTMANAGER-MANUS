@@ -10,7 +10,7 @@ The oversized documentation images previously stored in the project were preserv
 | `docs/smart-manager-book/assets/social-banners/smart_manager_simba_sw_banner.png` | `/manus-storage/smart_manager_simba_sw_banner_e637116e.png` |
 | `docs/smart-manager-book/assets/social-banners/smart_manager_twiga_sw_banner.png` | `/manus-storage/smart_manager_twiga_sw_banner_07fe6573.png` |
 
-These are two unique assets represented by four duplicate project-local files. Documentation rebuilds that need the original image bytes must use the preserved external source copies or the managed paths above; they must not restore large media inside the project.
+These are two unique assets represented by four duplicate project-local files. Documentation rebuilds may use the preserved external source copies or the managed paths above. For the portable master-book deliverable, the two approved branding images are intentionally copied under `docs/smart-manager-book/master-book/typst-project/assets/branding/`; they are byte-preserved source assets, not generated replacements. The social-banner and other oversized media assets remain external and must not be restored inside the project.
 
 The source builder defaults to `/home/ubuntu/webdev-static-assets/businesssphere-doc-assets/` and supports an explicit `SMART_MANAGER_BOOK_ASSET_ROOT` override for controlled documentation rebuilds.
 

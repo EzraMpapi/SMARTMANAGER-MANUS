@@ -7,7 +7,7 @@
 #page(numbering: none, header: none)[#outline(title: [Contents], indent: 1.5em)]
 #counter(page).update(1)
 = Executive evidence snapshot
-#table(columns: (3.1cm, 2.1cm, 11.0cm), inset: 3pt, stroke: 0.3pt + luma(190), table.header([*Metric*], [*Value*], [*Interpretation*]), [Total tables], [542], [Public plus auth metadata returned by read-only inventory], [Public tables], [519], [Application-facing public schema], [Auth tables], [23], [Supabase Auth schema], [RLS enabled], [535], [Reported enabled in returned metadata], [RLS not enabled], [7], [Requires table-specific review], [Migration records], [133], [Live migration ledger records], [Security lints], [119], [118 WARN; 1 INFO], [Performance lints], [851], [Saved performance advisor count])
+#table(columns: (3.1cm, 2.1cm, 11.0cm), inset: 3pt, stroke: 0.3pt + luma(190), table.header([*Metric*], [*Value*], [*Interpretation*]), [Total tables], [542], [Public plus auth metadata returned by read-only inventory], [Public tables], [519], [Application-facing public schema], [Auth tables], [23], [Supabase Auth schema], [Public RLS enabled], [519], [Public application tables reported protected], [Public RLS disabled], [0], [Should remain zero], [Auth-schema entries without RLS], [7], [Supabase-managed internal auth tables; do not blanket-enable], [Total RLS enabled], [535], [Combined metadata count], [Migration records], [133], [Live migration ledger records], [Security lints], [119], [118 WARN; 1 INFO], [Performance lints], [851], [Saved performance advisor count])
 The dictionary reports metadata and row estimates; it does not expose row contents. Advisor counts are findings rather than a claim that every finding has equal severity or exploitability.
 #pagebreak()
 = 1. Security risk register

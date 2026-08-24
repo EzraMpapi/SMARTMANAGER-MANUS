@@ -22,7 +22,7 @@ The report is evidence-bound to **24 August 2026**, Supabase project `rlhngsriha
 
 ## Current evidence snapshot
 
-The saved inventory reports 542 total tables: 519 public and 23 auth. It reports 535 tables with RLS enabled and 7 requiring table-specific review in the returned metadata. The saved migration ledger contains 133 records. The advisor summary contains 119 security lints and 851 performance lints. These values are historical audit evidence and must be rechecked after schema or deployment changes.
+The saved inventory reports 542 total tables: 519 public and 23 auth. All 519 public application tables report RLS enabled; the seven non-RLS entries are Supabase-managed auth-schema tables outside the application public schema and auto-generated Data API, so they must not be blanket-enabled by an application migration. The saved migration ledger contains 133 records. The advisor summary contains 119 security lints and 851 performance lints. These values are historical audit evidence and must be rechecked after schema or deployment changes.
 
 ## Safe-use boundary
 

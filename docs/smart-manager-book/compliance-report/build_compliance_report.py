@@ -128,6 +128,13 @@ def load_tables() -> list[dict[str, Any]]:
 
 def live_metrics() -> dict[str, str]:
     metrics = read_kv(LIVE_METRICS)
+    table_snapshot = json.loads(LIVE_TABLES.read_text(encoding="utf-8"))
+    snapshot_tables = table_snapshot.get("tables", [])
+    public_tables = [t for t in snapshot_tables if str(t.get("name", "")).startswith("public.")]
+    auth_tables = [t for t in snapshot_tables if str(t.get("name", "")).startswith("auth.")]
+    metrics["public_rls_enabled"] = str(sum(t.get("rls_enabled") is True for t in public_tables))
+    metrics["public_rls_disabled"] = str(sum(t.get("rls_enabled") is not True for t in public_tables))
+    metrics["auth_rls_disabled"] = str(sum(t.get("rls_enabled") is not True for t in auth_tables))
     advisor_lines = ADVISOR_COUNTS.read_text(encoding="utf-8").splitlines()
     section = "security"
     for line in advisor_lines:
@@ -187,8 +194,10 @@ def build_markdown(tables: list[dict[str, Any]], metrics: dict[str, str]) -> str
                 ["Total tables", metrics.get("table_count", "—"), "Combined public and auth tables returned by the read-only inventory"],
                 ["Public tables", metrics.get("live_public_table_count", "—"), "Application-facing public-schema inventory"],
                 ["Auth tables", metrics.get("live_auth_table_count", "—"), "Supabase Auth schema inventory"],
-                ["RLS enabled", metrics.get("live_rls_enabled_count", "—"), "Tables reported with RLS enabled"],
-                ["RLS not enabled", metrics.get("live_rls_disabled_count", "—"), "Requires table-specific review; not a reason to add broad policies blindly"],
+                ["Public RLS enabled", metrics.get("public_rls_enabled", "—"), "Public application tables reported with RLS enabled"],
+                ["Public RLS disabled", metrics.get("public_rls_disabled", "—"), "No public application table should remain unprotected"],
+                ["Auth-schema entries without RLS", metrics.get("auth_rls_disabled", "—"), "Supabase-managed internal tables; do not blanket-enable"],
+                ["Total RLS enabled", metrics.get("live_rls_enabled_count", "—"), "Combined metadata count across returned schemas"],
                 ["Migration records", metrics.get("migration_count", "—"), "Records returned by the live migration ledger"],
                 ["Security advisor", metrics.get("security_total", "—"), f"{metrics.get('security_WARN', '—')} WARN and {metrics.get('security_INFO', '—')} INFO"],
                 ["Performance advisor", metrics.get("performance_total", "—"), f"{metrics.get('performance_WARN', '—')} WARN and {metrics.get('performance_INFO', '—')} INFO in the saved advisor-count file"],
@@ -233,7 +242,7 @@ def build_markdown(tables: list[dict[str, Any]], metrics: dict[str, str]) -> str
         "",
         "# 2. Database schema dictionary",
         "",
-        f"The live read-only Supabase inventory returned **{metrics.get('table_count', '—')} tables**: {metrics.get('live_public_table_count', '—')} public and {metrics.get('live_auth_table_count', '—')} auth. This dictionary lists the **{len(public_rows)} public tables** observed in the snapshot, their observed columns, reported primary keys, RLS state, and reported row estimates. It is metadata evidence, not a data export. [3]",
+        f"The live read-only Supabase inventory returned **{metrics.get('table_count', '—')} tables**: {metrics.get('live_public_table_count', '—')} public and {metrics.get('live_auth_table_count', '—')} auth. All {metrics.get('public_rls_enabled', '—')} public application tables reported RLS enabled; the {metrics.get('auth_rls_disabled', '—')} non-RLS entries are Supabase-managed auth-schema tables. This dictionary lists the **{len(public_rows)} public tables** observed in the snapshot, their observed columns, reported primary keys, RLS state, and reported row estimates. It is metadata evidence, not a data export. [3]",
         "",
         "## 2.1 Canonical identity and tenancy contract",
         "",
@@ -302,7 +311,7 @@ def build_typst(tables: list[dict[str, Any]], metrics: dict[str, str]) -> None:
         '#page(numbering: none, header: none)[#outline(title: [Contents], indent: 1.5em)]',
         '#counter(page).update(1)',
         '= Executive evidence snapshot',
-        typst_table(["Metric", "Value", "Interpretation"], [["Total tables", metrics.get("table_count", "—"), "Public plus auth metadata returned by read-only inventory"], ["Public tables", metrics.get("live_public_table_count", "—"), "Application-facing public schema"], ["Auth tables", metrics.get("live_auth_table_count", "—"), "Supabase Auth schema"], ["RLS enabled", metrics.get("live_rls_enabled_count", "—"), "Reported enabled in returned metadata"], ["RLS not enabled", metrics.get("live_rls_disabled_count", "—"), "Requires table-specific review"], ["Migration records", metrics.get("migration_count", "—"), "Live migration ledger records"], ["Security lints", metrics.get("security_total", "—"), f"{metrics.get('security_WARN', '—')} WARN; {metrics.get('security_INFO', '—')} INFO"], ["Performance lints", metrics.get("performance_total", "—"), "Saved performance advisor count"]], "(3.1cm, 2.1cm, 11.0cm)"),
+        typst_table(["Metric", "Value", "Interpretation"], [["Total tables", metrics.get("table_count", "—"), "Public plus auth metadata returned by read-only inventory"], ["Public tables", metrics.get("live_public_table_count", "—"), "Application-facing public schema"], ["Auth tables", metrics.get("live_auth_table_count", "—"), "Supabase Auth schema"], ["Public RLS enabled", metrics.get("public_rls_enabled", "—"), "Public application tables reported protected"], ["Public RLS disabled", metrics.get("public_rls_disabled", "—"), "Should remain zero"], ["Auth-schema entries without RLS", metrics.get("auth_rls_disabled", "—"), "Supabase-managed internal auth tables; do not blanket-enable"], ["Total RLS enabled", metrics.get("live_rls_enabled_count", "—"), "Combined metadata count"], ["Migration records", metrics.get("migration_count", "—"), "Live migration ledger records"], ["Security lints", metrics.get("security_total", "—"), f"{metrics.get('security_WARN', '—')} WARN; {metrics.get('security_INFO', '—')} INFO"], ["Performance lints", metrics.get("performance_total", "—"), "Saved performance advisor count"]], "(3.1cm, 2.1cm, 11.0cm)"),
         "The dictionary reports metadata and row estimates; it does not expose row contents. Advisor counts are findings rather than a claim that every finding has equal severity or exploitability.",
         '#pagebreak()',
         '= 1. Security risk register',
@@ -413,7 +422,7 @@ def build_docx(tables: list[dict[str, Any]], metrics: dict[str, str]) -> None:
     add_docx_heading(doc, "Executive scope", 1)
     doc.add_paragraph("This focused report extracts the security risk register and live Supabase database schema dictionary from the Smart Manager ERP master book. It separates observed evidence from remediation recommendations and does not authorize destructive production changes. The live database evidence was collected read-only and is time-bound to the audit date.")
     add_docx_heading(doc, "Evidence snapshot", 1)
-    add_docx_table(doc, ["Metric", "Observed value", "Interpretation"], [["Total tables", metrics.get("table_count", "—"), "Combined public and auth tables"], ["Public tables", metrics.get("live_public_table_count", "—"), "Application-facing public schema"], ["Auth tables", metrics.get("live_auth_table_count", "—"), "Supabase Auth schema"], ["RLS enabled", metrics.get("live_rls_enabled_count", "—"), "Reported enabled"], ["RLS not enabled", metrics.get("live_rls_disabled_count", "—"), "Table-specific review required"], ["Migration records", metrics.get("migration_count", "—"), "Live ledger records"], ["Security advisor", metrics.get("total", "—"), f"{metrics.get('WARN', '—')} WARN; {metrics.get('INFO', '—')} INFO"], ["Performance advisor", metrics.get("total", "—"), "Saved performance count"]])
+    add_docx_table(doc, ["Metric", "Observed value", "Interpretation"], [["Total tables", metrics.get("table_count", "—"), "Combined public and auth tables"], ["Public tables", metrics.get("live_public_table_count", "—"), "Application-facing public schema"], ["Auth tables", metrics.get("live_auth_table_count", "—"), "Supabase Auth schema"], ["Public RLS enabled", metrics.get("public_rls_enabled", "—"), "Public application tables reported protected"], ["Public RLS disabled", metrics.get("public_rls_disabled", "—"), "Should remain zero"], ["Auth-schema entries without RLS", metrics.get("auth_rls_disabled", "—"), "Supabase-managed internal auth tables; do not blanket-enable"], ["Total RLS enabled", metrics.get("live_rls_enabled_count", "—"), "Combined metadata count"], ["Migration records", metrics.get("migration_count", "—"), "Live ledger records"], ["Security advisor", metrics.get("security_total", "—"), f"{metrics.get('security_WARN', '—')} WARN; {metrics.get('security_INFO', '—')} INFO"], ["Performance advisor", metrics.get("performance_total", "—"), f"{metrics.get('performance_WARN', '—')} WARN; {metrics.get('performance_INFO', '—')} INFO"]])
     doc.add_paragraph("Advisor counts are findings, not proof that every finding has equal severity or exploitability. The dictionary reports metadata and row estimates; it does not expose row contents.")
     doc.add_page_break()
     add_docx_heading(doc, "1. Security risk register", 1)

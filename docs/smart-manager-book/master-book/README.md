@@ -19,7 +19,7 @@ This directory contains the repository-audited English and Tanzanian Swahili mas
 
 The book uses `IMPLEMENTED`, `TESTING`, `PARTIALLY IMPLEMENTED`, `CONFIGURATION REQUIRED`, `EXTERNAL SERVICE REQUIRED`, and `BLOCKED` as evidence labels. A completed source contract or automated test does not prove that a live provider credential, real tenant data walkthrough, production callback, or migration application exists. Live Supabase evidence in this directory was collected read-only; no DDL, payment collection, external message, or secret was invoked while generating the book.
 
-The Supabase inventory snapshot reported 542 tables, including 519 public and 23 auth tables. It reported 535 tables with RLS enabled and 7 without RLS enabled in the returned metadata. The live migration ledger snapshot returned 133 records. The saved advisor snapshots returned 119 security lints and 851 performance lints at the audit timestamp. These values are historical evidence for this edition and should be rechecked after schema or deployment changes.
+The Supabase inventory snapshot reported 542 tables, including 519 public and 23 auth tables. All 519 public application tables reported RLS enabled. The seven entries without RLS are Supabase-managed auth-schema tables outside the application public schema and auto-generated Data API; they should not be blanket-enabled by an application migration. The live migration ledger snapshot returned 133 records. The saved advisor snapshots returned 119 security lints and 851 performance lints at the audit timestamp. These values are historical evidence for this edition and should be rechecked after schema or deployment changes.
 
 ## Rebuild
 

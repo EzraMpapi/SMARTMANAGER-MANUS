@@ -16,8 +16,10 @@ The report separates observed evidence from remediation recommendations. It does
 | Total tables | 542 | Combined public and auth tables returned by the read-only inventory |
 | Public tables | 519 | Application-facing public-schema inventory |
 | Auth tables | 23 | Supabase Auth schema inventory |
-| RLS enabled | 535 | Tables reported with RLS enabled |
-| RLS not enabled | 7 | Requires table-specific review; not a reason to add broad policies blindly |
+| Public RLS enabled | 519 | Public application tables reported with RLS enabled |
+| Public RLS disabled | 0 | No public application table should remain unprotected |
+| Auth-schema entries without RLS | 7 | Supabase-managed internal tables; do not blanket-enable |
+| Total RLS enabled | 535 | Combined metadata count across returned schemas |
 | Migration records | 133 | Records returned by the live migration ledger |
 | Security advisor | 119 | 118 WARN and 1 INFO |
 | Performance advisor | 851 | 162 WARN and 689 INFO in the saved advisor-count file |
@@ -112,7 +114,7 @@ The historical P0 invoice-payment finding should be handled as a finance-safety 
 
 # 2. Database schema dictionary
 
-The live read-only Supabase inventory returned **542 tables**: 519 public and 23 auth. This dictionary lists the **519 public tables** observed in the snapshot, their observed columns, reported primary keys, RLS state, and reported row estimates. It is metadata evidence, not a data export. [3]
+The live read-only Supabase inventory returned **542 tables**: 519 public and 23 auth. All 519 public application tables reported RLS enabled; the 7 non-RLS entries are Supabase-managed auth-schema tables. This dictionary lists the **519 public tables** observed in the snapshot, their observed columns, reported primary keys, RLS state, and reported row estimates. It is metadata evidence, not a data export. [3]
 
 ## 2.1 Canonical identity and tenancy contract
 

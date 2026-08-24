@@ -166,11 +166,11 @@ Express API hutenganisha API na SPA. Routes za HTTP zinahusu public config, bill
 
 ## III.4 Database Architecture
 
-The repository uses a source-versioned Supabase migration history. The live audit on 24 August 2026 returned 542 tables: 519 public and 23 auth; 535 tables reported RLS enabled and 7 did not. Table definitions, indexes, constraints, functions, grants, and policies are migration-owned.
+The repository uses a source-versioned Supabase migration history. The live audit on 24 August 2026 returned 542 tables: 519 public and 23 auth. All 519 public application tables reported RLS enabled; the 7 non-RLS entries are Supabase-managed auth-schema tables, not unprotected public application tables. Table definitions, indexes, constraints, functions, grants, and policies are migration-owned.
 
 ### Kiswahili: Database Architecture
 
-Repository ina migration history ya Supabase yenye version. Audit ya 24 Agosti 2026 ilirudisha tables 542: 519 public na 23 auth; tables 535 zilionesha RLS na 7 hazikuonesha.
+Repository ina migration history ya Supabase yenye version. Audit ya 24 Agosti 2026 ilirudisha tables 542: 519 public na 23 auth. Tables zote 519 za public application zilionesha RLS; entries 7 zisizo na RLS ni tables za ndani zinazosimamiwa na Supabase Auth, si tables za public zilizo wazi.
 
 | Live metric | Value | Interpretation |
 | --- | --- | --- |
@@ -178,7 +178,8 @@ Repository ina migration history ya Supabase yenye version. Audit ya 24 Agosti 2
 | Public tables | 519 | Application-facing public schema inventory |
 | Auth tables | 23 | Supabase Auth schema inventory |
 | RLS enabled | 535 | Tables reported with RLS enabled |
-| RLS not enabled | 7 | Requires table-specific review; not a reason to add broad policies blindly |
+| Public RLS disabled | 0 | All public application tables should remain protected |
+| Auth-schema entries without RLS | 7 | Supabase-managed internal auth tables; do not blanket-enable |
 | Migration records | 133 | Live migration ledger records returned by connector |
 
 ---
@@ -4105,7 +4106,7 @@ The platform should prefer explicit identity, narrow role authority, company sco
 
 # PART X — DATABASE DICTIONARY
 
-The live read-only Supabase inventory returned 542 tables (519 public and 23 auth), with 535 reporting RLS enabled. The following dictionary records the public table surface without exposing row contents.
+The live read-only Supabase inventory returned 542 tables (519 public and 23 auth). All 519 public application tables reported RLS enabled; the 7 non-RLS entries are Supabase-managed auth-schema tables. The following dictionary records the public table surface without exposing row contents.
 
 | Table | Observed columns | Primary key | RLS | Rows reported |
 | --- | --- | --- | --- | --- |
@@ -7500,7 +7501,7 @@ Ikiwa Uchambuzi wa Utabiri ina hali ya unavailable, failed, pending au rejected,
 
 ## Appendix D — Verification record
 
-Repository version: `1.0.0` from `package.json`. Documentation date: 24 August 2026. Live Supabase project audit: read-only. Live table count: 542; public: 519; auth: 23; RLS enabled: 535; RLS not enabled: 7; migration records: 133. Security advisor lints: 119; performance advisor lints: 851.
+Repository version: `1.0.0` from `package.json`. Documentation date: 24 August 2026. Live Supabase project audit: read-only. Live table count: 542; public: 519; auth: 23; RLS enabled: 535; public RLS disabled: 0; auth-schema entries without RLS: 7; migration records: 133. Security advisor lints: 119; performance advisor lints: 851.
 
 ## References
 
