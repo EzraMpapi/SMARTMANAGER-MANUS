@@ -343,3 +343,32 @@
 - [ ] Validate the production web contract and Android packaging configuration, then synchronize the verified changes safely.
 - [x] Update the pre-existing Vercel routing contract test for the narrowly scoped same-origin logo rewrite, then rerun the affected CI gate.
 - [x] Reconcile the remote Android TWA guide with the verified Vercel-origin source and rerun CI after the detected stale-document regression.
+
+## Installable Desktop and Android Packaging
+- [x] Inspect the existing frontend framework, build, routes, assets, authentication, Supabase/backend usage, environment handling, and deployment configuration.
+- [x] Choose and document compatible desktop and Android wrapper architectures.
+- [x] Add desktop and Android wrapper configuration without replacing the existing web UI.
+- [x] Build and test an unsigned Windows desktop artifact and Android debug APK where tooling permits.
+- [x] Document setup, signing, limitations, changed files, and artifact locations.
+
+## Android Physical Device and Offline Validation
+- [ ] Detect an authorized Android device and confirm it is safe to install the debug APK.
+- [ ] Install the debug APK and verify launch, production-origin routing, and non-destructive Supabase sign-in behavior.
+- [ ] Test session persistence and offline transitions without creating or editing production data.
+- [x] Record findings, limitations, and device-specific follow-up requirements.
+
+## Enterprise Dashboard Redesign
+- [x] Audit the current dashboard route, components, data queries, roles, and reusable UI primitives.
+- [x] Define the dashboard information architecture, state handling, and responsive design system.
+- [x] Rebuild the executive dashboard overview and shared responsive shell without changing backend contracts or production data.
+- [x] Run focused dashboard contract/truthfulness regression tests and TypeScript validation; keep the deployment build limitation documented because it requires deployment-only Supabase credentials.
+- [ ] Render the protected dashboard with an approved isolated or authenticated workspace session at desktop and mobile breakpoints; the uncredentialed local and live checks correctly stop at the existing secure login/workspace-resolution states.
+- [ ] Align connected management screens with the new reusable visual system and state patterns.
+- [ ] Test routing, auth states, real-data loading, responsive layouts, and production build behavior.
+- [ ] Document added, changed, and removed dashboard-specific files with remaining limitations.
+- [x] Create an executive presentation covering the redesign architecture, validation evidence, audit findings, and remaining safe protected-dashboard verification steps.
+## Guarded GitHub and Supabase Synchronization
+- [ ] Inventory uncommitted repository changes and confirm the target GitHub branch before staging only reviewed work.
+- [ ] Compare project migrations with the connected Supabase schema and identify only missing, idempotent, non-destructive migrations.
+- [ ] Apply verified missing schema changes through the connected Supabase project, then validate the affected schema state.
+- [ ] Commit and push the reviewed repository changes with a clear synchronization message.

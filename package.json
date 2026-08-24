@@ -1,6 +1,8 @@
 {
   "name": "businesssphere-erp",
   "version": "1.0.0",
+  "description": "Smart Manager enterprise operations platform",
+  "author": "Smart Manager",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -15,7 +17,12 @@
     "test:browser": "playwright test",
     "test:browser:operations-visual": "playwright test browser-tests/operationsCommandCenters.spec.ts",
     "verify:supabase-schema": "node server/verifySupabaseSchema.mjs",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "desktop:dev": "electron desktop/main.mjs",
+    "desktop:pack": "electron-builder --config desktop/electron-builder.yml --win --dir --x64",
+    "desktop:build": "electron-builder --config desktop/electron-builder.yml --win nsis --x64",
+    "android:debug": "cd android && ./gradlew assembleDebug",
+    "android:release": "cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
@@ -103,6 +110,8 @@
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.4",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
     "esbuild": "^0.25.0",
     "jsdom": "26.1.0",
     "playwright": "1.62.0",

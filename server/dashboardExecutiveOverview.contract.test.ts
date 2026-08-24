@@ -1,0 +1,30 @@
+import { describe, expect, it } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+
+const dashboardSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const overviewSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/EnterpriseDashboardOverview.jsx"), "utf8");
+
+describe("Enterprise dashboard overview contract", () => {
+  it("renders the new overview only through the established executive role view", () => {
+    expect(dashboardSource).toContain('import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview"');
+    expect(dashboardSource).toContain('if (roleView === "executive")');
+    expect(dashboardSource).toContain("<EnterpriseDashboardOverview");
+    expect(dashboardSource).toContain("financials={financials}");
+    expect(dashboardSource).toContain("revenueExpenseTrend={revenueExpenseTrend}");
+    expect(dashboardSource).toContain("onNavigate={onNavigate}");
+    expect(dashboardSource).toContain("onQuickAction={onQuickAction}");
+  });
+
+  it("derives visible metrics from supplied workspace rows and retains explicit non-fabrication states", () => {
+    expect(overviewSource).toContain("const invoiceRows = invoices?.rows || []");
+    expect(overviewSource).toContain("const expenseRows = expenses?.rows || []");
+    expect(overviewSource).toContain("const inventoryRows = inventory?.rows || []");
+    expect(overviewSource).toContain("const crmRows = crm?.rows || []");
+    expect(overviewSource).toContain("Some live workspace information is unavailable");
+    expect(overviewSource).toContain("The dashboard does not invent business metrics.");
+    expect(overviewSource).not.toContain("Simulated");
+  });
+});
+
+export {};

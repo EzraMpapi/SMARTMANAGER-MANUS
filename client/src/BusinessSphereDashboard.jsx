@@ -70,6 +70,7 @@ import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
 import { GlobalAdminControlCenter } from "./components/GlobalAdminControlCenter";
 import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
 import { AndroidAppStatus } from "./components/AndroidAppStatus";
+import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -6307,6 +6308,30 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       <p className="text-[13px] text-slate-500 mt-1">{currentUser.role} view — {focusLine}</p>
     </div>
   );
+
+  if (roleView === "executive") {
+    return (
+      <EnterpriseDashboardOverview
+        company={company}
+        currentUser={currentUser}
+        invoices={invoices}
+        expenses={expenses}
+        inventory={inventory}
+        crm={crm}
+        leaveRequests={leaveRequests}
+        workOrders={workOrders}
+        subscriptions={subscriptions}
+        financials={financials}
+        revenueExpenseTrend={revenueExpenseTrend}
+        recentActivity={recentActivity}
+        attentionItems={attentionItems}
+        pendingLeave={pendingLeave}
+        formatMoney={formatMoney}
+        onNavigate={onNavigate}
+        onQuickAction={onQuickAction}
+      />
+    );
+  }
 
   if (roleView === "financial") {
     return (
@@ -47301,7 +47326,7 @@ function SmartManager() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const handleOnboardingVisibilityChange = useCallback((isOpen) => {
     setSidebarOpen(isOpen);
   }, []);
@@ -47718,7 +47743,7 @@ function SmartManager() {
     <>
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
-    <div className={`h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#F8FAFC]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className={`h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Ambient background wash — subtle depth behind the content, the way
           Linear/Vercel-style dashboards avoid a flat, lifeless canvas. */}
       <div
@@ -47780,7 +47805,7 @@ function SmartManager() {
       {/* Overlay — dims the page behind the menu whenever it's open, at any screen size */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/40 z-40"
+          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
           style={{ animation: "fadeIn .15s ease-out" }}
           onClick={() => setSidebarOpen(false)}
         />
@@ -47796,7 +47821,7 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={!sidebarOpen}
-        className={`fixed z-50 h-full w-[240px] shrink-0 flex flex-col bg-white transition-transform duration-200 ease-out overflow-hidden ${darkMode ? "dark-shell" : ""} ${
+          className={`fixed z-50 h-full w-[264px] shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-transform duration-200 ease-out overflow-hidden lg:static lg:z-10 lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
@@ -47811,7 +47836,7 @@ function SmartManager() {
               <span className="text-[9.5px] text-slate-400">Simplify. Manage. Grow.</span>
             </div>
           </div>
-          <button className="text-slate-400 hover:text-[#111827] transition-colors" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+          <button className="text-slate-400 hover:text-[#111827] transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} />
           </button>
         </div>
@@ -47873,10 +47898,10 @@ function SmartManager() {
           column, so there is no reserved gutter to subtract. */}
       <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full">
         {/* Topbar */}
-        <header className={`h-16 shrink-0 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 ${darkMode ? "dark-shell" : ""}`}>
+        <header className={`h-[68px] shrink-0 bg-white/95 backdrop-blur border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
           <div className="flex items-center gap-3">
             <button
-              className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors"
+              className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -47989,7 +48014,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="module-fade flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6">
+        <main key={active} className="module-fade flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 sm:pb-6">
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
