@@ -362,7 +362,7 @@
 ## Documentation Asset Publication Recovery
 - [x] Preserve the supplied Smart Manager logo and owner-portrait source images outside the project and upload managed-storage copies for documentation use.
 - [x] Map each documentation reference to managed storage, record the locations in a non-sensitive manifest, and remove only the four confirmed oversized duplicate local files.
-- [ ] Revalidate the signup release, synchronize the cleanup to GitHub, and save the recovered managed publication checkpoint.
+- [x] Revalidate the signup release, synchronize the cleanup to GitHub, and save the recovered managed publication checkpoint.
 
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
