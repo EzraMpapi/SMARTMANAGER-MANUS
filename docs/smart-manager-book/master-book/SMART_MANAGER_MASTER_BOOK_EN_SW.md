@@ -8,7 +8,7 @@
 > **Product owner/creator:** Ezra Mpapi, as identified in supplied project materials
 > **Location:** Dar es Salaam, Tanzania
 
-![Official SMART MANAGER logo](typst-project/assets/branding/smart-manager-logo.png)
+![Official SMART MANAGER logo](/manus-storage/smart-manager-logo_b1db8065.png)
 
 ## Copyright and evidence notice
 This master book documents the SMART MANAGER ERP repository at the audit date shown above. It is not a generic ERP manual and does not convert every navigation surface into a claim of production completeness. Implemented, tested, partial, configuration-dependent, external-service-dependent, blocked, and planned states are separated throughout the book.

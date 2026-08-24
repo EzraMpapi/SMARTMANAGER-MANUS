@@ -385,9 +385,9 @@
 - [ ] Validate, synchronize, and checkpoint the live-error repair.
 
 ## Concurrent Master-Book Publication Recovery
-- [ ] Reconcile the approved remote master-book history without discarding staged local correction records.
-- [ ] Inventory and preserve only confirmed oversized master-book media outside the repository and in managed storage.
-- [ ] Update safe text references, remove only approved duplicate media, and revalidate publication readiness.
+- [x] Reconcile the approved remote master-book history without discarding staged local correction records.
+- [x] Inventory and preserve only confirmed oversized master-book media outside the repository and in managed storage. Two identical 1.4 MB logo copies were the only oversized master-book images; one preserved managed-storage copy now represents both.
+- [x] Update safe text references, remove only approved duplicate media, and revalidate publication readiness. Active Markdown, Typst, and builder references now use managed or preserved external paths; oversized-image, focused signup, TypeScript, and diff checks passed.
 
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
