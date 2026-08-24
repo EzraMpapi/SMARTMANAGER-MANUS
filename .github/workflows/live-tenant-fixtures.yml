@@ -95,6 +95,7 @@ jobs:
 
 
       - name: Validate protected fixture inputs
+        id: preflight
         env:
           FIXTURE_TARGET: isolated
           FIXTURE_CONFIRM: CREATE_SMARTMANAGER_E2E_FIXTURE
@@ -108,6 +109,8 @@ jobs:
           set -euo pipefail
 
           preflight_error() {
+            printf "failed=true\n" >> "$GITHUB_OUTPUT"
+            printf "message=%s\n" "$1" >> "$GITHUB_OUTPUT"
             echo "::error title=live-e2e preflight::$1" >&2
             exit 1
           }
@@ -117,7 +120,7 @@ jobs:
           fi
 
           if [[ "${FIXTURE_CONFIRM:-}" != "CREATE_SMARTMANAGER_E2E_FIXTURE" ]]; then
-            preflight_error "Fixture confirmation is missing or invalid; use the protected confirmation value."
+            preflight_error "Fixture confirmation is missing or invalid; use the workflow's protected confirmation value."
           fi
 
           if [[ -z "${FIXTURE_EMAIL_DOMAIN:-}" ]]; then
@@ -153,6 +156,30 @@ jobs:
           fi
 
           echo "live-e2e protected input preflight passed; secret values were not printed."
+
+      - name: Notify Slack about preflight failure
+        if: ${{ failure() && steps.preflight.outcome == 'failure' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.LIVE_E2E_SLACK_WEBHOOK_URL }}
+          PREFLIGHT_MESSAGE: ${{ steps.preflight.outputs.message }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SLACK_WEBHOOK_URL:-}" ]]; then
+            echo "::warning title=live-e2e notification::Preflight failed, but LIVE_E2E_SLACK_WEBHOOK_URL is not configured; no Slack notification was sent."
+            exit 0
+          fi
+
+          text="live-e2e preflight failed: ${PREFLIGHT_MESSAGE:-No diagnostic message was recorded.} Run: ${RUN_URL}"
+          payload="$(jq -n --arg text "$text" '{text: $text}')"
+          if ! curl --fail --silent --show-error --max-time 15 \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            --data "$payload" \
+            "$SLACK_WEBHOOK_URL" >/dev/null; then
+            echo "::warning title=live-e2e notification::Slack notification delivery failed; the original preflight failure remains unchanged."
+          fi
 
       - name: Verify runtime secret injection readiness
       
