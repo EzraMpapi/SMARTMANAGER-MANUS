@@ -1,0 +1,38 @@
+{
+  "generated_at": "2026-08-24T18:20:08.292Z",
+  "repository_migration_files": 84,
+  "repository_declared_tables": 287,
+  "live_public_tables": 521,
+  "missing_repository_declared_tables": [],
+  "duplicate_repository_declarations": [
+    "billing_plan_audit_log",
+    "billing_plans",
+    "billing_profiles",
+    "subscription_events",
+    "subscription_invoices",
+    "subscription_notifications",
+    "subscription_payments",
+    "subscription_usage",
+    "tenant_subscriptions"
+  ],
+  "production_migration_count": 138,
+  "latest_production_migration": {
+    "name": "trial_expiry_notice_once",
+    "version": "20260824175351"
+  },
+  "unapplied_local_migrations_not_replayed": [
+    "complete_erp_schema_baseline",
+    "fix_billing_snapshot_event_alias",
+    "fix_pos_return_audit_format",
+    "fix_pos_sale_audit_format",
+    "fk_index_optimization_p0_apply",
+    "fk_index_optimization_p0_review",
+    "global_admin_control_center",
+    "harden_pos_rpc_privileges",
+    "sales_document_contract_repair",
+    "sales_order_acceptance_followup",
+    "subscription_activation_flow_repair"
+  ],
+  "table_ddl_executed": false,
+  "decision": "No repository-declared table is missing. Do not create speculative tables from conceptual attachment requirements or replay historical migration filenames without a proven schema gap."
+}
