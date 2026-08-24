@@ -8,6 +8,10 @@ async function completeIsolatedSignup(page: Page) {
   await page.getByPlaceholder("you@company.tz").fill("asha@e2e.invalid");
   await page.getByPlaceholder("Create a password").fill("StrongPass!123");
   await page.getByPlaceholder("Repeat password").fill("StrongPass!123");
+
+  await page.getByRole("button", { name: "Continue to company setup →" }).click();
+  await expect(page.getByRole("alert")).toContainText("Please accept the Terms of Service and Privacy Policy to continue.");
+
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Continue to company setup →" }).click();
 

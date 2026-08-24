@@ -355,6 +355,10 @@
 - [x] Verify the provisioned account can enter the protected Global Admin server boundary, document the outcome, and retain release-tag creation until stakeholder acceptance is explicit. The snapshot guard returned the Platform Administrator viewer role in a rolled-back verification transaction.
 - [x] Align the profiles role constraint with the existing Global Admin guard and add a service-role-only, audit-recording initial Platform Administrator provisioning function; no tenant membership, password, subscription, or unrelated user data was altered.
 
+## Create Company Signup Progression Repair
+- [x] Trace and correct the non-responsive Create Company continuation step without submitting a real account, company, or tenant record during verification. The form now gives an explicit terms-acceptance message instead of silently blocking the continuation action, then moves directly to company setup once the account details and acceptance are valid.
+- [x] Add focused regression coverage for the continuation guard, validate the safe browser journey, and synchronize the verified fix to GitHub and managed hosting. Unit coverage, the rebuilt isolated browser journey (desktop and mobile), TypeScript, and diff checks passed; no tenant-write action was exercised.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.
