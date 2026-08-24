@@ -367,7 +367,7 @@
 ## Signup Account-Creation Failure Follow-up
 - [x] Trace the reported “account could not be created” failure through the current signup submission and authentication boundary without creating a real account or tenant. Existing-account responses were previously treated as terminal failures before a session attempt.
 - [x] Correct the identified failure path with isolated regression coverage and clear user-facing recovery behavior. A verified existing account now continues with its authenticated session; an unavailable or invalid session returns an explicit sign-in/password-recovery message.
-- [ ] Run isolated signup validation, synchronize the verified repair to GitHub, and save the managed release checkpoint.
+- [x] Run isolated signup validation, synchronize the verified repair to GitHub, and save the managed release checkpoint. Focused isolated regressions, TypeScript, and clean diff checks passed; the reserved `.invalid` browser build was attempted but terminated under sandbox memory pressure before Playwright ran and was not treated as a passing result.
 
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
