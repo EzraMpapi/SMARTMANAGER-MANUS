@@ -31,7 +31,7 @@ async function readJson(response: Response) {
 }
 
 function responseText(payload: Record<string, unknown>) {
-  return [payload.message, payload.error, payload.error_description]
+  return [payload.message, payload.msg, payload.error, payload.error_description, payload.code]
     .filter((value): value is string => typeof value === "string")
     .join(" ");
 }

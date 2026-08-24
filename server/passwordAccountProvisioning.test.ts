@@ -60,4 +60,17 @@ describe("confirmed password account provisioning", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[1]?.[0]).toContain("grant_type=password");
   });
+
+  it("recognizes Supabase's msg-field existing-account response before attempting the verified session", async () => {
+    ENV.supabaseUrl = "https://project.supabase.co";
+    ENV.supabaseAnonKey = "publishable-key";
+    ENV.supabaseSecretKey = "server-only-key";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ msg: "User already registered" }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ access_token: "access", refresh_token: "refresh", user: { id: "user-1", email: "owner@example.com" } }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(provisionConfirmedPasswordAccount({ email: "owner@example.com", password: "Password1!" }, "127.0.0.1")).resolves.toEqual({ access_token: "access", refresh_token: "refresh", user: { id: "user-1", email: "owner@example.com" } });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });

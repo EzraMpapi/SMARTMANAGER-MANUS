@@ -378,6 +378,12 @@
 - [x] Update active banner references and the documentation manifest, then remove only the three approved project-local banner files. No active textual banner references existed; managed locations are recorded in the documentation manifest.
 - [x] Validate, synchronize, and save the recovered managed checkpoint. The three-file migration passed stale-reference, oversized-PNG, and diff checks; GitHub main and checkpoint version `125ea3e` are aligned.
 
+## Persistent Live Signup Error Investigation
+- [x] Capture the exact non-sensitive live account-registration response and deployment path without submitting a real account or tenant record. Both deployed client bundles lacked the verified existing-account recovery string, while local regression coverage passed; the managed live bundle is stale.
+- [x] Identify the existing-account recognition gap. Supabase can return `msg: "User already registered"`, but the recovery detector only read other error fields and fell through to the generic creation error.
+- [x] Correct the Supabase `msg`-field recognition path and re-run isolated regression coverage. The exact `msg` payload recovery, mounted signup, onboarding progression, TypeScript, and diff checks passed.
+- [ ] Validate, synchronize, and checkpoint the live-error repair.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.
