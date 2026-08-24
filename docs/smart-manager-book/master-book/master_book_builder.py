@@ -28,12 +28,13 @@ TODAY = "24 August 2026"
 MANAGED_BRANDING_ASSET_ROOT = Path(
     os.environ.get(
         "SMART_MANAGER_MASTER_BOOK_BRANDING_ROOT",
-        str(ROOT / "typst-project" / "assets" / "branding"),
+        "/home/ubuntu/webdev-static-assets/smart-manager-master-book/branding",
     )
 ).expanduser()
 MASTER_BOOK_LOGO = MANAGED_BRANDING_ASSET_ROOT / "smart-manager-logo.png"
-MASTER_BOOK_LOGO_STORAGE = "/manus-storage/smart-manager-logo_b1db8065.png"
+MASTER_BOOK_LOGO_STORAGE = "/manus-storage/smart-manager-logo-20260824_aa2c04d3.png"
 MASTER_BOOK_OWNER = MANAGED_BRANDING_ASSET_ROOT / "ezra-mpapi-owner.png"
+MASTER_BOOK_OWNER_STORAGE = "/manus-storage/ezra-mpapi-owner-20260824_83575e38.png"
 
 LIVE_TABLES = EVIDENCE / "live_supabase_tables_2026-08-24.json"
 LIVE_MIGRATIONS = EVIDENCE / "live_supabase_migrations_2026-08-24.json"
@@ -423,8 +424,8 @@ def build_typst() -> None:
     lines.append('#set text(font: ("Libertinus Serif", "Noto Sans"), lang: "en")')
     lines.append('#set par(justify: true)')
     lines.append('')
-    lines.append(f'#page(fill: rgb("#061A13"), margin: (top: 1.2cm, bottom: 1.2cm, x: 2cm), numbering: none, header: none)[#align(center)[#v(1cm)#image("assets/branding/smart-manager-logo.png", width: 15cm)#v(0.8cm)#text(fill: white, size: 25pt, weight: "bold")[SMART MANAGER ERP]#v(0.35cm)#text(fill: rgb("#D6EADF"), size: 14pt)[MASTER SYSTEM BOOK \\ ENGLISH AND TANZANIAN SWAHILI EDITION]#v(1cm)#line(length: 70%, stroke: 1pt + rgb("#D6B36A"))#v(0.8cm)#text(fill: white, size: 11pt)[Your Business. Connected. Controlled. Intelligent.]#v(1.1cm)#text(fill: white, size: 11pt)[Repository-Audited Edition \\ Version 1.0.0 \\ Documentation date: 24 August 2026 \\ Prepared by Manus AI \\ Owner and Creator: Ezra Mpapi \\ Dar es Salaam, Tanzania]]]')
-    lines.append(f'#page(numbering: none, header: none)[#align(center)[#text(size: 19pt, weight: "bold", fill: report-accent)[The Vision Behind SMART MANAGER]#v(0.7cm)#image("assets/branding/ezra-mpapi-owner.png", width: 7cm)#v(0.5cm)#text(size: 10.5pt)[Ezra Mpapi is identified in the supplied project materials as the Owner and Creator of SMART MANAGER ERP. This book uses only verified identity information and does not add an unverified biography, qualification, award, or employment history. \\ \\ SMART MANAGER is documented here as a repository-audited product whose source, database, authentication, security, subscription, and operational boundaries are explicitly described. \\ \\ Dar es Salaam, Tanzania]] ]')
+    lines.append(f'#page(fill: rgb("#061A13"), margin: (top: 1.2cm, bottom: 1.2cm, x: 2cm), numbering: none, header: none)[#align(center)[#v(1cm)#image("{MASTER_BOOK_LOGO.as_posix()}", width: 15cm)#v(0.8cm)#text(fill: white, size: 25pt, weight: "bold")[SMART MANAGER ERP]#v(0.35cm)#text(fill: rgb("#D6EADF"), size: 14pt)[MASTER SYSTEM BOOK \\ ENGLISH AND TANZANIAN SWAHILI EDITION]#v(1cm)#line(length: 70%, stroke: 1pt + rgb("#D6B36A"))#v(0.8cm)#text(fill: white, size: 11pt)[Your Business. Connected. Controlled. Intelligent.]#v(1.1cm)#text(fill: white, size: 11pt)[Repository-Audited Edition \\ Version 1.0.0 \\ Documentation date: 24 August 2026 \\ Prepared by Manus AI \\ Owner and Creator: Ezra Mpapi \\ Dar es Salaam, Tanzania]]]')
+    lines.append(f'#page(numbering: none, header: none)[#align(center)[#text(size: 19pt, weight: "bold", fill: report-accent)[The Vision Behind SMART MANAGER]#v(0.7cm)#image("{MASTER_BOOK_OWNER.as_posix()}", width: 7cm)#v(0.5cm)#text(size: 10.5pt)[Ezra Mpapi is identified in the supplied project materials as the Owner and Creator of SMART MANAGER ERP. This book uses only verified identity information and does not add an unverified biography, qualification, award, or employment history. \\ \\ SMART MANAGER is documented here as a repository-audited product whose source, database, authentication, security, subscription, and operational boundaries are explicitly described. \\ \\ Dar es Salaam, Tanzania]] ]')
     lines.append('#page(numbering: none, header: none)[#outline(title: [Contents / Yaliyomo], indent: 1.5em)]')
     lines.append('#counter(page).update(1)')
     lines.append('= Editorial and Evidence Note')
