@@ -21,6 +21,13 @@ const safeArray = (value) => Array.isArray(value) ? value : [];
 const text = (value, fallback = "—") => value == null || value === "" ? fallback : String(value);
 const date = (value) => value ? new Intl.DateTimeFormat("en-TZ", { dateStyle: "medium", timeZone: "Africa/Dar_es_Salaam" }).format(new Date(value)) : "—";
 const money = (value, currency = "TZS") => new Intl.NumberFormat("en-TZ", { style: "currency", currency, maximumFractionDigits: 0 }).format(Number(value || 0));
+const portalError = (err, fallback) => {
+  const message = err?.message || fallback;
+  if (message.includes("not linked to an active employee record")) {
+    return "Your account is authenticated, but no active HR employee record is linked to it. Self-service actions remain blocked by design. Ask an HR Manager or Global Admin to link your profile to the correct employee record; no automatic or name/email matching is performed.";
+  }
+  return message;
+};
 const statusClass = (value) => {
   const s = String(value || "").toLowerCase();
   if (s.includes("approved") || s.includes("completed") || s.includes("issued") || s.includes("present") || s.includes("active")) return "bg-emerald-50 text-emerald-700 ring-emerald-600/10";
@@ -49,7 +56,7 @@ export function EmployeePortalWorkspace({ rpc, configured = true, currentUser })
     if (!configured) { setLoading(false); setError("A configured database session is required for the Employee Portal."); return; }
     if (!quiet) setLoading(true); else setRefreshing(true);
     try { const data = await rpc("employee_portal_snapshot", {}); setSnapshot(data || {}); setError(""); }
-    catch (err) { setError(err?.message || "Could not load the Employee Portal."); }
+    catch (err) { setError(portalError(err, "Could not load the Employee Portal.")); }
     finally { setLoading(false); setRefreshing(false); }
   }, [configured, rpc]);
   useEffect(() => { refresh(); }, [refresh]);
@@ -57,7 +64,7 @@ export function EmployeePortalWorkspace({ rpc, configured = true, currentUser })
   const execute = async (action, payload = {}, success = "Saved") => {
     setSaving(true); setError("");
     try { await rpc("employee_portal_action", { p_action: action, p_payload: payload }); setNotice(success); setModal(null); await refresh({ quiet: true }); }
-    catch (err) { setError(err?.message || "The change was not saved. Please review the data and try again."); }
+    catch (err) { setError(portalError(err, "The change was not saved. Please review the data and try again.")); }
     finally { setSaving(false); }
   };
   const viewer = snapshot?.viewer || {}; const employee = snapshot?.employee || {};
