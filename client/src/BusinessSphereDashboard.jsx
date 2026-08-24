@@ -44,6 +44,7 @@ import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneValidationError, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
+import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
@@ -47744,6 +47745,10 @@ function SmartManager() {
             <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
           </div>
         </header>
+
+        {IS_CONFIGURED && active !== "billing" && subscriptionAccess.ready && subscriptionAccess.access.trialActive && (
+          <FreeTrialBanner access={subscriptionAccess.access} onUpgrade={() => go("billing")} />
+        )}
 
         {paletteOpen && <CommandPalette modules={visibleModules} crm={crm} invoices={invoices} inventory={inventory} expenses={expenses} onNavigate={go} onNavigateWithIntent={goWithIntent} onClose={() => setPaletteOpen(false)} />}
 
