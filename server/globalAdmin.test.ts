@@ -4,7 +4,7 @@ const { resolveVerifiedProfile } = vi.hoisted(() => ({ resolveVerifiedProfile: v
 vi.mock("./aiApprovals", () => ({ resolveVerifiedProfile }));
 vi.mock("./_core/env", () => ({ ENV: { supabaseUrl: "https://example.supabase.co", supabaseAnonKey: "anon-key" } }));
 
-import { getGlobalAdminSnapshot, recordGlobalAdminAction } from "./globalAdmin";
+import { getGlobalAdminExecutiveSnapshot, getGlobalAdminSnapshot, recordGlobalAdminAction } from "./globalAdmin";
 import { appRouter } from "./routers";
 
 const request = { headers: {} } as any;
@@ -39,6 +39,13 @@ describe("Global Admin server contract", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => response({ overview: { companyCount: 1 } }));
     await expect(getGlobalAdminSnapshot(request)).resolves.toEqual({ overview: { companyCount: 1 } });
     expect(fetchSpy).toHaveBeenCalledWith("https://example.supabase.co/rest/v1/rpc/platform_admin_snapshot", expect.objectContaining({ method: "POST", headers: expect.objectContaining({ authorization: "Bearer verified-token" }) }));
+  });
+
+  it("uses the same verified platform boundary for the executive control-plane snapshot", async () => {
+    resolveVerifiedProfile.mockResolvedValue({ profile: platformProfile, token: "verified-token" });
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => response({ kpis: { companies: 2 }, trend: [] }));
+    await expect(getGlobalAdminExecutiveSnapshot(request)).resolves.toEqual({ kpis: { companies: 2 }, trend: [] });
+    expect(fetchSpy).toHaveBeenCalledWith("https://example.supabase.co/rest/v1/rpc/platform_admin_executive_snapshot", expect.objectContaining({ method: "POST", headers: expect.objectContaining({ authorization: "Bearer verified-token" }) }));
   });
 
   it("posts only the explicit reasoned action payload to the guarded action RPC", async () => {

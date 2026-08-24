@@ -58,6 +58,11 @@ export async function getGlobalAdminSnapshot(req: CreateExpressContextOptions["r
   return callUserRpc<Record<string, unknown>>("platform_admin_snapshot", token);
 }
 
+export async function getGlobalAdminExecutiveSnapshot(req: CreateExpressContextOptions["req"]) {
+  const { token } = await requirePlatformAdmin(req);
+  return callUserRpc<Record<string, unknown>>("platform_admin_executive_snapshot", token);
+}
+
 export async function recordGlobalAdminAction(req: CreateExpressContextOptions["req"], input: GlobalAdminActionInput) {
   const { token } = await requirePlatformAdmin(req);
   return callUserRpc<Record<string, unknown>>("platform_admin_record_action", token, {

@@ -15,7 +15,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
-import { getGlobalAdminSnapshot, globalAdminActionInput, recordGlobalAdminAction } from "./globalAdmin";
+import { getGlobalAdminExecutiveSnapshot, getGlobalAdminSnapshot, globalAdminActionInput, recordGlobalAdminAction } from "./globalAdmin";
 import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
@@ -90,6 +90,8 @@ export const appRouter = router({
   globalAdmin: router({
     snapshot: protectedProcedure
       .query(({ ctx }) => getGlobalAdminSnapshot(ctx.req)),
+    executiveSnapshot: protectedProcedure
+      .query(({ ctx }) => getGlobalAdminExecutiveSnapshot(ctx.req)),
     recordAction: protectedProcedure
       .input(globalAdminActionInput)
       .mutation(({ ctx, input }) => recordGlobalAdminAction(ctx.req, input)),
