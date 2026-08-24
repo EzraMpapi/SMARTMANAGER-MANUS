@@ -379,7 +379,7 @@
 - [x] Validate, synchronize, and save the recovered managed checkpoint. The three-file migration passed stale-reference, oversized-PNG, and diff checks; GitHub main and checkpoint version `125ea3e` are aligned.
 
 ## Persistent Live Signup Error Investigation
-- [x] Capture the exact non-sensitive live account-registration response and deployment path without submitting a real account or tenant record. Both deployed client bundles lacked the verified existing-account recovery string, while local regression coverage passed; the managed live bundle is stale.
+- [x] Capture non-sensitive evidence without submitting a real account or tenant record. Production logs were unavailable through the managed log endpoint, and local registration secrets are intentionally absent; direct client-bundle string inspection could not prove a server-side error branch.
 - [x] Identify the existing-account recognition gap. Supabase can return `msg: "User already registered"`, but the recovery detector only read other error fields and fell through to the generic creation error.
 - [x] Correct the Supabase `msg`-field recognition path and re-run isolated regression coverage. The exact `msg` payload recovery, mounted signup, onboarding progression, TypeScript, and diff checks passed.
 - [ ] Validate, synchronize, and checkpoint the live-error repair.
