@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export const SUBSCRIPTION_ACCESS_STATES = Object.freeze(["active", "grace", "pending", "expired", "required", "unknown"]);
-const ACCESSIBLE_STATES = new Set(["active", "grace"]);
+export const SUBSCRIPTION_ACCESS_STATES = Object.freeze(["trial", "active", "grace", "pending", "expired", "required", "unknown"]);
+const ACCESSIBLE_STATES = new Set(["trial", "active", "grace"]);
 const MODULE_ALIASES = Object.freeze({ hotel: "hospitality", restaurant: "hospitality" });
 
 function normalizeState(value) {
@@ -32,12 +32,17 @@ export function normalizeSubscriptionAccess(payload) {
     subscription,
     plan,
     moduleEntitlements,
+    trialActive: source.trialActive === true,
+    unlimitedAccess: source.unlimitedAccess === true,
+    trialStartedAt: source.trialStartedAt || subscription?.trial_started_at || null,
+    trialEndsAt: source.trialEndsAt || subscription?.trial_ends_at || source.accessUntil || null,
   };
 }
 
 export function subscriptionAllowsModule(access, moduleId) {
   if (!access?.allowed) return false;
   if (moduleId === "dashboard") return true;
+  if (access.unlimitedAccess === true && access.trialActive === true) return true;
   const requested = String(moduleId || "").trim().toLowerCase();
   const entitlement = MODULE_ALIASES[requested] || requested;
   return access.moduleEntitlements.includes(entitlement);
