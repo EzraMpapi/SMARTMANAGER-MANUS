@@ -10,17 +10,17 @@ The plan uses PostgreSQL `CREATE INDEX CONCURRENTLY`, one statement per autocomm
 
 The live public catalog currently contains **520 tables**, up from 518 in the previous snapshot. The two newly observed tables are `public.platform_admin_actions` and `public.platform_admin_dashboard_settings`; neither is missing from Supabase. All 520 public tables report RLS enabled.
 
-The catalog contains **1,097 foreign-key constraints**. Exact index-prefix classification found **997 truly uncovered relationships**, four relationships with only non-leading composite coverage, one relationship covered by a primary-key prefix, 50 covered by unique composite prefixes, and 37 covered by non-unique composite prefixes.
+The catalog contains **1,097 foreign-key constraints**. Exact index-prefix classification found **1,003 truly uncovered relationships**, four relationships with only non-leading composite coverage, two relationships covered by primary-key prefixes, 51 covered by unique composite prefixes, and 37 covered by non-unique composite prefixes.
 
 | Classification | Count | Action |
 |---|---:|---|
-| Truly uncovered FK relationships | 997 | Review and prioritize; do not auto-apply. |
+| Truly uncovered FK relationships | 1,003 | Review and prioritize; do not auto-apply. |
 | Non-leading composite coverage only | 4 | Exclude from automatic creation; validate with query plans. |
-| Primary-key leading-prefix coverage | 1 | Exclude; already covered. |
-| Unique leading-prefix coverage | 50 | Exclude; already covered. |
+| Primary-key leading-prefix coverage | 2 | Exclude; already covered. |
+| Unique leading-prefix coverage | 51 | Exclude; already covered. |
 | Non-unique composite leading-prefix coverage | 37 | Exclude; already covered. |
 
-The earlier 1,008-candidate figure is retained as historical evidence only. It was generated against the earlier catalog snapshot and did not fully separate existing coverage classes.
+The earlier 1,008-candidate figure is retained as historical evidence only. It was generated against the earlier catalog snapshot and did not fully separate existing coverage classes. The refreshed strict unmatched-leading-prefix set is 1,007; four have non-leading composite coverage, leaving 1,003 truly uncovered relationships.
 
 ## Promotion gates
 
