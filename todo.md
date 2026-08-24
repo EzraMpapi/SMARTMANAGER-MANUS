@@ -368,7 +368,7 @@
 - [ ] Document added, changed, and removed dashboard-specific files with remaining limitations.
 - [x] Create an executive presentation covering the redesign architecture, validation evidence, audit findings, and remaining safe protected-dashboard verification steps.
 ## Guarded GitHub and Supabase Synchronization
-- [ ] Inventory uncommitted repository changes and confirm the target GitHub branch before staging only reviewed work.
-- [ ] Compare project migrations with the connected Supabase schema and identify only missing, idempotent, non-destructive migrations.
-- [ ] Apply verified missing schema changes through the connected Supabase project, then validate the affected schema state.
-- [ ] Commit and push the reviewed repository changes with a clear synchronization message.
+- [x] Inventory uncommitted repository changes and confirm the target GitHub branch before staging only reviewed work.
+- [x] Compare project migrations with the connected Supabase schema and identify only missing, idempotent, non-destructive migrations.
+- [x] Validate that no unmatched project migration required reapplication: history, representative tables, property schema tables, and the five P0 index definitions were already present.
+- [x] Commit and push the reviewed repository changes with a clear synchronization message (`97ba3d2`).
