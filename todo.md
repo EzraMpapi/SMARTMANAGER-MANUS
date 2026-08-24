@@ -339,4 +339,5 @@
 - [x] Inspect the existing Android APK/TWA package, trusted-web-activity configuration, and production web routing for `https://menejajanja.vercel.app`.
 - [x] Align the Android package and full-stack web configuration to the verified production URL without exposing secrets or weakening authentication, tenant isolation, or role controls.
 - [x] Correct the production PWA/Android icon path so the Vercel origin returns an image rather than the application shell.
+- [x] Replace the Vercel-unserved managed-storage icon URL with a production-deployable PWA/Android icon source and revise the regression contract.
 - [ ] Validate the production web contract and Android packaging configuration, then synchronize the verified changes safely.
