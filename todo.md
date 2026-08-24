@@ -364,6 +364,11 @@
 - [x] Map each documentation reference to managed storage, record the locations in a non-sensitive manifest, and remove only the four confirmed oversized duplicate local files.
 - [x] Revalidate the signup release, synchronize the cleanup to GitHub, and save the recovered managed publication checkpoint.
 
+## Signup Account-Creation Failure Follow-up
+- [x] Trace the reported “account could not be created” failure through the current signup submission and authentication boundary without creating a real account or tenant. Existing-account responses were previously treated as terminal failures before a session attempt.
+- [x] Correct the identified failure path with isolated regression coverage and clear user-facing recovery behavior. A verified existing account now continues with its authenticated session; an unavailable or invalid session returns an explicit sign-in/password-recovery message.
+- [ ] Run isolated signup validation, synchronize the verified repair to GitHub, and save the managed release checkpoint.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.
