@@ -1,0 +1,287 @@
+name: Live authenticated tenant fixtures
+
+
+
+on:
+
+  workflow_dispatch:
+  
+    inputs:
+    
+      fixture_key:
+      
+        description: "Optional stable fixture key; leave blank to use the GitHub run ID"
+        
+        required: false
+        
+        type: string
+        
+      email_domain:
+      
+        description: "Controlled test email domain configured in Supabase Auth"
+        
+        required: false
+        
+        default: "example.invalid"
+        
+        type: string
+        
+
+
+permissions:
+
+  contents: read
+  
+
+
+concurrency:
+
+  group: live-e2e-${{ inputs.fixture_key || github.run_id }}
+  
+  cancel-in-progress: false
+  
+
+
+jobs:
+
+  authenticated-tenant-workflow:
+  
+    if: github.ref == 'refs/heads/main'
+    
+    name: Provision, test, and clean isolated tenant
+    
+    runs-on: ubuntu-latest
+    
+    environment: live-e2e
+    
+    timeout-minutes: 20
+    
+    steps:
+    
+      - name: Checkout repository
+      
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        
+
+
+      - name: Set up pnpm
+      
+        uses: pnpm/action-setup@0c17529a66aca453f9227af23103ed11469b1e47 # v4.0.0
+        
+        with:
+        
+          version: 10.34.2
+          
+          run_install: false
+          
+
+
+      - name: Set up Node.js
+      
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        
+        with:
+        
+          node-version: 22.13.0
+          
+          cache: pnpm
+          
+
+
+      - name: Install dependencies
+      
+        run: pnpm install --frozen-lockfile
+        
+
+
+      - name: Validate protected fixture inputs
+      
+        env:
+        
+          FIXTURE_TARGET: isolated
+          
+          FIXTURE_CONFIRM: CREATE_SMARTMANAGER_E2E_FIXTURE
+          
+          LIVE_SUPABASE_URL: ${{ vars.LIVE_SUPABASE_URL }}
+          
+          LIVE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.LIVE_SUPABASE_SERVICE_ROLE_KEY }}
+          
+          LIVE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.LIVE_SUPABASE_PUBLISHABLE_KEY }}
+          
+          LIVE_FIXTURE_PASSWORD: ${{ secrets.LIVE_FIXTURE_PASSWORD }}
+          
+        run: |
+        
+          set -euo pipefail
+          
+          [ "$FIXTURE_TARGET" = isolated ]
+          
+          [ "$FIXTURE_CONFIRM" = CREATE_SMARTMANAGER_E2E_FIXTURE ]
+          
+          [ -n "$LIVE_SUPABASE_URL" ]
+          
+          [ -n "$LIVE_SUPABASE_SERVICE_ROLE_KEY" ]
+          
+          [ -n "$LIVE_SUPABASE_PUBLISHABLE_KEY" ]
+          
+          [ -n "$LIVE_FIXTURE_PASSWORD" ]
+          
+          [ "${#LIVE_FIXTURE_PASSWORD}" -ge 12 ]
+          
+
+
+      - name: Verify runtime secret injection readiness
+      
+        env:
+        
+          LIVE_SUPABASE_URL: ${{ vars.LIVE_SUPABASE_URL }}
+          
+          LIVE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.LIVE_SUPABASE_SERVICE_ROLE_KEY }}
+          
+          LIVE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.LIVE_SUPABASE_PUBLISHABLE_KEY }}
+          
+          LIVE_FIXTURE_PASSWORD: ${{ secrets.LIVE_FIXTURE_PASSWORD }}
+          
+          LIVE_FIXTURE_TARGET: isolated
+          
+          LIVE_FIXTURE_CONFIRM: CREATE_SMARTMANAGER_E2E_FIXTURE
+          
+        run: node scripts/verifyGithubEnvironment.mjs --runtime
+        
+
+
+      - name: Run isolated authenticated tenant workflow
+      
+        env:
+        
+          LIVE_SUPABASE_URL: ${{ vars.LIVE_SUPABASE_URL }}
+          
+          LIVE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.LIVE_SUPABASE_SERVICE_ROLE_KEY }}
+          
+          LIVE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.LIVE_SUPABASE_PUBLISHABLE_KEY }}
+          
+          LIVE_FIXTURE_PASSWORD: ${{ secrets.LIVE_FIXTURE_PASSWORD }}
+          
+          LIVE_FIXTURE_TARGET: isolated
+          
+          LIVE_FIXTURE_CONFIRM: CREATE_SMARTMANAGER_E2E_FIXTURE
+          
+          LIVE_FIXTURE_KEY: ${{ inputs.fixture_key || format('gha-{0}', github.run_id) }}
+          
+          LIVE_FIXTURE_EMAIL_DOMAIN: ${{ inputs.email_domain }}
+          
+          LIVE_FIXTURE_MANIFEST: ${{ runner.temp }}/smartmanager-e2e-fixture.json
+          
+        run: node scripts/runLiveTenantWorkflow.mjs
+        
+
+
+      - name: Ensure fixture cleanup after cancellation or runner interruption
+      
+        if: always()
+        
+        env:
+        
+          LIVE_SUPABASE_URL: ${{ vars.LIVE_SUPABASE_URL }}
+          
+          LIVE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.LIVE_SUPABASE_SERVICE_ROLE_KEY }}
+          
+          LIVE_FIXTURE_TARGET: isolated
+          
+          LIVE_FIXTURE_MANIFEST: ${{ runner.temp }}/smartmanager-e2e-fixture.json
+          
+        run: |
+        
+          set -euo pipefail
+          
+          if [ -f "$LIVE_FIXTURE_MANIFEST" ]; then
+          
+            node scripts/liveTenantFixtures.mjs cleanup
+            
+          fi
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
