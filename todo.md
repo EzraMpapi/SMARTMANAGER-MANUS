@@ -373,6 +373,11 @@
 - [x] Re-run focused isolated signup account-provisioning and client-flow regressions without creating real accounts or tenant records. The focused release suite passed 77 tests across account provisioning, mounted signup, progression, and dashboard integration coverage.
 - [x] Confirm current TypeScript and working-tree integrity, then record the verified release outcome. TypeScript and diff checks passed, and the managed sign-in entry screen loaded without an account or tenant write.
 
+## Social Banner Publication Recovery
+- [x] Preserve and upload only the three approved oversized social-banner source images to managed storage.
+- [x] Update active banner references and the documentation manifest, then remove only the three approved project-local banner files. No active textual banner references existed; managed locations are recorded in the documentation manifest.
+- [ ] Validate, synchronize, and save the recovered managed checkpoint.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.
