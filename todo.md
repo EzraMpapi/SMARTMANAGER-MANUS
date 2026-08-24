@@ -369,6 +369,10 @@
 - [x] Correct the identified failure path with isolated regression coverage and clear user-facing recovery behavior. A verified existing account now continues with its authenticated session; an unavailable or invalid session returns an explicit sign-in/password-recovery message.
 - [x] Run isolated signup validation, synchronize the verified repair to GitHub, and save the managed release checkpoint. Focused isolated regressions, TypeScript, and clean diff checks passed; the reserved `.invalid` browser build was attempted but terminated under sandbox memory pressure before Playwright ran and was not treated as a passing result.
 
+## Final Signup Recovery Verification
+- [x] Re-run focused isolated signup account-provisioning and client-flow regressions without creating real accounts or tenant records. The focused release suite passed 77 tests across account provisioning, mounted signup, progression, and dashboard integration coverage.
+- [x] Confirm current TypeScript and working-tree integrity, then record the verified release outcome. TypeScript and diff checks passed, and the managed sign-in entry screen loaded without an account or tenant write.
+
 ## Vercel Global Admin Review
 - [x] Review the specified `menejajanja.vercel.com` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The address returned Vercel `DEPLOYMENT_NOT_FOUND`, so no application or protected Global Admin path is available there.
 - [x] Review the corrected `menejajanja.vercel.app` deployment in read-only mode and record whether its static hosting configuration can reach the protected Global Admin data path. The landing and `/app` routes loaded, while an unauthenticated protected Global Admin tRPC request returned 401 as expected.
