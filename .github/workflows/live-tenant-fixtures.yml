@@ -95,40 +95,64 @@ jobs:
 
 
       - name: Validate protected fixture inputs
-      
         env:
-        
           FIXTURE_TARGET: isolated
-          
           FIXTURE_CONFIRM: CREATE_SMARTMANAGER_E2E_FIXTURE
-          
+          FIXTURE_EMAIL_DOMAIN: ${{ inputs.email_domain }}
           LIVE_SUPABASE_URL: ${{ vars.LIVE_SUPABASE_URL }}
-          
           LIVE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.LIVE_SUPABASE_SERVICE_ROLE_KEY }}
-          
           LIVE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.LIVE_SUPABASE_PUBLISHABLE_KEY }}
-          
           LIVE_FIXTURE_PASSWORD: ${{ secrets.LIVE_FIXTURE_PASSWORD }}
-          
+        shell: bash
         run: |
-        
           set -euo pipefail
-          
-          [ "$FIXTURE_TARGET" = isolated ]
-          
-          [ "$FIXTURE_CONFIRM" = CREATE_SMARTMANAGER_E2E_FIXTURE ]
-          
-          [ -n "$LIVE_SUPABASE_URL" ]
-          
-          [ -n "$LIVE_SUPABASE_SERVICE_ROLE_KEY" ]
-          
-          [ -n "$LIVE_SUPABASE_PUBLISHABLE_KEY" ]
-          
-          [ -n "$LIVE_FIXTURE_PASSWORD" ]
-          
-          [ "${#LIVE_FIXTURE_PASSWORD}" -ge 12 ]
-          
 
+          preflight_error() {
+            echo "::error title=live-e2e preflight::$1" >&2
+            exit 1
+          }
+
+          if [[ "${FIXTURE_TARGET:-}" != "isolated" ]]; then
+            preflight_error "Fixture target must be isolated; refusing to run against a shared or production tenant."
+          fi
+
+          if [[ "${FIXTURE_CONFIRM:-}" != "CREATE_SMARTMANAGER_E2E_FIXTURE" ]]; then
+            preflight_error "Fixture confirmation is missing or invalid; use the protected confirmation value."
+          fi
+
+          if [[ -z "${FIXTURE_EMAIL_DOMAIN:-}" ]]; then
+            preflight_error "Missing workflow input email_domain; provide the controlled Supabase Auth test email domain."
+          fi
+
+          if [[ ! "${FIXTURE_EMAIL_DOMAIN}" =~ ^[A-Za-z0-9.-]+$ ]]; then
+            preflight_error "Workflow input email_domain contains invalid characters; use a hostname such as example.invalid."
+          fi
+
+          if [[ -z "${LIVE_SUPABASE_URL:-}" ]]; then
+            preflight_error "Missing environment variable LIVE_SUPABASE_URL; add it under Settings > Environments > live-e2e > Variables."
+          fi
+
+          if [[ ! "${LIVE_SUPABASE_URL}" =~ ^https://[^[:space:]]+$ ]]; then
+            preflight_error "LIVE_SUPABASE_URL must be a non-empty HTTPS URL; its value is intentionally not printed."
+          fi
+
+          if [[ -z "${LIVE_SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
+            preflight_error "Missing environment secret LIVE_SUPABASE_SERVICE_ROLE_KEY; add it under Settings > Environments > live-e2e > Secrets."
+          fi
+
+          if [[ -z "${LIVE_SUPABASE_PUBLISHABLE_KEY:-}" ]]; then
+            preflight_error "Missing environment secret LIVE_SUPABASE_PUBLISHABLE_KEY; add it under Settings > Environments > live-e2e > Secrets."
+          fi
+
+          if [[ -z "${LIVE_FIXTURE_PASSWORD:-}" ]]; then
+            preflight_error "Missing environment secret LIVE_FIXTURE_PASSWORD; add it under Settings > Environments > live-e2e > Secrets."
+          fi
+
+          if [[ "${#LIVE_FIXTURE_PASSWORD}" -lt 12 ]]; then
+            preflight_error "LIVE_FIXTURE_PASSWORD must contain at least 12 characters; its value is intentionally not printed."
+          fi
+
+          echo "live-e2e protected input preflight passed; secret values were not printed."
 
       - name: Verify runtime secret injection readiness
       
