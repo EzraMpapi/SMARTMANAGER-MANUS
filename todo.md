@@ -377,3 +377,17 @@
 - [x] Recheck the connected Supabase migration history and local migration inventory before applying any schema SQL.
 - [x] Apply only schema operations that remain demonstrably missing and safe after the recheck; none qualified because the checked migrations and schema objects already exist.
 - [x] Push any newly eligible repository change while documenting protected environment files and oversized generated artifacts separately (`c9af026`).
+
+## Release Binary Publication Guide
+- [x] Compare GitHub Releases and Git LFS for the oversized Windows packaging artifacts, then document the recommended publish sequence.
+
+## v1.0.0 Release Preparation
+- [x] Verify the intended Windows and Android artifacts, generate SHA-256 checksums, and draft release notes with signing limitations.
+
+## v1.0.0 Release Communications
+- [x] Draft a customer-ready announcement email and detailed changelog that accurately represent the current packaging and signing status.
+- [x] Create a stakeholder presentation script for the v1.0.0 release announcement, validation review, and signing decision gates.
+
+## Final Schema and Repository Synchronization
+- [x] Refresh the connected Supabase migration ledger and apply only demonstrably missing, safe schema changes; none qualified because the checked migration equivalents and schema objects already exist.
+- [ ] Commit and push the eligible v1.0.0 release communication materials and checklist updates to GitHub.
