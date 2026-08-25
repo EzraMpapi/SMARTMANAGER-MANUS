@@ -530,3 +530,15 @@
 - [ ] Apply only genuinely missing idempotent tables or related objects; do not duplicate existing objects or seed fabricated data.
 - [ ] Verify RLS, tenant isolation, and post-migration schema state.
 - [ ] Commit and push the intentional repository changes to the configured GitHub main branch.
+
+## Supabase 401 and Full Regression Verification
+- [x] Diagnose the local Supabase HTTP 401 using non-secret endpoint, environment, and credential metadata only; the failure was caused by Vitest overriding injected credentials with unit-test fallbacks.
+- [x] Run focused mobile-responsive and RLS policy tests.
+- [x] Run the complete regression suite and classify any failures separately from the credential probe.
+- [x] Record the diagnosis, test totals, and remaining blockers in the verification record.
+- [x] Fix the Android TWA template host and same-origin asset URLs so the existing packaging contract matches the verified Vercel production origin.
+
+## Final Build, RLS Recheck, and Vitest Push
+- [ ] Retry the production Vite build with optimized chunking and inspect emitted artifact completeness.
+- [x] Re-audit the six RLS-enabled tables with no attached policies for ownership, grants, and exposure.
+- [x] Run the verified Vitest/TypeScript checks, commit the Vitest environment fix and Android template correction, and push to GitHub.
