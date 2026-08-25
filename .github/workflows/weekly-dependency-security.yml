@@ -1,0 +1,94 @@
+name: Weekly Dependency Security
+
+on:
+  push:
+    branches:
+      - main
+      - automation/weekly-dependency-security
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Run after the Monday Dependabot update window.
+    - cron: "30 6 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: weekly-dependency-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-security:
+    name: Dependency vulnerability audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run production dependency audit
+        run: pnpm audit --prod --audit-level high
+
+      - name: Create or update vulnerability alert
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_SHA: ${{ github.sha }}
+        with:
+          script: |
+            const title = "[security] Weekly dependency vulnerability scan failing";
+            const body = [
+              "The weekly production dependency vulnerability audit found a high-severity or critical issue, or the audit could not complete.",
+              "",
+              `Run: ${process.env.RUN_URL}`,
+              `Commit: ${process.env.RUN_SHA}`,
+              `UTC: ${new Date().toISOString()}`,
+              "",
+              "Review the workflow log and update the affected package through the existing Dependabot process. Do not suppress the audit without documenting an approved exception.",
+            ].join("\\n");
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = openIssues.find((issue) => issue.title === title);
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+              core.info(`Updated existing security alert issue #${existing.number}.`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+              core.info(`Created security alert issue #${created.data.number}.`);
+            }
