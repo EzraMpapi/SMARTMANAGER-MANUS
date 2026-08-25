@@ -1736,7 +1736,7 @@ function LegacyHotelManagementModule({ currentUser, company }) {
   );
 }
 
-function LegacyBankingMFIModule({ currentUser, company, onLoansLoad = null }) {
+function LegacyBankingMFIModule({ currentUser, company, onLoansLoad = null, onOpenStandingOrderWorkflow = null }) {
   const [tab, setTab]   = useState("dashboard");
   const [tellerTab, setTellerTab] = useState("deposit");
   const [loanTab,   setLoanTab]   = useState("list");
@@ -2272,7 +2272,7 @@ function LegacyBankingMFIModule({ currentUser, company, onLoansLoad = null }) {
       {/* ── STANDING ORDERS ── */}
       {tab==="standing" && (
         <div className="space-y-3">
-          <div className="flex justify-end"><button onClick={()=>notify("Set up standing order — form")} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:BANK_BLUE}}><Plus size={13}/>New Standing Order</button></div>
+          <div className="flex items-center justify-between gap-3"><p className="text-[11px] text-slate-500">Use the shared server-confirmed workflow for maker-checker approval, activation, pausing, resuming, cancellation, and run status.</p><button onClick={()=>{ if (onOpenStandingOrderWorkflow) onOpenStandingOrderWorkflow(); else notify("Open Bank & MFI > Cash & channels to use the server-confirmed Standing Order workflow.", "info"); }} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:BANK_BLUE}}><Plus size={13}/>Open Standing Order workflow</button></div>
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Account No","Debtor","Beneficiary","Amount","Frequency","Next Run","Status"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>

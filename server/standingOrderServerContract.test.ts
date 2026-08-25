@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 const operations = readFileSync(new URL("./bankMfiOperations.ts", import.meta.url), "utf8");
 const router = readFileSync(new URL("./routers.ts", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20250825_007_standing_order_server_implementation.sql", import.meta.url), "utf8");
+const workspace = readFileSync(new URL("../client/src/components/BankMfiWorkspace.jsx", import.meta.url), "utf8");
+const legacyBanking = readFileSync(new URL("../client/src/dashboardExtractedModules.jsx", import.meta.url), "utf8");
 
 describe("Standing Order server implementation contract", () => {
   it("validates the backward-compatible create payload and channel destinations", () => {
@@ -61,6 +63,26 @@ describe("Standing Order server implementation contract", () => {
     expect(migration).toContain("RUN_PENDING_PROVIDER");
     expect(migration).toContain("bank_post_transaction");
     expect(migration).toContain("bank_create_payment_instruction");
+  });
+
+  it("connects the reachable workspace to confirmed lifecycle actions", () => {
+    expect(workspace).toContain("const [standingOrderRequestKey, setStandingOrderRequestKey] = useState(() => idempotencyKey())");
+    expect(workspace).toContain("idempotencyKey: standingOrderRequestKey");
+    expect(workspace).toContain("trpc.bankMfi.submitStandingOrder.useMutation");
+    expect(workspace).toContain("trpc.bankMfi.approveStandingOrder.useMutation");
+    expect(workspace).toContain("trpc.bankMfi.activateStandingOrder.useMutation");
+    expect(workspace).toContain("trpc.bankMfi.pauseStandingOrder.useMutation");
+    expect(workspace).toContain("trpc.bankMfi.resumeStandingOrder.useMutation");
+    expect(workspace).toContain("trpc.bankMfi.cancelStandingOrder.useMutation");
+    expect(workspace).toContain("expectedVersion: Number(order.version ?? 0)");
+    expect(workspace).toContain("status === \"PENDING_APPROVAL\"");
+    expect(workspace).toContain("Provider confirmation required; not settled.");
+  });
+
+  it("replaces the legacy notification-only Standing Order button with a workflow handoff", () => {
+    expect(legacyBanking).not.toContain('notify("Set up standing order — form")');
+    expect(legacyBanking).toContain("onOpenStandingOrderWorkflow");
+    expect(legacyBanking).toContain("Open Standing Order workflow");
   });
 
   it("keeps direct database exposure bounded", () => {
