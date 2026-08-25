@@ -423,3 +423,4 @@
 - [x] Preserve schema enforcement in local and CI validation while allowing a Vercel build to skip an unavailable or unauthorized server-only Supabase schema credential.
 - [x] Push the Vercel build-gate repair to GitHub (`5b1db50`).
 - [ ] Verify a Git-sourced Vercel deployment once the provider’s deployment quota resets; the API reports no remaining daily deployment capacity and a reset time approximately 24 hours later.
+- [x] Review `20260825_005_workspace_presence_recovery.sql` and preserve an audit-ready future-reference note in `docs/WORKSPACE_PRESENCE_RECOVERY_AUDIT_REFERENCE.md`.
