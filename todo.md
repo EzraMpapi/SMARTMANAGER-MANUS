@@ -402,3 +402,8 @@
 - [x] Refresh the live Supabase migration ledger and compare current project migrations and schema objects.
 - [x] Apply only demonstrably missing, idempotent, non-destructive schema objects; no qualified DDL was found because the refreshed live schema already contains the checked fixed-deposit and property-management objects. The isolated test seed remains unexecuted.
 - [x] Commit and push eligible seed-script and checklist changes to GitHub, excluding protected templates and generated binaries (`f4ed569`).
+
+## Automated Read-Only Health Verification
+- [ ] Update the existing recurring review into a daily 08:00 GMT+3 read-only Supabase and GitHub health check, retaining evidence reinspection on the 24th without applying DDL, test seeds, commits, or pushes.
+- [x] Create a repository-based scheduled workflow for read-only Supabase schema and GitHub synchronization verification, including a secure-secret activation guide; activation awaits a dedicated read-only database credential.
+- [ ] Commit and push the reviewed repository-based schema health workflow, script, activation guide, and checklist update.

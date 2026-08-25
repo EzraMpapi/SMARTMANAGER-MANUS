@@ -1,0 +1,83 @@
+name: Read-only schema and GitHub health verification
+on:
+  schedule:
+    # GitHub Actions cron is UTC. 05:00 UTC is 08:00 in Africa/Dar_es_Salaam (GMT+3).
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: read-only-schema-health-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    name: Verify read-only schema and repository health
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_SCHEMA_HEALTH_DATABASE_URL: ${{ secrets.SUPABASE_SCHEMA_HEALTH_DATABASE_URL }}
+    steps:
+      - name: Checkout scheduled revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify GitHub main synchronization
+        id: github-health
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          local_sha="$(git rev-parse HEAD)"
+          remote_sha="$(git rev-parse origin/main)"
+          dirty="$(git status --porcelain)"
+          {
+            echo "## GitHub synchronization"
+            echo
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| Scheduled revision | \`${local_sha}\` |"
+            echo "| Current main | \`${remote_sha}\` |"
+            echo "| Runner working tree | $([[ -z \"${dirty}\" ]] && echo 'clean' || echo 'modified') |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$local_sha" != "$remote_sha" ]]; then
+            echo "DRIFT: main advanced after this run began; the next scheduled run will check the current revision." >&2
+          fi
+          if [[ -n "$dirty" ]]; then
+            echo "BLOCKED: the Actions runner working tree is unexpectedly modified." >&2
+            exit 1
+          fi
+      - name: Ensure PostgreSQL client is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --yes postgresql-client
+          fi
+      - name: Verify Supabase schema health without writes
+        id: supabase-health
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SUPABASE_SCHEMA_HEALTH_DATABASE_URL:-}" ]]; then
+            echo "BLOCKED: configure the SUPABASE_SCHEMA_HEALTH_DATABASE_URL repository secret with a dedicated read-only database role." >&2
+            exit 64
+          fi
+          health_json="$(bash scripts/verify-schema-health.sh)"
+          {
+            echo
+            echo "## Supabase schema health"
+            echo
+            echo '```json'
+            echo "$health_json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Report operating boundary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo
+            echo "> This workflow is inspection-only. It does not run migrations or seed scripts, write application data, change policies, commit, push, tag, release, or deploy."
+            echo "> Investigate any failure with a separate, manually approved guarded change task."
+          } >> "$GITHUB_STEP_SUMMARY"
