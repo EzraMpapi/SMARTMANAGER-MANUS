@@ -66,3 +66,8 @@ The 139 security findings and 1,045 performance findings should continue through
 [3]: https://supabase.com/docs/guides/database/database-advisors "Supabase Database Advisors"  
 [4]: https://supabase.com/docs/guides/database/functions "Supabase Database Functions"  
 [5]: https://menejajanja.vercel.app/app "SMART MANAGER production application"
+
+
+## Data-consistency and reporting contracts
+
+Representative workflow contracts passed **23 tests**, with two live persistence tests skipped because they require a controlled authenticated tenant. The passing contracts cover guarded client/server mutation routing, CRM persistence boundaries, finance persistence and ledger contracts, dashboard truthfulness, report flow, and dashboard KPI/report integration. The suite confirms that the application’s supported persistence paths are wired to the guarded server boundary and that dashboard/report contracts do not rely on fabricated numbers. A live UI-to-database refresh proof remains gated on the disposable tenant/session prerequisite.

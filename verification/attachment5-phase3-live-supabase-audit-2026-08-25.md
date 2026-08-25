@@ -27,3 +27,16 @@ The live schema is substantially populated and RLS is broadly enabled. No missin
 ## Safety boundary
 
 The requested attachment calls for live CRUD and cross-tenant tests. Those tests require a disposable test tenant plus at least two authenticated sessions. No such controlled identities were supplied. Service-role metadata access cannot substitute for authenticated RLS testing because it bypasses the policy boundary. Production business rows remain unchanged.
+
+
+## Targeted policyless-table inspection
+
+A read-only query confirmed all six advisor-identified tables are owned by `postgres`, have RLS enabled, have zero policies, and expose no grants to `anon` or `authenticated`. The only listed privileges are full service-role privileges, consistent with backend/webhook-only control surfaces:
+
+| Table group | Owner | RLS | Policies | Ordinary roles | Service role |
+|---|---|---:|---:|---|---|
+| `bank_provider_webhook_account_controls`, `bank_provider_webhook_drain_approvals`, `bank_provider_webhook_drain_runs`, `bank_provider_webhook_remediation` | postgres | enabled | 0 each | none listed | full operational privileges |
+| `platform_admin_actions` | postgres | enabled | 0 | none listed | full operational privileges |
+| `subscription_trial_expiry_notices` | postgres | enabled | 0 | none listed | full operational privileges |
+
+This confirms the six INFO advisor notices represent intentional deny-by-default surfaces rather than missing end-user policies. No policy or grant change is warranted from this inspection alone.
