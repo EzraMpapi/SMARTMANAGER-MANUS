@@ -1,8 +1,6 @@
 {
   "name": "businesssphere-erp",
   "version": "1.0.0",
-  "description": "Smart Manager enterprise operations platform",
-  "author": "Smart Manager",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -13,17 +11,12 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "pretest:browser": "VITE_SUPABASE_URL=https://e2e.supabase.invalid VITE_SUPABASE_ANON_KEY=e2e-anon-key SUPABASE_URL=https://e2e.supabase.invalid SUPABASE_ANON_KEY=e2e-anon-key vite build --mode e2e --sourcemap=false --minify=esbuild",
+    "pretest:browser": "SUPABASE_URL=https://e2e.supabase.invalid SUPABASE_ANON_KEY=e2e-anon-key vite build --mode e2e --sourcemap=false --minify=esbuild",
     "test:browser": "playwright test",
-    "test:browser:preview-auth": "E2E_REAL_AUTH=1 playwright test browser-tests/authProviderDeployedPreview.spec.ts",
+    "test:browser:offline": "pnpm run pretest:browser && playwright test browser-tests/offlineFallback.e2e.spec.ts",
     "test:browser:operations-visual": "playwright test browser-tests/operationsCommandCenters.spec.ts",
     "verify:supabase-schema": "node server/verifySupabaseSchema.mjs",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "desktop:dev": "electron desktop/main.mjs",
-    "desktop:pack": "electron-builder --config desktop/electron-builder.yml --win --dir --x64",
-    "desktop:build": "electron-builder --config desktop/electron-builder.yml --win nsis --x64",
-    "android:debug": "cd android && ./gradlew assembleDebug",
-    "android:release": "cd android && ./gradlew assembleRelease"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
@@ -111,8 +104,6 @@
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.4",
-    "electron": "^37.2.6",
-    "electron-builder": "^26.0.12",
     "esbuild": "^0.25.0",
     "jsdom": "26.1.0",
     "playwright": "1.62.0",
