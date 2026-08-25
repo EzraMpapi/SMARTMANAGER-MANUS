@@ -25,7 +25,6 @@ jobs:
     timeout-minutes: 15
     env:
       E2E_BASE_URL: https://smartmanager-manus.vercel.app
-      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ms-playwright
 
     steps:
       - name: Checkout source
