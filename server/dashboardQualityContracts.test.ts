@@ -86,4 +86,25 @@ describe("dashboard quality and boundary contracts", () => {
       expect(text).not.toContain("Math.random");
     }
   });
+
+  it("keeps the executive overview grounded in explicit performance windows and confirmed sources", () => {
+    const overview = fs.readFileSync(path.join(root, "components/EnterpriseDashboardOverview.jsx"), "utf8");
+    for (const range of ["7D", "30D", "3M", "6M", "1Y"]) expect(overview).toContain(range);
+    expect(overview).toContain("aria-label=\"Performance period\"");
+    expect(overview).toContain("aria-pressed={performanceRangeId === range.id}");
+    expect(overview).toContain("buildPerformanceTrend");
+    expect(overview).toContain("Decision cues from confirmed data");
+    expect(overview).toContain("Source: confirmed invoice rows");
+    expect(overview).toContain("Source: confirmed inventory rows");
+    expect(overview).toContain("confirmedOutstanding");
+  });
+
+  it("does not expose executive write actions outside the existing role permission model", () => {
+    const overview = fs.readFileSync(path.join(root, "components/EnterpriseDashboardOverview.jsx"), "utf8");
+    expect(overview).toContain("allowedModules = []");
+    expect(overview).toContain("writeAccess = \"none\"");
+    expect(overview).toContain("const canWrite = writeAccess !== \"none\"");
+    expect(dashboard).toContain("allowedModules={currentRole.allowedModules}");
+    expect(dashboard).toContain("writeAccess={currentRole.writeAccess}");
+  });
 });

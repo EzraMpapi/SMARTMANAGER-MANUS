@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -22,6 +23,46 @@ import {
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const compactNumber = (value) => new Intl.NumberFormat("en", { maximumFractionDigits: 0, notation: "compact" }).format(Math.abs(Number(value) || 0));
+
+const PERFORMANCE_RANGES = [
+  { id: "7d", label: "7D", days: 7, bucket: "day" },
+  { id: "30d", label: "30D", days: 30, bucket: "day" },
+  { id: "3m", label: "3M", days: 92, bucket: "month" },
+  { id: "6m", label: "6M", days: 183, bucket: "month" },
+  { id: "1y", label: "1Y", days: 365, bucket: "month" },
+];
+
+function invoiceValue(row) {
+  const direct = [row?.total, row?.grandTotal, row?.amount].map(Number).find(Number.isFinite);
+  if (direct !== undefined) return direct;
+  return (Array.isArray(row?.items) ? row.items : []).reduce((sum, item) => sum + (Number(item?.qty) || 0) * (Number(item?.price ?? item?.rate) || 0), 0);
+}
+
+function buildPerformanceTrend(invoiceRows, expenseRows, rangeId) {
+  const range = PERFORMANCE_RANGES.find((item) => item.id === rangeId) || PERFORMANCE_RANGES[1];
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  const start = new Date(end);
+  start.setDate(start.getDate() - range.days + 1);
+  const rows = new Map();
+  const add = (sourceRows, kind) => sourceRows.forEach((row) => {
+    const rawDate = row?.date || row?.expenseDate || row?.issueDate;
+    if (!rawDate) return;
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime()) || date < start || date > end) return;
+    const key = range.bucket === "day" ? date.toISOString().slice(0, 10) : date.toISOString().slice(0, 7);
+    const bucket = rows.get(key) || { key, revenue_tzs_k: 0, expenses_tzs_k: 0 };
+    if (kind === "revenue") bucket.revenue_tzs_k += Math.max(0, (row.status === "Paid" ? invoiceValue(row) : Number(row.amountPaid) || 0) / 1000);
+    if (kind === "expense") bucket.expenses_tzs_k += Math.max(0, (Number(row.amount) || 0) / 1000);
+    rows.set(key, bucket);
+  });
+  add(invoiceRows, "revenue");
+  add(expenseRows, "expense");
+  return [...rows.values()].sort((a, b) => a.key.localeCompare(b.key)).map((row) => ({
+    ...row,
+    month: range.bucket === "day" ? new Date(`${row.key}T00:00:00`).toLocaleDateString("en", { day: "numeric", month: "short" }) : new Date(`${row.key}-01T00:00:00`).toLocaleDateString("en", { month: "short" }),
+  }));
+}
 
 function Panel({ children, className = "" }) {
   return <section className={`relative overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_2px_3px_rgba(15,23,42,.025)] transition-shadow duration-200 hover:shadow-[0_16px_32px_rgba(15,23,42,.055)] ${className}`}>{children}</section>;
@@ -82,6 +123,8 @@ export function EnterpriseDashboardOverview({
   formatMoney,
   onNavigate,
   onQuickAction,
+  allowedModules = [],
+  writeAccess = "none",
 }) {
   const invoiceRows = invoices?.rows || [];
   const expenseRows = expenses?.rows || [];
@@ -98,6 +141,27 @@ export function EnterpriseDashboardOverview({
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const hasCoreRows = invoiceRows.length + expenseRows.length + inventoryRows.length + crmRows.length > 0;
   const money = (amount) => formatMoney ? formatMoney(amount || 0) : `TZS ${compactNumber(amount)}`;
+  const [performanceRangeId, setPerformanceRangeId] = useState("30d");
+  const performanceRange = PERFORMANCE_RANGES.find((item) => item.id === performanceRangeId) || PERFORMANCE_RANGES[1];
+  const performanceTrend = useMemo(() => buildPerformanceTrend(invoiceRows, expenseRows, performanceRangeId), [invoiceRows, expenseRows, performanceRangeId]);
+  const canWrite = writeAccess !== "none";
+  const canOpen = (moduleId) => !allowedModules.length || allowedModules.includes(moduleId);
+  const confirmedTopCustomers = useMemo(() => {
+    const totals = new Map();
+    invoiceRows.forEach((row) => {
+      if (!row?.customer) return;
+      const value = Math.max(0, row.status === "Paid" ? invoiceValue(row) : Number(row.amountPaid) || 0);
+      totals.set(row.customer, (totals.get(row.customer) || 0) + value);
+    });
+    return [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+  }, [invoiceRows]);
+  const confirmedLowStock = useMemo(() => inventoryRows.filter((item) => Number(item?.reorder) > 0 && Number(item?.qty) <= Number(item.reorder)).slice(0, 4), [inventoryRows]);
+  const confirmedOutstanding = useMemo(() => invoiceRows.filter((row) => row.status !== "Paid").map((row) => ({ ...row, balance: Math.max(0, invoiceValue(row) - (Number(row.amountPaid) || 0)) })).sort((a, b) => b.balance - a.balance).slice(0, 4), [invoiceRows]);
+  const smartInsights = useMemo(() => [
+    invoiceRows.length ? `Confirmed collections total ${money(financials?.revenue)} across ${invoiceRows.length} invoice${invoiceRows.length === 1 ? "" : "s"}.` : null,
+    confirmedLowStock.length ? `${confirmedLowStock.length} confirmed stock item${confirmedLowStock.length === 1 ? " is" : "s are"} at or below reorder level.` : null,
+    financials?.outstandingCount ? `${financials.outstandingCount} invoice${financials.outstandingCount === 1 ? " remains" : "s remain"} open for follow-up.` : null,
+  ].filter(Boolean).slice(0, 3), [confirmedLowStock.length, financials?.outstandingCount, financials?.revenue, invoiceRows.length]);
 
   const metrics = [
     { label: "Collected", value: money(financials?.revenue), detail: invoiceRows.length ? "Confirmed invoice payments in the current view" : "No confirmed invoice payments yet", icon: CircleDollarSign, tone: { bg: "bg-emerald-50", text: "text-emerald-700", edge: "bg-emerald-500", glow: "bg-emerald-200" }, action: () => onQuickAction("finance", { tab: "receivables" }) },
@@ -113,11 +177,12 @@ export function EnterpriseDashboardOverview({
   ];
 
   const quickActions = [
-    { label: "Create invoice", detail: "Start a sales invoice", icon: ReceiptText, action: () => onQuickAction("sales", { tab: "invoices", openForm: true }) },
-    { label: "Add a lead", detail: "Capture a customer opportunity", icon: Users, action: () => onQuickAction("crm", { tab: "leads" }) },
-    { label: "Record expense", detail: "Open finance expenses", icon: Wallet, action: () => onQuickAction("finance", { tab: "expenses" }) },
-    { label: "Ask Smart AI", detail: "Open the existing assistant", icon: Brain, action: () => onNavigate("ai") },
-  ];
+    canWrite && canOpen("sales") ? { label: "Create invoice", detail: "Start a sales invoice", icon: ReceiptText, action: () => onQuickAction("sales", { tab: "invoices", openForm: true }) } : null,
+    canWrite && canOpen("crm") ? { label: "Add a lead", detail: "Capture a customer opportunity", icon: Users, action: () => onQuickAction("crm", { tab: "leads" }) } : null,
+    canWrite && canOpen("finance") ? { label: "Record expense", detail: "Open finance expenses", icon: Wallet, action: () => onQuickAction("finance", { tab: "expenses" }) } : null,
+    canOpen("inventory") ? { label: "Review stock", detail: "Open inventory health", icon: Package, action: () => onNavigate("inventory") } : null,
+    canOpen("ai") ? { label: "Ask Smart AI", detail: "Open the existing assistant", icon: Brain, action: () => onNavigate("ai") } : null,
+  ].filter(Boolean).slice(0, 4);
 
   return (
     <div className="enterprise-overview mx-auto w-full max-w-[1600px] space-y-7 pb-10">
@@ -157,13 +222,30 @@ export function EnterpriseDashboardOverview({
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(330px,.9fr)]">
         <Panel className="overflow-hidden">
           <WidgetHeader eyebrow="Financial movement" title="Collected value and recorded expenses" icon={BarChart3} tone="emerald" actionLabel="Open finance" onAction={() => onNavigate("finance")} />
-          {isLoading ? <div className="h-[294px] p-5"><Skeleton className="h-full w-full" /></div> : revenueExpenseTrend?.some((point) => point.revenue_tzs_k || point.expenses_tzs_k) ? <div className="h-[294px] px-2 pb-5 pt-4 sm:px-5"><ResponsiveContainer width="100%" height="100%"><AreaChart data={revenueExpenseTrend} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}><defs><linearGradient id="smRevenue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0f8b6d" stopOpacity=".28" /><stop offset="100%" stopColor="#0f8b6d" stopOpacity="0" /></linearGradient><linearGradient id="smExpense" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#d9a34d" stopOpacity=".22" /><stop offset="100%" stopColor="#d9a34d" stopOpacity="0" /></linearGradient></defs><CartesianGrid vertical={false} stroke="#edf1ef" /><XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: "#7a8983", fontSize: 11 }} dy={10} /><YAxis tickLine={false} axisLine={false} tick={{ fill: "#7a8983", fontSize: 10 }} tickFormatter={(value) => `${compactNumber(value)}k`} /><Tooltip contentStyle={{ borderRadius: 14, border: "1px solid #e2e8e5", boxShadow: "0 12px 30px rgba(15,23,42,.12)", fontSize: 12 }} formatter={(value, name) => [`TZS ${compactNumber(value)}k`, name === "revenue_tzs_k" ? "Collected" : "Expenses"]} /><Area type="monotone" dataKey="revenue_tzs_k" stroke="#0f8b6d" strokeWidth={2.5} fill="url(#smRevenue)" /><Area type="monotone" dataKey="expenses_tzs_k" stroke="#d9a34d" strokeWidth={2} fill="url(#smExpense)" /></AreaChart></ResponsiveContainer></div> : <EmptyPanel icon={BarChart3} title="Your first financial trend will appear here" detail="The chart uses confirmed invoice payments and recorded expenses. Add business records through the existing Sales or Finance workspace." actionLabel="Open finance" onAction={() => onNavigate("finance")} />}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3 sm:px-6" aria-label="Performance period">
+            <span className="text-[10.5px] font-medium text-slate-500">Confirmed movement · {performanceRange.label}</span>
+            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-0.5" role="group" aria-label="Select performance period">
+              {PERFORMANCE_RANGES.map((range) => <button key={range.id} type="button" onClick={() => setPerformanceRangeId(range.id)} aria-pressed={performanceRangeId === range.id} className={`min-h-9 min-w-11 rounded-lg px-2.5 text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${performanceRangeId === range.id ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>{range.label}</button>)}
+            </div>
+          </div>
+          {isLoading ? <div className="h-[294px] p-5"><Skeleton className="h-full w-full" /></div> : performanceTrend.some((point) => point.revenue_tzs_k || point.expenses_tzs_k) ? <div className="h-[294px] px-2 pb-5 pt-4 sm:px-5"><ResponsiveContainer width="100%" height="100%"><AreaChart data={performanceTrend} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}><defs><linearGradient id="smRevenue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0f8b6d" stopOpacity=".28" /><stop offset="100%" stopColor="#0f8b6d" stopOpacity="0" /></linearGradient><linearGradient id="smExpense" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#d9a34d" stopOpacity=".22" /><stop offset="100%" stopColor="#d9a34d" stopOpacity="0" /></linearGradient></defs><CartesianGrid vertical={false} stroke="#edf1ef" /><XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: "#7a8983", fontSize: 11 }} dy={10} /><YAxis tickLine={false} axisLine={false} tick={{ fill: "#7a8983", fontSize: 10 }} tickFormatter={(value) => `${compactNumber(value)}k`} /><Tooltip contentStyle={{ borderRadius: 14, border: "1px solid #e2e8e5", boxShadow: "0 12px 30px rgba(15,23,42,.12)", fontSize: 12 }} formatter={(value, name) => [`TZS ${compactNumber(value)}k`, name === "revenue_tzs_k" ? "Collected" : "Expenses"]} /><Area type="monotone" dataKey="revenue_tzs_k" stroke="#0f8b6d" strokeWidth={2.5} fill="url(#smRevenue)" /><Area type="monotone" dataKey="expenses_tzs_k" stroke="#d9a34d" strokeWidth={2} fill="url(#smExpense)" /></AreaChart></ResponsiveContainer></div> : <EmptyPanel icon={BarChart3} title={`No confirmed movement in ${performanceRange.label}`} detail="This chart uses confirmed invoice payments and recorded expenses in the selected window. Add records through the existing Sales or Finance workspace." actionLabel="Open finance" onAction={() => onNavigate("finance")} />}
         </Panel>
 
         <Panel className="overflow-hidden">
           <WidgetHeader eyebrow="Attention queue" title="What needs a review" icon={AlertTriangle} tone="amber" />
           {attentionItems?.length ? <div className="divide-y divide-slate-100">{attentionItems.slice(0, 4).map((item) => { const Icon = item.icon || AlertTriangle; return <button type="button" key={item.id} onClick={item.action} className="flex w-full items-start gap-3 px-5 py-4 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl" style={{ background: item.surface, color: item.color }}><Icon size={15} /></span><span className="min-w-0 flex-1"><span className="block truncate text-[12px] font-semibold text-slate-900">{item.title}</span><span className="mt-0.5 block text-[11px] leading-4 text-slate-500">{item.detail}</span><span className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700">{item.actionLabel}<ChevronRight size={12} /></span></span></button>; })}</div> : <EmptyPanel icon={CheckCircle2} title="No current attention signals" detail="Alerts appear from confirmed workspace conditions, such as stock thresholds or overdue work orders." actionLabel="Open activity" onAction={() => onNavigate("activity")} />}
         </Panel>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-3" aria-label="Operational intelligence">
+        <Panel className="overflow-hidden"><WidgetHeader eyebrow="Customers" title="Top customers" icon={Users} tone="violet" actionLabel={canOpen("crm") ? "Open CRM" : undefined} onAction={() => onNavigate("crm")} />{confirmedTopCustomers.length ? <div className="divide-y divide-slate-100">{confirmedTopCustomers.map(([customer, value], index) => <div key={customer} className="flex items-center gap-3 px-5 py-3.5"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-violet-50 text-[10px] font-bold text-violet-700">{index + 1}</span><span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold text-slate-800">{customer}</span><span className="shrink-0 font-mono text-[10.5px] font-bold text-slate-700">{money(value)}</span></div>)}</div> : <EmptyPanel icon={Users} title="No confirmed customers yet" detail="Customer ranking appears after invoice rows include a customer identity and confirmed value." actionLabel={canOpen("sales") ? "Open Sales" : undefined} onAction={() => onNavigate("sales")} />}<p className="px-5 py-3 text-[10px] text-slate-400">Source: confirmed invoice rows</p></Panel>
+        <Panel className="overflow-hidden"><WidgetHeader eyebrow="Inventory" title="Stock health" icon={Package} tone="amber" actionLabel={canOpen("inventory") ? "Open inventory" : undefined} onAction={() => onNavigate("inventory")} />{inventoryRows.length ? <div className="space-y-3 px-5 py-4"><div className="flex items-end justify-between"><div><p className="text-[25px] font-bold tracking-[-.05em] text-slate-950">{inventoryRows.length}</p><p className="text-[10.5px] text-slate-500">confirmed stock items</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${confirmedLowStock.length ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}`}>{confirmedLowStock.length} at attention</span></div>{confirmedLowStock.length ? <div className="space-y-2">{confirmedLowStock.slice(0, 3).map((item) => <button type="button" key={item.id || item.name} onClick={() => onNavigate("inventory")} className="flex w-full items-center gap-2 rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"><span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-rose-900">{item.name || item.sku || "Stock item"}</span><span className="shrink-0 text-[10px] text-rose-700">{item.qty} / {item.reorder}</span></button>)}</div> : <p className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-3 text-[11px] text-emerald-800">No confirmed stock item is currently below its reorder level.</p>}</div> : <EmptyPanel icon={Package} title="No confirmed inventory yet" detail="Stock health will appear once the Inventory workspace has confirmed item rows." actionLabel={canOpen("inventory") ? "Open inventory" : undefined} onAction={() => onNavigate("inventory")} />}<p className="px-5 py-3 text-[10px] text-slate-400">Source: confirmed inventory rows</p></Panel>
+        <Panel className="overflow-hidden"><WidgetHeader eyebrow="Receivables" title="Outstanding debts" icon={ReceiptText} tone="sky" actionLabel={canOpen("finance") ? "Open finance" : undefined} onAction={() => onNavigate("finance")} />{confirmedOutstanding.length ? <div className="divide-y divide-slate-100">{confirmedOutstanding.map((row) => <button type="button" key={row.id} onClick={() => onNavigate("finance")} className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-sky-50 text-sky-700"><ReceiptText size={13} /></span><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-semibold text-slate-800">{row.customer || row.id || "Open invoice"}</span><span className="mt-0.5 block truncate text-[10px] text-slate-500">{row.status || "Open"}{row.dueDate ? ` · due ${row.dueDate}` : ""}</span></span><span className="shrink-0 font-mono text-[10.5px] font-bold text-slate-700">{row.balance ? money(row.balance) : "—"}</span></button>)}</div> : <EmptyPanel icon={CheckCircle2} title="No open debts" detail="Outstanding invoices will appear here when confirmed invoice rows remain unpaid." actionLabel={canOpen("finance") ? "Open finance" : undefined} onAction={() => onNavigate("finance")} />}<p className="px-5 py-3 text-[10px] text-slate-400">Source: confirmed invoice rows</p></Panel>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]" aria-label="Smart insights and next actions">
+        <Panel className="overflow-hidden"><WidgetHeader eyebrow="Smart Insights" title="Decision cues from confirmed data" icon={Brain} tone="emerald" /><div className="space-y-2 px-5 py-4">{smartInsights.length ? smartInsights.map((insight) => <div key={insight} className="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-3"><span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-white text-emerald-700"><CheckCircle2 size={13} /></span><p className="text-[11.5px] leading-5 text-emerald-950">{insight}</p></div>) : <EmptyPanel icon={Brain} title="Insights will appear as records are confirmed" detail="This section summarizes recorded data only; it does not predict performance or invent business events." actionLabel={canOpen("reports") ? "Open reports" : undefined} onAction={() => onNavigate("reports")} />}</div></Panel>
+        <Panel className="overflow-hidden"><WidgetHeader eyebrow="Action required" title="Resolve the next exception" icon={AlertTriangle} tone="amber" />{attentionItems?.length ? <div className="space-y-2 px-5 py-4">{attentionItems.slice(0, 3).map((item) => <button type="button" key={item.id} onClick={item.action} className="flex w-full items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3 text-left hover:border-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg" style={{ background: item.surface, color: item.color }}><AlertTriangle size={13} /></span><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-slate-800">{item.title}</span><span className="mt-0.5 block text-[10.5px] leading-4 text-slate-500">{item.detail}</span></span><ChevronRight size={14} className="mt-1 shrink-0 text-slate-300" /></button>)}</div> : <EmptyPanel icon={CheckCircle2} title="No action required" detail="The current confirmed workspace rows do not contain an unresolved exception." />}</Panel>
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">

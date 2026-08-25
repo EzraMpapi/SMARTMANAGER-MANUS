@@ -14,6 +14,8 @@ describe("Enterprise dashboard overview contract", () => {
     expect(dashboardSource).toContain("revenueExpenseTrend={revenueExpenseTrend}");
     expect(dashboardSource).toContain("onNavigate={onNavigate}");
     expect(dashboardSource).toContain("onQuickAction={onQuickAction}");
+    expect(dashboardSource).toContain("allowedModules={currentRole.allowedModules}");
+    expect(dashboardSource).toContain("writeAccess={currentRole.writeAccess}");
   });
 
   it("derives visible metrics from supplied workspace rows and retains explicit non-fabrication states", () => {
@@ -43,7 +45,8 @@ describe("Enterprise dashboard overview contract", () => {
     expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Attention queue\"");
     expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Momentum\"");
     expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Team & next steps\"");
-    expect(overviewSource).toContain("revenueExpenseTrend?.some");
+    expect(overviewSource).toContain("performanceTrend.some");
+    expect(overviewSource).toContain("PERFORMANCE_RANGES");
     expect(overviewSource).toContain("attentionItems?.length");
     expect(overviewSource).toContain("onQuickAction(\"hr\", { tab: \"leave\" })");
   });

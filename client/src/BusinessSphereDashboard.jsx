@@ -6425,6 +6425,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         formatMoney={formatMoney}
         onNavigate={onNavigate}
         onQuickAction={onQuickAction}
+        allowedModules={currentRole.allowedModules}
+        writeAccess={currentRole.writeAccess}
       />
     );
   }
