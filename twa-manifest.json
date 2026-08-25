@@ -1,6 +1,6 @@
 {
   "packageId": "tz.smartmanager.erp",
-  "host": "menejajanja.vercel.app",
+  "host": "bserp-dashbo-xgm6fauw.manus.space",
   "name": "SMART MANAGER",
   "launcherName": "SMART MGR",
   "display": "standalone",
@@ -13,8 +13,8 @@
   "backgroundColor": "#101828",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://menejajanja.vercel.app/brand/smart-manager-logo.png",
-  "maskableIconUrl": "https://menejajanja.vercel.app/brand/smart-manager-logo.png",
+  "iconUrl": "https://bserp-dashbo-xgm6fauw.manus.space/brand/smart-manager-logo.png",
+  "maskableIconUrl": "https://bserp-dashbo-xgm6fauw.manus.space/brand/smart-manager-logo.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./.local/smart-manager-release.keystore",
@@ -24,7 +24,7 @@
   "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://menejajanja.vercel.app/manifest.webmanifest",
+  "webManifestUrl": "https://bserp-dashbo-xgm6fauw.manus.space/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -33,7 +33,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://menejajanja.vercel.app/",
+  "fullScopeUrl": "https://bserp-dashbo-xgm6fauw.manus.space/",
   "minSdkVersion": 21,
   "orientation": "any",
   "fingerprints": [],
