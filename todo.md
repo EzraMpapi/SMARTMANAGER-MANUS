@@ -450,3 +450,10 @@
 - [x] Audit mobile shell, bottom navigation, controls, forms, table overflow, and touch-target sizing.
 - [x] Implement mobile spacing, touch-target, and responsive-surface refinements without changing routes, data behavior, or access protections.
 - [x] Validate mobile responsive contracts and publish the reviewed Step 6 refinement.
+
+## Dashboard Polish Step 7
+- [x] Inventory every dashboard module, route, data boundary, and access guard.
+- [x] Run the complete available regression, type, build, and accessibility contract checks.
+- [x] Review end-to-end workflow evidence and document residual accessibility or live-verification risks.
+- [ ] Publish the final dashboard audit report and prioritized remediation plan.
+- [ ] Resolve the local production-build prerequisite through the configured secret/environment channel, then repeat the production build; do not place Supabase credentials in source control or chat.
