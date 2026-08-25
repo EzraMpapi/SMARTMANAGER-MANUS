@@ -45,6 +45,10 @@ export function TrialExpiryNoticeGate({ session, onChoosePlan }) {
       if (!body?.acknowledged) throw new Error("The server did not record the trial notice.");
       acknowledgedRef.current = true;
       setAcknowledged(true);
+      // The acknowledgement is account-bound and server-recorded. Hiding the
+      // dialog immediately avoids trapping a customer behind a completed
+      // informational notice; subscription enforcement remains server-driven.
+      setNotice(null);
       return true;
     } catch (nextError) {
       setError(nextError.message || "The trial notice could not be saved.");
@@ -121,7 +125,7 @@ export function TrialExpiryNoticeGate({ session, onChoosePlan }) {
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-[10px] font-bold uppercase tracking-[.13em] text-slate-400">Trial started</p><p className="mt-2 text-[13px] font-semibold text-slate-900">{formatDate(notice.trialStartedAt)}</p></div>
             <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4"><p className="text-[10px] font-bold uppercase tracking-[.13em] text-rose-500">Trial ended</p><p className="mt-2 text-[13px] font-semibold text-rose-900">{formatDate(notice.trialEndsAt)}</p></div>
           </div>
-          <div className="flex items-start gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-[11.5px] leading-5 text-emerald-900"><ShieldCheck size={16} className="mt-0.5 shrink-0" />This notice is tied to your authenticated account and is recorded once on the server. It will not return after logout, refresh, or another device.</div>
+          <div className="flex items-start gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-[11.5px] leading-5 text-emerald-900"><ShieldCheck size={16} className="mt-0.5 shrink-0" />This notice is tied to your authenticated account and is recorded once on the server. The account may still need a paid plan to restore restricted modules.</div>
           {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] leading-5 text-rose-800">{error}</div>}
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             {error && !acknowledged && <button type="button" disabled={acknowledging} onClick={acknowledgeNotice} className="rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-700 disabled:opacity-50">Retry recording</button>}

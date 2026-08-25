@@ -415,3 +415,7 @@
 ## Weekly Health Summary Notifications
 - [x] Implement a Monday 08:30 GMT+3 repository-based weekly email summary of the daily read-only schema-health and GitHub synchronization reports, with recipient and SMTP credentials supplied only as GitHub secrets; activation remains pending repository-administrator secret configuration.
 - [x] Commit and push the reviewed weekly email workflow, mail script, activation guide, and checklist update to GitHub (`078e26a`).
+
+## Workspace Recovery and Free-Plan Notice
+- [x] Trace the `WORKSPACE_MISSING` recovery path and make the free-plan notice dismissible and remembered without weakening tenant isolation or subscription enforcement.
+- [x] Apply and verify the production workspace-presence recovery migration, then publish the reviewed code and migration changes to GitHub.

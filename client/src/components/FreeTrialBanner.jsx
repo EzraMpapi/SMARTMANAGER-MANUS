@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowUpRight, Clock3, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Clock3, ShieldCheck, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -25,8 +25,20 @@ function countdown(endsAt, now) {
   };
 }
 
-export function FreeTrialBanner({ access, onUpgrade, compact = false }) {
+function dismissKey(noticeKey, trialStartedAt, trialEndsAt) {
+  if (!noticeKey || !trialEndsAt) return "";
+  return `smart-manager:free-trial-banner:${noticeKey}:${trialStartedAt || "unknown"}:${trialEndsAt}`;
+}
+
+function wasDismissed(key) {
+  if (!key || typeof window === "undefined") return false;
+  try { return window.localStorage.getItem(key) === "1"; } catch { return false; }
+}
+
+export function FreeTrialBanner({ access, onUpgrade, compact = false, noticeKey = "" }) {
   const [now, setNow] = useState(() => Date.now());
+  const [visibilityReady, setVisibilityReady] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const trialEndsAt = access?.trialEndsAt || access?.subscription?.trial_ends_at || access?.accessUntil;
   const trialStartedAt = access?.trialStartedAt || access?.subscription?.trial_started_at;
   const isFreeTrial = access?.subscription?.offerCode === "FREE_15" || access?.subscription?.offer_code === "FREE_15";
@@ -34,6 +46,19 @@ export function FreeTrialBanner({ access, onUpgrade, compact = false }) {
   const active = Boolean(isFreeTrial && access?.trialActive === true && access?.allowed === true && ["trial", "active"].includes(state));
   const time = useMemo(() => countdown(trialEndsAt, now), [trialEndsAt, now]);
   const expired = Boolean(isFreeTrial && (!active || time.expired) && ["required", "expired"].includes(state));
+  const storageKey = useMemo(() => dismissKey(noticeKey, trialStartedAt, trialEndsAt), [noticeKey, trialEndsAt, trialStartedAt]);
+
+  useEffect(() => {
+    setDismissed(wasDismissed(storageKey));
+    setVisibilityReady(true);
+  }, [storageKey]);
+
+  const dismiss = () => {
+    if (storageKey) {
+      try { window.localStorage.setItem(storageKey, "1"); } catch { /* The notice still closes in the current session. */ }
+    }
+    setDismissed(true);
+  };
 
   useEffect(() => {
     if (!trialEndsAt || (!active && !expired)) return undefined;
@@ -41,7 +66,17 @@ export function FreeTrialBanner({ access, onUpgrade, compact = false }) {
     return () => window.clearInterval(timer);
   }, [active, expired, trialEndsAt]);
 
-  if (!active && !expired) return null;
+  // An active free plan is informational, not an access decision. Let the
+  // customer see it once, then remove it automatically so it does not cover
+  // workspace content on smaller screens. Expired plans remain enforced by
+  // SubscriptionAccessBoundary rather than this display-only banner.
+  useEffect(() => {
+    if (!visibilityReady || !active || dismissed) return undefined;
+    const timer = window.setTimeout(dismiss, 8000);
+    return () => window.clearTimeout(timer);
+  }, [active, dismissed, visibilityReady, storageKey]);
+
+  if (!visibilityReady || (!active && !expired) || (active && dismissed)) return null;
 
   const endsToday = time.days === 1 && localDateKey(trialEndsAt) === localDateKey(now);
   const endsTomorrow = time.days === 1 && !endsToday;
@@ -90,9 +125,12 @@ export function FreeTrialBanner({ access, onUpgrade, compact = false }) {
             </p>
           </div>
         </div>
-        <button type="button" onClick={onUpgrade} className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 text-[11.5px] font-bold text-white ${expired ? "bg-rose-700 hover:bg-rose-800" : urgent ? "bg-amber-800 hover:bg-amber-900" : "bg-[#0B5D3B] hover:bg-[#084B30]"}`}>
-          {expired ? "View Plans" : "Upgrade Plan"} <ArrowUpRight size={14} />
-        </button>
+        <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+          {active && <button type="button" onClick={dismiss} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/85 text-slate-500 transition hover:border-slate-300 hover:text-slate-800" aria-label="Dismiss free trial notice" title="Hide this notice"><X size={16} /></button>}
+          <button type="button" onClick={onUpgrade} className={`inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 text-[11.5px] font-bold text-white ${expired ? "bg-rose-700 hover:bg-rose-800" : urgent ? "bg-amber-800 hover:bg-amber-900" : "bg-[#0B5D3B] hover:bg-[#084B30]"}`}>
+            {expired ? "View Plans" : "Upgrade Plan"} <ArrowUpRight size={14} />
+          </button>
+        </div>
       </div>
     </section>
   );

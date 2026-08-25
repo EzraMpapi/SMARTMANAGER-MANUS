@@ -111,7 +111,7 @@ describe("TrialExpiryNoticeGate runtime", () => {
     cleanup();
   });
 
-  it("claims, acknowledges, and enables plan navigation for one expired user", async () => {
+  it("claims and acknowledges one expired user, then closes the informational notice", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(await jsonResponse({ show: true, claimToken: "claim-a", trialStartedAt: "2026-01-01T00:00:00Z", trialEndsAt: "2026-01-31T00:00:00Z" }))
       .mockResolvedValueOnce(await jsonResponse({ acknowledged: true }));
@@ -120,10 +120,9 @@ describe("TrialExpiryNoticeGate runtime", () => {
 
     render(React.createElement(TrialExpiryNoticeGate, { session: session("user-a"), onChoosePlan }));
     expect(await screen.findByRole("heading", { name: "Your free trial has ended" })).toBeTruthy();
-    await waitFor(() => expect((screen.getByRole("button", { name: "Choose a plan" }) as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.click(screen.getByRole("button", { name: "Choose a plan" }));
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "Your free trial has ended" })).toBeNull());
 
-    expect(onChoosePlan).toHaveBeenCalledTimes(1);
+    expect(onChoosePlan).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0][0]).toBe("/api/billing/trial-expiry-notice/claim");
     expect(fetchMock.mock.calls[1][0]).toBe("/api/billing/trial-expiry-notice/ack");

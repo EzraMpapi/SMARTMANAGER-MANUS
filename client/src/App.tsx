@@ -77,12 +77,19 @@ function AuthenticationUnavailable({ onRetry }: { onRetry?: () => Promise<void> 
   </main>;
 }
 
-function IdentitySetupRequired({ reason }: { reason?: string | null }) {
+function IdentitySetupRequired({ reason, onRetry }: { reason?: string | null; onRetry?: () => Promise<void> }) {
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    if (!onRetry || retrying) return;
+    setRetrying(true);
+    try { await onRetry(); } finally { setRetrying(false); }
+  };
   return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6">
     <section className="w-full max-w-md rounded-2xl border border-amber-300/20 bg-slate-900 p-7 text-center shadow-2xl" role="alert">
       <h1 className="text-lg font-semibold">Secure workspace setup required</h1>
       <p className="mt-3 text-sm leading-6 text-slate-400">Your Supabase session is valid, but the application could not verify the profile and workspace identity required for tenant-scoped access.</p>
       {reason && <p className="mt-3 text-xs text-slate-500">Reference: {reason}</p>}
+      {onRetry && <button type="button" onClick={() => void retry()} disabled={retrying} className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60">{retrying ? "Checking secure workspace…" : "Retry secure workspace access"}</button>}
     </section>
   </main>;
 }
@@ -103,7 +110,7 @@ function ProtectedSurface({ children }: { children: ReactNode }) {
 
   if (auth.loading) return <DashboardRouteFallback />;
   if (auth.status === "AUTH_ERROR") return <AuthenticationUnavailable onRetry={auth.session ? auth.refresh : undefined} />;
-  if (auth.status === "UNAUTHORIZED") return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} />;
+  if (auth.status === "UNAUTHORIZED") return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} onRetry={auth.session ? auth.refresh : undefined} />;
   if (authScreen === "forgot" || authScreen === "reset" || (isPublicAuthScreen() && !auth.isAuthenticated)) return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
   if (!auth.configured && !auth.isAuthenticated) {
     if (requestedSignup && import.meta.env.MODE === "e2e") return <Suspense fallback={<DashboardRouteFallback />}><BusinessSphereDashboard /></Suspense>;

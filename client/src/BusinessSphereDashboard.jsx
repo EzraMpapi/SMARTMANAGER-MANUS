@@ -48011,7 +48011,7 @@ function SmartManager() {
         </header>
 
         {IS_CONFIGURED && active !== "billing" && subscriptionAccess.ready && subscriptionAccess.access.trialActive && (
-          <FreeTrialBanner access={subscriptionAccess.access} onUpgrade={() => go("billing")} />
+          <FreeTrialBanner access={subscriptionAccess.access} noticeKey={currentUser?.id || session?.userId || ""} onUpgrade={() => go("billing")} />
         )}
 
         {paletteOpen && <CommandPalette modules={visibleModules} crm={crm} invoices={invoices} inventory={inventory} expenses={expenses} onNavigate={go} onNavigateWithIntent={goWithIntent} onClose={() => setPaletteOpen(false)} />}
