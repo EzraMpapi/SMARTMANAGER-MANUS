@@ -576,3 +576,9 @@
 - [x] Verify data consistency and dashboard/report freshness through safe test contracts (contract-level evidence passed; live write verification remains gated)
 - [x] Produce final audit evidence, commit intentional changes, push GitHub, and document remaining blockers
 - [x] Previous request: authenticated live Supabase simulation deferred because no test tenant/session was supplied
+
+## Renewed GitHub and Verified Schema Synchronization
+- [x] Inspect current local and remote Git state and classify every unpushed intentional change
+- [x] Run the repository schema verifier and compare its required tables/contracts against the live Supabase catalog
+- [x] Apply only demonstrated missing idempotent tenant-safe tables or related objects, if any (no missing object was demonstrated; no DDL applied)
+- [x] Validate the final schema state, commit intentional changes, and push GitHub main
