@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 function trpcResult(data: unknown) { return { result: { data: { json: data } } }; }
 
@@ -17,10 +18,6 @@ const dashboard = {
 };
 
 test("loads the Microfinance Command Center and completes guarded borrower registration feedback", async ({ page }, testInfo) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-microfinance-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-microfinance-refresh-token");
-  });
   await page.route("**/auth/v1/user", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "mfi-e2e-user", email: "microfinance@e2e.invalid", user_metadata: { full_name: "Mussa Mrema" } }) }));
   await page.route("**/rest/v1/**", async (route) => {
     const url = route.request().url();
@@ -44,6 +41,13 @@ test("loads the Microfinance Command Center and completes guarded borrower regis
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
   });
 
+  await installManagedAuth(page, {
+    id: "mfi-e2e-user",
+    email: "microfinance@e2e.invalid",
+    fullName: "Mussa Mrema",
+    profile: { id: "mfi-e2e-user", company_id: "mfi-e2e-company", full_name: "Mussa Mrema", role: "Organization Owner", customer_ref: null },
+    company: { id: "mfi-e2e-company", name: "Kilimanjaro Finance", category: "microfinance", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
+  });
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Workspace overview", { exact: true })).toBeVisible();
   const dismiss = page.getByRole("button", { name: "Dismiss", exact: true }); if (await dismiss.count()) await dismiss.click();

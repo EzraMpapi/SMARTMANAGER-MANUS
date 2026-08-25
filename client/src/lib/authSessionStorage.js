@@ -17,3 +17,18 @@ export function persistAuthSession(result, remember = true) {
   activeStorage.setItem(activeAccessKey, result.access_token);
   if (result.refresh_token) activeStorage.setItem(activeRefreshKey, result.refresh_token);
 }
+
+export function readStoredAuthSession() {
+  if (typeof window === "undefined") return null;
+  const accessToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  const refreshToken = window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_REFRESH_TOKEN_STORAGE_KEY);
+  return accessToken && refreshToken ? { access_token: accessToken, refresh_token: refreshToken } : null;
+}
+
+export function clearStoredAuthSession() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_REFRESH_TOKEN_STORAGE_KEY);
+}

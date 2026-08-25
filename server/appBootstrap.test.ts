@@ -34,9 +34,9 @@ describe("application bootstrap recovery", () => {
   it("keeps auth route detection safe when browser storage is unavailable", () => {
     const source = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
 
-    expect(source).toContain("let hasStoredSession = false;");
-    expect(source).toContain("window.localStorage.getItem(\"bs_access_token\")");
-    expect(source).toContain("window.sessionStorage.getItem(\"bs_session_access_token\")");
-    expect(source).toContain("} catch {}\n  return params.get(\"auth\") !== \"signup\" && !hasStoredSession;");
+    expect(source).toContain("<AuthProvider>");
+    expect(source).toContain("function isPublicAuthScreen()");
+    expect(source).toContain('["login", "forgot", "reset", "verify"]');
+    expect(source).toContain("AuthenticationUnavailable");
   });
 });

@@ -7,7 +7,8 @@ const authViewsSource = readFileSync(new URL("../client/src/components/Enterpris
 
 describe("Smart Manager End-to-End User Journey Simulation", () => {
   it("supports authenticated session routing and public authentication gateway fallback", () => {
-    expect(appSource).toContain("isPublicAuthRequest()");
+    expect(appSource).toContain("<AuthProvider>");
+    expect(appSource).toContain("function ProtectedSurface");
     expect(appSource).toContain("BusinessSphereDashboard");
     expect(appSource).toContain("PublicAuthGateway");
   });

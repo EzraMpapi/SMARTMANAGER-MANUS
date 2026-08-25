@@ -27,6 +27,8 @@ const BILLING_MANAGER_ROLES = new Set([
   "admin",
 ]);
 
+const PLATFORM_ADMIN_ROLES = new Set(["super administrator", "platform administrator"]);
+
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -42,6 +44,14 @@ function sendError(res: Response, status: number, message: string) {
 function ensureBillingManager(role: string) {
   if (!BILLING_MANAGER_ROLES.has(role.toLowerCase())) {
     const error = new Error("Your workspace role is not authorized to manage billing.");
+    (error as Error & { status?: number }).status = 403;
+    throw error;
+  }
+}
+
+function ensurePlatformAdmin(role: string) {
+  if (!PLATFORM_ADMIN_ROLES.has(role.toLowerCase())) {
+    const error = new Error("Only a Global Admin can manage trial-expiry notice support controls.");
     (error as Error & { status?: number }).status = 403;
     throw error;
   }
@@ -207,7 +217,71 @@ export async function subscriptionBillingSnapshotHandler(req: Request, res: Resp
   }
 }
 
+export async function trialExpiryNoticeClaimHandler(req: Request, res: Response) {
+  try {
+    const { token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    return res.status(200).json(await userRpc("billing_trial_expiry_notice_claim", token, {}));
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Trial status could not be checked.");
+  }
+}
+
+export async function trialExpiryNoticeAcknowledgeHandler(req: Request, res: Response) {
+  try {
+    const { token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    const payload = isRecord(req.body) ? req.body : {};
+    const claimToken = asString(payload.claimToken, 200);
+    if (!claimToken) return sendError(res, 400, "A trial notice claim token is required.");
+    return res.status(200).json(await userRpc("billing_trial_expiry_notice_acknowledge", token, { p_claim_token: claimToken }));
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The trial-expiry notice could not be acknowledged.");
+  }
+}
+
+export async function trialExpiryNoticeAdminSnapshotHandler(req: Request, res: Response) {
+  try {
+    const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    ensurePlatformAdmin(profile.role);
+    const companyId = asString(req.query.companyId, 200);
+    const userId = asString(req.query.userId, 200);
+    const subscriptionId = asString(req.query.subscriptionId, 200);
+    return res.status(200).json(await userRpc("billing_admin_trial_expiry_notice_snapshot", token, {
+      p_company_id: companyId || null,
+      p_user_id: userId || null,
+      p_subscription_id: subscriptionId || null,
+    }));
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "Trial-expiry notice support data could not be loaded.");
+  }
+}
+
+export async function trialExpiryNoticeAdminResetHandler(req: Request, res: Response) {
+  try {
+    const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
+    ensurePlatformAdmin(profile.role);
+    const payload = isRecord(req.body) ? req.body : {};
+    const companyId = asString(payload.companyId, 200);
+    const userId = asString(payload.userId, 200);
+    const subscriptionId = asString(payload.subscriptionId, 200);
+    const reason = asString(payload.reason, 1000);
+    if (!companyId || !userId || !subscriptionId || reason.length < 5) return sendError(res, 400, "Company, user, subscription, and a reset reason of at least five characters are required.");
+    return res.status(200).json(await userRpc("billing_admin_trial_expiry_notice_reset", token, {
+      p_company_id: companyId,
+      p_user_id: userId,
+      p_subscription_id: subscriptionId,
+      p_reason: reason,
+    }));
+  } catch (error) {
+    return sendError(res, httpStatusFromError(error), (error as Error).message || "The trial-expiry notice could not be reset.");
+  }
+}
+
+export async function subscriptionBillingStartTrialHandler(req: Request, res: Response) {
+  return subscriptionBillingStartFreePlanHandler(req, res);
+}
+
 export async function subscriptionBillingStartFreePlanHandler(req: Request, res: Response) {
+
   try {
     const { profile, token } = await resolveVerifiedProfile(req as unknown as CreateExpressContextOptions["req"]);
     ensureBillingManager(profile.role);

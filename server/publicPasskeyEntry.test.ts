@@ -12,8 +12,9 @@ describe("public passkey entry", () => {
     expect(home).toContain('window.location.assign("/app")');
   });
 
-  it("keeps the gateway on the same shared confirmed-session persistence helper", () => {
-    expect(gateway).toContain('import { persistAuthSession } from "../lib/authSessionStorage"');
+  it("keeps the gateway on the centralized confirmed-session provider handoff", () => {
+    expect(gateway).toContain("useAuthContext");
+    expect(gateway).toContain("auth.adoptSession");
     expect(gateway).toContain("signInWithAccountPasskey");
   });
 });

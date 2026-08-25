@@ -46,6 +46,7 @@ import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneVali
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
+import { useAuthContext } from "./contexts/AuthContext";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
@@ -54,7 +55,8 @@ import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { calculateCommunityLoan, splitCommunityRepayment, unwrapCommunityMutationResult } from "./lib/communityGroups";
 import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
-import { SubscriptionBillingWorkspace } from "./components/SubscriptionBillingWorkspace";
+import { SubscriptionBillingWorkspace, TrialNoticeAdmin } from "./components/SubscriptionBillingWorkspace";
+import { TrialExpiryNoticeGate } from "./components/TrialExpiryNoticeGate";
 import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
 import { FleetWorkspace } from "./components/FleetWorkspace";
 import { RestaurantWorkspace } from "./components/RestaurantWorkspace";
@@ -5897,7 +5899,7 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
   );
 }
 
-function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, suppliers, quotations, scheduledWorkflows, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate }) {
+function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, suppliers, quotations, scheduledWorkflows, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate, accessToken }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   const roleChangeRows = roleChangeApprovalsQuery?.data?.approvals || [];
   const pendingRoleChangeRows = roleChangeRows.filter((row) => row.status === "Pending Review");
@@ -5908,6 +5910,18 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     onError: (error) => notify(error.message || "The role-change decision could not be saved.", "error"),
   });
   const currentRole = roleDefinitionFor(currentUser.role);
+  const isGlobalAdmin = ["Super Administrator", "Platform Administrator"].includes(currentRole.id);
+  const dashboardTrialNoticeApi = useCallback(async (path, options = {}) => {
+    const token = accessToken || getStoredAccessToken();
+    if (!token) throw new Error("An authenticated session is required for Global Admin support controls.");
+    const response = await fetch(path, {
+      ...options,
+      headers: { ...(options.headers || {}), "x-supabase-authorization": `Bearer ${token}` },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload?.error || "The trial-notice support request failed.");
+    return payload;
+  }, [accessToken]);
   const roleView = ROLE_HOME_VIEW[currentRole.id] || "executive";
   const canViewMarketIntelligence = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager"].includes(canonicalRoleId(currentUser.role));
   const vatAnomalySettingsQuery = trpc.traFiscal.getVatAnomalySettings.useQuery(
@@ -6441,6 +6455,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   return (
     <div className="flex flex-col gap-5">
+      {isGlobalAdmin && accessToken && <section aria-label="Global Admin trial-expiry notice panel"><TrialNoticeAdmin api={dashboardTrialNoticeApi} heading="Global Admin trial-expiry notice panel" /></section>}
       <ExecutiveCommandCenter
         invoices={invoices}
         expenses={expenses}
@@ -47086,6 +47101,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
 }
 
 function SmartManager() {
+  const centralizedAuth = useAuthContext();
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   // Role-based access and session state initialized first to prevent temporal dead zones
   const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
@@ -47100,7 +47116,22 @@ function SmartManager() {
   const [recoveryAccessToken, setRecoveryAccessToken] = useState(null);
   const invitationTokenRef = useRef(typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("invite") || "");
   const acceptInvitationMutation = trpc.teamInvitations.accept.useMutation();
-  const [session, setSession] = useState(() => (IS_CONFIGURED ? null : { demo: true }));
+  const [session, setSession] = useState(() => centralizedAuth.session ? {
+    userId: centralizedAuth.user?.id || null,
+    email: centralizedAuth.user?.email || null,
+    accessToken: centralizedAuth.session.access_token,
+    refreshToken: centralizedAuth.session.refresh_token,
+    fullName: centralizedAuth.user?.user_metadata?.full_name || centralizedAuth.user?.email || "Workspace user",
+    role: centralizedAuth.role || "Employee",
+    customerRef: null,
+    company: centralizedAuth.company,
+  } : (IS_CONFIGURED ? null : { demo: true }));
+  const adoptCentralizedSession = useCallback(async (candidate, fallback = null) => {
+    if (candidate?.access_token && candidate?.refresh_token) {
+      await centralizedAuth.adoptSession({ access_token: candidate.access_token, refresh_token: candidate.refresh_token });
+    }
+    setSession(candidate || fallback || (IS_CONFIGURED ? null : { demo: true }));
+  }, [centralizedAuth.adoptSession]);
   const subscriptionAccess = useSubscriptionAccess({
     accessToken: session?.accessToken,
     enabled: Boolean(IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && currentUser?.id),
@@ -47175,8 +47206,8 @@ function SmartManager() {
       }
     }
 
-    let token = tokenFromOAuth || getStoredAccessToken();
-    const storedRefreshToken = refreshTokenFromOAuth || getStoredRefreshToken();
+    let token = tokenFromOAuth || centralizedAuth.session?.access_token || getStoredAccessToken();
+    const storedRefreshToken = refreshTokenFromOAuth || centralizedAuth.session?.refresh_token || getStoredRefreshToken();
     if (!token) { setAuthChecking(false); return; }
     (async () => {
       let authenticatedUser = null;
@@ -47257,7 +47288,7 @@ function SmartManager() {
         setAuthChecking(false);
       }
     })();
-  }, [authRetryKey]);
+  }, [authRetryKey, centralizedAuth.session?.access_token]);
 
   function navigateAuthView(view, email = "") {
     if (email) setAuthContextEmail(email);
@@ -47269,15 +47300,19 @@ function SmartManager() {
     window.history.replaceState(null, "", `${url.pathname}${url.search}`);
   }
 
-    const handleSignOut = useCallback(() => {
-    clearStoredAuthSession();
-    if (session?.accessToken) authSignOut(session.accessToken);
-    DEMO_OVERRIDE = false;
-    setIdleWarningOpen(false);
-    setIdleSecondsRemaining(0);
-    setSession(IS_CONFIGURED ? null : { demo: true });
-    navigateAuthView("login");
-  }, [session]);
+  const handleSignOut = useCallback(async () => {
+    try {
+      if (session?.accessToken) await authSignOut(session.accessToken);
+    } finally {
+      try { await centralizedAuth.signOut(); } catch { /* local state is cleared even when the network is unavailable */ }
+      clearStoredAuthSession();
+      DEMO_OVERRIDE = false;
+      setIdleWarningOpen(false);
+      setIdleSecondsRemaining(0);
+      setSession(IS_CONFIGURED ? null : { demo: true });
+      navigateAuthView("login");
+    }
+  }, [centralizedAuth.signOut, session]);
 
   const isAdministrativeSession = Boolean(session?.accessToken && !session?.demo && PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role)));
   useEffect(() => {
@@ -47699,7 +47734,7 @@ function SmartManager() {
     return (
       <OAuthCompanySetup
         oauthUser={oauthPendingUser}
-        onAuthenticated={(s) => { setOauthPendingUser(null); setSession(s || { demo: true }); if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }}
+        onAuthenticated={async (s) => { setOauthPendingUser(null); try { await adoptCentralizedSession(s); } catch (error) { notify(toAuthUserMessage(error), "error"); return; } if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }}
         onCancel={() => { clearStoredAuthSession(); setOauthPendingUser(null); }}
       />
     );
@@ -47714,9 +47749,17 @@ function SmartManager() {
     if (authView === "reset") return <ResetPasswordView recoveryToken={recoveryAccessToken} onBack={() => navigateAuthView("login")} onUpdate={async (token, password) => { await authUpdatePassword(token, password); clearStoredAuthSession(); }} toMessage={toAuthUserMessage} />;
     if (authView === "verify") return <EmailConfirmationView email={authContextEmail} onBack={() => navigateAuthView("login")} onResend={authResendVerification} toMessage={toAuthUserMessage} />;
     return authView === "login"
-      ? <LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated={(s) => invitationTokenRef.current ? window.location.reload() : setSession(s || { demo: true })} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
-      : <SignupPage onAuthenticated={(s) => { if (invitationTokenRef.current) { window.location.reload(); return; } setSession(s || { demo: true }); if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }} onSwitchToLogin={() => navigateAuthView("login")} />;
+      ? <LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated={async (s) => { if (invitationTokenRef.current) { window.location.reload(); return; } try { await adoptCentralizedSession(s); } catch (error) { notify(toAuthUserMessage(error), "error"); } }} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
+      : <SignupPage onAuthenticated={async (s) => { if (invitationTokenRef.current) { window.location.reload(); return; } try { await adoptCentralizedSession(s); } catch (error) { notify(toAuthUserMessage(error), "error"); return; } if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }} onSwitchToLogin={() => navigateAuthView("login")} />;
   }
+
+  const sharedTrialNoticeGate = <TrialExpiryNoticeGate session={session} onChoosePlan={() => {
+    if (currentRole.category === "External Portal") {
+      notify("Subscription changes are managed by a workspace administrator.", "info");
+      return;
+    }
+    go("billing");
+  }} />;
 
   // A customer never sees the internal ERP shell at all — not a hidden
   // sidebar, a genuinely different, much smaller page. The real scoping
@@ -47724,10 +47767,10 @@ function SmartManager() {
   // alongside profiles.customer_ref, not from this branch — this is only
   // deciding which UI to show, the database decides what data comes back.
   if (currentRole.category === "External Portal" && currentRole.id === "External Client") {
-    return <CustomerPortal currentUser={currentUser} invoices={invoices} filesHook={files} onSignOut={handleSignOut} />;
+    return <>{sharedTrialNoticeGate}<CustomerPortal currentUser={currentUser} invoices={invoices} filesHook={files} onSignOut={handleSignOut} /></>;
   }
   if (currentRole.category === "External Portal" && currentRole.id === "Supplier") {
-    return <ExternalSupplierPortal currentUser={currentUser} onSignOut={handleSignOut} />;
+    return <>{sharedTrialNoticeGate}<ExternalSupplierPortal currentUser={currentUser} onSignOut={handleSignOut} /></>;
   }
 
   const subscriptionEscapeDestination = new Set(["profile", "support", "notifications", "settings", "global-admin"]);
@@ -47741,6 +47784,7 @@ function SmartManager() {
 
   return (
     <>
+      {sharedTrialNoticeGate}
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
     <div className={`h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -48020,7 +48064,7 @@ function SmartManager() {
               company={company} invoices={invoices} inventory={inventory} crm={crm}
               expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions}
               employees={employees} posTransactions={posTransactions} suppliers={suppliers} quotations={quotations} scheduledWorkflows={scheduledWorkflows} currentUser={currentUser}
-              onQuickAction={goWithIntent} onNavigate={go}
+              onQuickAction={goWithIntent} onNavigate={go} accessToken={session?.accessToken || getStoredAccessToken()}
             />
           )}
           {active === "crm" && <CRM crm={crm} invoices={invoices} expenses={expenses} suppliers={suppliers} />}

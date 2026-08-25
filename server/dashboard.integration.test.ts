@@ -39,9 +39,10 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("loads public auth through a smaller route bundle and retains the ERP shell for active sessions or signup", () => {
     expect(appSource).toContain("const PublicAuthGateway = lazy");
-    expect(appSource).toContain("function isPublicAuthRequest()");
-    expect(appSource).toContain('params.get("auth") !== "signup"');
-    expect(appSource).toContain("isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />");
+    expect(appSource).toContain("<AuthProvider>");
+    expect(appSource).toContain("function ProtectedSurface");
+    expect(appSource).toContain("auth.isAuthenticated");
+    expect(appSource).toContain("<PublicAuthGateway />");
   });
 
   it("defers TRA compliance and dashboard PDF code until the matching feature is opened", () => {
@@ -107,19 +108,20 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("keeps reload-session and provider-specific OAuth routes in the dashboard", () => {
-    expect(dashboardSource).toContain('window.localStorage.getItem("bs_access_token")');
+    expect(dashboardSource).toContain("centralizedAuth.session?.access_token");
     expect(dashboardSource).toContain("authGetUser(token)");
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("google")}');
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("azure")}');
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("apple")}');
-    expect(publicAuthSource).toContain("/auth/v1/authorize?provider=${encodeURIComponent(provider)}");
+    expect(publicAuthSource).toContain("await auth.signInWithOAuth(provider)");
   });
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
     expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
-    expect(publicAuthSource).toContain("persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken })");
-    expect(publicAuthSource).toContain("window.location.replace(withoutAuthView())");
+    expect(publicAuthSource).toContain("useAuthContext");
+    expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
     expect(publicAuthSource).toContain('provider === "azure" ? "Microsoft" : provider === "apple" ? "Apple" : "Google"');
+    expect(publicAuthSource).not.toContain("/auth/v1/authorize?provider=");
   });
 
   it("persists and refreshes Supabase tokens before tenant-scoped requests resume", () => {

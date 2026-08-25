@@ -1,0 +1,115 @@
+{
+  "project_info": {
+    "title": "Supabase Schema Synchronization & Auth Identity Snapshot",
+    "created": 1787513089.224,
+    "last_updated": 1787513477.695,
+    "total_slides": 10
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "objective",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "live_schema",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "database_controls",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "identity_snapshot",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "permissions",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "frontend",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "verification",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "advisors",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "next_steps",
+      "state": "edited",
+      "pageNum": 10
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Supabase Schema Synchronization & Auth Identity Snapshot",
+      "summary": "Cover slide for the SMART MANAGER reconciliation and authentication-hardening review."
+    },
+    {
+      "id": "objective",
+      "title": "Synchronization objective",
+      "summary": "Explain the evidence-led, additive synchronization path from repository to live Supabase and frontend."
+    },
+    {
+      "id": "live_schema",
+      "title": "Live schema is present; history has drift",
+      "summary": "Show the verified live catalog counts and distinguish migration-source drift from missing tables."
+    },
+    {
+      "id": "database_controls",
+      "title": "Database controls remain enabled",
+      "summary": "Summarize RLS, constraints, indexes, triggers, policies, and storage bucket evidence.",
+      "image_plan": "/home/ubuntu/SMARTMANAGER-MANUS/auth_identity_snapshot_authorization_flow.png - Image 1 is a detailed flowchart of the fail-closed identity gates and authorization evaluation logic described in Slide 4."
+    },
+    {
+      "id": "identity_snapshot",
+      "title": "One server snapshot closes the tenant boundary",
+      "summary": "Explain the new auth_identity_snapshot RPC and its fail-closed identity gates."
+    },
+    {
+      "id": "permissions",
+      "title": "Effective permissions are evaluated in PostgreSQL",
+      "summary": "Explain active workforce roles, Allow paths, Deny precedence, and legacy-role containment."
+    },
+    {
+      "id": "frontend",
+      "title": "Frontend hydration now fails closed",
+      "summary": "Show how AuthProvider maps snapshot outcomes into the auth state machine and protected shell."
+    },
+    {
+      "id": "verification",
+      "title": "Verification evidence is layered",
+      "summary": "Summarize SQL, unit, browser, build, and deployment evidence with explicit limitations."
+    },
+    {
+      "id": "advisors",
+      "title": "Advisor findings require targeted follow-up",
+      "summary": "Present security and performance advisor counts and explain why blanket changes were avoided.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "next_steps",
+      "title": "Safe next sequence",
+      "summary": "Close with fixture-backed E2E, targeted advisor remediation, and migration-source reconciliation actions.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

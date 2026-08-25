@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "playwright/test";
+import { installManagedAuth } from "./support/authHarness";
 
 function trpcResult(data: unknown) { return { result: { data: { json: data } } }; }
 
@@ -13,10 +14,6 @@ const customerSnapshot = {
 };
 
 test("loads the customer-only Money Agent portal with server-confirmed wallet history", async ({ page }, testInfo) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem("bs_access_token", "e2e-customer-access-token");
-    window.localStorage.setItem("bs_refresh_token", "e2e-customer-refresh-token");
-  });
   await page.route("**/auth/v1/user", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "customer-e2e-user", email: "customer@e2e.invalid", user_metadata: { full_name: "Neema Mushi" } }) }));
   await page.route("**/rest/v1/**", async (route) => {
     const url = route.request().url();
@@ -29,12 +26,19 @@ test("loads the customer-only Money Agent portal with server-confirmed wallet hi
     const responses = procedures.map((procedure) => procedure === "moneyAgent.customerSnapshot" ? trpcResult(customerSnapshot) : trpcResult(null));
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responses) });
   });
+  await installManagedAuth(page, {
+    id: "customer-e2e-user",
+    email: "customer@e2e.invalid",
+    fullName: "Neema Mushi",
+    profile: { id: "customer-e2e-user", company_id: "customer-e2e-company", full_name: "Neema Mushi", role: "Customer", customer_ref: null },
+    company: { id: "customer-e2e-company", name: "Kilimanjaro Finance", category: "money-agent", tax_rate: 18, timezone: "Africa/Dar_es_Salaam" },
+  });
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Money Agent", { exact: true }).first()).toBeVisible();
   const dismiss = page.getByRole("button", { name: "Dismiss", exact: true }); if (await dismiss.count()) await dismiss.click();
   const skipTour = page.getByRole("button", { name: "Skip tour" }); if (await skipTour.count()) await skipTour.last().click({ force: true });
-  await page.locator("aside nav button").filter({ hasText: "Money Agent" }).click({ force: true });
+  await page.locator("aside nav button").filter({ hasText: "Money Agent" }).evaluate((node) => (node as HTMLButtonElement).click());
   await expect(page.getByRole("heading", { name: "Your wallet, safely in view" })).toBeVisible();
   await expect(page.getByText("Customer-only access", { exact: true })).toBeVisible();
   await expect(page.getByText("Neema Mushi", { exact: true }).first()).toBeVisible();
