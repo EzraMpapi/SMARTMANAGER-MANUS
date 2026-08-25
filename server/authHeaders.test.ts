@@ -3,9 +3,10 @@ import { getBearerToken } from "./_core/authHeaders";
 import { createContext } from "./_core/context";
 
 describe("shared bearer-token extraction", () => {
-  it("prefers the standard authorization header and supports the Supabase fallback header", () => {
-    expect(getBearerToken({ headers: { authorization: "Bearer manus-session", "x-supabase-authorization": "Bearer supabase-session" } })).toBe("manus-session");
+  it("prefers the Supabase bearer header when both auth paths are present", () => {
+    expect(getBearerToken({ headers: { authorization: "Bearer stale-manus-session", "x-supabase-authorization": "Bearer supabase-session" } })).toBe("supabase-session");
     expect(getBearerToken({ headers: { "x-supabase-authorization": "Bearer supabase-session" } })).toBe("supabase-session");
+    expect(getBearerToken({ headers: { authorization: "Bearer manus-session" } })).toBe("manus-session");
     expect(getBearerToken({ headers: { "x-supabase-authorization": ["Bearer array-session"] } })).toBe("array-session");
   });
 
