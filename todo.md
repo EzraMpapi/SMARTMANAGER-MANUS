@@ -472,3 +472,16 @@
 - [x] Inspect published responsive entry states and verify mobile-safe layout where accessible.
 - [x] Document authenticated-browser and physical-device checks that cannot be completed without authorized sessions or devices.
 - [ ] Refresh and revalidate the local Supabase service credential through the approved secure environment channel; the isolated PostgREST check currently returns HTTP 401.
+
+## Step 8 — Viewport, Device, and Credential Validation
+- [ ] Set up a reproducible phone viewport emulation path for the protected dashboard and capture mobile-safe-area evidence.
+- [ ] Prepare the connected physical-device validation session for safe-area, keyboard, gesture, and bottom-navigation checks without submitting mutations.
+- [ ] Refresh local Supabase service credentials through the secure environment channel and verify the PostgREST credential check without exposing values.
+- [ ] Rerun the full regression suite and TypeScript validation after the credential refresh.
+
+## Attached Dashboard Directive and Schema Synchronization
+- [x] Audit the attached directive against the current dashboard, modules, permissions, subscriptions, workflows, and data sources without inventing metrics.
+- [x] Compare repository schema/migrations and live Supabase objects, including required tables, columns, relationships, indexes, functions, triggers, and RLS policies.
+- [x] Apply only missing non-destructive schema objects required by verified existing functionality; no missing required table was verified, so no DDL was applied.
+- [ ] Run schema, dashboard, type, build, and regression validation; document any credential or deployment blockers.
+- [ ] Review the final diff and push all completed code, migrations, tests, and documentation to GitHub.
