@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { resolveVerifiedProfile } from "./aiApprovals";
+import { z } from "zod";
 
 export type BankRequest = CreateExpressContextOptions["req"];
 
@@ -207,9 +208,108 @@ export async function createPaymentInstruction(req: BankRequest, payload: Record
   const { token } = await resolveVerifiedProfile(req);
   return callRpc(token, "bank_create_payment_instruction", { p_payload: payload });
 }
+export const standingOrderCreateInput = z.object({
+  sourceAccountId: z.string().uuid(),
+  destinationAccountId: z.string().uuid().nullable().optional(),
+  destinationMsisdn: z.string().trim().min(1).nullable().optional(),
+  customerId: z.string().uuid().nullable().optional(),
+  amount: z.number().finite().positive().max(10_000_000_000),
+  currency: z.string().trim().length(3).transform((value) => value.toUpperCase()).default("TZS"),
+  channel: z.enum(["INTERNAL_TRANSFER", "MOBILE_MONEY"]).default("INTERNAL_TRANSFER"),
+  frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
+  nextRunDate: z.string().date(),
+  endDate: z.string().date().nullable().optional(),
+  scheduleDay: z.number().int().min(1).max(31).nullable().optional(),
+  timezone: z.string().trim().min(1).max(100).default("Africa/Dar_es_Salaam"),
+  narration: z.string().trim().min(1).max(500).default("Standing order"),
+  name: z.string().trim().min(1).max(200).optional(),
+  approvalRequired: z.boolean().default(true),
+  maxRetries: z.number().int().min(0).max(10).default(3),
+  failurePolicy: z.enum(["RETRY_THEN_PAUSE", "PAUSE_AFTER_MAX_RETRIES", "SKIP_AND_CONTINUE", "FAIL_CLOSED"]).default("PAUSE_AFTER_MAX_RETRIES"),
+  data: z.record(z.string(), z.unknown()).default({}),
+  idempotencyKey: z.string().uuid(),
+}).superRefine((value, context) => {
+  const hasAccount = Boolean(value.destinationAccountId);
+  const hasMsisdn = Boolean(value.destinationMsisdn);
+  if (value.channel === "INTERNAL_TRANSFER" && (!hasAccount || hasMsisdn)) {
+    context.addIssue({ code: "custom", path: ["destinationAccountId"], message: "Internal transfers require exactly one account destination." });
+  }
+  if (value.channel === "MOBILE_MONEY" && (hasAccount || !hasMsisdn)) {
+    context.addIssue({ code: "custom", path: ["destinationMsisdn"], message: "Mobile-money orders require exactly one MSISDN destination." });
+  }
+  if (value.endDate && value.endDate < value.nextRunDate) {
+    context.addIssue({ code: "custom", path: ["endDate"], message: "End date must be on or after the first run date." });
+  }
+  if (value.frequency === "WEEKLY" && (value.scheduleDay === null || value.scheduleDay === undefined || value.scheduleDay > 7)) {
+    context.addIssue({ code: "custom", path: ["scheduleDay"], message: "Weekly schedule day must be ISO weekday 1 through 7." });
+  }
+});
+
+const standingOrderUuid = z.string().uuid();
+const standingOrderVersion = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
+const standingOrderIdempotencyKey = z.string().trim().min(12).max(200);
+
+export type StandingOrderCreateInput = z.infer<typeof standingOrderCreateInput>;
+
 export async function createStandingOrder(req: BankRequest, payload: Record<string, unknown>) {
+  const input = standingOrderCreateInput.parse(payload);
   const { token } = await resolveVerifiedProfile(req);
-  return callRpc(token, "bank_create_standing_order", { p_payload: payload });
+  return callRpc(token, "bank_create_standing_order", { p_payload: input });
+}
+
+export async function listStandingOrders(req: BankRequest, input: { status?: string; search?: string; limit?: number; offset?: number } = {}) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_list_standing_orders", {
+    p_status: input.status ?? null,
+    p_search: input.search ?? null,
+    p_limit: Math.min(Math.max(input.limit ?? 100, 1), 100),
+    p_offset: Math.max(input.offset ?? 0, 0),
+  });
+}
+
+export async function getStandingOrder(req: BankRequest, orderId: string) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_get_standing_order", { p_order_id: standingOrderUuid.parse(orderId) });
+}
+
+export async function submitStandingOrder(req: BankRequest, orderId: string, expectedVersion: number, idempotencyKey?: string) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_submit_standing_order", { p_order_id: standingOrderUuid.parse(orderId), p_expected_version: standingOrderVersion.parse(expectedVersion), p_idempotency_key: idempotencyKey ? standingOrderIdempotencyKey.parse(idempotencyKey) : null });
+}
+
+export async function approveStandingOrder(req: BankRequest, orderId: string, decision: string, note: string | undefined, expectedVersion: number, idempotencyKey?: string) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_approve_standing_order", { p_order_id: standingOrderUuid.parse(orderId), p_decision: decision, p_note: note ?? null, p_expected_version: standingOrderVersion.parse(expectedVersion), p_idempotency_key: idempotencyKey ? standingOrderIdempotencyKey.parse(idempotencyKey) : null });
+}
+
+export async function activateStandingOrder(req: BankRequest, orderId: string, expectedVersion: number, idempotencyKey?: string) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_activate_standing_order", { p_order_id: standingOrderUuid.parse(orderId), p_expected_version: standingOrderVersion.parse(expectedVersion), p_idempotency_key: idempotencyKey ? standingOrderIdempotencyKey.parse(idempotencyKey) : null });
+}
+
+export async function pauseStandingOrder(req: BankRequest, orderId: string, reason: string, expectedVersion: number, idempotencyKey?: string) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_pause_standing_order", { p_order_id: standingOrderUuid.parse(orderId), p_reason: z.string().trim().min(1).max(1000).parse(reason), p_expected_version: standingOrderVersion.parse(expectedVersion), p_idempotency_key: idempotencyKey ? standingOrderIdempotencyKey.parse(idempotencyKey) : null });
+}
+
+export async function resumeStandingOrder(req: BankRequest, orderId: string, expectedVersion: number, idempotencyKey?: string) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_resume_standing_order", { p_order_id: standingOrderUuid.parse(orderId), p_expected_version: standingOrderVersion.parse(expectedVersion), p_idempotency_key: idempotencyKey ? standingOrderIdempotencyKey.parse(idempotencyKey) : null });
+}
+
+export async function cancelStandingOrder(req: BankRequest, orderId: string, reason: string, expectedVersion: number, idempotencyKey?: string) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_cancel_standing_order", { p_order_id: standingOrderUuid.parse(orderId), p_reason: z.string().trim().min(1).max(1000).parse(reason), p_expected_version: standingOrderVersion.parse(expectedVersion), p_idempotency_key: idempotencyKey ? standingOrderIdempotencyKey.parse(idempotencyKey) : null });
+}
+
+export async function confirmStandingOrderProviderPayment(req: BankRequest, runId: string, providerReference: string, providerStatus: string, providerEventId: string, idempotencyKey: string) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_confirm_standing_order_provider_payment", { p_run_id: standingOrderUuid.parse(runId), p_provider_reference: z.string().trim().min(1).max(200).parse(providerReference), p_provider_status: z.string().trim().min(1).max(100).parse(providerStatus), p_provider_event_id: z.string().trim().min(1).max(200).parse(providerEventId), p_idempotency_key: standingOrderIdempotencyKey.parse(idempotencyKey) });
+}
+
+export async function retryStandingOrderRun(req: BankRequest, runId: string, idempotencyKey: string) {
+  const { token } = await resolveVerifiedProfile(req);
+  return callRpc(token, "bank_retry_standing_order_run", { p_run_id: standingOrderUuid.parse(runId), p_idempotency_key: standingOrderIdempotencyKey.parse(idempotencyKey) });
 }
 export async function createGroup(req: BankRequest, payload: Record<string, unknown>) {
   const { token } = await resolveVerifiedProfile(req);
@@ -263,7 +363,11 @@ export async function customerStatement(req: BankRequest, accountId: string, fro
   const { token } = await resolveVerifiedProfile(req);
   return callRpc(token, "bank_customer_statement", { p_account_id: accountId, p_from: from ?? null, p_to: to ?? null });
 }
-export async function runStandingOrders(req: BankRequest) {
+export async function runStandingOrders(req: BankRequest, input: { runDate?: string; orderId?: string; maxOrders?: number } = {}) {
   const { token } = await resolveVerifiedProfile(req);
-  return callRpc(token, "bank_run_standing_orders", {});
+  return callRpc(token, "bank_run_standing_orders", {
+    p_run_date: input.runDate ?? null,
+    p_order_id: input.orderId ? standingOrderUuid.parse(input.orderId) : null,
+    p_max_orders: Math.min(Math.max(input.maxOrders ?? 250, 1), 250),
+  });
 }
