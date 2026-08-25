@@ -401,4 +401,4 @@
 ## Guarded Schema Reconciliation and Push
 - [x] Refresh the live Supabase migration ledger and compare current project migrations and schema objects.
 - [x] Apply only demonstrably missing, idempotent, non-destructive schema objects; no qualified DDL was found because the refreshed live schema already contains the checked fixed-deposit and property-management objects. The isolated test seed remains unexecuted.
-- [ ] Commit and push eligible seed-script and checklist changes to GitHub, excluding protected templates and generated binaries.
+- [x] Commit and push eligible seed-script and checklist changes to GitHub, excluding protected templates and generated binaries (`f4ed569`).
