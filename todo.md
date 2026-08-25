@@ -607,3 +607,9 @@
 - [x] Replace the blocking profile overlay with a contained accessible profile menu and repair verified dashboard interaction defects
 - [x] Refine the top bar, validate desktop/mobile dashboard rendering, and run regression/type checks
 - [x] Verify the live schema for demonstrated missing objects only, commit intentional changes, and push GitHub main
+
+## Sidebar and Profile Menu Visual Simulation
+- [x] Confirm local preview availability and Git baseline
+- [x] Inspect desktop, tablet, and mobile dashboard entry states for sidebar and profile-menu behavior
+- [x] Verify Git remote synchronization and recent commit history
+- [x] Record the visual simulation findings and any authentication-gated limitations
