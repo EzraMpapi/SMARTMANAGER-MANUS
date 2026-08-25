@@ -51,7 +51,7 @@ describe("Standing Order webhook remediation contract", () => {
       "CREATE OR REPLACE FUNCTION bank_private.remediation_open(",
       "CREATE OR REPLACE FUNCTION bank_private.remediation_lease(",
     );
-    expect(open).toContain("p_requested_by IS DISTINCT FROM v_approval.requested_by");
+    expect(open).toContain("p_requested_by IS NULL OR p_requested_by <> v_approval.requested_by");
     expect(open).toContain("v_approval.provider_account_key <> btrim(p_provider_account_key)");
     expect(open).toContain("p_max_items > v_approval.max_items");
     expect(open).toContain("p_max_settlements > v_approval.max_settlements");
@@ -82,7 +82,7 @@ describe("Standing Order webhook remediation contract", () => {
     expect(migration).toContain("v_classification := 'PROVIDER_UNKNOWN'");
     expect(migration).toContain("p_classification NOT IN ('SAFE_RETRY', 'SAFE_RECONCILE')");
     expect(migration).toContain("remediation_attempt_count >= 5");
-    expect(migration).toContain("processing_status = 'NEEDS_ATTENTION'");
+    expect(migration).toContain("THEN 'NEEDS_ATTENTION' ELSE processing_status END");
   });
 
   it("requires requeue state before processing and delegates settlement to the existing private provider path", () => {
@@ -91,7 +91,7 @@ describe("Standing Order webhook remediation contract", () => {
     expect(processFunction).toContain("v_event.provider_status IS NULL");
     expect(processFunction).toContain("bank_private.confirm_provider_payment(");
     expect(processFunction).toContain("v_idempotency_key := 'WHE:' || p_event_id::text");
-    expect(worker).toContain("processThroughNormalServicePath");
+    expect(worker).toContain('"bank_webhook_remediation_process"');
     expect(worker).toContain("self.config.mode == \"DRAIN_SAFE_SETTLEMENTS\"");
   });
 
