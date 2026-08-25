@@ -6,7 +6,7 @@ On 24 August 2026, `https://menejajanja.vercel.app/manifest.webmanifest` returne
 
 The same Vercel origin responded successfully at `/api/config/public`, confirming that the Android wrapper can use the production application and its server-side runtime configuration boundary from one HTTPS origin. No configuration values are retained in this verification record.
 
-The managed development preview serves the updated manifest with the same-origin `/brand/smart-manager-logo.png` path. Vercel proxies only that path to the verified managed Smart Manager logo object. This prevents the Vercel application shell from being returned where Android expects `image/png`, without committing a local image copy to the repository. The source change is therefore ready for the next verified Vercel deployment; the currently live Vercel manifest will retain its prior icon path until that deployment completes.
+A subsequent no-body probe of the public Vercel origin returned `200` for `/manifest.webmanifest` with a manifest content type, `200` for `/brand/smart-manager-logo.png` with `image/png`, `200` for `/api/config/public` with JSON, and `200` for `/app` with HTML. The live manifest contains the same-origin `/brand/smart-manager-logo.png` reference. Vercel’s deployment metadata still reports its newest recorded Git deployment as `BLOCKED` and points to an older commit, so these route results are recorded as observed live behavior rather than proof that the latest `main` commit has propagated.
 
 ## Required release ownership steps
 
