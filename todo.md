@@ -391,3 +391,14 @@
 ## Final Schema and Repository Synchronization
 - [x] Refresh the connected Supabase migration ledger and apply only demonstrably missing, safe schema changes; none qualified because the checked migration equivalents and schema objects already exist.
 - [x] Commit and push the eligible v1.0.0 release communication materials and checklist updates to GitHub (`dce76f8`).
+
+## Property-Management Database Health Check
+- [x] Verify the active Supabase connection and run a read-only availability, RLS, and row-count health check across all property-management tables.
+
+## Property-Management Test Seed Migration
+- [x] Generate and validate a non-executing, idempotent seed migration for an isolated test company across all 37 property-management tables.
+
+## Guarded Schema Reconciliation and Push
+- [x] Refresh the live Supabase migration ledger and compare current project migrations and schema objects.
+- [x] Apply only demonstrably missing, idempotent, non-destructive schema objects; no qualified DDL was found because the refreshed live schema already contains the checked fixed-deposit and property-management objects. The isolated test seed remains unexecuted.
+- [ ] Commit and push eligible seed-script and checklist changes to GitHub, excluding protected templates and generated binaries.
