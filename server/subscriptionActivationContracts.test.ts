@@ -35,7 +35,7 @@ describe("subscription activation repair contracts", () => {
     expect(workspace).toContain('"smart-manager:subscription-updated"');
     expect(workspace).toContain('if (["Active", "Grace"].includes(String(freePlan.status || ""))) onBack?.();');
     expect(access).toContain('window.addEventListener("smart-manager:subscription-updated"');
-    expect(access).toContain('fetch("/api/billing/access"');
+    expect(access).toContain('fetchWithSupabaseAuthRecovery("/api/billing/access"');
     expect(access).toContain('cache: "no-store"');
     expect(access).not.toContain("localStorage");
   });

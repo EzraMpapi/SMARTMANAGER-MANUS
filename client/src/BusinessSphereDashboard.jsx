@@ -47,6 +47,7 @@ import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { useAuthContext } from "./contexts/AuthContext";
+import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
@@ -141,6 +142,7 @@ const LazyPropertyManagementWorkspace = lazyWorkspaceWithRecovery(() => import("
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.ITE_SUPABASE_ANON_KEY || "";
 const IS_CONFIGURED     = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+const SUPABASE_CONFIG = { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY };
 // Slice 1 is deliberately opt-in: the established Settings/HR/invitation
 // flow remains the safe rollback path until the workforce projection passes
 // staging and tenant-isolation verification.
@@ -215,12 +217,27 @@ function requiresConfirmedPersistence() {
 // different companies. The client never supplies its own company filter;
 // the database is the single source of truth for which rows a session can see.
 
-function authHeaders() {
-  const token = getStoredAccessToken() || SUPABASE_ANON_KEY;
+async function activeSupabaseAccessToken(fallback = null) {
+  const client = getSupabaseAuthClient(SUPABASE_CONFIG);
+  if (client) {
+    try {
+      const current = await client.auth.getSession();
+      if (current.data.session?.access_token) return current.data.session.access_token;
+    } catch (_error) {
+      // Use the explicit short-lived token or legacy migration token below.
+    }
+  }
+  if (fallback && fallback !== SUPABASE_ANON_KEY) return fallback;
+  const stored = getStoredAccessToken();
+  return stored && stored !== SUPABASE_ANON_KEY ? stored : null;
+}
+
+async function authHeaders(fallbackToken = null) {
+  const token = await activeSupabaseAccessToken(fallbackToken);
   return {
     apikey: SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
@@ -426,7 +443,6 @@ async function authGetUser(accessToken) {
 // any secret in the event payload.
 function useProactiveSessionRefresh(enabled, onRenewed) {
   const onRenewedRef = useRef(onRenewed);
-  const renewalInFlightRef = useRef(false);
   onRenewedRef.current = onRenewed;
 
   useEffect(() => {
@@ -435,44 +451,44 @@ function useProactiveSessionRefresh(enabled, onRenewed) {
     let timer = null;
 
     const renew = async () => {
-      if (disposed || renewalInFlightRef.current) return;
-      const refreshToken = getStoredRefreshToken();
-      if (!refreshToken) return;
-      renewalInFlightRef.current = true;
+      if (disposed) return;
+      const client = getSupabaseAuthClient(SUPABASE_CONFIG);
+      if (!client) return;
       try {
-        const refreshed = await authRefreshSession(refreshToken);
-        const remember = Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY));
-        persistAuthSession(refreshed, { remember });
-        reportSessionRefreshOutcome("success", "proactive");
-        onRenewedRef.current?.(refreshed.access_token);
-      } catch (error) {
-        authDebug("Proactive session renewal deferred", { status: error?.status || null, terminal: isTerminalSessionRefreshError(error) });
-        if (isTerminalSessionRefreshError(error)) {
-          reportSessionRefreshOutcome("terminal_failure", "proactive");
-          clearStoredAuthSession();
-          window.dispatchEvent(new CustomEvent("smart-manager:auth-session-expired", { detail: { diagnosticCode: "SM-AUTH-401" } }));
-        } else {
-          reportSessionRefreshOutcome("retryable_failure", "proactive");
+        const current = await client.auth.getSession();
+        if (!current.data.session) return;
+        const refreshed = await refreshSupabaseSession(client);
+        if (refreshed.error || !refreshed.data.session) {
+          if (isDefinitiveSupabaseAuthFailure(refreshed.error)) {
+            reportSessionRefreshOutcome("terminal_failure", "proactive");
+            try { await client.auth.signOut({ scope: "local" }); } catch { /* local session callback still clears state */ }
+            window.dispatchEvent(new CustomEvent("smart-manager:auth-session-expired", { detail: { diagnosticCode: "SM-AUTH-401-REFRESH-TOKEN-INVALID" } }));
+          } else {
+            reportSessionRefreshOutcome("retryable_failure", "proactive");
+          }
+          return;
         }
-      } finally {
-        renewalInFlightRef.current = false;
+        reportSessionRefreshOutcome("success", "proactive");
+        onRenewedRef.current?.(refreshed.data.session.access_token);
+      } catch (error) {
+        authDebug("Proactive session renewal deferred", { status: error?.status || null, terminal: isDefinitiveSupabaseAuthFailure(error) });
+        reportSessionRefreshOutcome(isDefinitiveSupabaseAuthFailure(error) ? "terminal_failure" : "retryable_failure", "proactive");
+        if (isDefinitiveSupabaseAuthFailure(error)) {
+          try { await client.auth.signOut({ scope: "local" }); } catch { /* local session callback still clears state */ }
+          window.dispatchEvent(new CustomEvent("smart-manager:auth-session-expired", { detail: { diagnosticCode: "SM-AUTH-401-REFRESH-TOKEN-INVALID" } }));
+        }
       }
     };
 
     const schedule = () => {
       if (timer) window.clearTimeout(timer);
-      const delay = getProactiveSessionRenewalDelay(getStoredAccessToken());
+      const delay = getProactiveSessionRenewalDelay(null);
       timer = window.setTimeout(() => {
-        void renew().finally(() => {
-          if (!disposed && getStoredRefreshToken()) schedule();
-        });
+        void renew().finally(() => { if (!disposed) schedule(); });
       }, delay);
     };
 
-    const renewWhenVisible = () => {
-      if (document.visibilityState === "visible") schedule();
-    };
-
+    const renewWhenVisible = () => { if (document.visibilityState === "visible") void renew(); };
     schedule();
     window.addEventListener("focus", renewWhenVisible);
     document.addEventListener("visibilitychange", renewWhenVisible);
@@ -505,11 +521,18 @@ function authSignInWithOAuth(provider) {
 // endpoint — the correct, safe way to expose a multi-step, atomic
 // operation to a client without granting raw table INSERT.
 async function callRpc(name, params, accessToken) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+  const token = await activeSupabaseAccessToken(accessToken);
+  if (!token) {
+    const error = new Error("A current authenticated session is required for this workspace operation.");
+    error.status = 401;
+    error.code = "AUTH_SESSION_MISSING";
+    throw error;
+  }
+  const res = await fetchWithSupabaseAuthRecovery(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
     body: JSON.stringify(params),
-  });
+  }, SUPABASE_CONFIG);
   const data = await res.json();
   if (!res.ok) {
     const error = new Error(data.message || data.error_description || `${name} failed.`);
@@ -533,20 +556,47 @@ export function sessionRecoveryDiagnosticCode(error) {
 // business-rule failure is ever reclassified as a session failure.
 export async function callWorkspaceRpcWithSessionRefresh(name, params, accessToken) {
   try {
-    return { data: await callRpc(name, params, accessToken), accessToken, refreshToken: getStoredRefreshToken() };
+    const currentToken = await activeSupabaseAccessToken(accessToken);
+    return { data: await callRpc(name, params, currentToken), accessToken: currentToken, refreshToken: null };
   } catch (firstError) {
-    if (!isTerminalWorkspaceSessionError(firstError) || !getStoredRefreshToken()) {
-      if (isTerminalWorkspaceSessionError(firstError)) reportSessionRefreshOutcome("terminal_failure", "workspace_rpc");
-      throw firstError;
+    if (!isTerminalWorkspaceSessionError(firstError)) throw firstError;
+    const client = getSupabaseAuthClient(SUPABASE_CONFIG);
+    let clientHasSession = false;
+    if (client) {
+      try { clientHasSession = Boolean((await client.auth.getSession()).data.session); } catch { /* use the explicit onboarding/migration token below */ }
+    }
+    if (!client || !clientHasSession) {
+      // Migration/onboarding fallback: production uses the shared client when
+      // it has adopted the session; this preserves the explicit signup token
+      // seam until the client callback has completed.
+      const legacyRefreshToken = getStoredRefreshToken();
+      if (!legacyRefreshToken) throw firstError;
+      try {
+        const refreshed = await authRefreshSession(legacyRefreshToken);
+        reportSessionRefreshOutcome("success", "workspace_rpc");
+        return { data: await callRpc(name, params, refreshed.access_token), accessToken: refreshed.access_token, refreshToken: refreshed.refresh_token || null };
+      } catch (refreshError) {
+        refreshError.code = "SESSION_REFRESH_FAILED";
+        reportSessionRefreshOutcome("terminal_failure", "workspace_rpc");
+        throw refreshError;
+      }
     }
     try {
-      const refreshed = await authRefreshSession(getStoredRefreshToken());
-      persistAuthSession(refreshed, { remember: Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)) });
+      const refreshed = await refreshSupabaseSession(client);
+      if (refreshed.error || !refreshed.data.session) {
+        const refreshError = refreshed.error || Object.assign(new Error("The authenticated session could not be refreshed."), { code: "SESSION_REFRESH_FAILED", status: 401 });
+        if (isDefinitiveSupabaseAuthFailure(refreshError)) {
+          refreshError.code = "SESSION_REFRESH_FAILED";
+          reportSessionRefreshOutcome("terminal_failure", "workspace_rpc");
+        } else {
+          reportSessionRefreshOutcome("retryable_failure", "workspace_rpc");
+        }
+        throw refreshError;
+      }
       reportSessionRefreshOutcome("success", "workspace_rpc");
-      return { data: await callRpc(name, params, refreshed.access_token), accessToken: refreshed.access_token, refreshToken: refreshed.refresh_token || getStoredRefreshToken() };
+      return { data: await callRpc(name, params, refreshed.data.session.access_token), accessToken: refreshed.data.session.access_token, refreshToken: null };
     } catch (refreshError) {
-      refreshError.code = "SESSION_REFRESH_FAILED";
-      reportSessionRefreshOutcome("terminal_failure", "workspace_rpc");
+      if (!refreshError.code) refreshError.code = "SESSION_REFRESH_FAILED";
       throw refreshError;
     }
   }
@@ -771,7 +821,7 @@ export function sb(table) {
         const lookupParams = new URLSearchParams(params);
         lookupParams.set("select", "*");
         lookupParams.delete("order");
-        const lookup = await fetch(`${path}?${lookupParams.toString()}`, { headers: authHeaders() });
+        const lookup = await fetchWithSupabaseAuthRecovery(`${path}?${lookupParams.toString()}`, { headers: await authHeaders() }, SUPABASE_CONFIG);
         const lookupRaw = await lookup.json().catch(() => null);
         if (!lookup.ok) {
           const error = new Error(lookupRaw?.message || lookupRaw?.error_description || lookupRaw?.hint || lookupRaw?.details || `Supabase lookup ${table} failed: ${lookup.status}`);
@@ -785,14 +835,14 @@ export function sb(table) {
         }
         requestPayload = normalizeGenericCompanyPayload(table, payload, Array.isArray(lookupRaw) ? lookupRaw[0] : lookupRaw);
       }
-      const res = await fetch(url, {
+      const res = await fetchWithSupabaseAuthRecovery(url, {
         method,
         headers: {
-          ...authHeaders(),
+          ...(await authHeaders()),
           Prefer: method === "GET" ? undefined : mergeDuplicates ? "return=representation,resolution=merge-duplicates" : "return=representation",
         },
         body: requestPayload == null ? null : JSON.stringify(requestPayload),
-      });
+      }, SUPABASE_CONFIG);
       const raw = await res.json().catch(() => null);
       if (!res.ok) {
         const message = raw?.message || raw?.error_description || raw?.hint || raw?.details || `Supabase ${method} ${table} failed: ${res.status}`;
@@ -45679,11 +45729,11 @@ function HotelManagementModule({ currentUser }) {
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
       throw new Error("You appear to be offline. Reconnect before submitting a hospitality workflow.");
     }
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`, {
+    const response = await fetchWithSupabaseAuthRecovery(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`, {
       method: "POST",
-      headers: { ...authHeaders(), Prefer: "return=representation" },
+      headers: { ...(await authHeaders()), Prefer: "return=representation" },
       body: JSON.stringify(payload),
-    });
+    }, SUPABASE_CONFIG);
     const body = await response.json().catch(() => null);
     if (!response.ok) {
       const error = new Error(body?.message || body?.hint || body?.details || `Hospitality request failed: ${response.status}`);
@@ -45698,7 +45748,7 @@ function HotelManagementModule({ currentUser }) {
 
 function FleetManagementModule({ currentUser }) {
   const api = useCallback(async (path, init = {}) => {
-    const response = await fetch(path, { ...init, headers: { ...authHeaders(), ...(init.headers || {}) } });
+    const response = await fetchWithSupabaseAuthRecovery(path, { ...init, headers: { ...(await authHeaders()), ...(init.headers || {}) } }, SUPABASE_CONFIG);
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(body?.error || body?.message || `Fleet request failed: ${response.status}`);
@@ -45718,11 +45768,11 @@ function RestaurantManagementModule({ currentUser }) {
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
       throw new Error("You appear to be offline. Reconnect before submitting a Restaurant workflow.");
     }
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`, {
+    const response = await fetchWithSupabaseAuthRecovery(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`, {
       method: "POST",
-      headers: { ...authHeaders(), Prefer: "return=representation" },
+      headers: { ...(await authHeaders()), Prefer: "return=representation" },
       body: JSON.stringify(payload),
-    });
+    }, SUPABASE_CONFIG);
     const body = await response.json().catch(() => null);
     if (!response.ok) {
       const error = new Error(body?.message || body?.hint || body?.details || `Restaurant request failed: ${response.status}`);

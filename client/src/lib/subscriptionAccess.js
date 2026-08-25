@@ -1,4 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchWithSupabaseAuthRecovery } from "./supabaseAuthClient";
+
+const supabaseConfig = {
+  url: import.meta.env.VITE_SUPABASE_URL || "",
+  anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
+};
 
 export const SUBSCRIPTION_ACCESS_STATES = Object.freeze(["trial", "active", "grace", "pending", "expired", "required", "unknown"]);
 const ACCESSIBLE_STATES = new Set(["trial", "active", "grace"]);
@@ -70,10 +76,10 @@ export function useSubscriptionAccess({ accessToken, enabled = true } = {}) {
     }
     setRequest((current) => ({ ...current, status: "loading", error: "" }));
     try {
-      const response = await fetch("/api/billing/access", {
+      const response = await fetchWithSupabaseAuthRecovery("/api/billing/access", {
         headers: { accept: "application/json", "x-supabase-authorization": `Bearer ${accessToken}` },
         cache: "no-store",
-      });
+      }, supabaseConfig);
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(typeof body?.error === "string" ? body.error : "Subscription access could not be confirmed.");
       setRequest({ status: "ready", payload: body, error: "" });

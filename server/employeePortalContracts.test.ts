@@ -13,7 +13,7 @@ describe("Employee Portal production contracts", () => {
     expect(workspace).toContain('rpc("employee_portal_action", { p_action: action, p_payload: payload })');
     expect(workspace).not.toContain("localStorage");
     expect(workspace).not.toContain("sessionStorage");
-    expect(dashboard).toContain('fetch(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`');
+    expect(dashboard).toContain('fetchWithSupabaseAuthRecovery(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`');
     expect(dashboard).toContain('import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace"');
     expect(dashboard).toContain("return <EmployeePortalWorkspace");
     expect(dashboard).toContain('rpc={(procedure, payload) => callRpc(procedure, payload, getStoredAccessToken() || "")}');

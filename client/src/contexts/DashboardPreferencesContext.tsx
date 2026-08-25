@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { trpc } from "../lib/trpc";
+import { useAuthContext } from "./AuthContext";
 
 interface DashboardPreferences {
   compactDensity: boolean;
@@ -43,15 +44,6 @@ const defaultPreferences: DashboardPreferences = {
   departmentBudgets: defaultDepartmentBudgets,
 };
 
-function hasStoredSupabaseSession() {
-  if (typeof window === "undefined") return false;
-  try {
-    return Boolean(window.localStorage.getItem("bs_access_token") || window.sessionStorage.getItem("bs_session_access_token"));
-  } catch {
-    return false;
-  }
-}
-
 function normalizePreferences(value: Partial<DashboardPreferences> | null | undefined): DashboardPreferences {
   return {
     ...defaultPreferences,
@@ -67,7 +59,8 @@ function normalizePreferences(value: Partial<DashboardPreferences> | null | unde
 const DashboardPreferencesContext = createContext<DashboardPreferencesContextType | undefined>(undefined);
 
 export function DashboardPreferencesProvider({ children }: { children: React.ReactNode }) {
-  const liveSession = hasStoredSupabaseSession();
+  const auth = useAuthContext();
+  const liveSession = Boolean(auth.configured && auth.session?.access_token && ["AUTHENTICATED", "PROFILE_LOADING", "WORKSPACE_LOADING", "AUTHORIZED"].includes(auth.status));
   const persistedQuery = trpc.dashboardPreferences.get.useQuery(undefined, { enabled: liveSession, retry: false, staleTime: 5 * 60 * 1000 });
   const saveMutation = trpc.dashboardPreferences.save.useMutation();
   const hydratedRef = useRef(false);

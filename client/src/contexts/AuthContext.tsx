@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import type { AuthChangeEvent, Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { clearStoredAuthSession, readStoredAuthSession } from "../lib/authSessionStorage";
 import { loadPublicSupabaseConfig, type PublicSupabaseConfig } from "../lib/publicSupabaseConfig";
-import { getSupabaseAuthClient } from "../lib/supabaseAuthClient";
+import { getSupabaseAuthClient, refreshSupabaseSession } from "../lib/supabaseAuthClient";
 import { authReducer, AUTH_STATES, initialAuthState, isAuthLoading, type AuthIdentity, type AuthMachineState } from "../lib/authStateMachine";
 
 type AuthContextValue = AuthMachineState & {
@@ -79,23 +79,48 @@ async function loadTenantIdentity(client: SupabaseClient): Promise<LoadedIdentit
   };
 }
 
+function isIdentityRpcAuthFailure(error: unknown) {
+  const candidate = error as { status?: unknown; code?: unknown; message?: unknown } | null;
+  const status = Number(candidate?.status);
+  const code = String(candidate?.code || "").toLowerCase();
+  const message = String(candidate?.message || "").toLowerCase();
+  return status === 401 || code === "pgrst301" || message.includes("jwt expired") || message.includes("invalid jwt") || message.includes("not authenticated");
+}
+
 async function hydrateIdentity(client: SupabaseClient, session: Session, dispatch: Dispatch<Parameters<typeof authReducer>[1]>, generation: MutableRefObject<number>) {
   const currentGeneration = ++generation.current;
-  dispatch({ type: "SESSION_ESTABLISHED", session, user: session.user });
+  let effectiveSession = session;
+  dispatch({ type: "SESSION_ESTABLISHED", session: effectiveSession, user: effectiveSession.user });
   dispatch({ type: "PROFILE_LOADING" });
   let snapshot: LoadedIdentitySnapshot;
   try {
     snapshot = await loadTenantIdentity(client);
   } catch (error) {
-    if (currentGeneration === generation.current) dispatch({ type: "AUTH_ERROR", error, reason: "IDENTITY_SNAPSHOT_FAILED" });
-    throw error;
+    if (!isIdentityRpcAuthFailure(error)) {
+      if (currentGeneration === generation.current) dispatch({ type: "AUTH_ERROR", error, reason: "IDENTITY_SNAPSHOT_FAILED" });
+      throw error;
+    }
+    const refreshed = await refreshSupabaseSession(client);
+    if (refreshed.error || !refreshed.data.session) {
+      if (currentGeneration === generation.current) dispatch({ type: "AUTH_ERROR", error: refreshed.error || error, reason: "SESSION_REFRESH_FAILED" });
+      throw refreshed.error || error;
+    }
+    if (currentGeneration !== generation.current) return;
+    effectiveSession = refreshed.data.session;
+    dispatch({ type: "TOKEN_REFRESHED", session: effectiveSession, user: effectiveSession.user });
+    try {
+      snapshot = await loadTenantIdentity(client);
+    } catch (retryError) {
+      if (currentGeneration === generation.current) dispatch({ type: "AUTH_ERROR", error: retryError, reason: "IDENTITY_SNAPSHOT_FAILED" });
+      throw retryError;
+    }
   }
   if (currentGeneration !== generation.current) return;
   if (!snapshot.authorized) {
     dispatch({
       type: "INCOMPLETE_IDENTITY",
-      session,
-      user: session.user,
+      session: effectiveSession,
+      user: effectiveSession.user,
       profile: snapshot.identity.profile,
       reason: snapshot.reason || "IDENTITY_INCOMPLETE",
     });
@@ -103,7 +128,7 @@ async function hydrateIdentity(client: SupabaseClient, session: Session, dispatc
   }
   dispatch({ type: "WORKSPACE_LOADING", profile: snapshot.identity.profile || {} });
   if (currentGeneration !== generation.current) return;
-  dispatch({ type: "AUTHORIZED", session, user: session.user, identity: snapshot.identity });
+  dispatch({ type: "AUTHORIZED", session: effectiveSession, user: effectiveSession.user, identity: snapshot.identity });
 }
 
 function redirectUri(screen: string) {
@@ -138,15 +163,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const subscription = client.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
         window.setTimeout(() => {
           if (!active) return;
+          if (event === "INITIAL_SESSION") return;
           if (event === "SIGNED_OUT" || !session) {
             generation.current += 1;
             dispatch({ type: "SIGNED_OUT" });
             return;
           }
-          if (event === "TOKEN_REFRESHED") dispatch({ type: "TOKEN_REFRESHED", session, user: session.user });
+          if (event === "TOKEN_REFRESHED") {
+            dispatch({ type: "TOKEN_REFRESHED", session, user: session.user });
+            return;
+          }
+          if (event === "PASSWORD_RECOVERY") {
+            dispatch({ type: "PASSWORD_RECOVERY", session, user: session.user });
+            return;
+          }
           if (event === "USER_UPDATED") dispatch({ type: "USER_UPDATED", session, user: session.user });
-          if (event === "PASSWORD_RECOVERY") dispatch({ type: "PASSWORD_RECOVERY", session, user: session.user });
-          void hydrateIdentity(client, session, dispatch, generation).catch((error) => dispatch({ type: "AUTH_ERROR", error, reason: "IDENTITY_BOOTSTRAP_FAILED" }));
+          if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+            void hydrateIdentity(client, session, dispatch, generation).catch((error) => dispatch({ type: "AUTH_ERROR", error, reason: "IDENTITY_BOOTSTRAP_FAILED" }));
+          }
         }, 0);
       });
       unsubscribe = () => subscription.data.subscription.unsubscribe();
@@ -179,22 +213,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     const result = await requireClient().auth.signInWithPassword({ email, password });
     if (result.error) throw result.error;
-    if (result.data.session) await hydrateIdentity(requireClient(), result.data.session, dispatch, generation);
     return result.data;
   }, [requireClient]);
 
   const signUp = useCallback(async (email: string, password: string, metadata?: Record<string, unknown>) => {
     const result = await requireClient().auth.signUp({ email, password, options: { data: metadata, emailRedirectTo: redirectUri("verify") } });
     if (result.error) throw result.error;
-    if (result.data.session) await hydrateIdentity(requireClient(), result.data.session, dispatch, generation);
     return result.data;
   }, [requireClient]);
 
   const signOut = useCallback(async () => {
-    const result = await requireClient().auth.signOut();
-    clearStoredAuthSession();
-    if (result.error) throw result.error;
-    dispatch({ type: "SIGNED_OUT" });
+    const client = requireClient();
+    let signOutError: unknown = null;
+    try {
+      const result = await client.auth.signOut();
+      signOutError = result.error;
+    } catch (error) {
+      signOutError = error;
+      try { await client.auth.signOut({ scope: "local" }); } catch { /* local state is cleared below */ }
+    } finally {
+      clearStoredAuthSession();
+      dispatch({ type: "SIGNED_OUT" });
+    }
+    if (signOutError) throw signOutError;
   }, [requireClient]);
 
   const resetPassword = useCallback(async (email: string) => {
@@ -220,16 +261,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.error) throw result.error;
   }, [requireClient]);
 
-  const adoptSession = useCallback(async (nextSession: { access_token: string; refresh_token: string }, remember = true) => {
+  const adoptSession = useCallback(async (nextSession: { access_token: string; refresh_token: string }, _remember = true) => {
     const result = await requireClient().auth.setSession(nextSession);
     if (result.error) throw result.error;
-    if (result.data.session) await hydrateIdentity(requireClient(), result.data.session, dispatch, generation);
+    if (!result.data.session) throw new Error("The authentication server returned an incomplete session.");
   }, [requireClient]);
 
   const refresh = useCallback(async () => {
-    const result = await requireClient().auth.getSession();
+    const client = requireClient();
+    const result = await refreshSupabaseSession(client);
     if (result.error) throw result.error;
-    if (result.data.session) await hydrateIdentity(requireClient(), result.data.session, dispatch, generation);
+    if (result.data.session) await hydrateIdentity(client, result.data.session, dispatch, generation);
     else dispatch({ type: "SIGNED_OUT" });
   }, [requireClient]);
 

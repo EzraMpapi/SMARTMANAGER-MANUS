@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAuthClient } from "../lib/supabaseAuthClient";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+const supabase = getSupabaseAuthClient({ url: supabaseUrl, anonKey: supabaseAnonKey });
 
 export function useSupabaseRealtime(tableName: string, onUpdate: () => void) {
   useEffect(() => {
