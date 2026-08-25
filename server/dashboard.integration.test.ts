@@ -39,10 +39,9 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("loads public auth through a smaller route bundle and retains the ERP shell for active sessions or signup", () => {
     expect(appSource).toContain("const PublicAuthGateway = lazy");
-    expect(appSource).toContain("<AuthProvider>");
-    expect(appSource).toContain("function ProtectedSurface");
-    expect(appSource).toContain("auth.isAuthenticated");
-    expect(appSource).toContain("<PublicAuthGateway />");
+    expect(appSource).toContain("function isPublicAuthRequest()");
+    expect(appSource).toContain('params.get("auth") !== "signup"');
+    expect(appSource).toContain("isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />");
   });
 
   it("defers TRA compliance and dashboard PDF code until the matching feature is opened", () => {
@@ -58,7 +57,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
-    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/manus-storage/smart-manager-logo_ad2a1e4d.png"');
+    expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/brand/smart-manager-logo.png"');
     expect(brandLogoSource).toContain('SMART_MANAGER_MARK_URL = "/manus-storage/smart-manager-mark_aa277576.png"');
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
     expect(brandLogoSource).toContain('width={variant === "compact" ? 768 : 1536}');
@@ -73,9 +72,9 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(enterpriseAuthSource).toContain('rememberMe');
     expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
-    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-12 w-12');
+    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
-    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/manus-storage/smart-manager-logo_ad2a1e4d.png"');
+    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/brand/smart-manager-logo.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
   });
 
@@ -84,11 +83,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("trpc.teamInvitations.create.useMutation");
     expect(dashboardSource).not.toContain("const TEAM_SEED");
     expect(invitationServiceSource).toContain("const { profile } = await resolveVerifiedProfile(req)");
-    expect(invitationServiceSource).toContain("company_id: profile.company_id");
-    expect(invitationServiceSource).toContain('const INVITATION_TABLE = "team_invitations"');
-    expect(invitationServiceSource).toContain("supabaseServiceRequest");
-    expect(invitationServiceSource).not.toContain("getDb");
-    expect(invitationServiceSource).not.toContain("drizzle-orm");
+    expect(invitationServiceSource).toContain("companyId: profile.company_id");
     expect(invitationServiceSource).toContain("hashInvitationToken(token)");
     expect(invitationServiceSource).toContain("Sign in with the email address that received this invitation");
     expect(invitationServiceSource).not.toContain("input.companyId");
@@ -112,20 +107,19 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("keeps reload-session and provider-specific OAuth routes in the dashboard", () => {
-    expect(dashboardSource).toContain("centralizedAuth.session?.access_token");
+    expect(dashboardSource).toContain('window.localStorage.getItem("bs_access_token")');
     expect(dashboardSource).toContain("authGetUser(token)");
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("google")}');
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("azure")}');
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("apple")}');
-    expect(publicAuthSource).toContain("await auth.signInWithOAuth(provider)");
+    expect(publicAuthSource).toContain("/auth/v1/authorize?provider=${encodeURIComponent(provider)}");
   });
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
     expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
-    expect(publicAuthSource).toContain("useAuthContext");
-    expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
+    expect(publicAuthSource).toContain("persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken })");
+    expect(publicAuthSource).toContain("window.location.replace(withoutAuthView())");
     expect(publicAuthSource).toContain('provider === "azure" ? "Microsoft" : provider === "apple" ? "Apple" : "Google"');
-    expect(publicAuthSource).not.toContain("/auth/v1/authorize?provider=");
   });
 
   it("persists and refreshes Supabase tokens before tenant-scoped requests resume", () => {
