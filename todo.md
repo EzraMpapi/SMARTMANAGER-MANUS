@@ -376,4 +376,4 @@
 ## Repeat Synchronization Verification
 - [x] Recheck the connected Supabase migration history and local migration inventory before applying any schema SQL.
 - [x] Apply only schema operations that remain demonstrably missing and safe after the recheck; none qualified because the checked migrations and schema objects already exist.
-- [ ] Push any newly eligible repository change while documenting protected environment files and oversized generated artifacts separately.
+- [x] Push any newly eligible repository change while documenting protected environment files and oversized generated artifacts separately (`c9af026`).
