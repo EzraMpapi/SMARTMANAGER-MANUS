@@ -430,3 +430,4 @@
 - [x] Audit the protected dashboard’s visual hierarchy, shell responsiveness, information density, and existing reusable design primitives.
 - [x] Define and implement the first cohesive dashboard polish pass without changing data fetching, business rules, subscription enforcement, or access controls.
 - [x] Run focused regression checks and document the recommended follow-up polish sequence.
+- [x] Refine the desktop sidebar and top bar into an operational command strip while preserving role-based module visibility, search, alerts, subscription state, and mobile navigation.

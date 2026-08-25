@@ -1,0 +1,28 @@
+import { describe, expect, it } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+
+const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+
+describe("dashboard operational command strip", () => {
+  it("derives the active command context only from the already-filtered visible module set", () => {
+    expect(dashboard).toContain("const activeModule = visibleModules.find((module) => module.id === active);");
+    expect(dashboard).toContain("const ActiveModuleIcon = activeModule?.icon || Building2;");
+    expect(dashboard).toContain("const activeModuleLabel = activeModule?.label");
+  });
+
+  it("keeps command search and operational workspace navigation bound to existing callbacks", () => {
+    expect(dashboard).toContain("aria-label=\"Open command palette\"");
+    expect(dashboard).toContain("onClick={() => setPaletteOpen(true)}");
+    expect(dashboard).toContain("aria-label=\"Operational workspaces\"");
+    expect(dashboard).toContain("visibleModules.map((m) => {");
+    expect(dashboard).toContain("onClick={() => go(m.id)}");
+  });
+
+  it("retains subscription status, alerts, and the independent mobile navigation path", () => {
+    expect(dashboard).toContain("subscriptionAccess.ready");
+    expect(dashboard).toContain("criticalAlerts.length > 0");
+    expect(dashboard).toContain('className="sm:hidden fixed bottom-0');
+    expect(dashboard).toContain("<SubscriptionAccessBoundary");
+  });
+});

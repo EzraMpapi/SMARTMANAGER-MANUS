@@ -47617,6 +47617,9 @@ function SmartManager() {
 
   const subscriptionFilteringReady = !IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || !session?.accessToken || session?.demo || !currentUser?.id || subscriptionAccess.ready;
   const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (!IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || isPlatformAdministrator || subscriptionAllowsModule(subscriptionAccess.access, m.id)));
+  const activeModule = visibleModules.find((module) => module.id === active);
+  const ActiveModuleIcon = activeModule?.icon || Building2;
+  const activeModuleLabel = activeModule?.label || (active === "settings" ? "Workspace settings" : active === "profile" ? "Profile" : active === "billing" ? "Subscription & Billing" : "Workspace");
 
   // If switching roles removes access to whatever module is currently on
   // screen (e.g. testing "Employee" while viewing Finance), fall back to
@@ -47870,14 +47873,14 @@ function SmartManager() {
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
       >
-          <div className="relative px-5 py-5 border-b border-[#F3F4F6] flex items-center justify-between">
+          <div className="relative px-4 py-4 border-b border-[#F3F4F6] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <BrandLogo variant="compact" priority className="h-9 w-9 ring-1 ring-emerald-100" />
+            <span className="rounded-xl bg-emerald-50 p-1 ring-1 ring-emerald-100 shadow-sm"><BrandLogo variant="compact" priority className="h-8 w-8" /></span>
             <div className="flex flex-col leading-tight">
-              <span className="text-[14.5px] font-semibold tracking-tight brand-wordmark" style={{ fontFamily: "'Poppins'" }}>
+              <span className="text-[14.5px] font-semibold tracking-tight brand-wordmark text-slate-950" style={{ fontFamily: "'Poppins'" }}>
                 Smart Manager
               </span>
-              <span className="text-[9.5px] text-slate-400">Simplify. Manage. Grow.</span>
+              <span className="mt-0.5 text-[9px] font-medium uppercase tracking-[.14em] text-emerald-700">Operations hub</span>
             </div>
           </div>
           <button className="text-slate-400 hover:text-[#111827] transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
@@ -47885,7 +47888,16 @@ function SmartManager() {
           </button>
         </div>
 
-        <nav className="relative flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
+        <div className="border-b border-slate-100 px-3 py-3">
+          <button type="button" onClick={() => setPaletteOpen(true)} className="group flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2" aria-label="Open command palette">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition group-hover:text-emerald-700"><Search size={15} /></span>
+            <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-700">Command palette</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Search modules and records</span></span>
+            <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400">⌘K</kbd>
+          </button>
+        </div>
+
+        <nav className="relative flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
+          <div className="mb-2 flex items-center justify-between px-2.5"><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Operational workspaces</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{visibleModules.length}</span></div>
           {visibleModules.map((m) => {
             const Icon = m.icon;
             const isActive = active === m.id;
@@ -47895,43 +47907,33 @@ function SmartManager() {
                 data-tour-target={m.id}
                 onClick={() => go(m.id)}
                 aria-current={isActive ? "page" : undefined}
-                className={`relative w-full flex items-center justify-between gap-2.5 pl-3 pr-3 py-2.5 rounded-lg text-[13.5px] transition-all duration-200 group ${
-                  isActive ? "font-medium" : "text-slate-500 hover:text-[#111827]"
+                className={`relative w-full flex items-center justify-between gap-2.5 rounded-xl border px-2.5 py-2.5 text-[12.5px] transition-all duration-200 group ${
+                  isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"
                 }`}
-                style={isActive ? { backgroundColor: "#DCFCE7", color: "#16A34A", borderLeft: "3px solid #16A34A", paddingLeft: "10px" } : { borderLeft: "3px solid transparent", paddingLeft: "10px" }}
-                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = "#F3F4F6"; }}
-                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = ""; }}
               >
-                {isActive && (
-                  <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full"
-                    style={{ background: "#16A34A" }}
-                  />
-                )}
-                <span className="flex items-center gap-2.5">
-                  <Icon size={16} strokeWidth={2} className={isActive ? "" : "group-hover:text-[#22C55E] transition-colors"} style={isActive ? { color: "#16A34A" } : undefined} />
-                  {m.label}
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={15} strokeWidth={isActive ? 2.2 : 1.9} /></span>
+                  <span className="truncate">{m.label}</span>
                 </span>
-                {!m.live && <Lock size={11} className="text-slate-300" />}
+                <span className="flex shrink-0 items-center gap-1.5">{isActive && <span className="hidden text-[9px] font-bold uppercase tracking-[.08em] text-emerald-700 xl:inline">Current</span>}{!m.live && <Lock size={11} className="text-slate-300" />}</span>
               </button>
             );
           })}
         </nav>
 
-        <div className="relative px-4 py-4 border-t border-[#F3F4F6]">
+        <div className="relative border-t border-[#F3F4F6] px-3 py-3">
           <button
             onClick={() => go("settings")}
-            className={`w-full flex items-center justify-between gap-2.5 text-[13px] transition-colors group ${
-              active === "settings" ? "font-medium" : "text-slate-500 hover:text-[#111827]"
+            className={`w-full flex items-center justify-between gap-2.5 rounded-xl border px-2.5 py-2.5 text-[12px] transition-colors group ${
+              active === "settings" ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-[#111827]"
             }`}
-            style={active === "settings" ? { color: "#16A34A" } : undefined}
           >
             <span className="flex items-center gap-2.5">
-              <Settings size={15} strokeWidth={2} className={active === "settings" ? "" : "group-hover:text-[#22C55E] transition-colors"} style={active === "settings" ? { color: "#16A34A" } : undefined} /> Settings
+              <span className={`grid h-8 w-8 place-items-center rounded-lg ${active === "settings" ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Settings size={15} strokeWidth={2} /></span> Settings
             </span>
             {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
-          <div className="mt-3.5 pt-3.5 border-t border-[#F3F4F6] flex items-center gap-1.5 text-[10px] text-slate-400 leading-snug">
+          <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-[#16A34A]" />
             <span>Bidhaa ya Kitanzania, kwa Wafanyabiashara wa Kitanzania na Duniani.</span>
           </div>
@@ -47942,7 +47944,7 @@ function SmartManager() {
           column, so there is no reserved gutter to subtract. */}
       <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full">
         {/* Topbar */}
-        <header className={`h-[68px] shrink-0 bg-white/95 backdrop-blur border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
+        <header className={`h-[72px] shrink-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
           <div className="flex items-center gap-3">
             <button
               className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
@@ -47952,18 +47954,17 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <BrandLogo variant="compact" priority className="h-8 w-8 sm:hidden" />
-            <div className="flex items-center gap-2 text-[13px] text-slate-500">
-              <Building2 size={14} className="hidden sm:block" />
-              <span className="font-medium text-[#111827] truncate max-w-[140px] sm:max-w-none">{company.name}</span>
-              <ChevronDown size={13} className="text-slate-400 hidden sm:block" />
-              <span className="hidden md:inline-flex items-center text-[10.5px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full ml-1">
-                {currentUser.role}
-              </span>
+            <div className="hidden min-w-0 items-center gap-2.5 sm:flex">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm"><ActiveModuleIcon size={17} strokeWidth={2.1} /></span>
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[13px] font-semibold text-slate-900">{company.name}</span><span className="hidden md:inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[.08em] text-slate-500">{currentUser.role}</span></div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-400"><span>Workspace</span><ChevronRight size={11} /><span className="truncate text-emerald-700">{activeModuleLabel}</span></div>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span
-              className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full"
+              className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
               style={
                 IS_CONFIGURED
                   ? { backgroundColor: "#16A34A14", color: "#16A34A" }
@@ -47974,18 +47975,18 @@ function SmartManager() {
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
               {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
             </span>
-            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-emerald-200 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
+            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             <button
               onClick={() => setPaletteOpen(true)}
-              className="flex items-center gap-1.5 text-[12px] font-medium text-slate-400 border border-slate-200 rounded-lg px-2.5 py-1.5 hover:border-slate-300 hover:text-slate-600 transition-colors"
+              className="flex items-center gap-1.5 border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 rounded-xl px-2.5 py-2 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
               aria-label="Search everything"
             >
               <Search size={13} />
-              <span className="hidden md:inline">Search anything...</span>
+              <span className="hidden md:inline">Search workspace</span>
               <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>
             <OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} />
-            <span className="hidden lg:inline-flex items-center text-[11.5px] font-medium text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
+            <span className="hidden xl:inline-flex items-center text-[10.5px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
             </span>
