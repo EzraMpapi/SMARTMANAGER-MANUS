@@ -390,4 +390,4 @@
 
 ## Final Schema and Repository Synchronization
 - [x] Refresh the connected Supabase migration ledger and apply only demonstrably missing, safe schema changes; none qualified because the checked migration equivalents and schema objects already exist.
-- [ ] Commit and push the eligible v1.0.0 release communication materials and checklist updates to GitHub.
+- [x] Commit and push the eligible v1.0.0 release communication materials and checklist updates to GitHub (`dce76f8`).
