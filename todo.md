@@ -505,3 +505,9 @@
 - [ ] Harden navigation, dashboard, tables, forms, dialogs, POS, charts, typography, images, loading/empty/error/permission/subscription states, and dark/light surfaces across representative breakpoints.
 - [ ] Validate zero unexpected horizontal overflow, keyboard/focus behavior, touch targets, representative viewport sizes, and regression contracts; responsive contracts, TypeScript, and non-credential regression checks passed, while full visual/device coverage remains open.
 - [ ] Review and push all intentional source and test changes while excluding secrets, generated artifacts, and unrelated temporary files.
+
+## Production, Legacy Responsive, and RLS Verification
+- [ ] Run a memory-optimized production Vite build with controlled chunking and verify generated artifacts.
+- [ ] Execute legacy-module visual and touch simulations at representative mobile breakpoints, including portrait and landscape where supported.
+- [ ] Inspect local Supabase connection status and run read-only RLS and tenant-isolation enforcement tests.
+- [x] Record results, blockers, and any safe follow-up changes in the verification record.

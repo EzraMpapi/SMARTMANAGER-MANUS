@@ -666,7 +666,19 @@
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  .dashboard-mobile-content .sm-responsive-dialog {
+  /* Legacy module forms and KPI groups frequently use fixed two/three-column
+     Tailwind grids. Collapse them on phones so labels and validation copy do
+     not compete for 320–479px of width. */
+  .dashboard-mobile-content :where(.grid.grid-cols-2, .grid.grid-cols-3) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-mobile-content :where(.grid.grid-cols-4, .grid.grid-cols-5, .grid.grid-cols-6) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-mobile-content .sm-responsive-dialog,
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, div) {
     width: 100% !important;
     max-width: 100% !important;
     max-height: min(92svh, 46rem);
