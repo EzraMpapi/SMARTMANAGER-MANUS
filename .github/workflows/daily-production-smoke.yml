@@ -1,0 +1,102 @@
+name: Daily Production Smoke
+
+on:
+  schedule:
+    # Run every day at 05:17 UTC.
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: daily-production-smoke
+  cancel-in-progress: false
+
+jobs:
+  production-smoke:
+    name: Production authentication and ERP smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      E2E_BASE_URL: https://smartmanager-manus.vercel.app
+      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ms-playwright
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium for smoke tests
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run credential-free production smoke tests
+        run: pnpm exec playwright test browser-tests/productionSmoke.spec.ts --reporter=line
+
+      - name: Upload Playwright diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-playwright-${{ github.run_id }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Create or update production smoke alert
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_SHA: ${{ github.sha }}
+        with:
+          script: |
+            const title = "[monitoring] Production smoke tests failing";
+            const body = [
+              "The daily credential-free production smoke tests failed.",
+              "",
+              `Run: ${process.env.RUN_URL}`,
+              `Commit: ${process.env.RUN_SHA}`,
+              `UTC: ${new Date().toISOString()}`,
+              "",
+              "This alert covers only public/auth-gateway and read-only ERP route checks. It does not use real credentials or mutate production data.",
+            ].join("\\n");
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = openIssues.find((issue) => issue.title === title);
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+              core.info(`Updated existing alert issue #${existing.number}.`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+              core.info(`Created alert issue #${created.data.number}.`);
+            }
