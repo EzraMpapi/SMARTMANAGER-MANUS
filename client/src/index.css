@@ -745,3 +745,114 @@
     touch-action: manipulation;
   }
 }
+
+
+/* Dashboard shell responsiveness: keep navigation usable without allowing the
+   header or workspace content to create horizontal page overflow. */
+.dashboard-shell {
+  min-height: 100dvh;
+  isolation: isolate;
+}
+
+.dashboard-topbar,
+.dashboard-main,
+.dashboard-mobile-nav,
+.dashboard-sidebar {
+  min-width: 0;
+}
+
+.dashboard-topbar > :first-child,
+.dashboard-topbar > :last-child {
+  min-width: 0;
+}
+
+.dashboard-topbar-search {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  justify-content: center;
+}
+
+.dashboard-main {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.dashboard-mobile-nav {
+  padding-left: max(.25rem, env(safe-area-inset-left));
+  padding-right: max(.25rem, env(safe-area-inset-right));
+}
+
+.dashboard-mobile-nav > button {
+  min-width: 0;
+  max-width: 20%;
+  touch-action: manipulation;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-shell {
+    min-height: 100dvh;
+  }
+
+  .dashboard-sidebar {
+    width: min(86vw, 264px);
+  }
+
+  .dashboard-topbar {
+    position: relative;
+    z-index: 45;
+  }
+
+  .dashboard-topbar > :first-child {
+    flex: 1 1 auto;
+  }
+
+  .dashboard-topbar > :last-child {
+    flex: 0 1 auto;
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-topbar {
+    align-items: center;
+    padding-left: max(.75rem, env(safe-area-inset-left));
+    padding-right: max(.75rem, env(safe-area-inset-right));
+  }
+
+  .dashboard-topbar > :first-child {
+    gap: .5rem;
+  }
+
+  .dashboard-topbar > :last-child {
+    gap: .25rem;
+  }
+
+  .dashboard-topbar-search {
+    padding-left: .625rem;
+    padding-right: .625rem;
+  }
+
+  .dashboard-topbar-search kbd {
+    display: none;
+  }
+
+  .dashboard-main {
+    padding-left: max(.75rem, env(safe-area-inset-left));
+    padding-right: max(.75rem, env(safe-area-inset-right));
+  }
+
+  .dashboard-mobile-nav {
+    min-height: calc(4rem + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .dashboard-mobile-nav > button {
+    min-height: 4rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-topbar-tour,
+  .dashboard-topbar-alert {
+    display: none !important;
+  }
+}
