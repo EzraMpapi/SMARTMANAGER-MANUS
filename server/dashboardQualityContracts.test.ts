@@ -68,6 +68,15 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("type=\"button\"");
   });
 
+  it("keeps mobile navigation and floating actions touch-safe", () => {
+    expect(dashboard).toContain('aria-label="Mobile workspace navigation"');
+    expect(dashboard).toContain("min-h-[64px]");
+    expect(dashboard).toContain('aria-current={on ? "page" : undefined}');
+    expect(dashboard).toContain("env(safe-area-inset-bottom)");
+    expect(dashboard).toContain("min-h-14 min-w-14");
+    expect(dashboard).toContain("focus-visible:ring-inset");
+  });
+
   it("does not introduce client-side persistence into command-center components", () => {
     for (const { text } of files) {
       expect(text).not.toContain("localStorage");

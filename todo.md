@@ -445,3 +445,8 @@
 - [x] Validate the workflow-panel and confirmation-dialog contract changes.
 - [x] Add explicit initial focus, keyboard focus trapping, and focus restoration to the global confirmation dialog while preserving Escape/backdrop cancellation and destructive-action safeguards.
 - [x] Validate the confirmation-dialog focus lifecycle and publish the reviewed accessibility hardening.
+
+## Dashboard Polish Step 6
+- [x] Audit mobile shell, bottom navigation, controls, forms, table overflow, and touch-target sizing.
+- [x] Implement mobile spacing, touch-target, and responsive-surface refinements without changing routes, data behavior, or access protections.
+- [x] Validate mobile responsive contracts and publish the reviewed Step 6 refinement.

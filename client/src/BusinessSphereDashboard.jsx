@@ -48119,12 +48119,12 @@ function SmartManager() {
             one thumb-tap away. Only renders on small screens where the
             sidebar is hidden. RBAC is automatic: tabs are built from the
             same visibleModules list the sidebar uses. */}
-        <nav className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)" }}>
+        <nav className="sm:hidden fixed bottom-0 inset-x-0 z-30 min-h-[64px] bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)", paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Mobile workspace navigation">
           {[...visibleModules.filter((m) => ["dashboard","sales","inventory","finance","hr"].includes(m.id)), ...visibleModules.filter((m) => !["dashboard","sales","inventory","finance","hr"].includes(m.id))].slice(0, 5).map((m) => {
             const Icon = m.icon;
             const on = active === m.id;
             return (
-              <button key={m.id} onClick={() => go(m.id)} className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors" style={{ color: on ? "#16A34A" : "#9CA3AF" }}>
+              <button key={m.id} type="button" onClick={() => go(m.id)} aria-current={on ? "page" : undefined} className="flex-1 min-h-[64px] min-w-0 px-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/45" style={{ color: on ? "#16A34A" : "#9CA3AF" }}>
                 <div className="relative">
                   <Icon size={on ? 22 : 20} strokeWidth={on ? 2.2 : 1.75} />
                   {on && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#16A34A]" />}
@@ -48139,7 +48139,7 @@ function SmartManager() {
           <button
             onClick={() => go("ai")}
             aria-label="Open AI Command Center"
-            className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform"
+            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 min-h-14 min-w-14 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#16A34A] sm:bottom-6 sm:right-6"
             style={{ background: "linear-gradient(135deg, #16A34A, #22C55E)" }}
           >
             <Sparkles size={22} />
@@ -48147,7 +48147,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="module-fade flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-24 sm:pb-6">
+        <main key={active} className="module-fade flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
