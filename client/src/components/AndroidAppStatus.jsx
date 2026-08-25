@@ -3,7 +3,7 @@ import { CheckCircle2, ExternalLink, Info, RefreshCw, Smartphone } from "lucide-
 
 export const SMART_MANAGER_APP_VERSION = import.meta.env.VITE_APP_VERSION || "2.0.0";
 export const SMART_MANAGER_ANDROID_PACKAGE = "tz.smartmanager.erp";
-export const SMART_MANAGER_PRODUCTION_ORIGIN = "https://bserp-dashbo-xgm6fauw.manus.space";
+export const SMART_MANAGER_PRODUCTION_ORIGIN = "https://menejajanja.vercel.app";
 const REMOTE_TWA_MANIFEST = "https://raw.githubusercontent.com/EzraMpapi/SMARTMANAGER-MANUS/main/android/twa-manifest.json";
 
 function versionParts(version) {

@@ -1,7 +1,7 @@
 import React, { useState, type CSSProperties } from "react";
 
 export const SMART_MANAGER_LOGO_URL = "/brand/smart-manager-logo.png";
-export const SMART_MANAGER_MARK_URL = "/manus-storage/smart-manager-mark_aa277576.png";
+export const SMART_MANAGER_MARK_URL = SMART_MANAGER_LOGO_URL;
 export const SMART_MANAGER_LOGO_ANIMATION_URL = "/manus-storage/1000411291_698e34d5.mp4";
 
 type BrandLogoProps = {
@@ -25,7 +25,7 @@ export function BrandLogo({ variant = "full", className = "", style, decorative 
   const wrapperClass = variant === "compact"
     ? `relative isolate block aspect-square shrink-0 overflow-hidden rounded-[22%] bg-white ${className}`
     : `relative isolate block overflow-hidden ${className}`;
-  const image = <img src={variant === "compact" ? SMART_MANAGER_MARK_URL : SMART_MANAGER_LOGO_URL} alt={decorative ? "" : label} width={variant === "compact" ? 768 : 1536} height={variant === "compact" ? 768 : 1024} loading={priority ? "eager" : "lazy"} decoding="async" className={`${imageClass} sm-animated-logo-fallback`.trim()} />;
+  const image = <img src={variant === "compact" ? SMART_MANAGER_MARK_URL : SMART_MANAGER_LOGO_URL} alt={decorative ? "" : label} width={512} height={512} loading={priority ? "eager" : "lazy"} decoding="async" className={`${imageClass} sm-animated-logo-fallback`.trim()} />;
   const video = animated && !animationFailed ? <video
     className={`${videoClass} sm-animated-logo-video`.trim()}
     autoPlay

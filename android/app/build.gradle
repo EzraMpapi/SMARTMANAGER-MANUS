@@ -22,7 +22,7 @@ plugins {
 
 def twaManifest = [
     applicationId: 'tz.smartmanager.erp',
-    hostName: 'bserp-dashbo-xgm6fauw.manus.space', // The verified Vercel production domain opened by the TWA.
+    hostName: 'menejajanja.vercel.app', // The verified Vercel production domain opened by the TWA.
     launchUrl: '/', // The start path for the TWA. Must be relative to the domain.
     name: 'SMART MANAGER', // The application name.
     launcherName: 'SMART MGR', // The name shown on the Android Launcher.
@@ -79,12 +79,12 @@ android {
             // The URL the Web Manifest for the Progressive Web App that the TWA points to. This
             // is used by Chrome OS and Meta Quest to open the Web version of the PWA instead of
             // the TWA, as it will probably give a better user experience for non-mobile devices.
-            resValue "string", "webManifestUrl", 'https://bserp-dashbo-xgm6fauw.manus.space/manifest.webmanifest'
+            resValue "string", "webManifestUrl", 'https://menejajanja.vercel.app/manifest.webmanifest'
 
 
 
             // This is used by Meta Quest.
-            resValue "string", "fullScopeUrl", 'https://bserp-dashbo-xgm6fauw.manus.space/'
+            resValue "string", "fullScopeUrl", 'https://menejajanja.vercel.app/'
 
 
 

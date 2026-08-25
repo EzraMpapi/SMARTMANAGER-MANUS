@@ -61,10 +61,9 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("uses the supplied Smart Manager logo through one accessible responsive component across public, auth, dashboard, state, and browser surfaces", () => {
     expect(brandLogoSource).toContain('SMART_MANAGER_LOGO_URL = "/brand/smart-manager-logo.png"');
-    expect(brandLogoSource).toContain('SMART_MANAGER_MARK_URL = "/manus-storage/smart-manager-mark_aa277576.png"');
+    expect(brandLogoSource).toContain("SMART_MANAGER_MARK_URL = SMART_MANAGER_LOGO_URL");
     expect(brandLogoSource).toContain('alt={decorative ? "" : label}');
-    expect(brandLogoSource).toContain('width={variant === "compact" ? 768 : 1536}');
-    expect(brandLogoSource).toContain('height={variant === "compact" ? 768 : 1024}');
+    expect(brandLogoSource).toContain("width={512} height={512}");
     expect(brandLogoSource).toContain('variant?: "full" | "compact"');
     expect(homeSource).toContain('import { BrandLogo } from "../components/BrandLogo"');
     expect(homeSource).toContain('<BrandLogo variant="compact" priority');
@@ -77,7 +76,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
     expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-8 w-8');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
-    expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/brand/smart-manager-logo.png"');
+    expect(indexHtmlSource).toContain('rel="icon" type="image/png" sizes="32x32" href="/brand/smart-manager-logo-32.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
   });
 

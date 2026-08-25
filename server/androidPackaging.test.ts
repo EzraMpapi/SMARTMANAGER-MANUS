@@ -15,9 +15,12 @@ describe("Android Trusted Web Activity delivery path", () => {
     expect(manifest).toContain('"name": "Smart Manager — Enterprise ERP"');
     expect(manifest).toContain('"display": "standalone"');
     expect(manifest).toContain('"purpose": "any maskable"');
-    expect(manifest).toContain('"src": "/brand/smart-manager-logo.png"');
-    expect(vercelConfig).toContain('"source": "/brand/smart-manager-logo.png"');
-    expect(vercelConfig).toContain("bserp-dashbo-xgm6fauw.manus.space/manus-storage/smart-manager-logo_ad2a1e4d.png");
+    expect(manifest).toContain('"src": "/brand/smart-manager-logo-512.png"');
+    expect(manifest).toContain('"sizes": "512x512"');
+    expect(manifest).toContain('"src": "/brand/smart-manager-logo-192.png"');
+    expect(manifest).toContain('"sizes": "192x192"');
+    expect(vercelConfig).not.toContain('"source": "/brand/smart-manager-logo.png"');
+    expect(vercelConfig).not.toContain("smart-manager-logo_ad2a1e4d.png");
   });
 
   it("documents Bubblewrap builds while keeping the release signing fingerprint out of the public site", () => {
@@ -45,10 +48,11 @@ describe("Android Trusted Web Activity delivery path", () => {
     expect(JSON.stringify(template)).not.toContain("sha256_cert_fingerprints");
   });
 
-  it("requires an approved square source asset instead of cropping or recreating the official horizontal logo", () => {
-    expect(squareIconHandoff).toContain("1024 × 1024 pixels");
-    expect(squareIconHandoff).toContain("not generated or reconstructed");
-    expect(squareIconHandoff).toContain("No square asset has been fabricated, cropped, recoloured, or inferred");
-    expect(squareIconHandoff).toContain('`purpose` set to `any maskable`');
+  it("requires the repository-managed square source asset and documents its release checks", () => {
+    expect(squareIconHandoff).toContain("client/public/brand/smart-manager-logo.png");
+    expect(squareIconHandoff).toContain("smart-manager-logo-192.png");
+    expect(squareIconHandoff).toContain("smart-manager-logo-512.png");
+    expect(squareIconHandoff).toContain("real transparent alpha");
+    expect(squareIconHandoff).toContain("any maskable");
   });
 });

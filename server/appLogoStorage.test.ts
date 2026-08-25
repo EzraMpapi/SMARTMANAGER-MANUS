@@ -13,7 +13,7 @@ describe("managed application logo configuration", () => {
     expect(manifest).toContain(managedLogoPath);
     expect(manifest).toContain(markPath);
     expect(brandLogoComponent).toContain(`SMART_MANAGER_LOGO_URL = "${publicLogoPath}"`);
-    expect(brandLogoComponent).toContain(`SMART_MANAGER_MARK_URL = "${markPath}"`);
+    expect(brandLogoComponent).toContain("SMART_MANAGER_MARK_URL = SMART_MANAGER_LOGO_URL");
     expect(documentShell).toContain(`og:image\" content=\"${publicLogoPath}`);
   });
 });

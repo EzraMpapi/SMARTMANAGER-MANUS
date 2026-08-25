@@ -9,10 +9,6 @@ describe("Vercel static deployment configuration", () => {
     expect(config.framework).toBe("vite");
     expect(config.outputDirectory).toBe("dist/public");
     expect(config.rewrites).toEqual([
-      {
-        source: "/brand/smart-manager-logo.png",
-        destination: "https://bserp-dashbo-xgm6fauw.manus.space/manus-storage/smart-manager-logo_ad2a1e4d.png",
-      },
       { source: "/api/(.*)", destination: "/api" },
       { source: "/(.*)", destination: "/index.html" },
     ]);

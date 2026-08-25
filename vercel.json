@@ -10,10 +10,6 @@
   },
   "rewrites": [
     {
-      "source": "/brand/smart-manager-logo.png",
-      "destination": "https://bserp-dashbo-xgm6fauw.manus.space/manus-storage/smart-manager-logo_ad2a1e4d.png"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api"
     },
