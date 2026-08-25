@@ -47063,7 +47063,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
       </button>
       {open && (
         <div
-          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${spotlightRect ? "bg-transparent" : "bg-slate-950/55 backdrop-blur-sm"}`}
+          className={`fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4 ${spotlightRect ? "bg-transparent" : "bg-slate-950/55 backdrop-blur-sm"}`}
           data-onboarding-tour="true"
           onClick={(event) => { if (event.target === event.currentTarget) finishTour("dismissed"); }}
         >
@@ -47083,7 +47083,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
             aria-modal="true"
             aria-labelledby="onboarding-tour-title"
             aria-describedby="onboarding-tour-description"
-            className="relative z-[102] w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="relative z-[102] flex max-h-[calc(100dvh-2rem)] w-full max-w-[560px] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style={{ maxHeight: "calc(100dvh - 2rem)" }}
             data-onboarding-step={step.id}
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
@@ -47095,7 +47095,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
                 <X size={17} />
               </button>
             </div>
-            <div className="px-5 pb-5 pt-6 sm:px-8 sm:pb-7 sm:pt-8">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-6 sm:px-8 sm:pb-7 sm:pt-8">
               <div className="flex items-start gap-4">
                 <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-md animate-pulse" style={{ background: `linear-gradient(135deg, ${step.accent}, #0F172A)` }} aria-hidden="true">
                   <StepIcon size={24} />
@@ -47440,8 +47440,11 @@ function SmartManager() {
   }, []);
   const sidebarContentCollapsed = sidebarCollapsed && !isNarrowViewport;
   const handleOnboardingVisibilityChange = useCallback((isOpen) => {
+    // On narrow screens the sidebar is a user-controlled drawer. The onboarding
+    // spotlight must not open it automatically and intercept the menu trigger.
+    if (isNarrowViewport) return;
     setSidebarOpen(isOpen);
-  }, []);
+  }, [isNarrowViewport]);
 
   // Company profile is editable in Settings; the topbar and dashboard
   // greeting read from this state, so edits are reflected immediately.
@@ -47697,11 +47700,12 @@ function SmartManager() {
   const activeModule = visibleModules.find((module) => module.id === active);
   const ActiveModuleIcon = activeModule?.icon || Building2;
   const activeModuleLabel = activeModule?.label || (active === "settings" ? "Workspace settings" : active === "profile" ? "Profile" : active === "billing" ? "Subscription & Billing" : "Workspace");
-  const navigationGroups = getNavigationGroups({
-    visibleModuleIds: visibleModules.map((module) => module.id),
+  const visibleModuleIdsKey = visibleModules.map((module) => module.id).join(",");
+  const navigationGroups = useMemo(() => getNavigationGroups({
+    visibleModuleIds: visibleModuleIdsKey ? visibleModuleIdsKey.split(",") : [],
     currentRoleId: currentRole.id,
     canSeeSettings: canManage,
-  });
+  }), [visibleModuleIdsKey, currentRole.id, canManage]);
   const quickCreateActions = getQuickCreateActions({
     visibleModuleIds: visibleModules.map((module) => module.id),
     canCreate: currentRole.writeAccess !== "none",
