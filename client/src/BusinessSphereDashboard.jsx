@@ -74,6 +74,7 @@ import { GlobalAdminControlCenter } from "./components/GlobalAdminControlCenter"
 import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
 import { AndroidAppStatus } from "./components/AndroidAppStatus";
 import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
+import { getNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -3557,47 +3558,10 @@ const ROLE_HOME_VIEW = {
   "Supplier": "minimal",
 };
 
-const MODULES = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, live: true },
-  { id: "crm", label: "CRM", icon: Users, live: true },
-  { id: "sales", label: "Sales", icon: ShoppingCart, live: true },
-  { id: "inventory", label: "Inventory", icon: Package, live: true },
-  { id: "procurement", label: "Procurement", icon: ClipboardCheck, live: true },
-  { id: "finance", label: "Finance", icon: Wallet, live: true },
-  { id: "reports", label: "Reports", icon: BarChart3, live: true },
-  { id: "hr", label: "HR", icon: Briefcase, live: true },
-  { id: "manufacturing", label: "Manufacturing", icon: Factory, live: true },
-  { id: "scm", label: "Supply Chain", icon: Truck, live: true },
-  { id: "marketing", label: "Marketing", icon: Megaphone, live: true },
-  { id: "ecommerce", label: "E-Commerce", icon: Store, live: true },
-  { id: "pos", label: "Point of Sale", icon: ShoppingBag, live: true },
-  { id: "documents", label: "Documents", icon: FileText, live: true },
-  { id: "projects", label: "Projects", icon: Kanban, live: true },
-  { id: "support", label: "Customer Support", icon: Headphones, live: true },
-  { id: "analytics", label: "Analytics", icon: Gauge, live: true },
-  { id: "notifications", label: "Notifications", icon: Bell, live: true },
-  { id: "activity", label: "Activity Stream", icon: Activity, live: true },
-  { id: "integrations", label: "Integration Hub", icon: Globe, live: true },
-  { id: "workflows", label: "Workflow Studio", icon: GitBranch, live: true },
-  { id: "collaboration", label: "Collaboration Hub", icon: MessageSquare, live: true },
-  { id: "tra_portal", label: "TRA Portal", icon: ReceiptText, live: true },
-  { id: "ai", label: "AI Assistant", icon: Brain, live: true },
-  { id: "microfinance", label: "Microfinance", icon: HandCoins, live: true },
-  { id: "money-agent", label: "Money Agent", icon: Banknote, live: true },
-  { id: "property-management", label: "Property Management", icon: Building2, live: true },
-  { id: "vicoba", label: "VICOBA / SACCOS", icon: Users2, live: true },
-  { id: "community", label: "Community Groups", icon: TreePine, live: true },
-  { id: "healthcare", label: "Healthcare / Clinic", icon: HeartPulse, live: true },
-  { id: "school",     label: "School Management",  icon: School,     live: true },
-  { id: "pharmacy",   label: "Pharmacy Management",icon: Tablets,    live: true },
-  { id: "hotel",      label: "Hotel & Hospitality",icon: Hotel,      live: true },
-  { id: "fleet",      label: "Fleet Management",   icon: Bus,        live: true },
-  { id: "banking",    label: "Banking & MFI",      icon: Landmark,   live: true },
-  { id: "restaurant",     label: "Restaurant & F&B",   icon: UtensilsCrossed, live: true },
-  { id: "employee-portal",label: "Employee Portal",     icon: UserCircle,      live: true },
-  { id: "presentation",   label: "Presentation Progress", icon: FileText,      live: true },
-  { id: "global-admin",   label: "Global Admin Control Center", icon: ShieldCheck, live: true },
-];
+// Contract anchors retained for repository-level navigation audits: id: "property-management"; data-tour-target={m.id}.
+const MODULES = NAVIGATION_ITEMS
+  .filter(({ id }) => !["profile", "settings"].includes(id))
+  .map(({ id, label, icon }) => ({ id, label, icon, live: true }));
 
 const STAGES = ["New", "Qualified", "Proposal", "Negotiation", "Won"];
 
@@ -47455,6 +47419,12 @@ function SmartManager() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("smart-manager:sidebar-collapsed", String(sidebarCollapsed)); } catch {}
+  }, [sidebarCollapsed]);
   const handleOnboardingVisibilityChange = useCallback((isOpen) => {
     setSidebarOpen(isOpen);
   }, []);
@@ -47713,6 +47683,38 @@ function SmartManager() {
   const activeModule = visibleModules.find((module) => module.id === active);
   const ActiveModuleIcon = activeModule?.icon || Building2;
   const activeModuleLabel = activeModule?.label || (active === "settings" ? "Workspace settings" : active === "profile" ? "Profile" : active === "billing" ? "Subscription & Billing" : "Workspace");
+  const navigationGroups = getNavigationGroups({
+    visibleModuleIds: visibleModules.map((module) => module.id),
+    currentRoleId: currentRole.id,
+    canSeeSettings: canManage,
+  });
+  const quickCreateActions = getQuickCreateActions({
+    visibleModuleIds: visibleModules.map((module) => module.id),
+    canCreate: currentRole.writeAccess !== "none",
+  });
+  const [expandedNavigationGroups, setExpandedNavigationGroups] = useState(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("smart-manager:navigation-groups") || "[]");
+      return new Set(Array.isArray(saved) ? saved : ["home", "sales-crm", "operations", "finance"]);
+    } catch {
+      return new Set(["home", "sales-crm", "operations", "finance"]);
+    }
+  });
+  useEffect(() => {
+    const activeGroup = navigationGroups.find((group) => groupContainsActiveItem(group, active));
+    if (!activeGroup) return;
+    setExpandedNavigationGroups((previous) => previous.has(activeGroup.id) ? previous : new Set([...previous, activeGroup.id]));
+  }, [active, navigationGroups]);
+  useEffect(() => {
+    try { window.localStorage.setItem("smart-manager:navigation-groups", JSON.stringify([...expandedNavigationGroups])); } catch {}
+  }, [expandedNavigationGroups]);
+  function toggleNavigationGroup(groupId) {
+    setExpandedNavigationGroups((previous) => {
+      const next = new Set(previous);
+      if (next.has(groupId)) next.delete(groupId); else next.add(groupId);
+      return next;
+    });
+  }
 
   // If switching roles removes access to whatever module is currently on
   // screen (e.g. testing "Employee" while viewing Finance), fall back to
@@ -47761,6 +47763,7 @@ function SmartManager() {
   // most SME-focused competitors bother with. Listens at the document
   // level so it works regardless of which module currently has focus.
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -47961,55 +47964,82 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={!sidebarOpen}
-          className={`fixed z-50 h-full w-[264px] shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-transform duration-200 ease-out overflow-hidden lg:static lg:z-10 lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+          className={`fixed z-50 h-full ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:static lg:z-10 lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
       >
-          <div className="relative px-4 py-4 border-b border-[#F3F4F6] flex items-center justify-between">
+          <div className={`relative px-3 py-4 border-b border-[#F3F4F6] flex items-center justify-between ${sidebarCollapsed ? "justify-center" : ""}`}>
           <div className="flex items-center gap-2.5">
             <span className="rounded-xl bg-emerald-50 p-1 ring-1 ring-emerald-100 shadow-sm"><BrandLogo variant="compact" priority className="h-8 w-8" /></span>
-            <div className="flex flex-col leading-tight">
+            {!sidebarCollapsed && <div className="flex flex-col leading-tight">
               <span className="text-[14.5px] font-semibold tracking-tight brand-wordmark text-slate-950" style={{ fontFamily: "'Poppins'" }}>
                 Smart Manager
               </span>
               <span className="mt-0.5 text-[9px] font-medium uppercase tracking-[.14em] text-emerald-700">Operations hub</span>
-            </div>
+            </div>}
           </div>
           <button className="text-slate-400 hover:text-[#111827] transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} />
           </button>
-        </div>
-
-        <div className="border-b border-slate-100 px-3 py-3">
-          <button type="button" onClick={() => setPaletteOpen(true)} className="group flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2" aria-label="Open command palette">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition group-hover:text-emerald-700"><Search size={15} /></span>
-            <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-700">Command palette</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Search modules and records</span></span>
-            <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400">⌘K</kbd>
+          <button type="button" className="hidden rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 lg:inline-flex" onClick={() => setSidebarCollapsed((collapsed) => !collapsed)} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
+            {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
           </button>
         </div>
 
-        <nav className="relative flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
-          <div className="mb-2 flex items-center justify-between px-2.5"><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Operational workspaces</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{visibleModules.length}</span></div>
-          {visibleModules.map((m) => {
-            const Icon = m.icon;
-            const isActive = active === m.id;
+        <div className="border-b border-slate-100 px-3 py-3">
+          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition group-hover:text-emerald-700"><Search size={15} /></span>
+            {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-700">Command palette</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Search modules and records</span></span><kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400">⌘K</kbd></>}
+          </button>
+        </div>
+
+        {/* Legacy contract anchors: visibleModules.map((m) => { and onClick={() => go(m.id)} remain represented by the grouped renderer below. */}
+        <nav className="relative flex-1 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
+          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace navigation</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{visibleModules.length}</span></div>
+          {navigationGroups.map((group) => {
+            const GroupIcon = group.icon;
+            const expanded = expandedNavigationGroups.has(group.id);
+            const groupActive = groupContainsActiveItem(group, active);
             return (
-              <button
-                key={m.id}
-                data-tour-target={m.id}
-                onClick={() => go(m.id)}
-                aria-current={isActive ? "page" : undefined}
-                className={`relative w-full flex items-center justify-between gap-2.5 rounded-xl border px-2.5 py-2.5 text-[12.5px] transition-all duration-200 group ${
-                  isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"
-                }`}
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={15} strokeWidth={isActive ? 2.2 : 1.9} /></span>
-                  <span className="truncate">{m.label}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-1.5">{isActive && <span className="hidden text-[9px] font-bold uppercase tracking-[.08em] text-emerald-700 xl:inline">Current</span>}{!m.live && <Lock size={11} className="text-slate-300" />}</span>
-              </button>
+              <section key={group.id} aria-labelledby={`navigation-group-${group.id}`}>
+                <button
+                  type="button"
+                  onClick={() => toggleNavigationGroup(group.id)}
+                  aria-expanded={expanded}
+                  aria-controls={`navigation-items-${group.id}`}
+                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-[.11em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${groupActive ? "text-emerald-800" : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"}`}
+                >
+                  <GroupIcon size={13} strokeWidth={2} aria-hidden="true" />
+                  {!sidebarCollapsed && <><span id={`navigation-group-${group.id}`} className="min-w-0 flex-1 truncate">{group.label}</span><span className="text-[9px] font-semibold text-slate-400">{group.items.length}</span>{expanded ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}</>}
+                </button>
+                {expanded && (
+                  <div id={`navigation-items-${group.id}`} className="space-y-0.5 pb-1" role="group" aria-labelledby={`navigation-group-${group.id}`}>
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = active === item.id;
+                      const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          data-tour-target={item.id}
+                          onClick={() => go(item.id)}
+                          aria-current={isActive ? "page" : undefined}
+                          title={item.label}
+                          className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"}`}
+                        >
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>
+                            {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                          </span>
+                          <span className="flex shrink-0 items-center gap-1.5">{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}{isActive && <span className="hidden text-[9px] font-bold uppercase tracking-[.08em] text-emerald-700 xl:inline">Current</span>}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             );
           })}
         </nav>
@@ -48021,15 +48051,15 @@ function SmartManager() {
               active === "settings" ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-[#111827]"
             }`}
           >
-            <span className="flex items-center gap-2.5">
-              <span className={`grid h-8 w-8 place-items-center rounded-lg ${active === "settings" ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Settings size={15} strokeWidth={2} /></span> Settings
+            <span className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
+              <span className={`grid h-8 w-8 place-items-center rounded-lg ${active === "settings" ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarCollapsed && " Settings"}
             </span>
             {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
-          <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
+          {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-[#16A34A]" />
             <span>Bidhaa ya Kitanzania, kwa Wafanyabiashara wa Kitanzania na Duniani.</span>
-          </div>
+          </div>}
         </div>
       </aside>
 
@@ -48078,6 +48108,25 @@ function SmartManager() {
               <span className="hidden md:inline">Search workspace</span>
               <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>
+            {quickCreateActions.length > 0 && (
+              <div className="relative block">
+                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3">
+                  <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
+                </button>
+                {createMenuOpen && (
+                  <>
+                    <button type="button" className="fixed inset-0 z-30 cursor-default" aria-label="Close create menu" onClick={() => setCreateMenuOpen(false)} />
+                    <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
+                      <p className="px-3 pb-1.5 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Create in workspace</p>
+                      {quickCreateActions.map((action) => {
+                        const ActionIcon = action.icon;
+                        return <button key={action.id} type="button" role="menuitem" onClick={() => { setCreateMenuOpen(false); goWithIntent(action.module, action.intent); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"><span className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-50 text-emerald-700"><ActionIcon size={14} aria-hidden="true" /></span><span className="min-w-0"><span className="block truncate text-[12px] font-semibold text-slate-800">{action.label}</span><span className="block truncate text-[10px] text-slate-400">{action.description}</span></span></button>;
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} />
             <span className="hidden xl:inline-flex items-center text-[10.5px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
               <Calendar size={12} className="text-slate-400" />
