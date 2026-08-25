@@ -77,6 +77,19 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("focus-visible:ring-inset");
     expect(dashboard).toContain("dashboard-mobile-content");
     expect(dashboard).toContain("sm-mobile-filter-row");
+    expect(dashboard).toContain("sm-responsive-table");
+  });
+
+  it("keeps repository-wide responsive foundations scoped and touch-safe", () => {
+    const css = fs.readFileSync(path.join(root, "index.css"), "utf8");
+    expect(css).toContain(".dashboard-mobile-content");
+    expect(css).toContain(".sm-responsive-toolbar");
+    expect(css).toContain(".sm-responsive-form-grid");
+    expect(css).toContain(".sm-responsive-dialog");
+    expect(css).toContain(".sm-responsive-table");
+    expect(css).toContain("max-height: min(92svh, 46rem)");
+    expect(css).toContain("min-height: 44px");
+    expect(css).toContain("overflow-x: clip");
   });
 
   it("does not introduce client-side persistence into command-center components", () => {

@@ -492,3 +492,16 @@
 - [x] Apply only verified missing non-destructive schema objects; no missing required table or unapplied required migration was verified, so no DDL was applied.
 - [ ] Run dashboard contracts, TypeScript, schema, build, and regression validation, documenting credential or environment blockers; focused contracts and TypeScript passed, 968 non-credential tests passed, while local Supabase credential validation remains HTTP 401 and the production bundle was terminated under sandbox memory pressure.
 - [x] Review and push every intentional unpushed repository change to the specified GitHub main branch while excluding secrets and generated artifacts.
+
+## Credential and Deployment Readiness Verification
+- [ ] Verify local Supabase environment variable presence and complete the isolated credential test without exposing secret values.
+- [ ] Review regression cases for the 7D/30D/3M/6M/1Y dashboard windows and role/module permission boundaries.
+- [ ] Run deployment-readiness checks and retry the Vite production build with controlled memory settings.
+- [ ] Document the results and preserve any unresolved environment or resource blockers.
+
+## Attachment 2 — Repository-wide Responsive Implementation
+- [ ] Audit every discovered route, module, component, table, form, dialog, chart, navigation surface, and responsive state for overflow, clipping, inaccessible controls, and touch-target risks.
+- [x] Implement shared responsive foundations using existing design tokens and components without changing business functionality or persistence behavior.
+- [ ] Harden navigation, dashboard, tables, forms, dialogs, POS, charts, typography, images, loading/empty/error/permission/subscription states, and dark/light surfaces across representative breakpoints.
+- [ ] Validate zero unexpected horizontal overflow, keyboard/focus behavior, touch targets, representative viewport sizes, and regression contracts; responsive contracts, TypeScript, and non-credential regression checks passed, while full visual/device coverage remains open.
+- [ ] Review and push all intentional source and test changes while excluding secrets, generated artifacts, and unrelated temporary files.

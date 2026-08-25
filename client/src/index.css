@@ -622,6 +622,79 @@
   animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Repository-wide responsive hardening. These rules are scoped to the protected
+   dashboard so public/auth pages retain their existing composition. */
+@media (max-width: 639px) {
+  .dashboard-mobile-content {
+    min-width: 0;
+    width: 100%;
+    overflow-x: clip;
+  }
+
+  .dashboard-mobile-content :where(input, select, textarea, button, [role="button"], [role="combobox"]) {
+    max-width: 100%;
+  }
+
+  .dashboard-mobile-content :where(input, select, textarea) {
+    min-height: 44px;
+  }
+
+  .dashboard-mobile-content :where(img, svg, canvas) {
+    max-width: 100%;
+  }
+
+  .dashboard-mobile-content .recharts-responsive-container {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-mobile-content .sm-responsive-toolbar {
+    display: flex;
+    min-width: 0;
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: .5rem;
+  }
+
+  .dashboard-mobile-content .sm-responsive-toolbar > * {
+    min-width: 0;
+    flex: 1 1 min(100%, 10rem);
+  }
+
+  .dashboard-mobile-content .sm-responsive-form-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-mobile-content .sm-responsive-dialog {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: min(92svh, 46rem);
+    margin-top: auto;
+    border-radius: 1.5rem 1.5rem 0 0;
+  }
+
+  .dashboard-mobile-content .sm-responsive-table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+
+  .dashboard-mobile-content .sm-responsive-table > table {
+    min-width: max-content;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .dashboard-mobile-content .sm-responsive-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Step 8: mobile operational surfaces. These rules are scoped to the protected
    dashboard so public pages and desktop layouts keep their existing rhythm. */
 @media (max-width: 639px) {

@@ -8649,9 +8649,9 @@ function CategoryPicker({ value, onChange }) {
 }
 
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-[#111827] placeholder-slate-400 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 focus:shadow-sm";
-const operationalFilterBarClass = "flex items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-[inset_0_1px_1px_rgba(15,23,42,.025)]";
+const operationalFilterBarClass = "sm-mobile-filter-row flex items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-[inset_0_1px_1px_rgba(15,23,42,.025)]";
 const operationalSearchInputClass = "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-[13px] text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20";
-const operationalTableShellClass = "overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_3px_10px_rgba(15,23,42,.035)]";
+const operationalTableShellClass = "sm-responsive-table overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_3px_10px_rgba(15,23,42,.035)]";
 const operationalTableClass = "w-full text-[13px]";
 
 // Real Excel/CSV import for Customers and Products — genuinely built to
