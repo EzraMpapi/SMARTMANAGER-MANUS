@@ -621,3 +621,42 @@
 .animate-modal-fade {
   animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Step 8: mobile operational surfaces. These rules are scoped to the protected
+   dashboard so public pages and desktop layouts keep their existing rhythm. */
+@media (max-width: 639px) {
+  .dashboard-mobile-content .sm-mobile-filter-row {
+    align-items: stretch;
+  }
+
+  .dashboard-mobile-content .sm-mobile-filter-row > input,
+  .dashboard-mobile-content .sm-mobile-filter-row > select,
+  .dashboard-mobile-content .sm-mobile-filter-row > button,
+  .dashboard-mobile-content .sm-mobile-filter-row [role="combobox"] {
+    min-height: 44px;
+  }
+
+  .dashboard-mobile-content .sm-mobile-action-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .dashboard-mobile-content .sm-mobile-action-group > button {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  .dashboard-mobile-content .sm-mobile-table-wrap,
+  .dashboard-mobile-content .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .dashboard-mobile-content .sm-mobile-row-action {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+}

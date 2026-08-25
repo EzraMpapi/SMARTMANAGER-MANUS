@@ -7266,7 +7266,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                     })()}
 
                     {/* Search & Amount Filter Bar */}
-                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3.5">
+                    <div className="sm-mobile-filter-row flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 p-3.5">
                       <div className="relative flex-1 min-w-[200px]">
                         <Search size={15} className="absolute left-3 top-2.5 text-slate-400" />
                         <input
@@ -8128,7 +8128,7 @@ function Customer360View({ crm, invoices }) {
       </div>
       <CxPulseCard customer={customer} />
       {customer && (
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-3.5 flex flex-wrap gap-2 items-center">
+        <div className="sm-mobile-filter-row bg-white rounded-xl border border-slate-200/80 shadow-sm p-3.5 flex flex-wrap gap-2 items-center">
           <select className={inputClass + " max-w-[170px]"} value={logDraft.channel} onChange={(e) => setLogDraft({ ...logDraft, channel: e.target.value })}>
             {CHANNELS.map((ch) => <option key={ch} value={ch}>{ch}</option>)}
           </select>
@@ -48147,7 +48147,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="module-fade flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
+        <main key={active} className="dashboard-mobile-content module-fade flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}

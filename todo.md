@@ -457,3 +457,13 @@
 - [x] Review end-to-end workflow evidence and document residual accessibility or live-verification risks.
 - [x] Publish the final dashboard audit report and prioritized remediation plan.
 - [ ] Resolve the local production-build prerequisite through the configured secret/environment channel, then repeat the production build; do not place Supabase credentials in source control or chat.
+
+## Production Build Environment Verification
+- [ ] Inspect required Supabase build variables and current local configuration without exposing secret values.
+- [ ] Configure missing Supabase build credentials through the approved secure environment channel if needed.
+- [ ] Run and record a successful production build test.
+
+## Dashboard Polish Step 8
+- [x] Audit remaining mobile controls, tables, filters, forms, and gesture-safe spacing beyond the Step 6 shell pass.
+- [x] Implement targeted mobile interaction refinements across operational modules without changing routes, data behavior, or access protections.
+- [x] Validate mobile contracts and publish the reviewed Step 8 refinement.

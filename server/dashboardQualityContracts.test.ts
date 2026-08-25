@@ -75,6 +75,8 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("env(safe-area-inset-bottom)");
     expect(dashboard).toContain("min-h-14 min-w-14");
     expect(dashboard).toContain("focus-visible:ring-inset");
+    expect(dashboard).toContain("dashboard-mobile-content");
+    expect(dashboard).toContain("sm-mobile-filter-row");
   });
 
   it("does not introduce client-side persistence into command-center components", () => {
