@@ -357,4 +357,4 @@
 - [x] Add a cache-first service worker for the offline shell without caching authenticated API or mutation responses.
 - [x] Register the service worker only in production and add regression coverage for offline fallback boundaries.
 - [x] Run focused tests, TypeScript checks, production build, and responsive browser verification.
-- [ ] Synchronize the verified offline fallback changes to the private repository and preserve deployment/signing gates.
+- [x] Synchronize the verified offline fallback changes to the private repository and preserve deployment/signing gates.
