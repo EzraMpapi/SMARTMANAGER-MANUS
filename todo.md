@@ -491,4 +491,4 @@
 - [x] Audit all repository schema sources and migration files against the connected Supabase catalog, including tables, columns, relationships, indexes, functions, triggers, RLS policies, and storage objects.
 - [x] Apply only verified missing non-destructive schema objects; no missing required table or unapplied required migration was verified, so no DDL was applied.
 - [ ] Run dashboard contracts, TypeScript, schema, build, and regression validation, documenting credential or environment blockers; focused contracts and TypeScript passed, while local Supabase credential validation remains HTTP 401.
-- [ ] Review and push every intentional unpushed repository change to the specified GitHub main branch while excluding secrets and generated artifacts.
+- [x] Review and push every intentional unpushed repository change to the specified GitHub main branch while excluding secrets and generated artifacts.
