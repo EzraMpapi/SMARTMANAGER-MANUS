@@ -60,6 +60,12 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("function ConfirmDeleteButton");
     expect(dashboard).toContain("confirmAction(message, onConfirm");
     expect(dashboard).toContain("disabled={disabled}");
+    expect(dashboard).toContain("previouslyFocusedRef");
+    expect(dashboard).toContain("requestAnimationFrame");
+    expect(dashboard).toContain("data-confirm-cancel");
+    expect(dashboard).toContain("e.key !== \"Tab\"");
+    expect(dashboard).toContain("preventScroll: true");
+    expect(dashboard).toContain("type=\"button\"");
   });
 
   it("does not introduce client-side persistence into command-center components", () => {

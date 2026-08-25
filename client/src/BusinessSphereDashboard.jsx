@@ -3112,6 +3112,8 @@ function SendReceiptPanel() {
 // (default) show brand green. Escape key and backdrop click both cancel.
 function ConfirmDialog() {
   const [dialog, setDialog] = useState(null);
+  const dialogRef = useRef(null);
+  const previouslyFocusedRef = useRef(null);
 
   useEffect(() => {
     const handler = (d) => setDialog(d);
@@ -3120,10 +3122,39 @@ function ConfirmDialog() {
   }, []);
 
   useEffect(() => {
-    if (!dialog) return;
-    const onKey = (e) => { if (e.key === "Escape") setDialog(null); };
+    if (!dialog) return undefined;
+    previouslyFocusedRef.current = document.activeElement;
+    const frame = window.requestAnimationFrame(() => {
+      const first = dialogRef.current?.querySelector("[data-confirm-cancel]");
+      first?.focus();
+    });
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setDialog(null);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const focusable = Array.from(dialogRef.current?.querySelectorAll("button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])") || []);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", onKey);
+      const previous = previouslyFocusedRef.current;
+      if (previous && typeof previous.focus === "function" && document.contains(previous)) previous.focus({ preventScroll: true });
+      previouslyFocusedRef.current = null;
+    };
   }, [dialog]);
 
   if (!dialog) return null;
@@ -3132,7 +3163,7 @@ function ConfirmDialog() {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setDialog(null)} role="presentation">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-      <div className="relative bg-white rounded-[26px] shadow-2xl p-6 w-full max-w-sm border border-slate-200/80" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true" aria-labelledby="global-confirm-title" aria-describedby="global-confirm-message">
+      <div ref={dialogRef} className="relative bg-white rounded-[26px] shadow-2xl p-6 w-full max-w-sm border border-slate-200/80" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true" aria-labelledby="global-confirm-title" aria-describedby="global-confirm-message">
         <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${danger ? "bg-red-50" : "bg-[#DCFCE7]"}`}>
           {danger ? <AlertCircle size={22} className="text-[#EF4444]" /> : <AlertCircle size={22} className="text-[#16A34A]" />}
         </div>
@@ -3141,10 +3172,11 @@ function ConfirmDialog() {
         </h3>
         <p id="global-confirm-message" className="text-[13px] text-slate-500 text-center mb-6 leading-relaxed px-2">{dialog.message}</p>
         <div className="flex gap-3">
-          <button type="button" onClick={() => setDialog(null)} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50">
+          <button type="button" data-confirm-cancel onClick={() => setDialog(null)} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50">
             Cancel
           </button>
           <button
+            type="button"
             onClick={() => { dialog.onConfirm(); setDialog(null); }}
             className="flex-1 py-2.5 rounded-xl text-[13px] font-medium text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/50 focus-visible:ring-offset-2"
             style={{ background: danger ? "linear-gradient(135deg,#EF4444,#DC2626)" : "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: danger ? "0 4px 12px rgba(239,68,68,0.3)" : "0 4px 12px rgba(22,163,74,0.3)" }}

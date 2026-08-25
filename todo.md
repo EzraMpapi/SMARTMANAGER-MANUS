@@ -436,10 +436,12 @@
 - [x] Standardize table, filter, form, and empty-state presentation across Finance, Sales, Inventory, CRM, and HR without changing existing workflows, persistence, or authorization.
 - [x] Refine workflow detail panels, slide-over forms, and confirmation dialogs while preserving existing callbacks, validation, tenant boundaries, and destructive-action safeguards.
 - [x] Validate Step 5 interaction semantics with focused dashboard contracts and type checking.
-- [ ] Commit and push the reviewed Step 5 interaction refinement after synchronizing with GitHub.
+- [x] Commit and push the reviewed Step 5 interaction refinement after synchronizing with GitHub.
 
 ## Dashboard Polish Step 5
 - [x] Apply shared rounded slide-over shells with sticky headers and action footers.
 - [x] Add accessible alert-dialog semantics and visible keyboard focus states to global confirmations.
 - [x] Retain the existing two-step or global confirmation safeguards for destructive actions.
 - [x] Validate the workflow-panel and confirmation-dialog contract changes.
+- [x] Add explicit initial focus, keyboard focus trapping, and focus restoration to the global confirmation dialog while preserving Escape/backdrop cancellation and destructive-action safeguards.
+- [x] Validate the confirmation-dialog focus lifecycle and publish the reviewed accessibility hardening.
