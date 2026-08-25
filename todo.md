@@ -484,4 +484,11 @@
 - [x] Compare repository schema/migrations and live Supabase objects, including required tables, columns, relationships, indexes, functions, triggers, and RLS policies.
 - [x] Apply only missing non-destructive schema objects required by verified existing functionality; no missing required table was verified, so no DDL was applied.
 - [ ] Run schema, dashboard, type, build, and regression validation; document any credential or deployment blockers.
-- [ ] Review the final diff and push all completed code, migrations, tests, and documentation to GitHub.
+- [x] Review the final diff and push all completed code, migrations, tests, and documentation to GitHub; no new migration was required because all verified repository-declared tables already exist live.
+
+## Renewed Attached Directive Synchronization
+- [x] Reconcile the attached Business Command Center requirements with the current implementation, routes, roles, permissions, and real-data boundaries.
+- [x] Audit all repository schema sources and migration files against the connected Supabase catalog, including tables, columns, relationships, indexes, functions, triggers, RLS policies, and storage objects.
+- [x] Apply only verified missing non-destructive schema objects; no missing required table or unapplied required migration was verified, so no DDL was applied.
+- [ ] Run dashboard contracts, TypeScript, schema, build, and regression validation, documenting credential or environment blockers; focused contracts and TypeScript passed, while local Supabase credential validation remains HTTP 401.
+- [ ] Review and push every intentional unpushed repository change to the specified GitHub main branch while excluding secrets and generated artifacts.
