@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Every critical transaction follows one recoverable sequence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F1F5F9;
+            font-family: 'Inter', sans-serif;
+            padding-top: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .header-container {
+            width: 1152px;
+            margin-bottom: 16px; /* reduced from 32px to remove overflow */
+        }
+        
+        h1 {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 44px;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+        
+        .subtitle {
+            color: #334155;
+            font-weight: 500;
+            font-size: 22px;
+            line-height: 1.4;
+            max-width: 1000px;
+        }
+        
+        .content-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            width: 1152px;
+            height: 440px;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 32px; /* slightly reduced padding */
+            box-shadow: 0 10px 30px rgba(11, 17, 32, 0.05);
+        }
+        
+        .text-section {
+            margin-bottom: 16px; /* reduced from 24px */
+        }
+        
+        .sequence-text {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 22px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sequence-text::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 24px;
+            background-color: #008A45;
+            margin-right: 16px;
+            border-radius: 4px;
+        }
+        
+        .recovery-text {
+            color: #334155;
+            font-weight: 500;
+            font-size: 18px;
+            line-height: 1.5;
+            padding-left: 20px;
+        }
+        
+        .recovery-text strong {
+            color: #0B1120;
+            font-weight: 700;
+        }
+        
+        .image-section {
+            flex: 1;
+            width: 100%;
+            background-color: #F8FAFC;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        
+        .diagram-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-container">
+            <h1>Every critical transaction follows one recoverable sequence</h1>
+            <p class="subtitle">The interaction grammar is deliberately consistent across sales, lending, contributions, procurement, POS, healthcare, reporting, and administration.</p>
+        </div>
+        
+        <div class="content-card">
+            <div class="text-section">
+                <div class="sequence-text">
+                    Entry → Form → Validation → Confirmation → Processing → Success → Result
+                </div>
+                <div class="recovery-text">
+                    A failed mutation exits through <strong>Error → Retry or Save draft</strong>. The design never treats a success toast as proof of persistence; the result view must show the confirmed record or an actionable server error.
+                </div>
+            </div>
+            
+            <div class="image-section">
+                <img class="diagram-image" src="/home/ubuntu/SMARTMANAGER-MANUS/UI-UX-DESIGN/04-Workflows/canonical-transaction-sequence.png" alt="Canonical transaction sequence diagram">
+            </div>
+        </div>
+    </div>
+</body>
+</html>

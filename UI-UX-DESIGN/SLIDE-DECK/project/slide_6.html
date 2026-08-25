@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>A reusable component grammar keeps the system coherent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F1F5F9;
+            font-family: 'Inter', sans-serif;
+            padding-top: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .header-container {
+            width: 1152px;
+            margin-bottom: 32px;
+        }
+        
+        h1 {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 44px;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+        
+        .subtitle {
+            color: #334155;
+            font-weight: 500;
+            font-size: 22px;
+            line-height: 1.4;
+            max-width: 1000px;
+        }
+        
+        .content-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            width: 1152px;
+            height: 420px;
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(11, 17, 32, 0.05);
+        }
+        
+        .image-panel {
+            width: 40%;
+            height: 100%;
+            background-color: #E2E8F0;
+        }
+        
+        .reference-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: left top;
+        }
+        
+        .text-panel {
+            width: 60%;
+            padding: 32px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .point-item {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 16px;
+        }
+        
+        .point-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .point-rule {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            bottom: 4px;
+            width: 4px;
+            background-color: #008A45;
+            border-radius: 4px;
+        }
+        
+        .point-title {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+        
+        .point-desc {
+            color: #334155;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-container">
+            <h1>A reusable component grammar keeps the system coherent</h1>
+            <p class="subtitle">The design system specifies component behavior—not only colors—so states remain predictable across domains.</p>
+        </div>
+        
+        <div class="content-card">
+            <div class="image-panel">
+                <img class="reference-image" src="/home/ubuntu/SMARTMANAGER-MANUS/UI-UX-DESIGN/05-Visual-Assets/10-settings-security.png" alt="Settings and Security UI">
+            </div>
+            
+            <div class="text-panel">
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Tables</div>
+                    <div class="point-desc">Sticky headers, visible status chips, bulk mode, responsive scroll containers.</div>
+                </div>
+                
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Forms</div>
+                    <div class="point-desc">Sectioned fields, required markers, inline validation, draft preservation, server-error recovery.</div>
+                </div>
+                
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Actions</div>
+                    <div class="point-desc">Idle, hover, pressed, loading, disabled, and permission-blocked states.</div>
+                </div>
+                
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Evidence</div>
+                    <div class="point-desc">Audit timelines with actor, time, action, resource, and evidence link.</div>
+                </div>
+                
+                <div class="point-item">
+                    <div class="point-rule"></div>
+                    <div class="point-title">Accessibility</div>
+                    <div class="point-desc">Visible focus, keyboard order, 44px mobile targets, text plus color for status, reduced motion.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

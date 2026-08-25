@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "title": "Recovery Overview",
+    "created": 1787508781.974,
+    "last_updated": 1787508965.57,
+    "total_slides": 4
+  },
+  "slides": [
+    {
+      "id": "recovery_summary",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "database_reconciliation",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "performance_optimization",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "vercel_blocker",
+      "state": "edited",
+      "pageNum": 4
+    }
+  ],
+  "outline": [
+    {
+      "id": "recovery_summary",
+      "title": "Recovery Overview",
+      "summary": "A high-level summary of the preserved Git history, identity repair, test optimization, and the final state of the GitHub repository.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "database_reconciliation",
+      "title": "Supabase Schema Reconciliation",
+      "summary": "Details the live production catalog verification, confirming that all repository migrations are applied and no speculative DDL was executed.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "performance_optimization",
+      "title": "Test Suite Performance",
+      "summary": "Showcases the before-and-after performance improvements for the optimized test files alongside the overall CI execution metrics.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "vercel_blocker",
+      "title": "Vercel Deployment Blocker",
+      "summary": "Explains the final manual intervention required: the target project is owned by the EZRA MPAPI team, which is inaccessible from the current personal workspace.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

@@ -19,8 +19,12 @@ import concurrent.futures
 import hashlib
 import json
 import os
+import random
+import sqlite3
 import statistics
 import sys
+import tempfile
+import threading
 import time
 import uuid
 from dataclasses import dataclass
@@ -44,6 +48,7 @@ class ClaimOutcome:
     http_status: int | None
     body: dict[str, Any] | None
     error: str | None = None
+    emulated_jitter_ms: float = 0.0
 
 
 def sha256_hex(value: bytes) -> str:
@@ -59,6 +64,19 @@ def bounded_int(value: str) -> int:
     if parsed < 1:
         raise argparse.ArgumentTypeError("must be at least 1")
     return parsed
+
+
+def bounded_nonnegative_float(value: str) -> float:
+    parsed = float(value)
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("must be non-negative")
+    return parsed
+
+
+def jitter_for(sequence: int, minimum_ms: float, maximum_ms: float, seed: int) -> float:
+    if maximum_ms <= minimum_ms:
+        return minimum_ms
+    return random.Random(seed + sequence).uniform(minimum_ms, maximum_ms)
 
 
 def build_claim_payload(
@@ -110,14 +128,179 @@ def build_claim_payload(
     }
 
 
-class SupabaseRpcClient:
-    def __init__(self, base_url: str, service_role_key: str, timeout_seconds: float) -> None:
-        self.url = base_url.rstrip("/") + f"/rest/v1/rpc/{RPC_NAME}"
-        self.service_role_key = service_role_key
-        self.timeout_seconds = timeout_seconds
+class LocalSQLiteRpcClient:
+    """Disposable local emulator for the claim contract.
+
+    SQLite has no PostgreSQL ``pg_advisory_xact_lock`` primitive. This backend
+    therefore uses a named process-local mutex per provider account and a
+    SQLite transaction for durable replay/conflict state. Its lock metrics are
+    useful for algorithmic/concurrency regression testing only; they are not
+    PostgreSQL advisory-lock or Supabase staging measurements.
+    """
+
+    def __init__(self, db_path: str, jitter_min_ms: float = 0.0, jitter_max_ms: float = 0.0, jitter_seed: int = 20260825) -> None:
+        self.db_path = db_path
+        self.jitter_min_ms = jitter_min_ms
+        self.jitter_max_ms = jitter_max_ms
+        self.jitter_seed = jitter_seed
+        self._locks: dict[str, threading.Lock] = {}
+        self._locks_guard = threading.Lock()
+        connection = sqlite3.connect(self.db_path, timeout=30, check_same_thread=False)
+        try:
+            connection.execute("PRAGMA journal_mode=WAL")
+            connection.execute("PRAGMA synchronous=NORMAL")
+            connection.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS provider_webhook_events (
+                    event_id TEXT PRIMARY KEY,
+                    provider TEXT NOT NULL,
+                    provider_account_key TEXT NOT NULL,
+                    provider_event_id TEXT NOT NULL,
+                    provider_uuid TEXT NOT NULL,
+                    provider_reference TEXT NOT NULL,
+                    client_reference TEXT NOT NULL,
+                    semantic_fingerprint TEXT NOT NULL,
+                    raw_payload_hash TEXT NOT NULL,
+                    processing_status TEXT NOT NULL,
+                    conflict INTEGER NOT NULL DEFAULT 0,
+                    created_at REAL NOT NULL DEFAULT (julianday('now')),
+                    UNIQUE(provider, provider_account_key, semantic_fingerprint)
+                );
+                CREATE INDEX IF NOT EXISTS provider_webhook_identity_idx
+                  ON provider_webhook_events(provider, provider_account_key, provider_reference);
+                """
+            )
+            connection.commit()
+        finally:
+            connection.close()
+
+    def _lock_for(self, key: str) -> threading.Lock:
+        with self._locks_guard:
+            return self._locks.setdefault(key, threading.Lock())
 
     def call(self, claim: ClaimCall) -> ClaimOutcome:
         started = time.perf_counter()
+        jitter_ms = jitter_for(claim.sequence, self.jitter_min_ms, self.jitter_max_ms, self.jitter_seed)
+        if jitter_ms:
+            time.sleep(jitter_ms / 1000)
+        payload = claim.payload
+        lock_key = f"{payload['p_provider']}:{payload['p_provider_account_key']}"
+        lock = self._lock_for(lock_key)
+        lock_wait_started = time.perf_counter()
+        lock.acquire()
+        lock_wait_ms = (time.perf_counter() - lock_wait_started) * 1000
+        critical_started = time.perf_counter()
+        try:
+            connection = sqlite3.connect(self.db_path, timeout=30, check_same_thread=False)
+            try:
+                begin_started = time.perf_counter()
+                connection.execute("BEGIN IMMEDIATE")
+                begin_ms = (time.perf_counter() - begin_started) * 1000
+                same_fingerprint = connection.execute(
+                    """SELECT event_id, provider_event_id, provider_uuid, provider_reference,
+                              conflict, processing_status
+                       FROM provider_webhook_events
+                       WHERE provider = ? AND provider_account_key = ?
+                         AND semantic_fingerprint = ?""",
+                    (payload["p_provider"], payload["p_provider_account_key"], payload["p_semantic_fingerprint"]),
+                ).fetchone()
+                identity_match = connection.execute(
+                    """SELECT event_id, semantic_fingerprint, provider_event_id, provider_uuid,
+                              provider_reference, conflict, processing_status
+                       FROM provider_webhook_events
+                       WHERE provider = ? AND provider_account_key = ?
+                         AND (provider_reference = ? OR provider_uuid = ? OR provider_event_id = ?)
+                       ORDER BY created_at LIMIT 1""",
+                    (payload["p_provider"], payload["p_provider_account_key"], payload["p_provider_reference"], payload["p_provider_uuid"], payload["p_provider_event_id"]),
+                ).fetchone()
+                if same_fingerprint:
+                    event_id = same_fingerprint[0]
+                    body = {
+                        "eventId": event_id,
+                        "replayed": True,
+                        "conflict": bool(same_fingerprint[4]),
+                        "processingStatus": "DUPLICATE" if not same_fingerprint[4] else "NEEDS_ATTENTION",
+                        "lockWaitMs": round(lock_wait_ms, 4),
+                    }
+                elif identity_match:
+                    event_id = identity_match[0]
+                    body = {
+                        "eventId": event_id,
+                        "replayed": False,
+                        "conflict": True,
+                        "processingStatus": "NEEDS_ATTENTION",
+                        "lockWaitMs": round(lock_wait_ms, 4),
+                    }
+                    connection.execute(
+                        "UPDATE provider_webhook_events SET conflict = 1, processing_status = 'NEEDS_ATTENTION' WHERE event_id = ?",
+                        (event_id,),
+                    )
+                else:
+                    event_id = str(uuid.uuid4())
+                    connection.execute(
+                        """INSERT INTO provider_webhook_events(
+                            event_id, provider, provider_account_key, provider_event_id,
+                            provider_uuid, provider_reference, client_reference,
+                            semantic_fingerprint, raw_payload_hash, processing_status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'RECEIVED')""",
+                        (event_id, payload["p_provider"], payload["p_provider_account_key"], payload["p_provider_event_id"], payload["p_provider_uuid"], payload["p_provider_reference"], payload["p_client_reference"], payload["p_semantic_fingerprint"], payload["p_raw_payload_hash"]),
+                    )
+                    body = {
+                        "eventId": event_id,
+                        "replayed": False,
+                        "conflict": False,
+                        "processingStatus": "RECEIVED",
+                        "lockWaitMs": round(lock_wait_ms, 4),
+                    }
+                connection.commit()
+                body["sqliteBeginMs"] = round(begin_ms, 4)
+                body["sqliteTxnWorkMs"] = round((time.perf_counter() - critical_started) * 1000, 4)
+                body["sqliteCriticalSectionMs"] = body["sqliteTxnWorkMs"]
+                return ClaimOutcome(
+                    sequence=claim.sequence,
+                    latency_ms=(time.perf_counter() - started) * 1000,
+                    http_status=200,
+                    body=body,
+                    emulated_jitter_ms=round(jitter_ms, 4),
+                )
+            except Exception:
+                connection.rollback()
+                raise
+            finally:
+                connection.close()
+        except (sqlite3.Error, OSError, ValueError) as error:
+            return ClaimOutcome(
+                sequence=claim.sequence,
+                latency_ms=(time.perf_counter() - started) * 1000,
+                http_status=None,
+                                body=None,
+                error=f"{type(error).__name__}: {error}",
+                emulated_jitter_ms=round(jitter_ms, 4),
+            )
+        finally:
+            lock.release()
+
+
+def run_batch(client: Any, claims: list[ClaimCall], concurrency: int) -> list[ClaimOutcome]:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
+        futures = [pool.submit(client.call, claim) for claim in claims]
+        return [future.result() for future in futures]
+
+
+class SupabaseRpcClient:
+    def __init__(self, base_url: str, service_role_key: str, timeout_seconds: float, jitter_min_ms: float = 0.0, jitter_max_ms: float = 0.0, jitter_seed: int = 20260825) -> None:
+        self.url = base_url.rstrip("/") + f"/rest/v1/rpc/{RPC_NAME}"
+        self.service_role_key = service_role_key
+        self.timeout_seconds = timeout_seconds
+        self.jitter_min_ms = jitter_min_ms
+        self.jitter_max_ms = jitter_max_ms
+        self.jitter_seed = jitter_seed
+
+    def call(self, claim: ClaimCall) -> ClaimOutcome:
+        started = time.perf_counter()
+        jitter_ms = jitter_for(claim.sequence, self.jitter_min_ms, self.jitter_max_ms, self.jitter_seed)
+        if jitter_ms:
+            time.sleep(jitter_ms / 1000)
         request = Request(
             self.url,
             data=canonical_json(claim.payload),
@@ -141,6 +324,7 @@ class SupabaseRpcClient:
                     latency_ms=(time.perf_counter() - started) * 1000,
                     http_status=response.status,
                     body=body,
+                    emulated_jitter_ms=round(jitter_ms, 4),
                 )
         except HTTPError as error:
             try:
@@ -153,21 +337,17 @@ class SupabaseRpcClient:
                 http_status=error.code,
                 body=None,
                 error=f"HTTP {error.code}: {raw_error}",
+                emulated_jitter_ms=round(jitter_ms, 4),
             )
         except (URLError, TimeoutError, OSError, ValueError) as error:
             return ClaimOutcome(
                 sequence=claim.sequence,
                 latency_ms=(time.perf_counter() - started) * 1000,
-                http_status=None,
+                                http_status=None,
                 body=None,
                 error=f"{type(error).__name__}: {error}",
+                emulated_jitter_ms=round(jitter_ms, 4),
             )
-
-
-def run_batch(client: SupabaseRpcClient, claims: list[ClaimCall], concurrency: int) -> list[ClaimOutcome]:
-    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
-        futures = [pool.submit(client.call, claim) for claim in claims]
-        return [future.result() for future in futures]
 
 
 def summarize(outcomes: list[ClaimOutcome], label: str) -> dict[str, Any]:
@@ -182,6 +362,14 @@ def summarize(outcomes: list[ClaimOutcome], label: str) -> dict[str, Any]:
         status = str(outcome.body.get("processingStatus", "UNKNOWN"))
         statuses[status] = statuses.get(status, 0) + 1
     percentile = lambda p: round(latencies[min(len(latencies) - 1, int(len(latencies) * p / 100))], 2) if latencies else None
+    lock_waits = sorted(float(outcome.body.get("lockWaitMs", 0)) for outcome in successful)
+    lock_percentile = lambda p: round(lock_waits[min(len(lock_waits) - 1, int(len(lock_waits) * p / 100))], 4) if lock_waits else None
+    jitter_values = sorted(outcome.emulated_jitter_ms for outcome in outcomes)
+    jitter_percentile = lambda p: round(jitter_values[min(len(jitter_values) - 1, int(len(jitter_values) * p / 100))], 4) if jitter_values else None
+    critical_values = sorted(float(outcome.body.get("sqliteCriticalSectionMs", 0)) for outcome in successful)
+    critical_percentile = lambda p: round(critical_values[min(len(critical_values) - 1, int(len(critical_values) * p / 100))], 4) if critical_values else None
+    begin_values = sorted(float(outcome.body.get("sqliteBeginMs", 0)) for outcome in successful)
+    begin_percentile = lambda p: round(begin_values[min(len(begin_values) - 1, int(len(begin_values) * p / 100))], 4) if begin_values else None
     return {
         "label": label,
         "requests": len(outcomes),
@@ -199,6 +387,38 @@ def summarize(outcomes: list[ClaimOutcome], label: str) -> dict[str, Any]:
             "p99": percentile(99),
             "max": round(max(latencies), 2) if latencies else None,
             "mean": round(statistics.mean(latencies), 2) if latencies else None,
+        },
+        "emulatedAdvisoryLockWaitMs": {
+            "min": round(min(lock_waits), 4) if lock_waits else None,
+            "p50": lock_percentile(50),
+            "p95": lock_percentile(95),
+            "p99": lock_percentile(99),
+            "max": round(max(lock_waits), 4) if lock_waits else None,
+            "mean": round(statistics.mean(lock_waits), 4) if lock_waits else None,
+        },
+        "networkJitterEmulatedMs": {
+            "min": round(min(jitter_values), 4) if jitter_values else None,
+            "p50": jitter_percentile(50),
+            "p95": jitter_percentile(95),
+            "p99": jitter_percentile(99),
+            "max": round(max(jitter_values), 4) if jitter_values else None,
+            "mean": round(statistics.mean(jitter_values), 4) if jitter_values else None,
+        },
+        "sqliteCriticalSectionMs": {
+            "min": round(min(critical_values), 4) if critical_values else None,
+            "p50": critical_percentile(50),
+            "p95": critical_percentile(95),
+            "p99": critical_percentile(99),
+            "max": round(max(critical_values), 4) if critical_values else None,
+            "mean": round(statistics.mean(critical_values), 4) if critical_values else None,
+        },
+        "sqliteBeginImmediateMs": {
+            "min": round(min(begin_values), 4) if begin_values else None,
+            "p50": begin_percentile(50),
+            "p95": begin_percentile(95),
+            "p99": begin_percentile(99),
+            "max": round(max(begin_values), 4) if begin_values else None,
+            "mean": round(statistics.mean(begin_values), 4) if begin_values else None,
         },
         "errorSamples": [outcome.error for outcome in errors[:5]],
     }
@@ -238,9 +458,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--environment", choices=("local", "staging", "production"), default="staging")
     parser.add_argument("--allow-production", action="store_true", help="required additional gate for a production target")
     parser.add_argument("--mode", choices=("duplicates", "conflicts", "both"), default="both")
-    parser.add_argument("--requests", type=bounded_int, default=50, help="claims per batch")
+    parser.add_argument("--requests", "--batch-size", dest="batch_size", type=bounded_int, default=50, help="claims per batch (legacy alias: --requests)")
     parser.add_argument("--concurrency", type=bounded_int, default=25, help="maximum simultaneous HTTP calls")
-    parser.add_argument("--timeout-seconds", type=float, default=15.0)
+    parser.add_argument("--timeout-seconds", type=bounded_nonnegative_float, default=15.0)
+    parser.add_argument("--jitter-min-ms", type=bounded_nonnegative_float, default=0.0, help="minimum emulated network delay before each claim")
+    parser.add_argument("--jitter-max-ms", type=bounded_nonnegative_float, default=0.0, help="maximum emulated network delay before each claim")
+    parser.add_argument("--jitter-seed", type=int, default=20260825, help="deterministic seed for per-request jitter")
     parser.add_argument("--provider", default="TEST_PROVIDER")
     parser.add_argument("--provider-account-key", default="staging-load-test-account")
     parser.add_argument("--amount", default="1000.00")
@@ -248,28 +471,39 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--status", default="SUCCESS")
     parser.add_argument("--output", help="optional JSON report path")
     parser.add_argument("--dry-run", action="store_true", help="build and validate payloads without making HTTP calls")
+    parser.add_argument("--local-sqlite", nargs="?", const="", help="run against an ephemeral local SQLite emulator; optionally provide a database path")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    if not args.base_url and not args.dry_run:
+    local_mode = args.local_sqlite is not None
+    if local_mode and args.environment != "local":
+        print("error: --local-sqlite requires --environment local", file=sys.stderr)
+        return 2
+    if not local_mode and not args.base_url and not args.dry_run:
         print("error: --base-url or SUPABASE_URL is required", file=sys.stderr)
         return 2
-    if not args.service_role_key and not args.dry_run:
+    if not local_mode and not args.service_role_key and not args.dry_run:
         print("error: --service-role-key or SUPABASE_SERVICE_ROLE_KEY is required", file=sys.stderr)
         return 2
     if args.environment == "production" and not args.allow_production:
         print("error: production requires --allow-production; use staging by default", file=sys.stderr)
         return 2
-    if args.requests > 1000:
-        print("error: --requests is capped at 1000 per batch", file=sys.stderr)
+    if args.jitter_max_ms < args.jitter_min_ms:
+        print("error: --jitter-max-ms must be greater than or equal to --jitter-min-ms", file=sys.stderr)
+        return 2
+    if args.jitter_max_ms > 5000:
+        print("error: --jitter-max-ms is capped at 5000 ms", file=sys.stderr)
+        return 2
+    if args.batch_size > 1000:
+        print("error: --batch-size is capped at 1000 per batch", file=sys.stderr)
         return 2
     if args.concurrency > 250:
         print("error: --concurrency is capped at 250", file=sys.stderr)
         return 2
-    if args.concurrency > args.requests:
-        args.concurrency = args.requests
+    if args.concurrency > args.batch_size:
+        args.concurrency = args.batch_size
 
     run_id = uuid.uuid4().hex
     provider_reference = f"load-{run_id}"
@@ -288,21 +522,26 @@ def main() -> int:
         "execution_id": execution_id,
     }
     duplicate_payload = build_claim_payload(**base_kwargs)
-    duplicate_claims = [ClaimCall(sequence=i, payload=duplicate_payload) for i in range(args.requests)]
+    duplicate_claims = [ClaimCall(sequence=i, payload=duplicate_payload) for i in range(args.batch_size)]
     report: dict[str, Any] = {
         "harness": "standing-order-webhook-load-test",
         "rpc": RPC_NAME,
         "environment": args.environment,
         "mode": args.mode,
-        "requestsPerBatch": args.requests,
+        "requestsPerBatch": args.batch_size,
+        "batchSize": args.batch_size,
         "concurrency": args.concurrency,
+        "jitterMinMs": args.jitter_min_ms,
+        "jitterMaxMs": args.jitter_max_ms,
+        "jitterSeed": args.jitter_seed,
         "provider": args.provider,
         "providerAccountKey": args.provider_account_key,
         "syntheticRunId": run_id,
+        "backend": "local-sqlite-emulator" if local_mode else "supabase-rpc",
         "notes": [
-            "Targets the service-role webhook claim bridge after provider signature verification.",
-            "Synthetic rows are durable and require normal staging cleanup; no settlement routine is invoked.",
-            "Latency is an end-to-end RPC measure; lock wait is inferred from duplicate serialization, not exposed as a separate database metric.",
+            "Targets the service-role webhook claim bridge after provider signature verification." if not local_mode else "Uses a disposable SQLite emulator with a named process-local mutex per provider account.",
+            "Synthetic rows are durable until the local SQLite file is removed; no settlement routine is invoked.",
+            "Local lock metrics are emulated advisory-lock wait measurements and must not be interpreted as PostgreSQL pg_advisory_xact_lock performance.",
         ],
     }
 
@@ -314,7 +553,18 @@ def main() -> int:
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["payloadShapeValidated"] else 1
 
-    client = SupabaseRpcClient(args.base_url, args.service_role_key, args.timeout_seconds)
+    temporary_db_path: str | None = None
+    if local_mode:
+        if args.local_sqlite:
+            db_path = args.local_sqlite
+        else:
+            handle, temporary_db_path = tempfile.mkstemp(prefix="standing-order-webhook-load-", suffix=".sqlite3")
+            os.close(handle)
+            db_path = temporary_db_path
+        client: Any = LocalSQLiteRpcClient(db_path, args.jitter_min_ms, args.jitter_max_ms, args.jitter_seed)
+        report["localDatabasePath"] = db_path
+    else:
+        client = SupabaseRpcClient(args.base_url, args.service_role_key, args.timeout_seconds, args.jitter_min_ms, args.jitter_max_ms, args.jitter_seed)
     failures: list[str] = []
 
     if args.mode in ("duplicates", "both"):
@@ -332,7 +582,7 @@ def main() -> int:
                 "conflict_marker": "same-provider-reference-different-fingerprint",
             }
         )
-        conflict_claims = [ClaimCall(sequence=i, payload=conflict_payload) for i in range(args.requests)]
+        conflict_claims = [ClaimCall(sequence=i, payload=conflict_payload) for i in range(args.batch_size)]
         conflict_summary = summarize(run_batch(client, conflict_claims, args.concurrency), "conflicting-provider-identity")
         report["conflictBatch"] = conflict_summary
         failures.extend(f"conflicts: {failure}" for failure in assert_conflict_invariants(conflict_summary))
@@ -344,6 +594,11 @@ def main() -> int:
         with open(args.output, "w", encoding="utf-8") as handle:
             handle.write(serialized + "\n")
     print(serialized)
+    if temporary_db_path:
+        try:
+            os.unlink(temporary_db_path)
+        except OSError:
+            pass
     return 0 if not failures else 1
 
 
