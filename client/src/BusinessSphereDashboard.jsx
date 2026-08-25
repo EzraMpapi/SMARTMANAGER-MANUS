@@ -3130,23 +3130,23 @@ function ConfirmDialog() {
   const danger = dialog.variant === "danger";
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setDialog(null)}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setDialog(null)} role="presentation">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-      <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-200/60" onClick={(e) => e.stopPropagation()}>
+      <div className="relative bg-white rounded-[26px] shadow-2xl p-6 w-full max-w-sm border border-slate-200/80" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true" aria-labelledby="global-confirm-title" aria-describedby="global-confirm-message">
         <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${danger ? "bg-red-50" : "bg-[#DCFCE7]"}`}>
           {danger ? <AlertCircle size={22} className="text-[#EF4444]" /> : <AlertCircle size={22} className="text-[#16A34A]" />}
         </div>
-        <h3 className="text-[16px] font-bold text-[#111827] text-center mb-2" style={{ fontFamily: "Poppins,Inter,sans-serif" }}>
+        <h3 id="global-confirm-title" className="text-[18px] font-semibold text-[#111827] text-center mb-2" style={{ fontFamily: "Poppins,Inter,sans-serif" }}>
           {dialog.title || (danger ? "Are you sure?" : "Confirm action")}
         </h3>
-        <p className="text-[13px] text-slate-500 text-center mb-6 leading-relaxed">{dialog.message}</p>
+        <p id="global-confirm-message" className="text-[13px] text-slate-500 text-center mb-6 leading-relaxed px-2">{dialog.message}</p>
         <div className="flex gap-3">
-          <button onClick={() => setDialog(null)} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+          <button type="button" onClick={() => setDialog(null)} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50">
             Cancel
           </button>
           <button
             onClick={() => { dialog.onConfirm(); setDialog(null); }}
-            className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold text-white transition-all"
+            className="flex-1 py-2.5 rounded-xl text-[13px] font-medium text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/50 focus-visible:ring-offset-2"
             style={{ background: danger ? "linear-gradient(135deg,#EF4444,#DC2626)" : "linear-gradient(135deg,#16A34A,#22C55E)", boxShadow: danger ? "0 4px 12px rgba(239,68,68,0.3)" : "0 4px 12px rgba(22,163,74,0.3)" }}
           >
             {dialog.confirmLabel || (danger ? "Delete" : "Confirm")}
@@ -8440,7 +8440,7 @@ function LeadPanel({ lead, onClose, onMove, onDelete }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{lead.id}</p>
@@ -8669,13 +8669,13 @@ function DataImportPanel({ type, onClose, onImport }) {
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[480px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <div className="relative w-full sm:w-[480px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Data Import</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Import {config.tableLabel}</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           {imported > 0 ? (
             <div className="text-center py-10">
               <div className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center mb-3" style={{ backgroundColor: "#DCFCE7" }}><CheckCircle2 size={22} className="text-[#16A34A]" /></div>
@@ -8718,7 +8718,7 @@ function DataImportPanel({ type, onClose, onImport }) {
         </div>
 
         {rows && imported === 0 && (
-          <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+          <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
             <button type="button" onClick={confirmImport} disabled={busy} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 flex items-center justify-center gap-2 disabled:opacity-40">
               {busy ? <LoaderCircle size={14} className="animate-spin" /> : `Import ${rows.data.length} Rows`}
@@ -8746,7 +8746,7 @@ function ConfirmDeleteButton({ onConfirm, label = "Delete", message, title, disa
   if (message) {
     return (
       <button type="button" disabled={disabled} aria-busy={busy} onClick={() => confirmAction(message, onConfirm, { variant: "danger", title: title || "Confirm deletion", confirmLabel: label })}
-        className="w-full text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 hover:bg-[#EF4444]/5 transition-colors flex items-center justify-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50">
+        className="w-full text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 hover:bg-[#FEF2F2] hover:border-[#EF4444]/40 transition-colors flex items-center justify-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50">
         <Trash2 size={12} /> {label}
       </button>
     );
@@ -8782,7 +8782,7 @@ function ConfirmDeleteButton({ onConfirm, label = "Delete", message, title, disa
       onClick={() => setArmed(true)}
       disabled={disabled}
       aria-busy={busy}
-      className="flex items-center justify-center gap-1.5 text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 px-3.5 hover:bg-[#FEE2E2] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex items-center justify-center gap-1.5 text-[12px] font-medium text-[#EF4444] border border-[#EF4444]/25 rounded-lg py-2.5 px-3.5 hover:bg-[#FEF2F2] hover:border-[#EF4444]/40 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
     >
       <Trash2 size={13} /> {label}
     </button>
@@ -8868,10 +8868,10 @@ function LeadFormPanel({ onClose, onSubmit }) {
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
       <form
         onSubmit={handleSubmit}
-        className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"
+        className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col"
         style={{ animation: "slideIn .15s ease-out" }}
       >
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">CRM</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Lead</h2>
@@ -8881,7 +8881,7 @@ function LeadFormPanel({ onClose, onSubmit }) {
           </button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Contact name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Amara Mwakisisile" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Contact name is required.</p>}
@@ -8924,7 +8924,7 @@ function LeadFormPanel({ onClose, onSubmit }) {
           </p>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
@@ -10267,12 +10267,12 @@ function ContactFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">CRM</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Contact</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Full name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Joseph Mwakisisile" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Name is required.</p>}
@@ -10293,7 +10293,7 @@ function ContactFormPanel({ onClose, onSubmit }) {
             Primary contact for this account
           </label>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add Contact</button>
         </div>
@@ -11152,7 +11152,7 @@ function DocPanel({ doc, onClose, onAdvance, onDelete, onPrint, onConvertToInvoi
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[460px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[460px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         {/* Header */}
         <div className="px-6 pt-6 pb-5 border-b border-slate-100">
           <div className="flex items-start justify-between mb-4">
@@ -11475,8 +11475,8 @@ function OrderReturnFormPanel({ order, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">{order.id}</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Process Return</h2>
@@ -11484,7 +11484,7 @@ function OrderReturnFormPanel({ order, onClose, onSubmit }) {
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <div>
             <p className="text-[11px] font-medium text-slate-500 mb-2">Select items and quantities to return</p>
             <div className="space-y-2.5">
@@ -11520,7 +11520,7 @@ function OrderReturnFormPanel({ order, onClose, onSubmit }) {
           <p className="text-[11.5px] text-slate-400">Returned quantities are restocked to Inventory immediately.</p>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
           <button type="button" disabled={submitting || !valid} onClick={async () => { setSubmitting(true); try { await onSubmit({ items: returnItems, reason }); } finally { setSubmitting(false); } }} className="flex-1 text-[12px] font-medium bg-[#EF4444] text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed">
             {submitting ? "Saving…" : `Refund TZS ${money(Math.round(refundValue))}k`}
@@ -11605,10 +11605,10 @@ function DocFormPanel({ kind, onClose, onSubmit, inventory }) {
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
       <form
         onSubmit={handleSubmit}
-        className="relative w-full sm:w-[460px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"
+        className="relative w-full sm:w-[460px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col"
         style={{ animation: "slideIn .15s ease-out" }}
       >
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Sales</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New {meta.label}</h2>
@@ -11618,7 +11618,7 @@ function DocFormPanel({ kind, onClose, onSubmit, inventory }) {
           </button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Customer" required>
             <input className={inputClass} value={form.customer} onChange={(e) => set("customer", e.target.value)} placeholder="e.g. Baraka Hotels & Resorts" />
             {touched && !form.customer.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Customer is required.</p>}
@@ -11720,7 +11720,7 @@ function DocFormPanel({ kind, onClose, onSubmit, inventory }) {
           </FormField>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
@@ -11977,7 +11977,7 @@ function SubscriptionPanel({ subscription, onClose, onSetStatus, onDelete, onGen
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{subscription.id}</p>
@@ -12071,8 +12071,8 @@ function SubscriptionFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Sales</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Subscription</h2>
@@ -12080,7 +12080,7 @@ function SubscriptionFormPanel({ onClose, onSubmit }) {
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Customer" required>
             <input className={inputClass} value={form.customer} onChange={(e) => set("customer", e.target.value)} placeholder="e.g. Meridian Logistics" />
             {touched && !form.customer.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Customer is required.</p>}
@@ -12112,7 +12112,7 @@ function SubscriptionFormPanel({ onClose, onSubmit }) {
           </p>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
           <button type="submit" disabled={submitting} className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5 disabled:opacity-50">{submitting ? "Saving…" : "Create Subscription"}</button>
         </div>
@@ -12778,7 +12778,7 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, onRaisePurchaseOrder, wa
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="px-6 pt-6 pb-5 border-b border-slate-100">
           <div className="flex items-start justify-between mb-4">
             <div>
@@ -12950,10 +12950,10 @@ function ItemFormPanel({ onClose, onSubmit, warehouses }) {
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
       <form
         onSubmit={handleSubmit}
-        className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"
+        className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col"
         style={{ animation: "slideIn .15s ease-out" }}
       >
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Inventory</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Item</h2>
@@ -12963,7 +12963,7 @@ function ItemFormPanel({ onClose, onSubmit, warehouses }) {
           </button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Item name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Industrial water heater 50L" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Item name is required.</p>}
@@ -13006,7 +13006,7 @@ function ItemFormPanel({ onClose, onSubmit, warehouses }) {
           </FormField>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
@@ -13101,7 +13101,7 @@ function Warehouses({ inventory }) {
       {selected && (
         <div className="fixed inset-0 z-30 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setSelected(null)} />
-          <div className="relative w-full sm:w-[360px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+          <div className="relative w-full sm:w-[360px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
             <div className="flex items-start justify-between mb-6">
               <div><h2 className="text-[17px] font-semibold text-[#111827]">{selected.name}</h2><p className="text-[13px] text-slate-500">{selected.city}</p></div>
               <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
@@ -13124,16 +13124,16 @@ function WarehouseFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Inventory</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Warehouse</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Dodoma — Regional" /></FormField>
           <FormField label="City"><input className={inputClass} value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="e.g. Dodoma" /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create</button>
         </div>
@@ -13263,12 +13263,12 @@ function TransferFormPanel({ inventory, warehouses, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Inventory</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Transfer</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Item">
             <select className={inputClass} value={sku} onChange={(e) => { setSku(e.target.value); setToWarehouse(""); }}>
               {inventory.rows.map((it) => <option key={it.sku} value={it.sku}>{it.name} ({it.sku})</option>)}
@@ -13289,7 +13289,7 @@ function TransferFormPanel({ inventory, warehouses, onClose, onSubmit }) {
             <textarea className={inputClass} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Reason for the transfer..." />
           </FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={!valid} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed">Create Transfer</button>
         </div>
@@ -13387,12 +13387,12 @@ function BatchFormPanel({ inventory, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Inventory</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Log Batch</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Item">
             <select className={inputClass} value={form.sku} onChange={(e) => set("sku", e.target.value)}>
               {inventory.rows.map((it) => <option key={it.sku} value={it.sku}>{it.name} ({it.sku})</option>)}
@@ -13413,7 +13413,7 @@ function BatchFormPanel({ inventory, onClose, onSubmit }) {
             <input className={inputClass} value={form.supplier} onChange={(e) => set("supplier", e.target.value)} placeholder="e.g. Tanzania Portland Cement Co." />
           </FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Log Batch</button>
         </div>
@@ -13502,7 +13502,7 @@ function Suppliers({ suppliersHook }) {
       {selected && (
         <div className="fixed inset-0 z-30 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setSelected(null)} />
-          <div className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+          <div className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
             <div className="flex items-start justify-between mb-6">
               <div><h2 className="text-[17px] font-semibold text-[#111827]">{selected.name}</h2><p className="text-[13px] text-slate-500">{selected.category}</p></div>
               <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
@@ -14026,12 +14026,12 @@ function SupplierFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Inventory</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Supplier</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Company name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Coastal Steel & Hardware Ltd" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Name is required.</p>}
@@ -14046,7 +14046,7 @@ function SupplierFormPanel({ onClose, onSubmit }) {
             <FormField label="Lead time (days)"><input type="number" min="0" className={inputClass} value={form.leadTimeDays} onChange={(e) => set("leadTimeDays", e.target.value)} placeholder="0" /></FormField>
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add Supplier</button>
         </div>
@@ -14390,7 +14390,7 @@ function PurchaseOrderPanel({ order, onClose, onReceive, onCancel }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="px-6 pt-6 pb-5 border-b border-slate-100">
           <div className="flex items-start justify-between mb-4">
             <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Purchase Order</p><h2 className="text-[19px] font-semibold text-[#111827] font-mono mt-0.5">{order.id}</h2></div>
@@ -14477,12 +14477,12 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[440px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Procurement</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Purchase Order</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Supplier" required>
             <select className={inputClass} value={supplier} onChange={(e) => setSupplier(e.target.value)}>
               {suppliers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
@@ -14522,7 +14522,7 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
             </div>
           )}
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={!valid || submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed">{submitting ? "Saving…" : "Create PO"}</button>
         </div>
@@ -14676,12 +14676,12 @@ function ContractFormPanel({ suppliersHook, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Procurement</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Contract</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Supplier">
             <select className={inputClass} value={form.supplier} onChange={(e) => set("supplier", e.target.value)}>
               {suppliers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
@@ -14702,7 +14702,7 @@ function ContractFormPanel({ suppliersHook, onClose, onSubmit }) {
           <FormField label="Contract value (TZS 000)"><input type="number" min="0" className={inputClass} value={form.value} onChange={(e) => set("value", e.target.value)} placeholder="0" /></FormField>
           <FormField label="Notes"><textarea className={inputClass} rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create Contract</button>
         </div>
@@ -15687,7 +15687,7 @@ function ExpensePanel({ expense, onClose, onSetStatus, onDelete }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{expense.id}</p>
@@ -15776,10 +15776,10 @@ function ExpenseFormPanel({ onClose, onSubmit }) {
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
       <form
         onSubmit={handleSubmit}
-        className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"
+        className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col"
         style={{ animation: "slideIn .15s ease-out" }}
       >
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Finance</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Record Expense</h2>
@@ -15789,7 +15789,7 @@ function ExpenseFormPanel({ onClose, onSubmit }) {
           </button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Vendor" required>
             <input className={inputClass} value={form.vendor} onChange={(e) => set("vendor", e.target.value)} placeholder="e.g. TANESCO" />
             {touched && !form.vendor.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Vendor is required.</p>}
@@ -15837,7 +15837,7 @@ function ExpenseFormPanel({ onClose, onSubmit }) {
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">
             Cancel
           </button>
@@ -16885,12 +16885,12 @@ function LoansView() {
       {showForm && (
         <div className="fixed inset-0 z-40 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setShowForm(false)} />
-          <form onSubmit={addLoan} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-            <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+          <form onSubmit={addLoan} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+            <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
               <h2 className="text-[18px] font-semibold text-[#111827]">Add Loan</h2>
               <button type="button" onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="px-6 py-5 flex-1 space-y-4">
+            <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
               <FormField label="Lender" required><input className={inputClass} value={form.lender} onChange={(e) => setForm((f) => ({ ...f, lender: e.target.value }))} placeholder="e.g. CRDB Bank" /></FormField>
               <FormField label="Loan type">
                 <select className={inputClass} value={form.loanType} onChange={(e) => setForm((f) => ({ ...f, loanType: e.target.value }))}>
@@ -16902,7 +16902,7 @@ function LoansView() {
               <FormField label="Borrowed date"><input type="date" className={inputClass} value={form.borrowedDate} onChange={(e) => setForm((f) => ({ ...f, borrowedDate: e.target.value }))} /></FormField>
               <FormField label="Due date (optional)"><input type="date" className={inputClass} value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} /></FormField>
             </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+            <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
               <button type="button" onClick={() => setShowForm(false)} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5">Cancel</button>
               <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add Loan</button>
             </div>
@@ -17074,12 +17074,12 @@ function OtherDebtorsView() {
       {showForm && (
         <div className="fixed inset-0 z-40 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setShowForm(false)} />
-          <form onSubmit={addDebtor} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-            <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+          <form onSubmit={addDebtor} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+            <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
               <h2 className="text-[18px] font-semibold text-[#111827]">Add Debtor</h2>
               <button type="button" onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="px-6 py-5 flex-1 space-y-4">
+            <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
               <div>
                 <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Debtor type</label>
                 <div className="flex flex-wrap gap-2">
@@ -17094,7 +17094,7 @@ function OtherDebtorsView() {
               <FormField label="Description (optional)"><textarea className={inputClass} rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></FormField>
               <FormField label="Due date (optional)"><input type="date" className={inputClass} value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} /></FormField>
             </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+            <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
               <button type="button" onClick={() => setShowForm(false)} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5">Cancel</button>
               <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save</button>
             </div>
@@ -17171,12 +17171,12 @@ function OtherIncomeView() {
       {showForm && (
         <div className="fixed inset-0 z-40 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setShowForm(false)} />
-          <form onSubmit={addIncome} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-            <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+          <form onSubmit={addIncome} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+            <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
               <h2 className="text-[18px] font-semibold text-[#111827]">Add Income</h2>
               <button type="button" onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="px-6 py-5 flex-1 space-y-4">
+            <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
               <FormField label="Title" required><input className={inputClass} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Interest earned" /></FormField>
               <FormField label="Amount" required><input type="number" min="0" className={inputClass} value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} /></FormField>
               <FormField label="Description (optional)"><textarea className={inputClass} rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></FormField>
@@ -17193,7 +17193,7 @@ function OtherIncomeView() {
               </div>
               <FormField label="Date"><input type="date" className={inputClass} value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} /></FormField>
             </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+            <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
               <button type="button" onClick={() => setShowForm(false)} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5">Cancel</button>
               <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save</button>
             </div>
@@ -17610,7 +17610,7 @@ function AssetPanel({ asset, onClose, onDelete }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{asset.id}</p>
@@ -17682,8 +17682,8 @@ function AssetFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Finance</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Asset</h2>
@@ -17691,7 +17691,7 @@ function AssetFormPanel({ onClose, onSubmit }) {
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Asset name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Toyota Hilux — Delivery Truck" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Asset name is required.</p>}
@@ -17720,7 +17720,7 @@ function AssetFormPanel({ onClose, onSubmit }) {
           <p className="text-[11.5px] text-slate-400">Depreciation is calculated automatically using the straight-line method from this date.</p>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
           <button type="submit" className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5">Create Asset</button>
         </div>
@@ -18450,7 +18450,7 @@ function DutyFormPanel({ employees, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose}/>
-      <div className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{animation:"slideIn .15s ease-out"}}>
+      <div className="relative w-full sm:w-[440px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{animation:"slideIn .15s ease-out"}}>
         <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Timetable</p>
@@ -18459,7 +18459,7 @@ function DutyFormPanel({ employees, onClose, onSubmit }) {
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18}/></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4 overflow-y-auto">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4 overflow-y-auto">
           <div>
             <label className="text-[11.5px] font-semibold text-slate-600 block mb-1">Duty / Task Title *</label>
             <input className={inputClass} value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Morning stock count"/>
@@ -18919,7 +18919,7 @@ function EmployeePanel({ employee, onClose, onSetStatus, onDelete }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{employee.id}</p>
@@ -19019,8 +19019,8 @@ function EmployeeFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">HR</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Employee</h2>
@@ -19028,7 +19028,7 @@ function EmployeeFormPanel({ onClose, onSubmit }) {
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Full name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Amara Mwakisisile" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Name is required.</p>}
@@ -19077,7 +19077,7 @@ function EmployeeFormPanel({ onClose, onSubmit }) {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
           <button type="submit" disabled={submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">{submitting ? "Saving…" : "Create Employee"}</button>
         </div>
@@ -19368,7 +19368,7 @@ function CandidatePanel({ candidate, onClose, onMove, onDelete }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{candidate.id}</p>
@@ -19410,12 +19410,12 @@ function CandidateFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Recruitment</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Candidate</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Full name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Neema Kessy" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Name is required.</p>}
@@ -19432,7 +19432,7 @@ function CandidateFormPanel({ onClose, onSubmit }) {
             <input type="email" className={inputClass} value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="name@gmail.com" />
           </FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add Candidate</button>
         </div>
@@ -19875,12 +19875,12 @@ function AttendanceFormPanel({ employees, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Attendance</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Log Attendance</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Employee">
             <select className={inputClass} value={form.employee} onChange={(e) => set("employee", e.target.value)}>
               {employees.map((e) => <option key={e.id} value={e.name}>{e.name}</option>)}
@@ -19893,7 +19893,7 @@ function AttendanceFormPanel({ employees, onClose, onSubmit }) {
             </select>
           </FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save</button>
         </div>
@@ -20256,12 +20256,12 @@ function PerformanceFormPanel({ employees, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Performance</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Review</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Employee">
             <select className={inputClass} value={form.employee} onChange={(e) => set("employee", e.target.value)}>
               {employees.map((e) => <option key={e.id} value={e.name}>{e.name}</option>)}
@@ -20282,7 +20282,7 @@ function PerformanceFormPanel({ employees, onClose, onSubmit }) {
             <textarea className={inputClass} rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Summary of the review..." />
           </FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save Review</button>
         </div>
@@ -20453,12 +20453,12 @@ function TrainingFormPanel({ employees, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Training</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Assign Training</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Employee">
             <select className={inputClass} value={form.employee} onChange={(e) => set("employee", e.target.value)}>
               {employees.map((e) => <option key={e.id} value={e.name}>{e.name}</option>)}
@@ -20468,7 +20468,7 @@ function TrainingFormPanel({ employees, onClose, onSubmit }) {
             <input className={inputClass} value={form.course} onChange={(e) => set("course", e.target.value)} placeholder="e.g. Fleet Safety Certification" />
           </FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Assign</button>
         </div>
@@ -20640,12 +20640,12 @@ function BenefitFormPanel({ employees, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Benefits</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Enroll Benefit</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Employee">
             <select className={inputClass} value={form.employee} onChange={(e) => set("employee", e.target.value)}>
               {employees.map((e) => <option key={e.id} value={e.name}>{e.name}</option>)}
@@ -20660,7 +20660,7 @@ function BenefitFormPanel({ employees, onClose, onSubmit }) {
             <input type="number" min="0" className={inputClass} value={form.monthlyValue} onChange={(e) => set("monthlyValue", e.target.value)} placeholder="0" />
           </FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Enroll</button>
         </div>
@@ -21195,7 +21195,7 @@ function BOMPanel({ bom, inventory, onClose, onDelete }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="px-6 pt-6 pb-5 border-b border-slate-100">
           <div className="flex items-start justify-between">
             <div>
@@ -21267,12 +21267,12 @@ function BOMFormPanel({ inventory, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[440px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Manufacturing</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Bill of Materials</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Product name" required>
             <input className={inputClass} value={product} onChange={(e) => setProduct(e.target.value)} placeholder="e.g. Cold Chain Storage Unit" />
           </FormField>
@@ -21306,7 +21306,7 @@ function BOMFormPanel({ inventory, onClose, onSubmit }) {
             </div>
           )}
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={!valid} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed">Create BOM</button>
         </div>
@@ -21656,7 +21656,7 @@ function WorkOrderPanel({ order, onClose, onAdvance, onDelete, inventory, boms }
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="px-6 pt-6 pb-5 border-b border-slate-100">
           <div className="flex items-start justify-between mb-4">
             <div>
@@ -21762,8 +21762,8 @@ function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Manufacturing</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Work Order</h2>
@@ -21771,7 +21771,7 @@ function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Bill of Materials">
             <select className={inputClass} value={form.bomId} onChange={(e) => set("bomId", e.target.value)}>
               {boms.rows.map((b) => <option key={b.id} value={b.id}>{b.product}</option>)}
@@ -21804,7 +21804,7 @@ function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
           <button type="submit" disabled={submitting} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 transition-colors disabled:opacity-50">{submitting ? "Saving…" : "Create Work Order"}</button>
         </div>
@@ -21888,7 +21888,7 @@ function Machines() {
       {selected && (
         <div className="fixed inset-0 z-30 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setSelected(null)} />
-          <div className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+          <div className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
             <div className="flex items-start justify-between mb-6">
               <div><h2 className="text-[17px] font-semibold text-[#111827]">{selected.name}</h2><p className="text-[13px] text-slate-500">{selected.type}</p></div>
               <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
@@ -21922,12 +21922,12 @@ function MachineFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Manufacturing</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Machine</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Machine name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. CNC Panel Cutter #2" /></FormField>
           <FormField label="Type"><input className={inputClass} value={form.type} onChange={(e) => set("type", e.target.value)} placeholder="e.g. Cutting" /></FormField>
           <FormField label="Location">
@@ -21937,7 +21937,7 @@ function MachineFormPanel({ onClose, onSubmit }) {
           </FormField>
           <FormField label="Purchase date"><input type="date" className={inputClass} value={form.purchaseDate} onChange={(e) => set("purchaseDate", e.target.value)} /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add Machine</button>
         </div>
@@ -22122,12 +22122,12 @@ function QcFormPanel({ workOrders, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Quality Control</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Log Inspection</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Work order">
             {completedOrders.length === 0 ? (
               <p className="text-[12.5px] text-slate-400">No completed work orders yet to inspect.</p>
@@ -22148,7 +22148,7 @@ function QcFormPanel({ workOrders, onClose, onSubmit }) {
           </div>
           <FormField label="Notes"><textarea className={inputClass} rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Inspection findings..." /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={completedOrders.length === 0} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:opacity-40 disabled:cursor-not-allowed">Log Inspection</button>
         </div>
@@ -22327,12 +22327,12 @@ function MaintenanceFormPanel({ onClose, onSubmit, saving = false }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Maintenance</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Log Maintenance</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Machine" required><input className={inputClass} value={form.machine} onChange={(e) => set("machine", e.target.value)} placeholder="e.g. Powder Coat Booth" /></FormField>
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Type">
@@ -22349,7 +22349,7 @@ function MaintenanceFormPanel({ onClose, onSubmit, saving = false }) {
           <FormField label="Notes"><textarea className={inputClass} rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} /></FormField>
           <p className="text-[11.5px] text-slate-400">A non-zero cost creates a real "Maintenance" expense in Finance automatically.</p>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Log Maintenance"}</button>
         </div>
@@ -22722,7 +22722,7 @@ function ShipmentPanel({ shipment, onClose, onAdvance, onDelete, advancing = fal
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{shipment.id} · {shipment.orderRef}</p>
@@ -22797,8 +22797,8 @@ function ShipmentFormPanel({ vehicles, onClose, onSubmit, saving = false }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Supply Chain</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Shipment</h2>
@@ -22806,7 +22806,7 @@ function ShipmentFormPanel({ vehicles, onClose, onSubmit, saving = false }) {
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Customer" required>
             <input className={inputClass} value={form.customer} onChange={(e) => set("customer", e.target.value)} placeholder="e.g. Meridian Logistics" />
             {touched && !form.customer.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Customer is required.</p>}
@@ -22844,7 +22844,7 @@ function ShipmentFormPanel({ vehicles, onClose, onSubmit, saving = false }) {
           </p>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Creating…" : "Create Shipment"}</button>
         </div>
@@ -23262,7 +23262,7 @@ function OnlineOrderPanel({ order, onClose, onAdvance, nextStatus }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{order.id}</p>
@@ -25033,12 +25033,12 @@ function ScheduleFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Reports</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Schedule</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Report">
             <select className={inputClass} value={form.reportType} onChange={(e) => set("reportType", e.target.value)}>
               {SCHEDULE_REPORT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -25059,7 +25059,7 @@ function ScheduleFormPanel({ onClose, onSubmit }) {
           <FormField label="Recipient email"><input type="email" className={inputClass} value={form.recipientEmail} onChange={(e) => set("recipientEmail", e.target.value)} placeholder="name@company.tz" /></FormField>
           <p className="text-[11.5px] text-slate-400">Delivery to this address is not automatic yet — see the note on this tab.</p>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create Schedule</button>
         </div>
@@ -25963,7 +25963,7 @@ function FilePanel({ file, company, onClose, onDelete, onAddVersion, deleting = 
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[440px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${meta.color}14` }}>
@@ -26093,17 +26093,17 @@ function VersionUploadPanel({ currentSize, onClose, onSubmit, saving = false }) 
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[360px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[360px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Version History</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Version</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="What changed?"><input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Updated pricing terms" /></FormField>
           <FormField label="New file size"><input className={inputClass} value={size} onChange={(e) => setSize(e.target.value)} placeholder="e.g. 1.3 MB" /></FormField>
           <p className="text-[11.5px] text-slate-400">The previous version moves into history below; this becomes the current one.</p>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Save New Version"}</button>
         </div>
@@ -26153,7 +26153,7 @@ function DocumentSignaturePad({ documentId, onClose, onSigned }) {
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-5">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">{documentId}</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Sign Document</h2></div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
@@ -26213,8 +26213,8 @@ function FileFormPanel({ onClose, onSubmit, saving = false }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Documents</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Upload File</h2>
@@ -26222,7 +26222,7 @@ function FileFormPanel({ onClose, onSubmit, saving = false }) {
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <div className="border-2 border-dashed border-slate-200 rounded-xl p-5 flex flex-col items-center text-center">
             <UploadCloud size={22} className="text-slate-300 mb-2" />
             <p className="text-[12px] text-slate-400 mb-3">This is a demo register — raw files are not stored, but scanning one below does run real OCR and keeps the extracted text.</p>
@@ -26262,7 +26262,7 @@ function FileFormPanel({ onClose, onSubmit, saving = false }) {
           </FormField>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
           <button type="submit" disabled={saving || ocrBusy} aria-busy={saving} className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Uploading…" : "Upload"}</button>
         </div>
@@ -26598,12 +26598,12 @@ function ProjectFormPanel({ onClose, onSubmit, saving = false }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Projects</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Project</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Project name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Cold Chain Rollout" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Project name is required.</p>}
@@ -26619,7 +26619,7 @@ function ProjectFormPanel({ onClose, onSubmit, saving = false }) {
           </div>
           <FormField label="Budget (TZS 000)"><input type="number" min="0" className={inputClass} value={form.budget} onChange={(e) => set("budget", e.target.value)} placeholder="0" /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Create Project"}</button>
         </div>
@@ -26863,7 +26863,7 @@ function TaskPanel({ task, busy = false, onClose, onMove, onDelete }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div><p className="text-[11px] font-mono text-slate-400">{task.id}</p><h2 className="text-[17px] font-semibold text-[#111827] mt-0.5 leading-snug">{task.title}</h2></div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
@@ -26903,12 +26903,12 @@ function TaskFormPanel({ onClose, onSubmit, saving = false }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Task</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Task</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Title" required><input className={inputClass} value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Install racking system" /></FormField>
           <FormField label="Assignee"><input className={inputClass} value={form.assignee} onChange={(e) => set("assignee", e.target.value)} placeholder="e.g. Grace Mmbaga" /></FormField>
           <div className="grid grid-cols-2 gap-3">
@@ -26920,7 +26920,7 @@ function TaskFormPanel({ onClose, onSubmit, saving = false }) {
             <FormField label="Due date"><input type="date" className={inputClass} value={form.dueDate} onChange={(e) => set("dueDate", e.target.value)} /></FormField>
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Add Task"}</button>
         </div>
@@ -27076,16 +27076,16 @@ function MilestoneFormPanel({ onClose, onSubmit, saving = false }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[360px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[360px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Milestone</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Milestone</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Title" required><input className={inputClass} value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Phase 1 complete" /></FormField>
           <FormField label="Due date"><input type="date" className={inputClass} value={form.dueDate} onChange={(e) => set("dueDate", e.target.value)} /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Add Milestone"}</button>
         </div>
@@ -27398,17 +27398,17 @@ function ProjectExpenseFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[360px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[360px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Budget</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Log Expense</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Description" required><input className={inputClass} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="e.g. Racking materials" /></FormField>
           <FormField label="Amount (TZS 000)" required><input type="number" min="0" className={inputClass} value={form.amount} onChange={(e) => set("amount", e.target.value)} placeholder="0" /></FormField>
           <p className="text-[11.5px] text-slate-400">This creates a real "Project Costs" expense in Finance automatically.</p>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Log Expense</button>
         </div>
@@ -27588,7 +27588,7 @@ function SupportWorkflowPolicyPanel({ onClose, onSubmit }) {
   const valid = form.name.trim() && (form.actionType !== "add_internal_note" || form.noteBody.trim());
   function set(key, value) { setForm((previous) => ({ ...previous, [key]: value })); }
   function submit(e) { e.preventDefault(); setTouched(true); if (!valid) return; const condition = {}; if (form.conditionPriority) condition.priority = form.conditionPriority; if (form.conditionStatus) condition.status = form.conditionStatus; const config = form.actionType === "add_internal_note" ? { body: form.noteBody.trim() } : { priority: form.priority }; onSubmit({ name: form.name.trim(), trigger: form.trigger, condition: Object.keys(condition).length ? condition : null, actions: [{ type: form.actionType, config }], enabled: form.enabled }); }
-  return <div className="fixed inset-0 z-40 flex justify-end"><div className="absolute inset-0 bg-[#111827]/25 backdrop-blur-[2px]" onClick={onClose} /><form onSubmit={submit} className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"><div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between"><div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Customer Support</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New workflow policy</h2></div><button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button></div><div className="px-6 py-5 flex-1 space-y-4"><div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[11.5px] text-amber-900 leading-relaxed">This saves a reviewed configuration only. It does not run in the background or change a ticket automatically.</div><FormField label="Policy name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Urgent ticket triage" />{touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">A policy name is required.</p>}</FormField><FormField label="Ticket event"><select className={inputClass} value={form.trigger} onChange={(e) => set("trigger", e.target.value)}><option value="support.ticket.created">Ticket created</option><option value="support.ticket.updated">Ticket updated</option></select></FormField><div className="grid grid-cols-2 gap-3"><FormField label="Priority condition"><select className={inputClass} value={form.conditionPriority} onChange={(e) => set("conditionPriority", e.target.value)}><option value="">Any priority</option>{["Low", "Medium", "High", "Urgent"].map((priority) => <option key={priority}>{priority}</option>)}</select></FormField><FormField label="Status condition"><select className={inputClass} value={form.conditionStatus} onChange={(e) => set("conditionStatus", e.target.value)}><option value="">Any status</option>{TICKET_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></FormField></div><FormField label="Approved action"><select className={inputClass} value={form.actionType} onChange={(e) => set("actionType", e.target.value)}><option value="add_internal_note">Add internal note</option><option value="set_ticket_priority">Set ticket priority</option></select></FormField>{form.actionType === "add_internal_note" ? <FormField label="Internal note text" required><textarea className={inputClass} rows={4} value={form.noteBody} onChange={(e) => set("noteBody", e.target.value)} placeholder="Instruction for the support team..." />{touched && !form.noteBody.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Internal-note text is required.</p>}</FormField> : <FormField label="Set priority to"><select className={inputClass} value={form.priority} onChange={(e) => set("priority", e.target.value)}>{["Low", "Medium", "High", "Urgent"].map((priority) => <option key={priority}>{priority}</option>)}</select></FormField>}<label className="flex items-start gap-2 text-[12px] text-slate-600"><input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} className="mt-0.5 rounded border-slate-300" /><span><strong className="font-medium text-[#111827]">Mark as configured</strong><br />It remains non-executing until a verified server runner is added.</span></label></div><div className="px-6 py-4 border-t border-slate-100 flex gap-2"><button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button><button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save policy</button></div></form></div>;
+  return <div className="fixed inset-0 z-40 flex justify-end"><div className="absolute inset-0 bg-[#111827]/25 backdrop-blur-[2px]" onClick={onClose} /><form onSubmit={submit} className="relative w-full sm:w-[440px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col"><div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between"><div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Customer Support</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New workflow policy</h2></div><button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button></div><div className="px-5 sm:px-6 py-5 flex-1 space-y-4"><div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[11.5px] text-amber-900 leading-relaxed">This saves a reviewed configuration only. It does not run in the background or change a ticket automatically.</div><FormField label="Policy name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Urgent ticket triage" />{touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">A policy name is required.</p>}</FormField><FormField label="Ticket event"><select className={inputClass} value={form.trigger} onChange={(e) => set("trigger", e.target.value)}><option value="support.ticket.created">Ticket created</option><option value="support.ticket.updated">Ticket updated</option></select></FormField><div className="grid grid-cols-2 gap-3"><FormField label="Priority condition"><select className={inputClass} value={form.conditionPriority} onChange={(e) => set("conditionPriority", e.target.value)}><option value="">Any priority</option>{["Low", "Medium", "High", "Urgent"].map((priority) => <option key={priority}>{priority}</option>)}</select></FormField><FormField label="Status condition"><select className={inputClass} value={form.conditionStatus} onChange={(e) => set("conditionStatus", e.target.value)}><option value="">Any status</option>{TICKET_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></FormField></div><FormField label="Approved action"><select className={inputClass} value={form.actionType} onChange={(e) => set("actionType", e.target.value)}><option value="add_internal_note">Add internal note</option><option value="set_ticket_priority">Set ticket priority</option></select></FormField>{form.actionType === "add_internal_note" ? <FormField label="Internal note text" required><textarea className={inputClass} rows={4} value={form.noteBody} onChange={(e) => set("noteBody", e.target.value)} placeholder="Instruction for the support team..." />{touched && !form.noteBody.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Internal-note text is required.</p>}</FormField> : <FormField label="Set priority to"><select className={inputClass} value={form.priority} onChange={(e) => set("priority", e.target.value)}>{["Low", "Medium", "High", "Urgent"].map((priority) => <option key={priority}>{priority}</option>)}</select></FormField>}<label className="flex items-start gap-2 text-[12px] text-slate-600"><input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} className="mt-0.5 rounded border-slate-300" /><span><strong className="font-medium text-[#111827]">Mark as configured</strong><br />It remains non-executing until a verified server runner is added.</span></label></div><div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2"><button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button><button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save policy</button></div></form></div>;
 }
 
 function SupportSlaPolicyPanel({ onClose, onSubmit }) {
@@ -27597,7 +27597,7 @@ function SupportSlaPolicyPanel({ onClose, onSubmit }) {
   const valid = form.name.trim() && Number(form.firstResponseMinutes) > 0 && Number(form.resolutionMinutes) > 0 && Number(form.warningMinutes) >= 0;
   function set(key, value) { setForm((previous) => ({ ...previous, [key]: value })); }
   function submit(e) { e.preventDefault(); setTouched(true); if (!valid) return; onSubmit({ name: form.name.trim(), priority: form.priority, firstResponseMinutes: Number(form.firstResponseMinutes), resolutionMinutes: Number(form.resolutionMinutes), warningMinutes: form.warningMinutes === "" ? null : Number(form.warningMinutes), isActive: form.isActive }); }
-  return <div className="fixed inset-0 z-40 flex justify-end"><div className="absolute inset-0 bg-[#111827]/25 backdrop-blur-[2px]" onClick={onClose} /><form onSubmit={submit} className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"><div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between"><div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Customer Support</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New SLA policy</h2></div><button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button></div><div className="px-6 py-5 flex-1 space-y-4"><div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-[11.5px] text-blue-900 leading-relaxed">This records a service commitment. It does not claim a breach, escalation, or customer notification.</div><FormField label="Policy name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. High-priority customer issue" />{touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">A policy name is required.</p>}</FormField><FormField label="Ticket priority"><select className={inputClass} value={form.priority} onChange={(e) => set("priority", e.target.value)}>{["Low", "Medium", "High", "Urgent"].map((priority) => <option key={priority}>{priority}</option>)}</select></FormField><div className="grid grid-cols-2 gap-3"><FormField label="First response (minutes)"><input type="number" min="1" className={inputClass} value={form.firstResponseMinutes} onChange={(e) => set("firstResponseMinutes", e.target.value)} /></FormField><FormField label="Resolution (minutes)"><input type="number" min="1" className={inputClass} value={form.resolutionMinutes} onChange={(e) => set("resolutionMinutes", e.target.value)} /></FormField></div><FormField label="Warning lead time (minutes)"><input type="number" min="0" className={inputClass} value={form.warningMinutes} onChange={(e) => set("warningMinutes", e.target.value)} />{touched && !valid && <p className="text-[11px] text-[#EF4444] mt-1">Use positive response and resolution times and a non-negative warning lead time.</p>}</FormField><label className="flex items-center gap-2 text-[12px] text-slate-600"><input type="checkbox" checked={form.isActive} onChange={(e) => set("isActive", e.target.checked)} className="rounded border-slate-300" /> Active policy</label></div><div className="px-6 py-4 border-t border-slate-100 flex gap-2"><button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button><button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save policy</button></div></form></div>;
+  return <div className="fixed inset-0 z-40 flex justify-end"><div className="absolute inset-0 bg-[#111827]/25 backdrop-blur-[2px]" onClick={onClose} /><form onSubmit={submit} className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col"><div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between"><div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Customer Support</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New SLA policy</h2></div><button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button></div><div className="px-5 sm:px-6 py-5 flex-1 space-y-4"><div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-[11.5px] text-blue-900 leading-relaxed">This records a service commitment. It does not claim a breach, escalation, or customer notification.</div><FormField label="Policy name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. High-priority customer issue" />{touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">A policy name is required.</p>}</FormField><FormField label="Ticket priority"><select className={inputClass} value={form.priority} onChange={(e) => set("priority", e.target.value)}>{["Low", "Medium", "High", "Urgent"].map((priority) => <option key={priority}>{priority}</option>)}</select></FormField><div className="grid grid-cols-2 gap-3"><FormField label="First response (minutes)"><input type="number" min="1" className={inputClass} value={form.firstResponseMinutes} onChange={(e) => set("firstResponseMinutes", e.target.value)} /></FormField><FormField label="Resolution (minutes)"><input type="number" min="1" className={inputClass} value={form.resolutionMinutes} onChange={(e) => set("resolutionMinutes", e.target.value)} /></FormField></div><FormField label="Warning lead time (minutes)"><input type="number" min="0" className={inputClass} value={form.warningMinutes} onChange={(e) => set("warningMinutes", e.target.value)} />{touched && !valid && <p className="text-[11px] text-[#EF4444] mt-1">Use positive response and resolution times and a non-negative warning lead time.</p>}</FormField><label className="flex items-center gap-2 text-[12px] text-slate-600"><input type="checkbox" checked={form.isActive} onChange={(e) => set("isActive", e.target.checked)} className="rounded border-slate-300" /> Active policy</label></div><div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2"><button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button><button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Save policy</button></div></form></div>;
 }
 
 /* ----------------------------------- TICKETS ----------------------------------- */
@@ -27870,7 +27870,7 @@ function TicketPanel({ ticket, onClose, onSetStatus, onAddInternalNote, onDelete
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[440px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="px-6 pt-6 pb-5 border-b border-slate-100">
           <div className="flex items-start justify-between mb-3">
             <div><p className="text-[11px] font-mono text-slate-400">{ticket.docNumber || ticket.id}</p><h2 className="text-[16px] font-semibold text-[#111827] mt-0.5 leading-snug">{ticket.subject}</h2></div>
@@ -27928,12 +27928,12 @@ function TicketFormPanel({ onClose, onSubmit, saving = false }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Customer Support</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Ticket</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Subject" required>
             <input className={inputClass} value={form.subject} onChange={(e) => set("subject", e.target.value)} placeholder="e.g. Invoice discrepancy" />
             {touched && !form.subject.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Subject is required.</p>}
@@ -27957,7 +27957,7 @@ function TicketFormPanel({ onClose, onSubmit, saving = false }) {
           <FormField label="Assignee"><input className={inputClass} value={form.assignee} onChange={(e) => set("assignee", e.target.value)} placeholder="e.g. Fatuma Salim" /></FormField>
           <FormField label="Initial message"><textarea className={inputClass} rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What the customer reported..." /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Creating…" : "Create Ticket"}</button>
         </div>
@@ -28121,7 +28121,7 @@ function KnowledgeBase() {
       {selected && (
         <div className="fixed inset-0 z-30 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setSelected(null)} />
-          <div className="relative w-full sm:w-[440px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+          <div className="relative w-full sm:w-[440px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
             <div className="flex items-start justify-between mb-4">
               <span className="text-[10px] font-medium text-[#16A34A] bg-[#16A34A]/8 px-1.5 py-0.5 rounded">{selected.category}</span>
               <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
@@ -28150,12 +28150,12 @@ function KbArticleFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[420px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Knowledge Base</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Article</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Title" required><input className={inputClass} value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. How to request a bulk quote" /></FormField>
           <FormField label="Category">
             <select className={inputClass} value={form.category} onChange={(e) => set("category", e.target.value)}>
@@ -28168,7 +28168,7 @@ function KbArticleFormPanel({ onClose, onSubmit }) {
             Published (visible outside drafts)
           </label>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create Article</button>
         </div>
@@ -28253,12 +28253,12 @@ function CallFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Call Center</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Log Call</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Customer" required><input className={inputClass} value={form.customer} onChange={(e) => set("customer", e.target.value)} placeholder="e.g. Kilimo Fresh Distributors" /></FormField>
           <FormField label="Agent" required><input className={inputClass} value={form.agent} onChange={(e) => set("agent", e.target.value)} placeholder="e.g. Fatuma Salim" /></FormField>
           <div className="grid grid-cols-2 gap-3">
@@ -28276,7 +28276,7 @@ function CallFormPanel({ onClose, onSubmit }) {
           </FormField>
           <FormField label="Notes"><textarea className={inputClass} rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Log Call</button>
         </div>
@@ -30501,12 +30501,12 @@ function KpiFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Business Intelligence</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Custom KPI</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Underlying metric">
             <select className={inputClass} value={form.metricId} onChange={(e) => set("metricId", e.target.value)}>
               {KPI_METRICS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
@@ -30515,7 +30515,7 @@ function KpiFormPanel({ onClose, onSubmit }) {
           <FormField label="Your label for this KPI" required><input className={inputClass} value={form.label} onChange={(e) => set("label", e.target.value)} placeholder="e.g. Monthly Revenue Target" /></FormField>
           <FormField label={`Target (${selectedMetric?.unit})`} required><input type="number" min="0" className={inputClass} value={form.target} onChange={(e) => set("target", e.target.value)} placeholder="0" /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add KPI</button>
         </div>
@@ -30858,7 +30858,7 @@ function Benchmarking({ data }) {
       {selectedCompetitor && (
         <div className="fixed inset-0 z-30 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setSelectedCompetitor(null)} />
-          <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+          <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
             <div className="flex items-start justify-between mb-4">
               <div><h2 className="text-[17px] font-semibold text-[#111827]">{selectedCompetitor.name}</h2><p className="text-[13px] text-slate-500">{selectedCompetitor.category}</p></div>
               <button onClick={() => setSelectedCompetitor(null)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
@@ -30885,12 +30885,12 @@ function BenchmarkFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Benchmarking</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Add Benchmark</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Metric">
             <select className={inputClass} value={form.metricId} onChange={(e) => set("metricId", e.target.value)}>
               {BENCHMARK_METRICS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
@@ -30900,7 +30900,7 @@ function BenchmarkFormPanel({ onClose, onSubmit }) {
           <FormField label="Benchmark value" required><input type="number" className={inputClass} value={form.benchmarkValue} onChange={(e) => set("benchmarkValue", e.target.value)} placeholder="0" /></FormField>
           <p className="text-[11.5px] text-slate-400">From your own research — there is no live feed behind this number.</p>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add Benchmark</button>
         </div>
@@ -30917,12 +30917,12 @@ function CompetitorFormPanel({ onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Competitor Tracking</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Add Competitor</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Competitor name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Coastal Building Supplies" /></FormField>
           <FormField label="Category"><input className={inputClass} value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="e.g. Construction Materials" /></FormField>
           <FormField label="Threat level">
@@ -30932,7 +30932,7 @@ function CompetitorFormPanel({ onClose, onSubmit }) {
           </FormField>
           <FormField label="Notes"><textarea className={inputClass} rows={4} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="What you know: pricing, strengths, weaknesses..." /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Add Competitor</button>
         </div>
@@ -31887,12 +31887,12 @@ function PublishTemplatePanel({ workflow, onClose, onPublish }) {
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Automation Marketplace</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Publish "{workflow.name}"</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Category">
             <select className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)}>
               {MARKETPLACE_CATEGORIES.filter((c) => c !== "All").map((c) => <option key={c} value={c}>{c}</option>)}
@@ -31909,7 +31909,7 @@ function PublishTemplatePanel({ workflow, onClose, onPublish }) {
           )}
           <p className="text-[11px] text-slate-400">Published under your company name — visible to any organization using this software.</p>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={!description.trim()} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:opacity-40">Publish</button>
         </div>
@@ -33537,12 +33537,12 @@ function ChannelFormPanel({ departments, onClose, onSubmit, saving = false }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[360px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[360px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Team Chat</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Channel</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Channel name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Warehouse" /></FormField>
           <FormField label="Scope">
             <select className={inputClass} value={form.scope} onChange={(e) => set("scope", e.target.value)}>
@@ -33553,7 +33553,7 @@ function ChannelFormPanel({ departments, onClose, onSubmit, saving = false }) {
           </FormField>
           <FormField label="Description"><input className={inputClass} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What's this channel for?" /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Create Channel"}</button>
         </div>
@@ -33881,12 +33881,12 @@ function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Shared Calendar</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Event</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Title" required><input className={inputClass} value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Weekly Sales Sync" /></FormField>
           <FormField label="Type">
             <select className={inputClass} value={form.type} onChange={(e) => set("type", e.target.value)}>
@@ -33925,7 +33925,7 @@ function EventFormPanel({ defaultDate, onClose, onSubmit, saving = false }) {
           )}
           <FormField label="Description"><textarea className={inputClass} rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Agenda or notes" /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Save Event"}</button>
         </div>
@@ -34201,12 +34201,12 @@ function WorkspaceFormPanel({ departments, onClose, onSubmit, saving = false }) 
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div><p className="text-[11px] text-slate-400 uppercase tracking-wide">Team Workspaces</p><h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Workspace</h2></div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Workspace name" required><input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Cold Chain Rollout Team" /></FormField>
           <FormField label="Department">
             <select className={inputClass} value={form.department} onChange={(e) => set("department", e.target.value)}>
@@ -34217,7 +34217,7 @@ function WorkspaceFormPanel({ departments, onClose, onSubmit, saving = false }) 
           <FormField label="Members"><input className={inputClass} value={form.members} onChange={(e) => set("members", e.target.value)} placeholder="Names, comma separated" /></FormField>
           <FormField label="Description"><textarea className={inputClass} rows={3} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="What is this workspace for?" /></FormField>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50">Cancel</button>
           <button type="submit" disabled={saving} aria-busy={saving} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Saving…" : "Create Workspace"}</button>
         </div>
@@ -34401,12 +34401,12 @@ function NotebookView({ currentUser }) {
       {showForm && (
         <div className="fixed inset-0 z-40 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setShowForm(false)} />
-          <form onSubmit={addNote} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-            <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+          <form onSubmit={addNote} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+            <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
               <h2 className="text-[18px] font-semibold text-[#111827]">New Note</h2>
               <button type="button" onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="px-6 py-5 flex-1 space-y-4">
+            <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
               <FormField label="Title" required><input className={inputClass} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} /></FormField>
               <FormField label="Content"><textarea className={inputClass} rows={6} value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} /></FormField>
               <div>
@@ -34419,7 +34419,7 @@ function NotebookView({ currentUser }) {
                 <p className="text-[10.5px] text-slate-400 mt-1.5">Private notes are only ever visible to you — real filtering, not a cosmetic label.</p>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+            <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
               <button type="button" onClick={() => setShowForm(false)} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5">Cancel</button>
               <button type="submit" disabled={savingNote} aria-busy={savingNote} className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5 disabled:cursor-not-allowed disabled:opacity-60">{savingNote ? "Saving…" : "Save Note"}</button>
             </div>
@@ -39723,7 +39723,7 @@ function CampaignPanel({ campaign, audience, onClose, onAdvance, onDelete }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${typeMeta.color}14` }}>
@@ -39813,8 +39813,8 @@ function CampaignFormPanel({ segments, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <form onSubmit={handleSubmit} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">Marketing</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">New Campaign</h2>
@@ -39822,7 +39822,7 @@ function CampaignFormPanel({ segments, onClose, onSubmit }) {
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Campaign name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Q3 Wholesale Promo" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Campaign name is required.</p>}
@@ -39851,7 +39851,7 @@ function CampaignFormPanel({ segments, onClose, onSubmit }) {
           </FormField>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
           <button type="submit" className="flex-1 btn-primary text-white text-[12px] font-medium rounded-lg py-2.5">Create Campaign</button>
         </div>
@@ -40010,12 +40010,12 @@ function BulkSmsView({ crm }) {
       {showGroupForm && (
         <div className="fixed inset-0 z-40 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setShowGroupForm(false)} />
-          <form onSubmit={saveGroup} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-            <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+          <form onSubmit={saveGroup} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+            <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
               <h2 className="text-[18px] font-semibold text-[#111827]">Create Group</h2>
               <button type="button" onClick={() => setShowGroupForm(false)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="px-6 py-5 flex-1 space-y-4">
+            <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
               <FormField label="Group name" required><input className={inputClass} value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="e.g. Wholesale customers" /></FormField>
               <div>
                 <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Select real customers from CRM ({selectedLeads.size} selected)</label>
@@ -40030,7 +40030,7 @@ function BulkSmsView({ crm }) {
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+            <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
               <button type="button" onClick={() => setShowGroupForm(false)} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5">Cancel</button>
               <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create Group</button>
             </div>
@@ -40041,12 +40041,12 @@ function BulkSmsView({ crm }) {
       {showTemplateForm && (
         <div className="fixed inset-0 z-40 flex justify-end">
           <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={() => setShowTemplateForm(false)} />
-          <form onSubmit={saveTemplate} className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-            <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+          <form onSubmit={saveTemplate} className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+            <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
               <h2 className="text-[18px] font-semibold text-[#111827]">Create Template</h2>
               <button type="button" onClick={() => setShowTemplateForm(false)} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
             </div>
-            <div className="px-6 py-5 flex-1 space-y-4">
+            <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
               <FormField label="Template name" required><input className={inputClass} value={templateForm.name} onChange={(e) => setTemplateForm((f) => ({ ...f, name: e.target.value }))} /></FormField>
               <div>
                 <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Category</label>
@@ -40064,7 +40064,7 @@ function BulkSmsView({ crm }) {
               </div>
               <p className="text-[11px] text-slate-400">{templateForm.message.length} characters · {smsCount}/{smsCount} SMS</p>
             </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+            <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
               <button type="button" onClick={() => setShowTemplateForm(false)} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5">Cancel</button>
               <button type="submit" className="flex-1 text-[12px] font-medium btn-primary text-white rounded-lg py-2.5">Create Template</button>
             </div>
@@ -41507,7 +41507,7 @@ function ReceiptPanel({ receipt, onClose, allowReturn, onOpenReturn, company, de
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[380px] bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+      <div className="relative w-full sm:w-[380px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#16A34A14" }}>
@@ -41622,8 +41622,8 @@ function ReturnFormPanel({ transaction, onClose, onSubmit }) {
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative w-full sm:w-[400px] bg-white h-full shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
-        <div className="px-6 pt-6 pb-5 border-b border-slate-100 flex items-start justify-between">
+      <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-slate-100 bg-white/95 backdrop-blur sticky top-0 z-10 flex items-start justify-between">
           <div>
             <p className="text-[11px] text-slate-400 uppercase tracking-wide">{transaction.id}</p>
             <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">Process Return</h2>
@@ -41631,7 +41631,7 @@ function ReturnFormPanel({ transaction, onClose, onSubmit }) {
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="px-6 py-5 flex-1 space-y-4">
+        <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <div>
             <p className="text-[11px] font-medium text-slate-500 mb-2">Select items and quantities to return</p>
             <div className="space-y-2.5">
@@ -41673,7 +41673,7 @@ function ReturnFormPanel({ transaction, onClose, onSubmit }) {
           <p className="text-[11.5px] text-slate-400">Returned quantities are restocked only after the server confirms the refund.</p>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex gap-2">
+        <div className="px-5 sm:px-6 py-4 border-t border-slate-100 bg-white/95 backdrop-blur sticky bottom-0 z-10 flex gap-2">
           <button type="button" onClick={onClose} className="flex-1 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors">Cancel</button>
           <button
             type="button"

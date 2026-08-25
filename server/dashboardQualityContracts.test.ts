@@ -49,6 +49,19 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("function HR(");
   });
 
+  it("standardizes workflow panels and confirmation dialogs without bypassing safeguards", () => {
+    expect(dashboard).toContain("rounded-l-[26px]");
+    expect(dashboard).toContain("sticky top-0 z-10");
+    expect(dashboard).toContain("sticky bottom-0 z-10");
+    expect(dashboard).toContain('role="alertdialog"');
+    expect(dashboard).toContain('aria-modal="true"');
+    expect(dashboard).toContain('aria-labelledby="global-confirm-title"');
+    expect(dashboard).toContain('aria-describedby="global-confirm-message"');
+    expect(dashboard).toContain("function ConfirmDeleteButton");
+    expect(dashboard).toContain("confirmAction(message, onConfirm");
+    expect(dashboard).toContain("disabled={disabled}");
+  });
+
   it("does not introduce client-side persistence into command-center components", () => {
     for (const { text } of files) {
       expect(text).not.toContain("localStorage");
