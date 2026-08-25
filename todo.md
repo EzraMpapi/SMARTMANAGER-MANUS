@@ -349,3 +349,5 @@
 - [ ] Resolve or obtain approval for the GitHub Actions billing/spending-limit blocker that prevents the quality gate from starting.
 - [x] Reconcile the readiness evidence note with the current successful live Vercel route probes while documenting the stale blocked deployment record honestly.
 - [x] Reconcile the latest concurrent Android commit that reverted the TWA template to the managed origin, then revalidate the Vercel target from the resulting main branch.
+- [x] Replace the live login-shell favicon, social image, and BrandLogo references that still use unserved same-origin managed-storage paths, while preserving valid server-side storage URLs for authenticated uploads.
+- [x] Synchronize the login-shell same-origin branding fix and its updated regression assertions to the private repository without changing repository privacy or history.
