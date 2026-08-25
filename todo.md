@@ -542,3 +542,19 @@
 - [ ] Retry the production Vite build with optimized chunking and inspect emitted artifact completeness.
 - [x] Re-audit the six RLS-enabled tables with no attached policies for ownership, grants, and exposure.
 - [x] Run the verified Vitest/TypeScript checks, commit the Vitest environment fix and Android template correction, and push to GitHub.
+
+## Policy-less RLS Security Review
+- [ ] Query ownership, RLS flags, policy counts, and ordinary/service-role privileges for the six identified tables.
+- [ ] Check backend access paths and public exposure indicators without changing database objects.
+- [ ] Record the security posture and any remediation need.
+
+## Mobile Responsive Regression Coverage
+- [x] Identify the focused mobile-responsive contracts and broader mobile-related regression files.
+- [x] Execute the mobile-responsive regression suite with serialized workers to avoid sandbox memory pressure.
+- [x] Review coverage totals, skipped checks, failures, and any live-device or environment limitations.
+
+## Unpublished Changes and Supabase Synchronization
+- [ ] Review all unpublished files and classify intentional source, tests, documentation, generated artifacts, and temporary probes.
+- [ ] Compare verified repository schema declarations and migrations against the connected Supabase catalog.
+- [ ] Apply only genuinely missing idempotent tables or related objects; preserve data, RLS, tenant isolation, and avoid fabricated seed data.
+- [ ] Verify post-comparison security posture and synchronize intentional changes to GitHub main.
