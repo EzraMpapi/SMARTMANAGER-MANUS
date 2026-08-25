@@ -394,6 +394,9 @@
 
 ## Property-Management Database Health Check
 - [x] Verify the active Supabase connection and run a read-only availability, RLS, and row-count health check across all property-management tables.
+- [x] Review the live migration ledger and revalidate availability, RLS, policy coverage, and catalog-level read accessibility for all 37 property-management tables.
+- [x] Grant and verify the minimum authenticated SELECT and INSERT table privileges across all property-management tables while keeping existing RLS policies unchanged.
+- [ ] Commit and push the audited authenticated SELECT and INSERT privilege grant migration and checklist update to GitHub.
 
 ## Property-Management Test Seed Migration
 - [x] Generate and validate a non-executing, idempotent seed migration for an isolated test company across all 37 property-management tables.
