@@ -467,3 +467,7 @@
 - [x] Audit remaining mobile controls, tables, filters, forms, and gesture-safe spacing beyond the Step 6 shell pass.
 - [x] Implement targeted mobile interaction refinements across operational modules without changing routes, data behavior, or access protections.
 - [x] Validate mobile contracts and publish the reviewed Step 8 refinement.
+
+## Dashboard Polish Step 8 — Live Validation
+- [x] Inspect published responsive entry states and verify mobile-safe layout where accessible.
+- [x] Document authenticated-browser and physical-device checks that cannot be completed without authorized sessions or devices.
