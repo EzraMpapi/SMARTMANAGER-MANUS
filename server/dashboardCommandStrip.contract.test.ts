@@ -22,7 +22,7 @@ describe("dashboard operational command strip", () => {
   it("retains subscription status, alerts, and the independent mobile navigation path", () => {
     expect(dashboard).toContain("subscriptionAccess.ready");
     expect(dashboard).toContain("criticalAlerts.length > 0");
-    expect(dashboard).toContain('className="sm:hidden fixed bottom-0');
+    expect(dashboard).toContain('className="dashboard-mobile-nav lg:hidden fixed bottom-0');
     expect(dashboard).toContain("<SubscriptionAccessBoundary");
   });
 });

@@ -50,7 +50,8 @@ describe("Attachment 5 forensic audit contracts", () => {
 
     expect(packageJson).toContain('"test": "vitest run"');
     expect(packageJson).toContain('"build":');
-    expect(vitest).toContain('include: ["server/**/*.test.ts", "server/**/*.spec.ts"]');
+    expect(vitest).toContain('"server/**/*.test.ts"');
+    expect(vitest).toContain('"client/src/**/*.test.ts"');
     expect(liveTest).toContain("describe.skip");
   });
 });

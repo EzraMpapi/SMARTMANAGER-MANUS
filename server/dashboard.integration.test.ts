@@ -27,6 +27,7 @@ const passwordAccountProvisioningSource = readFileSync(new URL("./passwordAccoun
 const brandLogoSource = readFileSync(new URL("../client/src/components/BrandLogo.tsx", import.meta.url), "utf8");
 const enterpriseAuthSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
 const indexHtmlSource = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
+const authContextSource = readFileSync(new URL("../client/src/contexts/AuthContext.tsx", import.meta.url), "utf8");
 
 describe("BusinessSphere launch and live-data integration", () => {
   it("keeps the preserved dashboard behind the dedicated app route", () => {
@@ -39,9 +40,11 @@ describe("BusinessSphere launch and live-data integration", () => {
 
   it("loads public auth through a smaller route bundle and retains the ERP shell for active sessions or signup", () => {
     expect(appSource).toContain("const PublicAuthGateway = lazy");
-    expect(appSource).toContain("function isPublicAuthRequest()");
-    expect(appSource).toContain('params.get("auth") !== "signup"');
-    expect(appSource).toContain("isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />");
+    expect(appSource).toContain("function isPublicAuthScreen()");
+    expect(appSource).toContain('["login", "forgot", "reset", "verify"].includes(requestedAuthScreen())');
+    expect(appSource).toContain("isPublicAuthScreen() && !auth.isAuthenticated");
+    expect(appSource).toContain("if (requestedSignup) return");
+    expect(appSource).toContain("<PublicAuthGateway />");
   });
 
   it("defers TRA compliance and dashboard PDF code until the matching feature is opened", () => {
@@ -72,7 +75,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(enterpriseAuthSource).toContain('rememberMe');
     expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
-    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-9 w-9');
+    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-8 w-8');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
     expect(indexHtmlSource).toContain('rel="icon" type="image/png" href="/brand/smart-manager-logo.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
@@ -83,7 +86,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("trpc.teamInvitations.create.useMutation");
     expect(dashboardSource).not.toContain("const TEAM_SEED");
     expect(invitationServiceSource).toContain("const { profile } = await resolveVerifiedProfile(req)");
-    expect(invitationServiceSource).toContain("companyId: profile.company_id");
+    expect(invitationServiceSource).toContain("company_id: profile.company_id");
     expect(invitationServiceSource).toContain("hashInvitationToken(token)");
     expect(invitationServiceSource).toContain("Sign in with the email address that received this invitation");
     expect(invitationServiceSource).not.toContain("input.companyId");
@@ -112,13 +115,16 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("google")}');
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("azure")}');
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("apple")}');
-    expect(publicAuthSource).toContain("/auth/v1/authorize?provider=${encodeURIComponent(provider)}");
+    expect(publicAuthSource).toContain("await auth.signInWithOAuth(provider)");
+    expect(authContextSource).toContain("auth.signInWithOAuth({ provider, options: { redirectTo: redirectTo?.toString() } })");
   });
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
     expect(publicAuthSource).toContain("oauthCallbackFromHash(window.location.hash)");
-    expect(publicAuthSource).toContain("persistAuthSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken })");
-    expect(publicAuthSource).toContain("window.location.replace(withoutAuthView())");
+    expect(publicAuthSource).toContain("if (!callback.errorCode) return;");
+    expect(authContextSource).toContain("const current = await client.auth.getSession()");
+    expect(authContextSource).toContain("await hydrateIdentity(client, current.data.session, dispatch, generation)");
+    expect(publicAuthSource).toContain("window.location.assign(withoutAuthView())");
     expect(publicAuthSource).toContain('provider === "azure" ? "Microsoft" : provider === "apple" ? "Apple" : "Google"');
   });
 

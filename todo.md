@@ -587,3 +587,9 @@
 - [x] Inspect current Git state and run the authoritative live schema verifier
 - [x] Create only contract-proven missing idempotent tenant-safe schema objects, if any (no missing object was proven; no DDL applied)
 - [x] Commit and push any intentional reconciliation changes to GitHub main
+
+## Full Integration and Tenant-Isolation Validation
+- [x] Inspect Git/test configuration and establish the live schema verification baseline
+- [x] Run full regression, integration, RLS, tenant-isolation, and schema-contract suites
+- [x] Compare live Supabase schema against contract references and create only proven missing objects (no missing object was demonstrated; no DDL applied)
+- [x] Record results, commit any intentional changes, and push GitHub main
