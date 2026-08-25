@@ -9,7 +9,7 @@
 
 The repository and live Supabase project were audited using static code analysis, migration/catalog reconciliation, Supabase table metadata, Supabase security/performance advisors, the complete Vitest suite, production-equivalent frontend/backend build commands, and the available browser integration suite.
 
-The audit verified that the live project contains **533 public tables**, all 533 with RLS enabled, **732 public policies**, **246 public functions**, **203 public `SECURITY DEFINER` functions**, **451 non-internal triggers**, and no public views in the queried metadata baseline. Local migration-defined tables had no missing live counterparts in the repository-to-live comparison. No new table was created because the evidence did not justify adding duplicate or unapproved schema.
+The audit verified that the live project contains **535 public tables**, all 535 with RLS enabled, **734 public policies**, **248 public functions**, **205 public `SECURITY DEFINER` functions**, **453 non-internal triggers**, and no public views in the queried metadata baseline. Local migration-defined tables had no missing live counterparts in the repository-to-live comparison. The two genuinely missing Healthcare Laboratory tables were then created through an explicit forward migration after the user requested creation of new tables.
 
 One reproducible product defect was found and repaired: the Android Trusted Web Activity manifest still pointed to the retired Manus preview origin instead of the verified Vercel production origin. The template now uses `menejajanja.vercel.app` for the host, manifest, and icons. The focused regression test passed after the fix, followed by a complete Vitest pass.
 
@@ -26,7 +26,7 @@ The audit also identified unresolved Supabase advisor backlog and environment-de
 | Browser/session storage | 166 matches | Requires control-by-control classification; auth/session and UI preferences are mixed with persistence contracts |
 | Direct Supabase references | 4 direct client/server pattern matches in the narrow scan | Most access is routed through shared adapters/RPC contracts |
 | Catch blocks | 457 | Requires semantic review; the count alone does not prove swallowed failures |
-| Supabase migrations | 112 local SQL files | Compared with live migration catalog |
+| Supabase migrations | 113 local SQL files | Compared with live migration catalog |
 | Live migrations | Applied through the current team-invitation and webhook changes | No unapplied committed table migration identified |
 | Vitest | 239 files: 233 passed, 6 skipped; 983 tests: 969 passed, 14 skipped | Passed after Android-origin repair |
 | TypeScript | `pnpm check` | Passed |
@@ -58,9 +58,9 @@ The static counts are triage indicators, not assertions that every matching stri
 
 ## Database reconciliation
 
-The local repository-to-live comparison found **300 migration-defined tables** and no migration-defined table missing from the saved live Supabase inventory. The conservative source-reference comparison found 68 public tables referenced by application/test source and no probable referenced table absent from the live inventory. These results mean there was no evidence for automatically creating “all missing tables.”
+The local repository-to-live comparison found **302 migration-defined tables** and no migration-defined table missing from the refreshed live Supabase inventory. The conservative source-reference comparison found 68 public tables referenced by application/test source and no probable referenced table absent from the live inventory. The only identified missing schema objects were the two Healthcare Laboratory category tables, which were created through migration `20260825_020_healthcare_lab_categories_schema` after the user explicitly requested creation of new tables.
 
-The Healthcare Laboratory `hc_lab_categories` schema remains intentionally unapplied because its draft is a product decision artifact, not an approved migration. The proposed DDL and authorization contract are stored separately for review and do not alter the live project.
+The Healthcare Laboratory table foundation is now applied. The dedicated write RPCs, reviewed permission seed, shared audit integration, and authenticated tenant-isolation tests remain intentionally gated; direct authenticated table mutation is not granted.
 
 ## Supabase security and performance findings
 
@@ -95,7 +95,7 @@ The Android TWA template used `bserp-dashbo-xgm6fauw.manus.space` while the pack
 
 The browser suite demonstrated that several workflows are reachable and functioning in the local test harness, including authentication preview behavior, Money Agent, operations command centers, patient SMS consent, Pharmacy, session recovery, and some role boundaries. The run also produced timeouts or failures for Community Groups, Healthcare, Microfinance, production smoke, profile identity, Property Management, and School flows. Because the suite did not complete cleanly and some tests depend on controlled authentication, these results cannot be represented as proof of complete end-to-end persistence.
 
-The sandbox did not have production or staging authenticated tenant credentials, a local PostgreSQL/Supabase runtime, or a `SUPABASE_SECRET_KEY`. Accordingly, no synthetic create/update/delete transaction was executed against live production, and no claim is made that every module’s UI write path has been directly verified in the database. The live Supabase connector was used for read-only schema/migration/advisor inspection only during this audit.
+The sandbox did not have production or staging authenticated tenant credentials, a local PostgreSQL/Supabase runtime, or a `SUPABASE_SECRET_KEY`. Accordingly, no synthetic application CRUD transaction was executed against live production, and no claim is made that every module’s UI write path has been directly verified in the database. The live Supabase connector was used for read-only inspection plus the explicitly requested Healthcare Laboratory schema migration; no settlement, billing, remediation, or destructive data operation was performed.
 
 ## Error register
 
@@ -109,7 +109,7 @@ The sandbox did not have production or staging authenticated tenant credentials,
 
 ## Delivery and next gates
 
-The current audit artifacts include the conservative inventory script, advisor summarizer, Healthcare Laboratory decision/auth documents, migration DDL draft, GitHub runner analysis, diagnostics script, and runner dashboard. Only the Android TWA template was modified as a product source repair during this audit sequence; generated browser artifacts are not product changes.
+The current audit artifacts include the conservative inventory script, advisor summarizer, Healthcare Laboratory decision/auth documents, migration DDL draft, applied Healthcare Laboratory migration, GitHub runner analysis, diagnostics script, runner dashboard, and migration contract test. The Android TWA template and Healthcare Laboratory schema foundation were the product changes applied during this audit sequence; generated browser artifacts are not product changes.
 
 The next safe engineering gates are to obtain approved staging/authenticated tenant fixtures, run module-specific CRUD and RLS tests with direct database assertions, apply only reviewed security/index migrations in bounded waves, rerun the Supabase schema verifier with the required secret, and rerun browser tests one workflow at a time. Production migrations, payment/settlement actions, external messaging, and destructive deletes must remain explicitly gated.
 

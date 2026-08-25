@@ -1,13 +1,13 @@
 # Healthcare Laboratory Categories Migration Plan
 
-**Status:** Proposed plan only; no migration has been applied.
+**Status:** Table schema migration applied; write RPC and permission-seed work remains gated.
 **Author:** Manus AI
 **Candidate objects:** `public.hc_lab_categories` and `public.hc_lab_category_events`
-**Proposed migration family:** `20260825_018_healthcare_lab_categories_*`
+**Applied migration:** `20260825_020_healthcare_lab_categories_schema.sql`
 
 ## Executive decision
 
-The Healthcare Laboratory schema draft is technically viable, but it is not yet safe to apply as live DDL. The draft itself records that it is a design document and that the product owner must first decide whether **New Category** belongs to Healthcare Laboratory or the existing Pharmacy catalog. It also requires confirmation of the approved Healthcare configuration permission and audit path. The live table inventory confirms that both proposed tables are currently absent, so this is a genuine future schema addition rather than a missing application of an existing migration.
+The Healthcare Laboratory table schema has been applied as a forward-only migration. The remaining work is not safe to enable until the product ownership, approved Healthcare configuration permission, canonical audit path, and dedicated write RPC contract are confirmed. The original draft still records the Pharmacy-versus-Laboratory ownership decision and remains the source for the gated follow-up workflow.
 
 The recommended implementation is a dedicated, tenant-scoped Laboratory Category resource with a separate append-only lifecycle-event table. Category writes should go through server-owned RPCs and a dedicated tRPC adapter rather than the current generic Healthcare CRUD path. The UI should remain disabled or feature-flagged until the product and authorization decisions below are recorded.
 
@@ -15,7 +15,7 @@ The recommended implementation is a dedicated, tenant-scoped Laboratory Category
 
 | Area | Finding | Consequence |
 |---|---|---|
-| Live database | `hc_lab_categories` and `hc_lab_category_events` are absent from the live table inventory. | A new additive migration is required if the Healthcare decision is approved. |
+| Live database | `hc_lab_categories` and `hc_lab_category_events` are present after migration `20260825_020_healthcare_lab_categories_schema.sql`. | The table foundation exists; write RPCs, permission seed, and authenticated tests remain gated. |
 | Existing Healthcare server | `healthcareOperations.ts` uses a generic table allow-list and direct tenant-filtered PostgREST CRUD. | Do not expose the new category tables through generic writes; add a specialized server contract. |
 | Existing role model | Healthcare roles include `Laboratory Technician`, `Clinic Administrator`, organization-level administrators, and other clinical roles. | The exact configuration permission must be confirmed against the existing workforce permission system. |
 | Existing Pharmacy category | `pharmacyOperations.ts` already owns `phm_categories` and exposes a Pharmacy-specific catalog permission. | If product ownership is Pharmacy, reuse `createPharmacyCategory`; create no Healthcare tables. |
@@ -97,13 +97,13 @@ The migration cannot be promoted until the following tests pass against an isola
 
 ## Rollout and rollback
 
-Apply the migration through the Supabase connector as a reviewed, forward-only migration after the decisions and tests above are complete. Immediately verify table existence, RLS status, indexes, function signatures, grants, and security-advisor findings. Enable the UI behind a feature flag or server capability check, then run an authenticated tenant-isolation smoke test.
+The table schema migration has been applied through the Supabase connector as a forward-only migration after live reconciliation. Immediately verify table existence, RLS status, indexes, trigger signatures, grants, and security-advisor findings. Keep UI writes disabled until the permission seed, dedicated RPCs, and authenticated tenant-isolation tests are complete.
 
 Rollback should be logical rather than destructive. Disable the UI capability and revoke the category write RPC grants if a defect is found. Preserve evidence rows and data for investigation. A later forward migration may repair constraints, policies, or functions; do not drop the tables or delete category history as an emergency rollback.
 
 ## Current recommendation
 
-**Do not apply `hc_lab_categories` yet.** The missing tables are expected because the source is explicitly a design draft, not an approved migration. Record the ownership and permission decisions, confirm the audit path, produce the reviewed SQL migration and contract tests, and then apply the additive schema through the Supabase connector in a controlled staging or approved environment.
+**The additive table schema is now applied.** The write path remains intentionally disabled because the permission seed, dedicated RPCs, shared audit integration, and authenticated tenant-isolation tests are still pending. Complete those controls in a follow-up forward migration before enabling the UI.
 
 ## References
 
