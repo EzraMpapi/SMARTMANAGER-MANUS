@@ -26,8 +26,8 @@ describe("public authentication experience", () => {
     expect(authSessionStorageSource).toContain('const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token"');
     expect(authSessionStorageSource).toContain("const activeStorage = remember ? window.localStorage : window.sessionStorage");
     expect(appSource).toContain("<AuthProvider>");
-    expect(trpcBootstrapSource).toContain("getSupabaseAuthClient");
-    expect(trpcBootstrapSource).toContain("client.auth.getSession()");
+    expect(trpcBootstrapSource).toContain("hasStoredSupabaseSession");
+    expect(trpcBootstrapSource).toContain('headers["x-supabase-authorization"] = `Bearer ${supabaseToken}`');
     expect(dashboardSource).toContain("function getStoredAccessToken()");
     expect(readFileSync(new URL("../client/src/contexts/AuthContext.tsx", import.meta.url), "utf8")).toContain("onAuthStateChange");
   });

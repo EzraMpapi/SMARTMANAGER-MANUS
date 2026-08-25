@@ -47968,9 +47968,10 @@ function SmartManager() {
         />
       )}
 
-      {/* Sidebar — a toggleable overlay menu at every breakpoint, closed by
-          default. It never reserves layout space, so the main content
-          always renders at full width whether the menu is open or not.
+      {/* Sidebar — a persistent, Manus-style navigation rail on desktop and a
+          temporary drawer on smaller screens. The desktop rail reserves a
+          stable operating column, while mobile keeps the dashboard content
+          unobstructed until the user opens navigation.
           Rebuilt as a light theme matching the design system image exactly
           (Kadi: "White background, Light shadow, Soft rounded corners") —
           every dark-theme color from the earlier version (the navy/dark-
@@ -47978,7 +47979,7 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={!sidebarOpen}
-          className={`dashboard-sidebar fixed z-50 h-[100dvh] max-h-[100dvh] ${sidebarContentCollapsed ? "w-[76px]" : "w-[min(86vw,264px)]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:static lg:z-10 lg:h-full lg:max-h-none lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+          className={`dashboard-sidebar fixed z-50 h-[100dvh] max-h-[100dvh] ${sidebarContentCollapsed ? "w-[76px]" : "w-[min(86vw,272px)]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:sticky lg:top-0 lg:z-10 lg:h-[100dvh] lg:max-h-[100dvh] lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
@@ -48077,11 +48078,10 @@ function SmartManager() {
         </div>
       </aside>
 
-      {/* Main — always full width; the sidebar is an overlay, not a docked
-          column, so there is no reserved gutter to subtract. */}
+      {/* Main workspace shares a stable desktop layout column with the left navigation. */}
       <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full">
         {/* Topbar */}
-        <header className={`dashboard-topbar min-h-[64px] shrink-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 flex items-center justify-between gap-2 px-3 py-2 sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-20 min-h-[64px] shrink-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_1px_0_rgba(15,23,42,.03)] flex items-center justify-between gap-2 px-3 py-2 sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
           <div className="flex items-center gap-3">
             <button
               className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
@@ -48103,7 +48103,7 @@ function SmartManager() {
               </div>
             </div>
           </div>
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-3">
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5">
             <span
               className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
               style={
@@ -48119,7 +48119,7 @@ function SmartManager() {
             {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             <button
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search flex items-center gap-1.5 border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 rounded-xl px-2.5 py-2 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+              className="dashboard-topbar-search hidden sm:flex items-center gap-1.5 border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 rounded-xl px-2.5 py-2 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
               aria-label="Search everything"
             >
               <Search size={13} />
@@ -48152,12 +48152,12 @@ function SmartManager() {
             </span>
             {/* ── Smart Alerts badge ── */}
             {criticalAlerts.length > 0 && (
-              <button onClick={()=>go("notifications")} className="dashboard-topbar-alert flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1.5 rounded-xl animate-pulse" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
+              <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden lg:flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1.5 rounded-xl animate-pulse" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
                 <AlertCircle size={13}/>
                 {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
               </button>
             )}
-            <WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} />
+            <span className="hidden xl:block"><WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} /></span>
             {/* ── Dark mode toggle ── */}
             <button
               onClick={()=>setDarkMode(d=>!d)}
