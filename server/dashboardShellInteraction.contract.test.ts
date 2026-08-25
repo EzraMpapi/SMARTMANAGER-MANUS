@@ -19,6 +19,9 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain("dashboard-topbar-search hidden sm:flex");
     expect(dashboard).toContain("dashboard-topbar-alert hidden lg:flex");
     expect(dashboard).toContain('<span className="hidden xl:block"><WorkspacePresenceBadge');
+    expect(dashboard).toContain("dashboard-topbar-context");
+    expect(dashboard).toContain("dashboard-topbar-actions");
+    expect(dashboard).toContain("min-[480px]:flex");
   });
 
   it("uses a contained profile menu without a fixed page-covering overlay", () => {

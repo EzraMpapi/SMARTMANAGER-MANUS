@@ -48082,16 +48082,16 @@ function SmartManager() {
       <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full">
         {/* Topbar */}
         <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-20 min-h-[64px] shrink-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_1px_0_rgba(15,23,42,.03)] flex items-center justify-between gap-2 px-3 py-2 sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
-          <div className="flex items-center gap-3">
+          <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
-              className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
+              className="min-h-11 min-w-11 text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:min-h-0 lg:min-w-0"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-            <BrandLogo variant="compact" priority className="h-8 w-8 sm:hidden" />
-            <div className="min-w-0 max-w-[42vw] sm:hidden">
+            <BrandLogo variant="compact" priority className="dashboard-topbar-context-logo h-8 w-8 sm:hidden" />
+            <div className="dashboard-topbar-context-title min-w-0 max-w-[42vw] sm:hidden">
               <p className="truncate text-[12px] font-semibold text-slate-900">{activeModuleLabel}</p>
               <p className="truncate text-[9px] font-medium text-slate-400">{company.name}</p>
             </div>
@@ -48103,7 +48103,7 @@ function SmartManager() {
               </div>
             </div>
           </div>
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5">
+          <div className="dashboard-topbar-actions flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2.5">
             <span
               className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
               style={
@@ -48128,7 +48128,7 @@ function SmartManager() {
             </button>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
-                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3">
+                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:min-h-0 sm:min-w-0 sm:px-3">
                   <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
                 </button>
                 {createMenuOpen && (
@@ -48161,7 +48161,7 @@ function SmartManager() {
             {/* ── Dark mode toggle ── */}
             <button
               onClick={()=>setDarkMode(d=>!d)}
-              className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-[#111827] transition-all"
+              className="hidden min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-[#111827] transition-all min-[480px]:flex sm:min-h-8 sm:min-w-8 sm:w-8 sm:h-8"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertCircle,
@@ -228,7 +228,7 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
 
   return (
     <div className="relative shrink-0">
-      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className="group flex min-h-10 items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-1.5 py-1.5 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50" aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account menu">
+      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className="group flex min-h-11 items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-1.5 py-1.5 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:min-h-10" aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account menu">
         <Avatar profile={profile} name={displayName} size="md" />
         <span className="hidden max-w-28 text-left sm:block"><span className="block truncate text-[11.5px] font-bold text-slate-800">{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span>
         <ChevronRight size={14} className={`mr-1 hidden text-slate-300 transition sm:block ${open ? "rotate-90 text-emerald-600" : ""}`} aria-hidden="true" />

@@ -814,16 +814,25 @@
 @media (max-width: 639px) {
   .dashboard-topbar {
     align-items: center;
+    min-height: 3.75rem;
+    gap: .5rem;
     padding-left: max(.75rem, env(safe-area-inset-left));
     padding-right: max(.75rem, env(safe-area-inset-right));
   }
 
-  .dashboard-topbar > :first-child {
-    gap: .5rem;
+  .dashboard-topbar-context {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: .375rem;
   }
 
-  .dashboard-topbar > :last-child {
+  .dashboard-topbar-actions {
+    flex: 0 0 auto;
     gap: .25rem;
+  }
+
+  .dashboard-topbar-tour {
+    display: none;
   }
 
   .dashboard-topbar-search {
@@ -851,6 +860,14 @@
 }
 
 @media (max-width: 380px) {
+  .dashboard-topbar-context-logo {
+    display: none;
+  }
+
+  .dashboard-topbar-context-title {
+    max-width: 5.5rem;
+  }
+
   .dashboard-topbar-tour,
   .dashboard-topbar-alert {
     display: none !important;
