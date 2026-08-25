@@ -6,9 +6,12 @@ const verifier = fs.readFileSync(path.resolve(process.cwd(), "server/verifySupab
 const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
 
 describe("external deployment schema verification guard", () => {
-  it("skips only the Vercel build-time schema request when its server-only credential is unavailable", () => {
+  it("skips only unavailable, unreachable, or unauthorized server-only schema verification during a Vercel build", () => {
     expect(verifier).toContain('process.env.VERCEL === "1"');
     expect(verifier).toContain("Vercel build has no server-only Supabase schema credential");
+    expect(verifier).toContain("Vercel could not reach the server-only Supabase schema endpoint");
+    expect(verifier).toContain("Vercel could not authorize the server-only Supabase schema endpoint");
+    expect(verifier).toContain("[401, 403].includes(response.status)");
     expect(verifier).toContain("Supabase schema verification requires SUPABASE_URL");
   });
 

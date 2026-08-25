@@ -419,3 +419,6 @@
 ## Workspace Recovery and Free-Plan Notice
 - [x] Trace the `WORKSPACE_MISSING` recovery path and make the free-plan notice dismissible and remembered without weakening tenant isolation or subscription enforcement.
 - [x] Apply and verify the production workspace-presence recovery migration, then publish the reviewed code and migration changes to GitHub.
+- [x] Confirm the tracked repository’s `pnpm` override configuration and frozen lockfile install are already aligned; the separate failed manual upload was not a Git-sourced deployment.
+- [x] Preserve schema enforcement in local and CI validation while allowing a Vercel build to skip an unavailable or unauthorized server-only Supabase schema credential.
+- [ ] Push the Vercel build-gate repair and verify a Git-sourced deployment completes from the current main branch.
