@@ -1,0 +1,54 @@
+name: PWA offline fallback E2E
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client/public/offline.html"
+      - "client/public/sw.js"
+      - "client/src/main.tsx"
+      - "browser-tests/offlineFallback.e2e.spec.ts"
+      - "playwright.config.ts"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/pwa-offline-e2e.yml"
+  pull_request:
+    paths:
+      - "client/public/offline.html"
+      - "client/public/sw.js"
+      - "client/src/main.tsx"
+      - "browser-tests/offlineFallback.e2e.spec.ts"
+      - "playwright.config.ts"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/pwa-offline-e2e.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  offline-fallback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: https://e2e.supabase.invalid
+      SUPABASE_ANON_KEY: e2e-anon-key
+      CI: true
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run offline fallback E2E
+        run: pnpm run test:browser:offline
