@@ -421,4 +421,5 @@
 - [x] Apply and verify the production workspace-presence recovery migration, then publish the reviewed code and migration changes to GitHub.
 - [x] Confirm the tracked repository’s `pnpm` override configuration and frozen lockfile install are already aligned; the separate failed manual upload was not a Git-sourced deployment.
 - [x] Preserve schema enforcement in local and CI validation while allowing a Vercel build to skip an unavailable or unauthorized server-only Supabase schema credential.
-- [ ] Push the Vercel build-gate repair and verify a Git-sourced deployment completes from the current main branch.
+- [x] Push the Vercel build-gate repair to GitHub (`5b1db50`).
+- [ ] Verify a Git-sourced Vercel deployment once the provider’s deployment quota resets; the API reports no remaining daily deployment capacity and a reset time approximately 24 hours later.
