@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Control-Plane Architecture</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.slide-container{width:1280px;min-height:720px;background:#0b1220;color:#edf4f2;font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+.content{min-height:720px;margin:0 74px;padding-top:56px;display:flex;flex-direction:column}
+.kicker{font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#55d6be;font-weight:700}
+h2{font-size:42px;line-height:1.08;letter-spacing:-1px;margin-top:16px;font-weight:750}
+.intro{color:#9fb3b0;font-size:19px;line-height:1.45;max-width:790px;margin-top:17px}
+.rule{height:1px;background:#29403c;margin-top:34px}
+.flow-container{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:48px;flex:1}
+.flow-step{border-left:2px solid #29403c;padding-left:20px;display:flex;flex-direction:column}
+.flow-step.active{border-left-color:#55d6be}
+.flow-step.warning{border-left-color:#f2b84b}
+.step-number{font-size:14px;letter-spacing:2px;color:#718987;margin-bottom:12px}
+.step-title{font-size:24px;font-weight:700;margin-bottom:16px;line-height:1.2}
+.step-detail{font-size:15px;line-height:1.5;color:#8fa4a0;margin-bottom:12px}
+.trust-boundary{margin-top:auto;padding-top:16px;border-top:1px dashed #29403c;font-size:13px;color:#55d6be;text-transform:uppercase;letter-spacing:1px}
+.trust-boundary.amber{color:#f2b84b}
+.bottom-note{margin-top:20px;padding:20px;background:rgba(85,214,190,0.05);border-left:4px solid #55d6be;font-size:16px;line-height:1.5;color:#edf4f2}
+.footer{display:flex;justify-content:space-between;color:#617873;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding-top:18px;margin-bottom:18px;border-top:1px solid #29403c;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="content">
+    <div class="kicker">02 / Architecture</div>
+    <h2>Control-Plane Architecture</h2>
+    <p class="intro">The remediation workflow enforces strict trust boundaries. The worker classifies and requeues events but never writes financial records directly.</p>
+    <div class="rule"></div>
+    
+    <div class="flow-container">
+      <div class="flow-step">
+        <div class="step-number">STEP 01</div>
+        <div class="step-title">Verified Callback</div>
+        <div class="step-detail">Provider adapter receives payload and verifies HMAC-SHA256 signature.</div>
+        <div class="trust-boundary">Untrusted Input</div>
+      </div>
+      
+      <div class="flow-step active">
+        <div class="step-number">STEP 02</div>
+        <div class="step-title">Immutable Evidence</div>
+        <div class="step-detail">Stores one append-only record per semantic fingerprint.</div>
+        <div class="trust-boundary">Cryptographic Boundary</div>
+      </div>
+      
+      <div class="flow-step warning">
+        <div class="step-number">STEP 03</div>
+        <div class="step-title">Remediation Classifier</div>
+        <div class="step-detail">Worker leases bounded batches via FOR UPDATE SKIP LOCKED.</div>
+        <div class="trust-boundary amber">Operational Boundary</div>
+      </div>
+      
+      <div class="flow-step active">
+        <div class="step-number">STEP 04</div>
+        <div class="step-title">Service Settlement</div>
+        <div class="step-detail">Delegates to existing idempotent provider-confirmation RPC.</div>
+        <div class="trust-boundary">Financial Boundary</div>
+      </div>
+    </div>
+    
+    <div class="bottom-note">
+      <strong>Crucial invariant:</strong> The remediation worker never writes balances, journals, bank transactions, or Standing Order status directly. It only updates the remediation cursor and calls the service-only settlement bridge.
+    </div>
+    
+    <div class="footer"><span>Strict trust boundaries</span><span>03 / 08</span></div>
+  </div>
+</div>
+</body>
+</html>

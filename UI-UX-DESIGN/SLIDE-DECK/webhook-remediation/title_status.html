@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Webhook Remediation & Dead-Letter Drainage</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.slide-container{width:1280px;min-height:720px;background:#0b1220;color:#edf4f2;font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+.content{min-height:720px;padding-top:62px;margin-left:74px;margin-right:74px;display:flex;flex-direction:column}
+.kicker{font-size:15px;letter-spacing:3px;text-transform:uppercase;color:#55d6be;font-weight:700}
+.rule{width:92px;height:3px;background:#55d6be;margin-top:22px}
+.main{display:grid;grid-template-columns:1.55fr .85fr;gap:78px;align-items:center;flex:1}
+h1{font-size:64px;line-height:1.03;letter-spacing:-2px;max-width:720px;font-weight:750}
+.subtitle{font-size:23px;line-height:1.45;color:#aebfbe;max-width:690px;margin-top:26px}
+.meta{margin-top:42px;font-size:14px;letter-spacing:1.6px;text-transform:uppercase;color:#718987}
+.status-panel{border-left:1px solid #28403d;padding-left:34px;display:flex;flex-direction:column;gap:25px}
+.status-title{font-size:14px;letter-spacing:2px;text-transform:uppercase;color:#aebfbe;margin-top:4px}
+.status-row{display:grid;grid-template-columns:22px 1fr;gap:15px;align-items:start}
+.dot{width:13px;height:13px;border-radius:50%;margin-top:4px;background:#55d6be;box-shadow:0 0 0 5px rgba(85,214,190,.12)}
+.dot.amber{background:#f2b84b;box-shadow:0 0 0 5px rgba(242,184,75,.12)}
+.status-label{font-size:19px;font-weight:700}
+.status-detail{font-size:14px;line-height:1.45;color:#8fa4a0;margin-top:5px}
+.bottom{display:flex;justify-content:space-between;border-top:1px solid #243634;padding-top:18px;margin-top:20px;margin-bottom:28px;color:#6f8581;font-size:13px;letter-spacing:1px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="content">
+    <div class="kicker">SMARTMANAGER / Operations &amp; Risk Controls</div>
+    <div class="rule"></div>
+    <div class="main">
+      <section>
+        <h1>Webhook Remediation<br>&amp; Dead-Letter Drainage</h1>
+        <p class="subtitle">A fail-closed operating model for provider callbacks, quarantine floods, advisory-lock serialization, and exactly-once financial settlement.</p>
+        <p class="meta">Standing Order service-control transition · 25 August 2026</p>
+      </section>
+      <aside class="status-panel">
+        <div class="status-title">Current posture</div>
+        <div class="status-row"><span class="dot"></span><div><div class="status-label">Control plane applied</div><div class="status-detail">Webhook evidence, remediation state, approvals, leases, and service-only RPCs.</div></div></div>
+        <div class="status-row"><span class="dot"></span><div><div class="status-label">Worker validated</div><div class="status-detail">Dry-run, bounded batches, safe classification, and circuit-breaker tests pass.</div></div></div>
+        <div class="status-row"><span class="dot amber"></span><div><div class="status-label">Production drain disabled</div><div class="status-detail">Provider confirmation, sandbox fixtures, and two-person approval remain gates.</div></div></div>
+      </aside>
+    </div>
+    <div class="bottom"><span>Internal design &amp; deployment summary</span><span>01 / 08</span></div>
+  </div>
+</div>
+</body>
+</html>

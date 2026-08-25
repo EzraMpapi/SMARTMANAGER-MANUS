@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Drain Procedure & Circuit Breakers</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.slide-container{width:1280px;min-height:720px;background:#0b1220;color:#edf4f2;font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+.content{min-height:720px;margin:0 74px;padding-top:56px;display:flex;flex-direction:column}
+.kicker{font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#55d6be;font-weight:700}
+h2{font-size:42px;line-height:1.08;letter-spacing:-1px;margin-top:16px;font-weight:750}
+.intro{color:#9fb3b0;font-size:19px;line-height:1.45;max-width:850px;margin-top:17px}
+.rule{height:1px;background:#29403c;margin-top:34px}
+
+.stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; margin-top: 40px; }
+.stage { border-top: 2px solid #55d6be; padding-top: 16px; }
+.stage-num { font-size: 13px; font-weight: 700; color: #55d6be; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+.stage h3 { font-size: 22px; margin-bottom: 10px; line-height: 1.2; }
+.stage p { font-size: 15px; color: #8fa4a0; line-height: 1.45; }
+
+.circuit-breakers { margin-top: 50px; border-top: 1px solid #29403c; padding-top: 30px; display: grid; grid-template-columns: 280px 1fr; gap: 40px; margin-bottom: 30px; }
+.cb-title { font-size: 24px; color: #f2b84b; font-weight: 700; line-height: 1.2; }
+.cb-title span { display: block; font-size: 15px; color: #aebfbe; font-weight: 400; margin-top: 8px; }
+.cb-list { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 32px; }
+.cb-item { font-size: 16px; color: #edf4f2; display: flex; align-items: flex-start; gap: 12px; line-height: 1.4; }
+.cb-item::before { content: "■"; color: #f2b84b; font-size: 12px; margin-top: 3px; }
+
+.footer{display:flex;justify-content:space-between;color:#617873;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding-top:15px;margin-top:auto;margin-bottom:29px;border-top:1px solid #29403c;}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="content">
+    <div class="kicker">06 / Execution</div>
+    <h2>Drain Procedure &amp; Circuit Breakers</h2>
+    <p class="intro">A staged rollout ensures that safe items are identified and processed without risking financial integrity. Hard stops automatically abort the run if anomalies are detected.</p>
+    <div class="rule"></div>
+    
+    <div class="stages">
+      <div class="stage">
+        <div class="stage-num">Stage 1</div>
+        <h3>Dry-Run</h3>
+        <p>Classify items only. No requeue or settlement actions are performed. Generates a bounded report.</p>
+      </div>
+      <div class="stage">
+        <div class="stage-num">Stage 2</div>
+        <h3>Requeue-Only</h3>
+        <p>Requeue safe items into the processing pipeline. Settlement remains disabled.</p>
+      </div>
+      <div class="stage">
+        <div class="stage-num">Stage 3</div>
+        <h3>Test-Tenant</h3>
+        <p>Settle safe items in a controlled test tenant to verify the end-to-end financial path.</p>
+      </div>
+      <div class="stage">
+        <div class="stage-num">Stage 4</div>
+        <h3>Production</h3>
+        <p>Small capped drain with two-person approval. Processes safe items through the service path.</p>
+      </div>
+    </div>
+    
+    <div class="circuit-breakers">
+      <div class="cb-title">
+        Hard Stops
+        <span>Automatically abort the run and pause the provider account.</span>
+      </div>
+      <div class="cb-list">
+        <div class="cb-item">Any duplicate posting detected</div>
+        <div class="cb-item">Identity, amount, or currency mismatch</div>
+        <div class="cb-item">New conflict or provider status inconsistency</div>
+        <div class="cb-item">Lease churn or timeout/error threshold</div>
+        <div class="cb-item">Approval problem or cap reached</div>
+        <div class="cb-item">Unexpected provider state</div>
+      </div>
+    </div>
+    
+    <div class="footer"><span>Fail-closed execution</span><span>07 / 08</span></div>
+  </div>
+</div>
+</body>
+</html>
