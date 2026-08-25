@@ -25,6 +25,16 @@ describe("Enterprise dashboard overview contract", () => {
     expect(overviewSource).toContain("The dashboard does not invent business metrics.");
     expect(overviewSource).not.toContain("Simulated");
   });
+
+  it("uses real workspace signals and keeps the decorative KPI treatment navigation-safe", () => {
+    expect(overviewSource).toContain("const workspaceSignals = [");
+    expect(overviewSource).toContain("Revenue signal");
+    expect(overviewSource).toContain("Pipeline signal");
+    expect(overviewSource).toContain("Review queue");
+    expect(overviewSource).toContain("attentionItems?.length || 0");
+    expect(overviewSource).toContain("tone.edge");
+    expect(overviewSource).toContain("View details");
+  });
 });
 
 export {};

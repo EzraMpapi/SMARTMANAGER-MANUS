@@ -422,5 +422,11 @@
 - [x] Confirm the tracked repository’s `pnpm` override configuration and frozen lockfile install are already aligned; the separate failed manual upload was not a Git-sourced deployment.
 - [x] Preserve schema enforcement in local and CI validation while allowing a Vercel build to skip an unavailable or unauthorized server-only Supabase schema credential.
 - [x] Push the Vercel build-gate repair to GitHub (`5b1db50`).
-- [ ] Verify a Git-sourced Vercel deployment once the provider’s deployment quota resets; the API reports no remaining daily deployment capacity and a reset time approximately 24 hours later.
+- [ ] Verify a Git-sourced Vercel deployment once the provider’s daily deployment capacity resets; the API reports no remaining daily deployment capacity and a reset time approximately 24 hours later.
 - [x] Review `20260825_005_workspace_presence_recovery.sql` and preserve an audit-ready future-reference note in `docs/WORKSPACE_PRESENCE_RECOVERY_AUDIT_REFERENCE.md`.
+- [ ] Check the Vercel deployment and provider-capacity status after the expected daily reset.
+
+## Protected Dashboard Polish
+- [x] Audit the protected dashboard’s visual hierarchy, shell responsiveness, information density, and existing reusable design primitives.
+- [x] Define and implement the first cohesive dashboard polish pass without changing data fetching, business rules, subscription enforcement, or access controls.
+- [x] Run focused regression checks and document the recommended follow-up polish sequence.

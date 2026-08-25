@@ -33,14 +33,17 @@ function Skeleton({ className = "" }) {
 
 function MetricCard({ label, value, detail, tone, icon: Icon, onClick }) {
   return (
-    <button type="button" onClick={onClick} className="group min-h-[152px] rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_1px_2px_rgba(15,23,42,.03)] transition duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_12px_28px_rgba(15,23,42,.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
-      <div className="flex items-start justify-between gap-3">
-        <span className={`grid h-10 w-10 place-items-center rounded-xl ${tone.bg} ${tone.text}`}><Icon size={18} aria-hidden="true" /></span>
+    <button type="button" onClick={onClick} className="group relative min-h-[166px] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_1px_2px_rgba(15,23,42,.03)] transition duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_14px_30px_rgba(15,23,42,.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
+      <span className={`absolute inset-x-0 top-0 h-1 ${tone.edge}`} aria-hidden="true" />
+      <span className={`pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-70 blur-2xl ${tone.glow}`} aria-hidden="true" />
+      <div className="relative flex items-start justify-between gap-3">
+        <span className={`grid h-10 w-10 place-items-center rounded-xl border border-white/70 shadow-sm ${tone.bg} ${tone.text}`}><Icon size={18} aria-hidden="true" /></span>
         <ChevronRight size={16} className="mt-1 text-slate-300 transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" aria-hidden="true" />
       </div>
-      <p className="mt-5 text-[11px] font-bold uppercase tracking-[.1em] text-slate-500">{label}</p>
-      <p className="mt-1.5 text-[22px] font-bold tracking-[-.04em] text-slate-950">{value}</p>
-      <p className="mt-2 line-clamp-2 text-[11px] leading-4 text-slate-500">{detail}</p>
+      <p className="relative mt-5 text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">{label}</p>
+      <p className="relative mt-1.5 text-[24px] font-bold tracking-[-.045em] text-slate-950">{value}</p>
+      <p className="relative mt-2 line-clamp-2 text-[11px] leading-4 text-slate-500">{detail}</p>
+      <span className={`relative mt-3 inline-flex items-center gap-1 text-[10px] font-bold ${tone.text}`}>View details <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" /></span>
     </button>
   );
 }
@@ -85,10 +88,16 @@ export function EnterpriseDashboardOverview({
   const money = (amount) => formatMoney ? formatMoney(amount || 0) : `TZS ${compactNumber(amount)}`;
 
   const metrics = [
-    { label: "Collected", value: money(financials?.revenue), detail: invoiceRows.length ? "Confirmed invoice payments in the current view" : "No confirmed invoice payments yet", icon: CircleDollarSign, tone: { bg: "bg-emerald-50", text: "text-emerald-700" }, action: () => onQuickAction("finance", { tab: "receivables" }) },
-    { label: "Open receivables", value: money(financials?.pendingCash), detail: financials?.outstandingCount ? `${financials.outstandingCount} invoice${financials.outstandingCount === 1 ? "" : "s"} still open` : "No outstanding invoices", icon: ReceiptText, tone: { bg: "bg-amber-50", text: "text-amber-700" }, action: () => onQuickAction("finance", { tab: "receivables" }) },
-    { label: "Pipeline", value: money(pipelineTotal), detail: openDeals.length ? `${openDeals.length} open deal${openDeals.length === 1 ? "" : "s"} in CRM` : "No open deals yet", icon: Users, tone: { bg: "bg-violet-50", text: "text-violet-700" }, action: () => onNavigate("crm") },
-    { label: "Stock attention", value: String(lowStockCount), detail: lowStockCount ? "Items at or below their confirmed reorder level" : inventoryRows.length ? "No stock items need attention" : "No confirmed stock items yet", icon: Package, tone: { bg: "bg-rose-50", text: "text-rose-700" }, action: () => onNavigate("inventory") },
+    { label: "Collected", value: money(financials?.revenue), detail: invoiceRows.length ? "Confirmed invoice payments in the current view" : "No confirmed invoice payments yet", icon: CircleDollarSign, tone: { bg: "bg-emerald-50", text: "text-emerald-700", edge: "bg-emerald-500", glow: "bg-emerald-200" }, action: () => onQuickAction("finance", { tab: "receivables" }) },
+    { label: "Open receivables", value: money(financials?.pendingCash), detail: financials?.outstandingCount ? `${financials.outstandingCount} invoice${financials.outstandingCount === 1 ? "" : "s"} still open` : "No outstanding invoices", icon: ReceiptText, tone: { bg: "bg-amber-50", text: "text-amber-700", edge: "bg-amber-400", glow: "bg-amber-200" }, action: () => onQuickAction("finance", { tab: "receivables" }) },
+    { label: "Pipeline", value: money(pipelineTotal), detail: openDeals.length ? `${openDeals.length} open deal${openDeals.length === 1 ? "" : "s"} in CRM` : "No open deals yet", icon: Users, tone: { bg: "bg-violet-50", text: "text-violet-700", edge: "bg-violet-500", glow: "bg-violet-200" }, action: () => onNavigate("crm") },
+    { label: "Stock attention", value: String(lowStockCount), detail: lowStockCount ? "Items at or below their confirmed reorder level" : inventoryRows.length ? "No stock items need attention" : "No confirmed stock items yet", icon: Package, tone: { bg: "bg-rose-50", text: "text-rose-700", edge: "bg-rose-500", glow: "bg-rose-200" }, action: () => onNavigate("inventory") },
+  ];
+
+  const workspaceSignals = [
+    { label: "Revenue signal", value: money(financials?.revenue), detail: invoiceRows.length ? `${invoiceRows.length} invoice record${invoiceRows.length === 1 ? "" : "s"} in this view` : "Waiting for confirmed payments", icon: TrendingUp, tone: "text-emerald-100", surface: "bg-emerald-300/10" },
+    { label: "Pipeline signal", value: money(pipelineTotal), detail: openDeals.length ? `${openDeals.length} open ${openDeals.length === 1 ? "opportunity" : "opportunities"}` : "No active CRM opportunity", icon: Users, tone: "text-amber-100", surface: "bg-amber-300/10" },
+    { label: "Review queue", value: String(attentionItems?.length || 0), detail: attentionItems?.length ? "Live item(s) currently need review" : "No live escalation at present", icon: AlertTriangle, tone: "text-sky-100", surface: "bg-sky-300/10" },
   ];
 
   const quickActions = [
@@ -100,8 +109,9 @@ export function EnterpriseDashboardOverview({
 
   return (
     <div className="enterprise-overview mx-auto w-full max-w-[1600px] space-y-6 pb-8">
-      <header className="relative overflow-hidden rounded-[26px] border border-slate-200 bg-[#0b1f1a] px-5 py-6 text-white shadow-[0_18px_48px_rgba(11,31,26,.16)] sm:px-7 sm:py-7">
+      <header className="relative overflow-hidden rounded-[30px] border border-slate-200 bg-[#0b1f1a] px-5 py-6 text-white shadow-[0_18px_48px_rgba(11,31,26,.16)] sm:px-7 sm:py-7">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_84%_0%,rgba(212,163,83,.28),transparent_28%),radial-gradient(circle_at_10%_100%,rgba(22,163,116,.22),transparent_36%)]" />
+        <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.07)_1px,transparent_1px)] [background-size:34px_34px] [mask-image:linear-gradient(to_bottom,black,transparent_76%)]" />
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.07] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.14em] text-emerald-100"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />Workspace overview</div>
@@ -113,6 +123,12 @@ export function EnterpriseDashboardOverview({
             <button type="button" onClick={() => onQuickAction("sales", { tab: "invoices", openForm: true })} className="inline-flex items-center gap-2 rounded-xl bg-[#d9a34d] px-3.5 py-2.5 text-[12px] font-bold text-[#10231e] transition hover:bg-[#e4b364] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f5d39c]"><Plus size={15} />New invoice</button>
           </div>
         </div>
+        <section className="relative mt-7 grid gap-2 border-t border-white/10 pt-4 sm:grid-cols-3" aria-label="Workspace signals">
+          {workspaceSignals.map((signal) => {
+            const Icon = signal.icon;
+            return <div key={signal.label} className={`min-w-0 rounded-2xl border border-white/10 ${signal.surface} px-3.5 py-3 backdrop-blur-sm`}><div className="flex items-center justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-[.12em] text-white/55">{signal.label}</span><Icon size={14} className={signal.tone} aria-hidden="true" /></div><p className="mt-2 truncate text-[18px] font-bold tracking-[-.04em] text-white">{signal.value}</p><p className="mt-1 truncate text-[10.5px] text-white/55">{signal.detail}</p></div>;
+          })}
+        </section>
         <div className="relative mt-6 flex flex-wrap gap-2 text-[10.5px] text-emerald-50/75">
           <span className="rounded-lg border border-white/10 bg-black/10 px-2.5 py-1.5">{isLoading ? "Refreshing confirmed data" : "Confirmed workspace data"}</span>
           <span className="rounded-lg border border-white/10 bg-black/10 px-2.5 py-1.5">{activeSubscriptions ? `${activeSubscriptions} active subscription${activeSubscriptions === 1 ? "" : "s"}` : "Subscription state available in Sales"}</span>
