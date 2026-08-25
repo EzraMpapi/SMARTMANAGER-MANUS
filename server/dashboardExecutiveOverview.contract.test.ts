@@ -35,6 +35,18 @@ describe("Enterprise dashboard overview contract", () => {
     expect(overviewSource).toContain("tone.edge");
     expect(overviewSource).toContain("View details");
   });
+
+  it("shares a responsive widget-card system without replacing live data or established actions", () => {
+    expect(overviewSource).toContain("function WidgetHeader");
+    expect(overviewSource).toContain("const widgetTones = {");
+    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Financial movement\"");
+    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Attention queue\"");
+    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Momentum\"");
+    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Team & next steps\"");
+    expect(overviewSource).toContain("revenueExpenseTrend?.some");
+    expect(overviewSource).toContain("attentionItems?.length");
+    expect(overviewSource).toContain("onQuickAction(\"hr\", { tab: \"leave\" })");
+  });
 });
 
 export {};

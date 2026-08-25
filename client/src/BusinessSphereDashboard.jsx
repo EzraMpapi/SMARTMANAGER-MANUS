@@ -48059,7 +48059,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="module-fade flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 sm:pb-6">
+        <main key={active} className="module-fade flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-24 sm:pb-6">
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}

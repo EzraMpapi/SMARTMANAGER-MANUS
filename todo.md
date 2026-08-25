@@ -431,3 +431,5 @@
 - [x] Define and implement the first cohesive dashboard polish pass without changing data fetching, business rules, subscription enforcement, or access controls.
 - [x] Run focused regression checks and document the recommended follow-up polish sequence.
 - [x] Refine the desktop sidebar and top bar into an operational command strip while preserving role-based module visibility, search, alerts, subscription state, and mobile navigation.
+- [x] Review commit `063d5c9` and document the exact command-strip layout, utility-class, and navigation-safety changes.
+- [x] Refine the main dashboard content canvas and widget-card system while preserving live data, module navigation, access boundaries, and mobile composition.
