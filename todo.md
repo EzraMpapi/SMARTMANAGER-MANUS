@@ -471,3 +471,4 @@
 ## Dashboard Polish Step 8 — Live Validation
 - [x] Inspect published responsive entry states and verify mobile-safe layout where accessible.
 - [x] Document authenticated-browser and physical-device checks that cannot be completed without authorized sessions or devices.
+- [ ] Refresh and revalidate the local Supabase service credential through the approved secure environment channel; the isolated PostgREST check currently returns HTTP 401.
