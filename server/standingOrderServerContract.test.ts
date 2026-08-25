@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 const operations = readFileSync(new URL("./bankMfiOperations.ts", import.meta.url), "utf8");
 const router = readFileSync(new URL("./routers.ts", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/20250825_007_standing_order_server_implementation.sql", import.meta.url), "utf8");
+const searchPathHardening = readFileSync(new URL("../supabase/migrations/20260825_008_standing_order_security_hardening.sql", import.meta.url), "utf8");
+const invokerHardening = readFileSync(new URL("../supabase/migrations/20260825_009_standing_order_invoker_helpers.sql", import.meta.url), "utf8");
 const workspace = readFileSync(new URL("../client/src/components/BankMfiWorkspace.jsx", import.meta.url), "utf8");
 const legacyBanking = readFileSync(new URL("../client/src/dashboardExtractedModules.jsx", import.meta.url), "utf8");
 
@@ -91,5 +93,18 @@ describe("Standing Order server implementation contract", () => {
     expect(migration).toContain("REVOKE ALL ON FUNCTION public.bank_standing_order_request_fingerprint(jsonb) FROM PUBLIC, anon, authenticated");
     expect(migration).toContain("SET search_path = public, auth");
     expect(migration).toContain("company_id = public.current_company_id()");
+  });
+
+  it("hardens Standing Order helper search paths and SECURITY DEFINER exposure", () => {
+    expect(searchPathHardening).toContain("SET search_path = pg_catalog, public, auth");
+    expect(searchPathHardening).toContain("ALTER FUNCTION public.bank_list_standing_orders(text, text, integer, integer)");
+    expect(searchPathHardening).toContain("SECURITY INVOKER");
+    expect(searchPathHardening).toContain("REVOKE ALL ON FUNCTION public.bank_standing_order_normalize_msisdn(text)");
+    expect(searchPathHardening).toContain("GRANT EXECUTE ON FUNCTION public.bank_create_standing_order(jsonb) TO authenticated");
+    expect(invokerHardening).toContain("ALTER FUNCTION public.bank_standing_order_raise(text, text)");
+    expect(invokerHardening).toContain("ALTER FUNCTION public.bank_standing_order_response(uuid, boolean, uuid, uuid, uuid)");
+    expect(invokerHardening).toContain("ALTER FUNCTION public.bank_get_standing_order(uuid)");
+    expect(invokerHardening).toContain("REVOKE ALL ON FUNCTION public.bank_standing_order_response(uuid, boolean, uuid, uuid, uuid)");
+    expect(invokerHardening).toContain("GRANT EXECUTE ON FUNCTION public.bank_get_standing_order(uuid) TO authenticated");
   });
 });
