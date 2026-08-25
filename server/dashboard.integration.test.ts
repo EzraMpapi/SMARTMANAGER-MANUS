@@ -84,7 +84,11 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("trpc.teamInvitations.create.useMutation");
     expect(dashboardSource).not.toContain("const TEAM_SEED");
     expect(invitationServiceSource).toContain("const { profile } = await resolveVerifiedProfile(req)");
-    expect(invitationServiceSource).toContain("companyId: profile.company_id");
+    expect(invitationServiceSource).toContain("company_id: profile.company_id");
+    expect(invitationServiceSource).toContain('const INVITATION_TABLE = "team_invitations"');
+    expect(invitationServiceSource).toContain("supabaseServiceRequest");
+    expect(invitationServiceSource).not.toContain("getDb");
+    expect(invitationServiceSource).not.toContain("drizzle-orm");
     expect(invitationServiceSource).toContain("hashInvitationToken(token)");
     expect(invitationServiceSource).toContain("Sign in with the email address that received this invitation");
     expect(invitationServiceSource).not.toContain("input.companyId");
