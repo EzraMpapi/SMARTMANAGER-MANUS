@@ -372,3 +372,8 @@
 - [x] Compare project migrations with the connected Supabase schema and identify only missing, idempotent, non-destructive migrations.
 - [x] Validate that no unmatched project migration required reapplication: history, representative tables, property schema tables, and the five P0 index definitions were already present.
 - [x] Commit and push the reviewed repository changes with a clear synchronization message (`97ba3d2`).
+
+## Repeat Synchronization Verification
+- [x] Recheck the connected Supabase migration history and local migration inventory before applying any schema SQL.
+- [x] Apply only schema operations that remain demonstrably missing and safe after the recheck; none qualified because the checked migrations and schema objects already exist.
+- [ ] Push any newly eligible repository change while documenting protected environment files and oversized generated artifacts separately.
