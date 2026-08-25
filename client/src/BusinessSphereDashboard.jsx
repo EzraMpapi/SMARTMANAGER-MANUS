@@ -5453,9 +5453,9 @@ function SortableHeader({ label, field, sort, onSort, align = "left" }) {
   return (
     <th
       onClick={() => onSort(field)}
-      className={`px-4 py-3 font-medium select-none cursor-pointer group ${align === "right" ? "text-right" : "text-left"}`}
+      className={`px-4 py-3.5 text-[10px] font-bold uppercase tracking-[.1em] text-slate-400 select-none cursor-pointer group ${align === "right" ? "text-right" : "text-left"}`}
     >
-      <span className={`inline-flex items-center gap-1 ${active ? "text-[#111827]" : "group-hover:text-slate-600"}`}>
+      <span className={`inline-flex items-center gap-1 ${active ? "text-emerald-800" : "group-hover:text-slate-600"}`}>
         {label}
         <span className="flex flex-col -space-y-1">
           <ChevronUp size={10} className={active && sort.direction === "asc" ? "text-[#16A34A]" : "text-slate-300"} />
@@ -8290,10 +8290,10 @@ function CRM({ crm, invoices, expenses, suppliers }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search leads, companies, industries..."
-            className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
+            className={operationalSearchInputClass}
           />
         </div>
-        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 self-start sm:self-auto">
+        <div className={`${operationalFilterBarClass} self-start sm:self-auto`}>
           <button
             onClick={() => setView("pipeline")}
             className={`text-[12px] font-medium px-3 py-1.5 rounded-md transition-colors ${view === "pipeline" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}
@@ -8365,9 +8365,9 @@ function CRM({ crm, invoices, expenses, suppliers }) {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className={operationalTableShellClass}>
           <div className="overflow-x-auto">
-          <table className="w-full text-[13px] min-w-[720px]">
+          <table className={`${operationalTableClass} min-w-[720px]`}>
             <thead>
               <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
                 <SortableHeader label="Lead" field="company" sort={sort} onSort={(f) => toggleSort(sort, setSort, f)} />
@@ -8513,9 +8513,9 @@ function LeadPanel({ lead, onClose, onMove, onDelete }) {
 
 function FormField({ label, required, children }) {
   return (
-    <div>
-      <label className="text-[12px] font-medium text-slate-600 mb-1.5 block">
-        {label}{required && <span className="text-[#EF4444]"> *</span>}
+    <div className="space-y-1.5">
+      <label className="block text-[10.5px] font-bold uppercase tracking-[.09em] text-slate-500">
+        {label}{required && <span className="text-[#EF4444]" aria-hidden="true"> *</span>}
       </label>
       {children}
     </div>
@@ -8564,7 +8564,11 @@ function CategoryPicker({ value, onChange }) {
   );
 }
 
-const inputClass = "w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] text-[#111827] placeholder-slate-400 outline-none focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 focus:shadow-sm transition-all";
+const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-[#111827] placeholder-slate-400 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 focus:shadow-sm";
+const operationalFilterBarClass = "flex items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-[inset_0_1px_1px_rgba(15,23,42,.025)]";
+const operationalSearchInputClass = "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-[13px] text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20";
+const operationalTableShellClass = "overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_3px_10px_rgba(15,23,42,.035)]";
+const operationalTableClass = "w-full text-[13px]";
 
 // Real Excel/CSV import for Customers and Products — genuinely built to
 // close a specific, verified competitive gap: SokoBook own advertised
@@ -8809,27 +8813,29 @@ function SkeletonRows({ cols, rows = 5 }) {
 // stay separate; this is specifically "you haven't created anything yet."
 function EmptyState({ icon: Icon, title, hint, actionLabel, onAction, tips = [], sourceNote }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center py-14 px-6">
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-3.5" style={{ backgroundColor: "#DCFCE7" }}>
+    <div className="relative flex min-h-[260px] flex-col items-center justify-center overflow-hidden px-6 py-14 text-center">
+      <span className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-100/70 blur-3xl" aria-hidden="true" />
+      <span className="pointer-events-none absolute -bottom-12 -left-10 h-28 w-28 rounded-full bg-slate-100 blur-3xl" aria-hidden="true" />
+      <div className="relative mb-3.5 flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 shadow-sm">
         <Icon size={19} strokeWidth={1.75} className="text-[#16A34A]" />
       </div>
-      <h3 className="text-[14.5px] font-semibold text-[#111827]">{title}</h3>
-      <p className="text-[12.5px] text-slate-500 mt-1 max-w-[300px] leading-relaxed">{hint}</p>
+      <h3 className="relative text-[14.5px] font-semibold text-[#111827]">{title}</h3>
+      <p className="relative mt-1 max-w-[300px] text-[12.5px] leading-relaxed text-slate-500">{hint}</p>
       {actionLabel && onAction && (
         <button
           onClick={onAction}
-          className="mt-4 btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"
+          className="relative mt-4 flex items-center gap-1.5 rounded-xl btn-primary px-3.5 py-2 text-[12.5px] font-medium text-white shadow-sm"
         >
           <Plus size={14} /> {actionLabel}
         </button>
       )}
       {tips.length > 0 && (
-        <div className="mt-4 w-full max-w-sm space-y-1.5 text-left">
+        <div className="relative mt-4 w-full max-w-sm space-y-1.5 text-left">
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Helpful next steps</p>
           {tips.map((tip) => <p key={tip} className="flex gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-500"><Sparkles size={13} className="mt-0.5 shrink-0 text-[#16A34A]" />{tip}</p>)}
         </div>
       )}
-      {sourceNote && <p className="mt-3 text-[10.5px] leading-relaxed text-slate-400">{sourceNote}</p>}
+      {sourceNote && <p className="relative mt-3 text-[10.5px] leading-relaxed text-slate-400">{sourceNote}</p>}
     </div>
   );
 }
@@ -10890,7 +10896,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
         )}
       </div>
 
-      <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
+      <div className={`${operationalFilterBarClass} w-fit max-w-full`}>
         {[...DOC_TABS, { id: "subscriptions", label: "Subscriptions", icon: Repeat }].map((t) => {
           const Icon = t.icon;
           const isActive = tab === t.id;
@@ -10974,14 +10980,14 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={`Search ${tab}...`}
-                className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
+                className={operationalSearchInputClass}
               />
             </div>{tab !== "subscriptions" && <EnterpriseColumnCustomizer columns={salesColumns} visibleColumns={visibleSalesColumns} onVisibleColumnsChange={setVisibleSalesColumns}/>}</div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className={operationalTableShellClass}>
         <div className="overflow-x-auto">
-        <table className="w-full text-[13px] min-w-[720px]">
+        <table className={`${operationalTableClass} min-w-[720px]`}>
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
               {visibleSalesColumns.includes("document") && <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>}
@@ -12525,7 +12531,7 @@ function Inventory({ inventory, suppliersHook }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
+        <div className={`${operationalFilterBarClass} w-fit max-w-full`}>
           {INV_TABS.map((t) => {
             const Icon = t.icon;
             const isActive = tab === t.id;
@@ -12582,7 +12588,7 @@ function Inventory({ inventory, suppliersHook }) {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto">
+        <div className={operationalFilterBarClass}>
           <button
             onClick={() => setWarehouse("all")}
             className={`text-[12px] font-medium px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${warehouse === "all" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}
@@ -12606,7 +12612,7 @@ function Inventory({ inventory, suppliersHook }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search SKU, name, or barcode..."
-              className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
+              className={operationalSearchInputClass}
             />
           </div>
           <button
@@ -12625,9 +12631,9 @@ function Inventory({ inventory, suppliersHook }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className={operationalTableShellClass}>
         <div className="overflow-x-auto">
-        <table className="w-full text-[13px] min-w-[800px]">
+        <table className={`${operationalTableClass} min-w-[800px]`}>
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
               {stockColumns.filter((column) => visibleStockColumns.includes(column.id)).map((column) => <th key={column.id} className={`px-4 py-3 font-medium ${column.id === "onHand" || column.id === "value" || column.id === "detail" ? "text-right" : ""}`}>{column.label}</th>)}
@@ -15361,12 +15367,12 @@ function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, compa
       {/* Search */}
       <div className="relative">
         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input className="w-full border border-slate-200 rounded-xl pl-8 pr-4 py-2.5 text-[13px] outline-none focus:border-[#16A34A]" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customer or invoice number…" />
+        <input className={operationalSearchInputClass} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customer or invoice number…" />
       </div>
 
       {/* By customer view */}
       {view === "customer" && (
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className={operationalTableShellClass}>
           <table className="w-full text-[12.5px]">
             <thead><tr className="border-b border-slate-100 text-[11px] uppercase tracking-wide text-slate-400">
               <th className="px-4 py-2.5 text-left">Customer</th>
@@ -15393,7 +15399,7 @@ function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, compa
 
       {/* By bucket / detail view */}
       {view === "aging" && (
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className={operationalTableShellClass}>
           <table className="w-full text-[12.5px]">
             <thead><tr className="border-b border-slate-100 text-[11px] uppercase tracking-wide text-slate-400">
               <th className="px-4 py-2.5 text-left">Invoice</th>
@@ -18707,7 +18713,7 @@ function Employees({ employees, setEmployees, loading, canManage }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto">
+        <div className={operationalFilterBarClass}>
           <button
             onClick={() => setDepartment("all")}
             className={`text-[12px] font-medium px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${department === "all" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}
@@ -18731,7 +18737,7 @@ function Employees({ employees, setEmployees, loading, canManage }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search name or role..."
-              className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
+              className={operationalSearchInputClass}
             />
           </div>
           {canManage && <button
@@ -18802,7 +18808,7 @@ function Employees({ employees, setEmployees, loading, canManage }) {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className={operationalTableShellClass}>
         <BulkActionBar count={bulk.count} onClear={bulk.clearAll} accent="#16A34A" actions={[
               { label:"Export Selected", onClick:()=>downloadCSV("employees-selected",bulk.selectedRows,[{key:"name",label:"Name"},{key:"department",label:"Dept"},{key:"role",label:"Role"},{key:"salary",label:"Salary"}]) },
               { label:"Mark On Leave", onClick:()=>{ bulk.selectedRows.forEach(e=>{ setEmployees(p=>p.map(x=>x.id===e.id?{...x,status:"On Leave"}:x)); }); bulk.clearAll(); notify(bulk.count+" employees marked On Leave"); } },

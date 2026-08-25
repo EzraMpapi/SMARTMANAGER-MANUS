@@ -34,6 +34,21 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("employee-portal");
   });
 
+  it("keeps the shared operational form, filter, table, and empty-state visual primitives available to core modules", () => {
+    expect(dashboard).toContain("const operationalFilterBarClass");
+    expect(dashboard).toContain("const operationalSearchInputClass");
+    expect(dashboard).toContain("const operationalTableShellClass");
+    expect(dashboard).toContain("const operationalTableClass");
+    expect(dashboard).toContain("function FormField");
+    expect(dashboard).toContain("function EmptyState");
+    expect(dashboard).toContain("<EmptyState");
+    expect(dashboard).toContain("function Sales(");
+    expect(dashboard).toContain("function Inventory(");
+    expect(dashboard).toContain("function Finance(");
+    expect(dashboard).toContain("function CRM(");
+    expect(dashboard).toContain("function HR(");
+  });
+
   it("does not introduce client-side persistence into command-center components", () => {
     for (const { text } of files) {
       expect(text).not.toContain("localStorage");
