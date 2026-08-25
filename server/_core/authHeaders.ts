@@ -6,13 +6,19 @@ function firstHeaderValue(value: string | string[] | undefined): string | undefi
   return Array.isArray(value) ? value[0] : value;
 }
 
+function bearerFrom(value: string | string[] | undefined): string | null {
+  const candidate = firstHeaderValue(value);
+  return candidate?.startsWith("Bearer ") ? candidate.slice(7).trim() || null : null;
+}
+
+export function getSupabaseBearerToken(req: HeaderRequest): string | null {
+  return bearerFrom(req.headers?.["x-supabase-authorization"]);
+}
+
 export function getBearerToken(req: HeaderRequest): string | null {
-  const authorization = firstHeaderValue(req.headers?.authorization);
-  const supabaseAuthorization = firstHeaderValue(req.headers?.["x-supabase-authorization"]);
   // Supabase is the active authentication authority for the modern app.
   // Prefer its dedicated header when both headers exist, because an older
   // Manus bearer token may be stale or use a different JWT algorithm. Keep
   // Authorization as the fallback for the legacy Manus OAuth path.
-  const candidate = supabaseAuthorization || authorization;
-  return candidate?.startsWith("Bearer ") ? candidate.slice(7).trim() || null : null;
+  return getSupabaseBearerToken(req) || bearerFrom(req.headers?.authorization);
 }

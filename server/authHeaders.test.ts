@@ -16,6 +16,21 @@ describe("shared bearer-token extraction", () => {
     expect(getBearerToken({ headers: {} })).toBeNull();
   });
 
+  it("verifies the Supabase header before legacy authentication when both are present", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "supabase-user-priority", email: "priority@example.invalid", user_metadata: {}, app_metadata: { provider: "email" } }),
+    }));
+
+    const context = await createContext({
+      req: { headers: { authorization: "Bearer stale-manus-session", "x-supabase-authorization": "Bearer current-supabase-token" } } as any,
+      res: {} as any,
+    });
+
+    expect(context.user?.openId).toBe("sup_supabase-user-priority");
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/auth/v1/user"), expect.objectContaining({ headers: expect.objectContaining({ authorization: "Bearer current-supabase-token" }) }));
+  });
+
   it("bridges a Supabase custom authorization header into the protected context fallback", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
