@@ -6,10 +6,13 @@ const root = process.cwd();
 const read = (relativePath: string) => fs.readFileSync(path.join(root, relativePath), "utf8");
 
 const migration = read("supabase/migrations/20260824_061_subscription_activation_flow_repair.sql");
+const billingAliasRepair = read("supabase/migrations/20260825_016_fix_billing_snapshot_event_alias.sql");
+const trialExpiryMigration = read("supabase/migrations/20260824_064_trial_expiry_notice_once.sql");
 const workspace = read("client/src/components/SubscriptionBillingWorkspace.jsx");
 const access = read("client/src/lib/subscriptionAccess.js");
 const service = read("server/subscriptionBilling.ts");
 const routes = read("server/_core/apiApp.ts");
+const executableSql = (sql: string) => sql.replace(/^\s*--.*$/gm, "");
 
 describe("subscription activation repair contracts", () => {
   it("fixes the deployed billing snapshot alias without changing the existing table model", () => {
@@ -18,6 +21,14 @@ describe("subscription activation repair contracts", () => {
     expect(migration).toContain("to_jsonb(event_row) ORDER BY event_row.created_at DESC");
     expect(migration).not.toContain("to_jsonb(e)");
     expect(migration).not.toMatch(/CREATE TABLE/i);
+  });
+
+  it("keeps the latest trial-expiry snapshot source free of the out-of-scope event alias", () => {
+    expect(trialExpiryMigration).toContain("AS event_row");
+    expect(trialExpiryMigration).not.toContain("ORDER BY e.created_at");
+    expect(billingAliasRepair).toContain("CREATE OR REPLACE FUNCTION public.billing_snapshot()");
+    expect(billingAliasRepair).toContain("to_jsonb(event_row) ORDER BY event_row.created_at DESC");
+    expect(executableSql(billingAliasRepair)).not.toContain("ORDER BY e.created_at");
   });
 
   it("serializes and idempotently activates the one-time Free plan", () => {

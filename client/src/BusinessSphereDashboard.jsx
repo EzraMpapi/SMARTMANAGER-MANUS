@@ -18667,7 +18667,7 @@ function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearInten
         {HR_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "employees" && <Employees employees={employees} setEmployees={setEmployees} loading={empLoading} canManage={canManage} />}
+      {tab === "employees" && <Employees employees={employees} setEmployees={setEmployees} loading={empLoading} canManage={canManage} intent={intent} />}
       {tab === "timetable" && <WorkingTimetable employees={employees} currentUser={currentUser} canManage={canManage} />}
       {tab === "recruitment" && <Recruitment />}
       {tab === "attendance" && <Attendance employees={employees} />}
@@ -18680,13 +18680,16 @@ function HR({ employeesHook, leaveRequestsHook, expensesHook, intent, clearInten
   );
 }
 
-function Employees({ employees, setEmployees, loading, canManage }) {
+function Employees({ employees, setEmployees, loading, canManage, intent }) {
   const [department, setDepartment] = useState("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [generatedInvitation, setGeneratedInvitation] = useState(null);
+  useEffect(() => {
+    if (intent?.module === "hr" && intent.openInvitation) setShowInvite(true);
+  }, [intent]);
   const bulk = useBulkSelect(employees);
   const invitationListQuery = trpc.teamInvitations.list.useQuery(undefined, { enabled: Boolean(showInvite && IS_CONFIGURED), retry: false, refetchOnWindowFocus: false });
   const createInvitationMutation = trpc.teamInvitations.create.useMutation({
@@ -48217,7 +48220,7 @@ function SmartManager() {
             </Suspense>
           )}
           {active === "vicoba" && <VicobaSaccosModule currentUser={currentUser} />}
-          {active === "community" && <CommunityGroupsModule currentUser={currentUser} canManage={canManage} />}
+          {active === "community" && <CommunityGroupsModule currentUser={currentUser} canManage={canManage} onOpenMemberInvitation={() => goWithIntent("hr", { tab: "employees", openInvitation: true })} />}
           {active === "healthcare" && (
             <Suspense fallback={<div className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white"><div className="text-center"><LoaderCircle className="mx-auto animate-spin text-emerald-600" size={24}/><p className="mt-3 text-sm font-medium text-slate-500">Loading Healthcare Command Center…</p></div></div>}>
               <LazyHealthcareClinicWorkspace currentUser={currentUser} company={company} isLive={Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo)} onNavigate={setActive} onToast={notify} />
