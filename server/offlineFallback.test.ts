@@ -23,7 +23,7 @@ describe("PWA offline fallback boundary", () => {
   });
 
   it("registers the service worker only in production", () => {
-    expect(bootstrap).toContain('import.meta.env.PROD && "serviceWorker" in navigator');
+    expect(bootstrap).toContain('import.meta.env.MODE !== "development" && "serviceWorker" in navigator');
     expect(bootstrap).toContain('navigator.serviceWorker.register("/sw.js", { scope: "/" })');
   });
 });
