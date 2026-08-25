@@ -410,3 +410,8 @@
 - [ ] Update the existing recurring review into a daily 08:00 GMT+3 read-only Supabase and GitHub health check, retaining evidence reinspection on the 24th without applying DDL, test seeds, commits, or pushes.
 - [x] Create a repository-based scheduled workflow for read-only Supabase schema and GitHub synchronization verification, including a secure-secret activation guide; activation awaits a dedicated read-only database credential.
 - [x] Commit and push the reviewed repository-based schema health workflow, script, activation guide, and checklist update (`f25feaf`).
+- [x] Confirm the daily GitHub Actions verification workflow is registered and active; secret inventory cannot be inspected with the current GitHub token, so a repository administrator must configure or confirm the required read-only database secret.
+
+## Weekly Health Summary Notifications
+- [x] Implement a Monday 08:30 GMT+3 repository-based weekly email summary of the daily read-only schema-health and GitHub synchronization reports, with recipient and SMTP credentials supplied only as GitHub secrets; activation remains pending repository-administrator secret configuration.
+- [ ] Commit and push the reviewed weekly email workflow, mail script, activation guide, and checklist update to GitHub.
