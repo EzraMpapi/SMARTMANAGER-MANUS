@@ -399,5 +399,5 @@
 - [x] Inspect the checked-in Drizzle schema, existing migrations, live Supabase catalog, and connector configuration.
 - [x] Generate a non-destructive additive migration for missing tables, columns, indexes, constraints, and RLS policies only.
 - [x] Apply the migration through the authorized Supabase connector and verify the resulting catalog and tenant isolation.
-- [ ] Update migration and verification evidence, run TypeScript/tests/build, and synchronize all changes to the private GitHub repository.
+- [x] Update migration and verification evidence, run TypeScript/tests/build, and synchronize all changes to the private GitHub repository.
 
