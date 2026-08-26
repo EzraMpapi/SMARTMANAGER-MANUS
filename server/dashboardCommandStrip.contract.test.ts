@@ -20,8 +20,9 @@ describe("dashboard operational command strip", () => {
   });
 
   it("renders desktop navigation as a flat role-aware list rather than an accordion of module groups", () => {
-    expect(dashboard).toContain("const flatNavigationItems = [");
+    expect(dashboard).toContain("const flatNavigationItems = useMemo(() => [");
     expect(dashboard).toContain("Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))");
+    expect(dashboard).toContain('sidebarModuleOrder === "alphabetical"');
     expect(dashboard).toContain("dashboard-flat-navigation");
     expect(dashboard).toContain("flatNavigationItems.map((item) => {");
     expect(dashboard).toContain("item.locked");

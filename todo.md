@@ -641,3 +641,10 @@
 - [x] Polish desktop command bars, workspace geometry, focus states, and large-screen responsive behavior
 - [x] Run desktop/laptop/widescreen visual simulation, regression, type, and tenant-safety validation
 - [x] Verify live Supabase schema through the connector, create only proven missing objects, commit intentional changes, and push GitHub main
+
+## Sidebar Ordering and Command-Bar Redesign
+- [x] Inspect current sidebar order derivation, top-bar markup/styles, responsive behavior, logs, and Git baseline
+- [x] Implement clear persistent role-priority and alphabetical sidebar ordering modes without changing visibility or RBAC
+- [x] Redesign and repair the desktop/mobile command bar for hierarchy, spacing, safe touch targets, and responsive overflow handling
+- [x] Run sidebar interaction, responsive layout, regression, type, and tenant-safety validation
+- [x] Commit and push intentional interface changes to GitHub main

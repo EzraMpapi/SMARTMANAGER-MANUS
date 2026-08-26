@@ -47706,13 +47706,26 @@ function SmartManager() {
     currentRoleId: currentRole.id,
     canSeeSettings: canManage,
   }), [visibleModuleIdsKey, currentRole.id, canManage]);
+  const [sidebarModuleOrder, setSidebarModuleOrder] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem("smart-manager:sidebar-module-order");
+      return saved === "alphabetical" ? "alphabetical" : "priority";
+    } catch {
+      return "priority";
+    }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("smart-manager:sidebar-module-order", sidebarModuleOrder); } catch {}
+  }, [sidebarModuleOrder]);
   // The navigation model remains role- and entitlement-aware, but the desktop
   // rail deliberately renders it as one ordered module list. This avoids an
   // accordion maze while preserving the canonical navigation configuration.
-  const flatNavigationItems = [
-    ...navigationGroups.flatMap((group) => group.items),
-    ...(navigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, isPrimary: false, locked: true }]),
-  ].sort((left, right) => Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.order - right.order);
+  const flatNavigationItems = useMemo(() => [
+    ...navigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
+    ...(navigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
+  ].sort((left, right) => sidebarModuleOrder === "alphabetical"
+    ? left.label.localeCompare(right.label, "en")
+    : Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.groupOrder - right.groupOrder || left.order - right.order), [navigationGroups, sidebarModuleOrder]);
   const quickCreateActions = getQuickCreateActions({
     visibleModuleIds: visibleModules.map((module) => module.id),
     canCreate: currentRole.writeAccess !== "none",
@@ -47995,6 +48008,13 @@ function SmartManager() {
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition group-hover:text-emerald-700"><Search size={15} /></span>
             {!sidebarContentCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-700">Command palette</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Search modules and records</span></span><kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400">⌘K</kbd></>}
           </button>
+          {!sidebarContentCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-2 py-1.5" role="group" aria-label="Sidebar module order">
+            <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">Order</span>
+            <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => setSidebarModuleOrder("priority")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "priority" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
+              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => setSidebarModuleOrder("alphabetical")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "alphabetical" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
+            </div>
+          </div>}
         </div>
 
         {/* A flat, role-aware module list keeps every permitted workspace one click away. */}
@@ -48036,7 +48056,7 @@ function SmartManager() {
       {/* Main workspace shares a stable desktop layout column with the left navigation. */}
       <div className="dashboard-workspace-column relative z-10 flex-1 flex flex-col min-w-0 w-full">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-20 min-h-[64px] shrink-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_1px_0_rgba(15,23,42,.03)] flex items-center justify-between gap-2 px-3 py-2 sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-20 grid min-h-[64px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               className="min-h-11 min-w-11 text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:min-h-0 lg:min-w-0"
@@ -48046,7 +48066,7 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <BrandLogo variant="compact" priority className="dashboard-topbar-context-logo h-8 w-8 sm:hidden" />
-            <div className="dashboard-topbar-context-title min-w-0 max-w-[42vw] sm:hidden">
+            <div className="dashboard-topbar-context-title min-w-0 max-w-[34vw] sm:hidden">
               <p className="truncate text-[12px] font-semibold text-slate-900">{activeModuleLabel}</p>
               <p className="truncate text-[9px] font-medium text-slate-400">{company.name}</p>
             </div>
@@ -48058,9 +48078,9 @@ function SmartManager() {
               </div>
             </div>
           </div>
-          <div className="dashboard-topbar-actions flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2.5">
+          <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2.5">
             <span
-              className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
+              className="hidden xl:flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[.08em]"
               style={
                 IS_CONFIGURED
                   ? { backgroundColor: "#16A34A14", color: "#16A34A" }
@@ -48071,15 +48091,15 @@ function SmartManager() {
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
               {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
             </span>
-            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
+            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden xl:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             <button
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search hidden sm:flex items-center gap-1.5 border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 rounded-xl px-2.5 py-2 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+              className="dashboard-topbar-search hidden lg:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
               aria-label="Search everything"
             >
               <Search size={13} />
-              <span className="hidden md:inline">Search workspace</span>
-              <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
+              <span className="hidden xl:inline">Search workspace</span>
+              <kbd className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
@@ -48100,7 +48120,7 @@ function SmartManager() {
                 )}
               </div>
             )}
-            <div className="dashboard-topbar-tour shrink-0"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>
+            <div className="dashboard-topbar-tour hidden shrink-0 xl:block"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>
             <span className="hidden xl:inline-flex items-center text-[10.5px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
@@ -48115,8 +48135,8 @@ function SmartManager() {
             <span className="hidden xl:block"><WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} /></span>
             {/* ── Dark mode toggle ── */}
             <button
-              onClick={()=>setDarkMode(d=>!d)}
-              className="hidden min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-[#111827] transition-all min-[480px]:flex sm:min-h-8 sm:min-w-8 sm:w-8 sm:h-8"
+              onClick={toggleDarkMode}
+              className="hidden min-h-8 min-w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-slate-300 hover:text-[#111827] lg:flex lg:h-8 lg:w-8"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
