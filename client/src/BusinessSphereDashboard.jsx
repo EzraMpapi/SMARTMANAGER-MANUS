@@ -6516,11 +6516,15 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         leaveRequests={leaveRequests}
         posTransactions={posTransactions}
         workOrders={workOrders}
+        recentActivity={recentActivity}
         onNavigate={onNavigate}
+        onQuickAction={onQuickAction}
         onCustomizeDashboard={() => setPreferencesDrawerOpen(true)}
         currentUser={currentUser}
         company={company}
         currency={company.currency || "TZS"}
+        allowedModules={currentRole.allowedModules}
+        writeAccess={currentRole.writeAccess}
       />
       <AiBusinessSignals
         invoices={invoices}
