@@ -74,6 +74,14 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+if (import.meta.env.MODE !== "development" && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((error) => {
+      console.warn("[PWA] Offline fallback registration unavailable", error);
+    });
+  });
+}
+
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>

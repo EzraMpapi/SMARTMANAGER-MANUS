@@ -520,3 +520,27 @@
 - [x] Prepare the Chapters 07–09 presentation narrative and slide-aligned Kiswahili presenter script with approved conceptual/redacted evidence only.
 - [x] Generate and present the evidence-based Chapters 07–09 commercial-foundation slide deck.
 - [x] Run final validation and synchronize the reviewed Chapter 13–15, terminology-audit, and commercial-deck package to GitHub main.
+
+## Post-Migration Integrity and Performance Audit
+- [x] Run read-only structural, relational, data-quality, and RLS-policy checks across the 17 newly created Supabase tables.
+- [x] Run bounded performance probes and query-plan checks for representative tenant-scoped access paths.
+- [x] Document live evidence, update the checklist, and report any actionable findings without modifying the database.
+
+
+## Post-Migration Integrity and Performance Audit — Completed
+- [x] Run read-only structural catalog checks across all 17 newly created Supabase tables: all tables present, RLS enabled, primary keys present, and expected policy/index metadata returned.
+- [x] Verify tenant-isolation policies: all 14 tenant-scoped tables expose authenticated ALL policies constrained by `company_id = current_company_id()` for both `USING` and `WITH CHECK`.
+- [x] Verify platform-only tables (`users`, `schema_drift_monitors`, `schema_drift_runs`) retain RLS with no client-facing policies, preserving deny-by-default access.
+- [x] Run bounded data-quality and relational checks: all 17 audited tables currently contain zero rows; no null tenant keys or orphan rows were present in the live audit window.
+- [x] Run representative tenant-scoped EXPLAIN probes for `audit_logs` and `tra_z_report_archives`; both selected company-scoped indexes, with the archive query using the composite company/created index for reverse chronological access.
+- [x] Run full local quality gates after the audit: 220 test files passed, 896 tests passed, 6 test files and 14 tests skipped, TypeScript passed, schema verification reported no missing/tenant/critical table issues, and the production build completed.
+- [ ] Re-check Vercel production deployment and GitHub Actions after the external Hobby quota/billing windows reset; no deployment or billing settings were changed during this audit.
+- [ ] Add covering indexes for any unrelated legacy foreign-key advisor findings only after a separate workload review; the current audit made no database modifications.
+
+
+## Requested Supabase Schema Application and GitHub Synchronization
+- [x] Verify the additive migration contains only intended non-destructive schema changes and confirm Supabase connector/project state.
+- [x] Apply the additive migration through the authorized Supabase connector without inserting seed or test data.
+- [x] Re-run bounded live table, RLS, policy, foreign-key, and schema-parity checks after application.
+- [x] Run relevant tests, TypeScript, schema verification, and production build gates.
+- [ ] Commit and push all pending project changes to the private `EzraMpapi/SMARTMANAGER-MANUS` repository on `main`, preserving privacy and excluding secrets/signing keys.

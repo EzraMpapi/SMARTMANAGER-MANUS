@@ -1,0 +1,103 @@
+{
+  "project_info": {
+    "title": "Smart Manager PWA Offline Fallback",
+    "created": 1787719388.201,
+    "last_updated": 1787719488.085,
+    "total_slides": 9
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "status_overview",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "boundary_design",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "automated_coverage",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "responsive_verification",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "quality_gates",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "production_status",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "blockers_remediation",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "closeout_sequence",
+      "state": "edited",
+      "pageNum": 9
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Smart Manager PWA Offline Fallback",
+      "summary": "Executive summary of the verified PWA offline behavior and current deployment status."
+    },
+    {
+      "id": "status_overview",
+      "title": "Verification & Deployment Status",
+      "summary": "Summary of verified offline behavior, automated test results, and production deployment gaps."
+    },
+    {
+      "id": "boundary_design",
+      "title": "Offline Boundary Design",
+      "summary": "Technical breakdown of the service-worker fallback strategy and data isolation boundaries.",
+      "image_plan": "/home/ubuntu/upload/search_images/UoxPmHG7yVuI.jpg - Visual architecture diagram illustrating service worker offline caching vs online backend requests"
+    },
+    {
+      "id": "automated_coverage",
+      "title": "Automated E2E Coverage",
+      "summary": "Deterministic verification results for desktop and mobile Chromium environments."
+    },
+    {
+      "id": "responsive_verification",
+      "title": "Responsive Browser Verification",
+      "summary": "Evidence of stable rendering and recovery behavior across representative Chromium viewports."
+    },
+    {
+      "id": "quality_gates",
+      "title": "Quality Gates & CI Integration",
+      "summary": "Overview of the repeatable local and continuous quality checks guarding the implementation."
+    },
+    {
+      "id": "production_status",
+      "title": "Production Verification Status",
+      "summary": "Current evidence from the menejajanja production alias and Vercel hobby quota state."
+    },
+    {
+      "id": "blockers_remediation",
+      "title": "External Blockers & Remediation",
+      "summary": "No-cost resolution paths for Vercel deployment and GitHub Actions billing limits."
+    },
+    {
+      "id": "closeout_sequence",
+      "title": "Recommended Closeout Sequence",
+      "summary": "Actionable next steps to finalize the production release and live verification."
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800&family=Inter:wght@400&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #E0F2FE;
+            position: relative;
+            font-family: 'Inter', sans-serif;
+            color: #2D3748;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            overflow: hidden;
+        }
+        
+        .top-rule {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background-color: #B91C1C;
+        }
+        
+        .content-wrapper {
+            padding: 60px 80px 80px 80px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: end;
+            gap: 60px;
+        }
+        
+        .left-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 800;
+            font-size: 60px;
+            line-height: 1.1;
+            color: #0A3622;
+            margin-bottom: 32px;
+        }
+        
+        .image-container {
+            width: 500px;
+            height: 300px;
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .summary {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #2D3748;
+            font-style: italic;
+        }
+        
+        .table-block {
+            width: 100%;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        th, td {
+            padding: 24px;
+            text-align: left;
+            border-bottom: 1px solid #CBD5E1;
+            font-size: 14px;
+        }
+        
+        th {
+            background-color: #0A3622;
+            color: #E0F2FE;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .accent-text {
+            color: #B91C1C;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="top-rule"></div>
+        <div class="content-wrapper">
+            <div class="left-col">
+                <h2>Offline Boundary Design</h2>
+                <div class="image-container">
+                    <img src="/home/ubuntu/upload/search_images/UoxPmHG7yVuI.jpg" alt="Service Worker Architecture">
+                </div>
+                <p class="summary">The design deliberately favors truthful failure over fabricated or stale operational data, protecting the app shell without touching sensitive traffic.</p>
+            </div>
+            <div class="table-block">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Request Class</th>
+                            <th>Service-Worker Treatment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>App Shell Navigation</td>
+                            <td><span class="accent-text">CACHE-FIRST FALLBACK</span> to branded offline document</td>
+                        </tr>
+                        <tr>
+                            <td>Static Assets</td>
+                            <td><span class="accent-text">CACHEABLE</span> for core offline experience</td>
+                        </tr>
+                        <tr>
+                            <td>API & tRPC Traffic</td>
+                            <td><span class="accent-text">EXCLUDED</span> to prevent stale business data</td>
+                        </tr>
+                        <tr>
+                            <td>Mutations (POST)</td>
+                            <td><span class="accent-text">EXCLUDED</span>; never replay writes offline</td>
+                        </tr>
+                        <tr>
+                            <td>Auth & Session</td>
+                            <td><span class="accent-text">EXCLUDED</span> to preserve tenant boundaries</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
