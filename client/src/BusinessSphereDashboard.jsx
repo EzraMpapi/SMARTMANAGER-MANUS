@@ -38493,6 +38493,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [assistantError, setAssistantError] = useState(null);
   const [listening, setListening] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [memoryState, setMemoryState] = useState(IS_CONFIGURED ? "loading" : "session");
@@ -38861,6 +38862,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
     setMessages(convo);
     setInput("");
     setBusy(true);
+    setAssistantError(null);
 
     try {
       const responseData = await callModel(convo);
@@ -38868,7 +38870,9 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       setMessages(convo);
       await persistTurn(question, responseData.result);
     } catch (e) {
-      notify(e?.message || "The AI assistant couldn't be reached. Please try again.", "error");
+      const message = e?.message || "The AI assistant couldn't be reached. Please try again.";
+      setAssistantError({ message, question });
+      notify(message, "error");
       setMessages(messages);
       setInput(question);
     } finally {
@@ -39106,6 +39110,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
             </div>
           </div>
         )}
+        {assistantError && !busy && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[12px] text-rose-800"><span>{assistantError.message}</span><button type="button" onClick={() => send(assistantError.question)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-800 transition hover:bg-rose-100"><RotateCcw size={13}/>Try again</button></div>}
       </div>
 
       <div className="border-t border-slate-100 p-3 sm:p-4">

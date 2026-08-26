@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Banknote, BarChart3, CheckCircle2, ClipboardCheck, CreditCard, FileCheck2, Landmark, Loader2, Plus, Pause, RefreshCw, Search, Send, ShieldCheck, Users, WalletCards, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Banknote, BarChart3, CheckCircle2, ClipboardCheck, Coins, CreditCard, FileCheck2, Landmark, Loader2, Plus, Pause, RefreshCw, Search, Send, ShieldCheck, Users, WalletCards, XCircle } from "lucide-react";
 import { trpc } from "../lib/trpc";
 
 const TABS = [
@@ -196,6 +196,7 @@ export function BankMfiWorkspace({ company, onLoansLoad, onNavigate }) {
     {actionError && <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"><AlertTriangle className="mt-0.5 shrink-0" size={16}/><span>{actionError}</span></div>}
     {query.error && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{query.error.message || "Banking persistence is unavailable. Configure Supabase and apply the Bank & MFI migration before posting financial records."}</div>}
     {data.errors?.length > 0 && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Some Bank & MFI resources are not yet available: {data.errors.map((e) => e.resource).join(", ")}. No substitute figures are shown.</div>}
+    {tab === "accounts" && !accountTypes.length && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><span>No account types are configured yet. Create an approved account type before opening an account; no product has been created automatically.</span><SecondaryButton onClick={() => setTab("institution")}><Landmark size={14}/>Configure account type</SecondaryButton></div>}
 
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <Metric label="Customer deposits" value={accounts.length ? money(depositBalance) : EMPTY} note={accounts.length ? `${count(accounts)} confirmed accounts` : "No confirmed account balances"} icon={WalletCards} onClick={() => setTab("accounts")} />

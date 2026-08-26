@@ -461,3 +461,9 @@
 - [x] Map reference KPI, chart, product, cash-flow, activity, health, and quick-action surfaces to real tenant-scoped sources or truthful unavailable states
 - [x] Implement reference-aligned dashboard composition and responsive styling through reusable current components without mock production metrics or duplicate preferences
 - [x] Extend contracts and validate full regression, TypeScript, live schema, responsive behavior, and build readiness; document and push GitHub main
+
+## Uploaded Banking and AI Assistant Error Evidence
+- [x] Reproduce and fix the Banking/MFI `Coins is not defined` runtime error shown at `/app?module=banking`
+- [x] Audit the unavailable `paymentInstructions` Banking/MFI dependency and account-opening type options against live-safe schema contracts without fabricating financial data
+- [x] Diagnose the AI Assistant reachability failure and ensure the user-facing recovery state is actionable without exposing tenant data or secrets
+- [x] Add regression coverage, validate type/schema contracts, document the fixes, and push verified changes to GitHub main
