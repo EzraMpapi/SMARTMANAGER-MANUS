@@ -4,6 +4,7 @@ import { clearStoredAuthSession, readStoredAuthSession } from "../lib/authSessio
 import { loadPublicSupabaseConfig, type PublicSupabaseConfig } from "../lib/publicSupabaseConfig";
 import { getSupabaseAuthClient, refreshSupabaseSession } from "../lib/supabaseAuthClient";
 import { authReducer, AUTH_STATES, initialAuthState, isAuthLoading, type AuthIdentity, type AuthMachineState } from "../lib/authStateMachine";
+import { buildAuthRedirectUri } from "../lib/authRedirect";
 
 type AuthContextValue = AuthMachineState & {
   configured: boolean;
@@ -131,13 +132,9 @@ async function hydrateIdentity(client: SupabaseClient, session: Session, dispatc
   dispatch({ type: "AUTHORIZED", session: effectiveSession, user: effectiveSession.user, identity: snapshot.identity });
 }
 
-function redirectUri(screen: string) {
+function redirectUri(screen: "login" | "verify" | "reset", provider?: string) {
   if (typeof window === "undefined") return undefined;
-  const url = new URL(window.location.href);
-  url.pathname = "/app";
-  url.search = `?auth=${encodeURIComponent(screen)}`;
-  url.hash = "";
-  return url.toString();
+  return buildAuthRedirectUri(window.location.href, import.meta.env.VITE_PUBLIC_APP_ORIGIN, screen, provider);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -249,10 +246,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [requireClient]);
 
   const signInWithOAuth = useCallback(async (provider: "google" | "azure" | "apple") => {
-    const callback = redirectUri("login");
-    const redirectTo = callback ? new URL(callback) : null;
-    if (redirectTo) redirectTo.searchParams.set("oauth_provider", provider);
-    const result = await requireClient().auth.signInWithOAuth({ provider, options: { redirectTo: redirectTo?.toString() } });
+    const redirectTo = redirectUri("login", provider);
+    const result = await requireClient().auth.signInWithOAuth({ provider, options: { redirectTo } });
     if (result.error) throw result.error;
   }, [requireClient]);
 
