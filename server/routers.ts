@@ -26,6 +26,7 @@ import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
+import { publicFeedbackInput, submitPublicFeedback } from "./feedbackOperations";
 import { traFiscalRouter } from "./traFiscalRouter";
 import { canReadTenantPushDeliveryHistory, listTenantPushDeliveryHistory } from "./notificationHistory";
 import { getMarketIntelligenceSnapshot, marketIntelligenceConfig } from "./marketIntelligence";
@@ -86,6 +87,9 @@ async function requireVerifiedAuditCompany(req: Parameters<typeof resolveVerifie
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+  publicFeedback: publicProcedure
+    .input(publicFeedbackInput)
+    .mutation(({ ctx, input }) => submitPublicFeedback(ctx.req, input)),
   traFiscal: traFiscalRouter,
   globalAdmin: router({
     snapshot: protectedProcedure

@@ -9,6 +9,7 @@ import {
   Headphones,
   HeartPulse,
   Layers3,
+  MessageSquarePlus,
   ShieldCheck,
   Sparkles,
   UsersRound,
@@ -23,6 +24,8 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { AnimatedGoldMesh } from "../components/AnimatedGoldMesh";
 import { BrandLogo } from "../components/BrandLogo";
+// @ts-expect-error The feedback modal intentionally remains JavaScript alongside the TypeScript page.
+import { UserFeedbackModal } from "../components/UserFeedbackModal";
 import { passkeySignInUserMessage, signInWithAccountPasskey } from "../lib/accountPasskeys";
 import { persistAuthSession } from "../lib/authSessionStorage";
 
@@ -43,6 +46,7 @@ export default function Home() {
   const { lang, setLang, t } = useLanguage();
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyError, setPasskeyError] = useState("");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   async function signInWithPublicPasskey() {
     if (!PUBLIC_SUPABASE_URL || !PUBLIC_SUPABASE_ANON_KEY) {
@@ -72,6 +76,7 @@ export default function Home() {
             <a href="#capabilities" className="transition-colors hover:text-[#C9A96E]">{t("capabilities")}</a>
             <a href="#why-smart-manager" className="transition-colors hover:text-[#C9A96E]">{t("whyUs")}</a>
             <a href="#launch" className="transition-colors hover:text-[#C9A96E]">{t("launch")}</a>
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="transition-colors hover:text-[#C9A96E]">Feedback</button>
           </nav>
           
           <div className="flex items-center gap-2 border-l border-white/10 pl-4">
@@ -95,6 +100,9 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-[12px] font-bold text-white transition-all hover:bg-white/10 active:scale-[0.97]" aria-label="Open feedback form">
+              <MessageSquarePlus size={15} /><span className="hidden lg:inline">Feedback</span>
+            </button>
             <button type="button" onClick={signInWithPublicPasskey} disabled={passkeyPending} aria-describedby={passkeyError ? "public-passkey-status" : undefined} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#16A34A]/35 bg-[#16A34A]/10 px-3 text-[12px] font-bold text-[#D1FAE5] transition-all hover:bg-[#16A34A]/20 active:scale-[0.97] disabled:cursor-wait disabled:opacity-70" aria-label="Sign in with a passkey">
               <Fingerprint size={15} /><span className="hidden sm:inline">{passkeyPending ? "Opening…" : "Passkey"}</span>
             </button>
@@ -215,6 +223,20 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Feedback invitation */}
+        <section id="feedback" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10">
+          <div className="flex flex-col gap-6 rounded-[2rem] border border-[#16A34A]/20 bg-[#16A34A]/[0.06] px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-9">
+            <div className="max-w-2xl">
+              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#16A34A]">Build with the community</p>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl font-heading">Help us improve Smart Manager.</h2>
+              <p className="mt-3 text-[15px] leading-7 text-[#94A3B8]">Share a bug, request a feature, or tell us what would make your daily work easier. Your feedback goes directly to the product team.</p>
+            </div>
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-6 py-3.5 text-[13px] font-bold text-white shadow-lg transition-all hover:bg-[#22C55E] active:scale-[0.97]">
+              <MessageSquarePlus size={16} /> Leave feedback
+            </button>
+          </div>
+        </section>
+
         {/* Call to Action */}
         <section id="launch" className="mx-auto max-w-7xl px-5 py-24 sm:px-8 lg:px-10">
           <div className="relative overflow-hidden rounded-[2.5rem] border border-[#C9A96E]/20 bg-gradient-to-br from-[#131C31] to-[#0B1120] px-8 py-16 text-center sm:px-16 sm:py-20 gold-glow">
@@ -230,6 +252,8 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      <UserFeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 
       <footer className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10">
         <div className="flex flex-col items-center justify-between gap-6 border-t border-white/5 pt-12 md:flex-row">
