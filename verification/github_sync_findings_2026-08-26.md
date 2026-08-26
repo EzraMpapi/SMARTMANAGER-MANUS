@@ -51,3 +51,31 @@ The corrected `server/resumeWhereYouLeftOff.contract.test.ts` is staged for the 
 The corrected server contract test was submitted as `test(session): verify hardened resume boundary`; GitHub is processing the direct main-branch commit and completion remains to be confirmed.
 
 The hardened client implementation and tests are confirmed on private `main` as commit `a0c55a3`; the corrected server contract test is confirmed as commit `93a2c11`. The remaining updated verification documentation and checklist are ready for synchronization.
+
+The updated hardening verification report and synchronization log are staged in the private GitHub `verification` upload flow and ready for a direct main-branch documentation commit.
+
+The updated hardening verification report and synchronization log were submitted as `docs(session): record persistence hardening verification`; GitHub is processing the direct main-branch documentation commit.
+
+The updated `todo.md` is staged at the repository root with all five hardening checklist items marked complete. It is ready for a direct main-branch synchronization commit.
+
+The completed `todo.md` checklist was submitted as `chore(session): close persistence hardening checklist`; GitHub is processing the direct main-branch synchronization commit.
+
+The additive Supabase migration `supabase/20260826_add_missing_erp_tables.sql` is staged in the private repository upload flow. It contains only CREATE/ALTER ENABLE RLS/CREATE INDEX operations and is ready for direct main-branch synchronization.
+
+The Supabase migration commit submission is processing on GitHub after direct upload to `main`; final commit identity will be captured after the repository returns to its root state.
+
+The updated `todo.md` is staged at the private repository root for direct main-branch synchronization; it marks Supabase reconciliation and verification complete while retaining the historical checklist.
+
+The final schema-reconciliation `todo.md` commit submission is processing on GitHub after direct upload to `main`; its commit identity will be confirmed from the repository root.
+
+The Supabase reconciliation report and three non-secret verification payloads are staged in `verification/` for a single direct main-branch documentation commit.
+
+The Supabase reconciliation verification documentation commit is processing on GitHub after direct upload of the report and non-secret query payloads.
+
+The non-secret `scripts/reconcile_schema.mjs` helper is staged in the private repository for direct main-branch synchronization.
+
+GitHub synchronization source: https://github.com/EzraMpapi/SMARTMANAGER-MANUS. The `scripts/reconcile_schema.mjs` commit was submitted directly to `main` and is processing before final identity confirmation.
+
+The final completed `todo.md` is staged at the private repository root for direct main-branch synchronization.
+
+The completed schema-reconciliation checklist commit is processing on GitHub after direct upload to `main`; final commit identity will be confirmed from the repository root.
