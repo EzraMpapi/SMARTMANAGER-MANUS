@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Sliders, X, Check, RotateCcw, DollarSign, Sparkles, Send, Loader2, Globe, Clock } from "lucide-react";
 import { useDashboardPreferences } from "../contexts/DashboardPreferencesContext";
 import { trpc } from "../lib/trpc";
+import { DashboardLayoutControls } from "./DashboardLayoutControls";
 
 interface DashboardPreferencesDrawerProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
   const [activeTab, setActiveTab] = useState<"settings" | "ai">("settings");
   const [aiGoal, setAiGoal] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<{ preferences: typeof preferences; explanation: string } | null>(null);
+  const [aiResult, setAiResult] = useState<{ preferences: Pick<typeof preferences, "compactDensity" | "showKpiBanner" | "showActivityTimeline" | "showPendingApprovals" | "accentColor" | "currency" | "timezone" | "fxRateOverride" | "departmentBudgets">; explanation: string } | null>(null);
 
   const configureAiMutation = trpc.ai.configurePreferences.useMutation({
     onSuccess: (data) => {
@@ -243,6 +244,7 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
                   </div>
                 </div>
               </div>
+              <DashboardLayoutControls preferences={preferences} updatePreference={updatePreference} />
             </div>
           ) : (
             <div className="mt-6 space-y-6">

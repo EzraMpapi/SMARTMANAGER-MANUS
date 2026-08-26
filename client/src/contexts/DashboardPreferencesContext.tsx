@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import { trpc } from "../lib/trpc";
 import { useAuthContext } from "./AuthContext";
 
-interface DashboardPreferences {
+export interface DashboardPreferences {
   compactDensity: boolean;
   showKpiBanner: boolean;
   showActivityTimeline: boolean;
@@ -12,6 +12,16 @@ interface DashboardPreferences {
   timezone: string;
   fxRateOverride: number;
   departmentBudgets: Record<string, number>;
+  showRevenueOverview: boolean;
+  showSalesMix: boolean;
+  showQuickActions: boolean;
+  showTopProducts: boolean;
+  showCashFlow: boolean;
+  showBusinessHealth: boolean;
+  showActionCenter: boolean;
+  widgetOrder: Array<"revenue" | "salesMix" | "quickActions" | "products" | "cashFlow" | "businessHealth" | "activity" | "actionCenter">;
+  kpiCardIds: Array<"revenue" | "expenses" | "net-result" | "orders" | "receivables">;
+  performanceWindow: "30d" | "3m" | "6m" | "1y";
 }
 
 interface DashboardPreferencesContextType {
@@ -42,6 +52,16 @@ const defaultPreferences: DashboardPreferences = {
   timezone: "Africa/Dar_es_Salaam",
   fxRateOverride: 2600,
   departmentBudgets: defaultDepartmentBudgets,
+  showRevenueOverview: true,
+  showSalesMix: true,
+  showQuickActions: true,
+  showTopProducts: true,
+  showCashFlow: true,
+  showBusinessHealth: true,
+  showActionCenter: true,
+  widgetOrder: ["revenue", "salesMix", "quickActions", "products", "cashFlow", "businessHealth", "activity", "actionCenter"],
+  kpiCardIds: ["revenue", "expenses", "net-result", "orders", "receivables"],
+  performanceWindow: "30d",
 };
 
 function normalizePreferences(value: Partial<DashboardPreferences> | null | undefined): DashboardPreferences {
@@ -53,6 +73,9 @@ function normalizePreferences(value: Partial<DashboardPreferences> | null | unde
     timezone: typeof value?.timezone === "string" && value.timezone.trim() ? value.timezone.trim() : defaultPreferences.timezone,
     fxRateOverride: Number.isFinite(Number(value?.fxRateOverride)) && Number(value?.fxRateOverride) > 0 ? Number(value?.fxRateOverride) : defaultPreferences.fxRateOverride,
     departmentBudgets: { ...defaultDepartmentBudgets, ...(value?.departmentBudgets || {}) },
+    widgetOrder: Array.isArray(value?.widgetOrder) && value.widgetOrder.length ? Array.from(new Set(value.widgetOrder.filter((id) => defaultPreferences.widgetOrder.includes(id)))) as DashboardPreferences["widgetOrder"] : defaultPreferences.widgetOrder,
+    kpiCardIds: Array.isArray(value?.kpiCardIds) && value.kpiCardIds.length ? Array.from(new Set(value.kpiCardIds.filter((id) => defaultPreferences.kpiCardIds.includes(id)))) as DashboardPreferences["kpiCardIds"] : defaultPreferences.kpiCardIds,
+    performanceWindow: ["30d", "3m", "6m", "1y"].includes(value?.performanceWindow || "") ? value?.performanceWindow as DashboardPreferences["performanceWindow"] : defaultPreferences.performanceWindow,
   };
 }
 

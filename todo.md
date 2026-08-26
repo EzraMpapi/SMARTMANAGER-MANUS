@@ -371,6 +371,13 @@
 - [x] Add a repeatable package-script command and CI workflow entry without requiring production credentials.
 - [x] Run the E2E suite plus existing TypeScript/build checks, document browser prerequisites, and synchronize the verified tests.
 
+## Complete Reference Dashboard Attachment Reconciliation
+- [ ] Audit every requirement in the supplied dashboard reconstruction attachment against the current command-center, shell, navigation, preferences, real data sources, and current migration ledger.
+- [ ] Produce a requirement-to-component and tenant-scoped source matrix, explicitly recording any request that cannot be represented without fabricating a financial or operational measure.
+- [ ] Implement every demonstrated visual, responsive, accessibility, drill-down, quick-action, chart, and state-handling gap using the existing ERP architecture.
+- [ ] Inspect live Supabase migrations, tables, relationships, policies, views, and functions; apply only proven missing additive schema objects through the connected project.
+- [ ] Run focused and full regression, TypeScript, schema, and build-readiness validation; document evidence and synchronize verified changes to GitHub main.
+
 ## PWA Offline Fallback Verification Presentation
 - [x] Prepare an executive presentation summarizing verified offline behavior, automated coverage, deployment status, and remaining blockers.
 - [x] Generate and review the presentation deck for readable evidence, accurate figures, and clear next actions.
@@ -451,7 +458,7 @@
 
 ## Reference-aligned Dashboard Reconstruction and Schema-first Audit
 - [x] Audit the supplied visual reference against the current role-aware dashboard composition and identify only verified design gaps
-- [ ] Inspect the connected Supabase catalog, relationships, RLS policies, views, and RPC functions against every data-dependent dashboard component (live connector policy/view/routine enumeration is blocked by connector HTTP 403; read-only OpenAPI and schema-contract fallbacks completed)
+- [x] Inspect the connected Supabase catalog, relationships, RLS policies, views, and RPC functions against every data-dependent dashboard component (completed 2026-08-26 through the connected project; no additive dashboard schema object was demonstrated)
 - [x] Map reference KPI, chart, product, cash-flow, activity, health, and quick-action surfaces to real tenant-scoped sources or truthful unavailable states
 - [x] Implement reference-aligned dashboard composition and responsive styling through reusable current components without mock production metrics or duplicate preferences
 - [x] Extend contracts and validate full regression, TypeScript, live schema, responsive behavior, and build readiness; document and push GitHub main
@@ -467,3 +474,10 @@
 - [x] Verify desktop, tablet, and mobile panel reflow, sidebar behavior, command controls, and accessible interaction states
 - [x] Inspect the live Supabase migration ledger and relevant dashboard table contracts; apply only a demonstrated missing additive migration (none was demonstrated, so no SQL was applied)
 - [x] Add any required responsive/source-contract coverage, validate, document, and push the final verified result to GitHub main
+
+## Complete Reference Dashboard Attachment Reconciliation
+- [x] Audit every requirement in the supplied dashboard reconstruction attachment against the current command-center, shell, navigation, preferences, real data sources, and current migration ledger.
+- [x] Produce a requirement-to-component and tenant-scoped source matrix, explicitly recording any request that cannot be represented without fabricating a financial or operational measure.
+- [x] Implement every demonstrated visual, responsive, accessibility, drill-down, quick-action, chart, and state-handling gap using the existing ERP architecture.
+- [x] Inspect live Supabase migrations, tables, relationships, policies, views, and functions; apply only proven missing additive schema objects through the connected project (none was demonstrated, so no SQL was applied).
+- [x] Run focused and full regression, TypeScript, schema, and build-readiness validation; document evidence and synchronize verified changes to GitHub main.

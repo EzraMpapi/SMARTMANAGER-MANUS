@@ -26,6 +26,9 @@ describe("reference-aligned dashboard contracts", () => {
     expect(commandCenter).toContain("Select dashboard performance period");
     expect(commandCenter).toContain("grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5");
     expect(commandCenter).toContain("sm:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4");
+    expect(commandCenter).toContain("preferences.kpiCardIds");
+    expect(commandCenter).toContain("preferences.widgetOrder");
+    expect(commandCenter).toContain("updatePreference(\"performanceWindow\"");
   });
 
   it("uses only confirmed tenant-scoped source rows for reference metrics and charts", () => {

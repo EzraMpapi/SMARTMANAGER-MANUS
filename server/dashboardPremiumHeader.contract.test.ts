@@ -7,7 +7,9 @@ const source = readFileSync(resolve(process.cwd(), "client/src/components/Execut
 describe("premium dashboard header", () => {
   it("uses an explicit real-data performance window instead of an inferred timeframe", () => {
     expect(source).toContain("const PERFORMANCE_WINDOWS");
-    expect(source).toContain('const [performanceWindowId, setPerformanceWindowId] = useState("30d")');
+    expect(source).toContain("const { preferences, updatePreference } = useDashboardPreferences()");
+    expect(source).toContain("const performanceWindowId = preferences.performanceWindow");
+    expect(source).toContain('updatePreference("performanceWindow", window.id)');
     expect(source).toContain('aria-label="Select dashboard performance period"');
     expect(source).toContain("isInPerformanceWindow(row, performanceBounds.start, performanceBounds.end)");
   });

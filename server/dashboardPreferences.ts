@@ -6,6 +6,13 @@ import { resolveVerifiedProfile } from "./aiApprovals";
 
 export const DASHBOARD_PREFERENCE_KEY = "dashboard";
 
+export const DASHBOARD_WIDGET_IDS = ["revenue", "salesMix", "quickActions", "products", "cashFlow", "businessHealth", "activity", "actionCenter"] as const;
+export const DASHBOARD_KPI_IDS = ["revenue", "expenses", "net-result", "orders", "receivables"] as const;
+export const DASHBOARD_PERFORMANCE_WINDOWS = ["30d", "3m", "6m", "1y"] as const;
+
+const dashboardWidgetId = z.enum(DASHBOARD_WIDGET_IDS);
+const dashboardKpiId = z.enum(DASHBOARD_KPI_IDS);
+
 export const dashboardPreferencesInput = z.object({
   compactDensity: z.boolean(),
   showKpiBanner: z.boolean(),
@@ -16,6 +23,16 @@ export const dashboardPreferencesInput = z.object({
   timezone: z.string().trim().min(1).max(100),
   fxRateOverride: z.number().finite().min(1).max(1_000_000),
   departmentBudgets: z.record(z.string().trim().min(1).max(80), z.number().finite().min(0).max(1_000_000_000_000)).refine((value) => Object.keys(value).length <= 50, "Too many department budgets supplied."),
+  showRevenueOverview: z.boolean(),
+  showSalesMix: z.boolean(),
+  showQuickActions: z.boolean(),
+  showTopProducts: z.boolean(),
+  showCashFlow: z.boolean(),
+  showBusinessHealth: z.boolean(),
+  showActionCenter: z.boolean(),
+  widgetOrder: z.array(dashboardWidgetId).min(1).max(DASHBOARD_WIDGET_IDS.length).refine((value) => new Set(value).size === value.length, "Dashboard panels must be unique."),
+  kpiCardIds: z.array(dashboardKpiId).min(1).max(DASHBOARD_KPI_IDS.length).refine((value) => new Set(value).size === value.length, "Dashboard KPIs must be unique."),
+  performanceWindow: z.enum(DASHBOARD_PERFORMANCE_WINDOWS),
 });
 
 export type DashboardPreferences = z.infer<typeof dashboardPreferencesInput>;
@@ -36,12 +53,28 @@ export const DEFAULT_DASHBOARD_PREFERENCES: DashboardPreferences = {
     Warehouse: 20000,
     Admin: 30000,
   },
+  showRevenueOverview: true,
+  showSalesMix: true,
+  showQuickActions: true,
+  showTopProducts: true,
+  showCashFlow: true,
+  showBusinessHealth: true,
+  showActionCenter: true,
+  widgetOrder: [...DASHBOARD_WIDGET_IDS],
+  kpiCardIds: [...DASHBOARD_KPI_IDS],
+  performanceWindow: "30d",
 };
 
 function normalizePreferences(value: unknown): DashboardPreferences {
   const candidate = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
   const rawBudgets = candidate.departmentBudgets && typeof candidate.departmentBudgets === "object" && !Array.isArray(candidate.departmentBudgets) ? candidate.departmentBudgets as Record<string, unknown> : {};
   const departmentBudgets = Object.fromEntries(Object.entries(rawBudgets).slice(0, 50).map(([key, budget]) => [key.trim().slice(0, 80), Math.min(1_000_000_000_000, Math.max(0, Number(budget) || 0))]).filter(([key]) => Boolean(key)));
+  const validWidgetIds = new Set<string>(DASHBOARD_WIDGET_IDS);
+  const suppliedOrder = Array.isArray(candidate.widgetOrder) ? candidate.widgetOrder.filter((item): item is string => typeof item === "string" && validWidgetIds.has(item)) : [];
+  const widgetOrder = Array.from(new Set([...suppliedOrder, ...DASHBOARD_WIDGET_IDS])).slice(0, DASHBOARD_WIDGET_IDS.length) as DashboardPreferences["widgetOrder"];
+  const validKpiIds = new Set<string>(DASHBOARD_KPI_IDS);
+  const suppliedKpiIds = Array.isArray(candidate.kpiCardIds) ? candidate.kpiCardIds.filter((item): item is string => typeof item === "string" && validKpiIds.has(item)) : [];
+  const kpiCardIds = (suppliedKpiIds.length ? Array.from(new Set(suppliedKpiIds)) : [...DASHBOARD_KPI_IDS]) as DashboardPreferences["kpiCardIds"];
   return {
     compactDensity: candidate.compactDensity === true,
     showKpiBanner: candidate.showKpiBanner !== false,
@@ -52,6 +85,16 @@ function normalizePreferences(value: unknown): DashboardPreferences {
     timezone: typeof candidate.timezone === "string" && candidate.timezone.trim() ? candidate.timezone.trim().slice(0, 100) : DEFAULT_DASHBOARD_PREFERENCES.timezone,
     fxRateOverride: Math.min(1_000_000, Math.max(1, Number(candidate.fxRateOverride) || DEFAULT_DASHBOARD_PREFERENCES.fxRateOverride)),
     departmentBudgets: { ...DEFAULT_DASHBOARD_PREFERENCES.departmentBudgets, ...departmentBudgets },
+    showRevenueOverview: candidate.showRevenueOverview !== false,
+    showSalesMix: candidate.showSalesMix !== false,
+    showQuickActions: candidate.showQuickActions !== false,
+    showTopProducts: candidate.showTopProducts !== false,
+    showCashFlow: candidate.showCashFlow !== false,
+    showBusinessHealth: candidate.showBusinessHealth !== false,
+    showActionCenter: candidate.showActionCenter !== false,
+    widgetOrder,
+    kpiCardIds,
+    performanceWindow: DASHBOARD_PERFORMANCE_WINDOWS.includes(candidate.performanceWindow as typeof DASHBOARD_PERFORMANCE_WINDOWS[number]) ? candidate.performanceWindow as DashboardPreferences["performanceWindow"] : DEFAULT_DASHBOARD_PREFERENCES.performanceWindow,
   };
 }
 
