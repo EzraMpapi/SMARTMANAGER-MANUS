@@ -191,6 +191,13 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           const moduleId = id.replaceAll("\\", "/");
+          // Keep the largest dashboard-local reusable factories and immutable
+          // seed data out of the already-lazy dashboard entry chunk. These
+          // remain static imports, preserving loading order and behavior;
+          // Rollup emits smaller cacheable assets for the shared code.
+          if (moduleId.endsWith("/client/src/dashboardExtractedModules.jsx")) return "dashboard-community-modules";
+          if (moduleId.endsWith("/client/src/dashboardAdditionalModules.jsx")) return "dashboard-additional-modules";
+          if (moduleId.endsWith("/client/src/dashboardStaticData.js")) return "dashboard-static-data";
           if (!moduleId.includes("/node_modules/")) return;
           if (moduleId.includes("/node_modules/react/") || moduleId.includes("/node_modules/react-dom/") || moduleId.includes("/node_modules/scheduler/")) return "react-runtime";
           if (moduleId.includes("/node_modules/lucide-react/")) return "icon-library";
