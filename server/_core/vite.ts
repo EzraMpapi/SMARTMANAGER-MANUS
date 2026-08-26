@@ -72,7 +72,18 @@ export function serveStatic(app: Express) {
     },
   }));
 
-  // fall through to index.html if the file doesn't exist
+  // Never answer a missing static asset with index.html. A stale hashed module
+  // must fail as an asset so the client lazy-loader can clear its shell cache
+  // and recover, rather than trying to parse HTML as JavaScript.
+  app.use((req, res, next) => {
+    if (path.extname(req.path)) {
+      res.status(404).end();
+      return;
+    }
+    next();
+  });
+
+  // Fall through to index.html for client-side application routes only.
   app.use((_req, res) => {
     res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
     res.sendFile(path.resolve(distPath, "index.html"));
