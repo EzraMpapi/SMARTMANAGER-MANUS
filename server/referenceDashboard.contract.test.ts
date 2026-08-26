@@ -25,6 +25,7 @@ describe("reference-aligned dashboard contracts", () => {
     expect(commandCenter).toContain("Customize dashboard");
     expect(commandCenter).toContain("Select dashboard performance period");
     expect(commandCenter).toContain("grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5");
+    expect(commandCenter).toContain("sm:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4");
   });
 
   it("uses only confirmed tenant-scoped source rows for reference metrics and charts", () => {
@@ -46,6 +47,7 @@ describe("reference-aligned dashboard contracts", () => {
     expect(commandCenter).toContain("const canWrite = writeAccess !== \"none\"");
     expect(commandCenter).toContain("const canOpen = (moduleId)");
     expect(commandCenter).toContain("onQuickAction?.");
+    for (const action of ["Record payment", "Approve leave", "AI assistant"]) expect(commandCenter).toContain(action);
   });
 
   it("retains authenticated company-scoped browser reads and relationship-backed nested sources", () => {

@@ -401,3 +401,69 @@
 - [x] Apply the migration through the authorized Supabase connector and verify the resulting catalog and tenant isolation.
 - [x] Update migration and verification evidence, run TypeScript/tests/build, and synchronize all changes to the private GitHub repository.
 
+## Dashboard Shell and Profile Interaction Refinement
+- [x] Inspect current sidebar, profile overlay, top-bar, dashboard shell, console logs, and reusable layout components
+- [x] Implement a professional persistent left sidebar with responsive mobile navigation while preserving RBAC and routes
+- [x] Replace the blocking profile overlay with a contained accessible profile menu and repair verified dashboard interaction defects
+- [x] Refine the top bar, validate desktop/mobile dashboard rendering, and run regression/type checks
+- [x] Verify the live schema for demonstrated missing objects only, commit intentional changes, and push GitHub main
+
+## Sidebar and Profile Menu Visual Simulation
+- [x] Confirm local preview availability and Git baseline
+- [x] Inspect desktop, tablet, and mobile dashboard entry states for sidebar and profile-menu behavior
+- [x] Verify Git remote synchronization and recent commit history
+- [x] Record the visual simulation findings and any authentication-gated limitations
+
+## Mobile Command Bar and Authenticated Interaction Validation
+- [x] Inspect current mobile top-bar styles, component inventory, available authenticated-session tests, and Git baseline
+- [x] Refine mobile command-bar spacing and responsive control density without changing routes or RBAC
+- [x] Generate a comprehensive dashboard component report with interaction and responsive responsibilities
+- [x] Run safe authenticated-session sidebar/profile interaction coverage and record any credential-gated limitation
+- [x] Run regression and live schema verification, create only proven missing objects, commit intentional changes, and push GitHub main
+
+## Desktop, Laptop, and Widescreen Command Workspace Refinement
+- [x] Audit desktop/laptop/widescreen shell geometry, all bars, navigation grouping, reusable components, and Git baseline
+- [x] Implement a clearer flatter role-aware desktop navigation model without changing routes, RBAC, or data flows
+- [x] Polish desktop command bars, workspace geometry, focus states, and large-screen responsive behavior
+- [x] Run desktop/laptop/widescreen visual simulation, regression, type, and tenant-safety validation
+- [x] Verify live Supabase schema through the connector, create only proven missing objects, commit intentional changes, and push GitHub main
+
+## Sidebar Ordering and Command-Bar Redesign
+- [x] Inspect current sidebar order derivation, top-bar markup/styles, responsive behavior, logs, and Git baseline
+- [x] Implement clear persistent role-priority and alphabetical sidebar ordering modes without changing visibility or RBAC
+- [x] Redesign and repair the desktop/mobile command bar for hierarchy, spacing, safe touch targets, and responsive overflow handling
+- [x] Run sidebar interaction, responsive layout, regression, type, and tenant-safety validation
+- [x] Commit and push intentional interface changes to GitHub main
+
+## Live Supabase Missing-Schema Reconciliation
+- [x] Inspect current Git state, repository schema contracts, migrations, and Supabase connector readiness
+- [x] Compare all required tables and relevant schema contracts with the live Supabase catalog
+- [x] Generate and apply only proven missing idempotent tenant-safe tables or schema objects through the Supabase connector (no missing object was demonstrated; no SQL applied)
+- [x] Re-verify schema completeness, RLS/tenant posture, and migration ledger
+- [x] Commit and push intentional migration or verification evidence to GitHub main
+
+## Attached Premium Dashboard Reconstruction Requirements
+- [x] Complete attachment review and audit repository dashboard, shell, modules, data contracts, states, and Git baseline
+- [x] Map actual dashboard metrics and widgets to real Supabase data, tenant scope, RLS, and UI loading/empty/error behavior
+- [x] Define and implement verified premium command-center layout, sidebar, header, dashboard-header, KPI, analytics, and operational-widget refinements
+- [x] Refine tables, quick actions, state handling, role-aware navigation, desktop/laptop/mobile responsiveness, and accessibility without mock production data
+- [x] Compare live Supabase contracts, create only demonstrated missing idempotent tenant-safe objects, validate, document, and push GitHub main
+
+## Reference-aligned Dashboard Reconstruction and Schema-first Audit
+- [x] Audit the supplied visual reference against the current role-aware dashboard composition and identify only verified design gaps
+- [ ] Inspect the connected Supabase catalog, relationships, RLS policies, views, and RPC functions against every data-dependent dashboard component (live connector policy/view/routine enumeration is blocked by connector HTTP 403; read-only OpenAPI and schema-contract fallbacks completed)
+- [x] Map reference KPI, chart, product, cash-flow, activity, health, and quick-action surfaces to real tenant-scoped sources or truthful unavailable states
+- [x] Implement reference-aligned dashboard composition and responsive styling through reusable current components without mock production metrics or duplicate preferences
+- [x] Extend contracts and validate full regression, TypeScript, live schema, responsive behavior, and build readiness; document and push GitHub main
+
+## Uploaded Banking and AI Assistant Error Evidence
+- [x] Reproduce and fix the Banking/MFI `Coins is not defined` runtime error shown at `/app?module=banking`
+- [x] Audit the unavailable `paymentInstructions` Banking/MFI dependency and account-opening type options against live-safe schema contracts without fabricating financial data
+- [x] Diagnose the AI Assistant reachability failure and ensure the user-facing recovery state is actionable without exposing tenant data or secrets
+- [x] Add regression coverage, validate type/schema contracts, document the fixes, and push verified changes to GitHub main
+
+## Reference Dashboard Responsive Completion and Live Migration Review
+- [x] Compare the current command-center composition and shared shell with the supplied reference without replacing verified real-data widgets
+- [x] Verify desktop, tablet, and mobile panel reflow, sidebar behavior, command controls, and accessible interaction states
+- [x] Inspect the live Supabase migration ledger and relevant dashboard table contracts; apply only a demonstrated missing additive migration (none was demonstrated, so no SQL was applied)
+- [x] Add any required responsive/source-contract coverage, validate, document, and push the final verified result to GitHub main
