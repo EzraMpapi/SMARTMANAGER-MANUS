@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createServer } from "http";
 import net from "net";
-import { serveStatic, setupVite } from "./vite";
+import { serveStatic } from "./static";
 import { createApiApp } from "./apiApp";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -28,6 +28,7 @@ async function startServer() {
   const server = createServer(app);
 
   if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
     serveStatic(app);
