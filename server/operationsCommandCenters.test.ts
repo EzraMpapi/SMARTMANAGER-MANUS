@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const workspace = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/OperationsCommandCenters.jsx"), "utf8");
-const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 
 describe("operations command-center contracts", () => {
   it("covers Inventory and Procurement control towers", () => {

@@ -12,7 +12,7 @@ const files = [
   "components/SectorCommandCenters.jsx",
   "components/VerticalCommandCenters.jsx",
 ].map((file) => ({ file, text: fs.readFileSync(path.join(root, file), "utf8") }));
-const dashboard = fs.readFileSync(path.join(root, "BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = fs.readFileSync(path.join(root, "BusinessSphereDashboardCore.jsx"), "utf8");
 
 describe("dashboard quality and boundary contracts", () => {
   it("keeps every command center responsive and source-labeled", () => {

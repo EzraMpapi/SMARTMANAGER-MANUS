@@ -47,11 +47,11 @@ The production smoke suite was not pointed at localhost because it intentionally
 
 ## Database and security boundary
 
-No schema changes were made in this UI/UX slice. The live Supabase project remains the source of truth for database state. The transformation preserves role-aware visibility, server-confirmed subscription access, tenant-scoped queries, server-side mutations, RLS expectations, offline write pausing, payment/provider gates, and audit evidence. No browser-only preference or recent-search state is used as a source of business truth.
+No schema changes were made in this UI/UX slice or in the checkout simulation. The live Supabase project remains the source of truth for database state. The transformation preserves role-aware visibility, server-confirmed subscription access, tenant-scoped queries, server-side mutations, RLS expectations, offline write pausing, payment/provider gates, and audit evidence. No browser-only preference or recent-search state is used as a source of business truth. The checkout/payment/shipping contract remains design-only and unapproved.
 
 ## Known remaining boundaries
 
-The repository still emits the known large `BusinessSphereDashboard` chunk warning at approximately 4.48 MB minified and approximately 905 KB gzip. This is a performance decomposition workstream, not a failed build. Production Vercel deployment remains externally blocked by account/project configuration and therefore cannot be claimed as live from local evidence alone.
+The repository still emits the known large dashboard core warning at **3,983.68 kB minified** after the wrapper/core split. The route wrapper itself is **1.66 kB**, but it immediately loads the core, so the practical initial dashboard payload is not below 500 kB. This remains a performance decomposition workstream, not a failed build. Production Vercel deployment remains externally blocked by account/project configuration and therefore cannot be claimed as live from local evidence alone.
 
 ## References
 
@@ -60,7 +60,7 @@ The repository still emits the known large `BusinessSphereDashboard` chunk warni
 [3]: ../client/src/index.css "Global semantic tokens and responsive rules"
 [4]: ../client/src/components/ui/button.tsx "Shared button primitive"
 [5]: ../client/src/components/EnterpriseLayout.tsx "Shared enterprise layout helpers"
-[6]: ../client/src/BusinessSphereDashboard.jsx "Authenticated shell and module switchboard"
+[6]: ../client/src/BusinessSphereDashboardCore.jsx "Authenticated shell and module switchboard core"
 [7]: ../server/uiDesignSystem.test.ts "Design-system and shell regression contracts"
 [8]: ../FULL_SYSTEM_IMPLEMENTATION_MATRIX.md "Existing implementation and acceptance matrix"
 
@@ -71,4 +71,4 @@ The E-Commerce mandate in `pasted_content_2.txt` was inspected in full. The curr
 
 The authenticated commerce workspace now provides expanded truthful KPIs for online revenue, orders, average order value, published products, pending payment, processing, low stock, and inventory value where unit cost is confirmed. Catalog discovery supports product/SKU search, category filters, stock filters, deterministic sorting, grid/list views, transparent image-unavailable labeling, and touch-safe publish controls. Order management supports order/customer search, status filtering, keyboard-accessible row opening, explicit confirmation-state copy, a responsive order table, dialog semantics, a status timeline, and touch-safe supported status advancement. Shared commercial command-center cards and metrics now use the canonical enterprise surface and focus contracts.
 
-The E-Commerce regression contract verifies live table hooks, truthful metric/source copy, catalog search/stock/sort controls, accessible order management, supported status transitions, and the schema safety boundary. The final full Vitest run after these changes passed **1,049 tests across 259 files**, with **15 skipped tests across 7 files**, in **25.63 seconds**. The production Vite build passed after the commerce changes; the known approximately 4.5 MB dashboard chunk warning remains non-blocking.
+The E-Commerce regression contract verifies live table hooks, truthful metric/source copy, catalog search/stock/sort controls, accessible order management, supported status transitions, and the schema safety boundary. The authoritative full Vitest run after the wrapper/core and offline-simulation changes passed **1,067 tests across 269 files**, with **15 skipped tests across 7 files**, in **24.29 seconds**. The new offline checkout/payment/shipping model passed **4 tests** for totals, state transitions, duplicate-event idempotency, oversell rejection, and invalid-line rejection. The direct Vite production build passed; the standard build remains credential-gated by the protected Supabase schema verifier. No live payment, provider call, Supabase mutation, or shipment delivery occurred.

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const layout = readFileSync(new URL("../client/src/components/EnterpriseLayout.tsx", import.meta.url), "utf8");
 const customizer = readFileSync(new URL("../client/src/components/EnterpriseColumnCustomizer.tsx", import.meta.url), "utf8");
-const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 const globalStyles = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 const predictiveWorkspace = readFileSync(new URL("../client/src/components/PredictiveAnalyticsWorkspace.jsx", import.meta.url), "utf8");
 const mobileEvidence = readFileSync(new URL("../AUTHENTICATED_MOBILE_ACTION_BAR_EVIDENCE.md", import.meta.url), "utf8");

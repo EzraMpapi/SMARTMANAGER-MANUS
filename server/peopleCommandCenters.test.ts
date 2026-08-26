@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const workspace = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/PeopleCommandCenters.jsx"), "utf8");
-const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const portal = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/EmployeePortalWorkspace.jsx"), "utf8");
 
 describe("people and work command-center contracts", () => {

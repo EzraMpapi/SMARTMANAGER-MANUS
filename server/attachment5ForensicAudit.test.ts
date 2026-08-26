@@ -32,7 +32,7 @@ describe("Attachment 5 forensic audit contracts", () => {
   });
 
   it("keeps dashboard responsive controls and safe-area handling in the shared shell", () => {
-    const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+    const dashboard = read("client/src/BusinessSphereDashboardCore.jsx");
     const css = read("client/src/index.css");
 
     expect(dashboard).toContain("dashboard-mobile-content");

@@ -12,7 +12,7 @@ vi.mock("../client/src/lib/trpc", () => ({
   },
 }));
 
-import { SignupPage } from "../client/src/BusinessSphereDashboard.jsx";
+import { SignupPage } from "../client/src/BusinessSphereDashboardCore.jsx";
 
 describe("SignupPage mounted interaction flow", () => {
   beforeEach(() => {

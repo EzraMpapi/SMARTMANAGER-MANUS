@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 const settingsSource = dashboardSource.slice(dashboardSource.indexOf("function SettingsPage("), dashboardSource.indexOf("function TeamManagement("));
 const rootSource = dashboardSource.slice(dashboardSource.indexOf("async function toggleModule(id)"), dashboardSource.indexOf("// Tables read by more than one module"));
 const routerSource = readFileSync(new URL("./routers.ts", import.meta.url), "utf8");

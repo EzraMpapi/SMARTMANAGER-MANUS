@@ -6,7 +6,7 @@ const repositoryRoot = path.resolve(__dirname, "..");
 const css = fs.readFileSync(path.join(repositoryRoot, "client/src/index.css"), "utf8");
 const button = fs.readFileSync(path.join(repositoryRoot, "client/src/components/ui/button.tsx"), "utf8");
 const enterpriseLayout = fs.readFileSync(path.join(repositoryRoot, "client/src/components/EnterpriseLayout.tsx"), "utf8");
-const shell = fs.readFileSync(path.join(repositoryRoot, "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const shell = fs.readFileSync(path.join(repositoryRoot, "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const designSystem = fs.readFileSync(path.join(repositoryRoot, "docs/smart-manager-design-system.md"), "utf8");
 const transformationAudit = fs.readFileSync(path.join(repositoryRoot, "docs/smart-manager-ui-ux-transformation-audit-20260826.md"), "utf8");
 

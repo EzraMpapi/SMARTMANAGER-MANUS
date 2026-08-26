@@ -10,7 +10,7 @@ vi.mock("../client/src/lib/guardedPersistenceClient", () => ({
   setGuardedPersistenceCompanyId: vi.fn(),
 }));
 
-const { runCompanyTableMutation, sb } = await import("../client/src/BusinessSphereDashboard.jsx");
+const { runCompanyTableMutation, sb } = await import("../client/src/BusinessSphereDashboardCore.jsx");
 
 describe("Guarded client mutation routing", () => {
   beforeEach(() => guardedMutation.mutate.mockReset());

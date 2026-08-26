@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const channels = source.slice(source.indexOf("function ChannelsView("), source.indexOf("function ChannelFormPanel("));
 const channelForm = source.slice(source.indexOf("function ChannelFormPanel("), source.indexOf("/* ----------------------------------- SHARED CALENDAR"));
 const calendar = source.slice(source.indexOf("function SharedCalendar("), source.indexOf("function EventFormPanel("));

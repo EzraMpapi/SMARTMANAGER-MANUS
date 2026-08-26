@@ -6,7 +6,7 @@ const authGatewaySource = readFileSync(new URL("../client/src/components/PublicA
 const authSessionStorageSource = readFileSync(new URL("../client/src/lib/authSessionStorage.js", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
 const trpcBootstrapSource = readFileSync(new URL("../client/src/main.tsx", import.meta.url), "utf8");
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 
 describe("public authentication experience", () => {
   it("keeps the mobile Google sign-in control discoverable, disabled while busy, and connected to the configured provider flow", () => {

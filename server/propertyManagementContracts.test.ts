@@ -7,7 +7,7 @@ const read = (relativePath: string) => fs.readFileSync(path.join(root, relativeP
 const migration = read("supabase/migrations/20260823_040_property_management_core.sql");
 const operations = read("server/propertyManagementOperations.ts");
 const router = read("server/routers.ts");
-const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+const dashboard = read("client/src/BusinessSphereDashboardCore.jsx");
 const workspace = read("client/src/components/PropertyManagementWorkspace.jsx");
 const scheduled = read("server/propertyManagement.ts");
 

@@ -16,7 +16,7 @@ const trialCatalog = read("supabase/migrations/20260822_028_subscription_trials_
 const trialHardening = read("supabase/migrations/20260822_029_subscription_trial_function_execute_hardening.sql");
 const planAdminControls = read("supabase/migrations/20260822_030_subscription_plan_admin_controls.sql");
 const billingSnapshotAliasFix = read("supabase/migrations/20260823_062_fix_billing_snapshot_event_alias.sql");
-const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+const dashboard = read("client/src/BusinessSphereDashboardCore.jsx");
 
 describe("Subscription billing and HarakaPay contracts", () => {
   it("creates tenant-scoped subscription, payment, invoice, usage, profile, and audit persistence with RLS", () => {

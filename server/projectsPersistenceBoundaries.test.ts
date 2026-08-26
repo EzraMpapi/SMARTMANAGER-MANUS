@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const projects = source.slice(source.indexOf("function Projects("), source.indexOf("function ProjectFormPanel("));
 const projectForm = source.slice(source.indexOf("function ProjectFormPanel("), source.indexOf("const PROJECT_DETAIL_TABS"));
 const projectDetail = source.slice(source.indexOf("function ProjectDetail("), source.indexOf("function ProjectTasks("));

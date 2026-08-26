@@ -4,7 +4,7 @@
 
 ## Executive result
 
-The full Vitest suite completed successfully with **1,049 passed tests**, **15 skipped tests**, and **7 skipped test files** across **266 files**. The skipped cases are explicit environment gates, not silent assertion failures. The dashboard entry bundle was reduced from **4,524,618 bytes** to **3,931,514 bytes**, a reduction of **593,104 bytes**, or **13.00%**, while retaining static import order and runtime behavior.
+The authoritative full Vitest suite completed successfully with **1,067 passed tests**, **15 skipped tests**, and **7 skipped test files** across **269 files**. The skipped cases are explicit environment gates, not silent assertion failures. The checkout/payment/shipping addition is covered by four offline-only passing tests. The dashboard optimization now has both a first chunking baseline and a wrapper/core measurement; these must not be conflated.
 
 ## Complete skipped-test inventory
 
@@ -24,16 +24,21 @@ The environment audit found only `OPENAI_API_BASE`, `OPENAI_API_KEY`, and `OPENA
 
 ## Dashboard bundle optimization
 
-The original dashboard chunk was **4,524,618 bytes**. Rollup now emits the largest dashboard-local reusable modules as separate cacheable assets while keeping them as static imports:
+The first optimization baseline was **4,524,618 bytes** and the first manual-chunk result was **3,931,514 bytes**, a reduction of **593,104 bytes or 13.00%**. The stronger wrapper/core measurement from a fresh direct Vite build is:
 
-| Emitted asset | Size |
-|---|---:|
-| `BusinessSphereDashboard-*.js` | 3,931,514 bytes |
-| `dashboard-community-modules-*.js` | 437,983 bytes |
-| `dashboard-additional-modules-*.js` | 93,497 bytes |
-| `dashboard-static-data-*.js` | 56,257 bytes |
+| Emitted asset | Size | Interpretation |
+|---|---:|---|
+| `BusinessSphereDashboard-*.js` | 1,661 bytes | Thin route entry wrapper |
+| `BusinessSphereDashboardCore-*.js` | 3,983,679 bytes | Core fetched immediately by the wrapper |
+| `dashboard-community-modules-*.js` | 438,013 bytes | Lazy Community Groups and Employee Portal factory |
+| `dashboard-additional-modules-*.js` | 93,497 bytes | Additional extracted module bundle |
+| `dashboard-static-data-*.js` | 56,257 bytes | Static/configuration data bundle |
 
-The main dashboard asset is therefore **593,104 bytes smaller** than the prior build. This reduces the size of the monolithic entry asset without changing data contracts, route behavior, import evaluation order, or workspace state. The build still reports the configured 2,500 kB warning because the dashboard entry remains above that threshold. The next safe performance wave should extract whole workspace boundaries behind true dynamic imports rather than raising the warning limit or using browser-only route assumptions.
+The wrapper filename is below 500 kB, but the practical initial dashboard payload is **not** below 500 kB because the wrapper immediately loads the approximately **3.98 MB** core. The build still reports the configured 2,500 kB warning. The next safe performance wave must extract whole route-specific workspaces behind true dynamic imports rather than raising the warning limit or claiming success from the wrapper alone.
+
+## Offline commerce simulation evidence
+
+`server/commerceCheckoutSimulation.test.ts` passed **4 tests**. The deterministic model produced a TZS 50,000 subtotal, TZS 9,000 tax, TZS 5,000 shipping charge, and TZS 64,000 grand total; moved the simulated checkout to `COMPLETED`, the payment to `SUCCEEDED`, the reservation to `CONSUMED`, and the shipment to `DELIVERED`; ignored a duplicate provider event; and rejected oversell, empty, and invalid lines. This is a local state-machine test only. It did not call a provider, collect money, mutate Supabase, or deliver a shipment. The future design-only schema/RPC contract remains unapproved and unapplied.
 
 ## Recommended next actions
 

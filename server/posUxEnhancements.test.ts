@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 describe("POS UX Enhancements", () => {
-  const dashboardPath = path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx");
+  const dashboardPath = path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx");
   const source = fs.readFileSync(dashboardPath, "utf-8");
 
   it("includes offline connection status alert banner with manual force sync button", () => {

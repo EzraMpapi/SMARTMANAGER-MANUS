@@ -4,7 +4,7 @@ import path from "node:path";
 
 const root = path.resolve(process.cwd(), "client/src");
 const intelligence = fs.readFileSync(path.join(root, "components/IntelligenceCommandCenters.jsx"), "utf8");
-const dashboard = fs.readFileSync(path.join(root, "BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = fs.readFileSync(path.join(root, "BusinessSphereDashboardCore.jsx"), "utf8");
 const tra = fs.readFileSync(path.join(root, "components/TraPortalModule.jsx"), "utf8");
 
 describe("support, AI, and TRA intelligence contracts", () => {

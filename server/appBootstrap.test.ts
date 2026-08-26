@@ -14,7 +14,7 @@ describe("application bootstrap recovery", () => {
   });
 
   it("protects School Workspace from stale hashed chunk failures", () => {
-    const source = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+    const source = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 
     expect(source).toContain("async function clearStaleShellCaches()");
     expect(source).toContain('cacheKey.startsWith("smart-manager-shell-")');

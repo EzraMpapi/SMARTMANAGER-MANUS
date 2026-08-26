@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 const salesStart = dashboardSource.indexOf("function Sales(");
 const salesEnd = dashboardSource.indexOf("/* ------------------------------- INVENTORY", salesStart);
 const salesSource = dashboardSource.slice(salesStart, salesEnd);

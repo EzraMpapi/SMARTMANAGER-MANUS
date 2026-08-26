@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const source = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const source = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 const reminder = source.slice(source.indexOf("function QuarterlySecurityReviewChecklist"), source.indexOf("function BranchesManager"));
 
 describe("quarterly security review reminder scope", () => {
