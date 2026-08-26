@@ -519,4 +519,4 @@
 - [x] Run a comprehensive Kiswahili terminology audit across Chapters 01–12, record corrections, and add regression coverage where appropriate.
 - [x] Prepare the Chapters 07–09 presentation narrative and slide-aligned Kiswahili presenter script with approved conceptual/redacted evidence only.
 - [x] Generate and present the evidence-based Chapters 07–09 commercial-foundation slide deck.
-- [ ] Run final validation and synchronize the reviewed Chapter 13–15, terminology-audit, and commercial-deck package to GitHub main.
+- [x] Run final validation and synchronize the reviewed Chapter 13–15, terminology-audit, and commercial-deck package to GitHub main.
