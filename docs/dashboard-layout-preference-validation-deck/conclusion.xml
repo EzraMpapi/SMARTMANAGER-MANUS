@@ -1,0 +1,25 @@
+<slide id="conclusion">
+  <background color="navy"/>
+  <shape id="grid-v1" type="line" x="920" y="80" width="0" height="540" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <shape id="grid-v2" type="line" x="1080" y="80" width="0" height="540" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <shape id="grid-h1" type="line" x="760" y="210" width="440" height="0" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <shape id="grid-h2" type="line" x="760" y="370" width="440" height="0" stroke="grid" stroke-width="1" opacity="0.45"/>
+  <text id="report-label" x="40" y="28" width="450" height="22" font="caption" size="13" color="gold" wrap="false">SMART MANAGER · ENGINEERING CONCLUSION</text>
+  <text id="title" x="40" y="105" width="970" height="44" font="heading" size="32" color="paper" wrap="false">Ready feature. Clear operating rule.</text>
+  <shape id="verdict-panel" type="rect" x="40" y="170" width="860" height="60" corner-radius="16" fill="#D4AF3720" stroke="#D4AF37" stroke-width="1"/>
+  <text id="verdict" x="68" y="186" width="780" height="26" font="body" size="21" color="gold" wrap="false">Dashboard layout preferences are verified through the real shared drawer and a tenant-safe isolated browser journey.</text>
+  <shape id="ready-card" type="rect" x="40" y="280" width="380" height="270" corner-radius="20" fill="evergreen" stroke="#2F6B58" stroke-width="1"/>
+  <icon id="ready-icon" name="circle-check-big" x="72" y="314" width="42" height="42" color="gold"/>
+  <text id="ready-title" x="72" y="382" width="260" height="24" font="body" size="22" color="paper" wrap="false">Feature readiness</text>
+  <text id="ready-copy" x="72" y="422" width="290" height="82" font="body" size="17" color="#D8E5E0" line-height="1.35">Saved performance range, KPI cards, panel visibility, and ordering are implemented with accessible controls and an executive-path drawer mount.</text>
+  <shape id="runbook-card" type="rect" x="450" y="280" width="380" height="270" corner-radius="20" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="runbook-icon" name="server-cog" x="482" y="314" width="42" height="42" color="gold"/>
+  <text id="runbook-title" x="482" y="382" width="260" height="24" font="body" size="22" color="paper" wrap="false">Build runbook</text>
+  <text id="runbook-copy" x="482" y="422" width="290" height="82" font="body" size="17" color="muted" line-height="1.35">Run the production build in a clean worker with the 2.3 GiB V8 cap and no concurrent development watcher. Keep the current lazy workspace boundaries.</text>
+  <shape id="boundary-card" type="rect" x="860" y="280" width="380" height="270" corner-radius="20" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="boundary-icon" name="database-zap" x="892" y="314" width="42" height="42" color="gold"/>
+  <text id="boundary-title" x="892" y="382" width="260" height="24" font="body" size="22" color="paper" wrap="false">Data boundary</text>
+  <text id="boundary-copy" x="892" y="422" width="290" height="82" font="body" size="17" color="muted" line-height="1.35">No schema migration is required. Existing tenant-scoped preference storage, RLS, real-data sources, and role-aware actions remain the governing architecture.</text>
+  <text id="next-step" x="40" y="601" width="980" height="22" font="caption" size="14" color="muted">Next safe step: include the clean-worker build command in CI or a dedicated release executor, then preserve the same isolated browser test as a regression gate.</text>
+  <text id="page-number" x="1175" y="662" width="64" height="24" font="caption" size="14" color="muted" align="right" wrap="false">08 / 08</text>
+</slide>

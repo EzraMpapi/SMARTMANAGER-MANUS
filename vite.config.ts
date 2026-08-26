@@ -183,6 +183,10 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 2500,
+    // Gzip size reporting is diagnostic-only and runs after asset emission.
+    // Disabling it avoids an avoidable high-memory post-bundle pass in the
+    // constrained build worker without changing emitted application assets.
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
         manualChunks(id) {

@@ -83,7 +83,7 @@ jobs:
             "$SLACK_WEBHOOK_URL"
 
   browser-signup:
-    name: Browser Signup Journey
+    name: Browser Dashboard Preference Journey
     needs: validate
     runs-on: ubuntu-latest
     permissions:
@@ -118,10 +118,14 @@ jobs:
       - name: Install Chromium for Playwright
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run isolated browser signup journey
+      - name: Run isolated dashboard preference journey
         run: |
           pnpm run pretest:browser
-          pnpm exec playwright test browser-tests/signupWizard.spec.ts
+          node scripts/serve-build-for-e2e.mjs > isolated-browser-server.log 2>&1 &
+          E2E_STATIC_SERVER_PID=$!
+          trap 'kill "$E2E_STATIC_SERVER_PID"' EXIT
+          sleep 1
+          PLAYWRIGHT_EXTERNAL_SERVER=1 pnpm exec playwright test browser-tests/signupWizard.spec.ts --config=playwright.isolated.config.ts
 
       - name: Upload browser diagnostics
         if: failure()
@@ -131,4 +135,5 @@ jobs:
           path: |
             test-results/
             playwright-report/
+            isolated-browser-server.log
           if-no-files-found: ignore

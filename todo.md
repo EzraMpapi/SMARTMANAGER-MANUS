@@ -481,3 +481,9 @@
 - [x] Implement every demonstrated visual, responsive, accessibility, drill-down, quick-action, chart, and state-handling gap using the existing ERP architecture.
 - [x] Inspect live Supabase migrations, tables, relationships, policies, views, and functions; apply only proven missing additive schema objects through the connected project (none was demonstrated, so no SQL was applied).
 - [x] Run focused and full regression, TypeScript, schema, and build-readiness validation; document evidence and synchronize verified changes to GitHub main.
+
+## Dashboard Build Memory and Isolated Visual Validation
+- [x] Profile the Vite production bundling phase and implement only a behavior-preserving mitigation for the chunk-rendering memory termination.
+- [x] Run automated dashboard layout-preference browser verification in a disposable isolated tenant/session without reading or mutating production tenant data.
+- [x] Create an evidence-based slide deck summarizing the saved layout-preference feature, real-data/RLS boundaries, validation results, and remaining limitations.
+- [x] Re-run appropriate quality gates, document results, and synchronize any verified implementation changes to GitHub main.

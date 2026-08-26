@@ -12,24 +12,24 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-label="Operational workspaces"');
     expect(dashboard).toContain('aria-label="Open command palette"');
     expect(dashboard).toContain('aria-hidden={!sidebarOpen}');
-    expect(dashboard).toContain('className={`fixed inset-y-0 left-0 z-50');
+    expect(dashboard).toContain('className={`dashboard-sidebar fixed z-50 inset-y-0 left-0');
     expect(dashboard).toContain('aria-current={isActive ? "page" : undefined}');
-    expect(dashboard).toContain('aria-expanded={expanded}');
+    expect(dashboard).toContain('dashboard-flat-navigation');
   });
 
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
     expect(dashboard).toContain('aria-label="Open menu"');
     expect(dashboard).toContain('aria-label="Search everything"');
     expect(dashboard).toContain('aria-label="Open workspace settings"');
-    expect(dashboard).toContain('onClick={()=>setDarkMode(d=>!d)}');
+    expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
     expect(dashboard).toContain("sm:hidden");
     expect(dashboard).toContain("xl:inline-flex");
   });
 
-  it("keeps grouped navigation role-safe and preserves the compact mobile navigation", () => {
-    expect(dashboard).toContain('aria-controls={`navigation-items-${group.id}`}');
-    expect(dashboard).toContain('role="group"');
+  it("keeps flat navigation role-safe and preserves the compact mobile navigation", () => {
+    expect(dashboard).toContain('flatNavigationItems.map((item) => {');
+    expect(dashboard).toContain('item.locked');
     expect(dashboard).toContain('aria-label="Mobile workspace navigation"');
     expect(dashboard).toContain('aria-current={on ? "page" : undefined}');
   });

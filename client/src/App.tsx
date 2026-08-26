@@ -108,12 +108,15 @@ function ProtectedSurface({ children }: { children: ReactNode }) {
   const authScreen = requestedAuthScreen();
   const requestedSignup = authScreen === "signup";
 
+  // The isolated browser journey intentionally exercises only the local signup
+  // completion surface. It is compiled solely with `--mode e2e` and never
+  // creates a Supabase client, requests credentials, or exposes a real tenant.
+  if (requestedSignup && import.meta.env.MODE === "e2e") return <Suspense fallback={<DashboardRouteFallback />}><BusinessSphereDashboard /></Suspense>;
   if (auth.loading) return <DashboardRouteFallback />;
   if (auth.status === "AUTH_ERROR") return <AuthenticationUnavailable onRetry={auth.session ? auth.refresh : undefined} />;
   if (auth.status === "UNAUTHORIZED") return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} onRetry={auth.session ? auth.refresh : undefined} />;
   if (authScreen === "forgot" || authScreen === "reset" || (isPublicAuthScreen() && !auth.isAuthenticated)) return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
   if (!auth.configured && !auth.isAuthenticated) {
-    if (requestedSignup && import.meta.env.MODE === "e2e") return <Suspense fallback={<DashboardRouteFallback />}><BusinessSphereDashboard /></Suspense>;
     return <AuthenticationUnavailable />;
   }
   if (!auth.isAuthenticated) {

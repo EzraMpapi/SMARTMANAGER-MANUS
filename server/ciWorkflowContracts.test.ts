@@ -5,8 +5,8 @@ const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta
 const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const browserJourney = readFileSync(new URL("../browser-tests/signupWizard.spec.ts", import.meta.url), "utf8");
 
-describe("isolated signup and CI quality gates", () => {
-  it("keeps final signup browser coverage inside a compile-time isolated mode", () => {
+describe("isolated dashboard browser journey and CI quality gates", () => {
+  it("keeps the disposable browser journey inside a compile-time isolated mode and mocked tenant boundary", () => {
     expect(dashboard).toContain('const IS_ISOLATED_SIGNUP_E2E = import.meta.env.MODE === "e2e"');
     expect(dashboard).toContain('endsWith("@e2e.invalid")');
     expect(dashboard).toContain("clearStoredAuthSession();");
@@ -16,9 +16,10 @@ describe("isolated signup and CI quality gates", () => {
     expect(dashboard).toContain("Preview dashboard preferences");
     expect(dashboard).toContain('const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAuditLogView")');
     expect(dashboard).toContain('aria-label="Loading compliance audit workspace"');
-    expect(browserJourney).toContain("Preview compliance audit workspace");
-    expect(browserJourney).toContain("asha@e2e.invalid");
-    expect(browserJourney).toContain('name: "Launch Smart Manager →"');
+    expect(browserJourney).toContain("installIsolatedDashboardSession");
+    expect(browserJourney).toContain("updates and saves dashboard layout preferences");
+    expect(browserJourney).toContain("preferenceSaveCount");
+    expect(browserJourney).toContain("e2e.supabase.invalid");
   });
 
   it("runs tests, schema validation, type checks, production build, and browser coverage in GitHub Actions", () => {
@@ -26,9 +27,10 @@ describe("isolated signup and CI quality gates", () => {
     expect(workflow).toContain("pnpm run verify:supabase-schema");
     expect(workflow).toContain("pnpm run check");
     expect(workflow).toContain("pnpm test -- --coverage --reporter=verbose");
-    expect(workflow).toContain('name: Browser Signup Journey');
+    expect(workflow).toContain('name: Browser Dashboard Preference Journey');
     expect(workflow).toContain("pnpm exec playwright install --with-deps chromium");
     expect(workflow).toContain("pnpm run pretest:browser");
-    expect(workflow).toContain("pnpm exec playwright test browser-tests/signupWizard.spec.ts");
+    expect(workflow).toContain("node scripts/serve-build-for-e2e.mjs");
+    expect(workflow).toContain("PLAYWRIGHT_EXTERNAL_SERVER=1 pnpm exec playwright test browser-tests/signupWizard.spec.ts --config=playwright.isolated.config.ts");
   });
 });
