@@ -1,0 +1,65 @@
+# SMART MANAGER ERP UI/UX Transformation Validation
+
+**Date:** 26 August 2026
+**Implementation slice:** Design-system contract, enterprise shell accessibility, global command palette, and representative financial/vertical workspace normalization.
+
+## Delivered implementation
+
+The repository now contains a traceable transformation audit and a canonical SMART MANAGER design-system contract. Global semantic tokens cover brand green, emerald, deep emerald, gold, ink, slate, canvas, surfaces, success, warning, danger, information, focus, panel radius, panel shadow, and minimum control height. The shared button primitive now has semantic success, warning, tertiary, and icon variants plus active, disabled, busy, and focus behavior. Shared enterprise layout helpers use semantic page-header, panel, and control contracts.
+
+The authenticated ERP shell now labels workspace settings, exposes the theme toggle state through `aria-pressed`, uses a semantic main page surface, and retains its role-aware navigation, mobile navigation, subscription boundaries, offline write pause, and tenant context. The global command palette now supports persisted recent searches, categorized recent/record/action/module results, listbox semantics, active option tracking, keyboard navigation, and a useful no-results explanation. Search and quick-action behavior still routes only through the existing RBAC- and entitlement-filtered module list.
+
+Microfinance, Pharmacy, School, and Bank/MFI workspaces now use the shared surface contract for their panels, controls, buttons, status indicators, modals, metrics, and scrollable tables. Existing tRPC procedures, guarded mutation paths, tenant-scoped queries, financial controls, and real workflow behavior were preserved.
+
+## Validation evidence
+
+| Check | Result | Evidence |
+|---|---:|---|
+| TypeScript check | Passed | `pnpm check` |
+| Full Vitest suite | **996 passed, 15 skipped** | 240 test files passed, 7 skipped; 1,011 tests total; 24.52 seconds |
+| Focused UI/accessibility contracts | **32 passed** | 8 test files passed, including design-system, shell, auth visual, mobile, table, button, and offline contracts |
+| Module-focused contracts | **48 passed** | 8 test files passed for UI slice plus representative Microfinance/Pharmacy/School/Bank contracts |
+| Production client build | Passed | 2,690 modules transformed; built successfully |
+| Browser auth journey — 1440 × 900 | Passed | 2 tests passed |
+| Browser auth journey — 768 × 1024 | Passed | 2 tests passed |
+| Browser auth journey — 390 × 844 | Passed | 2 tests passed |
+| Browser auth journey — 360 × 800 | Passed | 2 tests passed |
+| Git whitespace validation | Passed | `git diff --check` |
+| Supabase schema safety | No new DDL required | Existing live catalog and repository migration history are synchronized; duplicate tables were not created |
+
+## Responsive visual evidence
+
+The public entry surface was captured at 1440 × 900, 768 × 1024, 390 × 844, and 360 × 800. The actual transparent Smart Manager mark renders in the header at all four sizes after page settlement. The tablet and mobile compositions keep the primary action reachable, wrap the headline and supporting copy without horizontal overflow, and retain a visible logo. The initial desktop blank square disappeared in the delayed capture and was confirmed to be screenshot timing rather than a persistent asset defect.
+
+Evidence files are stored outside the repository’s tracked source surface:
+
+- `/tmp/smartmanager-desktop-mandate.png`
+- `/tmp/smartmanager-desktop-mandate-delayed.png`
+- `/tmp/smartmanager-tablet-mandate.png`
+- `/tmp/smartmanager-mobile-mandate.png`
+- `/tmp/smartmanager-smallmobile-mandate.png`
+
+## Browser-test limitation and resolution
+
+The first local browser attempt used a normal preview build without Supabase E2E configuration. The application correctly displayed its fail-closed “Secure authentication is unavailable” boundary, so authentication controls were not available to that test. This was an environment mismatch, not a UI regression. The repository’s intended E2E build path was then used with safe placeholder provider configuration, and the public authentication journey passed at all four viewport sizes.
+
+The production smoke suite was not pointed at localhost because it intentionally refuses non-production targets. No production authentication or provider action was attempted.
+
+## Database and security boundary
+
+No schema changes were made in this UI/UX slice. The live Supabase project remains the source of truth for database state. The transformation preserves role-aware visibility, server-confirmed subscription access, tenant-scoped queries, server-side mutations, RLS expectations, offline write pausing, payment/provider gates, and audit evidence. No browser-only preference or recent-search state is used as a source of business truth.
+
+## Known remaining boundaries
+
+The repository still emits the known large `BusinessSphereDashboard` chunk warning at approximately 4.48 MB minified and approximately 905 KB gzip. This is a performance decomposition workstream, not a failed build. Production Vercel deployment remains externally blocked by account/project configuration and therefore cannot be claimed as live from local evidence alone.
+
+## References
+
+[1]: ./smart-manager-ui-ux-transformation-audit-20260826.md "Repository-grounded transformation audit"
+[2]: ./smart-manager-design-system.md "SMART MANAGER design-system contract"
+[3]: ../client/src/index.css "Global semantic tokens and responsive rules"
+[4]: ../client/src/components/ui/button.tsx "Shared button primitive"
+[5]: ../client/src/components/EnterpriseLayout.tsx "Shared enterprise layout helpers"
+[6]: ../client/src/BusinessSphereDashboard.jsx "Authenticated shell and module switchboard"
+[7]: ../server/uiDesignSystem.test.ts "Design-system and shell regression contracts"
+[8]: ../FULL_SYSTEM_IMPLEMENTATION_MATRIX.md "Existing implementation and acceptance matrix"

@@ -88,10 +88,60 @@
   --noble-emerald: #16A34A;
   --noble-slate: #0B1120;
   --noble-navy: #131C31;
+
+  /* SMART MANAGER semantic design-system tokens. Prefer these over page-local
+     hex values so the ERP remains visually coherent across modules. */
+  --sm-brand: #0B5D3B;
+  --sm-brand-strong: #064E3B;
+  --sm-emerald: #16A34A;
+  --sm-gold: #C9A96E;
+  --sm-ink: #0F172A;
+  --sm-slate: #475569;
+  --sm-canvas: #F4F7F6;
+  --sm-surface: #FFFFFF;
+  --sm-muted-surface: #F8FAFC;
+  --sm-success: #15803D;
+  --sm-success-surface: #DCFCE7;
+  --sm-warning: #B45309;
+  --sm-warning-surface: #FEF3C7;
+  --sm-danger: #B91C1C;
+  --sm-danger-surface: #FEE2E2;
+  --sm-info: #0369A1;
+  --sm-info-surface: #E0F2FE;
+  --sm-focus: #16A34A;
+  --sm-control-min: 2.75rem;
+  --sm-radius-panel: 1rem;
+  --sm-shadow-panel: 0 12px 34px rgba(15, 23, 42, .07);
+  --sm-shadow-float: 0 18px 46px rgba(15, 23, 42, .14);
+  --sm-ease-out: cubic-bezier(.23, 1, .32, 1);
 }
 
 .dark {
-  /* Dark mode is the default for this redesign */
+  /* Dark mode has its own semantic surfaces; it is not a raw inversion. */
+  --background: #0B1220;
+  --foreground: #F8FAFC;
+  --card: #111827;
+  --card-foreground: #F8FAFC;
+  --popover: #111827;
+  --popover-foreground: #F8FAFC;
+  --secondary: #1E293B;
+  --secondary-foreground: #F8FAFC;
+  --muted: #1E293B;
+  --muted-foreground: #CBD5E1;
+  --accent: #1F2937;
+  --accent-foreground: #F8FAFC;
+  --border: rgba(226, 232, 240, .16);
+  --input: rgba(226, 232, 240, .18);
+  --ring: #6EE7B7;
+  --sidebar: #0F172A;
+  --sidebar-foreground: #F8FAFC;
+  --sidebar-border: rgba(226, 232, 240, .14);
+  --sm-canvas: #0B1220;
+  --sm-surface: #111827;
+  --sm-muted-surface: #1E293B;
+  --sm-ink: #F8FAFC;
+  --sm-slate: #CBD5E1;
+  --sm-focus: #6EE7B7;
 }
 
 @layer base {
@@ -119,6 +169,11 @@
   .noble-button {
     @apply bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all duration-200 font-semibold;
   }
+  :where(button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--sm-focus);
+    outline-offset: 2px;
+  }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),
@@ -133,6 +188,64 @@
 }
 
 @layer components {
+  /* System surfaces and layout contracts for new and migrated module views. */
+  .sm-page {
+    min-width: 0;
+    color: var(--sm-ink);
+  }
+
+  .sm-panel {
+    min-width: 0;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-radius: var(--sm-radius-panel);
+    background: var(--sm-surface);
+    box-shadow: var(--sm-shadow-panel);
+  }
+
+  .sm-panel-interactive {
+    transition: border-color 160ms ease-out, box-shadow 160ms ease-out, transform 160ms var(--sm-ease-out);
+  }
+
+  .sm-panel-interactive:hover {
+    border-color: color-mix(in srgb, var(--sm-emerald) 28%, var(--border));
+    box-shadow: var(--sm-shadow-float);
+    transform: translateY(-1px);
+  }
+
+  .sm-page-title {
+    color: var(--sm-ink);
+    font-family: 'Poppins', system-ui, sans-serif;
+    font-size: clamp(1.25rem, 1.05rem + .55vw, 1.75rem);
+    font-weight: 700;
+    letter-spacing: -.04em;
+    line-height: 1.2;
+  }
+
+  .sm-section-label {
+    color: var(--sm-slate);
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    line-height: 1.3;
+    text-transform: uppercase;
+  }
+
+  .sm-control {
+    min-height: var(--sm-control-min);
+  }
+
+  .sm-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /**
    * Custom container utility that centers content and adds responsive padding.
    *

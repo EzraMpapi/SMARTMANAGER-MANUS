@@ -42072,9 +42072,27 @@ const PALETTE_ACTIONS = [
 function CommandPalette({ modules, crm, invoices, inventory, expenses, onNavigate, onNavigateWithIntent, onClose }) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem("smart-manager:recent-searches") || "[]");
+      return Array.isArray(parsed) ? parsed.filter((value) => typeof value === "string" && value.trim()).slice(0, 5) : [];
+    } catch {
+      return [];
+    }
+  });
   const inputRef = useRef(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    try { window.localStorage.setItem("smart-manager:recent-searches", JSON.stringify(recentSearches)); } catch {}
+  }, [recentSearches]);
+  useEffect(() => { setSelectedIndex(0); }, [query]);
+
+  function rememberSearch() {
+    const normalized = query.trim();
+    if (normalized.length < 2) return;
+    setRecentSearches((previous) => [normalized, ...previous.filter((value) => value.toLowerCase() !== normalized.toLowerCase())].slice(0, 5));
+  }
 
   const moduleResults = modules
     .filter((m) => m.label.toLowerCase().includes(query.toLowerCase()))
@@ -42134,46 +42152,76 @@ function CommandPalette({ modules, crm, invoices, inventory, expenses, onNavigat
       .map((e) => ({ id: `rec-exp-${e.id}`, label: e.vendor, sub: `${e.category} · ${e.date} · TZS ${money(Math.round(e.amount))}k`, icon: ClipboardList, kind: "Expense", action: () => onNavigateWithIntent("finance", { tab: "expenses" }) })) : []),
   ];
 
-  const results = [...recordResults, ...actionResults, ...moduleResults];
+  const recentResults = q.length === 0 ? recentSearches.map((search) => ({
+    id: `recent-${search}`,
+    label: search,
+    sub: "Run this search again",
+    icon: History,
+    kind: "Recent",
+    keepOpen: true,
+    action: () => setQuery(search),
+  })) : [];
+  const results = [...recentResults, ...recordResults, ...actionResults, ...moduleResults];
+
+  function runResult(result) {
+    rememberSearch();
+    result.action();
+    if (!result.keepOpen) onClose();
+  }
 
   function handleKeyDown(e) {
     if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
-    if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIndex((i) => Math.min(i + 1, results.length - 1)); }
+    if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIndex((i) => Math.min(i + 1, Math.max(results.length - 1, 0))); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setSelectedIndex((i) => Math.max(i - 1, 0)); }
-    else if (e.key === "Enter" && results[selectedIndex]) { results[selectedIndex].action(); onClose(); }
+    else if (e.key === "Enter" && results[selectedIndex]) { e.preventDefault(); runResult(results[selectedIndex]); }
   }
 
+  let previousResultGroup = null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]">
-      <div className="absolute inset-0 bg-[#111827]/30 backdrop-blur-[2px]" onClick={onClose} />
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
+      <div className="absolute inset-0 bg-[#111827]/30 backdrop-blur-[2px]" onClick={onClose} aria-hidden="true" />
       <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ animation: "fadeInUp .15s ease-out" }}>
+        <h2 id="command-palette-title" className="sm-visually-hidden">Search workspace</h2>
         <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100">
           <Search size={16} className="text-slate-400 shrink-0" />
           <input
-            ref={inputRef} value={query} onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0); }} onKeyDown={handleKeyDown}
+            ref={inputRef} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={handleKeyDown}
             placeholder="Search customers, invoices, products — or jump anywhere..."
             className="flex-1 outline-none text-[14px] placeholder:text-slate-400"
+            aria-label="Search customers, invoices, products, modules, and actions"
+            aria-controls="command-palette-results"
+            aria-activedescendant={results[selectedIndex] ? `command-result-${results[selectedIndex].id}` : undefined}
           />
           <kbd className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Esc</kbd>
         </div>
-        <div className="max-h-80 overflow-y-auto py-1.5">
-          {results.length === 0 && <p className="text-[12.5px] text-slate-400 text-center py-8">No matches.</p>}
+        <div id="command-palette-results" className="max-h-80 overflow-y-auto py-1.5" role="listbox" aria-label="Workspace search results">
+          {results.length === 0 && <div className="px-6 py-8 text-center"><p className="text-[12.5px] font-semibold text-slate-600">No workspace matches</p><p className="mt-1 text-[11px] leading-5 text-slate-400">Try a customer, invoice, product, expense, module, or action name.</p></div>}
           {results.map((r, i) => {
             const Icon = r.icon;
+            const resultGroup = r.kind === "Recent" ? "Recent searches" : r.kind === "Go to" ? "Modules" : r.kind === "Quick action" ? "Quick actions" : "Records";
+            const showGroupLabel = resultGroup !== previousResultGroup;
+            previousResultGroup = resultGroup;
             return (
-              <button
-                key={r.id} onClick={() => { r.action(); onClose(); }} onMouseEnter={() => setSelectedIndex(i)}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${i === selectedIndex ? "bg-[#16A34A]/5" : ""}`}
-              >
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: i === selectedIndex ? "#DCFCE7" : "#F3F4F6" }}>
+              <React.Fragment key={r.id}>
+                {showGroupLabel && <p className="px-4 pb-1 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400" role="presentation">{resultGroup}</p>}
+                <button
+                  type="button"
+                  id={`command-result-${r.id}`}
+                  role="option"
+                  aria-selected={i === selectedIndex}
+                  onClick={() => runResult(r)} onMouseEnter={() => setSelectedIndex(i)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 ${i === selectedIndex ? "bg-[#16A34A]/5" : ""}`}
+                >
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: i === selectedIndex ? "#DCFCE7" : "#F3F4F6" }}>
                   <Icon size={14} style={{ color: i === selectedIndex ? "#16A34A" : "#94A3B8" }} />
                 </div>
                 <span className={`text-[13px] flex-1 min-w-0 ${i === selectedIndex ? "font-medium text-[#111827]" : "text-slate-600"}`}>
                   <span className="block truncate">{r.label}</span>
                   {r.sub && <span className="block text-[10.5px] text-slate-400 truncate font-normal">{r.sub}</span>}
                 </span>
-                <span className="text-[10.5px] text-slate-400 shrink-0">{r.kind}</span>
-              </button>
+                  <span className="text-[10.5px] text-slate-400 shrink-0">{r.kind}</span>
+                </button>
+              </React.Fragment>
             );
           })}
         </div>
@@ -48047,7 +48095,9 @@ function SmartManager() {
 
         <div className="relative border-t border-[#F3F4F6] px-3 py-3">
           <button
+            type="button"
             onClick={() => go("settings")}
+            aria-label="Open workspace settings"
             className={`w-full flex items-center justify-between gap-2.5 rounded-xl border px-2.5 py-2.5 text-[12px] transition-colors group ${
               active === "settings" ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-[#111827]"
             }`}
@@ -48143,7 +48193,10 @@ function SmartManager() {
             <WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} />
             {/* ── Dark mode toggle ── */}
             <button
+              type="button"
               onClick={()=>setDarkMode(d=>!d)}
+              aria-pressed={darkMode}
+              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
               className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-[#111827] transition-all"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
@@ -48202,7 +48255,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="dashboard-mobile-content module-fade flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
+        <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-6">
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
