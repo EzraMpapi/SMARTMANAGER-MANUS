@@ -511,4 +511,4 @@
 - [x] Produce privacy-gated, time-coded Kiswahili production packs for Chapter 10 Inventory, Chapter 11 Stock Control, and Chapter 12 Reports with scripts, VTT cues, asset lists, QA, Ulichojifunza, and Kinachofuata.
 - [x] Run a full Kiswahili translation and terminology consistency review across Chapters 07–09, record corrections, and add regression coverage where appropriate.
 - [x] Write the presenter narration and presentation script for all ten slides in the Chapters 01–06 foundation deck.
-- [ ] Run documentation/regression validation and synchronize the reviewed chapter, terminology, and narration package to GitHub main.
+- [x] Run documentation/regression validation and synchronize the reviewed chapter, terminology, and narration package to GitHub main.
