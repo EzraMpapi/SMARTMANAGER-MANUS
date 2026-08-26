@@ -8,6 +8,9 @@ const chapterSpecs = [
   ["chapter-04-architecture-na-multi-tenant.md", "12:00"],
   ["chapter-05-authentication-na-user-management.md", "10:00"],
   ["chapter-06-dashboard-ya-uongozi.md", "12:00"],
+  ["chapter-07-sales-kutoka-mteja-hadi-ankara.md", "14:00"],
+  ["chapter-08-point-of-sale.md", "14:00"],
+  ["chapter-09-crm-na-mahusiano-ya-wateja.md", "10:00"],
 ] as const;
 
 function readChapter(filename: string) {
@@ -45,5 +48,19 @@ describe("Swahili early-chapter production pack contract", () => {
       expect(chapter).not.toContain("nenosiri halisi");
       expect(chapter).not.toContain("tokeni halisi");
     }
+  });
+
+  it("retains the deliberate evidence gates for Sales, POS, and CRM", () => {
+    const sales = readChapter("chapter-07-sales-kutoka-mteja-hadi-ankara.md");
+    const pos = readChapter("chapter-08-point-of-sale.md");
+    const crm = readChapter("chapter-09-crm-na-mahusiano-ya-wateja.md");
+
+    expect(sales).toContain("Redacted Sales orientation frame");
+    expect(sales).toContain("Fresh Sales UI capture");
+    expect(sales).toContain("Haijapitishwa kwa sura hii");
+    expect(pos).toContain("POS UI capture");
+    expect(pos).toContain("BADO HAIJAPITISHWA");
+    expect(crm).toContain("CRM UI capture");
+    expect(crm).toContain("BADO HAIJAPITISHWA");
   });
 });

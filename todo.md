@@ -497,3 +497,11 @@
 - [x] Create controlled redacted KMKM training-capture plans for approved dashboard, Finance, Inventory, and Sales surfaces without preserving record-level data.
 - [x] Produce reusable Kiswahili chapter assets that pair approved redacted UI framing with the registered 3D concepts and training characters.
 - [x] Validate approved-KMKM redaction coverage and synchronize the updated controlled-capture production package to GitHub main.
+
+## Swahili Training Chapters 07–09 and Foundation Deck
+- [x] Review verified Sales, POS, and CRM feature-status boundaries and approved safe visual evidence before writing Chapter 07–09 packs.
+- [x] Produce privacy-gated, time-coded Kiswahili production packs for Chapter 07 Sales, Chapter 08 POS, and Chapter 09 CRM, including storyboards, narration, VTT cues, asset lists, QA, Ulichojifunza, and Kinachofuata.
+- [x] Add and run regression contracts that preserve the Chapter 07–09 instructional and privacy requirements.
+- [x] Prepare the Chapters 01–06 course-foundation presentation content with only approved conceptual and redacted evidence.
+- [x] Generate and present the evidence-based Chapters 01–06 training-foundation slide deck.
+- [ ] Validate, commit, and push the reviewed Chapters 07–09 and presentation package to GitHub main.

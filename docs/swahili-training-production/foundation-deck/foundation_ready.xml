@@ -1,0 +1,35 @@
+<slide id="foundation_ready">
+  <background color="ivory"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <text id="slide-title" x="60" y="62" width="1040" height="46" font="heading" size="34" color="emerald" wrap="false">Msingi uko tayari kupanuka kwa udhibiti</text>
+  <text id="slide-subtitle" x="60" y="114" width="1120" height="52" font="body" size="20" color="slate">Kila component imepewa hali yake: imehakikiwa, imeandikwa, au inasubiri ushahidi salama.</text>
+  <shape id="card-cast" type="rect" x="60" y="190" width="350" height="142" fill="mist" stroke="hairline" stroke-width="1"/>
+  <icon id="card-cast-icon" name="users" x="84" y="214" width="34" height="34" color="emerald"/>
+  <text id="card-cast-title" x="136" y="216" width="240" height="24" font="body" size="19" color="emerald" wrap="false">Character bible + cast</text>
+  <text id="card-cast-body" x="84" y="262" width="280" height="45" font="body" size="17" color="ink">Imehakikiwa kwa continuity ya wahusika wa kubuniwa.</text>
+  <shape id="card-chapters" type="rect" x="465" y="190" width="350" height="142" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <icon id="card-chapters-icon" name="file-text" x="489" y="214" width="34" height="34" color="emerald"/>
+  <text id="card-chapters-title" x="541" y="216" width="240" height="24" font="body" size="19" color="emerald" wrap="false">Sura 01–06 packs</text>
+  <text id="card-chapters-body" x="489" y="262" width="280" height="45" font="body" size="17" color="ink">Scripts, storyboards, VTT cues, assets na QA zimeandikwa.</text>
+  <shape id="card-redaction" type="rect" x="870" y="190" width="350" height="142" fill="mist" stroke="hairline" stroke-width="1"/>
+  <icon id="card-redaction-icon" name="shield-check" x="894" y="214" width="34" height="34" color="emerald"/>
+  <text id="card-redaction-title" x="946" y="216" width="240" height="24" font="body" size="19" color="emerald" wrap="false">Redaction iliyopitiwa</text>
+  <text id="card-redaction-body" x="894" y="262" width="280" height="45" font="body" size="17" color="ink">Dashboard, Finance, Inventory na Sales: orientation tu.</text>
+  <shape id="card-sales" type="rect" x="60" y="365" width="350" height="142" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <icon id="card-sales-icon" name="handshake" x="84" y="389" width="34" height="34" color="emerald"/>
+  <text id="card-sales-title" x="136" y="391" width="240" height="24" font="body" size="19" color="emerald" wrap="false">Sura 07: Sales</text>
+  <text id="card-sales-body" x="84" y="437" width="280" height="45" font="body" size="17" color="ink">Pack imeandikwa; frame iliyosafishwa hutumika kwa orientation pekee.</text>
+  <shape id="card-pos" type="rect" x="465" y="365" width="350" height="142" fill="#FFF7DE" stroke="#E6C86D" stroke-width="1"/>
+  <icon id="card-pos-icon" name="shopping-cart" x="489" y="389" width="34" height="34" color="gold"/>
+  <text id="card-pos-title" x="541" y="391" width="240" height="24" font="body" size="19" color="emerald" wrap="false">Sura 08: POS</text>
+  <text id="card-pos-body" x="489" y="437" width="280" height="45" font="body" size="17" color="ink">UI checkout inasubiri capture gate; maelezo ya dhana pekee sasa.</text>
+  <shape id="card-crm" type="rect" x="870" y="365" width="350" height="142" fill="#FFF7DE" stroke="#E6C86D" stroke-width="1"/>
+  <icon id="card-crm-icon" name="users-round" x="894" y="389" width="34" height="34" color="gold"/>
+  <text id="card-crm-title" x="946" y="391" width="240" height="24" font="body" size="19" color="emerald" wrap="false">Sura 09: CRM</text>
+  <text id="card-crm-body" x="894" y="437" width="280" height="45" font="body" size="17" color="ink">Customer/contact data haionyeshwi; CRM UI inasubiri review.</text>
+  <shape id="policy-band" type="rect" x="60" y="550" width="1160" height="62" fill="emerald"/>
+  <text id="policy-text" x="84" y="568" width="1110" height="28" font="body" size="18" color="ivory" align="center">Master course itaanza kuunganishwa baada ya kila sura kupita script, visual, subtitle, audio na privacy QA yake.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="slate" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="slate" align="right" wrap="false">09</text>
+</slide>

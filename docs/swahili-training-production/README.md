@@ -22,6 +22,11 @@ This package contains the versioned, evidence-based pre-production work for the 
 | [`chapter-04-architecture-na-multi-tenant.md`](./chapter-04-architecture-na-multi-tenant.md) | Time-coded architecture and company-context production pack. |
 | [`chapter-05-authentication-na-user-management.md`](./chapter-05-authentication-na-user-management.md) | Time-coded authentication and user-management safety production pack. |
 | [`chapter-06-dashboard-ya-uongozi.md`](./chapter-06-dashboard-ya-uongozi.md) | Time-coded leadership-dashboard interpretation production pack. |
+| [`chapter-07-sales-kutoka-mteja-hadi-ankara.md`](./chapter-07-sales-kutoka-mteja-hadi-ankara.md) | Privacy-gated Sales production pack with module-shell-only UI treatment. |
+| [`chapter-08-point-of-sale.md`](./chapter-08-point-of-sale.md) | Privacy-gated POS production pack; live checkout UI remains intentionally unapproved. |
+| [`chapter-09-crm-na-mahusiano-ya-wateja.md`](./chapter-09-crm-na-mahusiano-ya-wateja.md) | Privacy-gated CRM production pack; contact and pipeline UI remains intentionally unapproved. |
+| [`foundation-deck-outline.md`](./foundation-deck-outline.md) | Kiswahili narrative outline for the Chapters 01–06 evidence-based foundation deck. |
+| [`foundation-deck/`](./foundation-deck/) | Editable PPTX slide project for the Chapters 01–06 foundation deck; it references only approved conceptual and redacted external visuals. |
 
 ## External production media
 
@@ -43,4 +48,4 @@ No master video is assembled until every chapter has a privacy-screened UI captu
 
 ## Next production batch
 
-The next safe batch is Chapters 07–09: Sales, POS, and CRM. It must reuse the Sales concept only as an explanatory cutaway, retain the final redacted Sales orientation frame as navigation context only, and create new per-chapter UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts.
+The next safe batch is Chapters 10–12: Inventory, Procurement, and Supply Chain/Manufacturing. It must reuse the Inventory concept only as an explanatory cutaway and create any new UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts. Manufacturing must retain its `imejengwa kwa sehemu` qualifier.

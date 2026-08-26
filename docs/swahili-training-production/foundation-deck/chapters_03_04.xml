@@ -1,0 +1,35 @@
+<slide id="chapters_03_04">
+  <background color="ivory"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <text id="slide-title" x="60" y="62" width="960" height="46" font="heading" size="34" color="emerald" wrap="false">Sura 03–04: Muktadha kabla ya action</text>
+  <text id="slide-subtitle" x="60" y="114" width="1110" height="52" font="body" size="20" color="slate">Safari ya kazi hufundishwa kama muktadha unaodhibitiwa: si claim ya schema, query, policy au ruhusa ya mtu halisi.</text>
+  <text id="flow-label" x="60" y="190" width="410" height="24" font="caption" size="14" color="slate" wrap="false">RAMANI YA DHANA YA SURA 03–04</text>
+  <shape id="user-card" type="rect" x="60" y="235" width="190" height="165" fill="mist" stroke="hairline" stroke-width="1"/>
+  <icon id="user-icon" name="user" x="130" y="255" width="38" height="38" color="emerald"/>
+  <text id="user-text" x="78" y="313" width="154" height="60" font="body" size="19" color="ink" align="center"><p>Mtumiaji</p><p>anayefanya kazi</p></text>
+  <shape id="arrow-one" type="arrow" x="264" y="289" width="48" height="42" fill="gold" head-ratio="0.38"/>
+  <shape id="auth-card" type="rect" x="326" y="235" width="190" height="165" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <icon id="auth-icon" name="lock" x="396" y="255" width="38" height="38" color="emerald"/>
+  <text id="auth-text" x="344" y="313" width="154" height="60" font="body" size="19" color="ink" align="center"><p>Uthibitishaji</p><p>ulioidhinishwa</p></text>
+  <shape id="arrow-two" type="arrow" x="530" y="289" width="48" height="42" fill="gold" head-ratio="0.38"/>
+  <shape id="company-card" type="rect" x="592" y="235" width="190" height="165" fill="mist" stroke="hairline" stroke-width="1"/>
+  <icon id="company-icon" name="briefcase" x="662" y="255" width="38" height="38" color="emerald"/>
+  <text id="company-text" x="610" y="313" width="154" height="60" font="body" size="19" color="ink" align="center"><p>Muktadha wa</p><p>kampuni</p></text>
+  <shape id="arrow-three" type="arrow" x="796" y="289" width="48" height="42" fill="gold" head-ratio="0.38"/>
+  <shape id="role-card" type="rect" x="858" y="235" width="150" height="165" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <icon id="role-icon" name="shield-check" x="914" y="255" width="38" height="38" color="emerald"/>
+  <text id="role-text" x="876" y="313" width="114" height="60" font="body" size="19" color="ink" align="center"><p>Jukumu</p><p>na mpaka</p></text>
+  <shape id="arrow-four" type="arrow" x="1022" y="289" width="48" height="42" fill="gold" head-ratio="0.38"/>
+  <shape id="action-card" type="rect" x="1084" y="235" width="136" height="165" fill="emerald"/>
+  <icon id="action-icon" name="circle-check" x="1133" y="255" width="38" height="38" color="gold"/>
+  <text id="action-text" x="1098" y="313" width="108" height="60" font="body" size="18" color="ivory" align="center"><p>Kazi</p><p>inayofaa</p></text>
+  <shape id="known-band" type="rect" x="60" y="490" width="550" height="120" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <text id="known-title" x="86" y="510" width="470" height="24" font="body" size="18" color="emerald" wrap="false">KILE KINACHOFUNDISHWA</text>
+  <text id="known-body" x="86" y="545" width="490" height="42" font="body" size="18" color="ink">Kampuni sahihi, jukumu sahihi na kazi sahihi ni kanuni ya muktadha wa uendeshaji.</text>
+  <shape id="limit-band" type="rect" x="670" y="490" width="550" height="120" fill="#FFF7DE" stroke="#E6C86D" stroke-width="1"/>
+  <text id="limit-title" x="696" y="510" width="470" height="24" font="body" size="18" color="emerald" wrap="false">KILE AMBACHO HAKIDAIWI</text>
+  <text id="limit-body" x="696" y="545" width="490" height="42" font="body" size="18" color="ink">Hakuna role proof, schema, RLS policy result au data-isolation assertion inayotolewa na mchoro huu.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="slate" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="slate" align="right" wrap="false">05</text>
+</slide>

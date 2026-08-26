@@ -1,0 +1,22 @@
+<slide id="capture_validation">
+  <background color="ivory"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <text id="slide-title" x="60" y="62" width="980" height="46" font="heading" size="34" color="emerald" wrap="false">Capture ya KMKM ilihifadhiwa kwa redaction</text>
+  <text id="slide-subtitle" x="60" y="114" width="1110" height="52" font="body" size="20" color="slate">Ukaguzi wa kuona uliondoa tenant reference na dynamic badge kabla ya frame kuruhusiwa kwa mwelekeo wa moduli pekee.</text>
+  <shape id="frame-shell" type="rect" x="60" y="190" width="660" height="390" fill="emerald" stroke="gold" stroke-width="2"/>
+  <image id="dashboard-redacted" src="https://private-us-east-1.manuscdn.com/sessionFile/clrc1zfRAjd1ZizZGBswnB/sandbox/slides_resource_ip60v2xrksc8vp2gnfxgg-68e88b70-e2b-prod-azure-central-us_1787776135737_na1fn_L2hvbWUvdWJ1bnR1L3NtYXJ0bWFuYWdlci10cmFpbmluZy1hc3NldHMva21rbS1yZWRhY3RlZC9kYXNoYm9hcmQtdHJhaW5pbmctcmVkYWN0ZWQ.png?x-oss-process=image/resize,w_1560,h_1560/format,webp&Expires=1789430400&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvY2xyYzF6ZlJBamQxWml6WkdCc3duQi9zYW5kYm94L3NsaWRlc19yZXNvdXJjZV9pcDYwdjJ4cmtzYzh2cDJnbmZ4Z2ctNjhlODhiNzAtZTJiLXByb2QtYXp1cmUtY2VudHJhbC11c18xNzg3Nzc2MTM1NzM3X25hMWZuX0wyaHZiV1V2ZFdKMWJuUjFMM050WVhKMGJXRnVZV2RsY2kxMGNtRnBibWx1WnkxaGMzTmxkSE12YTIxcmJTMXlaV1JoWTNSbFpDOWtZWE5vWW05aGNtUXRkSEpoYVc1cGJtY3RjbVZrWVdOMFpXUS5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xNTYwLGhfMTU2MC9mb3JtYXQsd2VicCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc4OTQzMDQwMH19fV19&Key-Pair-Id=K2QY5QTL8JSY6C&Signature=MEUCIEbPyyL2Lp8SpkZFqvmMmm-qkByJgWhISdVs2W9ZLnWcAiEAo9Qim7HJHsrifGu5HZDbLC0zuoK5B63xxAt2t3vKn0U_" x="84" y="214" width="612" height="342" fit="contain" corner-radius="4"/>
+  <text id="frame-caption" x="84" y="566" width="612" height="20" font="caption" size="13" color="ivory" align="center" wrap="false">DASHBOARD ORIENTATION FRAME • CONTENT NA IDENTITY VIMEONDOLEWA</text>
+  <shape id="annotation-one-line" type="line" x="780" y="235" width="34" height="0" stroke="gold" stroke-width="3"/>
+  <text id="annotation-one" x="830" y="218" width="350" height="50" font="body" size="19" color="ink"><p><strong>Header na identity:</strong> vimefunikwa.</p></text>
+  <shape id="annotation-two-line" type="line" x="780" y="315" width="34" height="0" stroke="gold" stroke-width="3"/>
+  <text id="annotation-two" x="830" y="298" width="350" height="50" font="body" size="19" color="ink"><p><strong>Workspace content:</strong> rekodi, values na dates zimeondolewa.</p></text>
+  <shape id="annotation-three-line" type="line" x="780" y="405" width="34" height="0" stroke="gold" stroke-width="3"/>
+  <text id="annotation-three" x="830" y="388" width="350" height="50" font="body" size="19" color="ink"><p><strong>Sidebar state:</strong> badge na dynamic state zone vimefunikwa.</p></text>
+  <shape id="annotation-four-line" type="line" x="780" y="495" width="34" height="0" stroke="gold" stroke-width="3"/>
+  <text id="annotation-four" x="830" y="478" width="350" height="50" font="body" size="19" color="ink"><p><strong>Kinachobaki:</strong> majina ya module kwa orientation pekee.</p></text>
+  <shape id="approval-band" type="rect" x="780" y="553" width="400" height="60" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <text id="approval-text" x="800" y="569" width="360" height="28" font="body" size="17" color="emerald" align="center">Imeidhinishwa: module-shell orientation, si workflow, role au KPI proof.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="slate" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="slate" align="right" wrap="false">08</text>
+</slide>

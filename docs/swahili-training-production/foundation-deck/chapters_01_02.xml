@@ -1,0 +1,21 @@
+<slide id="chapters_01_02">
+  <background color="ivory"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <text id="slide-title" x="60" y="62" width="950" height="46" font="heading" size="34" color="emerald" wrap="false">Sura 01–02: Tatizo linaongoza mwanzo</text>
+  <text id="slide-subtitle" x="60" y="114" width="1050" height="44" font="body" size="20" color="slate">Kozi huanza na maana ya ERP na changamoto ya taarifa zilizotawanyika, si na orodha ya features.</text>
+  <shape id="chapter-one-card" type="rect" x="60" y="190" width="510" height="350" fill="mist" stroke="hairline" stroke-width="1"/>
+  <text id="chapter-one-number" x="92" y="218" width="110" height="40" font="display" size="42" color="gold" wrap="false">01</text>
+  <text id="chapter-one-title" x="92" y="270" width="410" height="58" font="body" size="27" color="emerald">Utangulizi wa SMART MANAGER ERP</text>
+  <text id="chapter-one-body" x="92" y="350" width="420" height="148" font="body" size="19" color="ink" line-height="1.38"><p>• Rekodi zilizotawanyika huleta hitaji la mpangilio.</p><p>• ERP inaelezwa kwa Kiswahili rahisi na mipaka ya ushahidi.</p><p>• Mtazamaji hupewa ramani ya safari ya sura 48.</p></text>
+  <shape id="chapter-two-card" type="rect" x="710" y="190" width="510" height="350" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <text id="chapter-two-number" x="742" y="218" width="110" height="40" font="display" size="42" color="gold" wrap="false">02</text>
+  <text id="chapter-two-title" x="742" y="270" width="410" height="58" font="body" size="27" color="emerald">Maono, Tatizo na Suluhisho</text>
+  <text id="chapter-two-body" x="742" y="350" width="420" height="148" font="body" size="19" color="ink" line-height="1.38"><p>• Tatizo linawekwa wazi kabla ya kuchagua moduli.</p><p>• Mtiririko mmoja wa thamani huanza kwa udhibiti.</p><p>• 3D huonyesha dhana; haidai matokeo ya biashara.</p></text>
+  <shape id="sequence-arrow" type="arrow" x="594" y="332" width="92" height="54" fill="gold" head-ratio="0.38"/>
+  <text id="sequence-label" x="582" y="402" width="116" height="42" font="caption" size="13" color="slate" align="center" line-height="1.1"><p>Fahamu tatizo</p><p>kisha anza</p></text>
+  <shape id="takeaway-band" type="rect" x="60" y="570" width="1160" height="56" fill="emerald"/>
+  <text id="takeaway-text" x="84" y="585" width="1110" height="24" font="body" size="18" color="ivory" align="center" wrap="false">Kanuni ya mwanzo: chagua mtiririko unaohitaji mpangilio, kisha jenga ushahidi wake kwa hatua.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="slate" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="slate" align="right" wrap="false">04</text>
+</slide>

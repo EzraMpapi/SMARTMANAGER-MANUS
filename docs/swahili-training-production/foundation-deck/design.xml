@@ -1,0 +1,14 @@
+<design>
+  <size width="1280" height="720"></size>
+  <color name="emerald" value="#064E3B"/>
+  <color name="ivory" value="#FDFBF7"/>
+  <color name="gold" value="#D4AF37"/>
+  <color name="ink" value="#1F2937"/>
+  <color name="slate" value="#4B5563"/>
+  <color name="mist" value="#F3F4F6"/>
+  <color name="hairline" value="#E5E7EB"/>
+  <font name="display" family="Inter" size="48"/>
+  <font name="heading" family="Inter" size="32"/>
+  <font name="body" family="Inter" size="20"/>
+  <font name="caption" family="Inter" size="14"/>
+</design>

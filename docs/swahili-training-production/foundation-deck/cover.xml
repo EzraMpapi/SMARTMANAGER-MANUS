@@ -1,0 +1,15 @@
+<slide id="cover">
+  <background color="emerald"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <shape id="title-frame" type="rect" x="60" y="94" width="34" height="410" fill="gold" opacity="0.95"/>
+  <text id="evidence-label" x="126" y="108" width="440" height="28" font="caption" size="14" color="gold" wrap="false">KOZI YA USHAHIDI • FARAGHA • UENDESHAJI SALAMA</text>
+  <text id="cover-title" x="126" y="166" width="630" height="198" font="display" size="54" color="ivory" line-height="1.05"><p>SMART MANAGER ERP</p><p>Msingi wa Kozi ya Kiswahili</p></text>
+  <text id="cover-subtitle" x="126" y="392" width="540" height="84" font="body" size="24" color="ivory" line-height="1.3">Sura 01–06: utangulizi, muktadha wa kazi, usalama na dashibodi ya uongozi.</text>
+  <text id="cover-scope" x="126" y="522" width="560" height="42" font="body" size="18" color="#DDECE7">Msingi wa uzalishaji uliothibitishwa; si master video iliyokamilika.</text>
+  <shape id="cast-frame" type="rect" x="840" y="110" width="340" height="500" fill="#0A3D32" stroke="gold" stroke-width="2"/>
+  <image id="cast-image" src="https://private-us-east-1.manuscdn.com/sessionFile/clrc1zfRAjd1ZizZGBswnB/sandbox/slides_resource_ip60v2xrksc8vp2gnfxgg-68e88b70-e2b-prod-azure-central-us_1787775982466_na1fn_L2hvbWUvdWJ1bnR1L3NtYXJ0bWFuYWdlci10cmFpbmluZy1hc3NldHMvY2hhcmFjdGVycy9zbWFydC1tYW5hZ2VyLXRyYWluaW5nLWNhc3QtcmVmZXJlbmNl.png?x-oss-process=image/resize,w_1560,h_1560/format,webp&Expires=1789430400&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvY2xyYzF6ZlJBamQxWml6WkdCc3duQi9zYW5kYm94L3NsaWRlc19yZXNvdXJjZV9pcDYwdjJ4cmtzYzh2cDJnbmZ4Z2ctNjhlODhiNzAtZTJiLXByb2QtYXp1cmUtY2VudHJhbC11c18xNzg3Nzc1OTgyNDY2X25hMWZuX0wyaHZiV1V2ZFdKMWJuUjFMM050WVhKMGJXRnVZV2RsY2kxMGNtRnBibWx1WnkxaGMzTmxkSE12WTJoaGNtRmpkR1Z5Y3k5emJXRnlkQzF0WVc1aFoyVnlMWFJ5WVdsdWFXNW5MV05oYzNRdGNtVm1aWEpsYm1ObC5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xNTYwLGhfMTU2MC9mb3JtYXQsd2VicCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc4OTQzMDQwMH19fV19&Key-Pair-Id=K2QY5QTL8JSY6C&Signature=MEUCIBTg1q5zvEtkV8ltG~CKmqO8gjZedgw5WyfBMDhRH~6gAiEAgAqpplXLQ25Uys2H-~6sJ9uV76Z7fy0TvH2xM~Po5ig_" x="854" y="124" width="312" height="472" fit="cover" corner-radius="6"/>
+  <text id="cast-caption" x="854" y="570" width="312" height="22" font="caption" size="12" color="ivory" align="center" wrap="false">WAHUSIKA WA MAFUNZO YA KUBUNIWA</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="#FFFFFF55" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="#DDECE7" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="#DDECE7" align="right" wrap="false">01</text>
+</slide>

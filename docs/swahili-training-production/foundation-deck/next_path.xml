@@ -1,0 +1,20 @@
+<slide id="next_path">
+  <background color="emerald"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <text id="closing-label" x="120" y="132" width="480" height="24" font="caption" size="14" color="gold" wrap="false">NJIA YA UZALISHAJI ILIYOIDHIBITIWA</text>
+  <text id="closing-title" x="120" y="188" width="980" height="106" font="display" size="52" color="ivory" align="center"><p>Njia ya master course</p><p>ni chapter-by-chapter</p></text>
+  <text id="closing-subtitle" x="210" y="306" width="860" height="48" font="body" size="22" color="#DDECE7" align="center">Kila sura huingia kwenye assembly baada ya ushahidi, faragha na ufundishaji wake kukaguliwa.</text>
+  <shape id="step-one" type="rect" x="170" y="392" width="250" height="78" fill="#0A3D32" stroke="#2D6F60" stroke-width="1"/>
+  <text id="step-one-text" x="184" y="408" width="222" height="40" font="body" size="18" color="ivory" align="center"><p>1. Script + asset</p><p>boundary</p></text>
+  <shape id="arrow-one" type="arrow" x="450" y="409" width="72" height="42" fill="gold" head-ratio="0.35"/>
+  <shape id="step-two" type="rect" x="552" y="392" width="250" height="78" fill="#0A3D32" stroke="#2D6F60" stroke-width="1"/>
+  <text id="step-two-text" x="566" y="408" width="222" height="40" font="body" size="18" color="ivory" align="center"><p>2. UI review + VTT</p><p>+ audio sync</p></text>
+  <shape id="arrow-two" type="arrow" x="832" y="409" width="72" height="42" fill="gold" head-ratio="0.35"/>
+  <shape id="step-three" type="rect" x="934" y="392" width="250" height="78" fill="#0A3D32" stroke="#2D6F60" stroke-width="1"/>
+  <text id="step-three-text" x="948" y="408" width="222" height="40" font="body" size="18" color="ivory" align="center"><p>3. QA + chapter</p><p>approval</p></text>
+  <shape id="commitment-band" type="rect" x="170" y="520" width="1014" height="58" fill="gold"/>
+  <text id="commitment-text" x="192" y="538" width="970" height="24" font="body" size="19" color="ink" align="center" wrap="false">Hatua inayofuata: Sales, POS na CRM zinaendelea kwa evidence gate bila kuonyesha data binafsi.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="#FFFFFF55" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="#DDECE7" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="#DDECE7" align="right" wrap="false">10</text>
+</slide>
