@@ -1,6 +1,4 @@
 
----
-
 import React, { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase,
@@ -6393,6 +6391,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         formatMoney={formatMoney}
         onNavigate={onNavigate}
         onQuickAction={onQuickAction}
+        onCustomizeDashboard={() => setPreferencesDrawerOpen(true)}
         allowedModules={currentRole.allowedModules}
         writeAccess={currentRole.writeAccess}
       />
@@ -6518,6 +6517,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         posTransactions={posTransactions}
         workOrders={workOrders}
         onNavigate={onNavigate}
+        onCustomizeDashboard={() => setPreferencesDrawerOpen(true)}
+        currentUser={currentUser}
+        company={company}
         currency={company.currency || "TZS"}
       />
       <AiBusinessSignals

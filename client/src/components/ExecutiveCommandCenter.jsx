@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -40,6 +40,24 @@ import {
 
 const numberFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const compactFormat = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+
+const PERFORMANCE_WINDOWS = [
+  { id: "30d", label: "30D", days: 30 },
+  { id: "3m", label: "3M", days: 92 },
+  { id: "6m", label: "6M", days: 183 },
+  { id: "1y", label: "1Y", days: 365 },
+];
+
+function rowDate(row) {
+  const value = row?.date || row?.issueDate || row?.expenseDate || row?.created_at || row?.createdAt;
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date : null;
+}
+
+function isInPerformanceWindow(row, start) {
+  const date = rowDate(row);
+  return Boolean(date) && date >= start;
+}
 
 function money(value, currency = "TZS") {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return "Insufficient confirmed data";
@@ -152,11 +170,22 @@ export function ExecutiveCommandCenter({
   posTransactions,
   workOrders,
   onNavigate,
+  onCustomizeDashboard,
+  currentUser,
+  company,
   currency = "TZS",
 }) {
+  const [performanceWindowId, setPerformanceWindowId] = useState("6m");
+  const performanceWindow = PERFORMANCE_WINDOWS.find((window) => window.id === performanceWindowId) || PERFORMANCE_WINDOWS[2];
+  const performanceStart = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - performanceWindow.days + 1);
+    return start;
+  }, [performanceWindow.days]);
   const data = useMemo(() => {
-    const invoiceRows = asRows(invoices);
-    const expenseRows = asRows(expenses);
+    const invoiceRows = asRows(invoices).filter((row) => isInPerformanceWindow(row, performanceStart));
+    const expenseRows = asRows(expenses).filter((row) => isInPerformanceWindow(row, performanceStart));
     const inventoryRows = asRows(inventory);
     const leadRows = asRows(crm);
     const employeeRows = asRows(employees);
@@ -218,7 +247,11 @@ export function ExecutiveCommandCenter({
       expenseSource,
       profitMargin,
     };
-  }, [invoices, expenses, inventory, crm, employees, leaveRequests, posTransactions, workOrders]);
+  }, [invoices, expenses, inventory, crm, employees, leaveRequests, posTransactions, workOrders, performanceStart]);
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName = String(currentUser?.name || "there").trim().split(/\s+/)[0] || "there";
 
   const metrics = [
     buildDashboardMetric({ id: "revenue", label: "Total revenue", value: data.billed ? money(data.billed, currency) : null, source: data.invoiceSource, context: data.invoiceRows.length ? `${data.invoiceRows.length} confirmed invoice${data.invoiceRows.length === 1 ? "" : "s"}` : "No confirmed invoice records yet", actionLabel: "Open sales records", onAction: () => onNavigate("sales"), trend: data.salesTrend, status: data.invoiceRows.length ? "confirmed" : "insufficient" }),
@@ -268,11 +301,27 @@ export function ExecutiveCommandCenter({
 
   return (
     <section className="space-y-5" aria-label="Executive command center">
+      <div className="rounded-[24px] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-white px-5 py-5 shadow-[0_8px_26px_rgba(15,23,42,.045)] sm:px-6 sm:py-6">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-emerald-700">SMART MANAGER · {company?.name || "Workspace"}</p>
+            <h1 className="mt-2 text-[25px] font-black tracking-[-.045em] text-slate-950 sm:text-[30px]">{greeting}, {firstName}.</h1>
+            <p className="mt-1.5 max-w-2xl text-[12px] leading-5 text-slate-500">Here is what is happening with confirmed business records in your current workspace.</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="inline-flex w-fit rounded-xl border border-slate-200 bg-white p-1 shadow-sm" role="group" aria-label="Select dashboard performance period">
+              {PERFORMANCE_WINDOWS.map((window) => <button key={window.id} type="button" onClick={() => setPerformanceWindowId(window.id)} aria-pressed={performanceWindowId === window.id} className={`min-h-9 min-w-11 rounded-lg px-2.5 text-[10px] font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${performanceWindowId === window.id ? "bg-emerald-700 text-white shadow-sm" : "text-slate-500 hover:bg-emerald-50 hover:text-emerald-800"}`}>{window.label}</button>)}
+            </div>
+            {onCustomizeDashboard && <button type="button" onClick={onCustomizeDashboard} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3.5 text-[11px] font-bold text-emerald-800 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"><Clock3 size={14} aria-hidden="true" />Customize dashboard</button>}
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700"><BriefcaseBusiness size={14} /> Executive command center</div>
           <h2 className="mt-1 text-[20px] font-black tracking-tight text-slate-900">What needs management attention now?</h2>
-          <p className="mt-1 max-w-2xl text-[12px] leading-5 text-slate-500">A module-aware operating view built from confirmed workspace records. Every card and alert leads to the underlying operational module.</p>
+          <p className="mt-1 max-w-2xl text-[12px] leading-5 text-slate-500">A module-aware operating view built from confirmed workspace records in the selected {performanceWindow.label} window. Every card and alert leads to the underlying operational module.</p>
         </div>
         <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10.5px] font-bold text-emerald-800"><CheckCircle2 size={13} /> Confirmed-data model</span>
       </div>

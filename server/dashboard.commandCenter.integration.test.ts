@@ -9,6 +9,9 @@ describe("dashboard command-center integration", () => {
     expect(dashboardSource).toContain('expenses={expenses}');
     expect(dashboardSource).toContain('inventory={inventory}');
     expect(dashboardSource).toContain('workOrders={workOrders}');
+    expect(dashboardSource).toContain('onCustomizeDashboard={() => setPreferencesDrawerOpen(true)}');
+    expect(dashboardSource).toContain('currentUser={currentUser}');
+    expect(dashboardSource).toContain('company={company}');
     expect(dashboardSource).toContain('currency={company.currency || "TZS"}');
   });
 
@@ -25,6 +28,7 @@ describe("dashboard command-center integration", () => {
     expect(dashboardSource).toContain('<SalesCommandCenter');
     expect(dashboardSource).toContain('<ProcurementCommandCenter');
     expect(dashboardSource).toContain('<WarehouseCommandCenter');
+    expect(dashboardSource).toContain('onCustomizeDashboard={() => setPreferencesDrawerOpen(true)}');
   });
 
   it("passes real supplier, quotation, and scheduled-workflow hooks into the dashboard", () => {

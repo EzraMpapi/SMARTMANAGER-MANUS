@@ -15,6 +15,7 @@ import {
   Plus,
   ReceiptText,
   RefreshCw,
+  SlidersHorizontal,
   TrendingDown,
   TrendingUp,
   Users,
@@ -123,6 +124,7 @@ export function EnterpriseDashboardOverview({
   formatMoney,
   onNavigate,
   onQuickAction,
+  onCustomizeDashboard,
   allowedModules = [],
   writeAccess = "none",
 }) {
@@ -197,6 +199,7 @@ export function EnterpriseDashboardOverview({
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => onNavigate("reports")} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[.08] px-3.5 py-2.5 text-[12px] font-semibold transition hover:bg-white/[.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><BarChart3 size={15} />Open reports</button>
+            {onCustomizeDashboard && <button type="button" onClick={onCustomizeDashboard} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[.08] px-3.5 py-2.5 text-[12px] font-semibold transition hover:bg-white/[.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><SlidersHorizontal size={15} />Customize dashboard</button>}
             <button type="button" onClick={() => onQuickAction("sales", { tab: "invoices", openForm: true })} className="inline-flex items-center gap-2 rounded-xl bg-[#d9a34d] px-3.5 py-2.5 text-[12px] font-bold text-[#10231e] transition hover:bg-[#e4b364] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f5d39c]"><Plus size={15} />New invoice</button>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const dashboardSource = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const navigationSource = readFileSync(resolve(process.cwd(), "client/src/navigation/enterpriseNavigation.js"), "utf8");
 const resumeSource = readFileSync(resolve(process.cwd(), "client/src/lib/resumeSession.ts"), "utf8");
 
 const requiredModules = [
@@ -23,7 +24,8 @@ describe("resume where you left off contracts", () => {
     expect(dashboardSource).toContain("const persistResumeLocation = useCallback");
     expect(dashboardSource).toContain("persistResumeLocation(id);");
     expect(dashboardSource).toContain("clearResumeLocation(window.localStorage, session.userId, session.company.id)");
-    for (const moduleId of requiredModules) expect(dashboardSource).toContain(`{ id: "${moduleId}"`);
+    expect(dashboardSource).toContain("NAVIGATION_ITEMS");
+    for (const moduleId of requiredModules) expect(navigationSource).toContain(`id: "${moduleId}"`);
   });
 
   it("keeps credentials and cross-tenant records outside the persistence contract", () => {

@@ -4,6 +4,7 @@ const supabaseUrl = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?
 const serviceKey = process.env.SUPABASE_SECRET_KEY ?? "";
 
 function hasLiveSupabaseCredentials() {
+  if (process.env.RUN_LIVE_SUPABASE_CREDENTIAL_CHECK !== "true") return false;
   if (!supabaseUrl || !serviceKey) return false;
 
   try {

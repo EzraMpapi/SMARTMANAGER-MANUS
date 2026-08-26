@@ -13,6 +13,14 @@ import "./index.css";
 const queryClient = new QueryClient();
 const publicConfigPromise = loadPublicSupabaseConfig();
 
+function hasStoredSupabaseSession() {
+  try {
+    return Boolean(readStoredAccessToken());
+  } catch {
+    return false;
+  }
+}
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
@@ -36,11 +44,13 @@ const trpcClient = trpc.createClient({
           // Provider initialization or browser storage may still be in progress.
         }
         try {
-          const storedSupabaseToken = readStoredAccessToken();
-          if (storedSupabaseToken) {
-            headers.Authorization = `Bearer ${storedSupabaseToken}`;
-            headers["x-supabase-authorization"] = `Bearer ${storedSupabaseToken}`;
-            return headers;
+          if (hasStoredSupabaseSession()) {
+            const storedSupabaseToken = readStoredAccessToken();
+            if (storedSupabaseToken) {
+              headers.Authorization = `Bearer ${storedSupabaseToken}`;
+              headers["x-supabase-authorization"] = `Bearer ${storedSupabaseToken}`;
+              return headers;
+            }
           }
 
           const raw = sessionStorage.getItem("manus-cookie");
@@ -71,3 +81,11 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </trpc.Provider>
 );
+
+if (import.meta.env.MODE !== "development" && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
+      // The network fallback remains available even when a worker cannot register.
+    });
+  }, { once: true });
+}
