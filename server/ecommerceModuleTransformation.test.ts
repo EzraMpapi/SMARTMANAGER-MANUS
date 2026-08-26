@@ -33,6 +33,12 @@ describe("E-Commerce module transformation contract", () => {
     expect(source).toContain('role="button" aria-label={`Open order ${o.id}`}');
     expect(source).toContain('"Payment Pending": "Processing"');
     expect(source).toContain("Review confirmed orders and advance only through supported server states.");
+    expect(source).toContain('aria-label="Commerce capability coverage"');
+    expect(source).toContain("Checkout & payments");
+    expect(source).toContain("Contract gated");
+    expect(source).toContain('target: "inventory"');
+    expect(source).toContain('target: "sales"');
+    expect(source).toContain('target: "crm"');
   });
 
   it("documents the safety boundary for missing public-commerce contracts", () => {

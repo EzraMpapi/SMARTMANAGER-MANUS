@@ -23005,7 +23005,22 @@ const ECOM_TABS = [
   { id: "orders", label: "Orders", icon: ShoppingCart },
 ];
 
-function ECommerce({ inventory }) {
+function CommerceCapabilityPanel({ onNavigate }) {
+  const capabilities = [
+    { label: "Catalog & stock", detail: "Published products reconcile to ERP inventory rows.", state: "Connected", icon: Package, action: "Review inventory", target: "inventory" },
+    { label: "Orders & finance", detail: "Order status can advance only through confirmed records.", state: "Connected", icon: ReceiptText, action: "Review sales", target: "sales" },
+    { label: "Customer records", detail: "Customer identity remains in the confirmed CRM/sales ledger.", state: "Connected", icon: Users, action: "Open CRM", target: "crm" },
+    { label: "Checkout & payments", detail: "Requires an approved cart, payment, and server RPC contract.", state: "Contract gated", icon: CreditCard },
+    { label: "Shipping & returns", detail: "No E-Commerce-specific shipping or return contract is exposed yet.", state: "Contract gated", icon: Truck },
+    { label: "Reviews & promotions", detail: "No confirmed review, coupon, or storefront promotion source is available.", state: "Contract gated", icon: Tag },
+  ];
+  return <section className="sm-panel rounded-xl bg-white p-4 sm:p-5" aria-label="Commerce capability coverage">
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-[14px] font-semibold text-[#111827]">Commerce capability coverage</h2><p className="text-[11px] text-slate-500">Connected workflows are actionable; contract-gated features are intentionally not simulated.</p></div><span className="text-[10px] text-slate-400">Source: live ERP contracts</span></div>
+    <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">{capabilities.map((item) => { const Icon = item.icon; const connected = item.state === "Connected"; return <div key={item.label} className="flex min-h-[104px] items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${connected ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}><Icon size={15} /></span><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><p className="text-[11.5px] font-semibold text-slate-800">{item.label}</p><span className={`shrink-0 text-[9px] font-bold uppercase tracking-[.08em] ${connected ? "text-emerald-700" : "text-amber-700"}`}>{item.state}</span></div><p className="mt-1 text-[10.5px] leading-4 text-slate-500">{item.detail}</p>{item.target && <button type="button" onClick={() => onNavigate?.(item.target)} className="mt-2 min-h-11 text-[10px] font-bold text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">{item.action} <ChevronRight size={11} className="inline" /></button>}</div></div>; })}</div>
+  </section>;
+}
+
+function ECommerce({ inventory, onNavigate }) {
   const [tab, setTab] = useState("storefront");
   const products = useCompanyTable("ecommerce_products", storefrontSeed, {
     select: "*,inventory_items(name,category)", order: { col: "sku", ascending: true }, mapRow: mapProductRow,
@@ -23074,6 +23089,7 @@ function ECommerce({ inventory }) {
         {ECOM_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
       <p className="text-[10px] text-slate-400">Source: confirmed ecommerce orders, ecommerce products, and ERP inventory rows. Payment, conversion, customer, coupon, shipping, and attribution metrics remain unavailable until their server-confirmed contracts exist.</p>
+      <CommerceCapabilityPanel onNavigate={onNavigate} />
 
       {tab === "storefront" && <Storefront products={products} inventory={inventory} />}
       {tab === "orders" && <OnlineOrders orders={orders} />}
@@ -48424,7 +48440,7 @@ function SmartManager() {
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
       {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} currentUser={currentUser} />}
           {active === "scm" && <SupplyChain />}
-          {active === "ecommerce" && <ECommerce inventory={inventory} />}
+          {active === "ecommerce" && <ECommerce inventory={inventory} onNavigate={go} />}
           {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} />}
           {active === "documents" && <Documents filesHook={files} company={company} />}
           {active === "projects" && <Projects filesHook={files} expensesHook={expenses} />}
