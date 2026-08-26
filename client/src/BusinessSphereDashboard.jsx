@@ -1719,10 +1719,22 @@ function mapScheduledReportRow(r) {
 }
 
 function mapIntegrationConnectionRow(r) {
+  const data = r?.data && typeof r.data === "object" && !Array.isArray(r.data) ? r.data : {};
   return {
-    id: r.integration_id, dbId: r.id, enabled: r.enabled,
-    tenantId: r.tenant_id || "", clientId: r.client_id || "", paymentLink: r.payment_link || "", paypalMeLink: r.paypal_me_link || "",
-    webhookUrl: r.webhook_url || "", apiKey: r.api_key || "", businessNumber: r.business_number || "", storeUrl: r.store_url || "", terminalId: r.terminal_id || "",
+    id: r.integration_id || r.channel_id || data.integrationId || r.name || r.id,
+    dbId: r.id,
+    enabled: Boolean(r.enabled ?? data.enabled ?? r.status === "Connected"),
+    tenantId: r.tenant_id || data.tenantId || "",
+    clientId: r.client_id || data.clientId || "",
+    paymentLink: r.payment_link || data.paymentLink || "",
+    paypalMeLink: r.paypal_me_link || data.paypalMeLink || "",
+    webhookUrl: r.webhook_url || data.webhookUrl || "",
+    apiKey: r.api_key || data.apiKey || "",
+    businessNumber: r.business_number || data.businessNumber || "",
+    storeUrl: r.store_url || data.storeUrl || "",
+    terminalId: r.terminal_id || data.terminalId || "",
+    lastTestedAt: data.lastTestedAt || null,
+    lastTestStatus: data.lastTestStatus || null,
   };
 }
 
@@ -25320,20 +25332,43 @@ function IntegrationConnections({ canManage, currentUser }) {
       notify("Integration connection storage is unavailable; no changes were written.", "error");
       return;
     }
-    const previous = rows.find((c) => c.id === id)?.[key];
-    setRows((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: value } : c)));
-    if (IS_CONFIGURED) {
-      const columnMap = {
-        enabled: "enabled", tenantId: "tenant_id", clientId: "client_id", paymentLink: "payment_link", paypalMeLink: "paypal_me_link",
-        webhookUrl: "webhook_url", apiKey: "api_key", businessNumber: "business_number", storeUrl: "store_url", terminalId: "terminal_id",
-      };
-      try {
-        const result = await runCompanyTableMutation("integration_connections", "update", { [columnMap[key]]: value }, { matchCol: "integration_id", matchVal: id });
-        if (result.error || result.data == null) throw result.error || new Error("The server did not confirm the integration update.");
-      } catch (e) {
-        setRows((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: previous } : c)));
-        notify("Integration change was not saved to the server.", "error");
-      }
+    const meta = INTEGRATION_CONNECTIONS.find((connection) => connection.id === id);
+    if (!meta) return;
+    const existing = rows.find((connection) => connection.id === id) || { id };
+    const hadExistingRow = Boolean(existing.dbId);
+    const previousRow = existing;
+    const next = { ...existing, id, [key]: value };
+    const persistedConfig = Object.fromEntries([
+      "enabled", "tenantId", "clientId", "paymentLink", "paypalMeLink", "webhookUrl", "apiKey", "businessNumber", "storeUrl", "terminalId",
+    ].map((field) => [field, next[field] || (field === "enabled" ? false : "")]));
+    const payload = {
+      name: meta.name,
+      status: next.enabled ? "Connected" : "Disconnected",
+      notes: meta.requirement,
+      data: {
+        integrationId: id,
+        ...persistedConfig,
+      },
+    };
+    setRows((prev) => {
+      const found = prev.some((connection) => connection.id === id);
+      return found ? prev.map((connection) => (connection.id === id ? next : connection)) : [...prev, next];
+    });
+    if (!IS_CONFIGURED) return;
+    try {
+      const result = hadExistingRow
+        ? await runCompanyTableMutation("integration_connections", "update", payload, { matchCol: "id", matchVal: existing.dbId })
+        : await runCompanyTableMutation("integration_connections", "insert", payload);
+      if (result.error || result.data == null) throw result.error || new Error("The server did not confirm the integration update.");
+      const raw = Array.isArray(result.data) ? result.data[0] : result.data;
+      const confirmed = mapIntegrationConnectionRow(raw || { ...payload, id });
+      setRows((prev) => prev.map((connection) => (connection.id === id ? confirmed : connection)));
+      notify(`${meta.name} configuration saved to the server.`, "success");
+    } catch (e) {
+      setRows((prev) => hadExistingRow
+        ? prev.map((connection) => (connection.id === id ? previousRow : connection))
+        : prev.filter((connection) => connection.id !== id));
+      notify("Integration change was not saved to the server.", "error");
     }
   }
 
@@ -25372,6 +25407,7 @@ function IntegrationConnections({ canManage, currentUser }) {
           const config = getConfig(meta.id);
           const Icon = meta.icon;
           const linkField = meta.fields.find((f) => f.key === "paymentLink" || f.key === "paypalMeLink");
+          const connectionStatus = config.enabled ? "Connected" : meta.functional ? "Ready to connect" : "Configuration required";
           return (
             <div key={meta.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
               <div className="flex items-center justify-between mb-3">
@@ -25379,7 +25415,7 @@ function IntegrationConnections({ canManage, currentUser }) {
                   <div className="w-9 h-9 rounded-lg bg-[#111827]/5 flex items-center justify-center"><Icon size={16} className="text-[#111827]" /></div>
                   <div>
                     <p className="text-[14px] font-semibold text-[#111827]">{meta.name}</p>
-                    <span className={`text-[10px] font-medium ${meta.functional ? "text-[#16A34A]" : "text-slate-400"}`}>{meta.functional ? "Real, working today" : "Needs backend OAuth"}</span>
+                    <span className={`text-[10px] font-medium ${config.enabled ? "text-[#16A34A]" : meta.functional ? "text-[#2563EB]" : "text-slate-400"}`}>{connectionStatus}</span>
                   </div>
                 </div>
                 {loading ? <div className="w-9 h-5 rounded-full skeleton-shimmer" /> : (
