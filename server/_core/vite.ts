@@ -3,10 +3,16 @@ import fs from "fs";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
-import { createServer as createViteServer } from "vite";
-import viteConfig from "../../vite.config";
 
 export async function setupVite(app: Express, server: Server) {
+  // Vite and its Rollup dependency are development-only. Keep them behind a
+  // runtime import so the production server can start from the bundled output
+  // after Render prunes dev dependencies.
+  const [{ createServer: createViteServer }, { default: viteConfig }] = await Promise.all([
+    import("vite"),
+    import("../../vite.config"),
+  ]);
+
   const serverOptions = {
     ...(viteConfig.server ?? {}),
     middlewareMode: true,
@@ -72,18 +78,7 @@ export function serveStatic(app: Express) {
     },
   }));
 
-  // Never answer a missing static asset with index.html. A stale hashed module
-  // must fail as an asset so the client lazy-loader can clear its shell cache
-  // and recover, rather than trying to parse HTML as JavaScript.
-  app.use((req, res, next) => {
-    if (path.extname(req.path)) {
-      res.status(404).end();
-      return;
-    }
-    next();
-  });
-
-  // Fall through to index.html for client-side application routes only.
+  // fall through to index.html if the file doesn't exist
   app.use((_req, res) => {
     res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
     res.sendFile(path.resolve(distPath, "index.html"));
