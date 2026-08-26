@@ -3,12 +3,16 @@ import {
   buildResumeUrl,
   getModuleFromUrl,
   getResumeLocationKey,
+  getSafeDraftKey,
+  isResumeLocationFresh,
   isSensitivePersistenceKey,
   readResumeLocation,
   readSafeDraft,
+  readScopedSafeDraft,
   sanitizeResumeLocation,
   writeResumeLocation,
   writeSafeDraft,
+  writeScopedSafeDraft,
 } from "./resumeSession";
 
 class MemoryStorage implements Storage {
@@ -55,29 +59,62 @@ describe("resumeSession", () => {
     expect(getModuleFromUrl("?module=settings", context.allowedModuleIds, context.safeModuleIds)).toBe("settings");
   });
 
-  it("strips credential-bearing query and hash state", () => {
+  it("strips credential, onboarding, and authentication callback state from query and hash", () => {
     const safe = sanitizeResumeLocation({
       ...context,
       pathname: "/app",
-      search: "?module=inventory&access_token=do-not-save&tab=details",
-      hash: "#refresh_token=do-not-save",
+      search: "?module=inventory&access_token=do-not-save&tab=details&invite=join-code&code=oauth-code&state=csrf-state",
+      hash: "#refresh_token=do-not-save&nonce=oauth-nonce&tab=details",
       moduleId: "inventory",
     }, context);
 
     expect(safe?.search).toContain("tab=details");
-    expect(safe?.search).not.toContain("access_token");
-    expect(safe?.hash).toBe("");
-    expect(buildResumeUrl({ pathname: "/app", search: "?auth=login&invite=unsafe&tab=details", hash: safe?.hash || "", moduleId: safe?.moduleId })).toContain("module=inventory");
-    expect(buildResumeUrl({ pathname: "/app", search: "?auth=login&invite=unsafe&tab=details", hash: safe?.hash || "", moduleId: safe?.moduleId })).not.toContain("auth=");
+    expect(safe?.search).not.toMatch(/access_token|invite|code|state/);
+    expect(safe?.hash).toBe("#tab=details");
+    const resumeUrl = buildResumeUrl({ pathname: "/app", search: "?auth=login&invite=unsafe&code=unsafe&tab=details", hash: "#state=unsafe&tab=details", moduleId: "inventory" });
+    expect(resumeUrl).toContain("module=inventory");
+    expect(resumeUrl).toContain("tab=details");
+    expect(resumeUrl).not.toMatch(/auth=|invite=|code=|state=/);
   });
 
-  it("does not persist sensitive draft keys and excludes sensitive fields", () => {
+  it("fails closed for malformed input and rejects expired or future-dated locations", () => {
+    expect(sanitizeResumeLocation({ ...context, pathname: "/app", search: "%E0%A4%A" , moduleId: "inventory" }, context)).not.toBeNull();
+    expect(isResumeLocationFresh(Date.now() - (30 * 24 * 60 * 60 * 1000 + 1))).toBe(false);
+    expect(isResumeLocationFresh(Date.now() + 10 * 60 * 1000)).toBe(false);
+
     const storage = new MemoryStorage();
+    const key = getResumeLocationKey(context.userId, context.companyId);
+    storage.setItem(key, JSON.stringify({
+      version: 1,
+      ...context,
+      pathname: "/app",
+      search: "?module=inventory",
+      hash: "",
+      moduleId: "inventory",
+      savedAt: Date.now() - (30 * 24 * 60 * 60 * 1000 + 1),
+    }));
+    expect(readResumeLocation(storage, context)).toBeNull();
+    expect(storage.getItem(key)).toBeNull();
+  });
+
+  it("requires scoped draft keys and recursively excludes sensitive fields and data URLs", () => {
+    const storage = new MemoryStorage();
+    const key = getSafeDraftKey("user-1", "company-1", "onboarding-company");
+    expect(key).toContain("smart_manager_safe_draft_v1");
+    expect(writeScopedSafeDraft(storage, "user-1", "company-1", "onboarding-company", {
+      companyName: "Acme",
+      password: "never",
+      nested: { apiKey: "never", displayName: "Safe" },
+      logoPreview: "data:image/png;base64,not-for-storage",
+    })).toBe(true);
+    expect(readScopedSafeDraft<Record<string, unknown>>(storage, "user-1", "company-1", "onboarding-company")).toEqual({
+      companyName: "Acme",
+      nested: { displayName: "Safe" },
+    });
+    expect(writeSafeDraft(storage, "onboarding-company-draft", { companyName: "Acme" })).toBe(false);
+    expect(readSafeDraft(storage, "onboarding-company-draft")).toBeNull();
     expect(isSensitivePersistenceKey("password")).toBe(true);
-    expect(isSensitivePersistenceKey("companyName")).toBe(false);
-    expect(writeSafeDraft(storage, "onboarding-company-draft", { companyName: "Acme", password: "never" })).toBe(true);
-    expect(readSafeDraft<Record<string, string>>(storage, "onboarding-company-draft")).toEqual({ companyName: "Acme" });
-    expect(writeSafeDraft(storage, "password-draft", { value: "never" })).toBe(false);
-    expect(readSafeDraft(storage, "password-draft")).toBeNull();
+    expect(writeScopedSafeDraft(storage, "user-1", "company-2", "onboarding-company", { companyName: "Other" })).toBe(true);
+    expect(readScopedSafeDraft(storage, "user-1", "company-1", "onboarding-company")).not.toEqual({ companyName: "Other" });
   });
 });
