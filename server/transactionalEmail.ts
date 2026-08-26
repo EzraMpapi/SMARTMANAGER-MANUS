@@ -14,7 +14,7 @@ type SendInput = {
   attachments?: Attachment[];
   category: "manual" | "invitation" | "report" | "notification";
   idempotencyKey?: string;
-  providerDeliveryPurpose?: "portal_reference_reconciliation_digest" | "microfinance_par_collections_escalation";
+  providerDeliveryPurpose?: "portal_reference_reconciliation_digest" | "microfinance_par_collections_escalation" | "website_feedback_reply";
 };
 
 const EMAIL_SENDER_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator", "Sales Manager", "Sales Representative", "Finance Manager", "HR Manager", "Customer Support"]);
@@ -27,6 +27,12 @@ export function isTransactionalEmailDeliveryEnabled() {
 export function assertTransactionalEmailDeliveryEnabled() {
   if (!isTransactionalEmailDeliveryEnabled()) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: TRANSACTIONAL_EMAIL_DISABLED_MESSAGE });
+  }
+}
+
+export function assertFeedbackReplyEmailDeliveryEnabled() {
+  if (!ENV.feedbackReplyEmailNotifications || !ENV.resendApiKey.trim() || !ENV.resendFromEmail.trim()) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Feedback reply email notifications are not enabled on the server. The reply was saved, but no email was sent." });
   }
 }
 
@@ -54,7 +60,8 @@ export function workspaceEmailHtml({ title, preheader, body }: { title: string; 
 }
 
 export async function sendTransactionalEmail(input: SendInput): Promise<{ deliveryId: string; acceptedAt: string }> {
-  if (input.providerDeliveryPurpose !== "portal_reference_reconciliation_digest" && input.providerDeliveryPurpose !== "microfinance_par_collections_escalation") assertTransactionalEmailDeliveryEnabled();
+  if (input.providerDeliveryPurpose === "website_feedback_reply") assertFeedbackReplyEmailDeliveryEnabled();
+  else if (input.providerDeliveryPurpose !== "portal_reference_reconciliation_digest" && input.providerDeliveryPurpose !== "microfinance_par_collections_escalation") assertTransactionalEmailDeliveryEnabled();
   if (!ENV.resendApiKey.trim() || !ENV.resendFromEmail.trim()) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: TRANSACTIONAL_EMAIL_DISABLED_MESSAGE });
   }

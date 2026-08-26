@@ -3,6 +3,7 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { ENV } from "./_core/env";
+import { parseEmailRecipients, sendTransactionalEmail, workspaceEmailHtml } from "./transactionalEmail";
 
 const FEEDBACK_CATEGORIES = ["bug", "feature", "ui", "general"] as const;
 const feedbackWindowMs = 10 * 60 * 1000;
@@ -127,8 +128,41 @@ async function requestWithServiceRole(path: string, init: RequestInit = {}) {
 
 export async function listWebsiteFeedback(req: FeedbackAdminRequest) {
   await requireFeedbackAdmin(req);
-  const rows = await requestWithServiceRole("website_feedback_submissions?select=id,category,message,name,email,page_path,source,status,admin_reply,reviewed_at,reviewed_by,replied_at,replied_by,created_at&order=created_at.desc&limit=200") as unknown;
+  const rows = await requestWithServiceRole("website_feedback_submissions?select=id,category,message,name,email,page_path,source,status,admin_reply,reviewed_at,reviewed_by,replied_at,replied_by,email_notification_status,email_notification_id,email_notification_sent_at,created_at&order=created_at.desc&limit=200") as unknown;
   return { feedback: Array.isArray(rows) ? rows : [] };
+}
+
+async function notifyFeedbackRecipient(feedback: Record<string, unknown>, reply: string) {
+  const rawEmail = typeof feedback.email === "string" ? feedback.email.trim() : "";
+  if (!rawEmail) return { status: "not_requested" as const };
+  let recipients: string[];
+  try {
+    recipients = parseEmailRecipients(rawEmail, "recipient", 1);
+  } catch {
+    return { status: "failed" as const };
+  }
+  if (!ENV.feedbackReplyEmailNotifications || !ENV.resendApiKey.trim() || !ENV.resendFromEmail.trim()) {
+    return { status: "disabled" as const };
+  }
+  const feedbackId = String(feedback.id || "");
+  const recipientName = typeof feedback.name === "string" && feedback.name.trim() ? feedback.name.trim() : "there";
+  const safeMessage = typeof feedback.message === "string" ? feedback.message : "";
+  const subject = "Your Smart Manager feedback has been reviewed";
+  const body = `Hello ${recipientName},\n\nThank you for sharing feedback with Smart Manager. Our team has reviewed your message and recorded the following response:\n\n${reply}\n\nYour original feedback was:\n${safeMessage}\n\nSmart Manager Team`;
+  try {
+    const delivery = await sendTransactionalEmail({
+      to: recipients,
+      subject,
+      text: body,
+      html: workspaceEmailHtml({ title: subject, preheader: "A response to your Smart Manager feedback", body }),
+      category: "notification",
+      providerDeliveryPurpose: "website_feedback_reply",
+      idempotencyKey: `feedback-reply:${feedbackId}:${createHash("sha256").update(reply).digest("hex").slice(0, 16)}`,
+    });
+    return { status: "sent" as const, deliveryId: delivery.deliveryId, sentAt: delivery.acceptedAt };
+  } catch {
+    return { status: "failed" as const };
+  }
 }
 
 export async function replyToWebsiteFeedback(req: FeedbackAdminRequest, input: z.infer<typeof websiteFeedbackReplyInput>) {
@@ -150,6 +184,16 @@ export async function replyToWebsiteFeedback(req: FeedbackAdminRequest, input: z
   if (!feedback || typeof feedback !== "object" || !(feedback as { id?: unknown }).id) {
     throw new TRPCError({ code: "NOT_FOUND", message: "That feedback record could not be found." });
   }
+  const emailNotification = await notifyFeedbackRecipient(feedback as Record<string, unknown>, input.reply.trim());
+  await requestWithServiceRole(`website_feedback_submissions?id=eq.${encodedId}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({
+      email_notification_status: emailNotification.status,
+      email_notification_id: "deliveryId" in emailNotification ? emailNotification.deliveryId : null,
+      email_notification_sent_at: "sentAt" in emailNotification ? emailNotification.sentAt : null,
+    }),
+  });
   const { recordGlobalAdminAction } = await import("./globalAdmin");
   await recordGlobalAdminAction(req, {
     action: "REPLY_TO_WEBSITE_FEEDBACK",
@@ -157,7 +201,7 @@ export async function replyToWebsiteFeedback(req: FeedbackAdminRequest, input: z
     targetId: input.feedbackId,
     reason: "Global Admin recorded a reply and updated the website feedback status.",
     confirmationText: `CONFIRM:REPLY_TO_WEBSITE_FEEDBACK:${input.feedbackId}`,
-    details: { status: input.status, replyLength: input.reply.trim().length },
+    details: { status: input.status, replyLength: input.reply.trim().length, emailNotificationStatus: emailNotification.status },
   });
-  return { feedback };
+  return { feedback: { ...feedback as Record<string, unknown>, email_notification_status: emailNotification.status, email_notification_id: "deliveryId" in emailNotification ? emailNotification.deliveryId : null, email_notification_sent_at: "sentAt" in emailNotification ? emailNotification.sentAt : null }, emailNotification };
 }

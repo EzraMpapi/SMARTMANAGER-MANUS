@@ -19,6 +19,7 @@ export const ENV = {
   healthcareSmsWebhookSecret: process.env.HEALTHCARE_SMS_WEBHOOK_SECRET ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "",
+  feedbackReplyEmailNotifications: process.env.FEEDBACK_REPLY_EMAIL_NOTIFICATIONS === "true",
   harakaPayApiKey: process.env.HARAKAPAY_API_KEY ?? "",
   harakaPayBaseUrl: process.env.HARAKAPAY_BASE_URL ?? "https://harakapay.net",
   harakaPayCollectUrl: process.env.HARAKAPAY_COLLECT_URL ?? "",
