@@ -648,3 +648,10 @@
 - [x] Redesign and repair the desktop/mobile command bar for hierarchy, spacing, safe touch targets, and responsive overflow handling
 - [x] Run sidebar interaction, responsive layout, regression, type, and tenant-safety validation
 - [x] Commit and push intentional interface changes to GitHub main
+
+## Live Supabase Missing-Schema Reconciliation
+- [x] Inspect current Git state, repository schema contracts, migrations, and Supabase connector readiness
+- [x] Compare all required tables and relevant schema contracts with the live Supabase catalog
+- [x] Generate and apply only proven missing idempotent tenant-safe tables or schema objects through the Supabase connector (no missing object was demonstrated; no SQL applied)
+- [x] Re-verify schema completeness, RLS/tenant posture, and migration ledger
+- [x] Commit and push intentional migration or verification evidence to GitHub main
