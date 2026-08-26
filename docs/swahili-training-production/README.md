@@ -1,6 +1,6 @@
 # SMART MANAGER Kiswahili Training Production Package
 
-This package contains the versioned, evidence-based pre-production work for the SMART MANAGER ERP long-form Kiswahili course. It is a **course-production foundation and Chapter 01 pilot**, not a claim that the 8.5-hour master video has already been rendered.
+This package contains the versioned, evidence-based pre-production work for the SMART MANAGER ERP long-form Kiswahili course. It is a **course-production foundation with validated Chapters 01–06 production packs**, not a claim that the 8.5-hour master video has already been rendered.
 
 ## Included repository deliverables
 
@@ -13,6 +13,15 @@ This package contains the versioned, evidence-based pre-production work for the 
 | [`chapter-01-utangulizi.md`](./chapter-01-utangulizi.md) | Time-coded Chapter 01 storyboard, Kiswahili script, UI/cursor plan, and subtitle cues. |
 | [`chapter-01-asset-manifest.md`](./chapter-01-asset-manifest.md) | Chapter 01 asset ledger and assembly instructions. |
 | [`chapter-01-validation.md`](./chapter-01-validation.md) | Technical, instructional, privacy, and provenance validation record. |
+| [`kmkm-controlled-capture-plan.md`](./kmkm-controlled-capture-plan.md) | Owner-approved KMKM capture scope, deterministic redaction method, and UI-frame usage limits. |
+| [`operational-workflow-visuals.md`](./operational-workflow-visuals.md) | Reusable Sales, Inventory, and Finance 3D visual pack and controlled UI pairing rules. |
+| [`operational-workflow-visual-review-20260826.md`](./operational-workflow-visual-review-20260826.md) | Availability, visual review, dimensions, and explanatory-only limits for the Sales, Inventory, and Finance workflow concepts. |
+| [`kmkm-redacted-output-privacy-review-20260826.md`](./kmkm-redacted-output-privacy-review-20260826.md) | Final output privacy review, tenant-reference remediation, and approved module-shell orientation limits. |
+| [`chapter-02-maono-tatizo-na-suluhisho.md`](./chapter-02-maono-tatizo-na-suluhisho.md) | Time-coded problem-framing production pack. |
+| [`chapter-03-mfumo-unavyofanya-kazi.md`](./chapter-03-mfumo-unavyofanya-kazi.md) | Time-coded operating-model and safe-workspace production pack. |
+| [`chapter-04-architecture-na-multi-tenant.md`](./chapter-04-architecture-na-multi-tenant.md) | Time-coded architecture and company-context production pack. |
+| [`chapter-05-authentication-na-user-management.md`](./chapter-05-authentication-na-user-management.md) | Time-coded authentication and user-management safety production pack. |
+| [`chapter-06-dashboard-ya-uongozi.md`](./chapter-06-dashboard-ya-uongozi.md) | Time-coded leadership-dashboard interpretation production pack. |
 
 ## External production media
 
@@ -23,6 +32,10 @@ Generated media intentionally remains outside the Git repository to avoid bloati
 | Fictional cast reference | `characters/smart-manager-training-cast-reference.png` | Generated, visually reviewed, 2560×1440 PNG |
 | Chapter 01 Kiswahili narration | `chapter-01/ch01-kiswahili-narration.wav` | Generated, 284.56 s, PCM WAV, 24 kHz mono |
 | Chapter 01 opening theme | `chapter-01/ch01-opening-theme.mp3` | Generated, 72.15 s, MP3, 44.1 kHz stereo, instrumental only |
+| Sales workflow concept | `chapter-01/sales-workflow-concept.png` | Generated, reviewed, 2560×1440 PNG; conceptual cutaway only |
+| Inventory workflow concept | `chapter-01/inventory-workflow-concept.png` | Generated, reviewed, 2560×1440 PNG; conceptual cutaway only |
+| Finance workflow concept | `chapter-01/finance-workflow-concept.png` | Generated, reviewed, 2560×1440 PNG; conceptual cutaway only |
+| Controlled Dashboard/Finance/Inventory/Sales frames | `kmkm-redacted/*-training-redacted.png` | Generated externally, final privacy review passed; module-shell orientation only |
 
 ## Assembly rule
 
@@ -30,4 +43,4 @@ No master video is assembled until every chapter has a privacy-screened UI captu
 
 ## Next production batch
 
-The next safe batch is Chapters 02–06: problem framing, operating model, multi-tenant architecture, secure authentication, and the dashboard. It should reuse the approved cast reference and existing 3D plates; any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, or tokens.
+The next safe batch is Chapters 07–09: Sales, POS, and CRM. It must reuse the Sales concept only as an explanatory cutaway, retain the final redacted Sales orientation frame as navigation context only, and create new per-chapter UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts.

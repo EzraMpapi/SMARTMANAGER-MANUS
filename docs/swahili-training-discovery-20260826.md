@@ -11,6 +11,16 @@ The owner completed the required manual sign-in in the connected browser. The au
 
 The initial authenticated workspace session displays a daily briefing and a guided onboarding tour over the command center. These are valid product surfaces, but neither overlay is suitable for capture until it can be closed or allowed to complete in a disposable training state. The attempted read-only navigation to Sales was intentionally not used as evidence because the briefing overlay remained active; no record was created, edited, dismissed, or exported during discovery.
 
+## Follow-up browser confirmation
+
+After the owner indicated readiness, the connected browser was rechecked without interacting with records. It still resolves to the `KMKM` workspace with an **owner** role and the same visible `DEMO` customer/invoice rows. It has not been confirmed as a separately provisioned disposable training tenant, and no approved Finance, Operations, Employee, Healthcare, or Administrator role session is present. The environment remains suitable only for public-entry and high-level shell orientation; role-specific module recording remains blocked until the requested training context is identified.
+
+The browser was then navigated read-only to the Finance module. Its visible information architecture includes Overview, Receivables, Payables, General Ledger, Chart of Accounts, Budgets, Scan Document, Financial Ratios, Loans, Other Debtors, Other Income, Banking, Tax, and Assets. The current screen shows confirmed financial figures and category amounts for `KMKM`; those figures must not be copied into scripts, captions, screenshots, narration, or generated visuals. The module map can inform the Finance chapter storyboard, but a redacted/disposable capture is still required for final video use.
+
+The Inventory module was also inspected read-only. It exposes Dashboard, Stock, Warehouses, Smart Analysis, Transfers, Batches, Suppliers, and Stock Audit, together with safe conceptual guidance for multi-location stock, expiry control, and reorder alerts. The screen currently renders individual demo SKU rows and stock-status quantities. These visible item rows, values, and any export/create controls are excluded from the course until a privacy-screened recording state is approved.
+
+The Sales module was inspected read-only after it finished loading. Its visible high-level workflow tabs are Quotations, Sales Orders, Invoices, and Subscriptions. The current owner workspace screen includes a named quotation customer, dates, draft state, and a monetary amount. Those record-level values are excluded from all training scripts, screenshots, animations, and narration. Only the generic workflow labels may inform the sales chapter storyboard before a redacted capture state is approved.
+
 ## Observed authenticated shell and command-center surfaces
 
 | Area | Verified visible surface | Production treatment |

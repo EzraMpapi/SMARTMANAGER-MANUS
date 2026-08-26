@@ -494,3 +494,6 @@
 - [x] Create the first verified chapter-level visual, narration, storyboard, and reusable production assets without using production credentials, fabricated workflows, or unapproved customer data.
 - [x] Validate the delivered chapter assets for instructional coverage, asset provenance, accessibility, security boundaries, and version-control suitability.
 - [x] Package documentation and verified reusable deliverables, then synchronize intentional repository changes to GitHub main.
+- [x] Create controlled redacted KMKM training-capture plans for approved dashboard, Finance, Inventory, and Sales surfaces without preserving record-level data.
+- [x] Produce reusable Kiswahili chapter assets that pair approved redacted UI framing with the registered 3D concepts and training characters.
+- [ ] Validate approved-KMKM redaction coverage and synchronize the updated controlled-capture production package to GitHub main.
