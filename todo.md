@@ -547,3 +547,6 @@
 
 ## Remote-Main Merge Regression Follow-up
 - [x] Update stale contract assertions exposed by the latest remote-main merge, then rerun TypeScript, tests, and production build before pushing.
+
+## Checkpoint Asset Size Remediation
+- [x] Resize the two oversized branding PNGs in place without replacing their visual content, verify they are below the checkpoint threshold, and retry the managed checkpoint.
