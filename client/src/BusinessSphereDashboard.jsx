@@ -95,6 +95,20 @@ const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_C
   Wallet,
 });
 
+async function clearStaleShellCaches() {
+  if (typeof window === "undefined" || !("caches" in window)) return;
+  try {
+    const keys = await window.caches.keys();
+    await Promise.all(
+      keys
+        .filter((cacheKey) => cacheKey.startsWith("smart-manager-shell-"))
+        .map((cacheKey) => window.caches.delete(cacheKey)),
+    );
+  } catch {
+    // Cache storage is best-effort; the controlled reload remains the fallback.
+  }
+}
+
 function lazyWorkspaceWithRecovery(load, key) {
   return lazy(async () => {
     const retryKey = `smart-manager-workspace-lazy-retry:${key}`;
@@ -107,6 +121,7 @@ function lazyWorkspaceWithRecovery(load, key) {
       try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
       if (!alreadyRetried && typeof window !== "undefined") {
         try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
+        await clearStaleShellCaches();
         window.location.reload();
         return new Promise(() => {});
       }
@@ -124,7 +139,7 @@ const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAud
 const LazyHealthcareClinicWorkspace = lazy(() => import("./components/HealthcareClinicWorkspace").then((module) => ({ default: module.HealthcareClinicWorkspace })));
 const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWorkspace").then((module) => ({ default: module.MicrofinanceWorkspace })));
 const LazyPharmacyWorkspace = lazyWorkspaceWithRecovery(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })), "pharmacy");
-const LazySchoolWorkspace = lazy(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })));
+const LazySchoolWorkspace = lazyWorkspaceWithRecovery(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })), "school");
 const LazyMoneyAgentWorkspace = lazyWorkspaceWithRecovery(() => import("./components/MoneyAgentWorkspace").then((module) => ({ default: module.MoneyAgentWorkspace })), "money-agent");
 const LazyPropertyManagementWorkspace = lazyWorkspaceWithRecovery(() => import("./components/PropertyManagementWorkspace").then((module) => ({ default: module.PropertyManagementWorkspace })), "property-management");
 
