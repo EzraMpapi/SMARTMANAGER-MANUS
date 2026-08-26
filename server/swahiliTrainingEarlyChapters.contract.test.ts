@@ -14,6 +14,9 @@ const chapterSpecs = [
   ["chapter-10-inventory-na-ghala.md", "16:00"],
   ["chapter-11-stock-control.md", "12:00"],
   ["chapter-12-reports.md", "08:00"],
+  ["chapter-13-procurement-na-wasambazaji.md", "14:00"],
+  ["chapter-14-supply-chain.md", "12:00"],
+  ["chapter-15-manufacturing-na-work-orders.md", "12:00"],
 ] as const;
 
 function readChapter(filename: string) {
@@ -79,6 +82,20 @@ describe("Swahili early-chapter production pack contract", () => {
     expect(stockControl).toContain("Bado haijapitishwa");
     expect(reports).toContain("Reports UI capture");
     expect(reports).toContain("BADO HAIJAPITISHWA");
+  });
+
+  it("retains the procurement, supply-chain, and manufacturing evidence gates", () => {
+    const procurement = readChapter("chapter-13-procurement-na-wasambazaji.md");
+    const supplyChain = readChapter("chapter-14-supply-chain.md");
+    const manufacturing = readChapter("chapter-15-manufacturing-na-work-orders.md");
+
+    expect(procurement).toContain("Procurement UI capture");
+    expect(procurement).toContain("Bado haijapitishwa");
+    expect(supplyChain).toContain("Supply Chain/Fleet UI");
+    expect(supplyChain).toContain("BADO HAIJAPITISHWA");
+    expect(manufacturing).toContain("Manufacturing UI capture");
+    expect(manufacturing).toContain("IMEJENGWA KWA SEHEMU");
+    expect(manufacturing).toContain("imejengwa kwa sehemu");
   });
 
   it("preserves Kiswahili-first terminology across Sales, POS, and CRM", () => {

@@ -28,10 +28,17 @@ This package contains the versioned, evidence-based pre-production work for the 
 | [`chapter-10-inventory-na-ghala.md`](./chapter-10-inventory-na-ghala.md) | Privacy-gated Inventory and warehouse production pack using conceptual and module-shell-only evidence. |
 | [`chapter-11-stock-control.md`](./chapter-11-stock-control.md) | Privacy-gated Stock Control production pack for count, difference, review, and adjustment-boundary instruction. |
 | [`chapter-12-reports.md`](./chapter-12-reports.md) | Privacy-gated Reports production pack; report UI, exports, schedules, and delivery evidence remain unapproved. |
+| [`chapter-13-procurement-na-wasambazaji.md`](./chapter-13-procurement-na-wasambazaji.md) | Privacy-gated Procurement production pack; vendor, quote, price, purchase, receipt, and approval evidence remain unapproved. |
+| [`chapter-14-supply-chain.md`](./chapter-14-supply-chain.md) | Privacy-gated Supply Chain production pack; route, vehicle, GPS, delivery, fleet, and schedule evidence remain unapproved. |
+| [`chapter-15-manufacturing-na-work-orders.md`](./chapter-15-manufacturing-na-work-orders.md) | Privacy-gated Manufacturing production pack retaining the required `imejengwa kwa sehemu` qualifier. |
 | [`chapter-07-09-terminology-validation.md`](./chapter-07-09-terminology-validation.md) | Kiswahili-first terminology audit, corrections, and canonical Sales/POS/CRM term ledger. |
+| [`chapter-01-12-terminology-audit.md`](./chapter-01-12-terminology-audit.md) | Comprehensive chapter-level Kiswahili terminology audit and standardized production glossary for Chapters 01–12. |
 | [`foundation-deck-outline.md`](./foundation-deck-outline.md) | Kiswahili narrative outline for the Chapters 01–06 evidence-based foundation deck. |
 | [`foundation-deck-presentation-script.md`](./foundation-deck-presentation-script.md) | Slide-aligned Kiswahili narration and presenter script for the ten-slide Chapters 01–06 foundation deck. |
 | [`foundation-deck/`](./foundation-deck/) | Editable PPTX slide project for the Chapters 01–06 foundation deck; it references only approved conceptual and redacted external visuals. |
+| [`commercial-deck-outline.md`](./commercial-deck-outline.md) | Kiswahili narrative outline for the eight-slide Chapters 07–09 commercial-foundation deck. |
+| [`commercial-deck-presentation-script.md`](./commercial-deck-presentation-script.md) | Slide-aligned Kiswahili narration and presenter script for the Chapters 07–09 commercial-foundation deck. |
+| [`commercial-foundation-deck/`](./commercial-foundation-deck/) | Editable PPTX slide project for Chapters 07–09; it uses only the approved conceptual Sales plate and the redacted Sales orientation frame. |
 
 ## External production media
 
@@ -53,4 +60,4 @@ No master video is assembled until every chapter has a privacy-screened UI captu
 
 ## Next production batch
 
-The next safe batch is Procurement and Supply Chain/Manufacturing in the master course sequence. It must create any new UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts. Manufacturing must retain its `imejengwa kwa sehemu` qualifier.
+The next safe batch is People/HR and Finance in the master course sequence. It must create any new UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts. Any external-service or configuration-dependent capability must retain its qualifier.

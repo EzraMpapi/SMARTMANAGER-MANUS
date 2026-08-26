@@ -1,0 +1,27 @@
+<slide id="commercial_context">
+  <background color="bg-content"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="slide-title" x="60" y="92" width="810" height="44" font="heading" size="34" color="brand" wrap="false">Commercial flow huanza na muktadha</text>
+  <text id="slide-subtitle" x="60" y="145" width="980" height="46" font="body" size="20" color="muted">Sura 07–09 zinafundisha hatua tofauti za uhusiano wa biashara, si muamala mmoja uliothibitishwa.</text>
+  <text id="context-heading" x="60" y="245" width="390" height="28" font="body" size="20" color="brand" wrap="false">KILE KINACHOJENGWA KWENYE MAFUNZO</text>
+  <text id="context-body" x="60" y="292" width="430" height="188" font="body" size="20" color="ink-dark" line-height="1.35"><p>Mauzo huanza na hitaji na hati.</p><p>POS huweka utaratibu wa kaunta.</p><p>CRM huweka ufuatiliaji na ownership wazi.</p><p>Kila sura ina script, VTT, asset boundary na QA.</p></text>
+  <shape id="sales-node" type="rect" x="610" y="250" width="175" height="175" fill="surface" stroke="border" stroke-width="1"/>
+  <icon id="sales-icon" name="handshake" x="674" y="275" width="44" height="44" color="brand"/>
+  <text id="sales-title" x="630" y="336" width="135" height="26" font="body" size="22" color="brand" align="center" wrap="false">Sales</text>
+  <text id="sales-text" x="630" y="374" width="135" height="34" font="caption" size="14" color="muted" align="center">Hitaji na hati</text>
+  <shape id="arrow-sales-pos" type="arrow" x="800" y="316" width="55" height="36" fill="accent" head-ratio="0.32"/>
+  <shape id="pos-node" type="rect" x="870" y="250" width="175" height="175" fill="#F6F0E4" stroke="#D8C597" stroke-width="1"/>
+  <icon id="pos-icon" name="shopping-cart" x="934" y="275" width="44" height="44" color="brand"/>
+  <text id="pos-title" x="890" y="336" width="135" height="26" font="body" size="22" color="brand" align="center" wrap="false">POS</text>
+  <text id="pos-text" x="890" y="374" width="135" height="34" font="caption" size="14" color="muted" align="center">Utendaji wa kaunta</text>
+  <shape id="arrow-pos-crm" type="arrow" x="1060" y="316" width="55" height="36" fill="accent" head-ratio="0.32"/>
+  <shape id="crm-node" type="rect" x="1130" y="250" width="90" height="175" fill="surface" stroke="border" stroke-width="1"/>
+  <icon id="crm-icon" name="users" x="1153" y="275" width="44" height="44" color="brand"/>
+  <text id="crm-title" x="1138" y="336" width="74" height="26" font="body" size="18" color="brand" align="center" wrap="false">CRM</text>
+  <text id="crm-text" x="1136" y="370" width="78" height="42" font="caption" size="12" color="muted" align="center">Ufuatiliaji</text>
+  <shape id="boundary-band" type="rect" x="60" y="545" width="1160" height="65" fill="brand"/>
+  <text id="boundary-text" x="85" y="563" width="1110" height="28" font="body" size="18" color="ink-light" align="center">Mstari huu unaeleza muktadha wa mafunzo, si conversion, payment, stock movement au customer outcome.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="border" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="520" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 07–09 Commercial Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">02</text>
+</slide>

@@ -512,3 +512,11 @@
 - [x] Run a full Kiswahili translation and terminology consistency review across Chapters 07–09, record corrections, and add regression coverage where appropriate.
 - [x] Write the presenter narration and presentation script for all ten slides in the Chapters 01–06 foundation deck.
 - [x] Run documentation/regression validation and synchronize the reviewed chapter, terminology, and narration package to GitHub main.
+
+## Swahili Training Chapters 13–15, Full Terminology Audit, and Commercial Deck
+- [x] Review verified Procurement, Supply Chain, and Manufacturing scope boundaries plus approved visual-evidence availability.
+- [x] Produce privacy-gated, time-coded Kiswahili production packs for Chapter 13 Procurement, Chapter 14 Supply Chain, and Chapter 15 Manufacturing with scripts, VTT cues, asset lists, QA, Ulichojifunza, and Kinachofuata.
+- [x] Run a comprehensive Kiswahili terminology audit across Chapters 01–12, record corrections, and add regression coverage where appropriate.
+- [x] Prepare the Chapters 07–09 presentation narrative and slide-aligned Kiswahili presenter script with approved conceptual/redacted evidence only.
+- [x] Generate and present the evidence-based Chapters 07–09 commercial-foundation slide deck.
+- [ ] Run final validation and synchronize the reviewed Chapter 13–15, terminology-audit, and commercial-deck package to GitHub main.

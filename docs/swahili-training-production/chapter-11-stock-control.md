@@ -27,11 +27,11 @@
 
 ### 00:00–00:25 — Udhibiti si namba tu
 
-> Stock Control ni utaratibu wa kuifanya record iwe ya kuaminika kwa kuangalia muktadha, tofauti na hatua inayofuata. Hatuonyeshi count, valuation, loss, adjustment au stocktake ya tenant katika sura hii.
+> Stock Control ni utaratibu wa kuifanya rekodi iwe ya kuaminika kwa kuangalia muktadha, tofauti na hatua inayofuata. Hatuonyeshi idadi—*count*—valuation, loss, marekebisho ya rekodi—*adjustment*—au stocktake ya tenant katika sura hii.
 
 ### 00:25–01:40 — Count discipline
 
-> **Juma:** “Count inahitaji utulivu na ushahidi. Ukihesabu au kupokea taarifa ya count, usiibadilishe kuwa conclusion kabla ya kuielewa na kuipitia.”
+> **Juma:** “Idadi—*count*—inahitaji utulivu na ushahidi. Ukihesabu au kupokea taarifa ya idadi, usiibadilishe kuwa conclusion kabla ya kuielewa na kuipitia.”
 
 > Hapa clipboard ni prop ya kubuniwa. Haina item, quantity, signature, date, area, au record ya biashara.
 

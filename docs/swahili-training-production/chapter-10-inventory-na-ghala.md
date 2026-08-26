@@ -2,7 +2,7 @@
 
 **Muda wa mpango:** 16:00.
 **Hadhira:** Wasimamizi wa ghala, timu za ununuzi, wauzaji, na viongozi wanaohitaji kuelewa uendeshaji wa stock kwa utaratibu.
-**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana bidhaa, eneo la kuhifadhi, movement, transfer, reorder na review ya stock bila kudai quantity, SKU, value, location, transaction, au stock availability ya tenant yoyote.
+**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana bidhaa, eneo la kuhifadhi, movement, transfer, kiwango cha kuagiza upya (reorder) na review ya stock bila kudai quantity, SKU, value, location, transaction, au stock availability ya tenant yoyote.
 
 > **Mpaka wa ushahidi:** Inventory & Warehouse Management imeorodheshwa kama **imejengwa**, ikiwa na inventory movement na warehouse command-center surfaces zinazounganisha quantities za uendeshaji na Sales/Procurement. Hilo halithibitishi stock count, availability, transfer, reorder, warehouse location, au muamala wowote wa tenant.[1] [2]
 
@@ -16,7 +16,7 @@
 | 03:20–04:35 | Redacted Inventory orientation frame; callout kwenye `Inventory` navigation shell | Kuelekeza module kwa usalama | Frame ya orientation tu; hakuna action/click. |
 | 04:35–06:20 | Diagramu: item → eneo → movement → review | Kuweka vocabulary ya msingi | Hakuna SKU, quantity au location halisi. |
 | 06:20–08:05 | Diagramu ya transfer na receiving, yenye label `pale inapowezeshwa` | Kueleza handoff ya uendeshaji | Usidai transfer/receipt halisi. |
-| 08:05–09:40 | Kadi za reorder na exception review | Kueleza trigger kama swali la review | Hakuna reorder level au alert halisi. |
+| 08:05–09:40 | Kadi za kiwango cha kuagiza upya na mapitio ya exception | Kueleza trigger kama swali la review | Hakuna reorder level au alert halisi. |
 | 09:40–11:20 | Uhusiano wa Sales, Procurement na Inventory kwa nodes za dashed | Kueleza uhusiano wa mikataba | Si uthibitisho wa cross-module posting. |
 | 11:20–13:00 | Juma anaweka checklist ya data quality na count discipline | Kuzuia guesswork na duplicate records | Scenario ya kubuniwa. |
 | 13:00–14:30 | Kadi ya capture gate ya Inventory detail screens | Kueleza ni nini kinahitajika kabla ya UI demo ya ndani | Transparency label. |
@@ -52,7 +52,7 @@
 
 ### 08:05–09:40 — Reorder ni signal ya review
 
-> Reorder haimaanishi order ya moja kwa moja. Ni signal inayoweza kuhitaji kuangaliwa pamoja na matumizi, muda wa upatikanaji, sera ya kampuni na ruhusa za kufanya hatua. Usitengeneze threshold au alert kwenye video bila capture iliyoidhinishwa.
+> Kiwango cha kuagiza upya—*reorder*—haimaanishi oda ya moja kwa moja. Ni ishara inayoweza kuhitaji kuangaliwa pamoja na matumizi, muda wa upatikanaji, sera ya kampuni na ruhusa za kufanya hatua. Usitengeneze threshold au alert kwenye video bila capture iliyoidhinishwa.
 
 ### 09:40–11:20 — Uhusiano unaowezekana
 
