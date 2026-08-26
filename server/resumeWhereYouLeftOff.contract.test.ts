@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const dashboardSource = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
-const navigationSource = readFileSync(resolve(process.cwd(), "client/src/navigation/enterpriseNavigation.js"), "utf8");
 const resumeSource = readFileSync(resolve(process.cwd(), "client/src/lib/resumeSession.ts"), "utf8");
 
 const requiredModules = [
@@ -24,16 +23,19 @@ describe("resume where you left off contracts", () => {
     expect(dashboardSource).toContain("const persistResumeLocation = useCallback");
     expect(dashboardSource).toContain("persistResumeLocation(id);");
     expect(dashboardSource).toContain("clearResumeLocation(window.localStorage, session.userId, session.company.id)");
-    expect(dashboardSource).toContain("NAVIGATION_ITEMS");
-    for (const moduleId of requiredModules) expect(navigationSource).toContain(`id: "${moduleId}"`);
+    for (const moduleId of requiredModules) expect(dashboardSource).toContain(`{ id: "${moduleId}"`);
   });
 
   it("keeps credentials and cross-tenant records outside the persistence contract", () => {
     expect(resumeSource).toContain("SENSITIVE_KEY_PATTERN");
     expect(resumeSource).toContain("input?.userId && input.userId !== context.userId");
     expect(resumeSource).toContain("input?.companyId && input.companyId !== context.companyId");
-    expect(resumeSource).toContain("url.searchParams.delete(key)");
-    expect(resumeSource).toContain("safeHash");
+    expect(resumeSource).toContain("SENSITIVE_CALLBACK_KEY_PATTERN");
+    expect(resumeSource).toContain("function sanitizeSearch");
+    expect(resumeSource).toContain("function sanitizeHash");
+    expect(resumeSource).toContain("isResumeLocationFresh");
+    expect(resumeSource).toContain("getSafeDraftKey");
+    expect(resumeSource).toContain("sanitizeDraftValue");
     expect(resumeSource).toContain("writeSafeDraft");
   });
 });
