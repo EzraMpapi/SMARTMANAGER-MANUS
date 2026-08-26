@@ -777,6 +777,39 @@
   overscroll-behavior: contain;
 }
 
+.dashboard-flat-navigation {
+  scrollbar-gutter: stable;
+}
+
+.dashboard-flat-nav-item[data-role-primary="true"]::before {
+  content: "";
+  position: absolute;
+  left: .35rem;
+  top: 50%;
+  width: .2rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: rgb(16 185 129 / .55);
+  transform: translateY(-50%);
+}
+
+@media (min-width: 1024px) {
+  .dashboard-workspace-column {
+    min-width: 42rem;
+  }
+
+  .dashboard-flat-navigation {
+    padding-top: 1rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .dashboard-flat-nav-item {
+    padding-top: .58rem;
+    padding-bottom: .58rem;
+  }
+}
+
 .dashboard-mobile-nav {
   padding-left: max(.25rem, env(safe-area-inset-left));
   padding-right: max(.25rem, env(safe-area-inset-right));

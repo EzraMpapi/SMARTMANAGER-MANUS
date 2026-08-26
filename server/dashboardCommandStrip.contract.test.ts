@@ -15,8 +15,17 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("aria-label=\"Open command palette\"");
     expect(dashboard).toContain("onClick={() => setPaletteOpen(true)}");
     expect(dashboard).toContain("aria-label=\"Operational workspaces\"");
-    expect(dashboard).toContain("visibleModules.map((m) => {");
+    expect(dashboard).toContain("visibleModules.filter((m) =>");
     expect(dashboard).toContain("onClick={() => go(m.id)}");
+  });
+
+  it("renders desktop navigation as a flat role-aware list rather than an accordion of module groups", () => {
+    expect(dashboard).toContain("const flatNavigationItems = [");
+    expect(dashboard).toContain("Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))");
+    expect(dashboard).toContain("dashboard-flat-navigation");
+    expect(dashboard).toContain("flatNavigationItems.map((item) => {");
+    expect(dashboard).toContain("item.locked");
+    expect(dashboard).not.toContain("toggleNavigationGroup(group.id)");
   });
 
   it("retains subscription status, alerts, and the independent mobile navigation path", () => {

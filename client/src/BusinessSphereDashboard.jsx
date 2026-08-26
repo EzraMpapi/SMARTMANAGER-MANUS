@@ -74,7 +74,7 @@ import { GlobalAdminControlCenter } from "./components/GlobalAdminControlCenter"
 import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
 import { AndroidAppStatus } from "./components/AndroidAppStatus";
 import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
-import { getNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
+import { getNavigationGroups, getQuickCreateActions, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -47706,33 +47706,17 @@ function SmartManager() {
     currentRoleId: currentRole.id,
     canSeeSettings: canManage,
   }), [visibleModuleIdsKey, currentRole.id, canManage]);
+  // The navigation model remains role- and entitlement-aware, but the desktop
+  // rail deliberately renders it as one ordered module list. This avoids an
+  // accordion maze while preserving the canonical navigation configuration.
+  const flatNavigationItems = [
+    ...navigationGroups.flatMap((group) => group.items),
+    ...(navigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, isPrimary: false, locked: true }]),
+  ].sort((left, right) => Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.order - right.order);
   const quickCreateActions = getQuickCreateActions({
     visibleModuleIds: visibleModules.map((module) => module.id),
     canCreate: currentRole.writeAccess !== "none",
   });
-  const [expandedNavigationGroups, setExpandedNavigationGroups] = useState(() => {
-    try {
-      const saved = JSON.parse(window.localStorage.getItem("smart-manager:navigation-groups") || "[]");
-      return new Set(Array.isArray(saved) ? saved : ["home", "sales-crm", "operations", "finance"]);
-    } catch {
-      return new Set(["home", "sales-crm", "operations", "finance"]);
-    }
-  });
-  useEffect(() => {
-    const activeGroup = navigationGroups.find((group) => groupContainsActiveItem(group, active));
-    if (!activeGroup) return;
-    setExpandedNavigationGroups((previous) => previous.has(activeGroup.id) ? previous : new Set([...previous, activeGroup.id]));
-  }, [active, navigationGroups]);
-  useEffect(() => {
-    try { window.localStorage.setItem("smart-manager:navigation-groups", JSON.stringify([...expandedNavigationGroups])); } catch {}
-  }, [expandedNavigationGroups]);
-  function toggleNavigationGroup(groupId) {
-    setExpandedNavigationGroups((previous) => {
-      const next = new Set(previous);
-      if (next.has(groupId)) next.delete(groupId); else next.add(groupId);
-      return next;
-    });
-  }
 
   // If switching roles removes access to whatever module is currently on
   // screen (e.g. testing "Employee" while viewing Finance), fall back to
@@ -47983,7 +47967,7 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={!sidebarOpen}
-          className={`dashboard-sidebar fixed z-50 h-[100dvh] max-h-[100dvh] ${sidebarContentCollapsed ? "w-[76px]" : "w-[min(86vw,272px)]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:sticky lg:top-0 lg:z-10 lg:h-[100dvh] lg:max-h-[100dvh] lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+          className={`dashboard-sidebar fixed z-50 h-[100dvh] max-h-[100dvh] ${sidebarContentCollapsed ? "w-[76px]" : "w-[min(86vw,272px)] xl:w-[296px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:sticky lg:top-0 lg:z-10 lg:h-[100dvh] lg:max-h-[100dvh] lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
@@ -48013,68 +47997,35 @@ function SmartManager() {
           </button>
         </div>
 
-        {/* Legacy contract anchors: visibleModules.map((m) => { and onClick={() => go(m.id)} remain represented by the grouped renderer below. */}
-        <nav className="relative flex-1 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
-          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarContentCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace navigation</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{visibleModules.length}</span></div>
-          {navigationGroups.map((group) => {
-            const GroupIcon = group.icon;
-            const expanded = expandedNavigationGroups.has(group.id);
-            const groupActive = groupContainsActiveItem(group, active);
+        {/* A flat, role-aware module list keeps every permitted workspace one click away. */}
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
+          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarContentCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Your workspace modules</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
+          {flatNavigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = active === item.id;
+            const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
             return (
-              <section key={group.id} aria-labelledby={`navigation-group-${group.id}`}>
-                <button
-                  type="button"
-                  onClick={() => toggleNavigationGroup(group.id)}
-                  aria-expanded={expanded}
-                  aria-controls={`navigation-items-${group.id}`}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-[.11em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarContentCollapsed ? "justify-center px-0" : ""} ${groupActive ? "text-emerald-800" : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"}`}
-                >
-                  <GroupIcon size={13} strokeWidth={2} aria-hidden="true" />
-                  {!sidebarContentCollapsed && <><span id={`navigation-group-${group.id}`} className="min-w-0 flex-1 truncate">{group.label}</span><span className="text-[9px] font-semibold text-slate-400">{group.items.length}</span>{expanded ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}</>}
-                </button>
-                {expanded && (
-                  <div id={`navigation-items-${group.id}`} className="space-y-0.5 pb-1" role="group" aria-labelledby={`navigation-group-${group.id}`}>
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = active === item.id;
-                      const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          data-tour-target={item.id}
-                          onClick={() => go(item.id)}
-                          aria-current={isActive ? "page" : undefined}
-                          title={item.label}
-                          className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarContentCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"}`}
-                        >
-                          <span className="flex min-w-0 items-center gap-2.5">
-                            <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>
-                            {!sidebarContentCollapsed && <span className="truncate">{item.label}</span>}
-                          </span>
-                          <span className="flex shrink-0 items-center gap-1.5">{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}{isActive && <span className="hidden text-[9px] font-bold uppercase tracking-[.08em] text-emerald-700 xl:inline">Current</span>}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
+              <button
+                key={item.id}
+                type="button"
+                data-tour-target={item.id}
+                data-role-primary={item.isPrimary ? "true" : undefined}
+                onClick={() => go(item.id)}
+                aria-current={isActive ? "page" : undefined}
+                title={item.label}
+                className={`dashboard-flat-nav-item relative w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarContentCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : item.isPrimary ? "border-emerald-50 bg-emerald-50/40 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"}`}
+              >
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : item.isPrimary ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>
+                  {!sidebarContentCollapsed && <span className="truncate">{item.label}</span>}
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-300" aria-label="Limited by your role" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}{isActive && <span className="hidden text-[9px] font-bold uppercase tracking-[.08em] text-emerald-700 xl:inline">Current</span>}</span>
+              </button>
             );
           })}
         </nav>
 
         <div className="relative border-t border-[#F3F4F6] px-3 py-3">
-          <button
-            onClick={() => go("settings")}
-            className={`w-full flex items-center justify-between gap-2.5 rounded-xl border px-2.5 py-2.5 text-[12px] transition-colors group ${
-              active === "settings" ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-[#111827]"
-            }`}
-          >
-            <span className={`flex items-center gap-2.5 ${sidebarContentCollapsed ? "justify-center" : ""}`}>
-              <span className={`grid h-8 w-8 place-items-center rounded-lg ${active === "settings" ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarContentCollapsed && " Settings"}
-            </span>
-            {!canManage && <Lock size={11} className="text-slate-300" />}
-          </button>
           {!sidebarContentCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-[#16A34A]" />
             <span>Bidhaa ya Kitanzania, kwa Wafanyabiashara wa Kitanzania na Duniani.</span>
@@ -48083,9 +48034,9 @@ function SmartManager() {
       </aside>
 
       {/* Main workspace shares a stable desktop layout column with the left navigation. */}
-      <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full">
+      <div className="dashboard-workspace-column relative z-10 flex-1 flex flex-col min-w-0 w-full">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-20 min-h-[64px] shrink-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_1px_0_rgba(15,23,42,.03)] flex items-center justify-between gap-2 px-3 py-2 sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-20 min-h-[64px] shrink-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_1px_0_rgba(15,23,42,.03)] flex items-center justify-between gap-2 px-3 py-2 sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               className="min-h-11 min-w-11 text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:min-h-0 lg:min-w-0"
@@ -48223,7 +48174,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-6">
+        <main key={active} className="dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:px-9 xl:py-8 2xl:px-12 2xl:py-9 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-7">
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
