@@ -505,3 +505,10 @@
 - [x] Prepare the Chapters 01–06 course-foundation presentation content with only approved conceptual and redacted evidence.
 - [x] Generate and present the evidence-based Chapters 01–06 training-foundation slide deck.
 - [x] Validate, commit, and push the reviewed Chapters 07–09 and presentation package to GitHub main.
+
+## Swahili Training Chapters 10–12, Terminology Review, and Deck Narration
+- [x] Review verified Inventory, Stock Control, and Reports scope boundaries plus approved visual-evidence availability.
+- [x] Produce privacy-gated, time-coded Kiswahili production packs for Chapter 10 Inventory, Chapter 11 Stock Control, and Chapter 12 Reports with scripts, VTT cues, asset lists, QA, Ulichojifunza, and Kinachofuata.
+- [x] Run a full Kiswahili translation and terminology consistency review across Chapters 07–09, record corrections, and add regression coverage where appropriate.
+- [x] Write the presenter narration and presentation script for all ten slides in the Chapters 01–06 foundation deck.
+- [ ] Run documentation/regression validation and synchronize the reviewed chapter, terminology, and narration package to GitHub main.

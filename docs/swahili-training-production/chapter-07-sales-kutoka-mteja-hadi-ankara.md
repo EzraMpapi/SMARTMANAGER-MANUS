@@ -14,8 +14,8 @@
 | 00:30–01:45 | Neema na Amina; Neema anaeleza mazungumzo ya mteja ya kubuniwa | Kuonyesha kwamba biashara huanza kwa hitaji lililoeleweka | Wahusika wa mafunzo; hakuna mteja halisi. |
 | 01:45–03:05 | Sales workflow concept yenye lebo `TASWIRA YA MAELEZO` | Kueleza mtiririko wa dhana: mazungumzo → hati → mapitio | Si screenshot; si proof ya transaction. |
 | 03:05–04:20 | Redacted Sales orientation frame; callout ya `Sales` navigation shell pekee | Kuelekeza mahali pa moduli | Frame iliyoidhinishwa; hakuna rekodi, badge, role proof, au click. |
-| 04:20–06:05 | Diagramu: mteja → quote/order/document → validation → hatua inayofuata | Kueleza nyaraka za mauzo kama muktadha wa kazi | Tumia `pale inapowezeshwa` kwa stock/finance. |
-| 06:05–07:30 | Neema anaweka tofauti ya draft, review, na confirmation | Kufundisha hatua zisikimbizwe | Dhana; si state ya UI. |
+| 04:20–06:05 | Diagramu: mteja → pendekezo/oda/hati → uthibitishaji → hatua inayofuata | Kueleza nyaraka za mauzo kama muktadha wa kazi | Tumia `pale inapowezeshwa` kwa stock/finance. |
+| 06:05–07:30 | Neema anaweka tofauti ya rasimu, mapitio, na uthibitisho wa mwisho | Kufundisha hatua zisikimbizwe | Dhana; si state ya UI. |
 | 07:30–09:05 | Diagramu ya `mauzo ↔ stock ↔ fedha ↔ report` yenye nodes za dashed | Kueleza connection inaweza kuwepo kwa mikataba inayowezeshwa | Usidai cross-module post imetokea. |
 | 09:05–10:30 | Checklist ya data quality: mteja, bidhaa/huduma, bei iliyoidhinishwa, owner wa hatua | Kutoa nidhamu ya kuingiza data | Hakuna mfano wa record halisi. |
 | 10:30–12:00 | Scenario ya kubuniwa: Amina anaomba review kabla ya confirmation | Kueleza review na role boundary | Hakuna action ya live system. |
@@ -43,13 +43,13 @@
 
 ### 04:20–06:05 — Nyaraka na validation
 
-> Kwa lugha rahisi, mauzo yanaweza kuhitaji kutunza mawasiliano ya mteja, hati ya pendekezo au oda, na uthibitisho wa taarifa kabla ya hatua inayofuata. Chanzo cha mradi kinaonyesha mikataba ya sales documents, invoices, payments na billing controls. Hata hivyo, hatua ya stock au fedha hutegemea kama mikataba na usanidi husika vimewezeshwa kwa mazingira yanayotumika.
+> Kwa lugha rahisi, mauzo yanaweza kuhitaji kutunza mawasiliano ya mteja, hati ya pendekezo au oda, na uthibitishaji wa taarifa—*validation*—kabla ya hatua inayofuata. Chanzo cha mradi kinaonyesha mikataba ya nyaraka za mauzo, ankara, malipo na udhibiti wa billing. Hata hivyo, hatua ya stock au fedha hutegemea kama mikataba na usanidi husika vimewezeshwa kwa mazingira yanayotumika.
 
 ### 06:05–07:30 — Draft si confirmation
 
 > **Neema:** “Je, nikishaandika hati, kazi imekamilika?”
 
-> **Amina:** “Siyo lazima. Draft ni nafasi ya kuangalia maelezo. Review ni nafasi ya kuthibitisha wajibu na ubora. Confirmation au hatua ya baadaye lazima ifuate mchakato wa shirika na ruhusa zinazotumika.”
+> **Amina:** “Siyo lazima. Rasimu—*draft*—ni nafasi ya kuangalia maelezo. Mapitio—*review*—ni nafasi ya kuthibitisha wajibu na ubora. Uthibitisho wa mwisho—*confirmation*—au hatua ya baadaye lazima ifuate mchakato wa shirika na ruhusa zinazotumika.”
 
 ### 07:30–09:05 — Uhusiano na stock na fedha
 
@@ -79,7 +79,7 @@
 | 01:58 | `TASWIRA YA MAELEZO` | Lazima ibaki kwenye workflow concept. |
 | 03:22 | `UI ILIYOSAFISHWA: mwelekeo wa moduli pekee` | Onyesha kwenye Sales frame. |
 | 04:40 | `Pale inapowezeshwa: stock / fedha` | Usibadilishe kuwa ahadi. |
-| 06:20 | `Draft ≠ confirmation` | Isomeke kwa urahisi. |
+| 06:20 | `Rasimu ≠ uthibitisho wa mwisho` | Isomeke kwa urahisi. |
 | 12:20 | `ULICHOJIFUNZA` | Pointi nne, si zaidi ya mistari miwili kila moja. |
 
 ## Asset na QA

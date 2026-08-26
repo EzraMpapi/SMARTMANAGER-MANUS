@@ -11,6 +11,9 @@ const chapterSpecs = [
   ["chapter-07-sales-kutoka-mteja-hadi-ankara.md", "14:00"],
   ["chapter-08-point-of-sale.md", "14:00"],
   ["chapter-09-crm-na-mahusiano-ya-wateja.md", "10:00"],
+  ["chapter-10-inventory-na-ghala.md", "16:00"],
+  ["chapter-11-stock-control.md", "12:00"],
+  ["chapter-12-reports.md", "08:00"],
 ] as const;
 
 function readChapter(filename: string) {
@@ -62,5 +65,34 @@ describe("Swahili early-chapter production pack contract", () => {
     expect(pos).toContain("BADO HAIJAPITISHWA");
     expect(crm).toContain("CRM UI capture");
     expect(crm).toContain("BADO HAIJAPITISHWA");
+  });
+
+  it("retains the privacy gates for Inventory, Stock Control, and Reports", () => {
+    const inventory = readChapter("chapter-10-inventory-na-ghala.md");
+    const stockControl = readChapter("chapter-11-stock-control.md");
+    const reports = readChapter("chapter-12-reports.md");
+
+    expect(inventory).toContain("Redacted Inventory orientation frame");
+    expect(inventory).toContain("Inventory detail UI");
+    expect(inventory).toContain("Bado haijapitishwa");
+    expect(stockControl).toContain("Stock-control UI detail capture");
+    expect(stockControl).toContain("Bado haijapitishwa");
+    expect(reports).toContain("Reports UI capture");
+    expect(reports).toContain("BADO HAIJAPITISHWA");
+  });
+
+  it("preserves Kiswahili-first terminology across Sales, POS, and CRM", () => {
+    const sales = readChapter("chapter-07-sales-kutoka-mteja-hadi-ankara.md");
+    const pos = readChapter("chapter-08-point-of-sale.md");
+    const crm = readChapter("chapter-09-crm-na-mahusiano-ya-wateja.md");
+
+    expect(sales).toContain("uthibitishaji wa taarifa—*validation*");
+    expect(sales).toContain("Rasimu—*draft*");
+    expect(sales).toContain("Mapitio—*review*");
+    expect(pos).toContain("rejista ya mauzo—*register*");
+    expect(pos).toContain("Ulinganifu wa rekodi—*reconciliation*");
+    expect(crm).toContain("opportunity (fursa ya biashara)");
+    expect(crm).toContain("follow-up (ufuatiliaji)");
+    expect(crm).toContain("pipeline (mfuatano)");
   });
 });

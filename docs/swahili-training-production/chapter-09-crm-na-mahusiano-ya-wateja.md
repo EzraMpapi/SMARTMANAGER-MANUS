@@ -2,7 +2,7 @@
 
 **Muda wa mpango:** 10:00.
 **Hadhira:** Timu za mauzo, customer-success, wasimamizi wa biashara, na wanaoanza kutumia CRM.
-**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana mzunguko wa CRM—lead, contact, opportunity, follow-up na pipeline—na kuzingatia kwamba taarifa ya mteja, status ya lead, owner, mawasiliano na matokeo ya pipeline havionyeshwi bila CRM capture iliyopitiwa kwa faragha.
+**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana mzunguko wa CRM—lead (ishara ya awali), contact (mawasiliano), opportunity (fursa ya biashara), follow-up (ufuatiliaji) na pipeline (mfuatano)—na kuzingatia kwamba taarifa ya mteja, status ya lead, owner, mawasiliano na matokeo ya pipeline havionyeshwi bila CRM capture iliyopitiwa kwa faragha.
 
 > **Mpaka wa ushahidi:** CRM & Customer Pipeline imeorodheshwa kama **imejengwa**, ikiwa na customer/lead persistence boundaries, interactions, na sales-facing workflows. Hiyo haithibitishi kuwa contact, opportunity, follow-up, pipeline stage, owner, au customer record fulani ipo au inaweza kuonekana kwa mtazamaji yeyote.[1] [2]
 
@@ -34,7 +34,7 @@
 
 ### 01:30–02:50 — Vocabulary ya mzunguko
 
-> Lead ni ishara ya awali ya uhusiano unaoweza kuhitaji kufuatiliwa. Contact ni mtu au upande wa mawasiliano uliorekodiwa kwa ruhusa na kwa madhumuni sahihi. Opportunity ni nafasi ya biashara inayohitaji hatua. Follow-up ni kitendo kilichopangwa. Pipeline review ni mapitio ya hatua mbalimbali. Haya ni maelezo ya jumla, si labels za record ya mtu yeyote.
+> Lead ni ishara ya awali ya uhusiano unaoweza kuhitaji kufuatiliwa. Contact ni mtu au upande wa mawasiliano uliorekodiwa kwa ruhusa na kwa madhumuni sahihi. Opportunity ni fursa ya biashara inayohitaji hatua. Follow-up ni ufuatiliaji uliopangwa. Pipeline review ni mapitio ya mfuatano wa hatua. Haya ni maelezo ya jumla, si labels za record ya mtu yeyote.
 
 ### 02:50–04:05 — CRM na Sales
 
@@ -71,7 +71,7 @@
 | Muda | Maandishi ya skrini | Kanuni ya subtitle |
 |---|---|---|
 | 00:08 | `CRM: mahusiano yenye hatua inayofuata` | Kichwa cha sura. |
-| 01:42 | `Lead → Contact → Opportunity → Follow-up → Review` | Dhana, si stage ya tenant. |
+| 01:42 | `Lead → Contact → Opportunity → Follow-up → Review` | Ufafanuzi wa Kiswahili umetolewa mara ya kwanza kwenye narration. |
 | 03:05 | `Uhusiano wa dhana, si conversion proof` | Kaa kwenye connector ya Sales/CRM. |
 | 04:30 | `Madhumuni. Ruhusa. Ubora wa data.` | Vipande vitatu kwa zamu. |
 | 06:00 | `Pipeline ≠ uamuzi wa mwisho` | Contrast ya juu. |

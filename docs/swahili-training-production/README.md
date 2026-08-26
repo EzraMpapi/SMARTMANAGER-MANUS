@@ -25,7 +25,12 @@ This package contains the versioned, evidence-based pre-production work for the 
 | [`chapter-07-sales-kutoka-mteja-hadi-ankara.md`](./chapter-07-sales-kutoka-mteja-hadi-ankara.md) | Privacy-gated Sales production pack with module-shell-only UI treatment. |
 | [`chapter-08-point-of-sale.md`](./chapter-08-point-of-sale.md) | Privacy-gated POS production pack; live checkout UI remains intentionally unapproved. |
 | [`chapter-09-crm-na-mahusiano-ya-wateja.md`](./chapter-09-crm-na-mahusiano-ya-wateja.md) | Privacy-gated CRM production pack; contact and pipeline UI remains intentionally unapproved. |
+| [`chapter-10-inventory-na-ghala.md`](./chapter-10-inventory-na-ghala.md) | Privacy-gated Inventory and warehouse production pack using conceptual and module-shell-only evidence. |
+| [`chapter-11-stock-control.md`](./chapter-11-stock-control.md) | Privacy-gated Stock Control production pack for count, difference, review, and adjustment-boundary instruction. |
+| [`chapter-12-reports.md`](./chapter-12-reports.md) | Privacy-gated Reports production pack; report UI, exports, schedules, and delivery evidence remain unapproved. |
+| [`chapter-07-09-terminology-validation.md`](./chapter-07-09-terminology-validation.md) | Kiswahili-first terminology audit, corrections, and canonical Sales/POS/CRM term ledger. |
 | [`foundation-deck-outline.md`](./foundation-deck-outline.md) | Kiswahili narrative outline for the Chapters 01–06 evidence-based foundation deck. |
+| [`foundation-deck-presentation-script.md`](./foundation-deck-presentation-script.md) | Slide-aligned Kiswahili narration and presenter script for the ten-slide Chapters 01–06 foundation deck. |
 | [`foundation-deck/`](./foundation-deck/) | Editable PPTX slide project for the Chapters 01–06 foundation deck; it references only approved conceptual and redacted external visuals. |
 
 ## External production media
@@ -48,4 +53,4 @@ No master video is assembled until every chapter has a privacy-screened UI captu
 
 ## Next production batch
 
-The next safe batch is Chapters 10–12: Inventory, Procurement, and Supply Chain/Manufacturing. It must reuse the Inventory concept only as an explanatory cutaway and create any new UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts. Manufacturing must retain its `imejengwa kwa sehemu` qualifier.
+The next safe batch is Procurement and Supply Chain/Manufacturing in the master course sequence. It must create any new UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts. Manufacturing must retain its `imejengwa kwa sehemu` qualifier.
