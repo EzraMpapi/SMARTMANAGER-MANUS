@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { publicFeedbackInput } from "./feedbackOperations";
+import { publicFeedbackInput, websiteFeedbackReplyInput } from "./feedbackOperations";
 
 describe("public feedback contract", () => {
   it("accepts a valid website feedback submission", () => {
@@ -19,6 +19,12 @@ describe("public feedback contract", () => {
     expect(publicFeedbackInput.safeParse({ category: "feature", message: "too short" }).success).toBe(false);
     expect(publicFeedbackInput.safeParse({ category: "other", message: "This is a long enough feedback message." }).success).toBe(false);
     expect(publicFeedbackInput.safeParse({ category: "bug", message: "This is a long enough feedback message.", email: "not-an-email" }).success).toBe(false);
+  });
+
+  it("validates Global Admin replies and review statuses", () => {
+    expect(websiteFeedbackReplyInput.safeParse({ feedbackId: "not-a-uuid", reply: "We are reviewing this request.", status: "reviewing" }).success).toBe(false);
+    expect(websiteFeedbackReplyInput.safeParse({ feedbackId: "00000000-0000-4000-8000-000000000001", reply: "We are reviewing this request.", status: "reviewing" }).success).toBe(true);
+    expect(websiteFeedbackReplyInput.safeParse({ feedbackId: "00000000-0000-4000-8000-000000000001", reply: "", status: "resolved" }).success).toBe(false);
   });
 
   it("keeps the schema additive and service-only at the database boundary", () => {

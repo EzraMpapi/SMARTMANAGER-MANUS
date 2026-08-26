@@ -26,7 +26,7 @@ import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
 import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
-import { publicFeedbackInput, submitPublicFeedback } from "./feedbackOperations";
+import { listWebsiteFeedback, publicFeedbackInput, replyToWebsiteFeedback, websiteFeedbackReplyInput, submitPublicFeedback } from "./feedbackOperations";
 import { traFiscalRouter } from "./traFiscalRouter";
 import { canReadTenantPushDeliveryHistory, listTenantPushDeliveryHistory } from "./notificationHistory";
 import { getMarketIntelligenceSnapshot, marketIntelligenceConfig } from "./marketIntelligence";
@@ -92,6 +92,11 @@ export const appRouter = router({
     .mutation(({ ctx, input }) => submitPublicFeedback(ctx.req, input)),
   traFiscal: traFiscalRouter,
   globalAdmin: router({
+    feedback: protectedProcedure
+      .query(({ ctx }) => listWebsiteFeedback(ctx.req)),
+    replyFeedback: protectedProcedure
+      .input(websiteFeedbackReplyInput)
+      .mutation(({ ctx, input }) => replyToWebsiteFeedback(ctx.req, input)),
     snapshot: protectedProcedure
       .query(({ ctx }) => getGlobalAdminSnapshot(ctx.req)),
     executiveSnapshot: protectedProcedure
