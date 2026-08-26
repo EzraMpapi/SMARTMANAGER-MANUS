@@ -13,6 +13,16 @@ describe("application bootstrap recovery", () => {
     expect(source).toContain("window.location.reload();");
   });
 
+  it("protects School Workspace from stale hashed chunk failures", () => {
+    const source = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+
+    expect(source).toContain("async function clearStaleShellCaches()");
+    expect(source).toContain('cacheKey.startsWith("smart-manager-shell-")');
+    expect(source).toContain('await clearStaleShellCaches();');
+    expect(source).toContain('import("./components/SchoolWorkspace")');
+    expect(source).toContain(')), "school");');
+  });
+
   it("registers a publishable-only runtime auth configuration route", () => {
     const source = readFileSync(resolve(process.cwd(), "server/_core/apiApp.ts"), "utf8");
 

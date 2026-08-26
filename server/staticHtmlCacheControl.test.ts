@@ -10,4 +10,10 @@ describe("production HTML cache control", () => {
     expect(source).toContain('res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate")');
     expect(source).toContain('res.sendFile(path.resolve(distPath, "index.html"));');
   });
+
+  it("returns 404 for missing files instead of serving index.html as a module", () => {
+    expect(source).toContain("if (path.extname(req.path))");
+    expect(source).toContain("res.status(404).end();");
+    expect(source).toContain("Fall through to index.html for client-side application routes only.");
+  });
 });
