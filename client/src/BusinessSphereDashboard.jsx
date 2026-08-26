@@ -5454,7 +5454,7 @@ function KpiCard({ item }) {
   const neutral = item.trend === "neutral";
   const accent = neutral ? "#64748B" : item.up ? "#16A34A" : "#F59E0B";
   return (
-    <div className="kpi-card relative bg-white rounded-xl border border-slate-200/70 p-5 flex flex-col gap-4 overflow-hidden group">
+    <div className="sm-panel kpi-card relative min-h-[154px] bg-white rounded-xl p-5 flex flex-col gap-4 overflow-hidden group">
       <div
         className="absolute inset-x-0 top-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ background: `linear-gradient(90deg, ${accent}, ${accent}00)` }}
@@ -23015,21 +23015,34 @@ function ECommerce({ inventory }) {
   });
 
   const stats = useMemo(() => {
-    const live = orders.rows.filter((o) => o.status !== "Cancelled");
+    const allOrders = orders.rows;
+    const live = allOrders.filter((o) => o.status !== "Cancelled");
     const revenue = live.reduce((s, o) => s + o.total, 0);
     const published = products.rows.filter((p) => p.published).length;
+    const statusCount = (status) => allOrders.filter((o) => o.status === status).length;
+    const lowStock = inventory.rows.filter((item) => Number(item.qty) <= Number(item.reorder || item.reorderLevel || 0) && Number(item.reorder || item.reorderLevel || 0) > 0).length;
+    const valuedRows = inventory.rows.filter((item) => Number.isFinite(Number(item.unitCost)) && Number(item.unitCost) >= 0);
+    const inventoryValue = valuedRows.reduce((s, item) => s + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
     return {
       revenue, count: live.length,
       avg: live.length ? Math.round(revenue / live.length) : 0,
       published, total: products.rows.length,
+      pending: statusCount("Payment Pending") + statusCount("Pending"),
+      processing: statusCount("Processing"), shipped: statusCount("Shipped"), delivered: statusCount("Delivered"),
+      cancelled: statusCount("Cancelled"), lowStock,
+      inventoryValue: valuedRows.length ? inventoryValue : null,
     };
-  }, [orders.rows, products.rows]);
+  }, [orders.rows, products.rows, inventory.rows]);
 
   const ECOM_KPIS = [
-    { label: "Online Revenue", value: `TZS ${money(stats.revenue)}k`, delta: "Last 7 days", up: true, icon: CircleDollarSign },
-    { label: "Orders", value: String(stats.count), delta: "Excl. cancelled", up: true, icon: ShoppingCart },
-    { label: "Avg Order Value", value: `TZS ${money(stats.avg)}k`, delta: "Per order", up: true, icon: Percent },
-    { label: "Published Products", value: `${stats.published}/${stats.total}`, delta: "Live on storefront", up: true, icon: Globe },
+    { label: "Online Revenue", value: `TZS ${money(stats.revenue)}k`, delta: "Confirmed non-cancelled orders", up: true, icon: CircleDollarSign },
+    { label: "Orders", value: String(stats.count), delta: `${stats.cancelled} cancelled excluded`, up: true, icon: ShoppingCart },
+    { label: "Avg Order Value", value: stats.count ? `TZS ${money(stats.avg)}k` : "Insufficient confirmed data", delta: "Confirmed orders only", up: true, icon: Percent },
+    { label: "Published Products", value: `${stats.published}/${stats.total}`, delta: "Live against confirmed catalog rows", up: true, icon: Globe },
+    { label: "Pending Payment", value: String(stats.pending), delta: "Needs payment confirmation", up: false, icon: Clock3 },
+    { label: "Processing", value: String(stats.processing), delta: "Awaiting fulfillment", up: true, icon: Package },
+    { label: "Low Stock", value: String(stats.lowStock), delta: "Inventory reorder signals", up: false, icon: AlertTriangle },
+    { label: "Inventory Value", value: stats.inventoryValue === null ? "Insufficient confirmed data" : `TZS ${money(stats.inventoryValue)}k`, delta: "Uses unit cost where confirmed", up: true, icon: WalletCards },
   ];
 
   return (
@@ -23060,6 +23073,7 @@ function ECommerce({ inventory }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {ECOM_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
+      <p className="text-[10px] text-slate-400">Source: confirmed ecommerce orders, ecommerce products, and ERP inventory rows. Payment, conversion, customer, coupon, shipping, and attribution metrics remain unavailable until their server-confirmed contracts exist.</p>
 
       {tab === "storefront" && <Storefront products={products} inventory={inventory} />}
       {tab === "orders" && <OnlineOrders orders={orders} />}
@@ -23070,18 +23084,24 @@ function ECommerce({ inventory }) {
 function Storefront({ products, inventory }) {
   const [view, setView] = useState("grid");
   const [category, setCategory] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("relevance");
   const [query, setQuery] = useState("");
   const { rows, setRows, loading } = products;
 
   const categories = useMemo(() => [...new Set(rows.map((p) => p.category))], [rows]);
 
   const filtered = useMemo(() => {
-    return rows.filter((p) => {
+    const matching = rows.filter((p) => {
+      const stockItem = inventory.rows.find((it) => it.sku === p.sku);
+      const stockState = stockItem ? stockStatus(stockItem.qty, stockItem.reorder || stockItem.reorderLevel || 0) : "Unavailable";
       const matchesCat = category === "all" || p.category === category;
-      const matchesQ = !query.trim() || p.name.toLowerCase().includes(query.toLowerCase());
-      return matchesCat && matchesQ;
+      const matchesQ = !query.trim() || `${p.name} ${p.sku} ${p.category}`.toLowerCase().includes(query.toLowerCase());
+      const matchesStock = stockFilter === "all" || (stockFilter === "available" && ["In Stock", "Low Stock"].includes(stockState)) || (stockFilter === "low" && stockState === "Low Stock") || (stockFilter === "out" && stockState === "Out of Stock");
+      return matchesCat && matchesQ && matchesStock;
     });
-  }, [rows, category, query]);
+    return [...matching].sort((a, b) => sortBy === "price-low" ? a.price - b.price : sortBy === "price-high" ? b.price - a.price : sortBy === "newest" ? String(b.sku).localeCompare(String(a.sku)) : String(a.name).localeCompare(String(b.name)));
+  }, [rows, inventory.rows, category, stockFilter, sortBy, query]);
 
   async function togglePublished(sku) {
     setRows((prev) => prev.map((p) => (p.sku === sku ? { ...p, published: !p.published } : p)));
@@ -23119,15 +23139,28 @@ function Storefront({ products, inventory }) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products..."
+              placeholder="Search products or SKU..."
+              aria-label="Search products or SKU"
               className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
             />
           </div>
+          <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)} aria-label="Filter products by stock" className="min-h-11 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] text-slate-600 outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30">
+            <option value="all">All stock</option>
+            <option value="available">Available</option>
+            <option value="low">Low stock</option>
+            <option value="out">Out of stock</option>
+          </select>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} aria-label="Sort products" className="min-h-11 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] text-slate-600 outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30">
+            <option value="relevance">Sort: relevance</option>
+            <option value="newest">Newest/SKU</option>
+            <option value="price-low">Price low to high</option>
+            <option value="price-high">Price high to low</option>
+          </select>
           <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-1 shrink-0">
-            <button onClick={() => setView("grid")} aria-label="Grid view" aria-pressed={view === "grid"} className={`p-1.5 rounded-md ${view === "grid" ? "bg-white shadow-sm text-[#111827]" : "text-slate-400"}`}>
+            <button type="button" onClick={() => setView("grid")} aria-label="Grid view" aria-pressed={view === "grid"} className={`min-h-11 min-w-11 p-1.5 rounded-md ${view === "grid" ? "bg-white shadow-sm text-[#111827]" : "text-slate-400"}`}>
               <Grid3x3 size={15} />
             </button>
-            <button onClick={() => setView("list")} aria-label="List view" aria-pressed={view === "list"} className={`p-1.5 rounded-md ${view === "list" ? "bg-white shadow-sm text-[#111827]" : "text-slate-400"}`}>
+            <button type="button" onClick={() => setView("list")} aria-label="List view" aria-pressed={view === "list"} className={`min-h-11 min-w-11 p-1.5 rounded-md ${view === "list" ? "bg-white shadow-sm text-[#111827]" : "text-slate-400"}`}>
               <List size={15} />
             </button>
           </div>
@@ -23158,13 +23191,13 @@ function Storefront({ products, inventory }) {
             return (
               <div
                 key={p.sku}
-                className="rounded-xl border border-slate-200/80 shadow-sm overflow-hidden bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                className="sm-panel rounded-xl overflow-hidden bg-white hover:-translate-y-0.5 transition-all duration-200"
               >
                 <div
                   className="h-28 relative flex items-center justify-center"
                   style={{ background: CATEGORY_GRADIENT[p.category] || "linear-gradient(135deg, #111827, #16A34A)" }}
                 >
-                  <Package size={30} strokeWidth={1.5} className="text-white/85" />
+                  <div className="flex flex-col items-center gap-1 text-white/85"><Package size={30} strokeWidth={1.5} /><span className="text-[9px] font-semibold uppercase tracking-[.1em]">Image not configured</span></div>
                   {p.featured && (
                     <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-semibold text-[#111827] bg-white/95 rounded-full px-2 py-0.5">
                       <Star size={9} fill="#F59E0B" className="text-[#F59E0B]" /> Featured
@@ -23191,8 +23224,10 @@ function Storefront({ products, inventory }) {
                     )}
                   </div>
                   <button
+                    type="button"
                     onClick={() => togglePublished(p.sku)}
-                    className={`w-full text-[11.5px] font-medium rounded-lg py-1.5 transition-colors ${
+                    aria-pressed={p.published}
+                    className={`w-full min-h-11 text-[11.5px] font-medium rounded-lg py-1.5 transition-colors ${
                       p.published ? "border border-slate-200 text-slate-500 hover:bg-slate-50" : "btn-primary text-white"
                     }`}
                   >
@@ -23221,9 +23256,9 @@ function Storefront({ products, inventory }) {
                   <tr key={p.sku} className="border-b border-slate-50 last:border-0">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style={{ background: CATEGORY_GRADIENT[p.category] }}>
-                          <Package size={14} className="text-white/85" />
-                        </div>
+                          <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style={{ background: CATEGORY_GRADIENT[p.category] }} title="Product image not configured">
+                            <Package size={14} className="text-white/85" />
+                          </div>
                         <div>
                           <p className="font-medium text-[#111827]">{p.name}</p>
                           {p.featured && <p className="text-[10.5px] text-[#F59E0B] flex items-center gap-1"><Star size={9} fill="#F59E0B" /> Featured</p>}
@@ -23255,7 +23290,14 @@ function Storefront({ products, inventory }) {
 
 function OnlineOrders({ orders }) {
   const [selected, setSelected] = useState(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { rows, setRows, loading } = orders;
+  const filteredRows = useMemo(() => rows.filter((order) => {
+    const matchesQuery = !query.trim() || `${order.id} ${order.customer || ""} ${order.email || ""}`.toLowerCase().includes(query.toLowerCase());
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    return matchesQuery && matchesStatus;
+  }), [rows, query, statusFilter]);
 
   async function advanceOrder(id, next) {
     const order = rows.find((o) => o.id === id);
@@ -23270,8 +23312,16 @@ function OnlineOrders({ orders }) {
   const nextStatus = { "Payment Pending": "Processing", Processing: "Shipped", Shipped: "Delivered", Delivered: null, Cancelled: null };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="space-y-4" aria-label="E-Commerce order management">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div><h2 className="text-[15px] font-semibold text-[#111827]">Order execution</h2><p className="text-[11px] text-slate-500">Review confirmed orders and advance only through supported server states.</p></div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search order or customer..." aria-label="Search orders" className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-[11px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30" />
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter orders by status" className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-[11px] text-slate-600 outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30"><option value="all">All statuses</option>{[...new Set(rows.map((order) => order.status).filter(Boolean))].map((status) => <option key={status} value={status}>{status}</option>)}</select>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="sm-panel lg:col-span-2 bg-white rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] min-w-[600px]">
             <thead>
@@ -23285,8 +23335,9 @@ function OnlineOrders({ orders }) {
             </thead>
             <tbody>
               {loading && <SkeletonRows cols={5} />}
-              {!loading && rows.map((o) => (
-                <tr key={o.id} onClick={() => setSelected(o)} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors">
+              {!loading && filteredRows.length === 0 && <tr><td colSpan={5} className="px-4 py-10 text-center text-[11px] text-slate-400">{rows.length ? "No orders match the current search and status filter." : "No confirmed orders yet."}</td></tr>}
+              {!loading && filteredRows.map((o) => (
+                <tr key={o.id} onClick={() => setSelected(o)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelected(o); } }} tabIndex={0} role="button" aria-label={`Open order ${o.id}`} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600">
                   <td className="px-4 py-3 font-mono font-medium text-[#111827]">{o.id}</td>
                   <td className="px-4 py-3">
                     <p className="text-slate-700">{o.customer}</p>
@@ -23310,7 +23361,7 @@ function OnlineOrders({ orders }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
+      <div className="sm-panel bg-white rounded-xl p-4 sm:p-5">
         <h3 className="text-[14px] font-semibold text-[#111827] mb-1">Orders This Week</h3>
         <p className="text-[11.5px] text-slate-400 mb-3">Daily order volume</p>
         <ResponsiveContainer width="100%" height={180}>
@@ -23327,22 +23378,23 @@ function OnlineOrders({ orders }) {
       {selected && (
         <OnlineOrderPanel order={selected} onClose={() => setSelected(null)} onAdvance={advanceOrder} nextStatus={nextStatus[selected.status]} />
       )}
+      </div>
     </div>
   );
 }
 
 function OnlineOrderPanel({ order, onClose, onAdvance, nextStatus }) {
   return (
-    <div className="fixed inset-0 z-30 flex justify-end">
-      <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
+    <div className="fixed inset-0 z-30 flex justify-end" role="dialog" aria-modal="true" aria-labelledby="online-order-panel-title">
+      <button type="button" className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px] cursor-default" onClick={onClose} aria-label="Close order details" />
       <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{order.id}</p>
-            <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">{order.customer}</h2>
+            <h2 id="online-order-panel-title" className="text-[18px] font-semibold text-[#111827] mt-0.5">{order.customer}</h2>
             <p className="text-[13px] text-slate-500">{order.email}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
+          <button type="button" onClick={onClose} className="min-h-11 min-w-11 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600" aria-label="Close order details"><X size={18} /></button>
         </div>
 
         <div className="mb-6">
@@ -23354,6 +23406,18 @@ function OnlineOrderPanel({ order, onClose, onAdvance, nextStatus }) {
             {order.status}
           </span>
         </div>
+        <section aria-label="Order status timeline" className="mb-6">
+          <h3 className="text-[11px] font-bold uppercase tracking-[.12em] text-slate-400">Timeline</h3>
+          <ol className="mt-3 space-y-2 border-l border-slate-200 pl-4">
+            {["Payment Pending", "Processing", "Shipped", "Delivered"].map((status) => {
+              const currentIndex = ["Payment Pending", "Processing", "Shipped", "Delivered"].indexOf(order.status);
+              const stepIndex = ["Payment Pending", "Processing", "Shipped", "Delivered"].indexOf(status);
+              const reached = order.status === "Cancelled" ? false : currentIndex >= stepIndex;
+              return <li key={status} className={`relative text-[11px] ${reached ? "font-semibold text-emerald-700" : "text-slate-400"}`}><span className={`absolute -left-[21px] top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${reached ? "bg-emerald-600" : "bg-slate-300"}`} aria-hidden="true" />{status}</li>;
+            })}
+          </ol>
+          <p className="mt-2 text-[10px] text-slate-400">Timeline reflects only statuses confirmed by the current order contract.</p>
+        </section>
 
         <div className="border border-slate-100 rounded-lg overflow-hidden mb-5">
           {order.items.map((it, i) => (
@@ -23379,7 +23443,7 @@ function OnlineOrderPanel({ order, onClose, onAdvance, nextStatus }) {
         <div className="flex-1" />
 
         {nextStatus && (
-          <button onClick={() => onAdvance(order.id, nextStatus)} className="btn-primary text-white text-[12px] font-medium rounded-lg py-2.5">
+          <button type="button" onClick={() => onAdvance(order.id, nextStatus)} className="btn-primary min-h-11 text-white text-[12px] font-medium rounded-lg py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
             Mark {nextStatus}
           </button>
         )}
