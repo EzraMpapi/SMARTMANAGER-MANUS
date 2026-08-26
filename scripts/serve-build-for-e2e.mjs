@@ -28,6 +28,13 @@ const server = createServer(async (request, response) => {
     response.end(JSON.stringify({ url: "https://e2e.supabase.invalid", anonKey: "e2e-anon-key" }));
     return;
   }
+  if (pathname.startsWith("/api/trpc/")) {
+    const procedurePath = pathname.slice("/api/trpc/".length).split("?")[0];
+    const procedures = procedurePath.split(",").filter(Boolean);
+    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    response.end(JSON.stringify(procedures.map(() => ({ result: { data: { json: null } } }))));
+    return;
+  }
   const requestedPath = safeAssetPath(pathname);
   const fallback = join(root, "index.html");
   let filePath = requestedPath && existsSync(requestedPath) ? requestedPath : fallback;

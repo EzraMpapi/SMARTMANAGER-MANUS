@@ -48056,7 +48056,7 @@ function SmartManager() {
         <header className={`min-h-[68px] shrink-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 flex items-center justify-between gap-3 px-3 sm:px-5 lg:px-7 ${darkMode ? "dark-shell" : ""}`}>
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <button
-              className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
+              className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >

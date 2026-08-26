@@ -45,8 +45,10 @@ async function mockAuthenticatedSchool(page: Parameters<typeof test>[0]["page"],
 async function openSchoolWorkspace(page: Parameters<typeof test>[0]["page"]) {
   const closeMenu = page.getByRole("button", { name: "Close menu" });
   if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("aside nav button").filter({ hasText: "School Management" }).click();
+  const schoolNav = page.locator("aside nav button").filter({ hasText: "School Management" });
+  const isMobileViewport = await page.evaluate(() => window.innerWidth < 1024);
+  if (isMobileViewport) await page.getByRole("button", { name: "Open menu" }).click();
+  await schoolNav.click();
 }
 
 test("loads the School Management Command Center and live learner metrics responsively", async ({ page }, testInfo) => {

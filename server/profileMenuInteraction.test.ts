@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const setData = vi.fn();
@@ -40,21 +40,22 @@ describe("authenticated profile-menu click behavior", () => {
       }),
     ));
 
-    const trigger = screen.getByRole("button", { name: "Open account menu" });
+    const trigger = screen.getByRole("button", { name: "Open account identity center" });
     fireEvent.click(trigger);
-    expect(screen.getByRole("menu", { name: "Account menu" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Account identity center" })).toBeTruthy();
     expect(document.querySelector(".fixed.inset-0")).toBeNull();
 
-    fireEvent.click(screen.getByRole("menuitem", { name: /My profile/i }));
+    const accountDialog = screen.getByRole("dialog", { name: "Account identity center" });
+    fireEvent.click(within(accountDialog).getByRole("button", { name: /View My Profile/i }));
     expect(onNavigate).toHaveBeenCalledWith("profile", {});
-    expect(screen.queryByRole("menu", { name: "Account menu" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Account identity center" })).toBeNull();
 
     fireEvent.click(trigger);
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByRole("menu", { name: "Account menu" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Account identity center" })).toBeNull();
 
     fireEvent.click(trigger);
     fireEvent.pointerDown(screen.getByRole("button", { name: "Workspace content remains clickable" }));
-    expect(screen.queryByRole("menu", { name: "Account menu" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Account identity center" })).toBeNull();
   });
 });

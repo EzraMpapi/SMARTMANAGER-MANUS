@@ -41,8 +41,8 @@ test("loads the customer-only Money Agent portal with server-confirmed wallet hi
   await page.locator("aside nav button").filter({ hasText: "Money Agent" }).evaluate((node) => (node as HTMLButtonElement).click());
   await expect(page.getByRole("heading", { name: "Your wallet, safely in view" })).toBeVisible();
   await expect(page.getByText("Customer-only access", { exact: true })).toBeVisible();
-  await expect(page.getByText("Neema Mushi", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("TZS 125,000", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("main").getByText("Neema Mushi", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("main").getByText("TZS 125,000", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("MA-RCPT-NEEMA001", { exact: true })).toBeVisible();
   await expect(page.getByText("Your Cash In was completed and recorded in the TZS ledger.", { exact: true })).toBeVisible();
   await expect(page.getByText("Agent register and KYC/KYB", { exact: true })).toHaveCount(0);

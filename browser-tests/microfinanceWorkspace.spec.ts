@@ -50,11 +50,13 @@ test("loads the Microfinance Command Center and completes guarded borrower regis
   });
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Workspace overview", { exact: true })).toBeVisible();
-  const dismiss = page.getByRole("button", { name: "Dismiss", exact: true }); if (await dismiss.count()) await dismiss.click();
-  const closeMenu = page.getByRole("button", { name: "Close menu" }); if (await closeMenu.count()) await closeMenu.click();
-  const skipTour = page.getByRole("button", { name: "Skip tour" }); if (await skipTour.count()) await skipTour.click();
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("aside nav button").filter({ hasText: "Microfinance" }).click();
+  const dismiss = page.getByRole("button", { name: "Dismiss", exact: true }); if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
+  const closeMenu = page.getByRole("button", { name: "Close menu" }); if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
+  const skipTour = page.getByRole("button", { name: "Skip tour" }); if (await skipTour.isVisible().catch(() => false)) await skipTour.click();
+  const microfinanceNav = page.locator("aside nav button").filter({ hasText: "Microfinance" });
+  const isMobileViewport = await page.evaluate(() => window.innerWidth < 1024);
+  if (isMobileViewport) await page.getByRole("button", { name: "Open menu" }).click();
+  await microfinanceNav.click();
   await expect(page.getByRole("heading", { name: "Microfinance Command Center" })).toBeVisible();
   await expect(page.getByText("12.8%", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Borrowers & KYC" }).click();

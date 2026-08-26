@@ -63,7 +63,7 @@ async function setupIdentityPage(page: Page) {
     company: { id: "profile-e2e-company", name: "Mlimani Properties", category: "real_estate", region: "Dar es Salaam", country: "Tanzania" },
   });
   await page.goto("/app", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("button", { name: "Dashboard", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dashboard", exact: true }).first()).toBeVisible();
   const dismiss = page.getByRole("button", { name: "Dismiss", exact: true }); if (await dismiss.count()) await dismiss.last().click({ force: true });
   const tour = page.locator('[data-onboarding-tour="true"]'); const skipTour = tour.locator("button").filter({ hasText: "Skip tour" }); if (await skipTour.count()) await skipTour.evaluate((node) => (node as HTMLButtonElement).click()); if (await tour.count()) await expect(tour).toHaveCount(0);
 }
@@ -73,22 +73,16 @@ test("opens the premium account popover and navigates to the responsive My Profi
   await page.getByRole("button", { name: "Open account identity center" }).click();
   await expect(page.getByRole("dialog", { name: "Account identity center" })).toBeVisible();
   await expect(page.getByText("View My Profile", { exact: true })).toBeVisible();
-  const serverBacked = await page.getByText("83%", { exact: true }).count() > 0;
-  if (!serverBacked) await expect(page.getByText("Awaiting profile", { exact: false })).toBeVisible();
+  const serverBacked = true;
   await page.getByRole("dialog", { name: "Account identity center" }).getByRole("button").filter({ hasText: "View My Profile" }).click();
   await expect(page.getByRole("heading", { name: "My Profile", exact: true })).toBeVisible();
   await expect(page.getByText("Your operating context", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Personal", exact: true }).click();
   await expect(page.getByText("Your details", { exact: true })).toBeVisible();
   const fullName = page.getByLabel("Legal / full name", { exact: true });
-  if (serverBacked) {
-    await fullName.fill("Asha Updated");
-    await page.getByRole("button", { name: "Save personal details", exact: true }).click();
-    await expect(page.getByRole("status")).toContainText("confirmed by the workspace");
-  } else {
-    await expect(fullName).toBeDisabled();
-    await expect(page.getByText("Migration pending", { exact: true })).toBeVisible();
-  }
+  await fullName.fill("Asha Updated");
+  await page.getByRole("button", { name: "Save personal details", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("confirmed by the workspace");
   await page.getByRole("button", { name: "Security", exact: true }).click();
   await expect(page.getByText("Security and access", { exact: true })).toBeVisible();
   await expect(page.getByText("Current session verified", { exact: true })).toBeVisible();

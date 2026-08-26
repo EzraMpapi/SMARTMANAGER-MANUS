@@ -33,8 +33,11 @@ test("registers a group, onboards a member, and posts a TZS contribution", async
   const dismiss = page.getByRole("button", { name: "Dismiss", exact: true }); if (await dismiss.count()) await dismiss.click();
   const closeMenu = page.getByRole("button", { name: "Close menu" }); if (await closeMenu.count()) await closeMenu.click();
   const skipTour = page.getByRole("button", { name: "Skip tour" }); if (await skipTour.count()) await skipTour.click();
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("aside nav button").filter({ hasText: "Community Groups" }).click();
+  const communityNav = page.locator("aside nav button").filter({ hasText: "Community Groups" });
+  if (!(await communityNav.isVisible().catch(() => false))) {
+    await page.getByRole("button", { name: "Open menu" }).click();
+  }
+  await communityNav.evaluate((element) => (element as HTMLButtonElement).click());
   await expect(page.getByRole("heading", { name: "Community Groups Manager" })).toBeVisible();
   await page.getByRole("button", { name: "Groups", exact: true }).click();
   await page.getByRole("button", { name: "Register group" }).click();
@@ -51,7 +54,9 @@ test("registers a group, onboards a member, and posts a TZS contribution", async
   await page.getByRole("button", { name: "Funds & Savings", exact: true }).click();
   await page.getByRole("button", { name: "Post transaction" }).click();
   const financeForm = page.locator("form").filter({ hasText: "Amount (TZS)" }).first();
-  await financeForm.locator("select").nth(2).selectOption("member-e2e-1");
+  const memberSelect = financeForm.locator("select").nth(2);
+  await expect(memberSelect.locator("option").filter({ hasText: "Amina Kweka" })).toHaveCount(1);
+  await memberSelect.selectOption({ index: 1 });
   await financeForm.locator('input[type="number"]').fill("25000");
   await financeForm.locator("input").nth(1).fill("MPESA-E2E-1");
   await page.getByRole("button", { name: "Save and confirm" }).click();

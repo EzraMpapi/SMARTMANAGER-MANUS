@@ -1,13 +1,16 @@
 import { devices, defineConfig } from "playwright/test";
 
+const productionSmokeEnabled = process.env.E2E_BASE_URL === "https://smartmanager-manus.vercel.app";
+
 export default defineConfig({
   testDir: "./browser-tests",
+  testIgnore: productionSmokeEnabled ? undefined : ["**/productionSmoke.spec.ts"],
   timeout: 60000,
   expect: { timeout: 30000 },
   fullyParallel: false,
   workers: 1,
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? process.env.E2E_BASE_URL ?? "http://127.0.0.1:4173",
     headless: true,
     viewport: { width: 1280, height: 800 },
     screenshot: "only-on-failure",
@@ -27,8 +30,8 @@ export default defineConfig({
       use: { ...devices["Pixel 5"] },
     },
   ],
-  webServer: {
-    command: "pnpm exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
+  webServer: productionSmokeEnabled ? undefined : {
+    command: "node scripts/serve-build-for-e2e.mjs",
     url: "http://127.0.0.1:4173",
     timeout: 30000,
     reuseExistingServer: false,

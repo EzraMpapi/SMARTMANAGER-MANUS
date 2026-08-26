@@ -43,7 +43,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(appSource).toContain("function isPublicAuthScreen()");
     expect(appSource).toContain('["login", "forgot", "reset", "verify"].includes(requestedAuthScreen())');
     expect(appSource).toContain("isPublicAuthScreen() && !auth.isAuthenticated");
-    expect(appSource).toContain("if (requestedSignup) return");
+    expect(appSource).toContain("if (requestedSignup && !auth.isAuthenticated)");
     expect(appSource).toContain("<PublicAuthGateway />");
   });
 

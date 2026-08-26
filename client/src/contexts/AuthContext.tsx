@@ -264,6 +264,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const client = requireClient();
+    const current = await client.auth.getSession();
+    if (current.error) throw current.error;
+    if (current.data.session) {
+      try {
+        await hydrateIdentity(client, current.data.session, dispatch, generation);
+        return;
+      } catch (error) {
+        if (!isIdentityRpcAuthFailure(error)) throw error;
+      }
+    }
     const result = await refreshSupabaseSession(client);
     if (result.error) throw result.error;
     if (result.data.session) await hydrateIdentity(client, result.data.session, dispatch, generation);

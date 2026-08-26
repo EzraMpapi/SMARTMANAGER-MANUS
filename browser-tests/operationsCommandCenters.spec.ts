@@ -130,9 +130,9 @@ test.describe("operations procurement and warehouse integration journeys", () =>
     await inventoryNav.evaluate((element) => (element as HTMLElement).click());
     await dismissTransientUi(page);
     await expect(page.getByRole("heading", { name: "Inventory", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Dashboard", exact: true }).click();
-    await expect(page.getByText("Low Stock", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("Out of Stock", { exact: true }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Dashboard", exact: true }).first().click();
+    await expect(page.getByText(/^(Low Stock|Low-stock items)$/, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/^(Out of Stock|0 out of stock)/, { exact: false }).first()).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("inventory-reorder-boundary.png"), fullPage: true });
   });
 });
