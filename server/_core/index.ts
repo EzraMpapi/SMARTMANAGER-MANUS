@@ -28,7 +28,12 @@ async function startServer() {
   const server = createServer(app);
 
   if (process.env.NODE_ENV === "development") {
-    const { setupVite } = await import("./vite");
+    // Keep the development-only bridge out of the production bundle. A
+    // literal relative dynamic import is still followed by esbuild, which
+    // would pull Vite, Rollup, and vite.config.ts into dist/index.js even
+    // though this branch never runs in production.
+    const viteModulePath = "./vite";
+    const { setupVite } = await import(viteModulePath);
     await setupVite(app, server);
   } else {
     serveStatic(app);
