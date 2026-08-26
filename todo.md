@@ -487,3 +487,10 @@
 - [x] Run automated dashboard layout-preference browser verification in a disposable isolated tenant/session without reading or mutating production tenant data.
 - [x] Create an evidence-based slide deck summarizing the saved layout-preference feature, real-data/RLS boundaries, validation results, and remaining limitations.
 - [x] Re-run appropriate quality gates, document results, and synchronize any verified implementation changes to GitHub main.
+
+## Swahili SMART MANAGER ERP Training Production
+- [x] Audit the complete attached 8–9 hour training-production brief and inventory every approved image, 3D concept, UI evidence capture, and repository-supported module.
+- [x] Produce a truthful Kiswahili course architecture, chapter timing plan, asset-provenance register, and production constraint register using only real SMART MANAGER capabilities.
+- [x] Create the first verified chapter-level visual, narration, storyboard, and reusable production assets without using production credentials, fabricated workflows, or unapproved customer data.
+- [x] Validate the delivered chapter assets for instructional coverage, asset provenance, accessibility, security boundaries, and version-control suitability.
+- [x] Package documentation and verified reusable deliverables, then synchronize intentional repository changes to GitHub main.
