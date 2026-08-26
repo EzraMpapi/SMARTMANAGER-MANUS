@@ -8,30 +8,30 @@ const profileCenter = readFileSync(resolve(root, "client/src/components/ProfileI
 const activeProfileMenu = profileCenter.slice(profileCenter.lastIndexOf("function ProfileMenu("));
 
 describe("dashboard shell interaction refinement", () => {
-  it("keeps the desktop navigation as a stable left operating rail and the command bar visible", () => {
-    expect(dashboard).toContain("dashboard-sidebar fixed z-50");
-    expect(dashboard).toContain("lg:sticky lg:top-0");
-    expect(dashboard).toContain('aria-label="Workspace command bar"');
-    expect(dashboard).toContain("dashboard-topbar sticky top-0 z-20");
+  it("keeps the workspace navigation as an accessible left operating rail and exposes the command entry point", () => {
+    expect(dashboard).toContain('aria-label="Operational workspaces"');
+    expect(dashboard).toContain('aria-label="Open command palette"');
+    expect(dashboard).toContain('aria-hidden={!sidebarOpen}');
+    expect(dashboard).toContain('className={`fixed inset-y-0 left-0 z-50');
+    expect(dashboard).toContain('aria-current={isActive ? "page" : undefined}');
+    expect(dashboard).toContain('aria-expanded={expanded}');
   });
 
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
-    expect(dashboard).toContain("grid-cols-[minmax(0,1fr)_auto]");
-    expect(dashboard).toContain("dashboard-topbar-search hidden lg:flex");
-    expect(dashboard).toContain("dashboard-topbar-alert hidden lg:flex");
-    expect(dashboard).toContain('<span className="hidden xl:block"><WorkspacePresenceBadge');
-    expect(dashboard).toContain("dashboard-topbar-context");
-    expect(dashboard).toContain("dashboard-topbar-actions");
-    expect(dashboard).toContain("dashboard-topbar-tour hidden shrink-0 xl:block");
-    expect(dashboard).toContain("onClick={toggleDarkMode}");
+    expect(dashboard).toContain('aria-label="Open menu"');
+    expect(dashboard).toContain('aria-label="Search everything"');
+    expect(dashboard).toContain('aria-label="Open workspace settings"');
+    expect(dashboard).toContain('onClick={()=>setDarkMode(d=>!d)}');
+    expect(dashboard).toContain('aria-pressed={darkMode}');
+    expect(dashboard).toContain("sm:hidden");
+    expect(dashboard).toContain("xl:inline-flex");
   });
 
-  it("keeps sidebar ordering explicit, role-safe, and persistent per device", () => {
-    expect(dashboard).toContain('"smart-manager:sidebar-module-order"');
-    expect(dashboard).toContain('sidebarModuleOrder === "alphabetical"');
-    expect(dashboard).toContain('aria-label="Sidebar module order"');
-    expect(dashboard).toContain('aria-pressed={sidebarModuleOrder === "priority"}');
-    expect(dashboard).toContain('aria-pressed={sidebarModuleOrder === "alphabetical"}');
+  it("keeps grouped navigation role-safe and preserves the compact mobile navigation", () => {
+    expect(dashboard).toContain('aria-controls={`navigation-items-${group.id}`}');
+    expect(dashboard).toContain('role="group"');
+    expect(dashboard).toContain('aria-label="Mobile workspace navigation"');
+    expect(dashboard).toContain('aria-current={on ? "page" : undefined}');
   });
 
   it("uses a contained profile menu without a fixed page-covering overlay", () => {
