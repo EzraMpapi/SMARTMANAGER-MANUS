@@ -544,3 +544,6 @@
 - [x] Re-run bounded live table, RLS, policy, foreign-key, and schema-parity checks after application.
 - [x] Run relevant tests, TypeScript, schema verification, and production build gates.
 - [ ] Commit and push all pending project changes to the private `EzraMpapi/SMARTMANAGER-MANUS` repository on `main`, preserving privacy and excluding secrets/signing keys.
+
+## Remote-Main Merge Regression Follow-up
+- [x] Update stale contract assertions exposed by the latest remote-main merge, then rerun TypeScript, tests, and production build before pushing.

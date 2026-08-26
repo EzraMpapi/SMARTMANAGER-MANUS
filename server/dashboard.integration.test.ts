@@ -115,7 +115,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("azure")}');
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("apple")}');
     expect(publicAuthSource).toContain("await auth.signInWithOAuth(provider)");
-    expect(authContextSource).toContain("auth.signInWithOAuth({ provider, options: { redirectTo: redirectTo?.toString() } })");
+    expect(authContextSource).toContain("auth.signInWithOAuth({ provider, options: { redirectTo } })");
   });
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {

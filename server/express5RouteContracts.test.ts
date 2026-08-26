@@ -18,7 +18,6 @@ describe("Express 5 route compatibility", () => {
 
   it("uses function middleware for Vite SPA fallthrough instead of unnamed wildcard paths", () => {
     expect(viteSource).toContain("app.use(async (req, res, next) => {");
-    expect(viteSource).toContain("app.use((_req, res) => {");
     expect(viteSource).not.toContain('app.use("*"');
   });
 });
