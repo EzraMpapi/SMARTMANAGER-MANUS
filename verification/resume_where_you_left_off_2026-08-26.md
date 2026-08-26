@@ -27,3 +27,13 @@ The final local quality gate completed with 220 test files passing and 6 skipped
 ## Scope note
 
 The application contains many module-specific in-memory controls because the dashboard is a large single-file shell. The central resume contract now preserves the active module and any URL-safe query/hash state already present. A future module-by-module enhancement can migrate individual filters, tabs, pagination, and sort controls to the same URL or tenant-scoped preference boundary without weakening the current security model.
+
+## Isolation hardening applied
+
+The persistence boundary now removes authentication and onboarding callback parameters from both query strings and key/value-style hash fragments, including `auth`, `invite`, `code`, `state`, `nonce`, SSO/SAML callback keys, token fields, and payment/credential keys. URL normalization and resume writes fail closed on malformed input.
+
+Resume records now enforce a 30-day TTL and reject timestamps more than five minutes in the future; expired records are removed when read. Writes refresh `savedAt` at persistence time.
+
+Safe drafts now require a scoped key built from encoded user ID, company ID, and a non-sensitive draft name. Draft values are recursively sanitized, sensitive nested fields are removed, and data URLs are excluded. Unscoped draft keys are rejected.
+
+The focused hardening tests and full quality gate pass: 220 test files passed and 6 were skipped, with 896 tests passed and 14 skipped. TypeScript validation, the Supabase schema guard, and the production build also completed successfully. The schema guard reported 201 referenced tables, 536 deployed tables, no missing tables, no tenant-table issues, and no critical-table issues.

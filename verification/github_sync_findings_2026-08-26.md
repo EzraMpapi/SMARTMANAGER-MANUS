@@ -37,3 +37,17 @@ The server contract test upload was submitted with the summary `test(session): g
 The private repository root upload page has staged `todo.md` and `vitest.config.ts`. They are ready for a direct main-branch commit; no other files are staged in this upload.
 
 The root upload containing `todo.md` and `vitest.config.ts` was submitted as `chore: record resume-session verification`; GitHub is processing the direct main-branch commit and completion still needs confirmation.
+
+The verification upload page has staged `resume_where_you_left_off_2026-08-26.md` and `github_sync_findings_2026-08-26.md`. Both are ready for a direct main-branch documentation commit.
+
+The verification documentation upload was submitted as `docs(session): record resume-system verification`; GitHub is processing the direct main-branch commit and completion still needs confirmation.
+
+Remote synchronization is complete. The private `main` branch now shows `bf659c2` (`docs(session): record resume-system verification`) as the latest commit, with the `verification` folder updated by that commit. Earlier confirmed synchronization commits are `ae3b8c5` (remote-base dashboard integration), `ddfa40f` (resume utility and unit tests), `1bdfc97` (server contract test), and `da284be` (todo.md and vitest.config.ts). The repository remains private and no credentials or signing keys were added.
+
+The hardened `resumeSession.ts` and `resumeSession.test.ts` are staged in the private GitHub upload flow under `client/src/lib`. The commit summary is `security(session): harden resume persistence isolation`; direct main-branch commit is ready.
+
+The corrected `server/resumeWhereYouLeftOff.contract.test.ts` is staged for the hardening release under `server`. It will be committed directly to the private `main` branch alongside the updated client utility.
+
+The corrected server contract test was submitted as `test(session): verify hardened resume boundary`; GitHub is processing the direct main-branch commit and completion remains to be confirmed.
+
+The hardened client implementation and tests are confirmed on private `main` as commit `a0c55a3`; the corrected server contract test is confirmed as commit `93a2c11`. The remaining updated verification documentation and checklist are ready for synchronization.
