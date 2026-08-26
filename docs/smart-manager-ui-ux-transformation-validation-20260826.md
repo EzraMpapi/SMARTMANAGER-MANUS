@@ -63,3 +63,12 @@ The repository still emits the known large `BusinessSphereDashboard` chunk warni
 [6]: ../client/src/BusinessSphereDashboard.jsx "Authenticated shell and module switchboard"
 [7]: ../server/uiDesignSystem.test.ts "Design-system and shell regression contracts"
 [8]: ../FULL_SYSTEM_IMPLEMENTATION_MATRIX.md "Existing implementation and acceptance matrix"
+
+
+## E-Commerce transformation addendum
+
+The E-Commerce mandate in `pasted_content_2.txt` was inspected in full. The current live architecture uses `ecommerce_products` and `ecommerce_orders` as company-scoped generic envelope tables, while product identity and stock context are linked to `inventory_items`. The live schema also contains `inventory_warehouses`, `inventory_stock_movements`, `inventory_transfers`, `crm_contacts`, `sales_orders`, `sales_order_items`, `sales_order_returns`, and `sales_payments`. No confirmed commerce-specific cart, wishlist, coupon, promotion, review, shipping, refund, or customer-account tables were identified, so no duplicate product/order/customer system or fake client-only business workflow was created.
+
+The authenticated commerce workspace now provides expanded truthful KPIs for online revenue, orders, average order value, published products, pending payment, processing, low stock, and inventory value where unit cost is confirmed. Catalog discovery supports product/SKU search, category filters, stock filters, deterministic sorting, grid/list views, transparent image-unavailable labeling, and touch-safe publish controls. Order management supports order/customer search, status filtering, keyboard-accessible row opening, explicit confirmation-state copy, a responsive order table, dialog semantics, a status timeline, and touch-safe supported status advancement. Shared commercial command-center cards and metrics now use the canonical enterprise surface and focus contracts.
+
+The E-Commerce regression contract verifies live table hooks, truthful metric/source copy, catalog search/stock/sort controls, accessible order management, supported status transitions, and the schema safety boundary. The final full Vitest run after these changes passed **1,049 tests across 259 files**, with **15 skipped tests across 7 files**, in **25.63 seconds**. The production Vite build passed after the commerce changes; the known approximately 4.5 MB dashboard chunk warning remains non-blocking.
