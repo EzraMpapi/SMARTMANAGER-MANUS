@@ -66,7 +66,7 @@ function buildPerformanceTrend(invoiceRows, expenseRows, rangeId) {
 }
 
 function Panel({ children, className = "" }) {
-  return <section className={`relative overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_2px_3px_rgba(15,23,42,.025)] transition-shadow duration-200 hover:shadow-[0_16px_32px_rgba(15,23,42,.055)] ${className}`}>{children}</section>;
+  return <section className={`sm-panel relative overflow-hidden rounded-[22px] ${className}`}>{children}</section>;
 }
 
 function Skeleton({ className = "" }) {
@@ -82,12 +82,12 @@ const widgetTones = {
 
 function WidgetHeader({ eyebrow, title, icon: Icon, tone = "emerald", actionLabel, onAction }) {
   const style = widgetTones[tone] || widgetTones.emerald;
-  return <header className="relative flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6"><span className={`absolute inset-y-4 left-0 w-1 rounded-r-full ${style.line}`} aria-hidden="true" /><div className="min-w-0"><p className={`text-[10px] font-bold uppercase tracking-[.12em] ${style.eyebrow}`}>{eyebrow}</p><h2 className="mt-1 text-[16px] font-semibold tracking-[-.025em] text-slate-950">{title}</h2></div>{actionLabel ? <button type="button" onClick={onAction} className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-[10.5px] font-bold ${style.eyebrow} transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600`}>{actionLabel}<ArrowRight size={13} /></button> : <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${style.icon}`}><Icon size={17} aria-hidden="true" /></span>}</header>;
+  return <header className="relative flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6"><span className={`absolute inset-y-4 left-0 w-1 rounded-r-full ${style.line}`} aria-hidden="true" /><div className="min-w-0"><p className={`text-[10px] font-bold uppercase tracking-[.12em] ${style.eyebrow}`}>{eyebrow}</p><h2 className="mt-1 text-[16px] font-semibold tracking-[-.025em] text-slate-950">{title}</h2></div>{actionLabel ? <button type="button" onClick={onAction} className={`inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-[10.5px] font-bold ${style.eyebrow} transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600`}>{actionLabel}<ArrowRight size={13} /></button> : <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${style.icon}`}><Icon size={17} aria-hidden="true" /></span>}</header>;
 }
 
 function MetricCard({ label, value, detail, tone, icon: Icon, onClick }) {
   return (
-    <button type="button" onClick={onClick} className="group relative min-h-[166px] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_1px_2px_rgba(15,23,42,.03)] transition duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_14px_30px_rgba(15,23,42,.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
+    <button type="button" onClick={onClick} className="sm-panel sm-panel-interactive group relative min-h-[166px] overflow-hidden rounded-2xl p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
       <span className={`absolute inset-x-0 top-0 h-1 ${tone.edge}`} aria-hidden="true" />
       <span className={`pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-70 blur-2xl ${tone.glow}`} aria-hidden="true" />
       <div className="relative flex items-start justify-between gap-3">
@@ -103,7 +103,7 @@ function MetricCard({ label, value, detail, tone, icon: Icon, onClick }) {
 }
 
 function EmptyPanel({ icon: Icon = ClipboardCheck, title, detail, actionLabel, onAction }) {
-  return <div className="relative flex min-h-[244px] flex-col items-center justify-center overflow-hidden px-5 py-8 text-center"><span className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-emerald-100/70 blur-2xl" aria-hidden="true" /><span className="relative grid h-11 w-11 place-items-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm"><Icon size={19} /></span><h3 className="relative mt-4 text-sm font-semibold text-slate-900">{title}</h3><p className="relative mt-1 max-w-sm text-[12px] leading-5 text-slate-500">{detail}</p>{actionLabel && <button type="button" onClick={onAction} className="relative mt-4 inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{actionLabel}<ArrowRight size={13} /></button>}</div>;
+  return <div className="relative flex min-h-[244px] flex-col items-center justify-center overflow-hidden px-5 py-8 text-center"><span className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-emerald-100/70 blur-2xl" aria-hidden="true" /><span className="relative grid h-11 w-11 place-items-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm"><Icon size={19} /></span><h3 className="relative mt-4 text-sm font-semibold text-slate-900">{title}</h3><p className="relative mt-1 max-w-sm text-[12px] leading-5 text-slate-500">{detail}</p>{actionLabel && <button type="button" onClick={onAction} className="relative mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-700 px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">{actionLabel}<ArrowRight size={13} /></button>}</div>;
 }
 
 export function EnterpriseDashboardOverview({
