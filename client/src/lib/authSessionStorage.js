@@ -18,9 +18,14 @@ export function persistAuthSession(result, remember = true) {
   if (result.refresh_token) activeStorage.setItem(activeRefreshKey, result.refresh_token);
 }
 
+export function readStoredAccessToken() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+}
+
 export function readStoredAuthSession() {
   if (typeof window === "undefined") return null;
-  const accessToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_ACCESS_TOKEN_STORAGE_KEY);
+  const accessToken = readStoredAccessToken();
   const refreshToken = window.localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) || window.sessionStorage.getItem(SESSION_REFRESH_TOKEN_STORAGE_KEY);
   return accessToken && refreshToken ? { access_token: accessToken, refresh_token: refreshToken } : null;
 }
