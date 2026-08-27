@@ -587,3 +587,8 @@
 - [x] Generate and present the evidence-based Chapters 10–12 operations-foundation slide deck.
 - [x] Create and validate a reviewable Chapters 01–15 animation assembly plan, subtitle/audio ledger, and pilot asset package without claiming a complete master video.
 - [ ] Run final validation and synchronize the reviewed Chapter 16–18, terminology, operations-deck, and animation-foundation package to GitHub main.
+
+## Protected Main-Branch Reconciliation for Training Package
+- [x] Reconcile the stale required `Browser Dashboard Preference Journey` status check with the current repository CI checks while preserving protected-branch review and validation requirements.
+- [x] Merge the validated Chapters 16–18, operations deck, and animation-foundation pull request through the protected-branch workflow.
+- [x] Verify the final `main` branch state and record the completed training-package synchronization.
