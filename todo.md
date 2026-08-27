@@ -330,6 +330,7 @@
 - [x] Configure available `main` pull-request protection with the verified CI quality check and preserve administrator safety.
 - [x] Update the credential-free production-smoke target to the verified `menejajanja.vercel.app` alias and add a regression assertion.
 - [x] Trigger and verify hosted quality workflows now that the public-repository Actions allowance applies. Both required CI checks passed on pull request #21; unrelated Vercel projects on the account reported deployment rate limits, while the linked `menejajanja` deployment completed.
+- [ ] Obtain one independent approval from a reviewer with repository write access for protected pull request #21, then merge the passing release branch into `main`.
 - [ ] Update the release record, synchronize changes, and save the resulting managed checkpoint.
 
 ## Platform Administrator Executive Control Center
