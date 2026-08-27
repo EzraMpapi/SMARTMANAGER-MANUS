@@ -74,14 +74,14 @@ jobs:
           script: |
             const title = "[monitoring] Render performance budget breached";
             const body = [
-              "The scheduled Render performance monitor failed a public availability or browser performance budget.",
+              "The scheduled Render monitor failed an application-uptime, database-connectivity, API response, or browser performance budget.",
               "",
               `Target: ${process.env.TARGET_URL}`,
               `Run: ${process.env.RUN_URL}`,
               `Commit: ${process.env.RUN_SHA}`,
               `UTC: ${new Date().toISOString()}`,
               "",
-              "Inspect the attached render-performance artifact for cold-start, TTFB, DOM-content-loaded, load-event, and first-contentful-paint metrics. This monitor is credential-free and does not mutate production data.",
+              "Inspect the attached render-performance artifact for application uptime, database-backed catalog connectivity, access-control, endpoint response, cold-start, TTFB, DOM-content-loaded, load-event, and first-contentful-paint metrics. This monitor is credential-free and does not mutate production data.",
             ].join("\n");
 
             const openIssues = await github.paginate(github.rest.issues.listForRepo, {
