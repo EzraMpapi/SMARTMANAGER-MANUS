@@ -20,3 +20,9 @@ The linked `menejajanja` Vercel preview was created successfully. Separate legac
 ## Release-boundary statement
 
 No Supabase schema objects, production data, application authorization rules, signing keys, or credentials were changed in this activation. The production-smoke workflow target was corrected to `https://menejajanja.vercel.app`, and its contract test passed before the pull request was opened.
+
+## Owner-approved merge exception and outcome
+
+The owner subsequently authorized reducing the approval-count requirement from one to zero after both required checks had passed. The adjustment retained the pull-request requirement, strict up-to-date checks, administrator enforcement, stale-review dismissal, conversation-resolution requirement, and force-push/deletion blocks.
+
+Pull request [#21](https://github.com/EzraMpapi/SMARTMANAGER-MANUS/pull/21) was then merged on 2026-08-27. The resulting `main` merge commit is `63d1496228bad497eabfebb48390f13aa788fbea`.
