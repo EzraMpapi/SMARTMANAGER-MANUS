@@ -38,7 +38,7 @@ describe("dashboard shell interaction refinement", () => {
 
   it("keeps grouped navigation role-safe and preserves the compact mobile navigation", () => {
     expect(dashboard).toContain('displayedNavigationGroups.map((group) => {');
-    expect(dashboard).toContain('preferences.visibleNavigationGroupIds.includes(group.id)');
+    expect(dashboard).toContain('getPresentationNavigationGroups(navigationGroups, preferences.visibleNavigationGroupIds, active)');
     expect(dashboard).toContain('availableNavigationGroups={navigationGroups.map');
     expect(dashboard).toContain('item.locked');
     expect(dashboard).toContain('aria-label="Mobile workspace navigation"');
