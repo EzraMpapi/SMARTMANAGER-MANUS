@@ -1047,3 +1047,92 @@
     display: none !important;
   }
 }
+
+/* Reference-directed enterprise command center. The sidebar remains a true
+   navigation surface; these selectors only alter its visual hierarchy, never
+   the existing RBAC, tenant, or routing contracts in BusinessSphereDashboard. */
+.dashboard-sidebar {
+  background: linear-gradient(180deg, #062a2d 0%, #083b3b 58%, #075843 100%) !important;
+  border-right-color: rgba(255, 255, 255, .08) !important;
+  box-shadow: 8px 0 30px rgba(3, 20, 24, .18) !important;
+}
+
+.dashboard-sidebar .brand-wordmark,
+.dashboard-sidebar .text-slate-950,
+.dashboard-sidebar .text-slate-900,
+.dashboard-sidebar .text-slate-800,
+.dashboard-sidebar .text-slate-700 {
+  color: #f8fffb !important;
+}
+
+.dashboard-sidebar .text-slate-400,
+.dashboard-sidebar .text-slate-500 {
+  color: rgba(226, 255, 244, .67) !important;
+}
+
+.dashboard-sidebar .border-slate-100,
+.dashboard-sidebar .border-slate-200,
+.dashboard-sidebar .border-\[\#F3F4F6\] {
+  border-color: rgba(255, 255, 255, .09) !important;
+}
+
+.dashboard-sidebar .bg-white,
+.dashboard-sidebar .bg-slate-50,
+.dashboard-sidebar .bg-slate-100 {
+  background-color: rgba(255, 255, 255, .07) !important;
+}
+
+.dashboard-sidebar .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+.dashboard-sidebar .dashboard-flat-navigation > section > button:hover {
+  background: rgba(255, 255, 255, .08) !important;
+}
+
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"] {
+  border-color: rgba(100, 255, 181, .25) !important;
+  background: linear-gradient(90deg, rgba(17, 154, 96, .98), rgba(10, 116, 81, .98)) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .16) !important;
+}
+
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"] .bg-white,
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100 {
+  background-color: rgba(255, 255, 255, .14) !important;
+  color: #eafff0 !important;
+}
+
+.dashboard-sidebar .dashboard-sidebar-order {
+  background: rgba(0, 0, 0, .12) !important;
+}
+
+.dashboard-reference-layout {
+  --sm-surface: #fff;
+}
+
+.dashboard-reference-layout .dashboard-reference-panel,
+.dashboard-reference-layout .dashboard-reference-kpi {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .055);
+}
+
+.dashboard-reference-layout .dashboard-reference-kpi:hover {
+  box-shadow: 0 16px 30px rgba(15, 23, 42, .10);
+}
+
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    width: min(84vw, 304px) !important;
+  }
+
+  .dashboard-reference-welcome {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-reference-layout {
+    gap: 1rem;
+  }
+
+  .dashboard-reference-layout .dashboard-reference-kpi {
+    min-height: 136px;
+  }
+}

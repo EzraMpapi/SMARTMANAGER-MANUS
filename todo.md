@@ -614,3 +614,17 @@
 - [x] Reconcile the stale required `Browser Dashboard Preference Journey` status check with the current repository CI checks while preserving protected-branch review and validation requirements.
 - [x] Merge the validated Chapters 16–18, operations deck, and animation-foundation pull request through the protected-branch workflow.
 - [x] Verify the final `main` branch state and record the completed training-package synchronization.
+
+## Chapters 16–18 Animation Continuation Pilot
+- [ ] Review the existing fictional animation pilot, Finance concept visual, and Chapter 16–18 privacy boundaries before extending the motion package.
+- [ ] Generate a text-free fictional animation continuation for Financial Management, Accounting, and Payroll using only conceptual props and characters.
+- [ ] Verify the continuation media integrity, record its external-only use and editorial QA boundary, and confirm it is not a complete chapter sequence or master video.
+- [ ] Run the focused documentation contract and synchronize the reviewed continuation package to GitHub main through the protected-branch workflow.
+
+## Reference-Directed Responsive Dashboard Rebuild
+- [x] Inspect current dashboard routes, layout, live-data contracts, navigation, reusable UI components, and existing responsive tests without modifying production data.
+- [x] Rebuild the dashboard shell and overview in the supplied dark-sidebar, compact-command-bar, KPI/analytics, and quick-action visual direction while retaining real application behavior and truthful empty/loading/error states.
+- [x] Standardize responsive desktop, tablet, and mobile layout behavior, keyboard access, and interaction layering without deleting unrelated working routes or backend logic.
+- [x] Inspect the connected Supabase schema against the dashboard’s actual data contracts and apply only verified non-destructive SQL additions if any are required.
+- [x] Add or update dashboard regression tests, run full responsive/build validation, and capture desktop/mobile verification evidence.
+- [ ] Commit, publish through the protected-branch workflow, merge the reviewed dashboard package, and report the exact schema and GitHub outcome.

@@ -47617,6 +47617,10 @@ function SmartManager() {
     media.addEventListener("change", syncNavigationViewport);
     return () => media.removeEventListener("change", syncNavigationViewport);
   }, []);
+  // Desktop CSS keeps the rail visible independently of the drawer state.
+  // Keep semantics aligned with that rendered behavior so a dismissed tour
+  // never leaves a visible desktop module map inaccessible to assistive tech.
+  const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
   useEffect(() => {
     try { window.localStorage.setItem("smart-manager:sidebar-collapsed", String(sidebarCollapsed)); } catch {}
   }, [sidebarCollapsed]);
@@ -47624,7 +47628,13 @@ function SmartManager() {
     setSidebarCollapsed(preferences.sidebarPresentation === "compact");
   }, [preferences.sidebarPresentation]);
   const handleOnboardingVisibilityChange = useCallback((isOpen) => {
-    setSidebarOpen(isOpen);
+    // An onboarding overlay must not close the desktop navigation rail: doing
+    // so leaves the primary module map unavailable after a tour is dismissed.
+    // On phones, deliberately close an already-open drawer while the overlay
+    // is active so it cannot compete with the focused onboarding interaction.
+    if (isOpen && typeof window !== "undefined" && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
   }, []);
 
   // Company profile is editable in Settings; the topbar and dashboard
@@ -48246,7 +48256,7 @@ function SmartManager() {
           green gradient, white-variant text, white/10 borders) was
           removed entirely rather than layered under the new palette. */}
       <aside
-        aria-hidden={!isDesktopNavigation && !sidebarOpen}
+        aria-hidden={sidebarHiddenFromAssistiveTech}
           className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
