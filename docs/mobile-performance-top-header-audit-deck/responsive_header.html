@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8" />
+  <title>Responsive header evidence</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7faf9; color: #132a22; font-family: Inter, Arial, sans-serif; }
+    .masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; background: #073a35; color: #ffffff; padding: 0 66px; }
+    .brand { font-size: 14px; font-weight: 800; letter-spacing: .08em; }
+    .section { color: #a7f3d0; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    .layout { display: grid; grid-template-columns: 1fr 380px; gap: 86px; min-height: 568px; padding: 48px 76px 0; }
+    .eyebrow { color: #07845a; font-size: 12px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    h1 { font-family: Poppins, Arial, sans-serif; font-size: 42px; letter-spacing: -.045em; line-height: 1.1; margin-top: 16px; max-width: 620px; }
+    .lead { color: #5d7169; font-size: 17px; line-height: 1.52; margin-top: 21px; max-width: 570px; }
+    .facts { border-top: 1px solid #d4e4dc; margin-top: 34px; }
+    .fact { display: grid; grid-template-columns: 46px 1fr; column-gap: 16px; align-items: center; min-height: 72px; border-bottom: 1px solid #dce9e3; }
+    .check { color: #0b5d3b; font-family: Poppins, Arial, sans-serif; font-size: 24px; font-weight: 800; }
+    .fact strong { color: #183e31; display: block; font-size: 15px; margin-bottom: 4px; }
+    .fact span { color: #6a7d75; font-size: 12px; line-height: 1.35; }
+    .evidence { display: flex; flex-direction: column; align-items: center; padding-top: 0; }
+    .evidence-frame { width: 292px; height: 505px; border: 1px solid #b9d4c7; background: #ffffff; display: flex; align-items: flex-start; justify-content: center; overflow: hidden; }
+    .evidence-frame img { width: 250px; height: 500px; object-fit: contain; object-position: top center; }
+    .evidence-label { color: #5f746b; font-size: 11px; font-weight: 700; letter-spacing: .08em; margin-top: 12px; text-transform: uppercase; }
+    .footer { color: #70837b; font-size: 11px; margin: 14px 76px 0; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="masthead"><div class="brand">SMART MANAGER</div><div class="section">Responsive proof</div></div>
+    <div class="layout">
+      <section>
+        <div class="eyebrow">Final mobile layout audit</div>
+        <h1>Header imebaki wazi kwenye phone widths zote.</h1>
+        <p class="lead">Top header, dashboard content, Create-menu, na fixed bottom navigation zilipimwa pamoja ili kuzuia overlap au horizontal clipping.</p>
+        <div class="facts">
+          <div class="fact"><div class="check">01</div><div><strong>320–412px coverage</strong><span>Ukaguzi ulifanyika kwenye 320, 360, 375, 390, na 412px phone widths.</span></div></div>
+          <div class="fact"><div class="check">02</div><div><strong>Zero header/content overlap</strong><span>Header bottom ilibaki juu ya greeting na dashboard content boundary kwenye kila width.</span></div></div>
+          <div class="fact"><div class="check">03</div><div><strong>Zero horizontal overflow</strong><span>Hakuna visible control overlap au page clipping iliyopimwa kwenye phone audit.</span></div></div>
+          <div class="fact"><div class="check">04</div><div><strong>Create backdrop stays safe</strong><span>Backdrop inazuia bottom navigation wakati menu iko wazi, kisha hufunga salama.</span></div></div>
+        </div>
+      </section>
+      <section class="evidence">
+        <div class="evidence-frame"><img src="/home/ubuntu/Downloads/SMARTMANAGER-mobile-performance-audit-20260827.png" alt="Isolated mobile dashboard capture showing the rebuilt header above dashboard content and fixed navigation" /></div>
+        <div class="evidence-label">Isolated 375px capture · non-production fixture</div>
+      </section>
+    </div>
+    <div class="footer">Browser evidence: compiled isolated artifact · 4 passed / 1 expected desktop-only skip</div>
+  </div>
+</body>
+</html>

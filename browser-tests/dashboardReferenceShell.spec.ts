@@ -131,7 +131,7 @@ test.describe("reference-directed enterprise dashboard", () => {
   test("keeps Notification Center and Command Palette interactive and isolated in the production build", async ({ page }, testInfo) => {
     await page.setViewportSize(testInfo.project.name === "chromium-mobile" ? { width: 375, height: 812 } : { width: 1440, height: 960 });
     const session = await openDashboard(page);
-    const notificationToggle = page.getByLabel("Notifications", { exact: true });
+    const notificationToggle = page.getByRole("banner", { name: "Workspace command bar" }).getByRole("button", { name: "Notifications", exact: true });
 
     await expect(notificationToggle).toBeVisible();
     await notificationToggle.click();
@@ -154,6 +154,55 @@ test.describe("reference-directed enterprise dashboard", () => {
     await page.keyboard.press("Escape");
     await expect(palette).toBeHidden();
 
+    expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
+  });
+
+  test("keeps every visible rebuilt top-header control labelled, focusable, and state-aware", async ({ page }, testInfo) => {
+    const mobile = testInfo.project.name === "chromium-mobile";
+    await page.setViewportSize(mobile ? { width: 375, height: 812 } : { width: 1440, height: 960 });
+    const session = await openDashboard(page);
+    const commandHeader = page.getByRole("banner", { name: "Workspace command bar" });
+    const visibleControls = commandHeader.locator("button:visible");
+
+    await expect(commandHeader).toBeVisible();
+    expect(await visibleControls.count()).toBeGreaterThanOrEqual(mobile ? 5 : 5);
+    for (let index = 0; index < await visibleControls.count(); index += 1) {
+      const control = visibleControls.nth(index);
+      const box = await control.boundingBox();
+      const audit = await control.evaluate((element) => ({
+        name: element.getAttribute("aria-label") || element.getAttribute("title") || element.textContent?.trim() || "",
+        disabled: (element as HTMLButtonElement).disabled,
+        tabIndex: (element as HTMLButtonElement).tabIndex,
+      }));
+      expect(audit.name).not.toBe("");
+      expect(audit.disabled).toBe(false);
+      expect(audit.tabIndex).toBeGreaterThanOrEqual(0);
+      if (mobile) {
+        expect(box?.width || 0).toBeGreaterThanOrEqual(40);
+        expect(box?.height || 0).toBeGreaterThanOrEqual(40);
+      }
+      await control.focus();
+      await expect(control).toBeFocused();
+    }
+
+    const notificationToggle = commandHeader.getByRole("button", { name: "Notifications", exact: true });
+    await expect(notificationToggle).toHaveAttribute("aria-expanded", "false");
+    await notificationToggle.click();
+    await expect(notificationToggle).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Escape");
+    await expect(notificationToggle).toHaveAttribute("aria-expanded", "false");
+
+    if (mobile) {
+      const createToggle = commandHeader.getByRole("button", { name: "Open create menu", exact: true });
+      await expect(createToggle).toHaveAttribute("aria-expanded", "false");
+      await createToggle.click();
+      await expect(createToggle).toHaveAttribute("aria-expanded", "true");
+      await expect(createToggle).toHaveAttribute("aria-controls", "dashboard-create-menu");
+      await expect(page.locator("#dashboard-create-menu")).toHaveAttribute("role", "menu");
+      await page.keyboard.press("Escape");
+      await expect(createToggle).toHaveAttribute("aria-expanded", "false");
+      await expect(createToggle).toBeFocused();
+    }
     expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
   });
 });

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coverage inathibitisha actions halisi</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7faf9; color: #102b22; font-family: Inter, Arial, sans-serif; }
+    .topline { min-height: 78px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d9e7e0; padding: 0 70px; }
+    .brand { color: #0b5d3b; font-size: 14px; font-weight: 800; letter-spacing: .09em; }
+    .tag { color: #6c8279; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    .intro { padding: 49px 70px 0; }
+    .eyebrow { color: #07845a; font-size: 12px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    h1 { font-family: Poppins, Arial, sans-serif; font-size: 39px; line-height: 1.12; letter-spacing: -.04em; margin-top: 14px; }
+    .sub { color: #60746b; font-size: 16px; line-height: 1.48; margin-top: 13px; max-width: 760px; }
+    .metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; margin: 44px 70px 0; border-top: 1px solid #cce0d6; border-bottom: 1px solid #cce0d6; }
+    .metric { min-height: 173px; display: flex; flex-direction: column; justify-content: center; padding: 0 35px; }
+    .metric + .metric { border-left: 1px solid #cce0d6; }
+    .metric strong { color: #073a35; font-family: Poppins, Arial, sans-serif; font-size: 67px; line-height: .92; letter-spacing: -.07em; }
+    .metric .emerald { color: #0a8f5a; }
+    .metric p { color: #476158; font-size: 14px; font-weight: 700; line-height: 1.34; margin-top: 14px; }
+    .metric small { color: #788c83; display: block; font-size: 11px; line-height: 1.38; margin-top: 6px; }
+    .proof { display: grid; grid-template-columns: 178px 1fr; gap: 25px; align-items: center; margin: 37px 70px 0; }
+    .proof-label { color: #0b5d3b; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .proof-line { min-height: 52px; display: flex; align-items: center; border-left: 4px solid #16a34a; color: #173d31; font-size: 16px; font-weight: 700; line-height: 1.4; padding-left: 21px; }
+    .footer { display: flex; justify-content: space-between; color: #71857b; font-size: 11px; margin: 41px 70px 0; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="topline"><div class="brand">SMART MANAGER</div><div class="tag">Regression proof</div></div>
+    <section class="intro">
+      <div class="eyebrow">Browser evidence</div>
+      <h1>Coverage inathibitisha actions halisi.</h1>
+      <p class="sub">Ukaguzi ulitumia flows za UI zinazofanya kazi—sio mock controls—na ulidumisha mpaka wa data wa isolated test environment.</p>
+    </section>
+    <section class="metrics" aria-label="Audit coverage metrics">
+      <div class="metric"><strong>9</strong><p>Desktop/mobile interaction &amp; a11y checks</p><small>Zimepita kwenye dashboard shell na top header.</small></div>
+      <div class="metric"><strong>5</strong><p>Expected project skips</p><small>Project guards; si failures za quality gate.</small></div>
+      <div class="metric"><strong class="emerald">1</strong><p>Focused mobile performance check</p><small>Compiled isolated artifact imepita guard ya dashboard-ready.</small></div>
+    </section>
+    <section class="proof">
+      <div class="proof-label">Flows zilizopimwa</div>
+      <div class="proof-line">Command Palette · Notification Center · Create menu · workspace/profile actions · mobile navigation</div>
+    </section>
+    <div class="footer"><span>Traffic ilibaki kwenye `e2e.supabase.invalid` na local `/api/trpc/`.</span><span>Hakuna production tenant au data write.</span></div>
+  </div>
+</body>
+</html>

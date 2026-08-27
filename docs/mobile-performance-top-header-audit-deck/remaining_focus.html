@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8" />
+  <title>Performance follow-up</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7faf9; color: #102a21; font-family: Inter, Arial, sans-serif; padding-top: 0; }
+    .topline { min-height: 76px; display: flex; align-items: center; justify-content: space-between; background: #073a35; padding: 0 68px; color: #ffffff; }
+    .brand { font-size: 14px; font-weight: 800; letter-spacing: .09em; }
+    .label { color: #a7f3d0; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .content { display: grid; grid-template-columns: 445px 1fr; gap: 82px; padding: 56px 74px 0; }
+    .eyebrow { color: #07845a; font-size: 12px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    h1 { font-family: Poppins, Arial, sans-serif; font-size: 40px; line-height: 1.12; letter-spacing: -.04em; margin-top: 15px; }
+    .outcome { display: flex; align-items: center; gap: 12px; color: #176a49; font-size: 16px; font-weight: 800; margin-top: 28px; }
+    .check { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #dcfce7; color: #087443; font-size: 16px; }
+    .metric { border-top: 1px solid #c9ded4; border-bottom: 1px solid #c9ded4; margin-top: 42px; padding-top: 20px; min-height: 158px; }
+    .metric strong { display: block; color: #0b5d3b; font-family: Poppins, Arial, sans-serif; font-size: 55px; letter-spacing: -.06em; line-height: 1; }
+    .metric span { color: #62766e; display: block; font-size: 13px; line-height: 1.45; margin-top: 10px; }
+    .warning-note { color: #7a5b18; font-size: 13px; font-weight: 700; line-height: 1.5; margin-top: 20px; }
+    .right-title { color: #123c2d; font-size: 19px; font-weight: 800; line-height: 1.35; margin: 7px 0 27px; }
+    .step { display: grid; grid-template-columns: 52px 1fr; gap: 22px; min-height: 119px; border-top: 1px solid #d2e3db; padding-top: 22px; }
+    .step:last-child { border-bottom: 1px solid #d2e3db; }
+    .step-index { color: #0b5d3b; font-family: Poppins, Arial, sans-serif; font-size: 27px; font-weight: 800; }
+    .step h2 { color: #123c2d; font-size: 17px; margin: 0 0 8px; }
+    .step p { color: #63786f; font-size: 14px; line-height: 1.52; max-width: 510px; }
+    .footer { color: #6e827a; font-size: 11px; margin: 34px 74px 0; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="topline"><div class="brand">SMART MANAGER</div><div class="label">Performance follow-up</div></div>
+    <div class="content">
+      <section>
+        <div class="eyebrow">Production build status</div>
+        <h1>Bundle kubwa ndiyo follow-up ya performance.</h1>
+        <div class="outcome"><span class="check">✓</span> Build imefaulu; si release blocker ya sasa.</div>
+        <div class="metric"><strong>6.35 MB</strong><span>`BusinessSphereDashboard` after minification<br />Configured warning threshold: 2.5 MB</span></div>
+        <p class="warning-note">Warning hii ilikuwepo kabla ya audit; haikusababishwa na top-header rebuild.</p>
+      </section>
+      <section>
+        <div class="eyebrow">Safe next steps</div>
+        <p class="right-title">Optimize kwa ushahidi wa workload, kisha thibitisha experience ya mtumiaji halisi.</p>
+        <div class="step"><div class="step-index">01</div><div><h2>Real-device &amp; 4G / 3G measurement</h2><p>Pima public-network loading kwenye simu halisi kabla ya kuweka customer-facing performance target. Local artifact timings haziwakilishi latency ya field.</p></div></div>
+        <div class="step"><div class="step-index">02</div><div><h2>Workload-based code splitting</h2><p>Tenganisha modules nzito kulingana na navigation na query evidence. Epuka manual chunking ya mass bila kupima user paths zinazotumika zaidi.</p></div></div>
+        <div class="step"><div class="step-index">03</div><div><h2>Retain regression guard</h2><p>Endelea kupima dashboard-ready state na header interactions kwenye isolated artifact ili changes zijazo zisirudishe slowdown au accessibility regression.</p></div></div>
+      </section>
+    </div>
+    <div class="footer">Measured audit: 3.01s local dashboard-ready at 375 × 812 · Production build completed successfully</div>
+  </div>
+</body>
+</html>
