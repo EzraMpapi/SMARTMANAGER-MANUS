@@ -74,12 +74,6 @@ jobs:
             echo "schema_health<<EOF"
             echo "$health_json"
             echo "EOF"
-            echo
-            echo "## Supabase schema health"
-            echo
-            echo '```json'
-            echo "$health_json"
-            echo '```'
           } >> "$GITHUB_OUTPUT"
           {
             echo
