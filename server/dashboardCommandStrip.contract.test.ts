@@ -19,6 +19,19 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("onClick={() => go(m.id)}");
   });
 
+  it("keeps the command-header search centered and operational controls grouped without replacing their menus", () => {
+    expect(dashboard).toContain("dashboard-topbar-primary-search");
+    expect(dashboard).toContain("dashboard-topbar-utility-group");
+    expect(dashboard).toContain("dashboard-topbar-notification-slot");
+    expect(dashboard).toContain("dashboard-topbar-profile-slot");
+    expect(dashboard).toContain("dashboard-topbar-create");
+    expect(dashboard).toContain("<NotificationCenter");
+    expect(dashboard).toContain("<PremiumProfileMenu");
+    expect(dashboard.indexOf("dashboard-topbar-primary-search")).toBeLessThan(
+      dashboard.indexOf("dashboard-topbar-actions"),
+    );
+  });
+
   it("renders desktop navigation as a flat, reference-ordered, role-aware workspace list", () => {
     expect(dashboard).toContain("const flatNavigationItems = useMemo(() => [");
     expect(dashboard).toContain("Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))");
