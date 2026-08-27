@@ -9,9 +9,11 @@ export const DASHBOARD_PREFERENCE_KEY = "dashboard";
 export const DASHBOARD_WIDGET_IDS = ["revenue", "salesMix", "quickActions", "products", "cashFlow", "businessHealth", "activity", "actionCenter"] as const;
 export const DASHBOARD_KPI_IDS = ["revenue", "expenses", "net-result", "orders", "receivables"] as const;
 export const DASHBOARD_PERFORMANCE_WINDOWS = ["30d", "3m", "6m", "1y"] as const;
+export const DASHBOARD_NAVIGATION_GROUP_IDS = ["home", "sales-crm", "operations", "finance", "people", "specialized", "analytics", "administration"] as const;
 
 const dashboardWidgetId = z.enum(DASHBOARD_WIDGET_IDS);
 const dashboardKpiId = z.enum(DASHBOARD_KPI_IDS);
+const dashboardNavigationGroupId = z.enum(DASHBOARD_NAVIGATION_GROUP_IDS);
 
 export const dashboardPreferencesInput = z.object({
   compactDensity: z.boolean(),
@@ -33,6 +35,13 @@ export const dashboardPreferencesInput = z.object({
   widgetOrder: z.array(dashboardWidgetId).min(1).max(DASHBOARD_WIDGET_IDS.length).refine((value) => new Set(value).size === value.length, "Dashboard panels must be unique."),
   kpiCardIds: z.array(dashboardKpiId).min(1).max(DASHBOARD_KPI_IDS.length).refine((value) => new Set(value).size === value.length, "Dashboard KPIs must be unique."),
   performanceWindow: z.enum(DASHBOARD_PERFORMANCE_WINDOWS),
+  sidebarPresentation: z.enum(["expanded", "compact"]),
+  navigationSort: z.enum(["priority", "alphabetical"]),
+  visibleNavigationGroupIds: z.array(dashboardNavigationGroupId).min(1).max(DASHBOARD_NAVIGATION_GROUP_IDS.length).refine((value) => new Set(value).size === value.length, "Navigation groups must be unique.").refine((value) => value.includes("home"), "Home navigation must remain available."),
+  showTopBarSearch: z.boolean(),
+  showGuidedTour: z.boolean(),
+  showConnectionStatus: z.boolean(),
+  showTopBarDate: z.boolean(),
 });
 
 export type DashboardPreferences = z.infer<typeof dashboardPreferencesInput>;
@@ -63,6 +72,13 @@ export const DEFAULT_DASHBOARD_PREFERENCES: DashboardPreferences = {
   widgetOrder: [...DASHBOARD_WIDGET_IDS],
   kpiCardIds: [...DASHBOARD_KPI_IDS],
   performanceWindow: "30d",
+  sidebarPresentation: "expanded",
+  navigationSort: "priority",
+  visibleNavigationGroupIds: [...DASHBOARD_NAVIGATION_GROUP_IDS],
+  showTopBarSearch: true,
+  showGuidedTour: true,
+  showConnectionStatus: true,
+  showTopBarDate: true,
 };
 
 function normalizePreferences(value: unknown): DashboardPreferences {
@@ -75,6 +91,11 @@ function normalizePreferences(value: unknown): DashboardPreferences {
   const validKpiIds = new Set<string>(DASHBOARD_KPI_IDS);
   const suppliedKpiIds = Array.isArray(candidate.kpiCardIds) ? candidate.kpiCardIds.filter((item): item is string => typeof item === "string" && validKpiIds.has(item)) : [];
   const kpiCardIds = (suppliedKpiIds.length ? Array.from(new Set(suppliedKpiIds)) : [...DASHBOARD_KPI_IDS]) as DashboardPreferences["kpiCardIds"];
+  const validNavigationGroupIds = new Set<string>(DASHBOARD_NAVIGATION_GROUP_IDS);
+  const suppliedNavigationGroupIds = Array.isArray(candidate.visibleNavigationGroupIds) ? candidate.visibleNavigationGroupIds.filter((item): item is string => typeof item === "string" && validNavigationGroupIds.has(item)) : [];
+  const requestedNavigationGroups = suppliedNavigationGroupIds.length ? new Set(suppliedNavigationGroupIds) : new Set(DASHBOARD_NAVIGATION_GROUP_IDS);
+  requestedNavigationGroups.add("home");
+  const visibleNavigationGroupIds = DASHBOARD_NAVIGATION_GROUP_IDS.filter((id) => requestedNavigationGroups.has(id)) as DashboardPreferences["visibleNavigationGroupIds"];
   return {
     compactDensity: candidate.compactDensity === true,
     showKpiBanner: candidate.showKpiBanner !== false,
@@ -95,6 +116,13 @@ function normalizePreferences(value: unknown): DashboardPreferences {
     widgetOrder,
     kpiCardIds,
     performanceWindow: DASHBOARD_PERFORMANCE_WINDOWS.includes(candidate.performanceWindow as typeof DASHBOARD_PERFORMANCE_WINDOWS[number]) ? candidate.performanceWindow as DashboardPreferences["performanceWindow"] : DEFAULT_DASHBOARD_PREFERENCES.performanceWindow,
+    sidebarPresentation: candidate.sidebarPresentation === "compact" ? "compact" : "expanded",
+    navigationSort: candidate.navigationSort === "alphabetical" ? "alphabetical" : "priority",
+    visibleNavigationGroupIds,
+    showTopBarSearch: candidate.showTopBarSearch !== false,
+    showGuidedTour: candidate.showGuidedTour !== false,
+    showConnectionStatus: candidate.showConnectionStatus !== false,
+    showTopBarDate: candidate.showTopBarDate !== false,
   };
 }
 

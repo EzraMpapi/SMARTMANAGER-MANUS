@@ -1,15 +1,23 @@
 import React, { useState } from "react";
-import { Sliders, X, Check, RotateCcw, DollarSign, Sparkles, Send, Loader2, Globe, Clock } from "lucide-react";
-import { useDashboardPreferences } from "../contexts/DashboardPreferencesContext";
+import { Sliders, X, Check, RotateCcw, DollarSign, Sparkles, Send, Loader2, Globe, Clock, Search, CalendarDays, Compass } from "lucide-react";
+import { useDashboardPreferences, type DashboardPreferences } from "../contexts/DashboardPreferencesContext";
 import { trpc } from "../lib/trpc";
 import { DashboardLayoutControls } from "./DashboardLayoutControls";
 
 interface DashboardPreferencesDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  availableNavigationGroups?: Array<{ id: string; label: string; shortLabel?: string; itemCount?: number }>;
 }
 
-export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPreferencesDrawerProps) {
+const topBarControls = [
+  { key: "showTopBarSearch", label: "Workspace search", detail: "Show the expanded command search on wide screens", icon: Search },
+  { key: "showGuidedTour", label: "Guided tour", detail: "Keep the context-aware tour entry in the command bar", icon: Compass },
+  { key: "showConnectionStatus", label: "Connection status", detail: "Show Live, Demo, or offline status when space allows", icon: Globe },
+  { key: "showTopBarDate", label: "Current date", detail: "Show the local business date on extra-wide screens", icon: CalendarDays },
+] as const;
+
+export function DashboardPreferencesDrawer({ isOpen, onClose, availableNavigationGroups = [] }: DashboardPreferencesDrawerProps) {
   const { preferences, updatePreference, resetPreferences } = useDashboardPreferences();
   const [activeTab, setActiveTab] = useState<"settings" | "ai">("settings");
   const [aiGoal, setAiGoal] = useState("");
@@ -67,6 +75,15 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
     updatePreference("showActivityTimeline", aiResult.preferences.showActivityTimeline);
     updatePreference("showPendingApprovals", aiResult.preferences.showPendingApprovals);
     setActiveTab("settings");
+  };
+
+  const toggleNavigationGroup = (groupId: DashboardPreferences["visibleNavigationGroupIds"][number]) => {
+    if (groupId === "home") return;
+    const isVisible = preferences.visibleNavigationGroupIds.includes(groupId);
+    const nextGroups = isVisible
+      ? preferences.visibleNavigationGroupIds.filter((id) => id !== groupId)
+      : [...preferences.visibleNavigationGroupIds, groupId];
+    updatePreference("visibleNavigationGroupIds", nextGroups);
   };
 
   if (!isOpen) return null;
@@ -245,6 +262,47 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
                 </div>
               </div>
               <DashboardLayoutControls preferences={preferences} updatePreference={updatePreference} />
+              <div className="space-y-3">
+                <label className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">Workspace Navigation &amp; Command Bar</label>
+                <div className="space-y-3 rounded-xl border border-white/10 bg-[#0B1120] p-4">
+                  <div>
+                    <p className="text-[13px] font-semibold text-white">Navigation presentation</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#94A3B8]">This changes only your personal menu layout. Role, company, and subscription checks still control what opens.</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label="Sidebar presentation">
+                      {[{ id: "expanded", label: "Expanded" }, { id: "compact", label: "Compact" }].map((mode) => <button key={mode.id} type="button" aria-pressed={preferences.sidebarPresentation === mode.id} onClick={() => updatePreference("sidebarPresentation", mode.id as DashboardPreferences["sidebarPresentation"])} className={`min-h-10 rounded-lg border px-2 text-[11px] font-bold transition ${preferences.sidebarPresentation === mode.id ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]" : "border-white/10 text-[#94A3B8] hover:border-white/25 hover:text-white"}`}>{mode.label}</button>)}
+                    </div>
+                  </div>
+                  <div className="border-t border-white/10 pt-3">
+                    <p className="text-[13px] font-semibold text-white">Menu order</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label="Sidebar sort order">
+                      {[{ id: "priority", label: "Role priority" }, { id: "alphabetical", label: "A–Z" }].map((order) => <button key={order.id} type="button" aria-pressed={preferences.navigationSort === order.id} onClick={() => updatePreference("navigationSort", order.id as DashboardPreferences["navigationSort"])} className={`min-h-10 rounded-lg border px-2 text-[11px] font-bold transition ${preferences.navigationSort === order.id ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]" : "border-white/10 text-[#94A3B8] hover:border-white/25 hover:text-white"}`}>{order.label}</button>)}
+                    </div>
+                  </div>
+                  {availableNavigationGroups.length > 0 && <div className="border-t border-white/10 pt-3">
+                    <p className="text-[13px] font-semibold text-white">Visible menu groups</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#94A3B8]">Only groups already authorized for this role are listed. Home remains available as a safe return point.</p>
+                    <div className="mt-3 space-y-2">
+                      {availableNavigationGroups.map((group) => {
+                        const groupId = group.id as DashboardPreferences["visibleNavigationGroupIds"][number];
+                        const visible = preferences.visibleNavigationGroupIds.includes(groupId);
+                        const isHome = groupId === "home";
+                        return <button key={group.id} type="button" aria-pressed={visible} disabled={isHome} onClick={() => toggleNavigationGroup(groupId)} className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border px-3 text-left transition disabled:cursor-not-allowed disabled:opacity-75 ${visible ? "border-[#C9A96E]/45 bg-[#C9A96E]/10 text-white" : "border-white/10 text-[#94A3B8] hover:border-white/25 hover:text-white"}`}><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{group.label}</span><span className="mt-0.5 block text-[9.5px] text-[#94A3B8]">{isHome ? "Always available" : `${group.itemCount || 0} permitted workspace${group.itemCount === 1 ? "" : "s"}`}</span></span><span aria-hidden="true" className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${visible ? "border-[#C9A96E] bg-[#C9A96E] text-[#0B1120]" : "border-white/20"}`}>{visible && <Check size={13} />}</span></button>;
+                      })}
+                    </div>
+                  </div>}
+                  <div className="border-t border-white/10 pt-3">
+                    <p className="text-[13px] font-semibold text-white">Top-bar controls</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#94A3B8]">Choose optional context controls. Required account, notification, and security controls remain available.</p>
+                    <div className="mt-3 space-y-2">
+                      {topBarControls.map((control) => {
+                        const enabled = preferences[control.key];
+                        const Icon = control.icon;
+                        return <button key={control.key} type="button" aria-pressed={enabled} onClick={() => updatePreference(control.key, !enabled)} className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border px-3 text-left transition ${enabled ? "border-[#C9A96E]/45 bg-[#C9A96E]/10 text-white" : "border-white/10 text-[#94A3B8] hover:border-white/25 hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><Icon size={14} className={enabled ? "text-[#C9A96E]" : "text-[#94A3B8]"} /><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{control.label}</span><span className="mt-0.5 block truncate text-[9.5px] text-[#94A3B8]">{control.detail}</span></span></span><span aria-hidden="true" className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${enabled ? "border-[#C9A96E] bg-[#C9A96E] text-[#0B1120]" : "border-white/20"}`}>{enabled && <Check size={13} />}</span></button>;
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="mt-6 space-y-6">

@@ -24,7 +24,9 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))");
     expect(dashboard).toContain('sidebarModuleOrder === "alphabetical"');
     expect(dashboard).toContain("dashboard-flat-navigation");
-    expect(dashboard).toContain("navigationGroups.map((group) => {");
+    expect(dashboard).toContain("const navigationGroups = getNavigationGroups({");
+    expect(dashboard).toContain("const displayedNavigationGroups = useMemo(() => navigationGroups");
+    expect(dashboard).toContain("displayedNavigationGroups.map((group) => {");
     expect(dashboard).toContain("toggleNavigationGroup(group.id)");
     expect(dashboard).toContain("item.locked");
   });

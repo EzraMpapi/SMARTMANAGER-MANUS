@@ -26,8 +26,12 @@ describe("workspace role and settings regressions", () => {
     expect(preferenceServiceSource).toContain("user_table_preferences");
     expect(preferenceServiceSource).toContain("company_id: profile.company_id");
     expect(preferenceServiceSource).toContain("user_id: profile.id");
+    expect(preferenceServiceSource).toContain("DASHBOARD_NAVIGATION_GROUP_IDS");
+    expect(preferenceServiceSource).toContain('requestedNavigationGroups.add("home")');
     expect(contextSource).toContain("trpc.dashboardPreferences.get.useQuery");
     expect(contextSource).toContain("trpc.dashboardPreferences.save.useMutation");
+    expect(contextSource).toContain("visibleNavigationGroupIds");
+    expect(contextSource).toContain("showGuidedTour");
     expect(contextSource).toContain("if (!liveSession");
     expect(contextSource).toContain('localStorage.setItem("smart_manager_dashboard_prefs"');
   });
