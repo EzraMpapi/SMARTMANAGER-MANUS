@@ -562,5 +562,5 @@
 - [x] Inspect the current GitHub remote state, pending dashboard changes, and Supabase schema contract results.
 - [x] Apply only missing, additive Supabase schema changes after confirming they are safe and required; the live schema gate found no missing tables, tenant columns, or critical contract issues, so no DDL was applied.
 - [x] Re-run targeted schema parity and dashboard quality checks after the live audit and rebase: schema gate, full test suite, TypeScript, production build, and whitespace check passed.
-- [ ] Commit and push all verified dashboard release changes to the private GitHub `main` branch without including secrets.
+- [x] Commit and push all verified dashboard release changes to the private GitHub `main` branch without including secrets.
 - [ ] Save the managed release checkpoint and report the exact synchronization and schema outcome.
