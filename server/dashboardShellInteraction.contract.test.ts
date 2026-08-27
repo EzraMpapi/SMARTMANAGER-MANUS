@@ -17,6 +17,8 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-hidden={sidebarHiddenFromAssistiveTech}');
     expect(dashboard).toContain('window.matchMedia("(min-width: 1024px)")');
     expect(dashboard).toContain('className={`dashboard-sidebar fixed z-40 inset-y-0 left-0');
+    expect(dashboard).toContain('${createMenuOpen ? "z-50" : "z-30"}');
+    expect(dashboard).toContain('createMenuOpen && <button type="button" className="fixed inset-0 z-40 cursor-default" aria-label="Close create menu"');
     expect(dashboard).toContain('lg:top-0 lg:z-30 lg:sticky lg:translate-x-0');
     expect(dashboard).toContain('aria-current={isActive ? "page" : undefined}');
     expect(dashboard).toContain('dashboard-flat-navigation');
@@ -44,6 +46,10 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('item.locked');
     expect(dashboard).toContain('aria-label="Mobile workspace navigation"');
     expect(dashboard).toContain('aria-current={on ? "page" : undefined}');
+    expect(dashboard).toContain('m.id === "dashboard" ? "Dashboard" : m.label.split(" ")[0]');
+    expect(dashboard).toContain('aria-label="Open AI Command Center"');
+    expect(dashboard).toContain('sm:hidden" aria-label="Open AI Command Center"');
+    expect(dashboard).toContain('bottom-6 right-6 z-40 hidden h-14 w-14 min-h-14 min-w-14');
     expect(dashboard).toContain('createPortal(');
     expect(dashboard).toContain('), document.body)');
   });
