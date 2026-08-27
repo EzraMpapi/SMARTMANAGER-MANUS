@@ -321,8 +321,16 @@
 - [x] Inspect current GitHub Actions workflow names, repository README, and available branch-protection controls. The GitHub API confirms that required branch protection needs GitHub Pro or a public repository for this private repository.
 - [x] Add a GitHub Actions status badge for the primary quality workflow.
 - [x] Add automated release-note generation from merged commit history and document how to use it.
-- [ ] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration.
+- [x] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration: one approval, stale-review dismissal, administrator enforcement, conversation resolution, no force pushes/deletions, and the current unit/build plus browser preference checks are required.
 - [x] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements. Local checks are green and the workflow files trigger correctly; hosted jobs still terminate before runner execution because of the separate GitHub Actions account constraint.
+
+## User-Approved Public Repository and Quality Gate Activation
+- [x] Run a final tracked-file secret and signing-key scan before changing repository visibility; environment files contain placeholders only and flagged code values are explicit non-production test fixtures, with no tracked private key or credential token detected.
+- [x] Change `EzraMpapi/SMARTMANAGER-MANUS` to public visibility as explicitly approved by the repository owner.
+- [x] Configure available `main` pull-request protection with the verified CI quality check and preserve administrator safety.
+- [x] Update the credential-free production-smoke target to the verified `menejajanja.vercel.app` alias and add a regression assertion.
+- [ ] Trigger and verify hosted quality workflows now that the public-repository Actions allowance applies.
+- [ ] Update the release record, synchronize changes, and save the resulting managed checkpoint.
 
 ## Platform Administrator Executive Control Center
 - [x] Inspect the restored Platform Administrator and Global Admin implementation, shared dashboard patterns, and current Supabase platform tables before extending the UI.
