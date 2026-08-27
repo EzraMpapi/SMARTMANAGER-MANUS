@@ -48327,7 +48327,7 @@ function SmartManager() {
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
-              className="hidden rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 lg:inline-flex"
+              className="dashboard-topbar-menu-control hidden rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 lg:inline-flex"
               onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")}
               aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
@@ -48335,7 +48335,7 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <button
-              className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
+              className="dashboard-topbar-menu-control text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -48349,17 +48349,17 @@ function SmartManager() {
                 <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-400"><span>Workspace</span><ChevronRight size={11} /><span className="truncate text-emerald-700">{activeModuleLabel}</span></div>
               </div>
             </div>
-            {preferences.showTopBarSearch && <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              className="hidden h-9 w-full max-w-[460px] items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 text-left text-[10px] font-medium text-slate-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 lg:flex"
-              aria-label="Open command palette"
-            >
-              <Search size={14} aria-hidden="true" />
-              <span className="min-w-0 flex-1 truncate">Search customers, products, invoices, orders...</span>
-              <kbd className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[8.5px] font-mono text-slate-400">Ctrl + K</kbd>
-            </button>}
           </div>
+          {preferences.showTopBarSearch && <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            className="dashboard-topbar-primary-search hidden h-9 w-full max-w-[460px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-[10px] font-medium text-slate-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 lg:flex"
+            aria-label="Open command palette"
+          >
+            <Search size={14} aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate">Search customers, products, invoices, orders...</span>
+            <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[8.5px] font-mono text-slate-400">Ctrl + K</kbd>
+          </button>}
           <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2.5">
             {preferences.showConnectionStatus && <span
               className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
@@ -48394,11 +48394,14 @@ function SmartManager() {
               <span className="hidden md:inline">Search workspace</span>
               <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>}
-            {active !== "ai" && visibleModules.some((module) => module.id === "ai") && <button type="button" onClick={() => go("ai")} className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#0B5D3B] text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:hidden" aria-label="Open AI Command Center" title="Open AI Command Center"><Sparkles size={17} aria-hidden="true" /></button>}
-            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
+            {active !== "ai" && visibleModules.some((module) => module.id === "ai") && <button type="button" onClick={() => go("ai")} className="dashboard-topbar-ai-shortcut inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#0B5D3B] text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:hidden" aria-label="Open AI Command Center" title="Open AI Command Center"><Sparkles size={17} aria-hidden="true" /></button>}
+            <div className="dashboard-topbar-utility-group">
+              <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9 sm:min-w-9 sm:px-2" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
+              <div className="dashboard-topbar-notification-slot"><NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} /></div>
+            </div>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
-                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden 2xl:inline-flex sm:px-3">
+            <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="dashboard-topbar-create inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden 2xl:inline-flex sm:px-3">
                   <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
                 </button>
                 {createMenuOpen && (
@@ -48438,8 +48441,7 @@ function SmartManager() {
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
-                        <NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
-            <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+            <div className="dashboard-topbar-profile-slot"><PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} /></div>
           </div>
         </header>
 
