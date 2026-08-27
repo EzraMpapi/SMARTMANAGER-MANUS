@@ -31,23 +31,25 @@ describe("Enterprise dashboard overview contract", () => {
   it("uses a reference-directed KPI treatment while keeping every card navigation-safe", () => {
     expect(overviewSource).toContain("Connected workspace view");
     expect(overviewSource).toContain("const metrics = [");
-    expect(overviewSource).toContain("Collected revenue");
-    expect(overviewSource).toContain("Sales documents");
-    expect(overviewSource).toContain("Open receivables");
-    expect(overviewSource).toContain("View details");
-    expect(overviewSource).toContain("onQuickAction(\"finance\", { tab: \"receivables\" })");
+    expect(overviewSource).toContain("Total revenue");
+    expect(overviewSource).toContain("Total sales");
+    expect(overviewSource).toContain("Receivables");
+    expect(overviewSource).toContain("Revenue & Sales Performance");
+    expect(overviewSource).toContain("Inventory health");
+    expect(overviewSource).toContain("const openAction = (moduleId, params) => onQuickAction?.(moduleId, params)");
+    expect(overviewSource).toContain('openAction("finance", { tab: "receivables" })');
   });
 
   it("shares a responsive analytic-panel system without replacing live data or established actions", () => {
-    expect(overviewSource).toContain("function WidgetHeader");
-    expect(overviewSource).toContain("<PanelHeader title=\"Revenue overview\"");
-    expect(overviewSource).toContain("<PanelHeader title=\"Sales document status\"");
-    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Attention queue\"");
-    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Team\"");
+    expect(overviewSource).toContain("function PanelHeader");
+    expect(overviewSource).toContain("<DonutPanel title=\"Sales by category\"");
+    expect(overviewSource).toContain("<DonutPanel title=\"Sales by channel\"");
+    expect(overviewSource).toContain("<PanelHeader title=\"Alerts\"");
+    expect(overviewSource).toContain("<PanelHeader title=\"Quick actions\"");
     expect(overviewSource).toContain("performanceTrend.some");
     expect(overviewSource).toContain("PERFORMANCE_RANGES");
     expect(overviewSource).toContain("attentionItems?.length");
-    expect(overviewSource).toContain("onQuickAction(\"hr\", { tab: \"leave\" })");
+    expect(overviewSource).toContain("allowedModules = []");
   });
 });
 

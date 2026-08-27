@@ -17,7 +17,7 @@ async function openDashboard(page: Page) {
   const session = await installIsolatedDashboardSession(page);
   await page.goto("/app?auth=signup", { waitUntil: "domcontentloaded" });
   await dismissBlockingUi(page);
-  await expect(page.getByRole("button", { name: "Customize dashboard", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Customize", exact: true })).toBeVisible();
   return session;
 }
 
@@ -29,11 +29,14 @@ test.describe("reference-directed enterprise dashboard", () => {
 
     await expect(page.getByRole("navigation", { name: "Operational workspaces" })).toBeVisible();
     await expect(page.getByRole("banner", { name: "Workspace command bar" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening), Layout\./ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Revenue overview", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Sales document status", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening), Layout/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Revenue & Sales Performance", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sales by category", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sales by channel", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Inventory health", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Quick actions", exact: true })).toBeVisible();
-    await expect(page.getByText("Collected revenue", { exact: true })).toBeVisible();
+    await expect(page.getByText("Total revenue", { exact: true })).toBeVisible();
+    await expect(page.getByText("Receivables", { exact: true }).first()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
     await page.screenshot({ path: testInfo.outputPath("reference-dashboard-desktop.png"), fullPage: true });
@@ -45,13 +48,45 @@ test.describe("reference-directed enterprise dashboard", () => {
     const session = await openDashboard(page);
 
     await expect(page.getByRole("navigation", { name: "Mobile workspace navigation" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open AI Command Center", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Dashboard", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Open menu", exact: true }).click();
     await expect(page.getByRole("navigation", { name: "Operational workspaces" })).toBeVisible();
     await page.getByRole("button", { name: "Close menu", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Revenue overview", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Revenue & Sales Performance", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Business health", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Quick actions", exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
     await page.screenshot({ path: testInfo.outputPath("reference-dashboard-mobile.png"), fullPage: true });
+  });
+
+  test("keeps the Create-menu backdrop above fixed mobile workspace navigation and closes it safely", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium-mobile", "Create-menu stacking assertions run in the mobile project only.");
+    await page.setViewportSize({ width: 375, height: 812 });
+    const session = await openDashboard(page);
+    const createToggle = page.locator('button[aria-haspopup="menu"]').first();
+    const createMenu = page.getByRole("menu", { name: "Create a new record" });
+    const mobileNavigation = page.getByRole("navigation", { name: "Mobile workspace navigation" });
+    const salesTab = mobileNavigation.getByRole("button", { name: "Sales", exact: true });
+
+    await expect(createToggle).toHaveAttribute("aria-expanded", "false");
+    await createToggle.click();
+    await expect(createToggle).toHaveAttribute("aria-expanded", "true");
+    await expect(createMenu).toBeVisible();
+
+    const salesBox = await salesTab.boundingBox();
+    expect(salesBox).not.toBeNull();
+    const elementAtSalesTab = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.getAttribute("aria-label"), {
+      x: (salesBox?.x || 0) + (salesBox?.width || 0) / 2,
+      y: (salesBox?.y || 0) + (salesBox?.height || 0) / 2,
+    });
+    expect(elementAtSalesTab).toBe("Close create menu");
+
+    await salesTab.click({ force: true });
+    await expect(createMenu).toBeHidden();
+    await expect(page.getByRole("heading", { name: "Revenue & Sales Performance", exact: true })).toBeVisible();
+    expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath("create-menu-mobile-stacking.png"), fullPage: false });
   });
 });
