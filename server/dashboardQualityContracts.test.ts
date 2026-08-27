@@ -106,8 +106,8 @@ describe("dashboard quality and boundary contracts", () => {
     expect(overview).toContain("aria-label=\"Performance period\"");
     expect(overview).toContain("aria-pressed={performanceRangeId === range.id}");
     expect(overview).toContain("buildPerformanceTrend");
-    expect(overview).toContain("Decision cues from confirmed data");
-    expect(overview).toContain("Source: confirmed invoice rows");
+    expect(overview).toContain("const decisionCues = [");
+    expect(overview).toContain("Source: confirmed invoice rows and recorded expense rows");
     expect(overview).toContain("Source: confirmed inventory rows");
     expect(overview).toContain("confirmedOutstanding");
   });

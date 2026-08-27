@@ -6396,6 +6396,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           leaveRequests={leaveRequests}
           workOrders={workOrders}
           subscriptions={subscriptions}
+          posTransactions={posTransactions}
           financials={financials}
           revenueExpenseTrend={revenueExpenseTrend}
           recentActivity={recentActivity}
@@ -48341,7 +48342,7 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-30 grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
@@ -48382,7 +48383,8 @@ function SmartManager() {
               <span className="hidden md:inline">Search workspace</span>
               <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>}
-            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
+            {active !== "ai" && visibleModules.some((module) => module.id === "ai") && <button type="button" onClick={() => go("ai")} className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#0B5D3B] text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:hidden" aria-label="Open AI Command Center" title="Open AI Command Center"><Sparkles size={17} aria-hidden="true" /></button>}
+            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize hidden min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:inline-flex sm:min-h-9" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
                 <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3">
@@ -48390,7 +48392,6 @@ function SmartManager() {
                 </button>
                 {createMenuOpen && (
                   <>
-                    <button type="button" className="fixed inset-0 z-30 cursor-default" aria-label="Close create menu" onClick={() => setCreateMenuOpen(false)} />
                     <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
                       <p className="px-3 pb-1.5 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Create in workspace</p>
                       {quickCreateActions.map((action) => {
@@ -48431,6 +48432,8 @@ function SmartManager() {
           </div>
         </header>
 
+        {createMenuOpen && <button type="button" className="fixed inset-0 z-40 cursor-default" aria-label="Close create menu" onClick={() => setCreateMenuOpen(false)} />}
+
         {IS_CONFIGURED && active !== "billing" && subscriptionAccess.ready && subscriptionAccess.access.trialActive && (
           <FreeTrialBanner access={subscriptionAccess.access} noticeKey={currentUser?.id || session?.userId || ""} onUpgrade={() => go("billing")} />
         )}
@@ -48462,7 +48465,7 @@ function SmartManager() {
                   <Icon size={on ? 22 : 20} strokeWidth={on ? 2.2 : 1.75} />
                   {on && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#16A34A]" />}
                 </div>
-                <span className="text-[9.5px] font-medium leading-none mt-1 truncate max-w-[48px]">{m.label.split(" ")[0]}</span>
+                <span className="mt-1 max-w-[62px] whitespace-nowrap text-[9px] font-medium leading-none">{m.id === "dashboard" ? "Dashboard" : m.label.split(" ")[0]}</span>
               </button>
             );
           })}
@@ -48472,7 +48475,7 @@ function SmartManager() {
           <button
             onClick={() => go("ai")}
             aria-label="Open AI Command Center"
-            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 min-h-14 min-w-14 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#16A34A] sm:bottom-6 sm:right-6"
+            className="fixed bottom-6 right-6 z-40 hidden h-14 w-14 min-h-14 min-w-14 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2 sm:flex"
             style={{ background: "linear-gradient(135deg, #16A34A, #22C55E)" }}
           >
             <Sparkles size={22} />
