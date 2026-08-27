@@ -68,6 +68,12 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("type=\"button\"");
   });
 
+  it("keeps the Inventory value metric bound to its icon import", () => {
+    expect(dashboard).toContain("Inventory Value");
+    expect(dashboard).toContain("icon: WalletCards");
+    expect(dashboard).toMatch(/import\s*\{[\s\S]*\bWalletCards\b[\s\S]*\}\s*from\s*"lucide-react";/);
+  });
+
   it("keeps mobile navigation and floating actions touch-safe", () => {
     expect(dashboard).toContain('aria-label="Mobile workspace navigation"');
     expect(dashboard).toContain("min-h-[64px]");

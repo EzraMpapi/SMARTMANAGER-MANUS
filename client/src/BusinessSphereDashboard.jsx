@@ -10,7 +10,7 @@ import {
   FileCheck, Trash2, Copy, Landmark, BarChart3, Grid3x3, List,
   FileSpreadsheet, FileImage, File, Folder, FolderOpen, UploadCloud,
   Eye, Percent, Globe, CreditCard, Tag, MessageSquare, MousePointerClick, ChevronUp,
-  ShoppingBag, Minus, Receipt, Banknote, Smartphone, ArrowUpDown, Repeat,
+  ShoppingBag, Minus, Receipt, Banknote, Smartphone, ArrowUpDown, Repeat, WalletCards,
   UserPlus, CalendarCheck, Stethoscope, ScanLine, Pill, FlaskConical, Edit2, Edit3, Heart, Award, GraduationCap, HeartHandshake, Layers, ClipboardCheck,
   Cog, ShieldCheck, Wrench, Kanban, Flag, ListTodo,
   Headphones, Ticket, MessageCircle, CircleHelp, BookOpen, PhoneCall, LoaderCircle, Gauge,
