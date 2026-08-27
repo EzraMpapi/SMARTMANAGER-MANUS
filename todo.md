@@ -670,3 +670,9 @@
 - [x] Add only any demonstrated isolated-browser regression coverage needed for desktop and mobile interactions.
 - [x] Add the demonstrated Notification Center Escape-close and expanded-state accessibility behavior without changing alert data or navigation actions.
 - [x] Run the isolated production-build checks and record the interaction, accessibility, and tenant-safety outcome without changing production data or schema.
+
+## Supabase Schema Synchronization and Additive Migration Audit
+- [x] Inspect the current repository migration inventory and the connected Supabase project catalog without changing production data.
+- [x] Compare verified repository persistence requirements with deployed tables, columns, relationships, indexes, functions, triggers, RLS policies, and storage metadata.
+- [x] Apply only proven-safe additive schema objects that are absent from the connected project, then validate schema and tenant/RLS boundaries; no object was absent, so no production DDL/DML was appropriate.
+- [ ] Publish the verified migration/audit result through the protected GitHub workflow.
