@@ -8633,7 +8633,7 @@ function CategoryPicker({ value, onChange }) {
 }
 
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-[#111827] placeholder-slate-400 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 focus:shadow-sm";
-const operationalFilterBarClass = "sm-mobile-filter-row flex items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-[inset_0_1px_1px_rgba(15,23,42,.025)]";
+const operationalFilterBarClass = "sm-mobile-filter-row flex min-w-0 max-w-full items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-[inset_0_1px_1px_rgba(15,23,42,.025)]";
 const operationalSearchInputClass = "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-[13px] text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20";
 const operationalTableShellClass = "sm-responsive-table overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_3px_10px_rgba(15,23,42,.035)]";
 const operationalTableClass = "w-full text-[13px]";
@@ -12619,9 +12619,9 @@ function Inventory({ inventory, suppliersHook }) {
         <div className="flex items-center justify-between gap-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl px-3.5 py-2.5 text-[12px] text-emerald-900">
           <div className="flex items-center gap-2">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-[10px]">💡</span>
-            <span><strong>Guided Inventory Tip:</strong> Use Warehouses to track multi-location stock, Batches for expiration control, and Reorder Alerts to safely restock without stockouts.</span>
+            <span className="min-w-0 leading-relaxed"><strong>Guided Inventory Tip:</strong> Use Warehouses to track multi-location stock, Batches for expiration control, and Reorder Alerts to safely restock without stockouts.</span>
           </div>
-          <span className="shrink-0 text-[11px] font-semibold text-emerald-700 bg-white/80 border border-emerald-200 px-2 py-1 rounded-md">
+          <span className="self-start shrink-0 text-[11px] font-semibold text-emerald-700 bg-white/80 border border-emerald-200 px-2 py-1 rounded-md sm:self-auto">
             Active Workspace Guidance
           </span>
         </div>
@@ -12659,7 +12659,7 @@ function Inventory({ inventory, suppliersHook }) {
         <div className={operationalFilterBarClass}>
           <button
             onClick={() => setWarehouse("all")}
-            className={`text-[12px] font-medium px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${warehouse === "all" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}
+            className={`shrink-0 text-[12px] font-medium px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${warehouse === "all" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}
           >
             All warehouses
           </button>
@@ -12667,7 +12667,7 @@ function Inventory({ inventory, suppliersHook }) {
             <button
               key={w.id}
               onClick={() => setWarehouse(w.id)}
-              className={`text-[12px] font-medium px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${warehouse === w.id ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}
+              className={`shrink-0 text-[12px] font-medium px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${warehouse === w.id ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}
             >
               {w.city}
             </button>
@@ -48232,7 +48232,7 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={!sidebarOpen}
-          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-auto lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 z-50 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-auto lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
@@ -48269,7 +48269,7 @@ function SmartManager() {
           </div>}
         </div>
 
-        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
           <div className={`mb-1 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
           {navigationGroups.map((group) => {
             const GroupIcon = group.icon;
@@ -48453,7 +48453,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-6">
+        <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
