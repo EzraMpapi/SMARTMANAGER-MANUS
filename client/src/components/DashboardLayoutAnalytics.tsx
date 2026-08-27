@@ -1,5 +1,6 @@
-import { BarChart3, Info, RefreshCw, ShieldCheck, TrendingUp } from "lucide-react";
+import { BarChart3, Download, Info, RefreshCw, ShieldCheck, TrendingUp } from "lucide-react";
 import { trpc } from "../lib/trpc";
+import { buildDashboardLayoutAnalyticsCsv, dashboardLayoutAnalyticsExportFilename } from "../lib/dashboardLayoutAnalyticsExport";
 import { useState } from "react";
 
 const ranges = [
@@ -9,11 +10,34 @@ const ranges = [
   ["all", "All time"],
 ] as const;
 
+const eventTypes = [
+  ["all", "All event types"],
+  ["layout_applied", "Layout applied"],
+  ["preset_applied", "Preset applied"],
+  ["personal_reset", "Personal reset"],
+  ["preset_created", "Preset created"],
+  ["preset_pushed", "Preset pushed"],
+] as const;
+
 export function DashboardLayoutAnalytics() {
   const [range, setRange] = useState<(typeof ranges)[number][0]>("30d");
-  const { data, isLoading, isError, refetch, isFetching } = trpc.dashboardLayoutAnalytics.summary.useQuery({ range }, { retry: false });
+  const [eventType, setEventType] = useState<(typeof eventTypes)[number][0]>("all");
+  const selectedEventType = eventType === "all" ? null : eventType;
+  const { data, isLoading, isError, refetch, isFetching } = trpc.dashboardLayoutAnalytics.summary.useQuery({ range, eventType: selectedEventType || undefined }, { retry: false });
   const maxSource = Math.max(1, ...(data?.topSources || []).map((row) => row.adoptionEvents));
   const maxDay = Math.max(1, ...(data?.activityByDay || []).map((row) => row.adoptionEvents));
+  const downloadCsv = () => {
+    if (!data) return;
+    const blob = new Blob([buildDashboardLayoutAnalyticsCsv({ ...data, eventType: selectedEventType })], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = dashboardLayoutAnalyticsExportFilename(new Date(), selectedEventType);
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <section className="space-y-4" aria-labelledby="layout-analytics-title">
@@ -23,11 +47,16 @@ export function DashboardLayoutAnalytics() {
           <h2 id="layout-analytics-title" className="mt-1 text-[21px] font-black tracking-tight text-slate-950">Dashboard layout adoption</h2>
           <p className="mt-1 max-w-2xl text-[12px] leading-5 text-slate-500">Understand which team presets and layout patterns are being applied, without collecting business records, preference payloads, or user identifiers.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label className="sr-only" htmlFor="layout-analytics-range">Analytics range</label>
           <select id="layout-analytics-range" value={range} onChange={(event) => setRange(event.target.value as typeof range)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
             {ranges.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
+          <label className="sr-only" htmlFor="layout-analytics-event-type">Event type filter for CSV export</label>
+          <select id="layout-analytics-event-type" value={eventType} onChange={(event) => setEventType(event.target.value as typeof eventType)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
+            {eventTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+          <button type="button" onClick={downloadCsv} disabled={!data || isFetching} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Download layout analytics CSV"><Download size={13} /> Export CSV</button>
           <button type="button" onClick={() => refetch()} disabled={isFetching} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-50" aria-label="Refresh layout analytics"><RefreshCw size={13} className={isFetching ? "animate-spin" : ""} /> Refresh</button>
         </div>
       </div>
