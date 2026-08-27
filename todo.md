@@ -628,3 +628,6 @@
 - [x] Inspect the connected Supabase schema against the dashboard’s actual data contracts and apply only verified non-destructive SQL additions if any are required.
 - [x] Add or update dashboard regression tests, run full responsive/build validation, and capture desktop/mobile verification evidence.
 - [x] Commit, publish through the protected-branch workflow, merge the reviewed dashboard package, and report the exact schema and GitHub outcome. Pull request #32 merged at `a11eb5c42a62ddbc9fd239de53df9c6c2288a028`; the required `Unit, Schema, Type and Production Build` check passed.
+
+## Mobile Dashboard Label and Floating-Action Review
+- [x] Inspect the current small-screen navigation-label and floating-action layout rules, then provide a scoped accessible adjustment proposal.
