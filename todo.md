@@ -331,12 +331,12 @@
 - [x] Update the credential-free production-smoke target to the verified `menejajanja.vercel.app` alias and add a regression assertion.
 - [x] Trigger and verify hosted quality workflows now that the public-repository Actions allowance applies. Both required CI checks passed on pull request #21; unrelated Vercel projects on the account reported deployment rate limits, while the linked `menejajanja` deployment completed.
 - [x] Obtain one independent approval from a reviewer with repository write access for protected pull request #21, then merge the passing release branch into `main`; this was superseded by the repository owner’s explicit zero-approval exception after both required checks passed, and PR #21 was merged at `63d1496`.
-- [ ] Update the release record, synchronize changes, and save the resulting managed checkpoint.
+- [x] Update the release record, synchronize changes, and save the resulting managed checkpoint. Public quality-gate activation is recorded in `verification/public_quality_gate_activation_2026-08-27.md`; PR #21 merged at `63d1496`, PR #22 merged at `a494047`, and checkpoint `a4940474` was saved.
 
 ## Owner-Approved Zero-Approval Merge Exception
 - [x] Change only the `main` approval-count requirement from one to zero for the passing release branch, while retaining strict required checks, administrator enforcement, stale-review dismissal, conversation resolution, and force-push/deletion blocks.
 - [x] Merge pull request #21 after confirming both required CI checks remain successful and verify the exact resulting `main` revision: `63d1496228bad497eabfebb48390f13aa788fbea`.
-- [ ] Record the exception, synchronize the release status, and save the managed checkpoint.
+- [x] Record the exception, synchronize the release status, and save the managed checkpoint. The exception record merged through PR #22 and is included in checkpoint `a4940474`.
 
 ## Platform Administrator Executive Control Center
 - [x] Inspect the restored Platform Administrator and Global Admin implementation, shared dashboard patterns, and current Supabase platform tables before extending the UI.
