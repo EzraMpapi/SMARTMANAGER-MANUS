@@ -57,3 +57,28 @@ Uthibitishaji wa mwisho umeonyesha safu nne kisha safu tatu za KPI kwenye deskto
 | Production build | `NODE_OPTIONS=--max-old-space-size=4096 pnpm build` imepita; ilitoa onyo lisilozuia kuhusu BusinessSphereDashboard chunk kubwa. |
 
 Hakuna data ya production, session ya mtumiaji halisi, wala mutation ya database iliyotumiwa na visual verification. Hakuna migration au SQL iliyotumika kwa sababu ukaguzi wa mkataba haujaonyesha object salama ya kuongeza inayokosekana.
+
+## Closer reference visual pass
+
+Capture ya desktop ya fixture iliyotengwa baada ya replacement inaonyesha dark flat operational rail, orodha ya modules inayotumia role-safe `flatNavigationItems`, KPI saba kwenye mstari mmoja, row ya Revenue & Sales Performance pamoja na sales/category/channel/business-health panels, na row ya products/orders/inventory. Capture ya mobile imehifadhi command strip, KPI stacking, na bottom navigation; drawer bado inatumia data na route handlers zile zile za sidebar ya desktop.
+
+Muonekano huu unafuata hierarchy ya picha ya rejea kwa karibu zaidi, bila kubadilisha rekodi za biashara ili kujaza chart, orders, au product rows. Kwa fixture yenye data ndogo, charts na tables huonyesha kiwango cha data kilichopo badala ya data ya mfano.
+
+## Final closer-layout observation
+
+Desktop visual pass ya `1440 × 960` imethibitisha rail ya takriban `188px`, hamburger na centered search control, workspace context, profile control, welcome/action row, KPI saba za urefu mfupi kwenye mstari mmoja, na safu ya panels nne ya analytics. Sidebar huanza kwa Dashboard, Sales, Point of Sale, Inventory, Procurement, Finance, CRM, Projects, Reports, Analytics, Workflow Studio, na E-Commerce—zinazoonekana tu pale role ya sasa inaziruhusu—kisha modules zingine zilizoidhinishwa hufuata bila group cards.
+
+Muundo haukuongeza icons au takwimu za notisi zisizopatikana. Badala yake, umehifadhi notification center na profile menu halisi, na umeonyesha company/workspace context kutoka kwa kampuni ya session. Hali za fixture za data ndogo zinaendelea kuwa za kweli: chart, donut, order, na inventory panels huonyesha safu zilizopo badala ya kujazwa kwa rekodi za mfano.
+
+## Closer replacement verification
+
+| Uthibitishaji | Matokeo |
+|---|---|
+| Focused dashboard contracts | Faili 4 na assertions 83 zimepita. |
+| Full regression | Faili 269 na tests 1,101 zimepita; faili 7 na tests 15 zilirukwa na configuration iliyokuwepo. |
+| Isolated browser | Tests 3 zimepita kwa desktop/mobile; duplicates 3 zilirukwa kwa project guards. |
+| TypeScript | `pnpm exec tsc --noEmit` imepita kabla ya visual pass ya mwisho. |
+| Schema verifier | Jedwali 201 yaliyorejelewa yamepimwa dhidi ya 554; hakuna missing, tenant, au critical table issue. |
+| Production build | `NODE_OPTIONS=--max-old-space-size=4096 pnpm build` imepita; onyo la BusinessSphereDashboard chunk kubwa halikuzuia artifact. |
+
+Browser verification imetumia fixture ya `e2e.supabase.invalid` na `/api/trpc/` pekee. Hakuna tenant ya production, data halisi, credential, DDL, DML, wala schema migration iliyotumiwa katika replacement hii.

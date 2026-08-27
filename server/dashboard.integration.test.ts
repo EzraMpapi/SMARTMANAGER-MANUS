@@ -925,10 +925,11 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
 });
 
 describe("Dashboard shell navigation and layering", () => {
-  it("keeps desktop navigation docked, grouped, and visible while retaining mobile drawer behavior", () => {
+  it("keeps desktop navigation docked, flat, and visible while retaining mobile drawer behavior", () => {
     expect(dashboardSource).toContain("lg:sticky lg:translate-x-0");
-    expect(dashboardSource).toContain("navigationGroups.map((group)");
-    expect(dashboardSource).toContain('aria-label={`${group.label} navigation group`}');
+    expect(dashboardSource).toContain("referenceOrderedNavigationItems.map((item)");
+    expect(dashboardSource).toContain('aria-label="Operational workspaces"');
+    expect(dashboardSource).toContain("getPresentationNavigationGroups(navigationGroups");
     expect(dashboardSource).toContain('dashboard-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"}');
   });
 
