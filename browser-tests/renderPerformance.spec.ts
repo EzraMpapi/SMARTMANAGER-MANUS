@@ -18,7 +18,8 @@ const thresholds = {
 
 const apiTargets = [
   {
-    name: "public configuration",
+    name: "application uptime configuration",
+    healthRole: "application-uptime",
     path: "/api/config/public",
     expectedStatuses: [200],
     assertShape: (body: unknown) => {
@@ -29,7 +30,8 @@ const apiTargets = [
     },
   },
   {
-    name: "billing catalog",
+    name: "database-backed billing catalog",
+    healthRole: "database-connectivity",
     path: "/api/billing/catalog",
     expectedStatuses: [200],
     assertShape: (body: unknown) => {
@@ -38,6 +40,7 @@ const apiTargets = [
   },
   {
     name: "protected billing access",
+    healthRole: "access-control",
     path: "/api/billing/access",
     expectedStatuses: [401, 403],
     assertShape: () => undefined,
@@ -111,6 +114,7 @@ test.describe("Render production performance monitor", () => {
   test("keeps monitored API endpoints available, contract-safe, and within response budgets", async ({ request }, testInfo) => {
     const apiMetrics = [] as Array<{
       name: string;
+      healthRole: "application-uptime" | "database-connectivity" | "access-control";
       path: string;
       status: number;
       responseDurationMs: number;
@@ -122,7 +126,13 @@ test.describe("Render production performance monitor", () => {
       const responseDurationMs = Math.round(performance.now() - startedAt);
       const body = await response.json();
 
-      apiMetrics.push({ name: target.name, path: target.path, status: response.status(), responseDurationMs });
+      apiMetrics.push({
+        name: target.name,
+        healthRole: target.healthRole,
+        path: target.path,
+        status: response.status(),
+        responseDurationMs,
+      });
       expect(target.expectedStatuses, `${target.name} returned an unexpected status`).toContain(response.status());
       expect(responseDurationMs, `${target.name} response exceeded ${thresholds.apiResponse}ms`).toBeLessThanOrEqual(thresholds.apiResponse);
       target.assertShape(body);
@@ -132,8 +142,14 @@ test.describe("Render production performance monitor", () => {
       target: productionOrigin,
       observedAt: new Date().toISOString(),
       apiResponseBudgetMs: thresholds.apiResponse,
+      applicationUptime: apiMetrics.find((endpoint) => endpoint.healthRole === "application-uptime"),
+      databaseHealth: apiMetrics.find((endpoint) => endpoint.healthRole === "database-connectivity"),
+      accessControlHealth: apiMetrics.find((endpoint) => endpoint.healthRole === "access-control"),
       endpoints: apiMetrics,
     };
+
+    expect(metrics.applicationUptime, "Application uptime probe must be recorded").toBeDefined();
+    expect(metrics.databaseHealth, "Database connectivity probe must be recorded").toBeDefined();
     await testInfo.attach("render-api-performance-metrics", {
       body: Buffer.from(`${JSON.stringify(metrics, null, 2)}\n`),
       contentType: "application/json",

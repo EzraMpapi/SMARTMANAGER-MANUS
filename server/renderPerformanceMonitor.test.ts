@@ -20,15 +20,20 @@ describe("Render performance monitor workflow", () => {
     expect(workflow).toContain('RENDER_API_RESPONSE_MAX_MS: "10000"');
     expect(workflow).toContain("browser-tests/renderPerformance.spec.ts");
     expect(workflow).toContain("Create or update Render performance alert");
+    expect(workflow).toContain("database-connectivity");
 
     const monitor = fs.readFileSync(
       path.resolve(process.cwd(), "browser-tests/renderPerformance.spec.ts"),
       "utf8",
     );
+    expect(monitor).toContain('healthRole: "application-uptime"');
+    expect(monitor).toContain('healthRole: "database-connectivity"');
+    expect(monitor).toContain('healthRole: "access-control"');
     expect(monitor).toContain('path: "/api/config/public"');
     expect(monitor).toContain('path: "/api/billing/catalog"');
     expect(monitor).toContain('path: "/api/billing/access"');
     expect(monitor).toContain("RENDER_API_RESPONSE_MAX_MS");
+    expect(monitor).toContain("databaseHealth");
     expect(workflow).not.toContain("vercel.app");
   });
 });
