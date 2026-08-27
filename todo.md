@@ -321,8 +321,17 @@
 - [x] Inspect current GitHub Actions workflow names, repository README, and available branch-protection controls. The GitHub API confirms that required branch protection needs GitHub Pro or a public repository for this private repository.
 - [x] Add a GitHub Actions status badge for the primary quality workflow.
 - [x] Add automated release-note generation from merged commit history and document how to use it.
-- [ ] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration.
+- [x] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration: one approval, stale-review dismissal, administrator enforcement, conversation resolution, no force pushes/deletions, and the current unit/build plus browser preference checks are required.
 - [x] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements. Local checks are green and the workflow files trigger correctly; hosted jobs still terminate before runner execution because of the separate GitHub Actions account constraint.
+
+## User-Approved Public Repository and Quality Gate Activation
+- [x] Run a final tracked-file secret and signing-key scan before changing repository visibility; environment files contain placeholders only and flagged code values are explicit non-production test fixtures, with no tracked private key or credential token detected.
+- [x] Change `EzraMpapi/SMARTMANAGER-MANUS` to public visibility as explicitly approved by the repository owner.
+- [x] Configure available `main` pull-request protection with the verified CI quality check and preserve administrator safety.
+- [x] Update the credential-free production-smoke target to the verified `menejajanja.vercel.app` alias and add a regression assertion.
+- [x] Trigger and verify hosted quality workflows now that the public-repository Actions allowance applies. Both required CI checks passed on pull request #21; unrelated Vercel projects on the account reported deployment rate limits, while the linked `menejajanja` deployment completed.
+- [ ] Obtain one independent approval from a reviewer with repository write access for protected pull request #21, then merge the passing release branch into `main`.
+- [ ] Update the release record, synchronize changes, and save the resulting managed checkpoint.
 
 ## Platform Administrator Executive Control Center
 - [x] Inspect the restored Platform Administrator and Global Admin implementation, shared dashboard patterns, and current Supabase platform tables before extending the UI.
@@ -346,7 +355,7 @@
 - [x] Diagnose and remove the safe Vercel deployment pipeline or configuration block preventing the synchronized Android/PWA source from reaching production; the current synchronized production deployment is READY and serves `https://menejajanja.vercel.app/app` with HTTP 200.
 - [x] Restore the TWA template if concurrent main-branch changes regress it away from `https://menejajanja.vercel.app`, then rerun its contract validation.
 - [x] Restore the Android packaging contract if concurrent main-branch changes assert a managed-host origin instead of `https://menejajanja.vercel.app`.
-- [ ] Resolve or obtain approval for the GitHub Actions billing/spending-limit blocker that prevents the quality gate from starting.
+- [x] Resolve or obtain approval for the GitHub Actions billing/spending-limit blocker that prevents the quality gate from starting. After the approved public transition, the required CI quality and browser dashboard preference jobs both completed successfully.
 - [x] Reconcile the readiness evidence note with the current successful live Vercel route probes while documenting the stale blocked deployment record honestly.
 - [x] Reconcile the latest concurrent Android commit that reverted the TWA template to the managed origin, then revalidate the Vercel target from the resulting main branch.
 - [x] Replace the live login-shell favicon, social image, and BrandLogo references that still use unserved same-origin managed-storage paths, while preserving valid server-side storage URLs for authenticated uploads.

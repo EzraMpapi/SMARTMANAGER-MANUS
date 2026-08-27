@@ -18,4 +18,11 @@ describe("Vercel static deployment configuration", () => {
     expect(viteConfig).toContain('process.env.VITE_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY');
     expect(viteConfig).not.toContain('SUPABASE_SECRET_KEY": JSON.stringify');
   });
+
+  it("keeps the credential-free production smoke workflow pointed at the verified production alias", () => {
+    const smokeWorkflow = fs.readFileSync(path.resolve(process.cwd(), ".github/workflows/daily-production-smoke.yml"), "utf8");
+
+    expect(smokeWorkflow).toContain("E2E_BASE_URL: https://menejajanja.vercel.app");
+    expect(smokeWorkflow).not.toContain("E2E_BASE_URL: https://smartmanager-manus.vercel.app");
+  });
 });

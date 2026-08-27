@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      E2E_BASE_URL: https://smartmanager-manus.vercel.app
+      E2E_BASE_URL: https://menejajanja.vercel.app
 
     steps:
       - name: Checkout source
