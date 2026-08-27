@@ -19,14 +19,14 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("onClick={() => go(m.id)}");
   });
 
-  it("renders desktop navigation as a flat role-aware list rather than an accordion of module groups", () => {
+  it("renders desktop navigation as grouped, role-aware workspace sections", () => {
     expect(dashboard).toContain("const flatNavigationItems = useMemo(() => [");
     expect(dashboard).toContain("Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))");
     expect(dashboard).toContain('sidebarModuleOrder === "alphabetical"');
     expect(dashboard).toContain("dashboard-flat-navigation");
-    expect(dashboard).toContain("flatNavigationItems.map((item) => {");
+    expect(dashboard).toContain("navigationGroups.map((group) => {");
+    expect(dashboard).toContain("toggleNavigationGroup(group.id)");
     expect(dashboard).toContain("item.locked");
-    expect(dashboard).not.toContain("toggleNavigationGroup(group.id)");
   });
 
   it("retains subscription status, alerts, and the independent mobile navigation path", () => {

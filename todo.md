@@ -550,3 +550,17 @@
 
 ## Checkpoint Asset Size Remediation
 - [x] Resize the two oversized branding PNGs in place without replacing their visual content, verify they are below the checkpoint threshold, and retry the managed checkpoint.
+
+## Dashboard Shell Redesign and Layering Fix
+- [x] Audit the current dashboard top bar, sidebar, module navigation, tour overlay, and desktop/mobile stacking behavior.
+- [x] Re-group project modules into a clearer navigation hierarchy with accessible labels and visible desktop menu affordances.
+- [x] Redesign the top bar and left sidebar while preserving existing navigation, auth, tenant, and entitlement behavior.
+- [x] Fix tour and overlay z-index, positioning, focus, and responsive visibility so the tour never sits behind dashboard features.
+- [x] Add or update regression coverage, verify desktop/tablet/mobile screenshots, run TypeScript/tests/build, and save the redesigned checkpoint.
+
+## Dashboard Release Synchronization and Schema Parity
+- [x] Inspect the current GitHub remote state, pending dashboard changes, and Supabase schema contract results.
+- [x] Apply only missing, additive Supabase schema changes after confirming they are safe and required; the live schema gate found no missing tables, tenant columns, or critical contract issues, so no DDL was applied.
+- [ ] Re-run targeted schema parity and dashboard quality checks after any database action.
+- [ ] Commit and push all verified dashboard release changes to the private GitHub `main` branch without including secrets.
+- [ ] Save the managed release checkpoint and report the exact synchronization and schema outcome.

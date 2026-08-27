@@ -924,4 +924,19 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
   expect(dashboardSource).toContain('<LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated=');
 });
 
+describe("Dashboard shell navigation and layering", () => {
+  it("keeps desktop navigation docked, grouped, and visible while retaining mobile drawer behavior", () => {
+    expect(dashboardSource).toContain("lg:sticky lg:translate-x-0");
+    expect(dashboardSource).toContain("navigationGroups.map((group)");
+    expect(dashboardSource).toContain('aria-label={`${group.label} navigation group`}');
+    expect(dashboardSource).toContain("dashboard-topbar sticky top-0 z-30");
+  });
+
+  it("renders the onboarding tour through document.body so it cannot sit behind shell layers", () => {
+    expect(dashboardSource).toContain("createPortal((");
+    expect(dashboardSource).toContain("document.body)}");
+    expect(dashboardSource).toContain('data-onboarding-tour="true"');
+  });
+});
+
 });

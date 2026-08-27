@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { createPortal } from "react-dom";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase,
   Factory, Truck, Megaphone, Store, FileText, Brain, Settings,
@@ -47231,13 +47232,13 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
         ref={triggerRef}
         type="button"
         onClick={restartTour}
-        className="hidden lg:inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11.5px] font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+        className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 text-[11.5px] font-bold text-emerald-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:from-emerald-100 hover:to-teal-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
         aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : "Take the Smart Manager onboarding tour"}
         data-onboarding-trigger="true"
       >
         <Info size={13} /> {isSw ? "Anza Ziara" : "Take a Tour"}
       </button>
-      {open && (
+      {open && typeof document !== "undefined" && createPortal((
         <div
           className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${spotlightRect ? "bg-transparent" : "bg-slate-950/55 backdrop-blur-sm"}`}
           data-onboarding-tour="true"
@@ -47328,7 +47329,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
             </div>
           </section>
         </div>
-      )}
+      ), document.body)}
     </>
   );
 }
@@ -48221,9 +48222,9 @@ function SmartManager() {
         />
       )}
 
-      {/* Sidebar — a toggleable overlay menu at every breakpoint, closed by
-          default. It never reserves layout space, so the main content
-          always renders at full width whether the menu is open or not.
+      {/* Sidebar — a docked navigation rail on desktop and a modal drawer on
+          mobile. Desktop reserves layout space so the content never sits under
+          the menu; mobile uses the backdrop above for an intentional drawer.
           Rebuilt as a light theme matching the design system image exactly
           (Kadi: "White background, Light shadow, Soft rounded corners") —
           every dark-theme color from the earlier version (the navy/dark-
@@ -48231,7 +48232,7 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={!sidebarOpen}
-          className={`dashboard-sidebar fixed z-50 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:sticky lg:top-0 lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-auto lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
@@ -48268,16 +48269,25 @@ function SmartManager() {
           </div>}
         </div>
 
-        <nav className="dashboard-flat-navigation relative flex-1 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
-          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Your workspace modules</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
-          {flatNavigationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = active === item.id;
-            const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-            return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"}`}>
-              <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
-              <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-300" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
-            </button>;
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
+          <div className={`mb-1 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
+          {navigationGroups.map((group) => {
+            const GroupIcon = group.icon;
+            const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
+            return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
+              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-[9.5px] font-bold uppercase tracking-[.13em] text-slate-400 transition hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40">
+                <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-emerald-600" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] tracking-normal text-slate-500">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
+              </button>}
+              {expanded && <div className="space-y-1">{group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = active === item.id;
+                const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
+                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"}`}>
+                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+                  <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-300" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
+                </button>;
+              })}</div>}
+            </section>;
           })}
         </nav>
 
@@ -48302,11 +48312,11 @@ function SmartManager() {
         </div>
       </aside>
 
-      {/* Main — always full width; the sidebar is an overlay, not a docked
-          column, so there is no reserved gutter to subtract. */}
-      <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full">
+      {/* Main content reserves the desktop navigation rail and remains full
+          width only on mobile, where the sidebar is a drawer. */}
+      <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-20 grid min-h-[64px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-30 grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
