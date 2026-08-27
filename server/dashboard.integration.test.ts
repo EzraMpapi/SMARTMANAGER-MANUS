@@ -930,7 +930,7 @@ describe("Dashboard shell navigation and layering", () => {
     expect(dashboardSource).toContain("referenceOrderedNavigationItems.map((item)");
     expect(dashboardSource).toContain('aria-label="Operational workspaces"');
     expect(dashboardSource).toContain("getPresentationNavigationGroups(navigationGroups");
-    expect(dashboardSource).toContain('dashboard-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"}');
+    expect(dashboardSource).toContain('dashboard-topbar dashboard-reference-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"}');
   });
 
   it("renders the onboarding tour through document.body so it cannot sit behind shell layers", () => {

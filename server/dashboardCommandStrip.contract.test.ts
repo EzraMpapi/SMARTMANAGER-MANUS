@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
+const dashboardCss = fs.readFileSync(path.resolve(process.cwd(), "client/src/index.css"), "utf8");
 
 describe("dashboard operational command strip", () => {
   it("derives the active command context only from the already-filtered visible module set", () => {
@@ -19,10 +20,14 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("onClick={() => go(m.id)}");
   });
 
-  it("keeps the command-header search centered and operational controls grouped without replacing their menus", () => {
+  it("keeps the reference-matched command-header hierarchy without replacing existing controls", () => {
+    expect(dashboard).toContain("dashboard-reference-topbar");
     expect(dashboard).toContain("dashboard-topbar-primary-search");
-    expect(dashboard).toContain("dashboard-topbar-utility-group");
+    expect(dashboard).toContain("dashboard-topbar-right-rail");
+    expect(dashboard).toContain("dashboard-topbar-workspace");
+    expect(dashboard).toContain("dashboard-topbar-presence");
     expect(dashboard).toContain("dashboard-topbar-notification-slot");
+    expect(dashboard).toContain("dashboard-topbar-alert");
     expect(dashboard).toContain("dashboard-topbar-profile-slot");
     expect(dashboard).toContain("dashboard-topbar-create");
     expect(dashboard).toContain("<NotificationCenter");
@@ -30,6 +35,15 @@ describe("dashboard operational command strip", () => {
     expect(dashboard.indexOf("dashboard-topbar-primary-search")).toBeLessThan(
       dashboard.indexOf("dashboard-topbar-actions"),
     );
+  });
+
+  it("preserves a centered desktop search and 40px mobile command targets", () => {
+    expect(dashboardCss).toContain("grid-template-columns: minmax(10rem, .5fr) minmax(18rem, 28.75rem) minmax(18rem, 1.5fr);");
+    expect(dashboardCss).toContain(".dashboard-topbar-right-rail");
+    expect(dashboardCss).toContain(".dashboard-topbar-workspace");
+    expect(dashboardCss).toContain(".dashboard-topbar-presence,");
+    expect(dashboardCss).toContain("min-height: 2.5rem;");
+    expect(dashboardCss).toContain(".dashboard-topbar-ai-shortcut {");
   });
 
   it("keeps notification and command overlays keyboard-operable without widening data access", () => {

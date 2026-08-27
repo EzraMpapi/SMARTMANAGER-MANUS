@@ -52,7 +52,8 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-current={on ? "page" : undefined}');
     expect(dashboard).toContain('m.id === "dashboard" ? "Dashboard" : m.label.split(" ")[0]');
     expect(dashboard).toContain('aria-label="Open AI Command Center"');
-    expect(dashboard).toContain('sm:hidden" aria-label="Open AI Command Center"');
+    expect(dashboard).toContain('dashboard-topbar-ai-shortcut');
+    expect(dashboard).toContain('lg:hidden" aria-label="Open AI Command Center"');
     expect(dashboard).toContain('bottom-6 right-6 z-40 hidden h-14 w-14 min-h-14 min-w-14');
     expect(dashboard).toContain('createPortal(');
     expect(dashboard).toContain('), document.body)');

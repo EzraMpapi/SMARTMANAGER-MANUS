@@ -676,3 +676,9 @@
 - [x] Compare verified repository persistence requirements with deployed tables, columns, relationships, indexes, functions, triggers, RLS policies, and storage metadata.
 - [x] Apply only proven-safe additive schema objects that are absent from the connected project, then validate schema and tenant/RLS boundaries; no object was absent, so no production DDL/DML was appropriate.
 - [x] Publish the verified migration/audit result through the protected GitHub workflow.
+
+## Reference-Matched Top Header Rebuild
+- [x] Analyse the supplied reference header and map its visual hierarchy to existing protected dashboard actions without inventing data or new routes.
+- [x] Rebuild the desktop/tablet/mobile top header with centered global search, workspace context, ordered utility icons, alert control, and profile block while retaining existing handlers and accessible labels.
+- [x] Validate all retained header interactions in isolated desktop/mobile browser sessions, then run regression, schema, and production-build gates.
+- [x] Publish the verified reference-matched header rebuild through the protected GitHub workflow.
