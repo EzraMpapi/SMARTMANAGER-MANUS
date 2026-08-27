@@ -659,3 +659,7 @@
 
 ## Mobile Revalidation Checklist Publication
 - [x] Commit and publish the completed mobile Create-menu revalidation record while excluding transient browser-test artifacts.
+
+## Command Header Icon and Hierarchy Refinement
+- [x] Audit and refine the command header’s icon grouping, visual hierarchy, accessible labels, focus treatments, and responsive spacing without changing its existing actions.
+- [ ] Validate the refined command header in isolated desktop and mobile browser sessions, then publish it through the protected GitHub workflow.
