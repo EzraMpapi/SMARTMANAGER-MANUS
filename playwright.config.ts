@@ -1,6 +1,6 @@
 import { devices, defineConfig } from "playwright/test";
 
-const productionSmokeEnabled = process.env.E2E_BASE_URL === "https://smartmanager-manus.vercel.app";
+const productionSmokeEnabled = process.env.E2E_BASE_URL === "https://smartmanager-manus-render.onrender.com";
 
 export default defineConfig({
   testDir: "./browser-tests",
