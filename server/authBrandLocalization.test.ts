@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const languageSource = readFileSync(new URL("../client/src/contexts/LanguageContext.tsx", import.meta.url), "utf8");
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 const stylesSource = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 
 describe("Tanzania-first authentication branding and localization", () => {

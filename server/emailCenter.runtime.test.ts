@@ -12,7 +12,7 @@ vi.mock("../client/src/lib/trpc", () => ({
   },
 }));
 
-import { EmailCenter } from "../client/src/BusinessSphereDashboard.jsx";
+import { EmailCenter } from "../client/src/BusinessSphereDashboardCore.jsx";
 
 describe("Collaboration Hub EmailCenter runtime", () => {
   it("mounts the composer, opens contact autocomplete, and toggles live preview without undefined callbacks", async () => {

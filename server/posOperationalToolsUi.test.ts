@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const source = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const source = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 const pos = source.slice(source.indexOf("function POS("), source.indexOf("function Checkout"));
 const reconciliation = source.slice(source.indexOf("function PosReconciliationDashboard"), source.indexOf("function Checkout"));
 

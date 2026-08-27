@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const dashboardSource = readFileSync(
-  resolve(projectRoot, "client/src/BusinessSphereDashboard.jsx"),
+  resolve(projectRoot, "client/src/BusinessSphereDashboardCore.jsx"),
   "utf8",
 );
 const microfinanceSource = readFileSync(

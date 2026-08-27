@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const additionalModules = fs.readFileSync(path.resolve(process.cwd(), "client/src/dashboardAdditionalModules.jsx"), "utf8");
 const inventory = dashboard.slice(dashboard.indexOf("function Inventory("), dashboard.indexOf("function ItemPanel("));
 const itemPanel = dashboard.slice(dashboard.indexOf("function ItemPanel("), dashboard.indexOf("function ItemFormPanel("));

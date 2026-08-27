@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const routersSource = readFileSync(new URL("./routers.ts", import.meta.url), "utf8");
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 
 describe("AI router and grounded dashboard signals", () => {
   it("exposes runtime model discovery and protected chat procedures", () => {
@@ -43,6 +43,14 @@ describe("AI router and grounded dashboard signals", () => {
     expect(dashboardSource).toContain("trpc.ai.analyzeAnomalies.useMutation");
     expect(dashboardSource).toContain("inventoryRows.filter((item) => item.qty <= item.reorder");
     expect(dashboardSource).toContain("Business signals");
+  });
+
+  it("preserves safe server-specific assistant errors and keeps retry available", () => {
+    expect(dashboardSource).toContain("function getAssistantErrorMessage(error)");
+    expect(dashboardSource).toContain("const message = getAssistantErrorMessage(e);");
+    expect(dashboardSource).toContain("Your secure session could not be verified. Please sign in again.");
+    expect(dashboardSource).toContain("The AI Assistant service is temporarily unavailable. Please contact an administrator.");
+    expect(dashboardSource).toContain('onClick={() => send(assistantError.question)}');
   });
 
   it("exposes configurePreferences procedure and AI preferences drawer assistant", () => {

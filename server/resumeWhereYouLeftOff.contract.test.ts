@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const dashboardSource = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboardSource = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const navigationSource = readFileSync(resolve(process.cwd(), "client/src/navigation/enterpriseNavigation.js"), "utf8");
 const resumeSource = readFileSync(resolve(process.cwd(), "client/src/lib/resumeSession.ts"), "utf8");
 

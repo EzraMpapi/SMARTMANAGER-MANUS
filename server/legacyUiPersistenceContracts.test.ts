@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const dashboardSource = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboardSource = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 
 describe("legacy UI persistence boundaries", () => {
   it("uses the server-backed team invitation procedures for HR invitations", () => {

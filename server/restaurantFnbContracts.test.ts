@@ -11,7 +11,7 @@ const tanzaniaTriggerHardening = readFileSync(resolve(root, "supabase/migrations
 const routeFile = existsSync(resolve(root, "server/_core/apiApp.ts")) ? "server/_core/apiApp.ts" : "server/_core/index.ts";
 const serverRoutes = readFileSync(resolve(root, routeFile), "utf8");
 const restaurantServer = readFileSync(resolve(root, "server/restaurantManagement.ts"), "utf8");
-const dashboard = readFileSync(resolve(root, "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = readFileSync(resolve(root, "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const workspace = readFileSync(resolve(root, "client/src/components/RestaurantWorkspace.jsx"), "utf8");
 const tanzaniaPanel = readFileSync(resolve(root, "client/src/components/RestaurantTanzaniaFiscalPanel.jsx"), "utf8");
 

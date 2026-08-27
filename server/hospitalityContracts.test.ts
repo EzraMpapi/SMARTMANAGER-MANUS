@@ -7,7 +7,7 @@ const pos = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/202
 const services = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260822_020_hospitality_guest_engagement.sql"), "utf8");
 const finance = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260822_022_hospitality_finance_reconciliation.sql"), "utf8");
 const workspace = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/HospitalityWorkspace.jsx"), "utf8");
-const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 
 describe("Hospitality production workflow contracts", () => {
   it("replaces the legacy hotel component with a secured snapshot-driven workspace", () => {

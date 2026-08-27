@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 const verifierSource = readFileSync(new URL("./verifySupabaseSchema.mjs", import.meta.url), "utf8");
 const contractManifest = JSON.parse(readFileSync(new URL("./schemaContracts.json", import.meta.url), "utf8"));
 const baselineMigration = readFileSync(new URL("../supabase/migrations/20260812_001_complete_erp_schema_baseline.sql", import.meta.url), "utf8");
@@ -37,7 +37,7 @@ describe("Supabase production schema contract guard", () => {
   it("uses the protected Supabase OpenAPI metadata rather than browser credentials or hardcoded schemas", () => {
     expect(verifierSource).toContain("SUPABASE_SECRET_KEY");
     expect(verifierSource).toContain("/rest/v1/");
-    expect(verifierSource).toContain("BusinessSphereDashboard.jsx");
+    expect(verifierSource).toContain("BusinessSphereDashboardCore.jsx");
     expect(verifierSource).toContain("useCompanyTable");
     expect(verifierSource).toContain("runCompanyTableMutation");
     expect(verifierSource).toContain("missingTables");

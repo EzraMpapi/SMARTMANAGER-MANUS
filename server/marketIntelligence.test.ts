@@ -5,7 +5,7 @@ import { deriveMarketProviderUiStatus, normalizeBankRows, normalizeBotExchangeHt
 const marketSource = readFileSync(new URL("./marketIntelligence.ts", import.meta.url), "utf8");
 const governanceSource = readFileSync(new URL("./marketGovernance.ts", import.meta.url), "utf8");
 const scheduledDigestSource = readFileSync(new URL("./scheduledMarketHealthDigest.ts", import.meta.url), "utf8");
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 
 describe("market intelligence response validation", () => {
   it("normalizes validated bank-rate records and rejects incomplete rows", () => {

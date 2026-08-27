@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const source = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const source = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const commandCenter = readFileSync(resolve(process.cwd(), "client/src/components/CommercialCommandCenters.jsx"), "utf8");
 const architecture = readFileSync(resolve(process.cwd(), "docs/ecommerce-architecture-map-20260826.md"), "utf8");
 

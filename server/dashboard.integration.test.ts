@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildDashboardChartSections, buildDashboardExportFilterSummary, canonicalRoleId, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, roleDefinitionFor, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboard.jsx";
+import { buildDashboardChartSections, buildDashboardExportFilterSummary, canonicalRoleId, createDashboardPdfDocument, filterDashboardChartSections, GENERIC_COMPANY_TABLES, mapContactRow, mapInventoryRow, mapLeadRow, mapExpenseRow, mapPosCashMovementRow, mapPosShiftRow, normalizeGenericCompanyPayload, resolveDailyBriefingFetchState, runCompanyTableQuery, roleDefinitionFor, runCompanyTableMutation, serializeDashboardSectionsToCsv, toastBus } from "../client/src/BusinessSphereDashboardCore.jsx";
 import { setGuardedPersistenceCompanyId } from "../client/src/lib/guardedPersistenceClient";
 import { dashboardSource } from "./dashboardSourceSnapshot";
 

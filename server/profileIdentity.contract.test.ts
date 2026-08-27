@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 const migration = readFileSync(new URL("../supabase/migrations/20260823_045_profile_identity_center.sql", import.meta.url), "utf8");
 const service = readFileSync(new URL("./profileIdentity.ts", import.meta.url), "utf8");
 const component = readFileSync(new URL("../client/src/components/ProfileIdentityCenter.jsx", import.meta.url), "utf8");
-const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 
 describe("profile identity center source contract", () => {
   it("adds profile-owned fields without assuming uncertain branch/department foreign-key definitions", () => {

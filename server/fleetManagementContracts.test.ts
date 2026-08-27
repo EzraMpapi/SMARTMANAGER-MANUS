@@ -8,7 +8,7 @@ const migration = read("supabase/migrations/20260822_031_fleet_management_core.s
 const server = read("server/fleetManagement.ts");
 const routes = read("server/_core/apiApp.ts");
 const workspace = read("client/src/components/FleetWorkspace.jsx");
-const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+const dashboard = read("client/src/BusinessSphereDashboardCore.jsx");
 const environment = read("server/_core/env.ts");
 
 describe("Fleet Management contracts", () => {

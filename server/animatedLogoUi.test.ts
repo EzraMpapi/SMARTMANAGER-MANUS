@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const brandLogo = readFileSync(new URL("../client/src/components/BrandLogo.tsx", import.meta.url), "utf8");
-const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboard = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 const app = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 

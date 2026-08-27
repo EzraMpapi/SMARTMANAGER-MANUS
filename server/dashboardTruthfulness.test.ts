@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const dashboard = source.slice(source.indexOf("function ExecutiveDashboard("), source.indexOf("function FinancialDashboard("));
 
 describe("Executive Dashboard truthfulness", () => {

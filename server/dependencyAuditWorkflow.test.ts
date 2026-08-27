@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboardCore.jsx", import.meta.url), "utf8");
 const packageSource = readFileSync(new URL("../package.json", import.meta.url), "utf8");
 const workflowSource = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const dashboardSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboardSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const stylesheet = fs.readFileSync(path.resolve(process.cwd(), "client/src/index.css"), "utf8");
 
 describe("Reference-directed dashboard shell contract", () => {

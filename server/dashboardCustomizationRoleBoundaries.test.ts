@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { roleDefinitionFor } from "../client/src/BusinessSphereDashboard.jsx";
+import { roleDefinitionFor } from "../client/src/BusinessSphereDashboardCore.jsx";
 import { getNavigationGroups, getPresentationNavigationGroups } from "../client/src/navigation/enterpriseNavigation";
 
 function navigationForRole(roleName: string, visibleModuleIds = roleDefinitionFor(roleName).allowedModules) {

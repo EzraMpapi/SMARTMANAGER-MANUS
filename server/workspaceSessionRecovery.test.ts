@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { callWorkspaceRpcWithSessionRefresh, isTerminalWorkspaceSessionError, sessionRecoveryDiagnosticCode, workspaceJoinErrorMessage } from "../client/src/BusinessSphereDashboard.jsx";
+import { callWorkspaceRpcWithSessionRefresh, isTerminalWorkspaceSessionError, sessionRecoveryDiagnosticCode, workspaceJoinErrorMessage } from "../client/src/BusinessSphereDashboardCore.jsx";
 import { reportSessionRefreshOutcome } from "../client/src/lib/runtimeTelemetry";
 
 function storage(values: Record<string, string> = {}) {

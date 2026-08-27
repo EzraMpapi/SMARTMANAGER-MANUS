@@ -8,7 +8,7 @@ const migration = read("supabase/migrations/20260823_001_money_agent_core.sql");
 const snapshotFixMigration = read("supabase/migrations/20260823_041_fix_money_agent_snapshot_reconciliation_created_at.sql");
 const operations = read("server/moneyAgentOperations.ts");
 const router = read("server/routers.ts");
-const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+const dashboard = read("client/src/BusinessSphereDashboardCore.jsx");
 const workspace = read("client/src/components/MoneyAgentWorkspace.jsx");
 
 const tables = [

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const workspace = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/SectorCommandCenters.jsx"), "utf8");
-const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 
 describe("sector command-center contracts", () => {
   it("covers lending and savings sectors", () => {
@@ -22,7 +22,7 @@ describe("sector command-center contracts", () => {
       "<LazyMicrofinanceWorkspace",
       '{active === "banking"     && <BankingMFIModule',
       '{active === "vicoba" && <VicobaSaccosModule',
-      '{active === "community" && <CommunityGroupsModule',
+      "<LazyCommunityGroupsModule",
     ]) expect(dashboard).toContain(route);
     expect(workspace).toContain("Insufficient confirmed data");
   });

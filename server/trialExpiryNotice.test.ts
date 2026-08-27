@@ -11,7 +11,7 @@ const read = (relativePath: string) => fs.readFileSync(path.join(root, relativeP
 const migration = read("supabase/migrations/20260824_064_trial_expiry_notice_once.sql");
 const service = read("server/subscriptionBilling.ts");
 const api = read("server/_core/apiApp.ts");
-const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+const dashboard = read("client/src/BusinessSphereDashboardCore.jsx");
 const billingWorkspace = read("client/src/components/SubscriptionBillingWorkspace.jsx");
 
 function jsonResponse(body: unknown, status = 200) {

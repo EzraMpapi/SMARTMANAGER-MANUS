@@ -60,7 +60,7 @@ describe("Collaboration Hub email hyperlink safety", () => {
   });
 
   it("keeps the contact picker render identifier aligned with its state declaration", () => {
-    const source = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+    const source = readFileSync(resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
     expect(source).toContain("const [showContactPicker, setShowContactPicker] = useState(false);");
     expect(source).toContain("{showContactPicker && filteredContacts.length>0 && (");
     expect(source).not.toContain("showCont && filteredContacts");

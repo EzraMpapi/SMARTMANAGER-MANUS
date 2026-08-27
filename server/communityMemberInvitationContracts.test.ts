@@ -6,7 +6,7 @@ const root = process.cwd();
 const read = (relativePath: string) => fs.readFileSync(path.join(root, relativePath), "utf8");
 
 const community = read("client/src/dashboardExtractedModules.jsx");
-const dashboard = read("client/src/BusinessSphereDashboard.jsx");
+const dashboard = read("client/src/BusinessSphereDashboardCore.jsx");
 const invitations = read("server/teamInvitations.ts");
 
  describe("Community Groups member invitation contracts", () => {

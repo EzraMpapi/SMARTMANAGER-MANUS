@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { dashboardSource } from "./dashboardSourceSnapshot";
 
-const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const tour = dashboardSource;
 
 describe("interactive onboarding tour", () => {

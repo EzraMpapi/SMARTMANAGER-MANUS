@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const root = resolve(process.cwd());
 const commandCenter = readFileSync(resolve(root, "client/src/components/ExecutiveCommandCenter.jsx"), "utf8");
-const dashboard = readFileSync(resolve(root, "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = readFileSync(resolve(root, "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 
 describe("reference-aligned dashboard contracts", () => {
   it("keeps the supplied enterprise composition in the default role-aware command center", () => {

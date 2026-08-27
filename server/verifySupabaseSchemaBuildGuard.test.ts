@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const verifier = fs.readFileSync(path.resolve(process.cwd(), "server/verifySupabaseSchema.mjs"), "utf8");
-const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 
 describe("external deployment schema verification guard", () => {
   it("skips only unavailable, unreachable, or unauthorized server-only schema verification during a Vercel build", () => {

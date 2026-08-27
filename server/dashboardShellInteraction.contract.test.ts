@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = resolve(process.cwd());
-const dashboard = readFileSync(resolve(root, "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = readFileSync(resolve(root, "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
 const app = readFileSync(resolve(root, "client/src/App.tsx"), "utf8");
 const profileCenter = readFileSync(resolve(root, "client/src/components/ProfileIdentityCenter.jsx"), "utf8");
 const vercelConfig = readFileSync(resolve(root, "vercel.json"), "utf8");
@@ -30,7 +30,7 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-label="Open workspace settings"');
     expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
-    expect(dashboard).toContain("sm:hidden");
+    expect(dashboard).toContain('sm:hidden');
     expect(dashboard).toContain('max-w-[460px]');
     expect(dashboard).toContain('Search customers, products, invoices, orders...');
     expect(dashboard).toContain('dashboard-topbar-tour hidden');

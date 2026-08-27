@@ -4,7 +4,7 @@ import path from "path";
 import { dashboardSource as combinedDashboardSource } from "./dashboardSourceSnapshot";
 
 describe("Collaboration Hub Enterprise Suite", () => {
-  const dashboardMainSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+  const dashboardMainSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboardCore.jsx"), "utf8");
   const dashboardSource = combinedDashboardSource;
 
   it("includes all Collaboration Hub tabs and real-time features", () => {
