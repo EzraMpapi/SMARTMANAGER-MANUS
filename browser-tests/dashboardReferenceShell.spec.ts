@@ -63,6 +63,42 @@ test.describe("reference-directed enterprise dashboard", () => {
     await page.screenshot({ path: testInfo.outputPath("reference-dashboard-mobile.png"), fullPage: true });
   });
 
+  test("keeps the rebuilt mobile command header clear of dashboard content across supported phone widths", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium-mobile", "Phone header overlap assertions run in the mobile project only.");
+    const phoneWidths = [320, 360, 375, 390, 412];
+
+    for (const width of phoneWidths) {
+      await page.setViewportSize({ width, height: 812 });
+      const session = await openDashboard(page);
+      const result = await page.evaluate(() => {
+        const header = document.querySelector('header[aria-label="Workspace command bar"]');
+        const greeting = Array.from(document.querySelectorAll("h1, h2, h3")).find((element) => /Good (morning|afternoon|evening), Layout/.test(element.textContent || ""));
+        const controls = Array.from(header?.querySelectorAll("button") || []).filter((element) => {
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+        }).map((element) => {
+          const rect = element.getBoundingClientRect();
+          return { label: element.getAttribute("aria-label") || "", left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+        });
+        const headerRect = header?.getBoundingClientRect();
+        const greetingRect = greeting?.getBoundingClientRect();
+        const overlaps = controls.some((control, index) => controls.slice(index + 1).some((other) => control.left < other.right && control.right > other.left && control.top < other.bottom && control.bottom > other.top));
+        return {
+          headerBottom: headerRect?.bottom || 0,
+          greetingTop: greetingRect?.top || 0,
+          horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          overlappingVisibleHeaderControls: overlaps,
+        };
+      });
+
+      expect(result.headerBottom).toBeLessThanOrEqual(result.greetingTop);
+      expect(result.horizontalOverflow).toBe(false);
+      expect(result.overlappingVisibleHeaderControls).toBe(false);
+      expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
+    }
+  });
+
   test("keeps the Create-menu backdrop above fixed mobile workspace navigation and closes it safely", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "chromium-mobile", "Create-menu stacking assertions run in the mobile project only.");
     await page.setViewportSize({ width: 375, height: 812 });
