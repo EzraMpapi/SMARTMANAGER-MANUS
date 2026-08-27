@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DASHBOARD_KPI_IDS, DASHBOARD_WIDGET_IDS, DEFAULT_DASHBOARD_PREFERENCES, dashboardPreferencesInput } from "./dashboardPreferences";
+import { DASHBOARD_KPI_IDS, DASHBOARD_NAVIGATION_GROUP_IDS, DASHBOARD_WIDGET_IDS, DEFAULT_DASHBOARD_PREFERENCES, dashboardPreferencesInput } from "./dashboardPreferences";
 
 describe("dashboard preference layout contract", () => {
   it("accepts the full persisted dashboard-layout configuration", () => {
@@ -24,5 +24,27 @@ describe("dashboard preference layout contract", () => {
   it("keeps the canonical preference catalog bounded to the visible dashboard", () => {
     expect(DASHBOARD_WIDGET_IDS).toEqual(["revenue", "salesMix", "quickActions", "products", "cashFlow", "businessHealth", "activity", "actionCenter"]);
     expect(DASHBOARD_KPI_IDS).toEqual(["revenue", "expenses", "net-result", "orders", "receivables"]);
+    expect(DASHBOARD_NAVIGATION_GROUP_IDS).toEqual(["home", "sales-crm", "operations", "finance", "people", "specialized", "analytics", "administration"]);
+  });
+
+  it("accepts presentation-only shell customization while retaining a safe home route", () => {
+    const parsed = dashboardPreferencesInput.parse({
+      ...DEFAULT_DASHBOARD_PREFERENCES,
+      sidebarPresentation: "compact",
+      navigationSort: "alphabetical",
+      visibleNavigationGroupIds: ["home", "finance", "analytics"],
+      showTopBarSearch: false,
+      showGuidedTour: false,
+      showConnectionStatus: false,
+      showTopBarDate: false,
+    });
+    expect(parsed.sidebarPresentation).toBe("compact");
+    expect(parsed.visibleNavigationGroupIds).toEqual(["home", "finance", "analytics"]);
+    expect(parsed.showGuidedTour).toBe(false);
+  });
+
+  it("rejects navigation settings that could remove every safe home destination or inject unknown groups", () => {
+    expect(() => dashboardPreferencesInput.parse({ ...DEFAULT_DASHBOARD_PREFERENCES, visibleNavigationGroupIds: ["finance"] })).toThrow();
+    expect(() => dashboardPreferencesInput.parse({ ...DEFAULT_DASHBOARD_PREFERENCES, visibleNavigationGroupIds: ["home", "unrecognized-group"] })).toThrow();
   });
 });

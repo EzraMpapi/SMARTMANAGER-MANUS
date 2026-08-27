@@ -338,6 +338,23 @@
 - [x] Merge pull request #21 after confirming both required CI checks remain successful and verify the exact resulting `main` revision: `63d1496228bad497eabfebb48390f13aa788fbea`.
 - [x] Record the exception, synchronize the release status, and save the managed checkpoint. The exception record merged through PR #22 and is included in checkpoint `a4940474`.
 
+## Responsive Top Bar and Sidebar Review
+- [ ] Capture desktop, tablet, and mobile dashboard navigation layouts and inspect for overflow, hidden controls, stacking, touch-target, and readability defects.
+- [ ] Apply only demonstrated top-bar or sidebar refinements while preserving module grouping, tenant-aware navigation, and the body-level onboarding tour overlay.
+- [ ] Run focused responsive-navigation tests, TypeScript, and production build; save the verified checkpoint and document the review outcome.
+
+## Tenant-Scoped Dashboard Customization
+- [x] Audit the existing dashboard-preference model, workspace settings entry points, and role/module/tenant enforcement before extending user controls.
+- [x] Add authorized controls for top-bar density, permitted navigation-group visibility, menu presentation, dashboard-widget visibility, and dashboard content order without allowing access expansion.
+- [x] Persist and restore each user’s preferences within their authorized company scope, with safe defaults and an accessible reset action.
+- [x] Add regression coverage for preference validation, role/module guard preservation, onboarding-tour layering, and responsive layout behavior.
+- [x] Run focused/full tests, TypeScript, schema verification, production build, responsive validation, and save the verified release checkpoint. Focused coverage passed 12 assertions; broader dashboard coverage passed 76 assertions; the full quality gate, schema verifier, TypeScript, build, and desktop/mobile route checks passed. Checkpoint `e46d180` was created; authenticated visual interaction remains intentionally user-controlled.
+
+## Reported Page-Not-Found Routing Follow-up
+- [x] Reproduce the reported missing-page route across the production alias, preview, and authentication return path without submitting forms or changing user data. Both `/app` origins returned 200 and reached the intended authentication gateway; no missing route was reproduced.
+- [x] Correct only the verified route/rewrite/navigation defect and add a regression assertion for the restored application entry point. The existing SPA rewrite was retained and regression coverage now protects the direct `/app` entry route.
+- [x] Revalidate the live route and responsive dashboard navigation, then save the verified release checkpoint. Published and managed-preview `/app` checks returned 200 and rendered the responsive secure gateway; the protected dashboard was not accessed without a user-authorized session.
+
 ## Platform Administrator Executive Control Center
 - [x] Inspect the restored Platform Administrator and Global Admin implementation, shared dashboard patterns, and current Supabase platform tables before extending the UI.
 - [x] Define a least-privilege Platform Administrator metric and operational-control data model, with server-side role verification and no tenant subscription bypass for ordinary users.

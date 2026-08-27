@@ -22,6 +22,13 @@ export interface DashboardPreferences {
   widgetOrder: Array<"revenue" | "salesMix" | "quickActions" | "products" | "cashFlow" | "businessHealth" | "activity" | "actionCenter">;
   kpiCardIds: Array<"revenue" | "expenses" | "net-result" | "orders" | "receivables">;
   performanceWindow: "30d" | "3m" | "6m" | "1y";
+  sidebarPresentation: "expanded" | "compact";
+  navigationSort: "priority" | "alphabetical";
+  visibleNavigationGroupIds: Array<"home" | "sales-crm" | "operations" | "finance" | "people" | "specialized" | "analytics" | "administration">;
+  showTopBarSearch: boolean;
+  showGuidedTour: boolean;
+  showConnectionStatus: boolean;
+  showTopBarDate: boolean;
 }
 
 interface DashboardPreferencesContextType {
@@ -41,6 +48,8 @@ const defaultDepartmentBudgets: Record<string, number> = {
   Warehouse: 20000,
   Admin: 30000,
 };
+
+const dashboardNavigationGroupIds = ["home", "sales-crm", "operations", "finance", "people", "specialized", "analytics", "administration"] as const;
 
 const defaultPreferences: DashboardPreferences = {
   compactDensity: false,
@@ -62,9 +71,20 @@ const defaultPreferences: DashboardPreferences = {
   widgetOrder: ["revenue", "salesMix", "quickActions", "products", "cashFlow", "businessHealth", "activity", "actionCenter"],
   kpiCardIds: ["revenue", "expenses", "net-result", "orders", "receivables"],
   performanceWindow: "30d",
+  sidebarPresentation: "expanded",
+  navigationSort: "priority",
+  visibleNavigationGroupIds: [...dashboardNavigationGroupIds],
+  showTopBarSearch: true,
+  showGuidedTour: true,
+  showConnectionStatus: true,
+  showTopBarDate: true,
 };
 
 function normalizePreferences(value: Partial<DashboardPreferences> | null | undefined): DashboardPreferences {
+  const requestedNavigationGroups = Array.isArray(value?.visibleNavigationGroupIds)
+    ? new Set(value.visibleNavigationGroupIds.filter((id) => dashboardNavigationGroupIds.includes(id)))
+    : new Set(defaultPreferences.visibleNavigationGroupIds);
+  requestedNavigationGroups.add("home");
   return {
     ...defaultPreferences,
     ...(value || {}),
@@ -76,6 +96,13 @@ function normalizePreferences(value: Partial<DashboardPreferences> | null | unde
     widgetOrder: Array.isArray(value?.widgetOrder) && value.widgetOrder.length ? Array.from(new Set(value.widgetOrder.filter((id) => defaultPreferences.widgetOrder.includes(id)))) as DashboardPreferences["widgetOrder"] : defaultPreferences.widgetOrder,
     kpiCardIds: Array.isArray(value?.kpiCardIds) && value.kpiCardIds.length ? Array.from(new Set(value.kpiCardIds.filter((id) => defaultPreferences.kpiCardIds.includes(id)))) as DashboardPreferences["kpiCardIds"] : defaultPreferences.kpiCardIds,
     performanceWindow: ["30d", "3m", "6m", "1y"].includes(value?.performanceWindow || "") ? value?.performanceWindow as DashboardPreferences["performanceWindow"] : defaultPreferences.performanceWindow,
+    sidebarPresentation: value?.sidebarPresentation === "compact" ? "compact" : "expanded",
+    navigationSort: value?.navigationSort === "alphabetical" ? "alphabetical" : "priority",
+    visibleNavigationGroupIds: dashboardNavigationGroupIds.filter((id) => requestedNavigationGroups.has(id)) as DashboardPreferences["visibleNavigationGroupIds"],
+    showTopBarSearch: value?.showTopBarSearch !== false,
+    showGuidedTour: value?.showGuidedTour !== false,
+    showConnectionStatus: value?.showConnectionStatus !== false,
+    showTopBarDate: value?.showTopBarDate !== false,
   };
 }
 

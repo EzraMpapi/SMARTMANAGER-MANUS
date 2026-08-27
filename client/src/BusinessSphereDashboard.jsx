@@ -35904,7 +35904,7 @@ function TeamWorkforceCenter({ enabled, canManage }) {
   );
 }
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, onOpenDashboardCustomization, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
@@ -36009,6 +36009,14 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Settings</h1>
         <p className="text-[13px] text-slate-500 mt-1">Company profile, module entitlements, and connection status</p>
       </div>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Personal dashboard customization">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-sky-700 shadow-sm"><Sliders size={16} /></span>
+          <div><p className="text-[12.5px] font-bold text-sky-950">Personal dashboard layout</p><p className="mt-0.5 text-[11.5px] leading-5 text-sky-900/75">Choose optional command-bar controls, your menu presentation and visible permitted groups, plus dashboard panels. Access rights do not change.</p></div>
+        </div>
+        <button type="button" onClick={onOpenDashboardCustomization} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-sky-700 px-3 py-2 text-[11.5px] font-bold text-white transition hover:bg-sky-800"><Sliders size={13} /> Customize dashboard <ArrowRight size={13} /></button>
+      </section>
 
       {canManageBilling && <section className="flex flex-col gap-3 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Subscription and billing"><div className="flex items-start gap-3"><span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><CreditCard size={16} /></span><div><p className="text-[12.5px] font-bold text-emerald-950">Subscription &amp; Billing</p><p className="mt-0.5 text-[11.5px] leading-5 text-emerald-900/75">Company-level plan, trial, invoice and provider-confirmed payment controls.</p></div></div><button type="button" onClick={onOpenBilling} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-[11.5px] font-bold text-white transition hover:bg-emerald-800"><CreditCard size={13} /> Open billing center <ArrowRight size={13} /></button></section>}
 
@@ -47597,12 +47605,24 @@ function SmartManager() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  const [isDesktopNavigation, setIsDesktopNavigation] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true"; } catch { return false; }
   });
+  const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const syncNavigationViewport = () => setIsDesktopNavigation(media.matches);
+    syncNavigationViewport();
+    media.addEventListener("change", syncNavigationViewport);
+    return () => media.removeEventListener("change", syncNavigationViewport);
+  }, []);
   useEffect(() => {
     try { window.localStorage.setItem("smart-manager:sidebar-collapsed", String(sidebarCollapsed)); } catch {}
   }, [sidebarCollapsed]);
+  useEffect(() => {
+    setSidebarCollapsed(preferences.sidebarPresentation === "compact");
+  }, [preferences.sidebarPresentation]);
   const handleOnboardingVisibilityChange = useCallback((isOpen) => {
     setSidebarOpen(isOpen);
   }, []);
@@ -47866,23 +47886,20 @@ function SmartManager() {
     currentRoleId: currentRole.id,
     canSeeSettings: canManage,
   });
-  const [sidebarModuleOrder, setSidebarModuleOrder] = useState(() => {
-    try {
-      const saved = window.localStorage.getItem("smart-manager:sidebar-module-order");
-      return saved === "alphabetical" ? "alphabetical" : "priority";
-    } catch {
-      return "priority";
-    }
-  });
-  useEffect(() => {
-    try { window.localStorage.setItem("smart-manager:sidebar-module-order", sidebarModuleOrder); } catch {}
-  }, [sidebarModuleOrder]);
+  const sidebarModuleOrder = preferences.navigationSort;
+  const activeNavigationGroup = navigationGroups.find((group) => groupContainsActiveItem(group, active));
+  const displayedNavigationGroups = useMemo(() => navigationGroups
+    .filter((group) => preferences.visibleNavigationGroupIds.includes(group.id) || group.id === activeNavigationGroup?.id)
+    .map((group) => ({
+      ...group,
+      items: [...group.items].sort((left, right) => sidebarModuleOrder === "alphabetical"
+        ? left.label.localeCompare(right.label, "en")
+        : Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.order - right.order),
+    })), [activeNavigationGroup?.id, navigationGroups, preferences.visibleNavigationGroupIds, sidebarModuleOrder]);
   const flatNavigationItems = useMemo(() => [
-    ...navigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
-    ...(navigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
-  ].sort((left, right) => sidebarModuleOrder === "alphabetical"
-    ? left.label.localeCompare(right.label, "en")
-    : Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.groupOrder - right.groupOrder || left.order - right.order), [navigationGroups, sidebarModuleOrder]);
+    ...displayedNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
+    ...(displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
+  ].sort((left, right) => left.groupOrder - right.groupOrder || left.order - right.order), [displayedNavigationGroups]);
   const quickCreateActions = getQuickCreateActions({
     visibleModuleIds: visibleModules.map((module) => module.id),
     canCreate: currentRole.writeAccess !== "none",
@@ -48231,8 +48248,8 @@ function SmartManager() {
           green gradient, white-variant text, white/10 borders) was
           removed entirely rather than layered under the new palette. */}
       <aside
-        aria-hidden={!sidebarOpen}
-          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 z-50 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-auto lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+        aria-hidden={!isDesktopNavigation && !sidebarOpen}
+          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
@@ -48250,7 +48267,7 @@ function SmartManager() {
           <button className="text-slate-400 hover:text-[#111827] transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} />
           </button>
-          <button type="button" className="hidden rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 lg:inline-flex" onClick={() => setSidebarCollapsed((collapsed) => !collapsed)} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
+          <button type="button" className="hidden rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
             {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
           </button>
         </div>
@@ -48263,15 +48280,15 @@ function SmartManager() {
           {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-2 py-1.5" role="group" aria-label="Sidebar module order">
             <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">Order</span>
             <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
-              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => setSidebarModuleOrder("priority")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "priority" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
-              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => setSidebarModuleOrder("alphabetical")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "alphabetical" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
+              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => updatePreference("navigationSort", "priority")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "priority" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
+              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => updatePreference("navigationSort", "alphabetical")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "alphabetical" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
             </div>
           </div>}
         </div>
 
         <nav className="dashboard-flat-navigation relative flex-1 space-y-3 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
           <div className={`mb-1 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
-          {navigationGroups.map((group) => {
+          {displayedNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
             const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
             return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
@@ -48335,7 +48352,7 @@ function SmartManager() {
             </div>
           </div>
           <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2.5">
-            <span
+            {preferences.showConnectionStatus && <span
               className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
               style={
                 IS_CONFIGURED
@@ -48346,17 +48363,18 @@ function SmartManager() {
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
               {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
-            </span>
+            </span>}
             {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
-            <button
+            {preferences.showTopBarSearch && <button
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search hidden lg:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+              className="dashboard-topbar-search hidden xl:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
               aria-label="Search everything"
             >
               <Search size={13} />
               <span className="hidden md:inline">Search workspace</span>
               <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
-            </button>
+            </button>}
+            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
                 <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3">
@@ -48376,11 +48394,11 @@ function SmartManager() {
                 )}
               </div>
             )}
-            <div className="dashboard-topbar-tour hidden shrink-0 xl:block"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>
-            <span className="hidden xl:inline-flex items-center text-[10.5px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
+            {preferences.showGuidedTour && <div className="dashboard-topbar-tour hidden shrink-0 lg:block"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>}
+            {preferences.showTopBarDate && <span className="hidden xl:inline-flex items-center text-[10.5px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-            </span>
+            </span>}
             {/* ── Smart Alerts badge ── */}
             {criticalAlerts.length > 0 && (
               <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden lg:flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1.5 rounded-xl animate-pulse" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
@@ -48410,6 +48428,7 @@ function SmartManager() {
         )}
 
         {paletteOpen && <CommandPalette modules={visibleModules} crm={crm} invoices={invoices} inventory={inventory} expenses={expenses} onNavigate={go} onNavigateWithIntent={goWithIntent} onClose={() => setPaletteOpen(false)} />}
+        {preferencesDrawerOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard customization" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30"><div className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-xl">Loading dashboard customization…</div></div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setPreferencesDrawerOpen(false)} availableNavigationGroups={navigationGroups.map((group) => ({ id: group.id, label: group.label, shortLabel: group.shortLabel, itemCount: group.items.length }))} /></Suspense>}
 
         {/* AI Command Center — the floating entry point the design spec
             asks for, on every screen. The intelligence behind it is the
@@ -48559,6 +48578,7 @@ function SmartManager() {
               canManage={canManage}
               canManageBilling={canManageBilling}
               onOpenBilling={() => go("billing")}
+              onOpenDashboardCustomization={() => setPreferencesDrawerOpen(true)}
               darkMode={darkMode}
               toggleDarkMode={toggleDarkMode}
               textSize={textSize}
