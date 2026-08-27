@@ -350,6 +350,11 @@
 - [x] Add regression coverage for preference validation, role/module guard preservation, onboarding-tour layering, and responsive layout behavior.
 - [x] Run focused/full tests, TypeScript, schema verification, production build, responsive validation, and save the verified release checkpoint. Focused coverage passed 12 assertions; broader dashboard coverage passed 76 assertions; the full quality gate, schema verifier, TypeScript, build, and desktop/mobile route checks passed. Checkpoint `e46d180` was created; authenticated visual interaction remains intentionally user-controlled.
 
+## Dashboard Customization Cross-Role Verification
+- [x] Map representative administrator, operational manager, employee, and external-user roles to authorized navigation and customization behavior.
+- [x] Add regression coverage proving personalization can hide only already-authorized presentation groups and cannot add role-, subscription-, or tenant-restricted destinations.
+- [ ] Run focused/full authorization checks, TypeScript, schema verification, and production build; document the result and save the verification checkpoint.
+
 ## Reported Page-Not-Found Routing Follow-up
 - [x] Reproduce the reported missing-page route across the production alias, preview, and authentication return path without submitting forms or changing user data. Both `/app` origins returned 200 and reached the intended authentication gateway; no missing route was reproduced.
 - [x] Correct only the verified route/rewrite/navigation defect and add a regression assertion for the restored application entry point. The existing SPA rewrite was retained and regression coverage now protects the direct `/app` entry route.

@@ -194,6 +194,19 @@ export function getNavigationGroups({ visibleModuleIds, currentRoleId, canSeeSet
   })).filter((group) => group.items.length > 0).sort((a, b) => a.order - b.order);
 }
 
+/**
+ * Applies a user’s saved presentation choices after role, module, and
+ * subscription filtering has already built the allowed navigation model.
+ * It intentionally cannot add an item or group absent from that model.
+ * The active authorized group remains present so a personalization change
+ * never strands a user on an otherwise valid workspace screen.
+ */
+export function getPresentationNavigationGroups(navigationGroups, requestedGroupIds, activeId) {
+  const requested = new Set(Array.isArray(requestedGroupIds) ? requestedGroupIds : []);
+  const activeGroupId = navigationGroups.find((group) => groupContainsActiveItem(group, activeId))?.id;
+  return navigationGroups.filter((group) => requested.has(group.id) || group.id === activeGroupId);
+}
+
 export function findNavigationItem(id) {
   return NAVIGATION_ITEMS.find((item) => item.id === id) || null;
 }
