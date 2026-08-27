@@ -38607,6 +38607,29 @@ function AIAssistant({ company, invoices, inventory, crm, expenses, employees, l
 
 /* -------------------------------- AI CHAT ENGINE -------------------------------- */
 
+function getAssistantErrorMessage(error) {
+  const code = error?.data?.code || error?.shape?.data?.code;
+  if (code === "UNAUTHORIZED" || code === "FORBIDDEN") {
+    return "Your secure session could not be verified. Please sign in again.";
+  }
+  if (code === "TOO_MANY_REQUESTS" || /provider is busy/i.test(error?.message || "")) {
+    return "The AI provider is busy. Please try again shortly.";
+  }
+  const rawMessage = typeof error?.message === "string"
+    ? error.message.replace(/^TRPCClientError:\s*/i, "").replace(/\s+/g, " ").trim()
+    : "";
+  if (/assistant request could not be processed/i.test(rawMessage)) {
+    return "The assistant request could not be processed. Please shorten or rephrase it.";
+  }
+  if (/AI Assistant service is temporarily unavailable/i.test(rawMessage)) {
+    return "The AI Assistant service is temporarily unavailable. Please contact an administrator.";
+  }
+  if (/AI Assistant could not be reached/i.test(rawMessage)) {
+    return "The AI Assistant could not be reached. Please try again shortly.";
+  }
+  return "The Business Consultant could not be reached. Please try again shortly.";
+}
+
 // The one real chat engine every conversational persona shares. Scoped
 // per-call by `persona`: which data it sees, which tools it may use, how
 // it introduces itself. Nothing here is persona-specific logic — that all
@@ -38992,7 +39015,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       setMessages(convo);
       await persistTurn(question, responseData.result);
     } catch (e) {
-      const message = "The Business Consultant could not be reached. Please try again.";
+      const message = getAssistantErrorMessage(e);
       notify(message, "error");
       setAssistantError({ message, question });
       setMessages(messages);

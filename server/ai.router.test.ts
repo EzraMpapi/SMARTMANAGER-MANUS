@@ -45,6 +45,14 @@ describe("AI router and grounded dashboard signals", () => {
     expect(dashboardSource).toContain("Business signals");
   });
 
+  it("preserves safe server-specific assistant errors and keeps retry available", () => {
+    expect(dashboardSource).toContain("function getAssistantErrorMessage(error)");
+    expect(dashboardSource).toContain("const message = getAssistantErrorMessage(e);");
+    expect(dashboardSource).toContain("Your secure session could not be verified. Please sign in again.");
+    expect(dashboardSource).toContain("The AI Assistant service is temporarily unavailable. Please contact an administrator.");
+    expect(dashboardSource).toContain('onClick={() => send(assistantError.question)}');
+  });
+
   it("exposes configurePreferences procedure and AI preferences drawer assistant", () => {
     expect(routersSource).toContain("configurePreferences: protectedProcedure");
     expect(routersSource).toContain("dashboard_ai_preferences");
