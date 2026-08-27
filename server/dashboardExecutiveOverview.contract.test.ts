@@ -24,27 +24,26 @@ describe("Enterprise dashboard overview contract", () => {
     expect(overviewSource).toContain("const inventoryRows = inventory?.rows || []");
     expect(overviewSource).toContain("const crmRows = crm?.rows || []");
     expect(overviewSource).toContain("Some live workspace information is unavailable");
-    expect(overviewSource).toContain("The dashboard does not invent business metrics.");
+    expect(overviewSource).toContain("The dashboard does not invent business metrics");
     expect(overviewSource).not.toContain("Simulated");
   });
 
-  it("uses real workspace signals and keeps the decorative KPI treatment navigation-safe", () => {
-    expect(overviewSource).toContain("const workspaceSignals = [");
-    expect(overviewSource).toContain("Revenue signal");
-    expect(overviewSource).toContain("Pipeline signal");
-    expect(overviewSource).toContain("Review queue");
-    expect(overviewSource).toContain("attentionItems?.length || 0");
-    expect(overviewSource).toContain("tone.edge");
+  it("uses a reference-directed KPI treatment while keeping every card navigation-safe", () => {
+    expect(overviewSource).toContain("Connected workspace view");
+    expect(overviewSource).toContain("const metrics = [");
+    expect(overviewSource).toContain("Collected revenue");
+    expect(overviewSource).toContain("Sales documents");
+    expect(overviewSource).toContain("Open receivables");
     expect(overviewSource).toContain("View details");
+    expect(overviewSource).toContain("onQuickAction(\"finance\", { tab: \"receivables\" })");
   });
 
-  it("shares a responsive widget-card system without replacing live data or established actions", () => {
+  it("shares a responsive analytic-panel system without replacing live data or established actions", () => {
     expect(overviewSource).toContain("function WidgetHeader");
-    expect(overviewSource).toContain("const widgetTones = {");
-    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Financial movement\"");
+    expect(overviewSource).toContain("<PanelHeader title=\"Revenue overview\"");
+    expect(overviewSource).toContain("<PanelHeader title=\"Sales document status\"");
     expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Attention queue\"");
-    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Momentum\"");
-    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Team & next steps\"");
+    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Team\"");
     expect(overviewSource).toContain("performanceTrend.some");
     expect(overviewSource).toContain("PERFORMANCE_RANGES");
     expect(overviewSource).toContain("attentionItems?.length");
