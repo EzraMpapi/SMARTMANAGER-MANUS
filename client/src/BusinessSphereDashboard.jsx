@@ -42122,12 +42122,25 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
   const [open, setOpen] = useState(false);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
+
   return (
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative text-slate-400 hover:text-slate-600"
         aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "")}
+        aria-expanded={open}
+        aria-controls={open ? "notification-center-panel" : undefined}
       >
         <Bell size={17} strokeWidth={1.75} />
         {alerts.length > 0 && (
@@ -42139,6 +42152,9 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div
+            id="notification-center-panel"
+            role="region"
+            aria-label="Notifications"
             className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-xl border border-slate-200/80 shadow-lg z-40 overflow-hidden"
             style={{ animation: "toastIn .15s ease-out" }}
           >
