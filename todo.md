@@ -681,4 +681,4 @@
 - [x] Analyse the supplied reference header and map its visual hierarchy to existing protected dashboard actions without inventing data or new routes.
 - [x] Rebuild the desktop/tablet/mobile top header with centered global search, workspace context, ordered utility icons, alert control, and profile block while retaining existing handlers and accessible labels.
 - [x] Validate all retained header interactions in isolated desktop/mobile browser sessions, then run regression, schema, and production-build gates.
-- [ ] Publish the verified reference-matched header rebuild through the protected GitHub workflow.
+- [x] Publish the verified reference-matched header rebuild through the protected GitHub workflow.
