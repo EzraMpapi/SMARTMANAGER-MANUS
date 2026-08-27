@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { DASHBOARD_KPI_IDS, DASHBOARD_NAVIGATION_GROUP_IDS, DASHBOARD_WIDGET_IDS, DEFAULT_DASHBOARD_PREFERENCES, dashboardPreferencesInput } from "./dashboardPreferences";
+import { DASHBOARD_KPI_IDS, DASHBOARD_NAVIGATION_GROUP_IDS, DASHBOARD_WIDGET_IDS, DASHBOARD_PREFERENCES_SCHEMA_VERSION, DEFAULT_DASHBOARD_PREFERENCES, dashboardPreferencesInput } from "./dashboardPreferences";
 
 describe("dashboard preference layout contract", () => {
+  it("uses the versioned dashboard preference payload contract", () => {
+    expect(DASHBOARD_PREFERENCES_SCHEMA_VERSION).toBe(1);
+    expect(DEFAULT_DASHBOARD_PREFERENCES).toHaveProperty("visibleNavigationGroupIds");
+    expect(DEFAULT_DASHBOARD_PREFERENCES).toHaveProperty("widgetOrder");
+  });
+
   it("accepts the full persisted dashboard-layout configuration", () => {
     const parsed = dashboardPreferencesInput.parse({
       ...DEFAULT_DASHBOARD_PREFERENCES,

@@ -50,6 +50,7 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 import { useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
+import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
@@ -47352,6 +47353,7 @@ function SmartManager() {
   const canManage = currentRole.writeAccess === "full";
   const billingManagerRoles = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "admin"]);
   const canManageBilling = billingManagerRoles.has(String(currentUser.role || "").trim().toLowerCase());
+  const canManageTeamPresets = new Set(["organization owner", "ceo", "super administrator", "system administrator"]).has(String(currentUser.role || "").trim().toLowerCase());
 
   const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
   const [authContextEmail, setAuthContextEmail] = useState("");
@@ -48426,7 +48428,7 @@ function SmartManager() {
         )}
 
         {paletteOpen && <CommandPalette modules={visibleModules} crm={crm} invoices={invoices} inventory={inventory} expenses={expenses} onNavigate={go} onNavigateWithIntent={goWithIntent} onClose={() => setPaletteOpen(false)} />}
-        {preferencesDrawerOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard customization" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30"><div className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-xl">Loading dashboard customization…</div></div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setPreferencesDrawerOpen(false)} availableNavigationGroups={navigationGroups.map((group) => ({ id: group.id, label: group.label, shortLabel: group.shortLabel, itemCount: group.items.length }))} /></Suspense>}
+        {preferencesDrawerOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard customization" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30"><div className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-xl">Loading dashboard customization…</div></div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setPreferencesDrawerOpen(false)} availableNavigationGroups={navigationGroups.map((group) => ({ id: group.id, label: group.label, shortLabel: group.shortLabel, itemCount: group.items.length }))} canManageTeamPresets={canManageTeamPresets} /></Suspense>}
 
         {/* AI Command Center — the floating entry point the design spec
             asks for, on every screen. The intelligence behind it is the
@@ -48564,6 +48566,7 @@ function SmartManager() {
           {active === "presentation" && <PresentationProgressView />}
           {active === "profile" && <ProfileIdentityPage currentUser={currentUser} session={session} company={company} onNavigate={go} onSignOut={handleSignOut} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} onThemeChange={(theme) => { if (theme === "dark") setDarkMode(true); if (theme === "light") setDarkMode(false); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} initialTab={intent?.module === "profile" ? intent.profileTab : "overview"} />}
           {active === "settings" && (
+            <>
             <SettingsPage
               company={company}
               setCompany={setCompany}
@@ -48586,6 +48589,8 @@ function SmartManager() {
               exportData={{ crm, invoices, expenses, inventory, employees, posTransactions, suppliers }}
               accountSession={session?.demo ? null : session}
             />
+            {canManageTeamPresets && <div className="mt-5"><DashboardLayoutAnalytics /></div>}
+            </>
           )}
           {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "global-admin", "activity", "profile"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />

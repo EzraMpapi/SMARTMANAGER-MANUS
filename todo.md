@@ -339,9 +339,9 @@
 - [x] Record the exception, synchronize the release status, and save the managed checkpoint. The exception record merged through PR #22 and is included in checkpoint `a4940474`.
 
 ## Responsive Top Bar and Sidebar Review
-- [ ] Capture desktop, tablet, and mobile dashboard navigation layouts and inspect for overflow, hidden controls, stacking, touch-target, and readability defects.
-- [ ] Apply only demonstrated top-bar or sidebar refinements while preserving module grouping, tenant-aware navigation, and the body-level onboarding tour overlay.
-- [ ] Run focused responsive-navigation tests, TypeScript, and production build; save the verified checkpoint and document the review outcome.
+- [x] Capture desktop, tablet, and mobile dashboard navigation layouts and inspect for overflow, hidden controls, stacking, touch-target, and readability defects. Managed preview route checks completed at wide desktop, 1024px, and narrow mobile widths; the protected gateway rendered cleanly. An authenticated dashboard walkthrough was not bypassed and remains user-session dependent.
+- [x] Apply only demonstrated top-bar or sidebar refinements while preserving module grouping, tenant-aware navigation, and the body-level onboarding tour overlay. The desktop rail semantics, breakpoint-balanced search/tour controls, grouped navigation, and body-level tour portal remain covered by source contracts.
+- [x] Run focused responsive-navigation tests, TypeScript, and production build; save the verified checkpoint and document the review outcome. Responsive and dashboard suites passed; TypeScript, production build, whitespace, and schema gates passed; checkpoint `f0743fbc` contains the released team preset work and review record.
 
 ## Tenant-Scoped Dashboard Customization
 - [x] Audit the existing dashboard-preference model, workspace settings entry points, and role/module/tenant enforcement before extending user controls.
@@ -353,7 +353,18 @@
 ## Dashboard Customization Cross-Role Verification
 - [x] Map representative administrator, operational manager, employee, and external-user roles to authorized navigation and customization behavior.
 - [x] Add regression coverage proving personalization can hide only already-authorized presentation groups and cannot add role-, subscription-, or tenant-restricted destinations.
-- [ ] Run focused/full authorization checks, TypeScript, schema verification, and production build; document the result and save the verification checkpoint.
+- [x] Run focused/full authorization checks, TypeScript, schema verification, and production build; document the result and save the verification checkpoint. The five focused role-boundary suites passed 21 assertions; the full suite passed 266 files and 1,096 tests (7 files and 15 tests skipped); TypeScript, schema verification, production build, and whitespace checks passed. Checkpoint `7e72b11` and GitHub PR #29 were merged.
+
+## Dashboard Customization User Guide
+- [x] Create a user-facing guide explaining how to open, personalize, reset, and troubleshoot dashboard top-bar, menu, KPI, and panel preferences without confusing presentation choices with access grants.
+
+## Dashboard Preference Data-Model Guide
+- [x] Document a tenant-scoped JSON Schema for personal dashboard customization preferences.
+- [x] Document a relational database model, validation rules, access-control constraints, and safe migration path for preference persistence.
+
+## Dashboard Customization TypeScript Reference
+- [x] Document typed frontend interfaces, safe defaults, normalization helpers, and a React state hook for dashboard customization.
+- [x] Document persistence integration, authorization boundaries, and test scenarios for the reference implementation.
 
 ## Reported Page-Not-Found Routing Follow-up
 - [x] Reproduce the reported missing-page route across the production alias, preview, and authentication return path without submitting forms or changing user data. Both `/app` origins returned 200 and reached the intended authentication gateway; no missing route was reproduced.
@@ -608,9 +619,51 @@
 - [x] Prepare the Chapters 10–12 presentation narrative and slide-aligned Kiswahili presenter script with approved conceptual/redacted evidence only.
 - [x] Generate and present the evidence-based Chapters 10–12 operations-foundation slide deck.
 - [x] Create and validate a reviewable Chapters 01–15 animation assembly plan, subtitle/audio ledger, and pilot asset package without claiming a complete master video.
-- [ ] Run final validation and synchronize the reviewed Chapter 16–18, terminology, operations-deck, and animation-foundation package to GitHub main.
+- [x] Run final validation and synchronize the reviewed Chapter 16–18, terminology, operations-deck, and animation-foundation package to GitHub main. The following protected-main checklist records confirm the validation, merge, and final branch-state verification: items 625–627.
+
 
 ## Protected Main-Branch Reconciliation for Training Package
 - [x] Reconcile the stale required `Browser Dashboard Preference Journey` status check with the current repository CI checks while preserving protected-branch review and validation requirements.
 - [x] Merge the validated Chapters 16–18, operations deck, and animation-foundation pull request through the protected-branch workflow.
 - [x] Verify the final `main` branch state and record the completed training-package synchronization.
+
+## Dashboard Preference Backend Persistence
+- [x] Reconcile the existing protected dashboard preference read/save procedures with the deployed Supabase preference table and verified profile/company scope. Read and save remain protected tRPC procedures; the save derives both scope fields from `resolveVerifiedProfile`.
+- [x] Add an idempotent database migration artifact for the user/company preference key, JSON payload, schema version, unique scope, indexes, and safe row-level access policy. Migration `20260827130000_dashboard_preferences.sql` was applied to Supabase project `rlhngsrihahhyxnjxrxm` through its PostgreSQL migration channel.
+- [x] Add endpoint, migration, tenant-isolation, and validation regression coverage; run full quality gates and save the release checkpoint. Focused tests passed 9 assertions; the full gate passed, schema verification reported 201 referenced / 554 deployed tables with no missing or critical issues, TypeScript passed, the production build passed, and `git diff --check` passed.
+
+## Dashboard Layout Export and Import
+- [x] Inspect the existing preference contract and customization drawer integration for a portable presentation-only format.
+- [x] Add validated export and authorization-safe import helpers that strip identity, tenant, entitlement, and private data.
+- [x] Integrate import/export controls with accessible file handling, clear validation errors, and reset-safe recovery.
+- [x] Add regression coverage for round trips, malformed files, unknown settings, role/module filtering, and tenant boundaries.
+- [x] Run focused/full tests, TypeScript, production build, and whitespace checks; save and report the verified release.
+
+## Administrator Team Dashboard Presets
+- [x] Audit existing dashboard preference persistence, role catalog, department sources, and administrator authorization boundaries.
+- [x] Add tenant-scoped team preset persistence and protected procedures for create, list, update, delete, and push operations.
+- [x] Build an administrator preset manager for targeting roles or departments and pushing presentation-only defaults.
+- [x] Add regression coverage for tenant isolation, administrator-only writes, role/department targeting, entitlement filtering, and personal-preference precedence.
+- [x] Run migration, API, full tests, TypeScript, production build, and responsive verification; save and report the release. Full test, schema, TypeScript, build, and whitespace gates passed; Supabase now reports 555 deployed tables with no missing or critical issues.
+
+## Reset Personal Dashboard to Administrator Default
+- [x] Inspect the personal override persistence and active role/department preset resolution path.
+- [x] Add a protected reset flow that clears only the user’s personal preference override and reloads the authorized administrator preset.
+- [x] Add an accessible settings action with confirmation, loading, success, and error feedback.
+- [x] Add regression coverage for reset behavior, personal-preference precedence, tenant isolation, and entitlement filtering.
+- [x] Run focused/full tests, TypeScript, production build, and whitespace checks; save and report the release. Focused reset/shell/dashboard coverage passed 85 assertions; the full gate, TypeScript, Supabase schema verification, production build, and whitespace checks passed.
+
+## Dashboard Layout Telemetry and Analytics
+- [x] Inspect existing dashboard preference and team preset flows, event instrumentation, and privacy/tenant boundaries.
+- [x] Define privacy-safe adoption events and bounded range aggregation; the system stores no preference payloads, business records, user identifiers, IP addresses, or user-agent strings. Unique-user and minimum-group metrics are intentionally not claimed because no identity is collected.
+- [x] Apply the tenant-scoped `dashboard_layout_telemetry` migration to Supabase project `rlhngsrihahhyxnjxrxm`; server writes use service-role persistence after verified profile resolution, while analytics reads are filtered by the verified company and administrator role.
+- [x] Add protected tRPC capture and analytics procedures, plus preset lifecycle instrumentation for creation, push, successful application, personal saves, and reset actions.
+- [x] Build a responsive administrator analytics view with adoption totals, tracked events, source ranking, daily trend, range filter, refresh state, empty state, and explicit privacy boundary copy.
+- [x] Add regression coverage for aggregation correctness, preset labeling, event filtering, stable signatures, and administrator-only access boundaries.
+- [x] Run full tests and TypeScript verification: 271 test files passed, 7 skipped; 1,111 tests passed, 15 skipped; TypeScript passed. Supabase migration verification completed and the telemetry release is ready for checkpoint publication.
+
+## Managed Checkpoint Timeout Troubleshooting
+- [ ] Inspect pending diff size, repository health, and managed checkpoint logs without discarding changes.
+- [ ] Apply the safest checkpoint recovery or diff-size correction identified by the inspection.
+- [ ] Re-run required quality gates and retry managed checkpoint publication.
+- [ ] Document the final checkpoint version or remaining publication blocker.
