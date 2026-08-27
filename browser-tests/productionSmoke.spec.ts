@@ -1,6 +1,6 @@
 import { expect, test } from "playwright/test";
 
-const productionHost = "smartmanager-manus.vercel.app";
+const productionHost = "smartmanager-manus-render.onrender.com";
 
 function assertProductionTarget() {
   const configured = process.env.E2E_BASE_URL?.trim();
