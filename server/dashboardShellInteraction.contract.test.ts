@@ -26,21 +26,25 @@ describe("dashboard shell interaction refinement", () => {
 
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
     expect(dashboard).toContain('aria-label="Open menu"');
-    expect(dashboard).toContain('aria-label="Search everything"');
+    expect(dashboard).toContain('aria-label="Open command palette"');
     expect(dashboard).toContain('aria-label="Open workspace settings"');
     expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
     expect(dashboard).toContain("sm:hidden");
-    expect(dashboard).toContain('dashboard-topbar-search hidden xl:flex');
-    expect(dashboard).toContain('dashboard-topbar-tour hidden shrink-0 lg:block');
+    expect(dashboard).toContain('max-w-[460px]');
+    expect(dashboard).toContain('Search customers, products, invoices, orders...');
+    expect(dashboard).toContain('dashboard-topbar-tour hidden');
     expect(dashboard).toContain('dashboard-topbar-customize');
     expect(dashboard).toContain('preferences.showGuidedTour &&');
     expect(dashboard).toContain('preferences.showTopBarSearch &&');
     expect(dashboard).toContain("inline-flex items-center gap-2 rounded-xl border border-emerald-200");
   });
 
-  it("keeps grouped navigation role-safe and preserves the compact mobile navigation", () => {
-    expect(dashboard).toContain('displayedNavigationGroups.map((group) => {');
+  it("keeps flat role-safe navigation and preserves the compact mobile navigation", () => {
+    expect(dashboard).toContain('const flatNavigationItems = useMemo(() => [');
+    expect(dashboard).toContain('displayedNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order })))');
+    expect(dashboard).toContain('const referenceOrderedNavigationItems = useMemo(() => {');
+    expect(dashboard).toContain('referenceOrderedNavigationItems.map((item) => {');
     expect(dashboard).toContain('getPresentationNavigationGroups(navigationGroups, preferences.visibleNavigationGroupIds, active)');
     expect(dashboard).toContain('availableNavigationGroups={navigationGroups.map');
     expect(dashboard).toContain('item.locked');

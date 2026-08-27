@@ -645,3 +645,11 @@
 - [x] Add or update source contracts and isolated browser checks for the refreshed overview, responsive breakpoints, and functional actions.
 - [x] Run full test, type, build, browser, and read-only schema-compatibility verification; do not apply SQL unless a missing safe additive object is proven.
 - [x] Commit, publish, and merge the verified dashboard rebuild through the protected GitHub workflow. Pull request #42 merged at `f55d10d9ec4ff22f5870ecd01bfffa7591fa5244` after the required `Unit, Schema, Type and Production Build` check passed.
+
+## Closer Reference-Directed ERP Dashboard Replacement — 2026-08-27
+- [x] Reconcile the exact desktop reference composition with the protected dashboard shell and restrict the replacement to presentation layers.
+- [x] Replace the executive overview with the eight-KPI, four-analytics-panel, three-operational-table, and bottom-information-panel hierarchy shown in the supplied reference.
+- [x] Present a flat, role-safe desktop module list and compact top bar that align with the reference without changing navigation routes, profile-menu behavior, or access controls.
+- [x] Preserve a responsive tablet/mobile adaptation that remains usable without introducing fictitious business data.
+- [x] Extend isolated visual and interaction coverage; run complete test, type, production build, and read-only schema verification.
+- [ ] Commit, publish, and merge the verified closer reference-directed rebuild through the protected GitHub workflow.

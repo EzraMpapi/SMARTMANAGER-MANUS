@@ -17,7 +17,7 @@ async function openDashboard(page: Page) {
   const session = await installIsolatedDashboardSession(page);
   await page.goto("/app?auth=signup", { waitUntil: "domcontentloaded" });
   await dismissBlockingUi(page);
-  await expect(page.getByRole("button", { name: "Customize", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening), Layout/ })).toBeVisible();
   return session;
 }
 

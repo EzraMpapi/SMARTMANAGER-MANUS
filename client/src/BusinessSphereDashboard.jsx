@@ -47909,6 +47909,16 @@ function SmartManager() {
     ...displayedNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
     ...(displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
   ].sort((left, right) => left.groupOrder - right.groupOrder || left.order - right.order), [displayedNavigationGroups]);
+  const referenceOrderedNavigationItems = useMemo(() => {
+    const referenceOrder = ["dashboard", "sales", "pos", "point of sale", "inventory", "procurement", "finance", "accounting", "crm", "hr & payroll", "projects", "assets", "reports", "analytics", "workflow studio", "e-commerce", "communications", "settings"];
+    const rank = (item) => {
+      const label = String(item.label || "").trim().toLowerCase();
+      const id = String(item.id || "").trim().toLowerCase();
+      const position = referenceOrder.findIndex((referenceItem) => referenceItem === label || referenceItem === id);
+      return position === -1 ? referenceOrder.length + item.groupOrder * 100 + item.order : position;
+    };
+    return [...flatNavigationItems].sort((left, right) => rank(left) - rank(right) || left.label.localeCompare(right.label, "en"));
+  }, [flatNavigationItems]);
   const quickCreateActions = getQuickCreateActions({
     visibleModuleIds: visibleModules.map((module) => module.id),
     canCreate: currentRole.writeAccess !== "none",
@@ -48248,92 +48258,63 @@ function SmartManager() {
         />
       )}
 
-      {/* Sidebar — a docked navigation rail on desktop and a modal drawer on
-          mobile. Desktop reserves layout space so the content never sits under
-          the menu; mobile uses the backdrop above for an intentional drawer.
-          Rebuilt as a light theme matching the design system image exactly
-          (Kadi: "White background, Light shadow, Soft rounded corners") —
-          every dark-theme color from the earlier version (the navy/dark-
-          green gradient, white-variant text, white/10 borders) was
-          removed entirely rather than layered under the new palette. */}
+      {/* Sidebar — flat operational rail on desktop and an equivalent drawer
+          on mobile. The item source remains flatNavigationItems, which is
+          derived from the existing role-aware navigation contract. */}
       <aside
         aria-hidden={sidebarHiddenFromAssistiveTech}
-          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[188px]"} shrink-0 flex flex-col border-r border-white/10 bg-[#033c3a] text-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
+        style={{ boxShadow: "4px 0 22px rgba(2,44,42,.18)" }}
       >
-          <div className={`relative px-3 py-4 border-b border-[#F3F4F6] flex items-center justify-between ${sidebarCollapsed ? "justify-center" : ""}`}>
+          <div className={`relative flex items-center justify-between border-b border-white/10 px-3 py-4 ${sidebarCollapsed ? "justify-center" : ""}`}>
           <div className="flex items-center gap-2.5">
-            <span className="rounded-xl bg-emerald-50 p-1 ring-1 ring-emerald-100 shadow-sm"><BrandLogo variant="compact" priority className="h-8 w-8" /></span>
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/5"><BrandLogo variant="compact" priority className="h-8 w-8" /></span>
             {!sidebarCollapsed && <div className="flex flex-col leading-tight">
-              <span className="text-[14.5px] font-semibold tracking-tight brand-wordmark text-slate-950" style={{ fontFamily: "'Poppins'" }}>
-                Smart Manager
+              <span className="brand-wordmark whitespace-nowrap text-[12px] font-bold tracking-tight text-white" style={{ fontFamily: "'Poppins'" }}>
+                SMART MANAGER
               </span>
-              <span className="mt-0.5 text-[9px] font-medium uppercase tracking-[.14em] text-emerald-700">Operations hub</span>
+              <span className="mt-0.5 text-[8px] font-bold uppercase tracking-[.15em] text-emerald-300">ERP</span>
             </div>}
           </div>
-          <button className="text-slate-400 hover:text-[#111827] transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+          <button className="text-emerald-100 transition-colors hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} />
           </button>
-          <button type="button" className="hidden rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
+          <button type="button" className="hidden rounded-lg p-1.5 text-emerald-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
             {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
           </button>
         </div>
 
-        <div className="border-b border-slate-100 px-3 py-3">
-          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition group-hover:text-emerald-700"><Search size={15} /></span>
-            {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-700">Command palette</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Search modules and records</span></span><kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400">⌘K</kbd></>}
-          </button>
-          {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-2 py-1.5" role="group" aria-label="Sidebar module order">
-            <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">Order</span>
-            <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
-              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => updatePreference("navigationSort", "priority")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "priority" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
-              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => updatePreference("navigationSort", "alphabetical")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "alphabetical" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
-            </div>
-          </div>}
-        </div>
-
-        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
-          <div className={`mb-1 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
-          {displayedNavigationGroups.map((group) => {
-            const GroupIcon = group.icon;
-            const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
-            return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
-              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-[9.5px] font-bold uppercase tracking-[.13em] text-slate-400 transition hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40">
-                <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-emerald-600" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] tracking-normal text-slate-500">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
-              </button>}
-              {expanded && <div className="space-y-1">{group.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = active === item.id;
-                const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
-                  <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-300" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
-                </button>;
-              })}</div>}
-            </section>;
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-0.5 overflow-y-auto px-2 py-3" aria-label="Operational workspaces">
+          {referenceOrderedNavigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = active === item.id;
+            const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
+            return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative flex min-h-9 w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-200 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "bg-[#07945e] font-bold text-white shadow-[0_6px_14px_rgba(0,0,0,.14)]" : "text-emerald-50 hover:bg-white/10 hover:text-white"}`}>
+              <span className="flex min-w-0 items-center gap-2"><Icon size={15} strokeWidth={isActive ? 2.25 : 1.9} aria-hidden="true" />{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+              {!sidebarCollapsed && <span className="flex shrink-0 items-center gap-1">{item.locked && <Lock size={10} className="text-emerald-200/70" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[8px] font-bold text-white" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}<ChevronRight size={12} className={isActive ? "text-emerald-100" : "text-emerald-200/50"} aria-hidden="true" /></span>}
+            </button>;
           })}
         </nav>
 
-        <div className="relative border-t border-[#F3F4F6] px-3 py-3">
+        <div className="relative border-t border-white/10 px-2 py-3">
           <button
             type="button"
             onClick={() => go("settings")}
             aria-label="Open workspace settings"
-            className={`w-full flex items-center justify-between gap-2.5 rounded-xl border px-2.5 py-2.5 text-[12px] transition-colors group ${
-              active === "settings" ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-[#111827]"
+            className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-200 ${
+              active === "settings" ? "bg-[#07945e] font-bold text-white" : "text-emerald-50 hover:bg-white/10 hover:text-white"
             }`}
           >
-            <span className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
-              <span className={`grid h-8 w-8 place-items-center rounded-lg ${active === "settings" ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarCollapsed && " Settings"}
+            <span className={`flex items-center gap-2 ${sidebarCollapsed ? "justify-center" : ""}`}>
+              <Building2 size={15} strokeWidth={2} />{!sidebarCollapsed && "Workspaces"}
             </span>
-            {!canManage && <Lock size={11} className="text-slate-300" />}
+            {!canManage && <Lock size={11} className="text-emerald-200/70" />}
           </button>
-          {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
-            <MapPin size={11} className="shrink-0 text-[#16A34A]" />
-            <span>Bidhaa ya Kitanzania, kwa Wafanyabiashara wa Kitanzania na Duniani.</span>
+          {!sidebarCollapsed && <div className="mt-3 rounded-md border border-white/10 bg-black/10 px-2.5 py-2 text-[9px] leading-snug text-emerald-100/75">
+            <span className="flex items-center gap-1.5 font-semibold text-emerald-50"><span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-400" : "bg-amber-300"}`} />Connection status</span>
+            <span className="mt-1 block">{online ? "Workspace available" : "Connection unavailable"}</span>
           </div>}
         </div>
       </aside>
@@ -48342,8 +48323,17 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:min-h-[56px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              className="hidden rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 lg:inline-flex"
+              onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+            >
+              <MenuIcon />
+            </button>
             <button
               className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
               onClick={() => setSidebarOpen(true)}
@@ -48352,13 +48342,23 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <BrandLogo variant="compact" priority className="h-8 w-8 sm:hidden" />
-            <div className="hidden min-w-0 items-center gap-2.5 sm:flex">
+            <div className="hidden min-w-0 items-center gap-2.5 sm:flex lg:hidden">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm"><ActiveModuleIcon size={17} strokeWidth={2.1} /></span>
               <div className="min-w-0">
                 <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[13px] font-semibold text-slate-900">{company.name}</span><span className="hidden md:inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[.08em] text-slate-500">{currentUser.role}</span></div>
                 <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-400"><span>Workspace</span><ChevronRight size={11} /><span className="truncate text-emerald-700">{activeModuleLabel}</span></div>
               </div>
             </div>
+            {preferences.showTopBarSearch && <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              className="hidden h-9 w-full max-w-[460px] items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 text-left text-[10px] font-medium text-slate-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 lg:flex"
+              aria-label="Open command palette"
+            >
+              <Search size={14} aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate">Search customers, products, invoices, orders...</span>
+              <kbd className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[8.5px] font-mono text-slate-400">Ctrl + K</kbd>
+            </button>}
           </div>
           <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2.5">
             {preferences.showConnectionStatus && <span
@@ -48373,11 +48373,22 @@ function SmartManager() {
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
               {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
             </span>}
+            <button
+              type="button"
+              onClick={() => canManage && go("settings")}
+              disabled={!canManage}
+              className="hidden min-w-0 items-center gap-2 border-x border-slate-100 px-3 py-1 text-left transition hover:bg-slate-50 disabled:cursor-default xl:flex"
+              aria-label={`Workspace: ${company?.name || "Current workspace"}`}
+              title={canManage ? "Open workspace settings" : "Current workspace"}
+            >
+              <span className="min-w-0"><span className="block max-w-[124px] truncate text-[10px] font-bold uppercase tracking-[.04em] text-slate-800">{company?.name || "Current workspace"}</span><span className="mt-0.5 block text-[9px] font-medium text-slate-500">Workspace</span></span>
+              <ChevronDown size={13} className="shrink-0 text-slate-500" aria-hidden="true" />
+            </button>
             {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             {preferences.showTopBarSearch && <button
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search hidden xl:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-              aria-label="Search everything"
+              className="dashboard-topbar-search hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+              aria-label="Open command palette"
             >
               <Search size={13} />
               <span className="hidden md:inline">Search workspace</span>
@@ -48387,7 +48398,7 @@ function SmartManager() {
             <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize hidden min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:inline-flex sm:min-h-9" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
-                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3">
+                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden 2xl:inline-flex sm:px-3">
                   <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
                 </button>
                 {createMenuOpen && (
@@ -48403,8 +48414,8 @@ function SmartManager() {
                 )}
               </div>
             )}
-            {preferences.showGuidedTour && <div className="dashboard-topbar-tour hidden shrink-0 lg:block"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>}
-            {preferences.showTopBarDate && <span className="hidden xl:inline-flex items-center text-[10.5px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
+            {preferences.showGuidedTour && <div className="dashboard-topbar-tour hidden"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>}
+            {preferences.showTopBarDate && <span className="hidden items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-semibold text-slate-400 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
             </span>}
@@ -48415,14 +48426,14 @@ function SmartManager() {
                 {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
               </button>
             )}
-            <span className="hidden xl:block"><WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} /></span>
+            <span className="hidden"><WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} /></span>
             {/* ── Dark mode toggle ── */}
             <button
               type="button"
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="hidden min-h-8 min-w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-slate-300 hover:text-[#111827] lg:flex lg:h-8 lg:w-8"
+              className="hidden min-h-8 min-w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-slate-300 hover:text-[#111827]"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}

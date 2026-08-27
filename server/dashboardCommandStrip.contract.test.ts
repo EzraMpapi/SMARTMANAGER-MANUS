@@ -19,15 +19,16 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("onClick={() => go(m.id)}");
   });
 
-  it("renders desktop navigation as grouped, role-aware workspace sections", () => {
+  it("renders desktop navigation as a flat, reference-ordered, role-aware workspace list", () => {
     expect(dashboard).toContain("const flatNavigationItems = useMemo(() => [");
     expect(dashboard).toContain("Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))");
     expect(dashboard).toContain('sidebarModuleOrder === "alphabetical"');
     expect(dashboard).toContain("dashboard-flat-navigation");
     expect(dashboard).toContain("const navigationGroups = getNavigationGroups({");
     expect(dashboard).toContain("const displayedNavigationGroups = useMemo(() => getPresentationNavigationGroups(");
-    expect(dashboard).toContain("displayedNavigationGroups.map((group) => {");
-    expect(dashboard).toContain("toggleNavigationGroup(group.id)");
+    expect(dashboard).toContain("const referenceOrderedNavigationItems = useMemo(() => {");
+    expect(dashboard).toContain("referenceOrderedNavigationItems.map((item) => {");
+    expect(dashboard).toContain("const referenceOrder = [\"dashboard\", \"sales\", \"pos\"");
     expect(dashboard).toContain("item.locked");
   });
 
