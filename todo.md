@@ -675,4 +675,4 @@
 - [x] Inspect the current repository migration inventory and the connected Supabase project catalog without changing production data.
 - [x] Compare verified repository persistence requirements with deployed tables, columns, relationships, indexes, functions, triggers, RLS policies, and storage metadata.
 - [x] Apply only proven-safe additive schema objects that are absent from the connected project, then validate schema and tenant/RLS boundaries; no object was absent, so no production DDL/DML was appropriate.
-- [ ] Publish the verified migration/audit result through the protected GitHub workflow.
+- [x] Publish the verified migration/audit result through the protected GitHub workflow.
