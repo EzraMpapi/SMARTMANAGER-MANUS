@@ -329,7 +329,7 @@
 - [x] Define a least-privilege Platform Administrator metric and operational-control data model, with server-side role verification and no tenant subscription bypass for ordinary users.
 - [x] Implement an executive dashboard with concise KPI cards, tenant health, operational queues, activity trends, accessible navigation, loading and error states, and action-safe controls inspired by the supplied reference.
 - [x] Apply the reviewed platform schema and configuration records through the Supabase connector, without fabricating customer reviews, ratings, or tenant financial transactions.
-- [ ] Add focused contract and interface coverage; validate responsive behavior; synchronize GitHub and save the managed checkpoint.
+- [x] Add focused contract and interface coverage; validate responsive behavior; synchronize GitHub and save the managed checkpoint. Focused platform contracts passed 11 assertions; the full suite passed 264 files and 1,079 tests; TypeScript and production build passed.
 
 ## Live Server Disconnection and Blank-Load Follow-up
 - [x] Diagnose the reported live server-disconnection and blank-load state across the authenticated Vercel route and current-main preview without weakening authentication or tenant isolation.
@@ -372,11 +372,11 @@
 - [x] Run the E2E suite plus existing TypeScript/build checks, document browser prerequisites, and synchronize the verified tests.
 
 ## Complete Reference Dashboard Attachment Reconciliation
-- [ ] Audit every requirement in the supplied dashboard reconstruction attachment against the current command-center, shell, navigation, preferences, real data sources, and current migration ledger.
-- [ ] Produce a requirement-to-component and tenant-scoped source matrix, explicitly recording any request that cannot be represented without fabricating a financial or operational measure.
-- [ ] Implement every demonstrated visual, responsive, accessibility, drill-down, quick-action, chart, and state-handling gap using the existing ERP architecture.
-- [ ] Inspect live Supabase migrations, tables, relationships, policies, views, and functions; apply only proven missing additive schema objects through the connected project.
-- [ ] Run focused and full regression, TypeScript, schema, and build-readiness validation; document evidence and synchronize verified changes to GitHub main.
+- [x] Audit every requirement in the supplied dashboard reconstruction attachment against the current command-center, shell, navigation, preferences, real data sources, and current migration ledger.
+- [x] Produce a requirement-to-component and tenant-scoped source matrix, explicitly recording any request that cannot be represented without fabricating a financial or operational measure.
+- [x] Implement every demonstrated visual, responsive, accessibility, drill-down, quick-action, chart, and state-handling gap using the existing ERP architecture; the remaining shell visibility and tour-layering gap was completed in the docked grouped navigation release.
+- [x] Inspect live Supabase migrations, tables, relationships, policies, views, and functions; apply only proven missing additive schema objects through the connected project. The live schema gate confirmed no missing objects, so no DDL was applied.
+- [x] Run focused and full regression, TypeScript, schema, and build-readiness validation; document evidence and synchronize verified changes to GitHub main.
 
 ## PWA Offline Fallback Verification Presentation
 - [x] Prepare an executive presentation summarizing verified offline behavior, automated coverage, deployment status, and remaining blockers.
