@@ -663,4 +663,4 @@
 ## Command Header Icon and Hierarchy Refinement
 - [x] Audit and refine the command header’s icon grouping, visual hierarchy, accessible labels, focus treatments, and responsive spacing without changing its existing actions.
 - [x] Restore the existing dashboard-preferences action at small mobile widths after isolated browser CI detected it was visually hidden.
-- [ ] Validate the refined command header in isolated desktop and mobile browser sessions, then publish it through the protected GitHub workflow.
+- [x] Validate the refined command header in isolated desktop and mobile browser sessions, then publish it through the protected GitHub workflow.
