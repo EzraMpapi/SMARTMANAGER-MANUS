@@ -18,14 +18,14 @@ function installProfileFetch({ extended = true, includeEmployee = true, includeN
     const url = String(input);
     const body = init?.body ? JSON.parse(String(init.body)) : null;
     if (url.endsWith("/auth/v1/user")) return json({ id: "user-1", email: "person@example.com", last_sign_in_at: "2026-08-23T08:00:00.000Z" });
-    if (url.includes("/rest/v1/get_current_profile_identity")) {
+    if (url.includes("/rest/v1/rpc/get_current_profile_identity")) {
       return extended ? json({ id: "user-1", companyId: "company-1", fullName: "Person Example", email: "person@example.com", role: "Employee", isActive: true, preferredName: "Person", notificationPreferences: { email: true, push: true, sms: false }, updatedAt: "2026-08-23T08:00:00.000Z" }) : json({ message: "function not found" }, 404);
     }
-    if (url.includes("/rest/v1/update_current_profile_identity")) {
+    if (url.includes("/rest/v1/rpc/update_current_profile_identity")) {
       expect(body).toEqual({ p_payload: { preferredName: "Asha" } });
       return json({ id: "user-1", companyId: "company-1", fullName: "Asha Example", email: "person@example.com", role: "Employee", isActive: true, preferredName: "Asha", updatedAt: "2026-08-23T08:01:00.000Z" });
     }
-    if (url.includes("/rest/v1/set_current_profile_avatar")) {
+    if (url.includes("/rest/v1/rpc/set_current_profile_avatar")) {
       if (avatarRpcStatus !== 200) return json({ message: "database confirmation failed" }, avatarRpcStatus);
       return json({ id: "user-1", companyId: "company-1", fullName: "Person Example", email: "person@example.com", role: "Employee", isActive: true, avatarUrl: "https://storage.example/avatar.jpg" });
     }
