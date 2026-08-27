@@ -631,3 +631,17 @@
 
 ## Mobile Dashboard Label and Floating-Action Review
 - [x] Inspect the current small-screen navigation-label and floating-action layout rules, then provide a scoped accessible adjustment proposal.
+
+## Mobile Dashboard Viewport Follow-up Review
+- [x] Inspect the validated mobile layout for additional overlap, safe-area, control-density, and readability issues; distinguish confirmed findings from items requiring further testing.
+
+## Mobile Create-Menu Stacking Validation
+- [x] Verify in an isolated mobile session that the Create-menu backdrop intercepts bottom-navigation interaction, remains above the fixed bar, and closes safely on outside activation.
+
+## Reference-Directed ERP Dashboard Rebuild — 2026-08-27
+- [x] Audit the protected dashboard shell, existing executive data contract, reusable components, and current branch state before replacing the overview presentation.
+- [x] Rebuild the executive overview around the supplied ERP hierarchy using only existing tenant-safe data props, role-aware navigation, and truthful unavailable/empty/error states.
+- [x] Apply only targeted shell and responsive improvements required to support the rebuilt header, actions, mobile behavior, and accessible overlay layering.
+- [x] Add or update source contracts and isolated browser checks for the refreshed overview, responsive breakpoints, and functional actions.
+- [x] Run full test, type, build, browser, and read-only schema-compatibility verification; do not apply SQL unless a missing safe additive object is proven.
+- [ ] Commit, publish, and merge the verified dashboard rebuild through the protected GitHub workflow.

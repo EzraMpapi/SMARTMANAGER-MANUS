@@ -1117,6 +1117,21 @@
   box-shadow: 0 16px 30px rgba(15, 23, 42, .10);
 }
 
+.dashboard-reference-erp .dashboard-reference-kpi:active {
+  transform: translateY(0) scale(.985);
+}
+
+.dashboard-reference-erp table th,
+.dashboard-reference-erp table td {
+  vertical-align: middle;
+}
+
+.dashboard-reference-erp .recharts-default-legend {
+  display: flex;
+  justify-content: center;
+  gap: .75rem;
+}
+
 @media (max-width: 1023px) {
   .dashboard-sidebar {
     width: min(84vw, 304px) !important;
@@ -1134,5 +1149,9 @@
 
   .dashboard-reference-layout .dashboard-reference-kpi {
     min-height: 136px;
+  }
+
+  .dashboard-reference-erp .recharts-legend-wrapper {
+    transform: translateY(1px);
   }
 }
