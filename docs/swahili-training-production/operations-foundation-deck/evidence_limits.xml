@@ -1,0 +1,23 @@
+<slide id="evidence_limits">
+  <background color="paper"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="title" x="60" y="92" width="980" height="42" font="heading" size="34" color="brand" wrap="false">Taswira inaeleza; UI iliyosafishwa huelekeza</text>
+  <text id="subtitle" x="60" y="145" width="1050" height="46" font="body" size="20" color="muted">Kila visual ina matumizi maalumu; haipanuliwi kuwa ushahidi wa rekodi au matokeo.</text>
+  <shape id="concept-card" type="rect" x="60" y="220" width="330" height="330" fill="surface" stroke="muted" stroke-width="1"/>
+  <icon id="concept-icon" name="sparkles" x="88" y="248" width="42" height="42" color="brand"/>
+  <text id="concept-title" x="150" y="254" width="205" height="26" font="body" size="21" color="brand" wrap="false">V04 ya dhana</text>
+  <text id="concept-body" x="88" y="322" width="270" height="164" font="body" size="18" color="ink" line-height="1.33"><p><strong>Inaeleza:</strong> uhusiano wa shughuli kuu.</p><p><strong>Haihakikishi:</strong> stock movement, posting au reconciliation.</p></text>
+  <shape id="inventory-card" type="rect" x="445" y="220" width="330" height="330" fill="#F7F1E5" stroke="accent" stroke-width="1"/>
+  <icon id="inventory-icon" name="monitor" x="473" y="248" width="42" height="42" color="brand"/>
+  <text id="inventory-title" x="535" y="254" width="205" height="26" font="body" size="21" color="brand" wrap="false">Inventory orientation</text>
+  <text id="inventory-body" x="473" y="322" width="270" height="164" font="body" size="18" color="ink" line-height="1.33"><p><strong>Inaruhusiwa:</strong> module shell pekee.</p><p><strong>Hairuhusiwi:</strong> item, SKU, quantity, location, value au action proof.</p></text>
+  <shape id="pending-card" type="rect" x="830" y="220" width="330" height="330" fill="#FFF8E8" stroke="accent" stroke-width="1"/>
+  <icon id="pending-icon" name="lock" x="858" y="248" width="42" height="42" color="accent"/>
+  <text id="pending-title" x="920" y="254" width="205" height="50" font="body" size="20" color="brand" align="center"><p>Stock / Reports</p><p>UI</p></text>
+  <text id="pending-body" x="858" y="340" width="270" height="145" font="body" size="18" color="ink" line-height="1.33"><p><strong>Hali:</strong> bado haijapitishwa.</p><p>Inahitaji capture salama na claim-to-screen review.</p></text>
+  <shape id="policy-strip" type="rect" x="60" y="580" width="1100" height="42" fill="brand"/>
+  <text id="policy-text" x="80" y="591" width="1060" height="18" font="caption" size="14" color="white" align="center" wrap="false">Taswira ya dhana au UI iliyofunikwa haiwezi kuchukua nafasi ya ushahidi ulioidhinishwa.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="#E0D9CE" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="560" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 10–12 Operations Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">03</text>
+</slide>

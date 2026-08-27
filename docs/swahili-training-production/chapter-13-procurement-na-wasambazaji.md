@@ -1,8 +1,8 @@
-# Sura ya 13 — Procurement na Wasambazaji
+# Sura ya 13 — Ununuzi (Procurement) na Wasambazaji
 
 **Muda wa mpango:** 14:00.
 **Hadhira:** Timu za ununuzi, wasimamizi wa ghala, wasimamizi wa fedha, na viongozi wanaosimamia ufuatiliaji wa mahitaji ya biashara.
-**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana safari ya hitaji la ununuzi—uhitaji, mtoa huduma au muuzaji, mapitio, hati ya ununuzi, upokeaji, na ufuatiliaji—bila kudai supplier, quotation, price, purchase order, invoice, approval, receipt au cross-module result ya tenant yoyote.
+**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana safari ya hitaji la ununuzi—uhitaji, mtoa huduma au muuzaji, mapitio, hati ya ununuzi, upokeaji, na ufuatiliaji—bila kudai msambazaji, nukuu ya bei, bei, agizo la ununuzi, ankara, idhini, risiti au matokeo ya kuunganisha moduli ya kampuni yoyote.
 
 > **Mpaka wa ushahidi:** Procurement & Vendor Management imeorodheshwa kama **imejengwa**, ikiwa na mipaka ya persistence ya procurement na vendor workflows zinazounganisha ununuzi na stock/finance. Hilo halithibitishi vendor fulani, offer, price, purchase order, receipt, financial posting, approval, au reconciliation iliyofanyika.[1]
 
@@ -10,7 +10,7 @@
 
 | Muda | Taswira na mwendo | Kusudi la sauti | Kanuni ya ushahidi |
 |---|---|---|---|
-| 00:00–00:30 | Kadi ya `PROCUREMENT: hitaji, mapitio, ufuatiliaji` | Kutaja mada na truthfulness rule | Motion graphic. |
+| 00:00–00:30 | Kadi ya `UNUNUZI: hitaji, mapitio, ufuatiliaji` | Kutaja mada na kanuni ya ukweli | Motion graphic. |
 | 00:30–01:45 | Juma na Amina wakitazama board ya kubuniwa yenye `hitaji` na `review` pekee | Kuanza na mahitaji ya kazi | Hakuna vendor, quote au price. |
 | 01:45–03:05 | V04 core-operations concept yenye lebo `TASWIRA YA MAELEZO` | Kuonyesha ununuzi katika mnyororo wa dhana | Si procurement screen wala transaction proof. |
 | 03:05–04:30 | Diagramu: hitaji → source → mapitio → hati → upokeaji → follow-up | Kuweka vocabulary | Hakuna PO, GRN au approval detail. |
@@ -25,7 +25,7 @@
 
 ### 00:00–00:30 — Procurement ni mpangilio wa uamuzi
 
-> Procurement, au ununuzi wa biashara, huanza na hitaji linaloeleweka. Hapa hatufundishi jinsi ya kuunda order halisi; tunafundisha mnyororo wa maamuzi, mapitio na uwajibikaji. Hakuna supplier, quote, price, order, invoice au receipt halisi itakayoonekana.
+> Ununuzi wa biashara—Procurement—huanza na hitaji linaloeleweka. Hapa hatufundishi jinsi ya kuunda agizo halisi; tunafundisha mnyororo wa maamuzi, mapitio na uwajibikaji. Hakuna msambazaji, nukuu ya bei, bei, agizo, ankara au risiti halisi itakayoonekana.
 
 ### 00:30–01:45 — Hitaji kabla ya hati
 
@@ -39,17 +39,17 @@
 
 ### 03:05–04:30 — Vocabulary ya safari ya ununuzi
 
-> Safari ya dhana ni: hitaji, source, mapitio, hati, upokeaji, na ufuatiliaji. Source hapa ina maana ya chanzo cha kupata taarifa au mtoa huduma anayepitiwa kwa madhumuni sahihi. Hati ni rekodi ya hatua; haimaanishi automatic approval. Upokeaji unahitaji uthibitishaji wa kilichohusika. Ufuatiliaji unaweka hatua inayofuata wazi.
+> Safari ya dhana ni: hitaji, chanzo—source—mapitio, hati, upokeaji, na ufuatiliaji. Chanzo hapa kina maana ya mahali pa kupata taarifa au mtoa huduma anayepitiwa kwa madhumuni sahihi. Hati ni rekodi ya hatua; haimaanishi idhini ya moja kwa moja. Upokeaji unahitaji uthibitishaji wa kilichohusika. Ufuatiliaji unaweka hatua inayofuata wazi.
 
 ### 04:30–06:00 — Mapitio ya source
 
 > **Amina:** “Usichague source kwa kubahatisha. Tumia vigezo vya shirika, kusanya maelezo yanayoruhusiwa, na uache mapitio yawe sehemu ya mchakato.”
 
-> Hii ni scenario ya mafunzo. Hatuonyeshi supplier, contact, quotation, ranking, bank detail, tax detail, au agreement halisi.
+> Hii ni scenario ya mafunzo. Hatuonyeshi msambazaji, mawasiliano, nukuu ya bei, mpangilio wa tathmini, maelezo ya benki, maelezo ya kodi, au makubaliano halisi.
 
 ### 06:00–07:30 — Hati si ruhusa ya mwisho
 
-> Hati ya ununuzi inaweza kuwa rasimu au rekodi inayosubiri mapitio. Haihakikishi kwamba ruhusa imepatikana, kwamba fedha zimeidhinishwa, au kwamba bidhaa zimepokelewa. Hatua inayofuata huongozwa na sera, jukumu na usanidi wa mazingira yanayotumika.
+> Hati ya ununuzi inaweza kuwa rasimu au rekodi inayosubiri mapitio. Haihakikishi kwamba idhini imepatikana, kwamba fedha zimeidhinishwa, au kwamba bidhaa zimepokelewa. Hatua inayofuata huongozwa na sera, jukumu na usanidi wa mazingira yanayotumika.
 
 ### 07:30–09:00 — Uhusiano na Inventory na Finance
 
@@ -57,11 +57,11 @@
 
 ### 09:00–10:40 — Upokeaji na exception review
 
-> Upokeaji unauliza swali: je, kilichorekodiwa kinaendana na kilichohitajiwa na kilichopitiwa? Tofauti inahitaji mapitio; haimaanishi kubadilisha rekodi haraka au kutoa lawama. Hatuonyeshi receiving screen, quantity, value, discrepancy, au approval event.
+> Upokeaji unauliza swali: je, kilichorekodiwa kinaendana na kilichohitajiwa na kilichopitiwa? Tofauti inahitaji mapitio; haimaanishi kubadilisha rekodi haraka au kutoa lawama. Hatuonyeshi skrini ya upokeaji, idadi, thamani, tofauti, au tukio la idhini.
 
 ### 10:40–12:00 — Ubora na uwajibikaji
 
-> Kabla ya kuendelea, thibitisha hitaji, chanzo kinachopitiwa, hatua ya review, na owner wa follow-up. Usitumie taarifa ya supplier au mteja wa tenant kama mfano wa mafunzo. Usihamishe taarifa nyeti kwa njia isiyoidhinishwa ili kuharakisha mchakato.
+> Kabla ya kuendelea, thibitisha hitaji, chanzo kinachopitiwa, hatua ya mapitio, na mwenye jukumu la ufuatiliaji. Usitumie taarifa ya msambazaji au mteja wa kampuni kama mfano wa mafunzo. Usihamishe taarifa nyeti kwa njia isiyoidhinishwa ili kuharakisha mchakato.
 
 ### 12:00–14:00 — Hitimisho
 
@@ -73,9 +73,9 @@
 
 | Muda | Maandishi ya skrini | Kanuni ya subtitle |
 |---|---|---|
-| 00:08 | `PROCUREMENT: hitaji, mapitio, ufuatiliaji` | Kichwa cha sura. |
+| 00:08 | `UNUNUZI: hitaji, mapitio, ufuatiliaji` | Kichwa cha sura. |
 | 01:58 | `TASWIRA YA MAELEZO` | Lazima ibaki kwenye V04 cutaway. |
-| 03:18 | `Hitaji → source → mapitio → hati → upokeaji` | Mfuatano wa dhana. |
+| 03:18 | `Hitaji → chanzo → mapitio → hati → upokeaji` | Mfuatano wa dhana. |
 | 06:18 | `Hati ≠ ruhusa ya mwisho` | Contrast ya juu. |
 | 07:45 | `Pale inapowezeshwa: Procurement ↔ Inventory ↔ Finance` | Usibadilishe kuwa ahadi. |
 | 12:18 | `Procurement UI: BADO HAIJAPITISHWA` | Hakuna UI bandia. |

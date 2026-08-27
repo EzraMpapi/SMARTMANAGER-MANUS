@@ -1,8 +1,8 @@
-# Sura ya 15 — Manufacturing na Work Orders
+# Sura ya 15 — Uzalishaji (Manufacturing) na Maagizo ya Kazi
 
 **Muda wa mpango:** 12:00.
-**Hadhira:** Wasimamizi wa uzalishaji, operations leaders, warehouse teams, na wakurugenzi wanaohitaji kuelewa scope ya manufacturing kwa tahadhari.
-**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana input, work order, hatua ya kazi, review na output, huku akielewa kuwa Manufacturing & Work Orders imeorodheshwa kama **imejengwa kwa sehemu** na kwamba operational depth lazima ithibitishwe kwa deployment husika.
+**Hadhira:** Wasimamizi wa uzalishaji, viongozi wa shughuli za uendeshaji, timu za ghala, na wakurugenzi wanaohitaji kuelewa upeo wa uzalishaji kwa tahadhari.
+**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana ingizo—input—agizo la kazi—work order—hatua ya kazi, mapitio na tokeo, huku akielewa kuwa Manufacturing & Work Orders imeorodheshwa kama **imejengwa kwa sehemu** na kwamba kina cha utekelezaji lazima kithibitishwe kwa mazingira husika ya utekelezaji—deployment.
 
 > **Mpaka wa ukweli:** Manufacturing & Work Orders ni **imejengwa kwa sehemu**. Chanzo kinatambua surface na persistence boundaries, lakini kinaelekeza kwamba operational depth ithibitishwe kwa deployment husika. Hivyo sura hii haitadai BOM, recipe, routing, production plan, machine state, quality result, work-order execution, stock consumption, output, costing, au approval ya live.[1]
 
@@ -10,9 +10,9 @@
 
 | Muda | Taswira na mwendo | Kusudi la sauti | Kanuni ya ushahidi |
 |---|---|---|---|
-| 00:00–00:30 | Kadi ya `MANUFACTURING: imejengwa kwa sehemu` | Kutaja qualifier mapema | Label lazima ibaki. |
-| 00:30–01:45 | Juma na David kwenye board ya kubuniwa yenye `input`, `kazi`, `review`, `output` | Kueleza language ya uzalishaji | Hakuna work order halisi. |
-| 01:45–03:10 | Diagramu: input → work order concept → hatua → review → output | Kuweka thinking model | Si production screen. |
+| 00:00–00:30 | Kadi ya `UZALISHAJI: imejengwa kwa sehemu` | Kutaja qualifier mapema | Label lazima ibaki. |
+| 00:30–01:45 | Juma na David kwenye board ya kubuniwa yenye `ingizo`, `kazi`, `mapitio`, `tokeo` | Kueleza lugha ya uzalishaji | Hakuna agizo la kazi halisi. |
+| 01:45–03:10 | Diagramu: ingizo → dhana ya agizo la kazi → hatua → mapitio → tokeo | Kuweka mfano wa kufikiri | Si production screen. |
 | 03:10–04:20 | V04 concept yenye boundary label | Kuonyesha relationship na operations | Si manufacturing proof. |
 | 04:20–05:45 | Kadi ya `imejengwa kwa sehemu` dhidi ya `imehakikiwa kwa deployment` | Kueleza tofauti ya scope na evidence | Truthfulness card. |
 | 05:45–07:10 | Scenario ya work order ya kubuniwa inayosubiri review | Kueleza kwamba record si execution result | Hakuna ID, quantity, cost au role. |
@@ -25,25 +25,25 @@
 
 ### 00:00–00:30 — Qualifier ya sura
 
-> Katika SMART MANAGER, Manufacturing na Work Orders zimeorodheshwa kama **imejengwa kwa sehemu**. Hii ndiyo lebo ya ukweli wa sura: surface na persistence boundaries zinatambuliwa, lakini depth ya uendeshaji lazima ithibitishwe kwa deployment inayotumika. Hatuwezi kubadilisha label hii kuwa ahadi ya production workflow kamili.
+> Katika SMART MANAGER, Uzalishaji—Manufacturing—na Maagizo ya Kazi—Work Orders—vimeorodheshwa kama **imejengwa kwa sehemu**. Hii ndiyo lebo ya ukweli wa sura: mwonekano wa moduli na mipaka ya uhifadhi vinatambuliwa, lakini kina cha uendeshaji lazima kithibitishwe kwa mazingira yanayotumika ya deployment. Hatuwezi kubadilisha lebo hii kuwa ahadi ya mtiririko kamili wa uzalishaji.
 
 ### 00:30–01:45 — Lugha ya dhana
 
-> **Juma:** “Kwa level ya mafunzo, tunaanza na input, kazi, mapitio na output. Lakini hatusemi kwamba item fulani imetumika, order imekamilika, au output imepokelewa.”
+> **Juma:** “Kwa kiwango cha mafunzo, tunaanza na ingizo, kazi, mapitio na tokeo. Lakini hatusemi kwamba item fulani imetumika, agizo limekamilika, au tokeo limepokelewa.”
 
 > **David:** “Sahihi. Hizi ni pointi za kufikiri. Kila deployment inaweza kuwa na scope, role, data na usanidi tofauti.”
 
 ### 01:45–03:10 — Work order kama dhana
 
-> Mchoro huu unaweka work order kama concept ya kupanga kazi inayoweza kuhitaji input, hatua, review na output. Hatuonyeshi work-order screen, ID, product, recipe, quantity, cost, machine, operator, start/end time au status. Diagramu haijathibitisha kwamba execution path inafanya kazi katika mazingira ya live.
+> Mchoro huu unaweka agizo la kazi kama dhana ya kupanga kazi inayoweza kuhitaji ingizo, hatua, mapitio na tokeo. Hatuonyeshi skrini ya agizo la kazi, ID, bidhaa, recipe, idadi, gharama, mashine, mtendaji, muda wa kuanza/kuisha au hali. Diagramu haijathibitisha kwamba njia ya utekelezaji inafanya kazi katika mazingira yanayotumika.
 
 ### 03:10–04:20 — Relationship ya operations
 
-> V04 inatumika hapa kama visual ya high-level operations. Inaweza kusaidia kueleza kwamba manufacturing inaweza kugusa Inventory, Procurement au Finance. Lakini relationship hiyo ni ya dhana. Haitoi proof ya stock consumption, material issue, output receipt, costing, journal entry, or reconciliation.
+> V04 inatumika hapa kama taswira ya shughuli za kiwango cha jumla. Inaweza kusaidia kueleza kwamba uzalishaji unaweza kugusa Inventory, Procurement au Finance. Lakini uhusiano huo ni wa dhana. Hautoi uthibitisho wa stock consumption, material issue, output receipt, costing, journal entry, or reconciliation.
 
 ### 04:20–05:45 — Scope dhidi ya deployment verification
 
-> `Imejengwa kwa sehemu` inamaanisha hatusemi zaidi ya tulichothibitisha. Inaweza kuwa na surface na persistence boundaries, lakini capability ya kina—kama routing, quality, costing au execution—lazima ipitiwe kwa deployment husika. Uwazi huu hulinda mtazamaji dhidi ya kuchukulia UI au diagramu kama ahadi ya kila workflow.
+> `Imejengwa kwa sehemu` inamaanisha hatusemi zaidi ya tulichothibitisha. Inaweza kuwa na mwonekano wa moduli na mipaka ya uhifadhi, lakini uwezo wa kina—kama routing, quality, costing au execution—lazima upitiwe kwa deployment husika. Uwazi huu hulinda mtazamaji dhidi ya kuchukulia UI au diagramu kama ahadi ya kila mtiririko wa kazi.
 
 ### 05:45–07:10 — Scenario ya mafunzo
 
@@ -71,8 +71,8 @@
 
 | Muda | Maandishi ya skrini | Kanuni ya subtitle |
 |---|---|---|
-| 00:08 | `MANUFACTURING: IMEJENGWA KWA SEHEMU` | Label lazima ionekane. |
-| 01:55 | `Input → work order concept → hatua → review → output` | `concept` ifafanuliwe kwenye narration. |
+| 00:08 | `UZALISHAJI: IMEJENGWA KWA SEHEMU` | Lebo lazima ionekane. |
+| 01:55 | `Ingizo → dhana ya agizo la kazi → hatua → mapitio → tokeo` | Dhana ifafanuliwe kwenye narration. |
 | 03:22 | `TASWIRA YA MAELEZO` | Kaa kwenye V04 concept. |
 | 04:35 | `Scope ≠ deployment verification` | Contrast ya juu. |
 | 07:25 | `Quality review ≠ quality result` | Usionyeshe data ya quality. |

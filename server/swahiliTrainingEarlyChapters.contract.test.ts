@@ -17,6 +17,9 @@ const chapterSpecs = [
   ["chapter-13-procurement-na-wasambazaji.md", "14:00"],
   ["chapter-14-supply-chain.md", "12:00"],
   ["chapter-15-manufacturing-na-work-orders.md", "12:00"],
+  ["chapter-16-financial-management.md", "16:00"],
+  ["chapter-17-accounting-na-ledger.md", "14:00"],
+  ["chapter-18-payroll-na-people-operations.md", "14:00"],
 ] as const;
 
 function readChapter(filename: string) {
@@ -96,6 +99,22 @@ describe("Swahili early-chapter production pack contract", () => {
     expect(manufacturing).toContain("Manufacturing UI capture");
     expect(manufacturing).toContain("IMEJENGWA KWA SEHEMU");
     expect(manufacturing).toContain("imejengwa kwa sehemu");
+  });
+
+  it("retains the finance, accounting, and payroll evidence gates", () => {
+    const finance = readChapter("chapter-16-financial-management.md");
+    const accounting = readChapter("chapter-17-accounting-na-ledger.md");
+    const payroll = readChapter("chapter-18-payroll-na-people-operations.md");
+
+    expect(finance).toContain("Finance detail UI");
+    expect(finance).toContain("Bado haijapitishwa");
+    expect(finance).toContain("frame ya Finance iliyosafishwa");
+    expect(accounting).toContain("Accounting UI");
+    expect(accounting).toContain("Bado haijapitishwa");
+    expect(accounting).toContain("haionyeshi Accounting UI");
+    expect(payroll).toContain("HR/Payroll UI capture");
+    expect(payroll).toContain("Bado haijapitishwa");
+    expect(payroll).toContain("Hakuna HR/Payroll UI capture iliyoidhinishwa");
   });
 
   it("preserves Kiswahili-first terminology across Sales, POS, and CRM", () => {

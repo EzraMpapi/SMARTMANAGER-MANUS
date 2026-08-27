@@ -578,3 +578,12 @@
 - [x] Re-run targeted schema parity and dashboard quality checks after the live audit and rebase: schema gate, full test suite, TypeScript, production build, and whitespace check passed.
 - [x] Commit and push all verified dashboard release changes to the private GitHub `main` branch without including secrets.
 - [x] Save the managed release checkpoint and report the exact synchronization and schema outcome.
+
+## Swahili Training Chapters 16–18, Operations Deck, and Animation Foundation
+- [x] Review verified Financial Management, Accounting, Payroll, and approved animation-source boundaries.
+- [x] Produce privacy-gated, time-coded Kiswahili production packs for Chapter 16 Financial Management, Chapter 17 Accounting, and Chapter 18 Payroll with scripts, VTT cues, asset lists, QA, Ulichojifunza, and Kinachofuata.
+- [x] Run a comprehensive Kiswahili terminology audit across Chapters 01–15, record targeted Kiswahili-first corrections, and add regression coverage.
+- [x] Prepare the Chapters 10–12 presentation narrative and slide-aligned Kiswahili presenter script with approved conceptual/redacted evidence only.
+- [x] Generate and present the evidence-based Chapters 10–12 operations-foundation slide deck.
+- [x] Create and validate a reviewable Chapters 01–15 animation assembly plan, subtitle/audio ledger, and pilot asset package without claiming a complete master video.
+- [ ] Run final validation and synchronize the reviewed Chapter 16–18, terminology, operations-deck, and animation-foundation package to GitHub main.
