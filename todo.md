@@ -653,3 +653,9 @@
 - [x] Preserve a responsive tablet/mobile adaptation that remains usable without introducing fictitious business data.
 - [x] Extend isolated visual and interaction coverage; run complete test, type, production build, and read-only schema verification.
 - [x] Commit, publish, and merge the verified closer reference-directed rebuild through the protected GitHub workflow. Pull request #44 merged at `fa792a67fecf56a77ec99686affb2d80ff006503` after the required `Unit, Schema, Type and Production Build` check passed.
+
+## Mobile Create-Menu Revalidation — 2026-08-27
+- [x] Revalidate the small-screen dashboard layout and Create-menu backdrop interception against fixed bottom navigation using the isolated browser session.
+
+## Mobile Revalidation Checklist Publication
+- [x] Commit and publish the completed mobile Create-menu revalidation record while excluding transient browser-test artifacts.
