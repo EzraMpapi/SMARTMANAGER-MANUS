@@ -4,7 +4,7 @@
 **Audience:** Product, engineering, operations, and compliance reviewers
 **Purpose:** Present the validated authenticated commerce-management scope, the deliberate safety gates, the current bundle evidence, and the next release approvals.
 
-> **Delivery rule:** Distinguish confirmed behavior from design-only and environment-gated work. The checkout simulation is offline-only; it did not collect money, call a provider, create Supabase rows, or deliver a shipment. The route wrapper is 1.66 kB, but the current core remains 3,995.36 kB, so the practical initial dashboard payload is not yet below 500 kB.
+> **Delivery rule:** Distinguish confirmed behavior from design-only and environment-gated work. The checkout simulation is offline-only; it did not collect money, call a provider, create Supabase rows, or deliver a shipment. The route wrapper is 1.66 kB, but the current core remains 3,994.37 kB, so the practical initial dashboard payload is not yet below 500 kB.
 
 ## Cover — SMART MANAGER E-Commerce Architecture & Validation
 
@@ -28,7 +28,7 @@ The order workspace is designed around supported state semantics. Search and sta
 
 ## Slide 5 — Validation covered the full repository and responsive browser journeys
 
-The authoritative full Vitest run passed **1,108 tests across 270 files**, with **15 deliberate skips** and no failures. The new offline commerce simulation adds four focused passing tests covering the happy path, duplicate-event idempotency, oversell rejection, and invalid or empty checkout lines. The wrapper/core migration also passed the dashboard integration and source-contract coverage after updating consumers to inspect the moved core. Type checking, direct Vite production building, and whitespace validation were part of the quality gates. Earlier browser evidence covered authentication journeys at 1,440, 768, 390, and 360 pixels. The next slide explains why the 15 skips remain visible rather than being hidden or mocked.
+The authoritative full Vitest run passed **1,109 tests across 270 files**, with **15 deliberate skips** and no failures. The new offline commerce simulation adds four focused passing tests covering the happy path, duplicate-event idempotency, oversell rejection, and invalid or empty checkout lines. The wrapper/core migration also passed the dashboard integration and source-contract coverage after updating consumers to inspect the moved core. Type checking, direct Vite production building, and whitespace validation were part of the quality gates. Earlier browser evidence covered authentication journeys at 1,440, 768, 390, and 360 pixels. The next slide explains why the 15 skips remain visible rather than being hidden or mocked.
 
 ## Slide 6 — The 15 skipped tests are deliberate environment gates
 
@@ -36,7 +36,7 @@ The skipped tests are controlled boundaries, not silent failures. Five Community
 
 ## Slide 7 — Chunking reduced the dashboard entry asset by 13 percent
 
-The first optimization wave reduced the previous dashboard chunk from **4,524,618 bytes** to **3,931,514 bytes**, a reduction of **593,104 bytes or 13.00%**. It also created cacheable community, additional-module, and static-data chunks. The stronger wrapper/core split now emits a **1.66 kB** `BusinessSphereDashboard` route wrapper, but that wrapper immediately lazy-loads a **3,995.36 kB** core. The community module is about **438.01 kB**, the additional module about **93.50 kB**, and static data about **56.26 kB**. Therefore the route filename is below 500 kB, but the practical initial dashboard consumption is not. The next decomposition wave must extract route-specific workspaces such as Settings, Sales, Finance, POS, and Reports behind real lazy boundaries.
+The first optimization wave reduced the previous dashboard chunk from **4,524,618 bytes** to **3,931,514 bytes**, a reduction of **593,104 bytes or 13.00%**. It also created cacheable community, additional-module, and static-data chunks. The stronger wrapper/core split now emits a **1.66 kB** `BusinessSphereDashboard` route wrapper, but that wrapper immediately lazy-loads a **3,994.37 kB** core. The community module is about **438.01 kB**, the additional module about **93.50 kB**, and static data about **56.26 kB**. Therefore the route filename is below 500 kB, but the practical initial dashboard consumption is not. The next decomposition wave must extract route-specific workspaces such as Settings, Sales, Finance, POS, and Reports behind real lazy boundaries.
 
 ## Slide 8 — Checkout integration needs a server-first contract
 

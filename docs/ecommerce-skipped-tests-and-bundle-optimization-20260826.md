@@ -4,7 +4,7 @@
 
 ## Executive result
 
-The authoritative full Vitest suite completed successfully with **1,108 passed tests**, **15 skipped tests**, and **7 skipped test files** across **270 files**. The skipped cases are explicit environment gates, not silent assertion failures. The checkout/payment/shipping addition is covered by four offline-only passing tests. The dashboard optimization now has both a first chunking baseline and a wrapper/core measurement; these must not be conflated.
+The authoritative full Vitest suite completed successfully with **1,109 passed tests**, **15 skipped tests**, and **7 skipped test files** across **270 files**. The skipped cases are explicit environment gates, not silent assertion failures. The checkout/payment/shipping addition is covered by four offline-only passing tests. The dashboard optimization now has both a first chunking baseline and a wrapper/core measurement; these must not be conflated.
 
 ## Complete skipped-test inventory
 
@@ -29,12 +29,12 @@ The first optimization baseline was **4,524,618 bytes** and the first manual-chu
 | Emitted asset | Size | Interpretation |
 |---|---:|---|
 | `BusinessSphereDashboard-*.js` | 1,661 bytes | Thin route entry wrapper |
-| `BusinessSphereDashboardCore-*.js` | 3,995,364 bytes | Core fetched immediately by the wrapper |
+| `BusinessSphereDashboardCore-*.js` | 3,994,374 bytes | Core fetched immediately by the wrapper |
 | `dashboard-community-modules-*.js` | 438,013 bytes | Lazy Community Groups and Employee Portal factory |
 | `dashboard-additional-modules-*.js` | 93,497 bytes | Additional extracted module bundle |
 | `dashboard-static-data-*.js` | 56,257 bytes | Static/configuration data bundle |
 
-The wrapper filename is below 500 kB, but the practical initial dashboard payload is **not** below 500 kB because the wrapper immediately loads the approximately **4.00 MB** core. The build still reports the configured 2,500 kB warning. The next safe performance wave must extract whole route-specific workspaces behind true dynamic imports rather than raising the warning limit or claiming success from the wrapper alone.
+The wrapper filename is below 500 kB, but the practical initial dashboard payload is **not** below 500 kB because the wrapper immediately loads the approximately **3.99 MB** core. The build still reports the configured 2,500 kB warning. The next safe performance wave must extract whole route-specific workspaces behind true dynamic imports rather than raising the warning limit or claiming success from the wrapper alone.
 
 ## Offline commerce simulation evidence
 
