@@ -1142,6 +1142,7 @@
     border-right: 0;
   }
 
+  .dashboard-topbar-menu-control,
   .dashboard-topbar-ai-shortcut,
   .dashboard-topbar-customize,
   .dashboard-topbar-notification-slot > div > button {

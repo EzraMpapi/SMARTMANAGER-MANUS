@@ -687,3 +687,12 @@
 - [x] Inspect mobile header layout contracts and current isolated browser coverage across narrow phone widths.
 - [x] Validate that the header, Create-menu overlay, dashboard content, and fixed bottom navigation do not overlap or clip each other at supported phone breakpoints.
 - [x] Record the isolated mobile audit outcome and apply only a demonstrated layout correction if one is needed; no overlap or clipping correction was proven necessary.
+
+## Mobile Performance, Top-Header Accessibility, and Final Audit Slides
+- [x] Establish an isolated production-build baseline for mobile dashboard loading and inspect top-header accessibility semantics.
+- [x] Measure mobile dashboard loading performance and accessibility of each new top-header control without using production tenant data.
+- [x] Repair the demonstrated 36px mobile menu control so every visible retained top-header action meets the 40px touch-target requirement.
+- [x] Add an explicit accessible name and controlled-menu relationship to the mobile Create action so it is unambiguous beside the profile menu.
+- [x] Add the demonstrated Escape-key close behavior to the mobile Create menu and restore focus to its trigger.
+- [x] Fix only any demonstrated performance or accessibility defect and rerun the focused audit.
+- [x] Prepare the verified audit summary and generate final report slides.

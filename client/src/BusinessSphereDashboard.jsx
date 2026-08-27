@@ -48084,17 +48084,24 @@ function SmartManager() {
   // level so it works regardless of which module currently has focus.
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const createMenuTriggerRef = useRef(null);
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setPaletteOpen((o) => !o);
       }
-      if (e.key === "Escape") setPaletteOpen(false);
+      if (e.key === "Escape") {
+        setPaletteOpen(false);
+        if (createMenuOpen) {
+          setCreateMenuOpen(false);
+          requestAnimationFrame(() => createMenuTriggerRef.current?.focus());
+        }
+      }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [createMenuOpen]);
 
   // Real, per-device dark mode preference for the App Shell — the same
   // localStorage pattern already proven for App Lock, since visual theme
@@ -48351,7 +48358,7 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <button
-              className="dashboard-topbar-menu-control text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
+              className="dashboard-topbar-menu-control inline-flex min-h-10 min-w-10 items-center justify-center text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -48410,12 +48417,12 @@ function SmartManager() {
             </div>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
-            <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="dashboard-topbar-create inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden sm:px-3">
+            <button ref={createMenuTriggerRef} type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" aria-label="Open create menu" aria-controls={createMenuOpen ? "dashboard-create-menu" : undefined} className="dashboard-topbar-create inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden sm:px-3">
                   <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
                 </button>
                 {createMenuOpen && (
                   <>
-                    <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
+                    <div id="dashboard-create-menu" className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
                       <p className="px-3 pb-1.5 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Create in workspace</p>
                       {quickCreateActions.map((action) => {
                         const ActionIcon = action.icon;
