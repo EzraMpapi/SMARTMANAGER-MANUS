@@ -19,6 +19,7 @@ export const dashboardLayoutTelemetryEventInput = z.object({
 
 export const dashboardLayoutAnalyticsInput = z.object({
   range: z.enum(["7d", "30d", "90d", "all"]).default("30d"),
+  eventType: z.enum(EVENT_TYPES).optional(),
 });
 
 type EventInput = z.infer<typeof dashboardLayoutTelemetryEventInput>;
@@ -104,10 +105,11 @@ export async function getDashboardLayoutAnalytics(req: CreateExpressContextOptio
   const cutoff = parsed.range === "all" ? null : new Date(Date.now() - Number(parsed.range.replace("d", "")) * 86_400_000).toISOString();
   const query = new URLSearchParams({ select: "event_type,source_type,source_id,layout_signature,target_type,target_value,occurred_at", company_id: `eq.${profile.company_id}`, order: "occurred_at.desc", limit: "5000" });
   if (cutoff) query.set("occurred_at", `gte.${cutoff}`);
+  if (parsed.eventType) query.set("event_type", `eq.${parsed.eventType}`);
   const [events, presets] = await Promise.all([
     serviceRequest(`dashboard_layout_telemetry?${query.toString()}`) as Promise<Array<Record<string, unknown>> | null>,
     serviceRequest(`dashboard_team_presets?${new URLSearchParams({ select: "id,name,target_type,target_value", company_id: `eq.${profile.company_id}`, limit: "100" }).toString()}`) as Promise<Array<Record<string, unknown>> | null>,
   ]);
   const rows = events || [];
-  return { range: parsed.range, ...aggregateDashboardLayoutEvents(rows, presets || []) };
+  return { range: parsed.range, eventType: parsed.eventType || null, ...aggregateDashboardLayoutEvents(rows, presets || []) };
 }

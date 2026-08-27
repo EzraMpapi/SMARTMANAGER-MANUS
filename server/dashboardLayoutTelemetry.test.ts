@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { aggregateDashboardLayoutEvents, assertDashboardAnalyticsRole, createLayoutSignature } from "./dashboardLayoutTelemetry";
+import { aggregateDashboardLayoutEvents, assertDashboardAnalyticsRole, createLayoutSignature, dashboardLayoutAnalyticsInput } from "./dashboardLayoutTelemetry";
+import { buildDashboardLayoutAnalyticsCsv, dashboardLayoutAnalyticsExportFilename } from "../client/src/lib/dashboardLayoutAnalyticsExport";
 
  describe("dashboard layout telemetry", () => {
   it("counts only adoption events and resolves team preset names", () => {
@@ -22,8 +23,39 @@ import { aggregateDashboardLayoutEvents, assertDashboardAnalyticsRole, createLay
     expect(() => assertDashboardAnalyticsRole("CEO")).not.toThrow();
   });
 
+  it("accepts supported event filters and rejects unknown event types", () => {
+    expect(dashboardLayoutAnalyticsInput.parse({ range: "30d", eventType: "preset_pushed" })).toEqual({ range: "30d", eventType: "preset_pushed" });
+    expect(() => dashboardLayoutAnalyticsInput.parse({ range: "30d", eventType: "customer_created" })).toThrow();
+  });
+
   it("creates a stable non-sensitive layout signature", () => {
     expect(createLayoutSignature({ compactDensity: true, widgetOrder: ["revenue"] })).toBe(createLayoutSignature({ compactDensity: true, widgetOrder: ["revenue"] }));
     expect(createLayoutSignature({ compactDensity: true })).not.toBe(createLayoutSignature({ compactDensity: false }));
+  });
+
+  it("exports only aggregate sections and safely escapes spreadsheet cells", () => {
+    const csv = buildDashboardLayoutAnalyticsCsv({
+      range: "30d",
+      eventType: "preset_pushed",
+      adoptionEvents: 4,
+      trackedEvents: 6,
+      topSources: [{ label: "Finance, leads", sourceType: "team_role", adoptionEvents: 4 }],
+      topLayouts: [{ signature: "layout-abc12345", sourceType: "team_role", adoptionEvents: 4 }],
+      activityByDay: [{ date: "2026-08-27", adoptionEvents: 4 }],
+      eventBreakdown: [{ eventType: "preset_pushed", count: 2 }],
+    }, new Date("2026-08-27T12:00:00.000Z"));
+    expect(csv).toContain("\"Event type filter\",\"preset_pushed\"");
+    expect(csv).toContain("Privacy boundary");
+    expect(csv).toContain("\"Finance, leads\"");
+    expect(csv).toContain("\"layout-abc12345\"");
+    expect(csv).not.toContain("company_id");
+    expect(csv).not.toContain("user_id");
+    expect(dashboardLayoutAnalyticsExportFilename(new Date("2026-08-27T12:00:00.000Z"))).toBe("smart-manager-dashboard-layout-analytics-2026-08-27.csv");
+    expect(dashboardLayoutAnalyticsExportFilename(new Date("2026-08-27T12:00:00.000Z"), "preset_pushed")).toBe("smart-manager-dashboard-layout-analytics-preset_pushed-2026-08-27.csv");
+  });
+
+  it("guards exported cells against spreadsheet formula execution", () => {
+    const csv = buildDashboardLayoutAnalyticsCsv({ range: "all", adoptionEvents: 0, trackedEvents: 1, topSources: [{ label: "=HYPERLINK(\"https://bad\")", sourceType: "personal", adoptionEvents: 0 }], topLayouts: [], activityByDay: [], eventBreakdown: [] });
+    expect(csv).toContain("\"'=HYPERLINK(\"\"https://bad\"\")");
   });
 });

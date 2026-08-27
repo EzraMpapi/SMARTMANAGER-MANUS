@@ -667,3 +667,15 @@
 - [x] Apply the safest checkpoint recovery: create a clean local commit after confirming the large dependency directory was ignored and the tracked release delta was limited to the intended 25 files.
 - [x] Re-run required quality gates and retry managed checkpoint publication; TypeScript, Supabase schema verification, full Vitest, and production build passed.
 - [x] Document the final checkpoint version: `e43b385f`; managed publication completed successfully and the version is live.
+
+## Dashboard Layout Analytics CSV Export
+- [x] Inspect existing analytics data shape and CSV export conventions.
+- [x] Add a privacy-safe administrator CSV export for tenant-scoped telemetry summaries. The export is generated from the already protected aggregate analytics response and excludes preference payloads, business records, user identifiers, and tenant identifiers.
+- [x] Add regression coverage for CSV escaping, spreadsheet formula injection protection, export contents, and the administrator access boundary.
+- [x] Run TypeScript, focused/full tests, Supabase schema verification, production build, and whitespace validation. All checks passed; checkpoint publication is next.
+
+## Dashboard Layout Analytics Event-Type Export Filter
+- [x] Inspect the telemetry event contract and current analytics export flow.
+- [x] Add an event-type dropdown beside Export CSV and apply the selected event filter to the protected tenant-scoped analytics query and downloaded data.
+- [x] Add regression coverage for all-events and single-event exports, supported/invalid event filters, filtering labels, spreadsheet safety, and privacy boundaries.
+- [x] Run TypeScript, focused/full tests, Supabase schema verification, production build, and whitespace validation. All checks passed; checkpoint publication is next.
