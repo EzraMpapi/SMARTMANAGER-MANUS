@@ -32,6 +32,17 @@ describe("dashboard operational command strip", () => {
     );
   });
 
+  it("keeps notification and command overlays keyboard-operable without widening data access", () => {
+    expect(dashboard).toContain("const closeOnEscape = (event) => {");
+    expect(dashboard).toContain('if (event.key !== "Escape") return;');
+    expect(dashboard).toContain("aria-expanded={open}");
+    expect(dashboard).toContain('aria-controls={open ? "notification-center-panel" : undefined}');
+    expect(dashboard).toContain('id="notification-center-panel"');
+    expect(dashboard).toContain('role="region"');
+    expect(dashboard).toContain('if (e.key === "Escape") { e.preventDefault(); onClose(); return; }');
+    expect(dashboard).toContain("modules.some((m) => m.id === a.module)");
+  });
+
   it("renders desktop navigation as a flat, reference-ordered, role-aware workspace list", () => {
     expect(dashboard).toContain("const flatNavigationItems = useMemo(() => [");
     expect(dashboard).toContain("Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))");

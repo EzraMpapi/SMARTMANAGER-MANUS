@@ -664,3 +664,9 @@
 - [x] Audit and refine the command header’s icon grouping, visual hierarchy, accessible labels, focus treatments, and responsive spacing without changing its existing actions.
 - [x] Restore the existing dashboard-preferences action at small mobile widths after isolated browser CI detected it was visually hidden.
 - [x] Validate the refined command header in isolated desktop and mobile browser sessions, then publish it through the protected GitHub workflow.
+
+## Notification Center and Command Palette Production-Build Audit
+- [x] Inspect the current production-build interaction paths, accessible controls, and isolated browser coverage for Notification Center and Command Palette.
+- [x] Add only any demonstrated isolated-browser regression coverage needed for desktop and mobile interactions.
+- [x] Add the demonstrated Notification Center Escape-close and expanded-state accessibility behavior without changing alert data or navigation actions.
+- [x] Run the isolated production-build checks and record the interaction, accessibility, and tenant-safety outcome without changing production data or schema.

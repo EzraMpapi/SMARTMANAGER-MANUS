@@ -89,4 +89,33 @@ test.describe("reference-directed enterprise dashboard", () => {
     expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
     await page.screenshot({ path: testInfo.outputPath("create-menu-mobile-stacking.png"), fullPage: false });
   });
+
+  test("keeps Notification Center and Command Palette interactive and isolated in the production build", async ({ page }, testInfo) => {
+    await page.setViewportSize(testInfo.project.name === "chromium-mobile" ? { width: 375, height: 812 } : { width: 1440, height: 960 });
+    const session = await openDashboard(page);
+    const notificationToggle = page.getByLabel("Notifications", { exact: true });
+
+    await expect(notificationToggle).toBeVisible();
+    await notificationToggle.click();
+    await expect(page.getByRole("heading", { name: "Notifications", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /View Today Daily Brief/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("heading", { name: "Notifications", exact: true })).toBeHidden();
+    await notificationToggle.click();
+    await expect(page.getByRole("heading", { name: "Notifications", exact: true })).toBeVisible();
+    await page.locator("div.fixed.inset-0.z-30").last().click({ position: { x: 8, y: 8 } });
+    await expect(page.getByRole("heading", { name: "Notifications", exact: true })).toBeHidden();
+
+    await page.keyboard.press("Control+k");
+    const palette = page.getByRole("dialog", { name: "Search workspace" });
+    const search = page.getByRole("textbox", { name: "Search customers, invoices, products, modules, and actions" });
+    await expect(palette).toBeVisible();
+    await expect(search).toBeFocused();
+    await search.fill("sales");
+    await expect(page.getByRole("listbox", { name: "Workspace search results" })).toContainText("Sales");
+    await page.keyboard.press("Escape");
+    await expect(palette).toBeHidden();
+
+    expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
+  });
 });
