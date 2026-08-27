@@ -343,7 +343,7 @@
 - [x] Validate the production web contract and Android packaging configuration, then synchronize the verified changes safely.
 - [x] Update the pre-existing Vercel routing contract test for the narrowly scoped same-origin logo rewrite, then rerun the affected CI gate.
 - [x] Reconcile the remote Android TWA guide with the verified Vercel-origin source and rerun CI after the detected stale-document regression.
-- [ ] Diagnose and remove the safe Vercel deployment pipeline or configuration block preventing the synchronized Android/PWA source from reaching production.
+- [x] Diagnose and remove the safe Vercel deployment pipeline or configuration block preventing the synchronized Android/PWA source from reaching production; the current synchronized production deployment is READY and serves `https://menejajanja.vercel.app/app` with HTTP 200.
 - [x] Restore the TWA template if concurrent main-branch changes regress it away from `https://menejajanja.vercel.app`, then rerun its contract validation.
 - [x] Restore the Android packaging contract if concurrent main-branch changes assert a managed-host origin instead of `https://menejajanja.vercel.app`.
 - [ ] Resolve or obtain approval for the GitHub Actions billing/spending-limit blocker that prevents the quality gate from starting.
