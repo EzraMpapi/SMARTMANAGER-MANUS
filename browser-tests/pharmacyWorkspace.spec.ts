@@ -45,13 +45,31 @@ async function openPharmacyWorkspace(page: Parameters<typeof test>[0]["page"]) {
   if (await closeTour.count() && await closeTour.isVisible().catch(() => false)) await closeTour.click({ force: true });
   const skipTour = page.getByRole("button", { name: "Skip tour", exact: true }).last();
   if (await skipTour.count() && await skipTour.isVisible().catch(() => false)) await skipTour.click({ force: true });
-  const closeMenu = page.getByRole("button", { name: "Close menu", exact: true }).last();
-  if (await closeMenu.count() && await closeMenu.isVisible().catch(() => false)) await closeMenu.click({ force: true });
-  const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
-  if (await openMenu.count() && await openMenu.isVisible().catch(() => false)) await openMenu.click({ force: true });
-  const pharmacyNav = page.locator("aside nav button").filter({ hasText: "Pharmacy" }).last();
-  await pharmacyNav.scrollIntoViewIfNeeded();
-  await pharmacyNav.evaluate((element) => (element as HTMLElement).click());
+  const workspaceAside = page.locator("aside").first();
+  const workspaceNav = page.locator('aside nav[aria-label="Operational workspaces"]');
+  const isMobile = await page.evaluate(() => window.innerWidth < 1024);
+  if (isMobile && (await workspaceAside.getAttribute("aria-hidden")) === "true") {
+    const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
+    await expect(openMenu).toBeVisible();
+    await openMenu.click({ force: true });
+    await expect(workspaceAside).toHaveAttribute("aria-hidden", "false");
+  }
+  const pharmacyNav = page.locator('aside nav button[data-tour-target="pharmacy"]');
+  if (await pharmacyNav.count()) {
+    await expect(pharmacyNav).toBeVisible();
+    await pharmacyNav.click({ force: true });
+  } else {
+    const specializedNav = page.locator('aside nav button[aria-controls="navigation-items-specialized"]');
+    if (await specializedNav.count()) {
+      await expect(specializedNav).toBeVisible();
+      if ((await specializedNav.getAttribute("aria-expanded")) !== "true") await specializedNav.click({ force: true });
+      await expect(specializedNav).toHaveAttribute("aria-expanded", "true");
+      await expect(pharmacyNav).toBeVisible();
+      await pharmacyNav.click({ force: true });
+    } else {
+      await page.goto("/app?module=pharmacy", { waitUntil: "domcontentloaded" });
+    }
+  }
   await page.waitForTimeout(1200);
   for (const name of ["Close onboarding tour", "Skip tour"]) {
     const tourButton = page.getByRole("button", { name, exact: true }).last();

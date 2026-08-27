@@ -105,6 +105,10 @@ test.describe("operations procurement and warehouse integration journeys", () =>
     const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
     if (await openMenu.count() && await openMenu.isVisible().catch(() => false)) await openMenu.click({ force: true });
     const procurementNav = page.locator("aside nav button").filter({ hasText: "Procurement" }).first();
+    if (!(await procurementNav.count()) || !(await procurementNav.isVisible().catch(() => false))) {
+      const operationsNav = page.locator("aside nav button").filter({ hasText: "Operations" }).first();
+      if (await operationsNav.count() && await operationsNav.isVisible().catch(() => false)) await operationsNav.evaluate((element) => (element as HTMLButtonElement).click());
+    }
     await expect(procurementNav).toBeVisible();
     await procurementNav.scrollIntoViewIfNeeded();
     await procurementNav.evaluate((element) => (element as HTMLElement).click());
@@ -125,6 +129,10 @@ test.describe("operations procurement and warehouse integration journeys", () =>
     const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
     if (await openMenu.count() && await openMenu.isVisible().catch(() => false)) await openMenu.click({ force: true });
     const inventoryNav = page.locator("aside nav button").filter({ hasText: "Inventory" }).first();
+    if (!(await inventoryNav.count()) || !(await inventoryNav.isVisible().catch(() => false))) {
+      const operationsNav = page.locator("aside nav button").filter({ hasText: "Operations" }).first();
+      if (await operationsNav.count() && await operationsNav.isVisible().catch(() => false)) await operationsNav.evaluate((element) => (element as HTMLButtonElement).click());
+    }
     await expect(inventoryNav).toBeVisible();
     await inventoryNav.scrollIntoViewIfNeeded();
     await inventoryNav.evaluate((element) => (element as HTMLElement).click());

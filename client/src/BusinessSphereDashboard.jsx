@@ -75,6 +75,7 @@ import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./compon
 import { AndroidAppStatus } from "./components/AndroidAppStatus";
 import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
 import { getNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
+import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -93,6 +94,20 @@ const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_C
   Wallet,
 });
 
+async function clearStaleShellCaches() {
+  if (typeof window === "undefined" || !("caches" in window)) return;
+  try {
+    const keys = await window.caches.keys();
+    await Promise.all(
+      keys
+        .filter((cacheKey) => cacheKey.startsWith("smart-manager-shell-"))
+        .map((cacheKey) => window.caches.delete(cacheKey)),
+    );
+  } catch {
+    // Cache storage is best-effort; the controlled reload remains the fallback.
+  }
+}
+
 function lazyWorkspaceWithRecovery(load, key) {
   return lazy(async () => {
     const retryKey = `smart-manager-workspace-lazy-retry:${key}`;
@@ -105,6 +120,7 @@ function lazyWorkspaceWithRecovery(load, key) {
       try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
       if (!alreadyRetried && typeof window !== "undefined") {
         try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
+        await clearStaleShellCaches();
         window.location.reload();
         return new Promise(() => {});
       }
@@ -122,7 +138,7 @@ const LazyComplianceAuditLogView = lazy(() => import("./components/ComplianceAud
 const LazyHealthcareClinicWorkspace = lazy(() => import("./components/HealthcareClinicWorkspace").then((module) => ({ default: module.HealthcareClinicWorkspace })));
 const LazyMicrofinanceWorkspace = lazy(() => import("./components/MicrofinanceWorkspace").then((module) => ({ default: module.MicrofinanceWorkspace })));
 const LazyPharmacyWorkspace = lazyWorkspaceWithRecovery(() => import("./components/PharmacyWorkspace").then((module) => ({ default: module.PharmacyWorkspace })), "pharmacy");
-const LazySchoolWorkspace = lazy(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })));
+const LazySchoolWorkspace = lazyWorkspaceWithRecovery(() => import("./components/SchoolWorkspace").then((module) => ({ default: module.SchoolWorkspace })), "school");
 const LazyMoneyAgentWorkspace = lazyWorkspaceWithRecovery(() => import("./components/MoneyAgentWorkspace").then((module) => ({ default: module.MoneyAgentWorkspace })), "money-agent");
 const LazyPropertyManagementWorkspace = lazyWorkspaceWithRecovery(() => import("./components/PropertyManagementWorkspace").then((module) => ({ default: module.PropertyManagementWorkspace })), "property-management");
 
@@ -1688,10 +1704,22 @@ function mapScheduledReportRow(r) {
 }
 
 function mapIntegrationConnectionRow(r) {
+  const data = r?.data && typeof r.data === "object" && !Array.isArray(r.data) ? r.data : {};
   return {
-    id: r.integration_id, dbId: r.id, enabled: r.enabled,
-    tenantId: r.tenant_id || "", clientId: r.client_id || "", paymentLink: r.payment_link || "", paypalMeLink: r.paypal_me_link || "",
-    webhookUrl: r.webhook_url || "", apiKey: r.api_key || "", businessNumber: r.business_number || "", storeUrl: r.store_url || "", terminalId: r.terminal_id || "",
+    id: r.integration_id || r.channel_id || data.integrationId || r.name || r.id,
+    dbId: r.id,
+    enabled: Boolean(r.enabled ?? data.enabled ?? r.status === "Connected"),
+    tenantId: r.tenant_id || data.tenantId || "",
+    clientId: r.client_id || data.clientId || "",
+    paymentLink: r.payment_link || data.paymentLink || "",
+    paypalMeLink: r.paypal_me_link || data.paypalMeLink || "",
+    webhookUrl: r.webhook_url || data.webhookUrl || "",
+    apiKey: r.api_key || data.apiKey || "",
+    businessNumber: r.business_number || data.businessNumber || "",
+    storeUrl: r.store_url || data.storeUrl || "",
+    terminalId: r.terminal_id || data.terminalId || "",
+    lastTestedAt: data.lastTestedAt || null,
+    lastTestStatus: data.lastTestStatus || null,
   };
 }
 
@@ -5423,7 +5451,7 @@ function KpiCard({ item }) {
   const neutral = item.trend === "neutral";
   const accent = neutral ? "#64748B" : item.up ? "#16A34A" : "#F59E0B";
   return (
-    <div className="kpi-card relative bg-white rounded-xl border border-slate-200/70 p-5 flex flex-col gap-4 overflow-hidden group">
+    <div className="sm-panel kpi-card relative min-h-[154px] bg-white rounded-xl p-5 flex flex-col gap-4 overflow-hidden group">
       <div
         className="absolute inset-x-0 top-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ background: `linear-gradient(90deg, ${accent}, ${accent}00)` }}
@@ -6356,27 +6384,33 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   if (roleView === "executive") {
     return (
-      <EnterpriseDashboardOverview
-        company={company}
-        currentUser={currentUser}
-        invoices={invoices}
-        expenses={expenses}
-        inventory={inventory}
-        crm={crm}
-        leaveRequests={leaveRequests}
-        workOrders={workOrders}
-        subscriptions={subscriptions}
-        financials={financials}
-        revenueExpenseTrend={revenueExpenseTrend}
-        recentActivity={recentActivity}
-        attentionItems={attentionItems}
-        pendingLeave={pendingLeave}
-        formatMoney={formatMoney}
-        onNavigate={onNavigate}
-        onQuickAction={onQuickAction}
-        allowedModules={currentRole.allowedModules}
-        writeAccess={currentRole.writeAccess}
-      />
+      <>
+        <EnterpriseDashboardOverview
+          company={company}
+          currentUser={currentUser}
+          invoices={invoices}
+          expenses={expenses}
+          inventory={inventory}
+          crm={crm}
+          leaveRequests={leaveRequests}
+          workOrders={workOrders}
+          subscriptions={subscriptions}
+          financials={financials}
+          revenueExpenseTrend={revenueExpenseTrend}
+          recentActivity={recentActivity}
+          attentionItems={attentionItems}
+          pendingLeave={pendingLeave}
+          formatMoney={formatMoney}
+          onNavigate={onNavigate}
+          onQuickAction={onQuickAction}
+          onCustomizeDashboard={() => setPreferencesDrawerOpen(true)}
+          allowedModules={currentRole.allowedModules}
+          writeAccess={currentRole.writeAccess}
+        />
+        <Suspense fallback={null}>
+          <LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
+        </Suspense>
+      </>
     );
   }
 
@@ -22968,7 +23002,22 @@ const ECOM_TABS = [
   { id: "orders", label: "Orders", icon: ShoppingCart },
 ];
 
-function ECommerce({ inventory }) {
+function CommerceCapabilityPanel({ onNavigate }) {
+  const capabilities = [
+    { label: "Catalog & stock", detail: "Published products reconcile to ERP inventory rows.", state: "Connected", icon: Package, action: "Review inventory", target: "inventory" },
+    { label: "Orders & finance", detail: "Order status can advance only through confirmed records.", state: "Connected", icon: ReceiptText, action: "Review sales", target: "sales" },
+    { label: "Customer records", detail: "Customer identity remains in the confirmed CRM/sales ledger.", state: "Connected", icon: Users, action: "Open CRM", target: "crm" },
+    { label: "Checkout & payments", detail: "Requires an approved cart, payment, and server RPC contract.", state: "Contract gated", icon: CreditCard },
+    { label: "Shipping & returns", detail: "No E-Commerce-specific shipping or return contract is exposed yet.", state: "Contract gated", icon: Truck },
+    { label: "Reviews & promotions", detail: "No confirmed review, coupon, or storefront promotion source is available.", state: "Contract gated", icon: Tag },
+  ];
+  return <section className="sm-panel rounded-xl bg-white p-4 sm:p-5" aria-label="Commerce capability coverage">
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-[14px] font-semibold text-[#111827]">Commerce capability coverage</h2><p className="text-[11px] text-slate-500">Connected workflows are actionable; contract-gated features are intentionally not simulated.</p></div><span className="text-[10px] text-slate-400">Source: live ERP contracts</span></div>
+    <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">{capabilities.map((item) => { const Icon = item.icon; const connected = item.state === "Connected"; return <div key={item.label} className="flex min-h-[104px] items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${connected ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}><Icon size={15} /></span><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><p className="text-[11.5px] font-semibold text-slate-800">{item.label}</p><span className={`shrink-0 text-[9px] font-bold uppercase tracking-[.08em] ${connected ? "text-emerald-700" : "text-amber-700"}`}>{item.state}</span></div><p className="mt-1 text-[10.5px] leading-4 text-slate-500">{item.detail}</p>{item.target && <button type="button" onClick={() => onNavigate?.(item.target)} className="mt-2 min-h-11 text-[10px] font-bold text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">{item.action} <ChevronRight size={11} className="inline" /></button>}</div></div>; })}</div>
+  </section>;
+}
+
+function ECommerce({ inventory, onNavigate }) {
   const [tab, setTab] = useState("storefront");
   const products = useCompanyTable("ecommerce_products", storefrontSeed, {
     select: "*,inventory_items(name,category)", order: { col: "sku", ascending: true }, mapRow: mapProductRow,
@@ -22978,21 +23027,34 @@ function ECommerce({ inventory }) {
   });
 
   const stats = useMemo(() => {
-    const live = orders.rows.filter((o) => o.status !== "Cancelled");
+    const allOrders = orders.rows;
+    const live = allOrders.filter((o) => o.status !== "Cancelled");
     const revenue = live.reduce((s, o) => s + o.total, 0);
     const published = products.rows.filter((p) => p.published).length;
+    const statusCount = (status) => allOrders.filter((o) => o.status === status).length;
+    const lowStock = inventory.rows.filter((item) => Number(item.qty) <= Number(item.reorder || item.reorderLevel || 0) && Number(item.reorder || item.reorderLevel || 0) > 0).length;
+    const valuedRows = inventory.rows.filter((item) => Number.isFinite(Number(item.unitCost)) && Number(item.unitCost) >= 0);
+    const inventoryValue = valuedRows.reduce((s, item) => s + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
     return {
       revenue, count: live.length,
       avg: live.length ? Math.round(revenue / live.length) : 0,
       published, total: products.rows.length,
+      pending: statusCount("Payment Pending") + statusCount("Pending"),
+      processing: statusCount("Processing"), shipped: statusCount("Shipped"), delivered: statusCount("Delivered"),
+      cancelled: statusCount("Cancelled"), lowStock,
+      inventoryValue: valuedRows.length ? inventoryValue : null,
     };
-  }, [orders.rows, products.rows]);
+  }, [orders.rows, products.rows, inventory.rows]);
 
   const ECOM_KPIS = [
-    { label: "Online Revenue", value: `TZS ${money(stats.revenue)}k`, delta: "Last 7 days", up: true, icon: CircleDollarSign },
-    { label: "Orders", value: String(stats.count), delta: "Excl. cancelled", up: true, icon: ShoppingCart },
-    { label: "Avg Order Value", value: `TZS ${money(stats.avg)}k`, delta: "Per order", up: true, icon: Percent },
-    { label: "Published Products", value: `${stats.published}/${stats.total}`, delta: "Live on storefront", up: true, icon: Globe },
+    { label: "Online Revenue", value: `TZS ${money(stats.revenue)}k`, delta: "Confirmed non-cancelled orders", up: true, icon: CircleDollarSign },
+    { label: "Orders", value: String(stats.count), delta: `${stats.cancelled} cancelled excluded`, up: true, icon: ShoppingCart },
+    { label: "Avg Order Value", value: stats.count ? `TZS ${money(stats.avg)}k` : "Insufficient confirmed data", delta: "Confirmed orders only", up: true, icon: Percent },
+    { label: "Published Products", value: `${stats.published}/${stats.total}`, delta: "Live against confirmed catalog rows", up: true, icon: Globe },
+    { label: "Pending Payment", value: String(stats.pending), delta: "Needs payment confirmation", up: false, icon: Clock3 },
+    { label: "Processing", value: String(stats.processing), delta: "Awaiting fulfillment", up: true, icon: Package },
+    { label: "Low Stock", value: String(stats.lowStock), delta: "Inventory reorder signals", up: false, icon: AlertTriangle },
+    { label: "Inventory Value", value: stats.inventoryValue === null ? "Insufficient confirmed data" : `TZS ${money(stats.inventoryValue)}k`, delta: "Uses unit cost where confirmed", up: true, icon: WalletCards },
   ];
 
   return (
@@ -23023,6 +23085,8 @@ function ECommerce({ inventory }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {ECOM_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
+      <p className="text-[10px] text-slate-400">Source: confirmed ecommerce orders, ecommerce products, and ERP inventory rows. Payment, conversion, customer, coupon, shipping, and attribution metrics remain unavailable until their server-confirmed contracts exist.</p>
+      <CommerceCapabilityPanel onNavigate={onNavigate} />
 
       {tab === "storefront" && <Storefront products={products} inventory={inventory} />}
       {tab === "orders" && <OnlineOrders orders={orders} />}
@@ -23033,18 +23097,24 @@ function ECommerce({ inventory }) {
 function Storefront({ products, inventory }) {
   const [view, setView] = useState("grid");
   const [category, setCategory] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("relevance");
   const [query, setQuery] = useState("");
   const { rows, setRows, loading } = products;
 
   const categories = useMemo(() => [...new Set(rows.map((p) => p.category))], [rows]);
 
   const filtered = useMemo(() => {
-    return rows.filter((p) => {
+    const matching = rows.filter((p) => {
+      const stockItem = inventory.rows.find((it) => it.sku === p.sku);
+      const stockState = stockItem ? stockStatus(stockItem.qty, stockItem.reorder || stockItem.reorderLevel || 0) : "Unavailable";
       const matchesCat = category === "all" || p.category === category;
-      const matchesQ = !query.trim() || p.name.toLowerCase().includes(query.toLowerCase());
-      return matchesCat && matchesQ;
+      const matchesQ = !query.trim() || `${p.name} ${p.sku} ${p.category}`.toLowerCase().includes(query.toLowerCase());
+      const matchesStock = stockFilter === "all" || (stockFilter === "available" && ["In Stock", "Low Stock"].includes(stockState)) || (stockFilter === "low" && stockState === "Low Stock") || (stockFilter === "out" && stockState === "Out of Stock");
+      return matchesCat && matchesQ && matchesStock;
     });
-  }, [rows, category, query]);
+    return [...matching].sort((a, b) => sortBy === "price-low" ? a.price - b.price : sortBy === "price-high" ? b.price - a.price : sortBy === "newest" ? String(b.sku).localeCompare(String(a.sku)) : String(a.name).localeCompare(String(b.name)));
+  }, [rows, inventory.rows, category, stockFilter, sortBy, query]);
 
   async function togglePublished(sku) {
     setRows((prev) => prev.map((p) => (p.sku === sku ? { ...p, published: !p.published } : p)));
@@ -23082,15 +23152,28 @@ function Storefront({ products, inventory }) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products..."
+              placeholder="Search products or SKU..."
+              aria-label="Search products or SKU"
               className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30 transition-all"
             />
           </div>
+          <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)} aria-label="Filter products by stock" className="min-h-11 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] text-slate-600 outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30">
+            <option value="all">All stock</option>
+            <option value="available">Available</option>
+            <option value="low">Low stock</option>
+            <option value="out">Out of stock</option>
+          </select>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} aria-label="Sort products" className="min-h-11 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] text-slate-600 outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30">
+            <option value="relevance">Sort: relevance</option>
+            <option value="newest">Newest/SKU</option>
+            <option value="price-low">Price low to high</option>
+            <option value="price-high">Price high to low</option>
+          </select>
           <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-1 shrink-0">
-            <button onClick={() => setView("grid")} aria-label="Grid view" aria-pressed={view === "grid"} className={`p-1.5 rounded-md ${view === "grid" ? "bg-white shadow-sm text-[#111827]" : "text-slate-400"}`}>
+            <button type="button" onClick={() => setView("grid")} aria-label="Grid view" aria-pressed={view === "grid"} className={`min-h-11 min-w-11 p-1.5 rounded-md ${view === "grid" ? "bg-white shadow-sm text-[#111827]" : "text-slate-400"}`}>
               <Grid3x3 size={15} />
             </button>
-            <button onClick={() => setView("list")} aria-label="List view" aria-pressed={view === "list"} className={`p-1.5 rounded-md ${view === "list" ? "bg-white shadow-sm text-[#111827]" : "text-slate-400"}`}>
+            <button type="button" onClick={() => setView("list")} aria-label="List view" aria-pressed={view === "list"} className={`min-h-11 min-w-11 p-1.5 rounded-md ${view === "list" ? "bg-white shadow-sm text-[#111827]" : "text-slate-400"}`}>
               <List size={15} />
             </button>
           </div>
@@ -23121,13 +23204,13 @@ function Storefront({ products, inventory }) {
             return (
               <div
                 key={p.sku}
-                className="rounded-xl border border-slate-200/80 shadow-sm overflow-hidden bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                className="sm-panel rounded-xl overflow-hidden bg-white hover:-translate-y-0.5 transition-all duration-200"
               >
                 <div
                   className="h-28 relative flex items-center justify-center"
                   style={{ background: CATEGORY_GRADIENT[p.category] || "linear-gradient(135deg, #111827, #16A34A)" }}
                 >
-                  <Package size={30} strokeWidth={1.5} className="text-white/85" />
+                  <div className="flex flex-col items-center gap-1 text-white/85"><Package size={30} strokeWidth={1.5} /><span className="text-[9px] font-semibold uppercase tracking-[.1em]">Image not configured</span></div>
                   {p.featured && (
                     <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-semibold text-[#111827] bg-white/95 rounded-full px-2 py-0.5">
                       <Star size={9} fill="#F59E0B" className="text-[#F59E0B]" /> Featured
@@ -23154,8 +23237,10 @@ function Storefront({ products, inventory }) {
                     )}
                   </div>
                   <button
+                    type="button"
                     onClick={() => togglePublished(p.sku)}
-                    className={`w-full text-[11.5px] font-medium rounded-lg py-1.5 transition-colors ${
+                    aria-pressed={p.published}
+                    className={`w-full min-h-11 text-[11.5px] font-medium rounded-lg py-1.5 transition-colors ${
                       p.published ? "border border-slate-200 text-slate-500 hover:bg-slate-50" : "btn-primary text-white"
                     }`}
                   >
@@ -23184,9 +23269,9 @@ function Storefront({ products, inventory }) {
                   <tr key={p.sku} className="border-b border-slate-50 last:border-0">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style={{ background: CATEGORY_GRADIENT[p.category] }}>
-                          <Package size={14} className="text-white/85" />
-                        </div>
+                          <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center" style={{ background: CATEGORY_GRADIENT[p.category] }} title="Product image not configured">
+                            <Package size={14} className="text-white/85" />
+                          </div>
                         <div>
                           <p className="font-medium text-[#111827]">{p.name}</p>
                           {p.featured && <p className="text-[10.5px] text-[#F59E0B] flex items-center gap-1"><Star size={9} fill="#F59E0B" /> Featured</p>}
@@ -23218,7 +23303,14 @@ function Storefront({ products, inventory }) {
 
 function OnlineOrders({ orders }) {
   const [selected, setSelected] = useState(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { rows, setRows, loading } = orders;
+  const filteredRows = useMemo(() => rows.filter((order) => {
+    const matchesQuery = !query.trim() || `${order.id} ${order.customer || ""} ${order.email || ""}`.toLowerCase().includes(query.toLowerCase());
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    return matchesQuery && matchesStatus;
+  }), [rows, query, statusFilter]);
 
   async function advanceOrder(id, next) {
     const order = rows.find((o) => o.id === id);
@@ -23233,8 +23325,16 @@ function OnlineOrders({ orders }) {
   const nextStatus = { "Payment Pending": "Processing", Processing: "Shipped", Shipped: "Delivered", Delivered: null, Cancelled: null };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="space-y-4" aria-label="E-Commerce order management">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div><h2 className="text-[15px] font-semibold text-[#111827]">Order execution</h2><p className="text-[11px] text-slate-500">Review confirmed orders and advance only through supported server states.</p></div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search order or customer..." aria-label="Search orders" className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-[11px] outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30" />
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter orders by status" className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-[11px] text-slate-600 outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]/30"><option value="all">All statuses</option>{[...new Set(rows.map((order) => order.status).filter(Boolean))].map((status) => <option key={status} value={status}>{status}</option>)}</select>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="sm-panel lg:col-span-2 bg-white rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] min-w-[600px]">
             <thead>
@@ -23248,8 +23348,9 @@ function OnlineOrders({ orders }) {
             </thead>
             <tbody>
               {loading && <SkeletonRows cols={5} />}
-              {!loading && rows.map((o) => (
-                <tr key={o.id} onClick={() => setSelected(o)} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors">
+              {!loading && filteredRows.length === 0 && <tr><td colSpan={5} className="px-4 py-10 text-center text-[11px] text-slate-400">{rows.length ? "No orders match the current search and status filter." : "No confirmed orders yet."}</td></tr>}
+              {!loading && filteredRows.map((o) => (
+                <tr key={o.id} onClick={() => setSelected(o)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelected(o); } }} tabIndex={0} role="button" aria-label={`Open order ${o.id}`} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600">
                   <td className="px-4 py-3 font-mono font-medium text-[#111827]">{o.id}</td>
                   <td className="px-4 py-3">
                     <p className="text-slate-700">{o.customer}</p>
@@ -23273,7 +23374,7 @@ function OnlineOrders({ orders }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
+      <div className="sm-panel bg-white rounded-xl p-4 sm:p-5">
         <h3 className="text-[14px] font-semibold text-[#111827] mb-1">Orders This Week</h3>
         <p className="text-[11.5px] text-slate-400 mb-3">Daily order volume</p>
         <ResponsiveContainer width="100%" height={180}>
@@ -23290,22 +23391,23 @@ function OnlineOrders({ orders }) {
       {selected && (
         <OnlineOrderPanel order={selected} onClose={() => setSelected(null)} onAdvance={advanceOrder} nextStatus={nextStatus[selected.status]} />
       )}
+      </div>
     </div>
   );
 }
 
 function OnlineOrderPanel({ order, onClose, onAdvance, nextStatus }) {
   return (
-    <div className="fixed inset-0 z-30 flex justify-end">
-      <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
+    <div className="fixed inset-0 z-30 flex justify-end" role="dialog" aria-modal="true" aria-labelledby="online-order-panel-title">
+      <button type="button" className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px] cursor-default" onClick={onClose} aria-label="Close order details" />
       <div className="relative w-full sm:w-[400px] bg-white h-full rounded-l-[26px] border-l border-slate-200/80 shadow-2xl p-6 overflow-y-auto flex flex-col" style={{ animation: "slideIn .15s ease-out" }}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[11px] font-mono text-slate-400">{order.id}</p>
-            <h2 className="text-[18px] font-semibold text-[#111827] mt-0.5">{order.customer}</h2>
+            <h2 id="online-order-panel-title" className="text-[18px] font-semibold text-[#111827] mt-0.5">{order.customer}</h2>
             <p className="text-[13px] text-slate-500">{order.email}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Close"><X size={18} /></button>
+          <button type="button" onClick={onClose} className="min-h-11 min-w-11 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600" aria-label="Close order details"><X size={18} /></button>
         </div>
 
         <div className="mb-6">
@@ -23317,6 +23419,18 @@ function OnlineOrderPanel({ order, onClose, onAdvance, nextStatus }) {
             {order.status}
           </span>
         </div>
+        <section aria-label="Order status timeline" className="mb-6">
+          <h3 className="text-[11px] font-bold uppercase tracking-[.12em] text-slate-400">Timeline</h3>
+          <ol className="mt-3 space-y-2 border-l border-slate-200 pl-4">
+            {["Payment Pending", "Processing", "Shipped", "Delivered"].map((status) => {
+              const currentIndex = ["Payment Pending", "Processing", "Shipped", "Delivered"].indexOf(order.status);
+              const stepIndex = ["Payment Pending", "Processing", "Shipped", "Delivered"].indexOf(status);
+              const reached = order.status === "Cancelled" ? false : currentIndex >= stepIndex;
+              return <li key={status} className={`relative text-[11px] ${reached ? "font-semibold text-emerald-700" : "text-slate-400"}`}><span className={`absolute -left-[21px] top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${reached ? "bg-emerald-600" : "bg-slate-300"}`} aria-hidden="true" />{status}</li>;
+            })}
+          </ol>
+          <p className="mt-2 text-[10px] text-slate-400">Timeline reflects only statuses confirmed by the current order contract.</p>
+        </section>
 
         <div className="border border-slate-100 rounded-lg overflow-hidden mb-5">
           {order.items.map((it, i) => (
@@ -23342,7 +23456,7 @@ function OnlineOrderPanel({ order, onClose, onAdvance, nextStatus }) {
         <div className="flex-1" />
 
         {nextStatus && (
-          <button onClick={() => onAdvance(order.id, nextStatus)} className="btn-primary text-white text-[12px] font-medium rounded-lg py-2.5">
+          <button type="button" onClick={() => onAdvance(order.id, nextStatus)} className="btn-primary min-h-11 text-white text-[12px] font-medium rounded-lg py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2">
             Mark {nextStatus}
           </button>
         )}
@@ -25203,20 +25317,43 @@ function IntegrationConnections({ canManage, currentUser }) {
       notify("Integration connection storage is unavailable; no changes were written.", "error");
       return;
     }
-    const previous = rows.find((c) => c.id === id)?.[key];
-    setRows((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: value } : c)));
-    if (IS_CONFIGURED) {
-      const columnMap = {
-        enabled: "enabled", tenantId: "tenant_id", clientId: "client_id", paymentLink: "payment_link", paypalMeLink: "paypal_me_link",
-        webhookUrl: "webhook_url", apiKey: "api_key", businessNumber: "business_number", storeUrl: "store_url", terminalId: "terminal_id",
-      };
-      try {
-        const result = await runCompanyTableMutation("integration_connections", "update", { [columnMap[key]]: value }, { matchCol: "integration_id", matchVal: id });
-        if (result.error || result.data == null) throw result.error || new Error("The server did not confirm the integration update.");
-      } catch (e) {
-        setRows((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: previous } : c)));
-        notify("Integration change was not saved to the server.", "error");
-      }
+    const meta = INTEGRATION_CONNECTIONS.find((connection) => connection.id === id);
+    if (!meta) return;
+    const existing = rows.find((connection) => connection.id === id) || { id };
+    const hadExistingRow = Boolean(existing.dbId);
+    const previousRow = existing;
+    const next = { ...existing, id, [key]: value };
+    const persistedConfig = Object.fromEntries([
+      "enabled", "tenantId", "clientId", "paymentLink", "paypalMeLink", "webhookUrl", "apiKey", "businessNumber", "storeUrl", "terminalId",
+    ].map((field) => [field, next[field] || (field === "enabled" ? false : "")]));
+    const payload = {
+      name: meta.name,
+      status: next.enabled ? "Connected" : "Disconnected",
+      notes: meta.requirement,
+      data: {
+        integrationId: id,
+        ...persistedConfig,
+      },
+    };
+    setRows((prev) => {
+      const found = prev.some((connection) => connection.id === id);
+      return found ? prev.map((connection) => (connection.id === id ? next : connection)) : [...prev, next];
+    });
+    if (!IS_CONFIGURED) return;
+    try {
+      const result = hadExistingRow
+        ? await runCompanyTableMutation("integration_connections", "update", payload, { matchCol: "id", matchVal: existing.dbId })
+        : await runCompanyTableMutation("integration_connections", "insert", payload);
+      if (result.error || result.data == null) throw result.error || new Error("The server did not confirm the integration update.");
+      const raw = Array.isArray(result.data) ? result.data[0] : result.data;
+      const confirmed = mapIntegrationConnectionRow(raw || { ...payload, id });
+      setRows((prev) => prev.map((connection) => (connection.id === id ? confirmed : connection)));
+      notify(`${meta.name} configuration saved to the server.`, "success");
+    } catch (e) {
+      setRows((prev) => hadExistingRow
+        ? prev.map((connection) => (connection.id === id ? previousRow : connection))
+        : prev.filter((connection) => connection.id !== id));
+      notify("Integration change was not saved to the server.", "error");
     }
   }
 
@@ -25255,6 +25392,7 @@ function IntegrationConnections({ canManage, currentUser }) {
           const config = getConfig(meta.id);
           const Icon = meta.icon;
           const linkField = meta.fields.find((f) => f.key === "paymentLink" || f.key === "paypalMeLink");
+          const connectionStatus = config.enabled ? "Connected" : meta.functional ? "Ready to connect" : "Configuration required";
           return (
             <div key={meta.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
               <div className="flex items-center justify-between mb-3">
@@ -25262,7 +25400,7 @@ function IntegrationConnections({ canManage, currentUser }) {
                   <div className="w-9 h-9 rounded-lg bg-[#111827]/5 flex items-center justify-center"><Icon size={16} className="text-[#111827]" /></div>
                   <div>
                     <p className="text-[14px] font-semibold text-[#111827]">{meta.name}</p>
-                    <span className={`text-[10px] font-medium ${meta.functional ? "text-[#16A34A]" : "text-slate-400"}`}>{meta.functional ? "Real, working today" : "Needs backend OAuth"}</span>
+                    <span className={`text-[10px] font-medium ${config.enabled ? "text-[#16A34A]" : meta.functional ? "text-[#2563EB]" : "text-slate-400"}`}>{connectionStatus}</span>
                   </div>
                 </div>
                 {loading ? <div className="w-9 h-5 rounded-full skeleton-shimmer" /> : (
@@ -38468,6 +38606,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [assistantError, setAssistantError] = useState(null);
   const [listening, setListening] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [memoryState, setMemoryState] = useState(IS_CONFIGURED ? "loading" : "session");
@@ -38835,6 +38974,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
     let convo = [...messages, { role: "user", content: question }];
     setMessages(convo);
     setInput("");
+    setAssistantError(null);
     setBusy(true);
 
     try {
@@ -38843,7 +38983,9 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       setMessages(convo);
       await persistTurn(question, responseData.result);
     } catch (e) {
-      notify(e?.message || "The AI assistant couldn't be reached. Please try again.", "error");
+      const message = "The Business Consultant could not be reached. Please try again.";
+      notify(message, "error");
+      setAssistantError({ message, question });
       setMessages(messages);
       setInput(question);
     } finally {
@@ -38900,6 +39042,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
           </button>
         </div>
       </div>
+      {assistantError && !busy && <div role="alert" className="mx-3 mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[12px] text-rose-800"><span>{assistantError.message}</span><button type="button" onClick={() => send(assistantError.question)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-800 transition hover:bg-rose-100"><RotateCcw size={13}/>Try again</button></div>}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         {anomalies.length > 0 && (
           <div className="rounded-xl border border-[#C9A96E]/30 bg-[#C9A96E]/5 p-3.5">
@@ -42057,9 +42200,27 @@ const PALETTE_ACTIONS = [
 function CommandPalette({ modules, crm, invoices, inventory, expenses, onNavigate, onNavigateWithIntent, onClose }) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem("smart-manager:recent-searches") || "[]");
+      return Array.isArray(parsed) ? parsed.filter((value) => typeof value === "string" && value.trim()).slice(0, 5) : [];
+    } catch {
+      return [];
+    }
+  });
   const inputRef = useRef(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    try { window.localStorage.setItem("smart-manager:recent-searches", JSON.stringify(recentSearches)); } catch {}
+  }, [recentSearches]);
+  useEffect(() => { setSelectedIndex(0); }, [query]);
+
+  function rememberSearch() {
+    const normalized = query.trim();
+    if (normalized.length < 2) return;
+    setRecentSearches((previous) => [normalized, ...previous.filter((value) => value.toLowerCase() !== normalized.toLowerCase())].slice(0, 5));
+  }
 
   const moduleResults = modules
     .filter((m) => m.label.toLowerCase().includes(query.toLowerCase()))
@@ -42119,46 +42280,76 @@ function CommandPalette({ modules, crm, invoices, inventory, expenses, onNavigat
       .map((e) => ({ id: `rec-exp-${e.id}`, label: e.vendor, sub: `${e.category} · ${e.date} · TZS ${money(Math.round(e.amount))}k`, icon: ClipboardList, kind: "Expense", action: () => onNavigateWithIntent("finance", { tab: "expenses" }) })) : []),
   ];
 
-  const results = [...recordResults, ...actionResults, ...moduleResults];
+  const recentResults = q.length === 0 ? recentSearches.map((search) => ({
+    id: `recent-${search}`,
+    label: search,
+    sub: "Run this search again",
+    icon: History,
+    kind: "Recent",
+    keepOpen: true,
+    action: () => setQuery(search),
+  })) : [];
+  const results = [...recentResults, ...recordResults, ...actionResults, ...moduleResults];
+
+  function runResult(result) {
+    rememberSearch();
+    result.action();
+    if (!result.keepOpen) onClose();
+  }
 
   function handleKeyDown(e) {
     if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
-    if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIndex((i) => Math.min(i + 1, results.length - 1)); }
+    if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIndex((i) => Math.min(i + 1, Math.max(results.length - 1, 0))); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setSelectedIndex((i) => Math.max(i - 1, 0)); }
-    else if (e.key === "Enter" && results[selectedIndex]) { results[selectedIndex].action(); onClose(); }
+    else if (e.key === "Enter" && results[selectedIndex]) { e.preventDefault(); runResult(results[selectedIndex]); }
   }
 
+  let previousResultGroup = null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]">
-      <div className="absolute inset-0 bg-[#111827]/30 backdrop-blur-[2px]" onClick={onClose} />
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
+      <div className="absolute inset-0 bg-[#111827]/30 backdrop-blur-[2px]" onClick={onClose} aria-hidden="true" />
       <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden" style={{ animation: "fadeInUp .15s ease-out" }}>
+        <h2 id="command-palette-title" className="sm-visually-hidden">Search workspace</h2>
         <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100">
           <Search size={16} className="text-slate-400 shrink-0" />
           <input
-            ref={inputRef} value={query} onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0); }} onKeyDown={handleKeyDown}
+            ref={inputRef} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={handleKeyDown}
             placeholder="Search customers, invoices, products — or jump anywhere..."
             className="flex-1 outline-none text-[14px] placeholder:text-slate-400"
+            aria-label="Search customers, invoices, products, modules, and actions"
+            aria-controls="command-palette-results"
+            aria-activedescendant={results[selectedIndex] ? `command-result-${results[selectedIndex].id}` : undefined}
           />
           <kbd className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Esc</kbd>
         </div>
-        <div className="max-h-80 overflow-y-auto py-1.5">
-          {results.length === 0 && <p className="text-[12.5px] text-slate-400 text-center py-8">No matches.</p>}
+        <div id="command-palette-results" className="max-h-80 overflow-y-auto py-1.5" role="listbox" aria-label="Workspace search results">
+          {results.length === 0 && <div className="px-6 py-8 text-center"><p className="text-[12.5px] font-semibold text-slate-600">No workspace matches</p><p className="mt-1 text-[11px] leading-5 text-slate-400">Try a customer, invoice, product, expense, module, or action name.</p></div>}
           {results.map((r, i) => {
             const Icon = r.icon;
+            const resultGroup = r.kind === "Recent" ? "Recent searches" : r.kind === "Go to" ? "Modules" : r.kind === "Quick action" ? "Quick actions" : "Records";
+            const showGroupLabel = resultGroup !== previousResultGroup;
+            previousResultGroup = resultGroup;
             return (
-              <button
-                key={r.id} onClick={() => { r.action(); onClose(); }} onMouseEnter={() => setSelectedIndex(i)}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${i === selectedIndex ? "bg-[#16A34A]/5" : ""}`}
-              >
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: i === selectedIndex ? "#DCFCE7" : "#F3F4F6" }}>
+              <React.Fragment key={r.id}>
+                {showGroupLabel && <p className="px-4 pb-1 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400" role="presentation">{resultGroup}</p>}
+                <button
+                  type="button"
+                  id={`command-result-${r.id}`}
+                  role="option"
+                  aria-selected={i === selectedIndex}
+                  onClick={() => runResult(r)} onMouseEnter={() => setSelectedIndex(i)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 ${i === selectedIndex ? "bg-[#16A34A]/5" : ""}`}
+                >
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: i === selectedIndex ? "#DCFCE7" : "#F3F4F6" }}>
                   <Icon size={14} style={{ color: i === selectedIndex ? "#16A34A" : "#94A3B8" }} />
                 </div>
                 <span className={`text-[13px] flex-1 min-w-0 ${i === selectedIndex ? "font-medium text-[#111827]" : "text-slate-600"}`}>
                   <span className="block truncate">{r.label}</span>
                   {r.sub && <span className="block text-[10.5px] text-slate-400 truncate font-normal">{r.sub}</span>}
                 </span>
-                <span className="text-[10.5px] text-slate-400 shrink-0">{r.kind}</span>
-              </button>
+                  <span className="text-[10.5px] text-slate-400 shrink-0">{r.kind}</span>
+                </button>
+              </React.Fragment>
             );
           })}
         </div>
@@ -47347,6 +47538,7 @@ function SmartManager() {
       if (session?.accessToken) await authSignOut(session.accessToken);
     } finally {
       try { await centralizedAuth.signOut(); } catch { /* local state is cleared even when the network is unavailable */ }
+      if (typeof window !== "undefined" && session?.userId && session?.company?.id) clearResumeLocation(window.localStorage, session.userId, session.company.id);
       clearStoredAuthSession();
       DEMO_OVERRIDE = false;
       setIdleWarningOpen(false);
@@ -47673,6 +47865,23 @@ function SmartManager() {
     currentRoleId: currentRole.id,
     canSeeSettings: canManage,
   });
+  const [sidebarModuleOrder, setSidebarModuleOrder] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem("smart-manager:sidebar-module-order");
+      return saved === "alphabetical" ? "alphabetical" : "priority";
+    } catch {
+      return "priority";
+    }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("smart-manager:sidebar-module-order", sidebarModuleOrder); } catch {}
+  }, [sidebarModuleOrder]);
+  const flatNavigationItems = useMemo(() => [
+    ...navigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
+    ...(navigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
+  ].sort((left, right) => sidebarModuleOrder === "alphabetical"
+    ? left.label.localeCompare(right.label, "en")
+    : Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.groupOrder - right.groupOrder || left.order - right.order), [navigationGroups, sidebarModuleOrder]);
   const quickCreateActions = getQuickCreateActions({
     visibleModuleIds: visibleModules.map((module) => module.id),
     canCreate: currentRole.writeAccess !== "none",
@@ -47724,8 +47933,81 @@ function SmartManager() {
       return;
     }
     setActive(id);
+    persistResumeLocation(id);
     setSidebarOpen(false);
   }
+
+  const resumeSafeShellModules = ["dashboard", "profile", "support", "notifications", "settings", "billing"];
+  const resumeRestoreKey = `${currentUser?.id || ""}:${company?.id || ""}`;
+  const resumeRestoredRef = useRef("");
+  const persistResumeLocation = useCallback((moduleId) => {
+    if (typeof window === "undefined" || !IS_CONFIGURED || !session?.accessToken || session?.demo || !currentUser?.id || !company?.id || !moduleId) return;
+    const resumeUrl = buildResumeUrl({
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash,
+      moduleId,
+    });
+    if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== resumeUrl) {
+      window.history.replaceState(null, "", resumeUrl);
+    }
+    writeResumeLocation(window.localStorage, {
+      userId: currentUser.id,
+      companyId: company.id,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash,
+      moduleId,
+      savedAt: Date.now(),
+    }, {
+      userId: currentUser.id,
+      companyId: company.id,
+      allowedModuleIds: MODULES.map((module) => module.id),
+      safeModuleIds: resumeSafeShellModules,
+    });
+  }, [company?.id, currentUser?.id, session?.accessToken, session?.demo]);
+
+  useEffect(() => {
+    if (!IS_CONFIGURED || !session?.accessToken || session?.demo || !currentUser?.id || !company?.id) {
+      resumeRestoredRef.current = "";
+      return;
+    }
+    if (!subscriptionFilteringReady || resumeRestoredRef.current === resumeRestoreKey) return;
+    const allowedModuleIds = visibleModules.map((module) => module.id);
+    const fromUrl = typeof window !== "undefined"
+      ? getModuleFromUrl(window.location.search, allowedModuleIds, resumeSafeShellModules)
+      : null;
+    const stored = typeof window !== "undefined"
+      ? readResumeLocation(window.localStorage, {
+        userId: currentUser.id,
+        companyId: company.id,
+        allowedModuleIds,
+        safeModuleIds: resumeSafeShellModules,
+      })
+      : null;
+    const candidate = fromUrl || stored?.moduleId || "dashboard";
+    const nextModule = allowedModuleIds.includes(candidate) || resumeSafeShellModules.includes(candidate) ? candidate : "dashboard";
+    setActive(nextModule);
+    if (!fromUrl && stored && typeof window !== "undefined") {
+      window.history.replaceState(null, "", buildResumeUrl({ pathname: stored.pathname, search: stored.search, hash: stored.hash, moduleId: nextModule }));
+    }
+    resumeRestoredRef.current = resumeRestoreKey;
+    persistResumeLocation(nextModule);
+  }, [company?.id, currentUser?.id, persistResumeLocation, resumeRestoreKey, session?.accessToken, session?.demo, subscriptionFilteringReady, visibleModules]);
+
+  useEffect(() => {
+    if (resumeRestoredRef.current === resumeRestoreKey && session?.accessToken && !session?.demo && active) persistResumeLocation(active);
+  }, [active, persistResumeLocation, resumeRestoreKey, session?.accessToken, session?.demo]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window === "undefined") return;
+      const moduleId = getModuleFromUrl(window.location.search, visibleModules.map((module) => module.id), resumeSafeShellModules);
+      if (moduleId) setActive(moduleId);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [visibleModules]);
 
   // Lets a Dashboard "Quick Action" land a user not just on a module but on
   // the specific tab or form they meant — e.g. "Create Invoice" opens Sales
@@ -47833,7 +48115,7 @@ function SmartManager() {
     if (authView === "reset") return <ResetPasswordView recoveryToken={recoveryAccessToken} onBack={() => navigateAuthView("login")} onUpdate={async (token, password) => { await authUpdatePassword(token, password); clearStoredAuthSession(); }} toMessage={toAuthUserMessage} />;
     if (authView === "verify") return <EmailConfirmationView email={authContextEmail} onBack={() => navigateAuthView("login")} onResend={authResendVerification} toMessage={toAuthUserMessage} />;
     return authView === "login"
-      ? <LoginPage initialDiagnostic={terminalSessionDiagnostic} onOAuth={centralizedAuth.signInWithOAuth} onAuthenticated={async (s) => { if (invitationTokenRef.current) { window.location.reload(); return; } try { await adoptCentralizedSession(s); } catch (error) { notify(toAuthUserMessage(error), "error"); } }} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
+      ? <LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated={async (s) => { if (invitationTokenRef.current) { window.location.reload(); return; } try { await adoptCentralizedSession(s); } catch (error) { notify(toAuthUserMessage(error), "error"); } }} onOAuth={centralizedAuth.signInWithOAuth} onSwitchToSignup={() => navigateAuthView("signup")} onForgotPassword={() => navigateAuthView("forgot")} />
       : <SignupPage onAuthenticated={async (s) => { if (invitationTokenRef.current) { window.location.reload(); return; } try { await adoptCentralizedSession(s); } catch (error) { notify(toAuthUserMessage(error), "error"); return; } if (s?.workspaceCreated) notify("Workspace ready — your dashboard is now available."); if (s?.workspaceWarning) notify(s.workspaceWarning, "error"); }} onSwitchToLogin={() => navigateAuthView("login")} />;
   }
 
@@ -47949,7 +48231,7 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={!sidebarOpen}
-          className={`fixed inset-y-0 left-0 z-50 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden ${darkMode ? "dark-shell" : ""} ${
+          className={`dashboard-sidebar fixed z-50 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:sticky lg:top-0 lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
@@ -47977,62 +48259,33 @@ function SmartManager() {
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition group-hover:text-emerald-700"><Search size={15} /></span>
             {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-700">Command palette</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Search modules and records</span></span><kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400">⌘K</kbd></>}
           </button>
+          {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-2 py-1.5" role="group" aria-label="Sidebar module order">
+            <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">Order</span>
+            <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => setSidebarModuleOrder("priority")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "priority" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
+              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => setSidebarModuleOrder("alphabetical")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "alphabetical" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
+            </div>
+          </div>}
         </div>
 
-        {/* Legacy contract anchors: visibleModules.map((m) => { and onClick={() => go(m.id)} remain represented by the grouped renderer below. */}
-        <nav className="relative flex-1 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
-          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace navigation</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{visibleModules.length}</span></div>
-          {navigationGroups.map((group) => {
-            const GroupIcon = group.icon;
-            const expanded = expandedNavigationGroups.has(group.id);
-            const groupActive = groupContainsActiveItem(group, active);
-            const isHomeGroup = group.id === "home";
-            return (
-              <section key={group.id} aria-labelledby={`navigation-group-${group.id}`}>
-                <button
-                  type="button"
-                  onClick={() => toggleNavigationGroup(group.id)}
-                  aria-expanded={expanded}
-                  aria-controls={`navigation-items-${group.id}`}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-[.11em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${groupActive ? "text-emerald-800" : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"}`}
-                >
-                  <GroupIcon size={13} strokeWidth={2} aria-hidden="true" />
-                  {!sidebarCollapsed && <><span id={`navigation-group-${group.id}`} className={`min-w-0 flex-1 truncate ${isHomeGroup ? "sr-only" : ""}`}>{group.label}</span><span className={isHomeGroup ? "sr-only" : "text-[9px] font-semibold text-slate-400"}>{group.items.length}</span>{expanded ? <ChevronUp className={isHomeGroup ? "sr-only" : ""} size={13} aria-hidden="true" /> : <ChevronDown className={isHomeGroup ? "sr-only" : ""} size={13} aria-hidden="true" />}</>}
-                </button>
-                {expanded && (
-                  <div id={`navigation-items-${group.id}`} className="space-y-0.5 pb-1" role="group" aria-labelledby={`navigation-group-${group.id}`}>
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = active === item.id;
-                      const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          data-tour-target={item.id}
-                          onClick={() => go(item.id)}
-                          aria-current={isActive ? "page" : undefined}
-                          title={item.label}
-                          className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"}`}
-                        >
-                          <span className="flex min-w-0 items-center gap-2.5">
-                            <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>
-                            {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-                          </span>
-                          <span className="flex shrink-0 items-center gap-1.5">{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            );
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
+          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Your workspace modules</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
+          {flatNavigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = active === item.id;
+            const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
+            return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"}`}>
+              <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+              <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-300" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
+            </button>;
           })}
         </nav>
 
         <div className="relative border-t border-[#F3F4F6] px-3 py-3">
           <button
+            type="button"
             onClick={() => go("settings")}
+            aria-label="Open workspace settings"
             className={`w-full flex items-center justify-between gap-2.5 rounded-xl border px-2.5 py-2.5 text-[12px] transition-colors group ${
               active === "settings" ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-[#111827]"
             }`}
@@ -48053,10 +48306,10 @@ function SmartManager() {
           column, so there is no reserved gutter to subtract. */}
       <div className="relative z-10 flex-1 flex flex-col min-w-0 w-full">
         {/* Topbar */}
-        <header className={`min-h-[68px] shrink-0 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 flex items-center justify-between gap-3 px-3 sm:px-5 lg:px-7 ${darkMode ? "dark-shell" : ""}`}>
-          <div className="flex min-w-0 flex-1 items-center gap-3">
+        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-20 grid min-h-[64px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+          <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
-              className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors"
+              className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -48071,7 +48324,7 @@ function SmartManager() {
               </div>
             </div>
           </div>
-          <div className="flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-2.5">
+          <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2.5">
             <span
               className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
               style={
@@ -48087,7 +48340,7 @@ function SmartManager() {
             {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             <button
               onClick={() => setPaletteOpen(true)}
-              className="flex max-w-[180px] items-center gap-1.5 overflow-hidden border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 rounded-xl px-2.5 py-2 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 transition-colors sm:max-w-[210px]"
+              className="dashboard-topbar-search hidden lg:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
               aria-label="Search everything"
             >
               <Search size={13} />
@@ -48113,23 +48366,26 @@ function SmartManager() {
                 )}
               </div>
             )}
-            <OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} />
+            <div className="dashboard-topbar-tour hidden shrink-0 xl:block"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>
             <span className="hidden xl:inline-flex items-center text-[10.5px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
             </span>
             {/* ── Smart Alerts badge ── */}
             {criticalAlerts.length > 0 && (
-              <button onClick={()=>go("notifications")} className="flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1.5 rounded-xl animate-pulse" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
+              <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden lg:flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1.5 rounded-xl animate-pulse" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
                 <AlertCircle size={13}/>
                 {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
               </button>
             )}
-            <WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} />
+            <span className="hidden xl:block"><WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} /></span>
             {/* ── Dark mode toggle ── */}
             <button
-              onClick={()=>setDarkMode(d=>!d)}
-              className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-[#111827] transition-all"
+              type="button"
+              onClick={toggleDarkMode}
+              aria-pressed={darkMode}
+              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+              className="hidden min-h-8 min-w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-slate-300 hover:text-[#111827] lg:flex lg:h-8 lg:w-8"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
@@ -48159,7 +48415,7 @@ function SmartManager() {
             one thumb-tap away. Only renders on small screens where the
             sidebar is hidden. RBAC is automatic: tabs are built from the
             same visibleModules list the sidebar uses. */}
-        <nav className="sm:hidden fixed bottom-0 inset-x-0 z-30 min-h-[64px] bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)", paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Mobile workspace navigation">
+        <nav className="dashboard-mobile-nav lg:hidden fixed bottom-0 inset-x-0 z-30 min-h-[64px] bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)", paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Mobile workspace navigation">
           {[...visibleModules.filter((m) => ["dashboard","sales","inventory","finance","hr"].includes(m.id)), ...visibleModules.filter((m) => !["dashboard","sales","inventory","finance","hr"].includes(m.id))].slice(0, 5).map((m) => {
             const Icon = m.icon;
             const on = active === m.id;
@@ -48187,7 +48443,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="dashboard-mobile-content module-fade flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
+        <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-6">
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
@@ -48205,7 +48461,7 @@ function SmartManager() {
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
       {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} currentUser={currentUser} />}
           {active === "scm" && <SupplyChain />}
-          {active === "ecommerce" && <ECommerce inventory={inventory} />}
+          {active === "ecommerce" && <ECommerce inventory={inventory} onNavigate={go} />}
           {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} />}
           {active === "documents" && <Documents filesHook={files} company={company} />}
           {active === "projects" && <Projects filesHook={files} expensesHook={expenses} />}

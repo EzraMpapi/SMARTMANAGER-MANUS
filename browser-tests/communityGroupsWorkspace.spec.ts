@@ -34,9 +34,11 @@ test("registers a group, onboards a member, and posts a TZS contribution", async
   const closeMenu = page.getByRole("button", { name: "Close menu" }); if (await closeMenu.count()) await closeMenu.click();
   const skipTour = page.getByRole("button", { name: "Skip tour" }); if (await skipTour.count()) await skipTour.click();
   const communityNav = page.locator("aside nav button").filter({ hasText: "Community Groups" });
-  if (!(await communityNav.isVisible().catch(() => false))) {
-    await page.getByRole("button", { name: "Open menu" }).click();
+  if (!(await communityNav.count()) || !(await communityNav.isVisible().catch(() => false))) {
+    const financeNav = page.locator("aside nav button").filter({ hasText: "Finance" }).first();
+    if (await financeNav.count() && await financeNav.isVisible().catch(() => false)) await financeNav.evaluate((element) => (element as HTMLButtonElement).click());
   }
+  await communityNav.scrollIntoViewIfNeeded();
   await communityNav.evaluate((element) => (element as HTMLButtonElement).click());
   await expect(page.getByRole("heading", { name: "Community Groups Manager" })).toBeVisible();
   await page.getByRole("button", { name: "Groups", exact: true }).click();

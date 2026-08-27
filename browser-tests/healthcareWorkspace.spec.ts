@@ -102,9 +102,12 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   const skipTour = page.getByRole("button", { name: "Skip tour" });
   if (await skipTour.count()) await skipTour.click();
   const clinicNav = page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" });
-  const isMobileViewport = await page.evaluate(() => window.innerWidth < 1024);
-  if (isMobileViewport) await page.getByRole("button", { name: "Open menu" }).click();
-  await clinicNav.click();
+  if (!(await clinicNav.count()) || !(await clinicNav.isVisible().catch(() => false))) {
+    const specializedNav = page.locator("aside nav button").filter({ hasText: "Specialized" }).first();
+    if (await specializedNav.count() && await specializedNav.isVisible().catch(() => false)) await specializedNav.evaluate((element) => (element as HTMLButtonElement).click());
+  }
+  await clinicNav.scrollIntoViewIfNeeded();
+  await clinicNav.evaluate((element) => (element as HTMLButtonElement).click());
   await expect(page.getByRole("heading", { name: "Healthcare Command Center" })).toBeVisible();
   await expect(page.getByText("Asha Mtemi", { exact: true }).first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("healthcare-command-center-desktop.png"), fullPage: true });
@@ -329,9 +332,12 @@ test("keeps a receptionist out of restricted clinical and report records without
   const skipTour = page.getByRole("button", { name: "Skip tour" });
   if (await skipTour.count()) await skipTour.click();
   const clinicNav = page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" });
-  const isMobileViewport = await page.evaluate(() => window.innerWidth < 1024);
-  if (isMobileViewport) await page.getByRole("button", { name: "Open menu" }).click();
-  await clinicNav.click();
+  if (!(await clinicNav.count()) || !(await clinicNav.isVisible().catch(() => false))) {
+    const specializedNav = page.locator("aside nav button").filter({ hasText: "Specialized" }).first();
+    if (await specializedNav.count() && await specializedNav.isVisible().catch(() => false)) await specializedNav.evaluate((element) => (element as HTMLButtonElement).click());
+  }
+  await clinicNav.scrollIntoViewIfNeeded();
+  await clinicNav.evaluate((element) => (element as HTMLButtonElement).click());
   await page.getByRole("main").getByRole("button", { name: "Clinical care", exact: true }).click();
   await expect(page.getByText("Clinical care is restricted", { exact: true })).toBeVisible();
   await page.getByRole("main").getByRole("button", { name: "Insurance claims", exact: true }).click();

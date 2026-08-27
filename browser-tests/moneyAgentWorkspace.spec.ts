@@ -35,10 +35,8 @@ test("loads the customer-only Money Agent portal with server-confirmed wallet hi
   });
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });
-  await expect(page.getByText("Money Agent", { exact: true }).first()).toBeVisible();
-  const dismiss = page.getByRole("button", { name: "Dismiss", exact: true }); if (await dismiss.count()) await dismiss.click();
-  const skipTour = page.getByRole("button", { name: "Skip tour" }); if (await skipTour.count()) await skipTour.last().click({ force: true });
-  await page.locator("aside nav button").filter({ hasText: "Money Agent" }).evaluate((node) => (node as HTMLButtonElement).click());
+  await expect(page.getByRole("button", { name: "Open permitted Money Agent workspace" })).toBeVisible();
+  await page.getByRole("button", { name: "Open permitted Money Agent workspace" }).click();
   await expect(page.getByRole("heading", { name: "Your wallet, safely in view" })).toBeVisible();
   await expect(page.getByText("Customer-only access", { exact: true })).toBeVisible();
   await expect(page.getByRole("main").getByText("Neema Mushi", { exact: true }).first()).toBeVisible();

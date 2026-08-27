@@ -43,12 +43,30 @@ async function mockAuthenticatedSchool(page: Parameters<typeof test>[0]["page"],
 }
 
 async function openSchoolWorkspace(page: Parameters<typeof test>[0]["page"]) {
-  const closeMenu = page.getByRole("button", { name: "Close menu" });
-  if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
-  const schoolNav = page.locator("aside nav button").filter({ hasText: "School Management" });
-  const isMobileViewport = await page.evaluate(() => window.innerWidth < 1024);
-  if (isMobileViewport) await page.getByRole("button", { name: "Open menu" }).click();
-  await schoolNav.click();
+  const workspaceAside = page.locator("aside").first();
+  const isMobile = await page.evaluate(() => window.innerWidth < 1024);
+  if (isMobile && (await workspaceAside.getAttribute("aria-hidden")) === "true") {
+    const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
+    await expect(openMenu).toBeVisible();
+    await openMenu.click({ force: true });
+    await expect(workspaceAside).toHaveAttribute("aria-hidden", "false");
+  }
+  const schoolNav = page.locator('aside nav button[data-tour-target="school"]');
+  if (await schoolNav.count()) {
+    await expect(schoolNav).toBeVisible();
+    await schoolNav.click({ force: true });
+  } else {
+    const specializedNav = page.locator('aside nav button[aria-controls="navigation-items-specialized"]');
+    if (await specializedNav.count()) {
+      await expect(specializedNav).toBeVisible();
+      if ((await specializedNav.getAttribute("aria-expanded")) !== "true") await specializedNav.click({ force: true });
+      await expect(specializedNav).toHaveAttribute("aria-expanded", "true");
+      await expect(schoolNav).toBeVisible();
+      await schoolNav.click({ force: true });
+    } else {
+      await page.goto("/app?module=school", { waitUntil: "domcontentloaded" });
+    }
+  }
 }
 
 test("loads the School Management Command Center and live learner metrics responsively", async ({ page }, testInfo) => {

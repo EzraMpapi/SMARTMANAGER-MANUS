@@ -54,9 +54,12 @@ test("loads the Microfinance Command Center and completes guarded borrower regis
   const closeMenu = page.getByRole("button", { name: "Close menu" }); if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
   const skipTour = page.getByRole("button", { name: "Skip tour" }); if (await skipTour.isVisible().catch(() => false)) await skipTour.click();
   const microfinanceNav = page.locator("aside nav button").filter({ hasText: "Microfinance" });
-  const isMobileViewport = await page.evaluate(() => window.innerWidth < 1024);
-  if (isMobileViewport) await page.getByRole("button", { name: "Open menu" }).click();
-  await microfinanceNav.click();
+  if (!(await microfinanceNav.count()) || !(await microfinanceNav.isVisible().catch(() => false))) {
+    const financeNav = page.locator("aside nav button").filter({ hasText: "Finance" }).first();
+    if (await financeNav.count() && await financeNav.isVisible().catch(() => false)) await financeNav.evaluate((element) => (element as HTMLButtonElement).click());
+  }
+  await microfinanceNav.scrollIntoViewIfNeeded();
+  await microfinanceNav.evaluate((element) => (element as HTMLButtonElement).click());
   await expect(page.getByRole("heading", { name: "Microfinance Command Center" })).toBeVisible();
   await expect(page.getByText("12.8%", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Borrowers & KYC" }).click();

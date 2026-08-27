@@ -15,6 +15,8 @@ export async function installManagedAuth(page: Page, identity: ManagedIdentity) 
   const refreshToken = `${identity.id}-refresh-token`;
   await page.addInitScript((storedSession) => {
     window.localStorage.setItem("smart-manager-auth", JSON.stringify(storedSession));
+    window.localStorage.setItem("bs_brief_2026-08-23", "1");
+    window.localStorage.setItem(`bs_onboarding_tour_${storedSession.user.id}_${storedSession.companyId}`, JSON.stringify({ status: "dismissed", completedAt: new Date().toISOString() }));
   }, {
     access_token: accessToken,
     refresh_token: refreshToken,
@@ -22,6 +24,7 @@ export async function installManagedAuth(page: Page, identity: ManagedIdentity) 
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     token_type: "bearer",
     user: { id: identity.id, email: identity.email, user_metadata: { full_name: identity.fullName } },
+    companyId: identity.company.id,
   });
   // Register after each spec's broad /rest/v1/** route so this narrow route wins.
   await page.route("**/rest/v1/rpc/auth_identity_snapshot", async (route) => {
