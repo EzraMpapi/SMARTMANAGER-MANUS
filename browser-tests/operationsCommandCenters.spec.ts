@@ -123,6 +123,8 @@ test.describe("operations procurement and warehouse integration journeys", () =>
   });
 
   test("opens Inventory and exposes the reorder workflow boundary", async ({ page }, testInfo) => {
+    const runtimeErrors: string[] = [];
+    page.on("pageerror", (error) => runtimeErrors.push(error.message));
     await mockAuthenticatedOperations(page, "Warehouse Manager");
     await page.goto("/app", { waitUntil: "domcontentloaded" });
     await dismissTransientUi(page);
@@ -141,6 +143,7 @@ test.describe("operations procurement and warehouse integration journeys", () =>
     await page.getByRole("button", { name: "Dashboard", exact: true }).first().click();
     await expect(page.getByText(/^(Low Stock|Low-stock items)$/, { exact: true }).first()).toBeVisible();
     await expect(page.getByText(/^(Out of Stock|0 out of stock)/, { exact: false }).first()).toBeVisible();
+    expect(runtimeErrors).not.toContain("WalletCards is not defined");
     await page.screenshot({ path: testInfo.outputPath("inventory-reorder-boundary.png"), fullPage: true });
   });
 });
