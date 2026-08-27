@@ -40,12 +40,16 @@ function unwrapInput(input: unknown): Record<string, unknown> {
 }
 
 async function dismissTransientUi(page: import("@playwright/test").Page) {
-  for (const name of ["Dismiss", "Close onboarding tour", "Skip tour"]) {
-    const button = page.getByRole("button", { name, exact: true }).last();
-    if (await button.count() && await button.isVisible().catch(() => false)) await button.click({ force: true });
+  for (const name of ["Dismiss", "Close onboarding tour", "Skip tour", "Close menu"]) {
+    const buttons = page.getByRole("button", { name, exact: true });
+    for (let index = 0; index < await buttons.count(); index += 1) {
+      const button = buttons.nth(index);
+      if (await button.isVisible().catch(() => false)) {
+        await button.click({ force: true });
+        break;
+      }
+    }
   }
-  const closeMenu = page.getByRole("button", { name: "Close menu", exact: true }).last();
-  if (await closeMenu.count() && await closeMenu.isVisible().catch(() => false)) await closeMenu.click({ force: true });
 }
 
 test("Standing Order workflow stays server-confirmed across maker-checker and lifecycle transitions", async ({ page }) => {
@@ -94,11 +98,31 @@ test("Standing Order workflow stays server-confirmed across maker-checker and li
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });
   await dismissTransientUi(page);
-  const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
-  if (await openMenu.count() && await openMenu.isVisible().catch(() => false)) await openMenu.click({ force: true });
-  const bankingNav = page.locator("aside nav button").filter({ hasText: "Banking & MFI" }).first();
-  await bankingNav.scrollIntoViewIfNeeded();
-  await bankingNav.evaluate((element) => (element as HTMLElement).click());
+  const workspaceAside = page.locator("aside").first();
+  const isMobile = await page.evaluate(() => window.innerWidth < 1024);
+  if (isMobile && (await workspaceAside.getAttribute("aria-hidden")) === "true") {
+    const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
+    await expect(openMenu).toBeVisible();
+    await openMenu.evaluate((element) => (element as HTMLButtonElement).click());
+    await expect(workspaceAside).toHaveAttribute("aria-hidden", "false");
+  }
+  const bankingNav = page.locator('aside nav button[data-tour-target="banking"]');
+  if (await bankingNav.count()) {
+    await expect(bankingNav).toBeVisible();
+    await bankingNav.evaluate((element) => (element as HTMLButtonElement).click());
+  } else {
+    const financeNav = page.locator('aside nav button[aria-controls="navigation-items-finance"]');
+    if (await financeNav.count()) {
+      await expect(financeNav).toBeVisible();
+      if ((await financeNav.getAttribute("aria-expanded")) !== "true") await financeNav.click({ force: true });
+      await expect(financeNav).toHaveAttribute("aria-expanded", "true");
+      await expect(bankingNav).toBeVisible();
+      await bankingNav.evaluate((element) => (element as HTMLButtonElement).click());
+    } else {
+      await page.goto("/app?module=banking", { waitUntil: "domcontentloaded" });
+    }
+  }
+  await page.waitForTimeout(750);
   await dismissTransientUi(page);
   await expect(page.getByRole("heading", { name: /SO E2E MFI|Institution configuration/ })).toBeVisible();
   await page.getByRole("button", { name: "Cash & channels", exact: true }).click();

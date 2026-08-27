@@ -1,0 +1,1 @@
+{"project_id":"rlhngsrihahhyxnjxrxm","query":"EXPLAIN (FORMAT JSON) SELECT id, company_id, created_at FROM public.audit_logs WHERE company_id = public.current_company_id() ORDER BY created_at DESC LIMIT 50;"}

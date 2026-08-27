@@ -885,6 +885,56 @@
   justify-content: center;
 }
 
+.dashboard-topbar-primary-search {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .72);
+}
+
+.dashboard-topbar-menu-control {
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-topbar-utility-group {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  padding-right: .5rem;
+  border-right: 1px solid rgb(226 232 240 / .85);
+}
+
+.dashboard-topbar-notification-slot > div > button {
+  display: inline-flex;
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(226 232 240);
+  border-radius: .75rem;
+  background: rgb(248 250 252);
+  color: rgb(100 116 139);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .72);
+  transition: background-color 160ms var(--ease-out, ease-out), border-color 160ms var(--ease-out, ease-out), color 160ms var(--ease-out, ease-out), transform 160ms var(--ease-out, ease-out);
+}
+
+.dashboard-topbar-notification-slot > div > button:hover {
+  border-color: rgb(167 243 208);
+  background: rgb(236 253 245);
+  color: rgb(5 150 105);
+}
+
+.dashboard-topbar-notification-slot > div > button:active,
+.dashboard-topbar-create:active,
+.dashboard-topbar-customize:active {
+  transform: scale(.97);
+}
+
+.dashboard-topbar-profile-slot {
+  display: inline-flex;
+  align-items: center;
+}
+
 .dashboard-main {
   scrollbar-gutter: stable;
   overscroll-behavior: contain;
@@ -911,6 +961,23 @@
 }
 
 @media (min-width: 1024px) {
+  .dashboard-topbar {
+    grid-template-columns: minmax(11rem, 1fr) minmax(18rem, 28.75rem) minmax(15rem, 1fr);
+    column-gap: 1rem;
+  }
+
+  .dashboard-topbar-context {
+    justify-self: start;
+  }
+
+  .dashboard-topbar-primary-search {
+    justify-self: center;
+  }
+
+  .dashboard-topbar-actions {
+    justify-self: end;
+  }
+
   .dashboard-workspace-column {
     min-width: 42rem;
   }
@@ -1005,6 +1072,15 @@
     gap: .25rem;
   }
 
+  .dashboard-topbar-utility-group {
+    display: contents;
+  }
+
+  .dashboard-topbar-notification-slot > div > button {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+  }
+
   .dashboard-topbar-tour {
     display: none;
   }
@@ -1045,5 +1121,113 @@
   .dashboard-topbar-tour,
   .dashboard-topbar-alert {
     display: none !important;
+  }
+}
+
+/* Reference-directed enterprise command center. The sidebar remains a true
+   navigation surface; these selectors only alter its visual hierarchy, never
+   the existing RBAC, tenant, or routing contracts in BusinessSphereDashboard. */
+.dashboard-sidebar {
+  background: linear-gradient(180deg, #062a2d 0%, #083b3b 58%, #075843 100%) !important;
+  border-right-color: rgba(255, 255, 255, .08) !important;
+  box-shadow: 8px 0 30px rgba(3, 20, 24, .18) !important;
+}
+
+.dashboard-sidebar .brand-wordmark,
+.dashboard-sidebar .text-slate-950,
+.dashboard-sidebar .text-slate-900,
+.dashboard-sidebar .text-slate-800,
+.dashboard-sidebar .text-slate-700 {
+  color: #f8fffb !important;
+}
+
+.dashboard-sidebar .text-slate-400,
+.dashboard-sidebar .text-slate-500 {
+  color: rgba(226, 255, 244, .67) !important;
+}
+
+.dashboard-sidebar .border-slate-100,
+.dashboard-sidebar .border-slate-200,
+.dashboard-sidebar .border-\[\#F3F4F6\] {
+  border-color: rgba(255, 255, 255, .09) !important;
+}
+
+.dashboard-sidebar .bg-white,
+.dashboard-sidebar .bg-slate-50,
+.dashboard-sidebar .bg-slate-100 {
+  background-color: rgba(255, 255, 255, .07) !important;
+}
+
+.dashboard-sidebar .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+.dashboard-sidebar .dashboard-flat-navigation > section > button:hover {
+  background: rgba(255, 255, 255, .08) !important;
+}
+
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"] {
+  border-color: rgba(100, 255, 181, .25) !important;
+  background: linear-gradient(90deg, rgba(17, 154, 96, .98), rgba(10, 116, 81, .98)) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .16) !important;
+}
+
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"] .bg-white,
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100 {
+  background-color: rgba(255, 255, 255, .14) !important;
+  color: #eafff0 !important;
+}
+
+.dashboard-sidebar .dashboard-sidebar-order {
+  background: rgba(0, 0, 0, .12) !important;
+}
+
+.dashboard-reference-layout {
+  --sm-surface: #fff;
+}
+
+.dashboard-reference-layout .dashboard-reference-panel,
+.dashboard-reference-layout .dashboard-reference-kpi {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .055);
+}
+
+.dashboard-reference-layout .dashboard-reference-kpi:hover {
+  box-shadow: 0 16px 30px rgba(15, 23, 42, .10);
+}
+
+.dashboard-reference-erp .dashboard-reference-kpi:active {
+  transform: translateY(0) scale(.985);
+}
+
+.dashboard-reference-erp table th,
+.dashboard-reference-erp table td {
+  vertical-align: middle;
+}
+
+.dashboard-reference-erp .recharts-default-legend {
+  display: flex;
+  justify-content: center;
+  gap: .75rem;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    width: min(84vw, 304px) !important;
+  }
+
+  .dashboard-reference-welcome {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-reference-layout {
+    gap: 1rem;
+  }
+
+  .dashboard-reference-layout .dashboard-reference-kpi {
+    min-height: 136px;
+  }
+
+  .dashboard-reference-erp .recharts-legend-wrapper {
+    transform: translateY(1px);
   }
 }

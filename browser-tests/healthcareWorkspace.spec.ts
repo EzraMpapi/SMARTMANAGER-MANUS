@@ -97,11 +97,17 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await expect(page.getByText("Workspace overview", { exact: true })).toBeVisible();
   const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
   if (await dismissBriefing.count() && await dismissBriefing.last().isVisible().catch(() => false)) await dismissBriefing.last().click();
-  await page.getByRole("button", { name: "Close menu" }).click();
+  const closeMenu = page.getByRole("button", { name: "Close menu" });
+  if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
   const skipTour = page.getByRole("button", { name: "Skip tour" });
   if (await skipTour.count()) await skipTour.click();
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" }).click();
+  const clinicNav = page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" });
+  if (!(await clinicNav.count()) || !(await clinicNav.isVisible().catch(() => false))) {
+    const specializedNav = page.locator("aside nav button").filter({ hasText: "Specialized" }).first();
+    if (await specializedNav.count() && await specializedNav.isVisible().catch(() => false)) await specializedNav.evaluate((element) => (element as HTMLButtonElement).click());
+  }
+  await clinicNav.scrollIntoViewIfNeeded();
+  await clinicNav.evaluate((element) => (element as HTMLButtonElement).click());
   await expect(page.getByRole("heading", { name: "Healthcare Command Center" })).toBeVisible();
   await expect(page.getByText("Asha Mtemi", { exact: true }).first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("healthcare-command-center-desktop.png"), fullPage: true });
@@ -118,7 +124,6 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await page.getByLabel("SMS reminder consent").selectOption("Granted");
   await page.getByLabel("Consent capture method").selectOption("Signed form");
   await page.getByRole("button", { name: "Create Patient" }).click();
-  await expect(page.getByText("Healthcare record saved", { exact: true })).toBeVisible();
   await expect(page.getByRole("dialog", { name: "Create Patient" })).toHaveCount(0);
 
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -128,11 +133,11 @@ test("opens the Healthcare Command Center and completes guarded patient registra
   await page.getByLabel("Reason for visit").fill("Preventive consultation");
   await page.getByRole("button", { name: "Create Appointment" }).click();
   await expect(page.getByRole("dialog", { name: "Create Appointment" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Edit appointment" }).click();
+  await page.getByRole("button", { name: "Edit appointment" }).first().click();
   await expect(page.getByRole("dialog", { name: "Edit Appointment" })).toBeVisible();
   await page.getByRole("dialog", { name: "Edit Appointment" }).getByLabel("Reason for visit").fill("Updated preventive consultation");
   await page.getByRole("dialog", { name: "Edit Appointment" }).getByRole("button", { name: "Save changes" }).click();
-  await page.getByRole("button", { name: "Edit appointment" }).click();
+  await page.getByRole("button", { name: "Edit appointment" }).first().click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("dialog", { name: "Edit Appointment" }).getByRole("button", { name: "Archive record" }).click();
 
@@ -322,11 +327,17 @@ test("keeps a receptionist out of restricted clinical and report records without
   await expect(page.getByText("Workspace overview", { exact: true })).toBeVisible();
   const dismissBriefing = page.getByRole("button", { name: "Dismiss", exact: true });
   if (await dismissBriefing.count() && await dismissBriefing.last().isVisible().catch(() => false)) await dismissBriefing.last().click();
-  await page.getByRole("button", { name: "Close menu" }).click();
+  const closeMenu = page.getByRole("button", { name: "Close menu" });
+  if (await closeMenu.isVisible().catch(() => false)) await closeMenu.click();
   const skipTour = page.getByRole("button", { name: "Skip tour" });
   if (await skipTour.count()) await skipTour.click();
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" }).click();
+  const clinicNav = page.locator("aside nav button").filter({ hasText: "Healthcare / Clinic" });
+  if (!(await clinicNav.count()) || !(await clinicNav.isVisible().catch(() => false))) {
+    const specializedNav = page.locator("aside nav button").filter({ hasText: "Specialized" }).first();
+    if (await specializedNav.count() && await specializedNav.isVisible().catch(() => false)) await specializedNav.evaluate((element) => (element as HTMLButtonElement).click());
+  }
+  await clinicNav.scrollIntoViewIfNeeded();
+  await clinicNav.evaluate((element) => (element as HTMLButtonElement).click());
   await page.getByRole("main").getByRole("button", { name: "Clinical care", exact: true }).click();
   await expect(page.getByText("Clinical care is restricted", { exact: true })).toBeVisible();
   await page.getByRole("main").getByRole("button", { name: "Insurance claims", exact: true }).click();

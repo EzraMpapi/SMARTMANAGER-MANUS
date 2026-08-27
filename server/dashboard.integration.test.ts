@@ -43,7 +43,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(appSource).toContain("function isPublicAuthScreen()");
     expect(appSource).toContain('["login", "forgot", "reset", "verify"].includes(requestedAuthScreen())');
     expect(appSource).toContain("isPublicAuthScreen() && !auth.isAuthenticated");
-    expect(appSource).toContain("if (requestedSignup) return");
+    expect(appSource).toContain("if (requestedSignup && !auth.isAuthenticated)");
     expect(appSource).toContain("<PublicAuthGateway />");
   });
 
@@ -115,7 +115,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("azure")}');
     expect(enterpriseAuthSource).toContain('onClick={() => onOAuth("apple")}');
     expect(publicAuthSource).toContain("await auth.signInWithOAuth(provider)");
-    expect(authContextSource).toContain("auth.signInWithOAuth({ provider, options: { redirectTo: redirectTo?.toString() } })");
+    expect(authContextSource).toContain("auth.signInWithOAuth({ provider, options: { redirectTo } })");
   });
 
   it("captures an OAuth callback in the lightweight public route and resumes the tenant-aware bootstrap instead of rendering login", () => {
@@ -922,6 +922,22 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
   expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"');
   expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"');
   expect(dashboardSource).toContain('<LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated=');
+});
+
+describe("Dashboard shell navigation and layering", () => {
+  it("keeps desktop navigation docked, flat, and visible while retaining mobile drawer behavior", () => {
+    expect(dashboardSource).toContain("lg:sticky lg:translate-x-0");
+    expect(dashboardSource).toContain("referenceOrderedNavigationItems.map((item)");
+    expect(dashboardSource).toContain('aria-label="Operational workspaces"');
+    expect(dashboardSource).toContain("getPresentationNavigationGroups(navigationGroups");
+    expect(dashboardSource).toContain('dashboard-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"}');
+  });
+
+  it("renders the onboarding tour through document.body so it cannot sit behind shell layers", () => {
+    expect(dashboardSource).toContain("createPortal((");
+    expect(dashboardSource).toContain("document.body)}");
+    expect(dashboardSource).toContain('data-onboarding-tour="true"');
+  });
 });
 
 });

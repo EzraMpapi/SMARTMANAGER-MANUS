@@ -45,16 +45,8 @@ test("loads the Property Management workspace and submits a guarded portfolio fo
   });
 
   await page.goto("/app", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("button", { name: "Dashboard", exact: true })).toBeVisible();
-  const dismiss = page.getByRole("button", { name: "Dismiss", exact: true }); if (await dismiss.count()) await dismiss.last().click({ force: true });
-  const tour = page.locator('[data-onboarding-tour="true"]');
-  const skipTour = tour.locator("button").filter({ hasText: "Skip tour" });
-  if (await skipTour.count()) await skipTour.evaluate((node) => (node as HTMLButtonElement).click());
-  if (await tour.count()) await expect(tour).toHaveCount(0);
-  const openMenu = page.getByRole("button", { name: "Open menu" }); if (await openMenu.isVisible().catch(() => false)) await openMenu.click();
-  const propertyNavigation = page.locator("aside nav button").filter({ hasText: "Property Management" });
-  await expect(propertyNavigation).toHaveCount(1);
-  await propertyNavigation.evaluate((node) => (node as HTMLButtonElement).click());
+  await expect(page.getByRole("button", { name: "Open permitted Property Management workspace" })).toBeVisible();
+  await page.getByRole("button", { name: "Open permitted Property Management workspace" }).click();
   await expect(page.getByRole("heading", { name: "Portfolio, leases, rent, and property operations" })).toBeVisible();
   await expect(page.getByText("50.00%", { exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Portfolio", exact: true }).click();

@@ -26,10 +26,17 @@ describe("public authentication experience", () => {
     expect(authSessionStorageSource).toContain('const SESSION_ACCESS_TOKEN_STORAGE_KEY = "bs_session_access_token"');
     expect(authSessionStorageSource).toContain("const activeStorage = remember ? window.localStorage : window.sessionStorage");
     expect(appSource).toContain("<AuthProvider>");
-    expect(trpcBootstrapSource).toContain("hasStoredSupabaseSession");
-    expect(trpcBootstrapSource).toContain('headers["x-supabase-authorization"] = `Bearer ${supabaseToken}`');
+    expect(trpcBootstrapSource).toContain("getSupabaseAuthClient");
+    expect(trpcBootstrapSource).toContain("client.auth.getSession()");
     expect(dashboardSource).toContain("function getStoredAccessToken()");
     expect(readFileSync(new URL("../client/src/contexts/AuthContext.tsx", import.meta.url), "utf8")).toContain("onAuthStateChange");
+  });
+
+  it("routes the legacy dashboard login through the centralized AuthContext OAuth handler", () => {
+    expect(dashboardSource).toContain("function LoginPage({ onAuthenticated, onSwitchToSignup, onForgotPassword, onOAuth");
+    expect(dashboardSource).toContain("onOAuth={onOAuth}");
+    expect(dashboardSource).toContain("onOAuth={centralizedAuth.signInWithOAuth}");
+    expect(dashboardSource).not.toContain("window.location.href = `${SUPABASE_URL}/auth/v1/authorize");
   });
 
   it("gives visible, provider-specific recovery paths when Google, Microsoft, or Apple OAuth returns an error", () => {

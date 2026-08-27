@@ -19,14 +19,41 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("onClick={() => go(m.id)}");
   });
 
-  it("renders desktop navigation as a flat role-aware list rather than an accordion of module groups", () => {
+  it("keeps the command-header search centered and operational controls grouped without replacing their menus", () => {
+    expect(dashboard).toContain("dashboard-topbar-primary-search");
+    expect(dashboard).toContain("dashboard-topbar-utility-group");
+    expect(dashboard).toContain("dashboard-topbar-notification-slot");
+    expect(dashboard).toContain("dashboard-topbar-profile-slot");
+    expect(dashboard).toContain("dashboard-topbar-create");
+    expect(dashboard).toContain("<NotificationCenter");
+    expect(dashboard).toContain("<PremiumProfileMenu");
+    expect(dashboard.indexOf("dashboard-topbar-primary-search")).toBeLessThan(
+      dashboard.indexOf("dashboard-topbar-actions"),
+    );
+  });
+
+  it("keeps notification and command overlays keyboard-operable without widening data access", () => {
+    expect(dashboard).toContain("const closeOnEscape = (event) => {");
+    expect(dashboard).toContain('if (event.key !== "Escape") return;');
+    expect(dashboard).toContain("aria-expanded={open}");
+    expect(dashboard).toContain('aria-controls={open ? "notification-center-panel" : undefined}');
+    expect(dashboard).toContain('id="notification-center-panel"');
+    expect(dashboard).toContain('role="region"');
+    expect(dashboard).toContain('if (e.key === "Escape") { e.preventDefault(); onClose(); return; }');
+    expect(dashboard).toContain("modules.some((m) => m.id === a.module)");
+  });
+
+  it("renders desktop navigation as a flat, reference-ordered, role-aware workspace list", () => {
     expect(dashboard).toContain("const flatNavigationItems = useMemo(() => [");
     expect(dashboard).toContain("Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))");
     expect(dashboard).toContain('sidebarModuleOrder === "alphabetical"');
     expect(dashboard).toContain("dashboard-flat-navigation");
-    expect(dashboard).toContain("flatNavigationItems.map((item) => {");
+    expect(dashboard).toContain("const navigationGroups = getNavigationGroups({");
+    expect(dashboard).toContain("const displayedNavigationGroups = useMemo(() => getPresentationNavigationGroups(");
+    expect(dashboard).toContain("const referenceOrderedNavigationItems = useMemo(() => {");
+    expect(dashboard).toContain("referenceOrderedNavigationItems.map((item) => {");
+    expect(dashboard).toContain("const referenceOrder = [\"dashboard\", \"sales\", \"pos\"");
     expect(dashboard).toContain("item.locked");
-    expect(dashboard).not.toContain("toggleNavigationGroup(group.id)");
   });
 
   it("retains subscription status, alerts, and the independent mobile navigation path", () => {

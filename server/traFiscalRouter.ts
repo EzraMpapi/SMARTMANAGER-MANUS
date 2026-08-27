@@ -1,15 +1,30 @@
 import { z } from "zod";
-import { TRPCError } from "@trpc/server";
 import { parse as parseCookie } from "cookie";
 import { COOKIE_NAME } from "@shared/const";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "./_core/trpc";
-import { getDb } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
-import { fiscalProfiles, fiscalReceipts, fiscalRetryQueue, zReports, taxConfigurations, getFiscalProvider, getFiscalProviderReadiness, FiscalSubmissionPayload, officialTraLinks } from "./traFiscal";
-import { listAuditLogs, recordAuditLog } from "./auditLogs";
-import { listTraArchives } from "./traZReportArchive";
 import { resolveVerifiedProfile } from "./aiApprovals";
-import { evaluateVatAnomaly, getVatAnomalySettings, getVatTrendSummary, listVatAnomalyEvents, saveVatAnomalySettings } from "./traVatAnomaly";
+import {
+  callRestaurantTanzaniaRpc,
+  getNativeAnomalySettings,
+  getNativeFiscalProfile,
+  getNativeSnapshot,
+  listNativeReceipts,
+  mapNativeFiscalReceipt,
+  nativeAuxiliaryRows,
+  nativeOfficialLinks,
+  nativeReceiptStats,
+  nativeReadiness,
+  nativeVatTrend,
+  mutateRows,
+  queueNativeReceipt,
+  resolveRestaurantOutletId,
+  saveNativeAnomalySettings,
+  saveNativeFiscalProfile,
+  selectRows,
+} from "./traFiscalSupabase";
+
+const ADMIN_ROLES = ["admin", "owner", "manager", "organization owner", "ceo", "super administrator", "system administrator", "finance manager", "cfo"];
 
 function getSessionToken(req: { headers: { cookie?: string; authorization?: string } }) {
   const cookieToken = parseCookie(req.headers.cookie ?? "")[COOKIE_NAME];
@@ -18,18 +33,44 @@ function getSessionToken(req: { headers: { cookie?: string; authorization?: stri
   return authorization?.startsWith("Bearer ") ? authorization.slice(7) : "";
 }
 
+function requireCompany(profile: { company_id?: string | null }, companyId: string) {
+  if (!profile.company_id || profile.company_id !== companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
+}
+
+function canAdmin(role: string) {
+  const normalized = role.toLowerCase();
+  return ADMIN_ROLES.some((allowed) => normalized.includes(allowed));
+}
+
+function numberValue(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function nativeAudit(companyId: string, action: string, detail: Record<string, unknown> = {}) {
+  try {
+    const outletId = await resolveRestaurantOutletId(companyId).catch(() => null);
+    await mutateRows("restaurant_audit_events", "POST", {}, {
+      company_id: companyId,
+      outlet_id: outletId,
+      actor_id: null,
+      action,
+      subject_type: "TRA_PORTAL",
+      subject_id: null,
+      detail,
+    });
+  } catch {
+    // The native RPC already audits profile and receipt actions. Auxiliary audit writes must not hide a successful operation.
+  }
+}
+
 export const traFiscalRouter = router({
   getProfile: protectedProcedure
     .input(z.object({ companyId: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      }
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection unavailable." });
-      const rows = await db.select().from(fiscalProfiles).where(eq(fiscalProfiles.companyId, input.companyId)).limit(1);
-      return rows[0] || null;
+      requireCompany(profile, input.companyId);
+      return getNativeFiscalProfile(getSessionToken(ctx.req));
     }),
 
   saveProfile: protectedProcedure
@@ -53,141 +94,47 @@ export const traFiscalRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      }
-      const allowedRoles = ["admin", "owner", "manager", "Organization Owner", "CEO", "Super Administrator", "Finance Manager", "CFO"];
-      if (!allowedRoles.some(r => profile.role.toLowerCase().includes(r.toLowerCase()))) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Insufficient permissions to configure TRA VFD profile." });
-      }
-
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection unavailable." });
-      const existing = await db.select().from(fiscalProfiles).where(eq(fiscalProfiles.companyId, input.companyId)).limit(1);
-
-      if (existing.length > 0) {
-        await db.update(fiscalProfiles)
-          .set({
-            branchId: input.branchId,
-            tin: input.tin,
-            vrn: input.vrn || null,
-            businessName: input.businessName,
-            tradingName: input.tradingName || null,
-            physicalAddress: input.physicalAddress || null,
-            postalAddress: input.postalAddress || null,
-            region: input.region || null,
-            district: input.district || null,
-            phone: input.phone || null,
-            email: input.email || null,
-            businessActivity: input.businessActivity || null,
-            deviceSerial: input.deviceSerial || null,
-            environment: input.environment,
-            fiscalStatus: input.fiscalStatus === "active" ? "misconfigured" : input.fiscalStatus,
-            updatedAt: new Date(),
-          })
-          .where(eq(fiscalProfiles.companyId, input.companyId));
-      } else {
-        await db.insert(fiscalProfiles).values({
-          companyId: input.companyId,
-          branchId: input.branchId,
-          tin: input.tin,
-          vrn: input.vrn || null,
-          businessName: input.businessName,
-          tradingName: input.tradingName || null,
-          physicalAddress: input.physicalAddress || null,
-          postalAddress: input.postalAddress || null,
-          region: input.region || null,
-          district: input.district || null,
-          phone: input.phone || null,
-          email: input.email || null,
-          businessActivity: input.businessActivity || null,
-          deviceSerial: input.deviceSerial || null,
-          environment: input.environment,
-          fiscalStatus: input.fiscalStatus === "active" ? "misconfigured" : input.fiscalStatus,
-        });
-      }
-
-      await recordAuditLog(ctx.user, {
-        companyId: input.companyId,
-        action: "SAVE_TRA_PROFILE",
-        module: "TRA_PORTAL",
-        details: `Saved TRA VFD Profile for TIN ${input.tin} (${input.businessName})`,
-      });
-
-      return { success: true };
+      requireCompany(profile, input.companyId);
+      if (!canAdmin(profile.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Insufficient permissions to configure TRA VFD profile." });
+      await saveNativeFiscalProfile({ ...input, accessToken: getSessionToken(ctx.req) });
+      const saved = await getNativeFiscalProfile(getSessionToken(ctx.req));
+      await nativeAudit(input.companyId, "SAVE_TRA_PROFILE", { tin: input.tin, businessName: input.businessName, environment: input.environment });
+      return { success: true as const, profile: saved };
     }),
 
   listReceipts: protectedProcedure
-    .input(z.object({
-      companyId: z.string().min(1),
-      status: z.string().optional(),
-      sourceType: z.string().optional(),
-      limit: z.number().min(1).max(100).default(50),
-    }))
+    .input(z.object({ companyId: z.string().min(1), status: z.string().optional(), sourceType: z.string().optional(), limit: z.number().min(1).max(100).default(50) }))
     .query(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      }
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection unavailable." });
-      const rows = await db.select().from(fiscalReceipts)
-        .where(eq(fiscalReceipts.companyId, input.companyId))
-        .orderBy(desc(fiscalReceipts.createdAt))
-        .limit(input.limit);
-      return rows.map(({ traResponse: _traResponse, qrInformation: _qrInformation, ...receipt }) => receipt);
+      requireCompany(profile, input.companyId);
+      const receipts = await listNativeReceipts(input.companyId, input.limit);
+      return receipts.filter((receipt) => {
+        const statusMatch = !input.status || receipt.status.toLowerCase() === input.status.toLowerCase();
+        const sourceMatch = !input.sourceType || receipt.sourceType === input.sourceType;
+        return statusMatch && sourceMatch;
+      });
     }),
 
   submitTransaction: protectedProcedure
     .input(z.object({
       companyId: z.string().min(1),
       branchId: z.string().default("MAIN"),
-      sourceType: z.enum(["invoice", "pos", "sales", "ecommerce", "service"]),
-      sourceId: z.string().min(1),
-      idempotencyKey: z.string().min(1),
-      items: z.array(z.object({
-        name: z.string(),
-        quantity: z.number(),
-        unitPrice: z.number(),
-        taxCode: z.string(),
-      })),
-      grossAmount: z.number(),
-      vatAmount: z.number(),
-      netAmount: z.number(),
+      sourceType: z.literal("restaurant_order"),
+      sourceId: z.string().uuid(),
+      idempotencyKey: z.string().min(1).max(200),
+      items: z.array(z.object({ name: z.string().min(1), quantity: z.number().positive(), unitPrice: z.number().nonnegative(), taxCode: z.string().min(1) })).max(200),
+      grossAmount: z.number().positive(),
+      vatAmount: z.number().nonnegative(),
+      netAmount: z.number().nonnegative(),
     }))
     .mutation(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      }
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection unavailable." });
-
-      const existing = await db.select().from(fiscalReceipts).where(eq(fiscalReceipts.idempotencyKey, input.idempotencyKey)).limit(1);
-      if (existing.length > 0) {
-        return { success: true, receipt: existing[0], duplicate: true };
-      }
-
-      const profRows = await db.select().from(fiscalProfiles).where(eq(fiscalProfiles.companyId, input.companyId)).limit(1);
-      if (profRows.length === 0) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "TRA VFD Profile not configured for this company. Please complete TRA configuration first." });
-      }
-      const profileRec = profRows[0];
-
-      const provider = getFiscalProvider(profileRec.environment);
-      const readiness = provider.getReadiness();
-      if (!readiness.canSubmit) {
-        await recordAuditLog(ctx.user, {
-          companyId: input.companyId,
-          action: "BLOCK_TRA_RECEIPT_SUBMISSION",
-          module: "TRA_PORTAL",
-          details: `Fiscalization blocked: ${readiness.reason}`,
-        });
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: `TRA fiscalization is not available: ${readiness.reason}` });
-      }
-      const submissionPayload: FiscalSubmissionPayload = {
-        companyId: input.companyId,
-        branchId: input.branchId,
+      requireCompany(profile, input.companyId);
+      const accessToken = getSessionToken(ctx.req);
+      const fiscalProfile = await getNativeFiscalProfile(accessToken);
+      if (!fiscalProfile) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "TRA VFD Profile not configured for this company. Please complete TRA configuration first." });
+      const queued = await queueNativeReceipt({
+        outletId: fiscalProfile.outletId,
         sourceType: input.sourceType,
         sourceId: input.sourceId,
         idempotencyKey: input.idempotencyKey,
@@ -195,74 +142,31 @@ export const traFiscalRouter = router({
         grossAmount: input.grossAmount,
         vatAmount: input.vatAmount,
         netAmount: input.netAmount,
-        tin: profileRec.tin,
-        vrn: profileRec.vrn || undefined,
-      };
-
-      const result = await provider.submitReceipt(submissionPayload);
-
-      const inserted = await db.insert(fiscalReceipts).values({
-        companyId: input.companyId,
-        branchId: input.branchId,
-        fiscalProfileId: profileRec.id,
-        sourceType: input.sourceType,
-        sourceId: input.sourceId,
-        idempotencyKey: input.idempotencyKey,
-        status: result.success ? "VERIFIED" : "FAILED",
-        receiptNumber: result.receiptNumber,
-        fiscalSerial: result.fiscalSerial || null,
-        verificationNumber: result.verificationNumber || null,
-        submissionTimestamp: new Date(),
-        traResponse: result.rawResponse,
-        responseCode: result.responseCode,
-        responseMessage: result.responseMessage,
-        qrInformation: result.qrInformation,
-        grossAmount: input.grossAmount.toFixed(2),
-        vatAmount: input.vatAmount.toFixed(2),
-        netAmount: input.netAmount.toFixed(2),
-        createdByOpenId: profile.id || "system",
+        currency: "TZS",
+        accessToken,
       });
-
-      const newReceiptId = Number(inserted[0].insertId);
-      const [newReceipt] = await db.select().from(fiscalReceipts).where(eq(fiscalReceipts.id, newReceiptId)).limit(1);
-
-      await recordAuditLog(ctx.user, {
-        companyId: input.companyId,
-        action: "SUBMIT_TRA_RECEIPT",
-        module: "TRA_PORTAL",
-        details: `Fiscalized ${input.sourceType} #${input.sourceId} -> Receipt ${result.receiptNumber} (${result.responseCode})`,
-      });
-
-      return { success: result.success, receipt: newReceipt };
+      const recordId = queued && typeof queued === "object" && "recordId" in queued ? String((queued as { recordId: unknown }).recordId) : "";
+      const receiptRows = await listNativeReceipts(input.companyId, 100);
+      const receipt = receiptRows.find((row) => row.id === recordId) || null;
+      await nativeAudit(input.companyId, "QUEUE_TRA_RECEIPT", { sourceType: input.sourceType, sourceId: input.sourceId, recordId, idempotencyKey: input.idempotencyKey });
+      return { success: true as const, queued: true as const, duplicate: Boolean(queued && typeof queued === "object" && "duplicate" in queued && (queued as { duplicate?: unknown }).duplicate), receipt };
     }),
 
   getConnectionStatus: protectedProcedure
     .input(z.object({ companyId: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      }
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection unavailable." });
-      const profRows = await db.select().from(fiscalProfiles).where(eq(fiscalProfiles.companyId, input.companyId)).limit(1);
-      const env = profRows[0]?.environment || "sandbox";
-      const provider = getFiscalProvider(env);
-      const readiness = getFiscalProviderReadiness(env);
-      const conn = await provider.checkConnection();
-
-      const stats = await db.select({
-        total: sql<number>`count(*)`,
-        verified: sql<number>`sum(case when status='VERIFIED' then 1 else 0 end)`,
-        failed: sql<number>`sum(case when status='FAILED' then 1 else 0 end)`,
-        pending: sql<number>`sum(case when status='PENDING' then 1 else 0 end)`,
-      }).from(fiscalReceipts).where(eq(fiscalReceipts.companyId, input.companyId));
-
+      requireCompany(profile, input.companyId);
+      const accessToken = getSessionToken(ctx.req);
+      const fiscalProfile = await getNativeFiscalProfile(accessToken);
+      const environment = fiscalProfile?.environment === "production" ? "production" : "sandbox";
+      const readiness = nativeReadiness(environment, Boolean(fiscalProfile));
       return {
-        connection: { ...conn, readiness },
-        officialLinks: officialTraLinks,
-        profileConfigured: Boolean(profRows[0]),
-        stats: stats[0] || { total: 0, verified: 0, failed: 0, pending: 0 },
+        connection: { connected: readiness.canSubmit, status: readiness.status, message: readiness.reason },
+        readiness,
+        officialLinks: nativeOfficialLinks(),
+        profileConfigured: Boolean(fiscalProfile),
+        stats: await nativeReceiptStats(input.companyId),
       };
     }),
 
@@ -270,51 +174,41 @@ export const traFiscalRouter = router({
     .input(z.object({ companyId: z.string().min(1), limit: z.number().int().min(1).max(100).optional() }))
     .query(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      const allowedRoles = ["admin", "owner", "manager", "organization owner", "ceo", "super administrator", "system administrator", "finance manager", "cfo"];
-      if (!allowedRoles.some((role) => profile.role.toLowerCase().includes(role))) throw new TRPCError({ code: "FORBIDDEN", message: "Only authorized tenant administrators can view TRA evidence documents." });
-      const [archives, audit] = await Promise.all([listTraArchives(input.companyId), listAuditLogs(input.companyId, input.limit || 50)]);
-      return { archives, audit: audit.filter((log) => log.module === "TRA_PORTAL" || log.action.toLowerCase().includes("tra")) };
+      requireCompany(profile, input.companyId);
+      if (!canAdmin(profile.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Only authorized tenant administrators can view TRA evidence documents." });
+      const limit = input.limit || 50;
+      const [archives, auditRows] = await Promise.all([
+        nativeAuxiliaryRows("tra_z_report_archives", input.companyId, limit),
+        selectRows("restaurant_audit_events", { select: "id,company_id,outlet_id,actor_id,action,subject_type,subject_id,detail,created_at", company_id: `eq.${input.companyId}`, order: "created_at.desc", limit: String(limit) }),
+      ]);
+      return { archives, audit: auditRows.filter((log) => String(log.action || "").toLowerCase().includes("tra") || String(log.subject_type || "").toLowerCase().includes("fiscal")) };
     }),
 
   getOperationsSummary: protectedProcedure
     .input(z.object({ companyId: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "TRA operations database is unavailable." });
-      const profileRows = await db.select({ environment: fiscalProfiles.environment }).from(fiscalProfiles).where(eq(fiscalProfiles.companyId, input.companyId)).limit(1);
-      const environment = profileRows[0]?.environment || "sandbox";
-      const provider = getFiscalProvider(environment);
-      const [connection, receiptStats, retryStats, zReportStats, taxConfigStats] = await Promise.all([
-        provider.checkConnection(),
-        db.select({
-          total: sql<number>`count(*)`,
-          verified: sql<number>`sum(case when ${fiscalReceipts.status} in ('VERIFIED', 'SUBMITTED') then 1 else 0 end)`,
-          failed: sql<number>`sum(case when ${fiscalReceipts.status} in ('FAILED', 'REJECTED') then 1 else 0 end)`,
-          pending: sql<number>`sum(case when ${fiscalReceipts.status} in ('PENDING', 'SUBMITTING', 'RETRYING') then 1 else 0 end)`,
-        }).from(fiscalReceipts).where(eq(fiscalReceipts.companyId, input.companyId)),
-        db.select({ pending: sql<number>`sum(case when ${fiscalRetryQueue.status} = 'pending' then 1 else 0 end)`, processing: sql<number>`sum(case when ${fiscalRetryQueue.status} = 'processing' then 1 else 0 end)`, exhausted: sql<number>`sum(case when ${fiscalRetryQueue.status} = 'exhausted' then 1 else 0 end)` }).from(fiscalRetryQueue).where(eq(fiscalRetryQueue.companyId, input.companyId)),
-        db.select({ total: sql<number>`count(*)`, latestBusinessDate: sql<string>`max(${zReports.businessDate})` }).from(zReports).where(eq(zReports.companyId, input.companyId)),
-        db.select({ total: sql<number>`count(*)`, active: sql<number>`sum(case when ${taxConfigurations.isActive} = true then 1 else 0 end)` }).from(taxConfigurations).where(eq(taxConfigurations.companyId, input.companyId)),
+      requireCompany(profile, input.companyId);
+      const accessToken = getSessionToken(ctx.req);
+      const fiscalProfile = await getNativeFiscalProfile(accessToken);
+      const environment = fiscalProfile?.environment === "production" ? "production" : "sandbox";
+      const readiness = nativeReadiness(environment, Boolean(fiscalProfile));
+      const snapshot = await getNativeSnapshot(accessToken);
+      const receipts = await listNativeReceipts(input.companyId, 100);
+      const [archives, anomalySettings, anomalyEvents] = await Promise.all([
+        nativeAuxiliaryRows("tra_z_report_archives", input.companyId, 100),
+        getNativeAnomalySettings(input.companyId),
+        nativeAuxiliaryRows("tra_vat_anomaly_events", input.companyId, 10),
       ]);
-      let anomaly: unknown = { status: "unavailable", reason: "VAT anomaly service could not be read." };
-      try {
-        const settings = await getVatAnomalySettings(input.companyId);
-        const events = await listVatAnomalyEvents(input.companyId, 10);
-        anomaly = { status: "available", settings, recentEvents: events };
-      } catch {
-        // Keep the operations center usable when optional anomaly tables are not migrated.
-      }
+      const taxProfiles = Array.isArray(snapshot.taxProfiles) ? snapshot.taxProfiles : [];
       return {
-        provider: { ...connection, readiness: provider.getReadiness() },
-        officialLinks: officialTraLinks,
-        fiscalReceipts: receiptStats[0] || { total: 0, verified: 0, failed: 0, pending: 0 },
-        retryQueue: retryStats[0] || { pending: 0, processing: 0, exhausted: 0 },
-        zReports: zReportStats[0] || { total: 0, latestBusinessDate: null },
-        taxConfigurations: taxConfigStats[0] || { total: 0, active: 0 },
-        anomaly,
+        provider: { connected: readiness.canSubmit, status: readiness.status, message: readiness.reason, readiness },
+        officialLinks: nativeOfficialLinks(),
+        fiscalReceipts: { total: receipts.length, verified: receipts.filter((row) => row.status === "Verified").length, failed: receipts.filter((row) => ["Rejected", "Failed"].includes(row.status)).length, pending: receipts.filter((row) => ["Queued", "Submitting", "Submitted"].includes(row.status)).length },
+        retryQueue: { pending: receipts.filter((row) => row.status === "Queued").length, processing: receipts.filter((row) => row.status === "Submitting").length, exhausted: 0 },
+        zReports: { total: archives.length, latestBusinessDate: archives.map((row) => row.business_date).filter(Boolean).sort().at(-1) || null },
+        taxConfigurations: { total: taxProfiles.length, active: taxProfiles.filter((row) => row.is_active !== false).length },
+        anomaly: { status: "available", settings: anomalySettings, recentEvents: anomalyEvents },
       };
     }),
 
@@ -322,27 +216,26 @@ export const traFiscalRouter = router({
     .input(z.object({ companyId: z.string().min(1), periods: z.number().int().min(3).max(24).optional() }))
     .query(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      return getVatTrendSummary(input.companyId, input.periods);
+      requireCompany(profile, input.companyId);
+      return nativeVatTrend(input.companyId, input.periods || 12);
     }),
 
   getVatAnomalySettings: protectedProcedure
     .input(z.object({ companyId: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      return getVatAnomalySettings(input.companyId);
+      requireCompany(profile, input.companyId);
+      return getNativeAnomalySettings(input.companyId);
     }),
 
   saveVatAnomalySettings: protectedProcedure
     .input(z.object({ companyId: z.string().min(1), enabled: z.boolean(), thresholdPercent: z.number().int().min(5).max(500), cooldownMinutes: z.number().int().min(15).max(10080) }))
     .mutation(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      const allowedRoles = ["admin", "owner", "manager", "Organization Owner", "CEO", "Super Administrator", "System Administrator", "Finance Manager", "CFO"];
-      if (!allowedRoles.some((role) => profile.role.toLowerCase().includes(role.toLowerCase()))) throw new TRPCError({ code: "FORBIDDEN", message: "Insufficient permissions to configure VAT anomaly alerts." });
-      const settings = await saveVatAnomalySettings(ctx.user, getSessionToken(ctx.req), input);
-      await recordAuditLog(ctx.user, { companyId: input.companyId, action: "SAVE_TRA_VAT_ANOMALY_SETTINGS", module: "TRA_PORTAL", details: `VAT anomaly alerts ${input.enabled ? "enabled" : "disabled"}; threshold ${input.thresholdPercent}%; cooldown ${input.cooldownMinutes} minutes.` });
+      requireCompany(profile, input.companyId);
+      if (!canAdmin(profile.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Insufficient permissions to configure VAT anomaly alerts." });
+      const settings = await saveNativeAnomalySettings(input.companyId, input);
+      await nativeAudit(input.companyId, "SAVE_TRA_VAT_ANOMALY_SETTINGS", input);
       return settings;
     }),
 
@@ -350,16 +243,22 @@ export const traFiscalRouter = router({
     .input(z.object({ companyId: z.string().min(1), limit: z.number().int().min(1).max(100).optional() }))
     .query(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      return listVatAnomalyEvents(input.companyId, input.limit);
+      requireCompany(profile, input.companyId);
+      return nativeAuxiliaryRows("tra_vat_anomaly_events", input.companyId, input.limit || 50);
     }),
 
   evaluateVatAnomaly: protectedProcedure
-    .input(z.object({ companyId: z.string().min(1), period: z.string().regex(/^\\d{4}-\\d{2}$/).optional(), branchId: z.string().optional() }))
+    .input(z.object({ companyId: z.string().min(1), period: z.string().regex(/^\d{4}-\d{2}$/).optional(), branchId: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       const { profile } = await resolveVerifiedProfile(ctx.req);
-      if (profile.company_id !== input.companyId) throw new TRPCError({ code: "FORBIDDEN", message: "Company isolation violation." });
-      const settings = await getVatAnomalySettings(input.companyId);
-      return evaluateVatAnomaly(input.companyId, settings, input.period, input.branchId);
+      requireCompany(profile, input.companyId);
+      const settings = await getNativeAnomalySettings(input.companyId);
+      const trends = await nativeVatTrend(input.companyId, 12);
+      const selected = trends.find((row) => row.period === input.period) || trends.at(-1) || { period: input.period || "", vat: 0 };
+      const historical = trends.filter((row) => row.period !== selected.period && row.verifiedReceipts > 0).map((row) => row.vat);
+      const historicalAverageVat = historical.length ? historical.reduce((sum, value) => sum + value, 0) / historical.length : 0;
+      const variancePercent = historicalAverageVat > 0 ? ((selected.vat - historicalAverageVat) / historicalAverageVat) * 100 : null;
+      const threshold = numberValue(settings.threshold_percent) || 50;
+      return { period: selected.period, branchId: input.branchId || null, currentVat: selected.vat, historicalAverageVat: Number(historicalAverageVat.toFixed(2)), variancePercent: variancePercent === null ? null : Number(variancePercent.toFixed(2)), thresholdPercent: threshold, status: variancePercent !== null && Math.abs(variancePercent) >= threshold ? "Triggered" : "Normal", deliveryStatus: "Not evaluated", source: "Supabase-native restaurant_fiscal_receipts" };
     }),
 });

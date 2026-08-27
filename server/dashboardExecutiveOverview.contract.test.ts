@@ -24,31 +24,32 @@ describe("Enterprise dashboard overview contract", () => {
     expect(overviewSource).toContain("const inventoryRows = inventory?.rows || []");
     expect(overviewSource).toContain("const crmRows = crm?.rows || []");
     expect(overviewSource).toContain("Some live workspace information is unavailable");
-    expect(overviewSource).toContain("The dashboard does not invent business metrics.");
+    expect(overviewSource).toContain("The dashboard does not invent business metrics");
     expect(overviewSource).not.toContain("Simulated");
   });
 
-  it("uses real workspace signals and keeps the decorative KPI treatment navigation-safe", () => {
-    expect(overviewSource).toContain("const workspaceSignals = [");
-    expect(overviewSource).toContain("Revenue signal");
-    expect(overviewSource).toContain("Pipeline signal");
-    expect(overviewSource).toContain("Review queue");
-    expect(overviewSource).toContain("attentionItems?.length || 0");
-    expect(overviewSource).toContain("tone.edge");
-    expect(overviewSource).toContain("View details");
+  it("uses a reference-directed KPI treatment while keeping every card navigation-safe", () => {
+    expect(overviewSource).toContain("Connected workspace view");
+    expect(overviewSource).toContain("const metrics = [");
+    expect(overviewSource).toContain("Total revenue");
+    expect(overviewSource).toContain("Total sales");
+    expect(overviewSource).toContain("Receivables");
+    expect(overviewSource).toContain("Revenue & Sales Performance");
+    expect(overviewSource).toContain("Inventory health");
+    expect(overviewSource).toContain("const openAction = (moduleId, params) => onQuickAction?.(moduleId, params)");
+    expect(overviewSource).toContain('openAction("finance", { tab: "receivables" })');
   });
 
-  it("shares a responsive widget-card system without replacing live data or established actions", () => {
-    expect(overviewSource).toContain("function WidgetHeader");
-    expect(overviewSource).toContain("const widgetTones = {");
-    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Financial movement\"");
-    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Attention queue\"");
-    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Momentum\"");
-    expect(overviewSource).toContain("<WidgetHeader eyebrow=\"Team & next steps\"");
+  it("shares a responsive analytic-panel system without replacing live data or established actions", () => {
+    expect(overviewSource).toContain("function PanelHeader");
+    expect(overviewSource).toContain("<DonutPanel title=\"Sales by category\"");
+    expect(overviewSource).toContain("<DonutPanel title=\"Sales by channel\"");
+    expect(overviewSource).toContain("<PanelHeader title=\"Alerts\"");
+    expect(overviewSource).toContain("<PanelHeader title=\"Quick actions\"");
     expect(overviewSource).toContain("performanceTrend.some");
     expect(overviewSource).toContain("PERFORMANCE_RANGES");
     expect(overviewSource).toContain("attentionItems?.length");
-    expect(overviewSource).toContain("onQuickAction(\"hr\", { tab: \"leave\" })");
+    expect(overviewSource).toContain("allowedModules = []");
   });
 });
 

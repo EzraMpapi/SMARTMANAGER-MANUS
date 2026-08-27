@@ -2,23 +2,28 @@
 
 ## Selected Repository Posture
 
-The Smart Manager repository remains **private**. This preserves the existing access boundary and avoids changing repository visibility or authorizing a GitHub billing change without a separate explicit instruction.
-GitHub reports that this repository’s current plan does not permit branch protection or repository rulesets for the private `main` branch. Consequently, required status checks cannot be enforced by GitHub at this time. This is a GitHub account-entitlement limitation, not an application or workflow failure.
+On 2026-08-27, the repository owner explicitly approved changing `EzraMpapi/SMARTMANAGER-MANUS` to **public** after a tracked-file safety scan confirmed that environment files contain placeholders only and flagged code values are non-production test fixtures. This change makes the repository source and history publicly visible; secrets remain deployment- or CI-managed and must never be committed.
+
+Public visibility allows GitHub main-branch protection on the current plan. The `main` policy requires a pull request and the current CI status checks before merge, including for administrators. On 2026-08-27, the repository owner separately authorized a narrow zero-approval exception for the already-passing quality-gate activation release; that exception did not remove any required status check or other branch-safety control.
 
 ## Active Quality Gate
 
-The **CI & Quality Gate** workflow remains enabled for pushes and pull requests targeting `main`. It validates the Supabase schema contract, TypeScript, automated tests, dependency audit, production build, and browser signup journey. Its result is visible through the repository status badge in [README.md](README.md).
-Until GitHub branch protection becomes available, maintainers must treat a passing **CI & Quality Gate** run as the required pre-merge condition and avoid merging pull requests with a failing or incomplete run. The release-notes workflow is independent of this policy and creates release notes only from a version tag or explicit manual dispatch.
+The **CI & Quality Gate** workflow remains enabled for pushes and pull requests targeting `main`. It validates the Supabase schema contract, TypeScript, automated tests, dependency audit, production build, and the isolated browser dashboard-preference journey. Its result is visible through the repository status badge in [README.md](README.md).
 
-## Future Enforcement Option
+Maintainers must open a pull request before merging into `main`. The two required checks are **Unit, Schema, Type and Production Build** and **Browser Dashboard Preference Journey**. The current approval count is **zero** under the owner-approved exception; the PR and CI gates remain enforced. Stale approvals are dismissed after new commits, administrator bypass is disabled, force pushes and branch deletion are disabled, and conversation resolution is required. The release-notes workflow remains independent of this policy and creates release notes only from a version tag or explicit manual dispatch.
 
-If GitHub Pro is later enabled for the private repository, configure branch protection or a repository ruleset for `main` with the following settings:
+## Enforced Protection Settings
+
+The `main` protection configuration uses the following settings:
 | Control | Required setting |
 | --------------- | --------------------------------------------- |
 | Pull requests | Require a pull request before merging |
-| Required check | `Unit, Schema, Type and Production Build` |
-| Dependent check | `Browser Signup Journey` |
+| Approving reviews | 0, by explicit owner authorization on 2026-08-27 |
+| Required checks | `Unit, Schema, Type and Production Build`; `Browser Dashboard Preference Journey` |
 | Stale approvals | Dismiss approvals when new commits are pushed |
 | Administrators | Include administrators in the policy |
 | Force pushes | Disallow |
-No workflow, application behavior, production data, credentials, or schedules are modified by this policy document.
+| Branch deletion | Disallow |
+| Conversations | Require resolution before merge |
+
+No application behavior, production data, credentials, or schedules are modified by this policy document.

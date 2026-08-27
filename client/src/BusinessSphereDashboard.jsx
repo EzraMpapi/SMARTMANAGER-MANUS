@@ -20,3 +20,5 @@ export default function BusinessSphereDashboard() {
     </Suspense>
   );
 }
+
+/* Extracted from BusinessSphereDashboard.jsx to keep Vercel source files below the direct-upload limit. */

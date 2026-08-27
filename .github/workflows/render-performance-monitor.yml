@@ -1,0 +1,111 @@
+name: Render Performance Monitor
+
+on:
+  schedule:
+    # Every six hours; spread away from the daily smoke workflow.
+    - cron: "43 1,7,13,19 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: render-performance-monitor
+  cancel-in-progress: false
+
+jobs:
+  render-performance:
+    name: Render availability and browser performance budgets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      E2E_BASE_URL: https://smartmanager-manus-render.onrender.com
+      RENDER_COLD_START_MAX_MS: "60000"
+      RENDER_TTFB_MAX_MS: "7500"
+      RENDER_DCL_MAX_MS: "15000"
+      RENDER_LOAD_MAX_MS: "20000"
+      RENDER_FCP_MAX_MS: "15000"
+      RENDER_API_RESPONSE_MAX_MS: "10000"
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium for performance monitor
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Measure Render availability and performance budgets
+        run: pnpm exec playwright test browser-tests/renderPerformance.spec.ts --reporter=line
+
+      - name: Upload performance diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-performance-${{ github.run_id }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Create or update Render performance alert
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_SHA: ${{ github.sha }}
+          TARGET_URL: https://smartmanager-manus-render.onrender.com
+        with:
+          script: |
+            const title = "[monitoring] Render performance budget breached";
+            const body = [
+              "The scheduled Render monitor failed an application-uptime, database-connectivity, API response, or browser performance budget.",
+              "",
+              `Target: ${process.env.TARGET_URL}`,
+              `Run: ${process.env.RUN_URL}`,
+              `Commit: ${process.env.RUN_SHA}`,
+              `UTC: ${new Date().toISOString()}`,
+              "",
+              "Inspect the attached render-performance artifact for application uptime, database-backed catalog connectivity, access-control, endpoint response, cold-start, TTFB, DOM-content-loaded, load-event, and first-contentful-paint metrics. This monitor is credential-free and does not mutate production data.",
+            ].join("\n");
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = openIssues.find((issue) => issue.title === title);
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+              core.info(`Updated existing Render performance alert issue #${existing.number}.`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+              core.info(`Created Render performance alert issue #${created.data.number}.`);
+            }

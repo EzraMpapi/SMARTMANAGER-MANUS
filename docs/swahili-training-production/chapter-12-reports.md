@@ -25,7 +25,7 @@
 
 ### 00:00–00:25 — Report inaanza na swali
 
-> Report nzuri haianzi na chart. Inaanza na swali: nini kinahitaji kueleweka, kwa kipindi gani, kutoka chanzo gani, na ni nani atakayepitia hatua inayofuata? Sura hii haionyeshi report, chart, export au value ya tenant.
+> Ripoti—*report*—nzuri haianzi na chart. Inaanza na swali: nini kinahitaji kueleweka, kwa kipindi gani, kutoka chanzo gani, na ni nani atakayepitia hatua inayofuata? Sura hii haionyeshi report, chart, export au value ya tenant.
 
 ### 00:25–01:30 — Swali la uongozi
 

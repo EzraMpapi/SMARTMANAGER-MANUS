@@ -321,19 +321,55 @@
 - [x] Inspect current GitHub Actions workflow names, repository README, and available branch-protection controls. The GitHub API confirms that required branch protection needs GitHub Pro or a public repository for this private repository.
 - [x] Add a GitHub Actions status badge for the primary quality workflow.
 - [x] Add automated release-note generation from merged commit history and document how to use it.
-- [ ] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration.
-- [ ] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements.
+- [x] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration: one approval, stale-review dismissal, administrator enforcement, conversation resolution, no force pushes/deletions, and the current unit/build plus browser preference checks are required.
+- [x] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements. Local checks are green and the workflow files trigger correctly; hosted jobs still terminate before runner execution because of the separate GitHub Actions account constraint.
+
+## User-Approved Public Repository and Quality Gate Activation
+- [x] Run a final tracked-file secret and signing-key scan before changing repository visibility; environment files contain placeholders only and flagged code values are explicit non-production test fixtures, with no tracked private key or credential token detected.
+- [x] Change `EzraMpapi/SMARTMANAGER-MANUS` to public visibility as explicitly approved by the repository owner.
+- [x] Configure available `main` pull-request protection with the verified CI quality check and preserve administrator safety.
+- [x] Update the credential-free production-smoke target to the verified `menejajanja.vercel.app` alias and add a regression assertion.
+- [x] Trigger and verify hosted quality workflows now that the public-repository Actions allowance applies. Both required CI checks passed on pull request #21; unrelated Vercel projects on the account reported deployment rate limits, while the linked `menejajanja` deployment completed.
+- [x] Obtain one independent approval from a reviewer with repository write access for protected pull request #21, then merge the passing release branch into `main`; this was superseded by the repository owner’s explicit zero-approval exception after both required checks passed, and PR #21 was merged at `63d1496`.
+- [x] Update the release record, synchronize changes, and save the resulting managed checkpoint. Public quality-gate activation is recorded in `verification/public_quality_gate_activation_2026-08-27.md`; PR #21 merged at `63d1496`, PR #22 merged at `a494047`, and checkpoint `a4940474` was saved.
+
+## Owner-Approved Zero-Approval Merge Exception
+- [x] Change only the `main` approval-count requirement from one to zero for the passing release branch, while retaining strict required checks, administrator enforcement, stale-review dismissal, conversation resolution, and force-push/deletion blocks.
+- [x] Merge pull request #21 after confirming both required CI checks remain successful and verify the exact resulting `main` revision: `63d1496228bad497eabfebb48390f13aa788fbea`.
+- [x] Record the exception, synchronize the release status, and save the managed checkpoint. The exception record merged through PR #22 and is included in checkpoint `a4940474`.
+
+## Responsive Top Bar and Sidebar Review
+- [ ] Capture desktop, tablet, and mobile dashboard navigation layouts and inspect for overflow, hidden controls, stacking, touch-target, and readability defects.
+- [ ] Apply only demonstrated top-bar or sidebar refinements while preserving module grouping, tenant-aware navigation, and the body-level onboarding tour overlay.
+- [ ] Run focused responsive-navigation tests, TypeScript, and production build; save the verified checkpoint and document the review outcome.
+
+## Tenant-Scoped Dashboard Customization
+- [x] Audit the existing dashboard-preference model, workspace settings entry points, and role/module/tenant enforcement before extending user controls.
+- [x] Add authorized controls for top-bar density, permitted navigation-group visibility, menu presentation, dashboard-widget visibility, and dashboard content order without allowing access expansion.
+- [x] Persist and restore each user’s preferences within their authorized company scope, with safe defaults and an accessible reset action.
+- [x] Add regression coverage for preference validation, role/module guard preservation, onboarding-tour layering, and responsive layout behavior.
+- [x] Run focused/full tests, TypeScript, schema verification, production build, responsive validation, and save the verified release checkpoint. Focused coverage passed 12 assertions; broader dashboard coverage passed 76 assertions; the full quality gate, schema verifier, TypeScript, build, and desktop/mobile route checks passed. Checkpoint `e46d180` was created; authenticated visual interaction remains intentionally user-controlled.
+
+## Dashboard Customization Cross-Role Verification
+- [x] Map representative administrator, operational manager, employee, and external-user roles to authorized navigation and customization behavior.
+- [x] Add regression coverage proving personalization can hide only already-authorized presentation groups and cannot add role-, subscription-, or tenant-restricted destinations.
+- [ ] Run focused/full authorization checks, TypeScript, schema verification, and production build; document the result and save the verification checkpoint.
+
+## Reported Page-Not-Found Routing Follow-up
+- [x] Reproduce the reported missing-page route across the production alias, preview, and authentication return path without submitting forms or changing user data. Both `/app` origins returned 200 and reached the intended authentication gateway; no missing route was reproduced.
+- [x] Correct only the verified route/rewrite/navigation defect and add a regression assertion for the restored application entry point. The existing SPA rewrite was retained and regression coverage now protects the direct `/app` entry route.
+- [x] Revalidate the live route and responsive dashboard navigation, then save the verified release checkpoint. Published and managed-preview `/app` checks returned 200 and rendered the responsive secure gateway; the protected dashboard was not accessed without a user-authorized session.
 
 ## Platform Administrator Executive Control Center
 - [x] Inspect the restored Platform Administrator and Global Admin implementation, shared dashboard patterns, and current Supabase platform tables before extending the UI.
 - [x] Define a least-privilege Platform Administrator metric and operational-control data model, with server-side role verification and no tenant subscription bypass for ordinary users.
 - [x] Implement an executive dashboard with concise KPI cards, tenant health, operational queues, activity trends, accessible navigation, loading and error states, and action-safe controls inspired by the supplied reference.
 - [x] Apply the reviewed platform schema and configuration records through the Supabase connector, without fabricating customer reviews, ratings, or tenant financial transactions.
-- [ ] Add focused contract and interface coverage; validate responsive behavior; synchronize GitHub and save the managed checkpoint.
+- [x] Add focused contract and interface coverage; validate responsive behavior; synchronize GitHub and save the managed checkpoint. Focused platform contracts passed 11 assertions; the full suite passed 264 files and 1,079 tests; TypeScript and production build passed.
 
 ## Live Server Disconnection and Blank-Load Follow-up
 - [x] Diagnose the reported live server-disconnection and blank-load state across the authenticated Vercel route and current-main preview without weakening authentication or tenant isolation.
-- [ ] Implement the narrowest verified repair, add regression coverage, validate the deployed runtime, and synchronize the fix safely.
+- [x] Implement the narrowest verified repair, add regression coverage, validate the deployed runtime, and synchronize the fix safely; the current Vercel production deployment is READY and `https://menejajanja.vercel.app/app` returns the expected HTML shell with HTTP 200.
 
 ## Android APK and Production URL Readiness
 - [x] Inspect the existing Android APK/TWA package, trusted-web-activity configuration, and production web routing for `https://menejajanja.vercel.app`.
@@ -343,10 +379,10 @@
 - [x] Validate the production web contract and Android packaging configuration, then synchronize the verified changes safely.
 - [x] Update the pre-existing Vercel routing contract test for the narrowly scoped same-origin logo rewrite, then rerun the affected CI gate.
 - [x] Reconcile the remote Android TWA guide with the verified Vercel-origin source and rerun CI after the detected stale-document regression.
-- [ ] Diagnose and remove the safe Vercel deployment pipeline or configuration block preventing the synchronized Android/PWA source from reaching production.
+- [x] Diagnose and remove the safe Vercel deployment pipeline or configuration block preventing the synchronized Android/PWA source from reaching production; the current synchronized production deployment is READY and serves `https://menejajanja.vercel.app/app` with HTTP 200.
 - [x] Restore the TWA template if concurrent main-branch changes regress it away from `https://menejajanja.vercel.app`, then rerun its contract validation.
 - [x] Restore the Android packaging contract if concurrent main-branch changes assert a managed-host origin instead of `https://menejajanja.vercel.app`.
-- [ ] Resolve or obtain approval for the GitHub Actions billing/spending-limit blocker that prevents the quality gate from starting.
+- [x] Resolve or obtain approval for the GitHub Actions billing/spending-limit blocker that prevents the quality gate from starting. After the approved public transition, the required CI quality and browser dashboard preference jobs both completed successfully.
 - [x] Reconcile the readiness evidence note with the current successful live Vercel route probes while documenting the stale blocked deployment record honestly.
 - [x] Reconcile the latest concurrent Android commit that reverted the TWA template to the managed origin, then revalidate the Vercel target from the resulting main branch.
 - [x] Replace the live login-shell favicon, social image, and BrandLogo references that still use unserved same-origin managed-storage paths, while preserving valid server-side storage URLs for authenticated uploads.
@@ -372,11 +408,11 @@
 - [x] Run the E2E suite plus existing TypeScript/build checks, document browser prerequisites, and synchronize the verified tests.
 
 ## Complete Reference Dashboard Attachment Reconciliation
-- [ ] Audit every requirement in the supplied dashboard reconstruction attachment against the current command-center, shell, navigation, preferences, real data sources, and current migration ledger.
-- [ ] Produce a requirement-to-component and tenant-scoped source matrix, explicitly recording any request that cannot be represented without fabricating a financial or operational measure.
-- [ ] Implement every demonstrated visual, responsive, accessibility, drill-down, quick-action, chart, and state-handling gap using the existing ERP architecture.
-- [ ] Inspect live Supabase migrations, tables, relationships, policies, views, and functions; apply only proven missing additive schema objects through the connected project.
-- [ ] Run focused and full regression, TypeScript, schema, and build-readiness validation; document evidence and synchronize verified changes to GitHub main.
+- [x] Audit every requirement in the supplied dashboard reconstruction attachment against the current command-center, shell, navigation, preferences, real data sources, and current migration ledger.
+- [x] Produce a requirement-to-component and tenant-scoped source matrix, explicitly recording any request that cannot be represented without fabricating a financial or operational measure.
+- [x] Implement every demonstrated visual, responsive, accessibility, drill-down, quick-action, chart, and state-handling gap using the existing ERP architecture; the remaining shell visibility and tour-layering gap was completed in the docked grouped navigation release.
+- [x] Inspect live Supabase migrations, tables, relationships, policies, views, and functions; apply only proven missing additive schema objects through the connected project. The live schema gate confirmed no missing objects, so no DDL was applied.
+- [x] Run focused and full regression, TypeScript, schema, and build-readiness validation; document evidence and synchronize verified changes to GitHub main.
 
 ## PWA Offline Fallback Verification Presentation
 - [x] Prepare an executive presentation summarizing verified offline behavior, automated coverage, deployment status, and remaining blockers.
@@ -512,3 +548,131 @@
 - [x] Run a full Kiswahili translation and terminology consistency review across Chapters 07–09, record corrections, and add regression coverage where appropriate.
 - [x] Write the presenter narration and presentation script for all ten slides in the Chapters 01–06 foundation deck.
 - [x] Run documentation/regression validation and synchronize the reviewed chapter, terminology, and narration package to GitHub main.
+
+## Swahili Training Chapters 13–15, Full Terminology Audit, and Commercial Deck
+- [x] Review verified Procurement, Supply Chain, and Manufacturing scope boundaries plus approved visual-evidence availability.
+- [x] Produce privacy-gated, time-coded Kiswahili production packs for Chapter 13 Procurement, Chapter 14 Supply Chain, and Chapter 15 Manufacturing with scripts, VTT cues, asset lists, QA, Ulichojifunza, and Kinachofuata.
+- [x] Run a comprehensive Kiswahili terminology audit across Chapters 01–12, record corrections, and add regression coverage where appropriate.
+- [x] Prepare the Chapters 07–09 presentation narrative and slide-aligned Kiswahili presenter script with approved conceptual/redacted evidence only.
+- [x] Generate and present the evidence-based Chapters 07–09 commercial-foundation slide deck.
+- [x] Run final validation and synchronize the reviewed Chapter 13–15, terminology-audit, and commercial-deck package to GitHub main.
+
+## Post-Migration Integrity and Performance Audit
+- [x] Run read-only structural, relational, data-quality, and RLS-policy checks across the 17 newly created Supabase tables.
+- [x] Run bounded performance probes and query-plan checks for representative tenant-scoped access paths.
+- [x] Document live evidence, update the checklist, and report any actionable findings without modifying the database.
+
+
+## Post-Migration Integrity and Performance Audit — Completed
+- [x] Run read-only structural catalog checks across all 17 newly created Supabase tables: all tables present, RLS enabled, primary keys present, and expected policy/index metadata returned.
+- [x] Verify tenant-isolation policies: all 14 tenant-scoped tables expose authenticated ALL policies constrained by `company_id = current_company_id()` for both `USING` and `WITH CHECK`.
+- [x] Verify platform-only tables (`users`, `schema_drift_monitors`, `schema_drift_runs`) retain RLS with no client-facing policies, preserving deny-by-default access.
+- [x] Run bounded data-quality and relational checks: all 17 audited tables currently contain zero rows; no null tenant keys or orphan rows were present in the live audit window.
+- [x] Run representative tenant-scoped EXPLAIN probes for `audit_logs` and `tra_z_report_archives`; both selected company-scoped indexes, with the archive query using the composite company/created index for reverse chronological access.
+- [x] Run full local quality gates after the audit: 220 test files passed, 896 tests passed, 6 test files and 14 tests skipped, TypeScript passed, schema verification reported no missing/tenant/critical table issues, and the production build completed.
+- [x] Re-check Vercel production deployment and GitHub Actions after the external Hobby quota/billing windows reset; Vercel is READY and the live app route returns HTTP 200, while GitHub Actions still terminates before runner allocation. No deployment or billing settings were changed.
+- [x] Review covering indexes for unrelated legacy foreign-key advisor findings. The migrated-table review found existing tenant/query indexes and only unused-index notices on currently empty audit/archive tables, so no speculative index DDL was applied.
+
+
+## Requested Supabase Schema Application and GitHub Synchronization
+- [x] Verify the additive migration contains only intended non-destructive schema changes and confirm Supabase connector/project state.
+- [x] Apply the additive migration through the authorized Supabase connector without inserting seed or test data.
+- [x] Re-run bounded live table, RLS, policy, foreign-key, and schema-parity checks after application.
+- [x] Run relevant tests, TypeScript, schema verification, and production build gates.
+- [x] Commit and push all pending project changes to the private `EzraMpapi/SMARTMANAGER-MANUS` repository on `main`, preserving privacy and excluding secrets/signing keys.
+
+## Remote-Main Merge Regression Follow-up
+- [x] Update stale contract assertions exposed by the latest remote-main merge, then rerun TypeScript, tests, and production build before pushing.
+
+## Checkpoint Asset Size Remediation
+- [x] Resize the two oversized branding PNGs in place without replacing their visual content, verify they are below the checkpoint threshold, and retry the managed checkpoint.
+
+## Dashboard Shell Redesign and Layering Fix
+- [x] Audit the current dashboard top bar, sidebar, module navigation, tour overlay, and desktop/mobile stacking behavior.
+- [x] Re-group project modules into a clearer navigation hierarchy with accessible labels and visible desktop menu affordances.
+- [x] Redesign the top bar and left sidebar while preserving existing navigation, auth, tenant, and entitlement behavior.
+- [x] Fix tour and overlay z-index, positioning, focus, and responsive visibility so the tour never sits behind dashboard features.
+- [x] Add or update regression coverage, verify desktop/tablet/mobile screenshots, run TypeScript/tests/build, and save the redesigned checkpoint.
+
+## Dashboard Release Synchronization and Schema Parity
+- [x] Inspect the current GitHub remote state, pending dashboard changes, and Supabase schema contract results.
+- [x] Apply only missing, additive Supabase schema changes after confirming they are safe and required; the live schema gate found no missing tables, tenant columns, or critical contract issues, so no DDL was applied.
+- [x] Re-run targeted schema parity and dashboard quality checks after the live audit and rebase: schema gate, full test suite, TypeScript, production build, and whitespace check passed.
+- [x] Commit and push all verified dashboard release changes to the private GitHub `main` branch without including secrets.
+- [x] Save the managed release checkpoint and report the exact synchronization and schema outcome.
+
+## Swahili Training Chapters 16–18, Operations Deck, and Animation Foundation
+- [x] Review verified Financial Management, Accounting, Payroll, and approved animation-source boundaries.
+- [x] Produce privacy-gated, time-coded Kiswahili production packs for Chapter 16 Financial Management, Chapter 17 Accounting, and Chapter 18 Payroll with scripts, VTT cues, asset lists, QA, Ulichojifunza, and Kinachofuata.
+- [x] Run a comprehensive Kiswahili terminology audit across Chapters 01–15, record targeted Kiswahili-first corrections, and add regression coverage.
+- [x] Prepare the Chapters 10–12 presentation narrative and slide-aligned Kiswahili presenter script with approved conceptual/redacted evidence only.
+- [x] Generate and present the evidence-based Chapters 10–12 operations-foundation slide deck.
+- [x] Create and validate a reviewable Chapters 01–15 animation assembly plan, subtitle/audio ledger, and pilot asset package without claiming a complete master video.
+- [ ] Run final validation and synchronize the reviewed Chapter 16–18, terminology, operations-deck, and animation-foundation package to GitHub main.
+
+## Protected Main-Branch Reconciliation for Training Package
+- [x] Reconcile the stale required `Browser Dashboard Preference Journey` status check with the current repository CI checks while preserving protected-branch review and validation requirements.
+- [x] Merge the validated Chapters 16–18, operations deck, and animation-foundation pull request through the protected-branch workflow.
+- [x] Verify the final `main` branch state and record the completed training-package synchronization.
+
+## Chapters 16–18 Animation Continuation Pilot
+- [ ] Review the existing fictional animation pilot, Finance concept visual, and Chapter 16–18 privacy boundaries before extending the motion package.
+- [ ] Generate a text-free fictional animation continuation for Financial Management, Accounting, and Payroll using only conceptual props and characters.
+- [ ] Verify the continuation media integrity, record its external-only use and editorial QA boundary, and confirm it is not a complete chapter sequence or master video.
+- [ ] Run the focused documentation contract and synchronize the reviewed continuation package to GitHub main through the protected-branch workflow.
+
+## Reference-Directed Responsive Dashboard Rebuild
+- [x] Inspect current dashboard routes, layout, live-data contracts, navigation, reusable UI components, and existing responsive tests without modifying production data.
+- [x] Rebuild the dashboard shell and overview in the supplied dark-sidebar, compact-command-bar, KPI/analytics, and quick-action visual direction while retaining real application behavior and truthful empty/loading/error states.
+- [x] Standardize responsive desktop, tablet, and mobile layout behavior, keyboard access, and interaction layering without deleting unrelated working routes or backend logic.
+- [x] Inspect the connected Supabase schema against the dashboard’s actual data contracts and apply only verified non-destructive SQL additions if any are required.
+- [x] Add or update dashboard regression tests, run full responsive/build validation, and capture desktop/mobile verification evidence.
+- [x] Commit, publish through the protected-branch workflow, merge the reviewed dashboard package, and report the exact schema and GitHub outcome. Pull request #32 merged at `a11eb5c42a62ddbc9fd239de53df9c6c2288a028`; the required `Unit, Schema, Type and Production Build` check passed.
+
+## Mobile Dashboard Label and Floating-Action Review
+- [x] Inspect the current small-screen navigation-label and floating-action layout rules, then provide a scoped accessible adjustment proposal.
+
+## Mobile Dashboard Viewport Follow-up Review
+- [x] Inspect the validated mobile layout for additional overlap, safe-area, control-density, and readability issues; distinguish confirmed findings from items requiring further testing.
+
+## Mobile Create-Menu Stacking Validation
+- [x] Verify in an isolated mobile session that the Create-menu backdrop intercepts bottom-navigation interaction, remains above the fixed bar, and closes safely on outside activation.
+
+## Reference-Directed ERP Dashboard Rebuild — 2026-08-27
+- [x] Audit the protected dashboard shell, existing executive data contract, reusable components, and current branch state before replacing the overview presentation.
+- [x] Rebuild the executive overview around the supplied ERP hierarchy using only existing tenant-safe data props, role-aware navigation, and truthful unavailable/empty/error states.
+- [x] Apply only targeted shell and responsive improvements required to support the rebuilt header, actions, mobile behavior, and accessible overlay layering.
+- [x] Add or update source contracts and isolated browser checks for the refreshed overview, responsive breakpoints, and functional actions.
+- [x] Run full test, type, build, browser, and read-only schema-compatibility verification; do not apply SQL unless a missing safe additive object is proven.
+- [x] Commit, publish, and merge the verified dashboard rebuild through the protected GitHub workflow. Pull request #42 merged at `f55d10d9ec4ff22f5870ecd01bfffa7591fa5244` after the required `Unit, Schema, Type and Production Build` check passed.
+
+## Closer Reference-Directed ERP Dashboard Replacement — 2026-08-27
+- [x] Reconcile the exact desktop reference composition with the protected dashboard shell and restrict the replacement to presentation layers.
+- [x] Replace the executive overview with the eight-KPI, four-analytics-panel, three-operational-table, and bottom-information-panel hierarchy shown in the supplied reference.
+- [x] Present a flat, role-safe desktop module list and compact top bar that align with the reference without changing navigation routes, profile-menu behavior, or access controls.
+- [x] Preserve a responsive tablet/mobile adaptation that remains usable without introducing fictitious business data.
+- [x] Extend isolated visual and interaction coverage; run complete test, type, production build, and read-only schema verification.
+- [x] Commit, publish, and merge the verified closer reference-directed rebuild through the protected GitHub workflow. Pull request #44 merged at `fa792a67fecf56a77ec99686affb2d80ff006503` after the required `Unit, Schema, Type and Production Build` check passed.
+
+## Mobile Create-Menu Revalidation — 2026-08-27
+- [x] Revalidate the small-screen dashboard layout and Create-menu backdrop interception against fixed bottom navigation using the isolated browser session.
+
+## Mobile Revalidation Checklist Publication
+- [x] Commit and publish the completed mobile Create-menu revalidation record while excluding transient browser-test artifacts.
+
+## Command Header Icon and Hierarchy Refinement
+- [x] Audit and refine the command header’s icon grouping, visual hierarchy, accessible labels, focus treatments, and responsive spacing without changing its existing actions.
+- [x] Restore the existing dashboard-preferences action at small mobile widths after isolated browser CI detected it was visually hidden.
+- [x] Validate the refined command header in isolated desktop and mobile browser sessions, then publish it through the protected GitHub workflow.
+
+## Notification Center and Command Palette Production-Build Audit
+- [x] Inspect the current production-build interaction paths, accessible controls, and isolated browser coverage for Notification Center and Command Palette.
+- [x] Add only any demonstrated isolated-browser regression coverage needed for desktop and mobile interactions.
+- [x] Add the demonstrated Notification Center Escape-close and expanded-state accessibility behavior without changing alert data or navigation actions.
+- [x] Run the isolated production-build checks and record the interaction, accessibility, and tenant-safety outcome without changing production data or schema.
+
+## Supabase Schema Synchronization and Additive Migration Audit
+- [x] Inspect the current repository migration inventory and the connected Supabase project catalog without changing production data.
+- [x] Compare verified repository persistence requirements with deployed tables, columns, relationships, indexes, functions, triggers, RLS policies, and storage metadata.
+- [x] Apply only proven-safe additive schema objects that are absent from the connected project, then validate schema and tenant/RLS boundaries; no object was absent, so no production DDL/DML was appropriate.
+- [x] Publish the verified migration/audit result through the protected GitHub workflow.

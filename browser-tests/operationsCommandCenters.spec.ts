@@ -105,6 +105,10 @@ test.describe("operations procurement and warehouse integration journeys", () =>
     const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
     if (await openMenu.count() && await openMenu.isVisible().catch(() => false)) await openMenu.click({ force: true });
     const procurementNav = page.locator("aside nav button").filter({ hasText: "Procurement" }).first();
+    if (!(await procurementNav.count()) || !(await procurementNav.isVisible().catch(() => false))) {
+      const operationsNav = page.locator("aside nav button").filter({ hasText: "Operations" }).first();
+      if (await operationsNav.count() && await operationsNav.isVisible().catch(() => false)) await operationsNav.evaluate((element) => (element as HTMLButtonElement).click());
+    }
     await expect(procurementNav).toBeVisible();
     await procurementNav.scrollIntoViewIfNeeded();
     await procurementNav.evaluate((element) => (element as HTMLElement).click());
@@ -119,20 +123,27 @@ test.describe("operations procurement and warehouse integration journeys", () =>
   });
 
   test("opens Inventory and exposes the reorder workflow boundary", async ({ page }, testInfo) => {
+    const runtimeErrors: string[] = [];
+    page.on("pageerror", (error) => runtimeErrors.push(error.message));
     await mockAuthenticatedOperations(page, "Warehouse Manager");
     await page.goto("/app", { waitUntil: "domcontentloaded" });
     await dismissTransientUi(page);
     const openMenu = page.getByRole("button", { name: "Open menu", exact: true }).last();
     if (await openMenu.count() && await openMenu.isVisible().catch(() => false)) await openMenu.click({ force: true });
     const inventoryNav = page.locator("aside nav button").filter({ hasText: "Inventory" }).first();
+    if (!(await inventoryNav.count()) || !(await inventoryNav.isVisible().catch(() => false))) {
+      const operationsNav = page.locator("aside nav button").filter({ hasText: "Operations" }).first();
+      if (await operationsNav.count() && await operationsNav.isVisible().catch(() => false)) await operationsNav.evaluate((element) => (element as HTMLButtonElement).click());
+    }
     await expect(inventoryNav).toBeVisible();
     await inventoryNav.scrollIntoViewIfNeeded();
     await inventoryNav.evaluate((element) => (element as HTMLElement).click());
     await dismissTransientUi(page);
     await expect(page.getByRole("heading", { name: "Inventory", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Dashboard", exact: true }).click();
-    await expect(page.getByText("Low Stock", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("Out of Stock", { exact: true }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Dashboard", exact: true }).first().click();
+    await expect(page.getByText(/^(Low Stock|Low-stock items)$/, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/^(Out of Stock|0 out of stock)/, { exact: false }).first()).toBeVisible();
+    expect(runtimeErrors).not.toContain("WalletCards is not defined");
     await page.screenshot({ path: testInfo.outputPath("inventory-reorder-boundary.png"), fullPage: true });
   });
 });
