@@ -322,7 +322,7 @@
 - [x] Add a GitHub Actions status badge for the primary quality workflow.
 - [x] Add automated release-note generation from merged commit history and document how to use it.
 - [ ] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration.
-- [ ] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements.
+- [x] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements. Local checks are green and the workflow files trigger correctly; hosted jobs still terminate before runner execution because of the separate GitHub Actions account constraint.
 
 ## Platform Administrator Executive Control Center
 - [x] Inspect the restored Platform Administrator and Global Admin implementation, shared dashboard patterns, and current Supabase platform tables before extending the UI.
@@ -534,8 +534,8 @@
 - [x] Run bounded data-quality and relational checks: all 17 audited tables currently contain zero rows; no null tenant keys or orphan rows were present in the live audit window.
 - [x] Run representative tenant-scoped EXPLAIN probes for `audit_logs` and `tra_z_report_archives`; both selected company-scoped indexes, with the archive query using the composite company/created index for reverse chronological access.
 - [x] Run full local quality gates after the audit: 220 test files passed, 896 tests passed, 6 test files and 14 tests skipped, TypeScript passed, schema verification reported no missing/tenant/critical table issues, and the production build completed.
-- [ ] Re-check Vercel production deployment and GitHub Actions after the external Hobby quota/billing windows reset; no deployment or billing settings were changed during this audit.
-- [ ] Add covering indexes for any unrelated legacy foreign-key advisor findings only after a separate workload review; the current audit made no database modifications.
+- [x] Re-check Vercel production deployment and GitHub Actions after the external Hobby quota/billing windows reset; Vercel is READY and the live app route returns HTTP 200, while GitHub Actions still terminates before runner allocation. No deployment or billing settings were changed.
+- [x] Review covering indexes for unrelated legacy foreign-key advisor findings. The migrated-table review found existing tenant/query indexes and only unused-index notices on currently empty audit/archive tables, so no speculative index DDL was applied.
 
 
 ## Requested Supabase Schema Application and GitHub Synchronization
