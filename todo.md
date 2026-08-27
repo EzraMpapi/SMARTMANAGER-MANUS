@@ -663,7 +663,7 @@
 - [x] Run full tests and TypeScript verification: 271 test files passed, 7 skipped; 1,111 tests passed, 15 skipped; TypeScript passed. Supabase migration verification completed and the telemetry release is ready for checkpoint publication.
 
 ## Managed Checkpoint Timeout Troubleshooting
-- [ ] Inspect pending diff size, repository health, and managed checkpoint logs without discarding changes.
-- [ ] Apply the safest checkpoint recovery or diff-size correction identified by the inspection.
-- [ ] Re-run required quality gates and retry managed checkpoint publication.
-- [ ] Document the final checkpoint version or remaining publication blocker.
+- [x] Inspect pending diff size, repository health, and managed checkpoint logs without discarding changes.
+- [x] Apply the safest checkpoint recovery: create a clean local commit after confirming the large dependency directory was ignored and the tracked release delta was limited to the intended 25 files.
+- [x] Re-run required quality gates and retry managed checkpoint publication; TypeScript, Supabase schema verification, full Vitest, and production build passed.
+- [x] Document the final checkpoint version: `e43b385f`; managed publication completed successfully and the version is live.
