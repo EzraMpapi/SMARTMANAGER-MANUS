@@ -88,7 +88,7 @@ function rpcPayload(body: unknown): Record<string, unknown> | null {
 }
 
 async function getIdentityRpc(token: string) {
-  const { response, body } = await requestJson<unknown>("get_current_profile_identity", token, { method: "POST", body: "{}" });
+  const { response, body } = await requestJson<unknown>("rpc/get_current_profile_identity", token, { method: "POST", body: "{}" });
   if (response.ok) return { available: true, payload: rpcPayload(body) };
   if (response.status === 404 || response.status === 400 || response.status === 405) return { available: false, payload: null };
   throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The profile identity record could not be read." });
@@ -227,7 +227,7 @@ export async function updateProfileIdentity(req: CreateExpressContextOptions["re
   }
   const rpc = await getIdentityRpc(token);
   if (!rpc.available) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Profile self-service fields are awaiting the controlled identity-center migration." });
-  const { response, body } = await requestJson<unknown>("update_current_profile_identity", token, { method: "POST", body: JSON.stringify({ p_payload: input }) });
+  const { response, body } = await requestJson<unknown>("rpc/update_current_profile_identity", token, { method: "POST", body: JSON.stringify({ p_payload: input }) });
   const payload = rpcPayload(body);
   if (!response.ok || !payload) throw new TRPCError({ code: response.status === 403 ? "FORBIDDEN" : "INTERNAL_SERVER_ERROR", message: "Your profile changes could not be confirmed by the workspace database." });
   return { ...(await getProfileIdentity(req)), saved: true, savedProfile: normalizedProfile(payload, await authUser(token), true), actorProfileId: verified.id };
@@ -253,7 +253,7 @@ export function validateAvatarUpload(input: { mimeType: AvatarMimeType; base64: 
 }
 
 async function setAvatarRpc(token: string, avatarUrl: string | null, avatarStorageKey: string | null) {
-  const { response, body } = await requestJson<unknown>("set_current_profile_avatar", token, { method: "POST", body: JSON.stringify({ p_avatar_url: avatarUrl, p_avatar_storage_key: avatarStorageKey }) });
+  const { response, body } = await requestJson<unknown>("rpc/set_current_profile_avatar", token, { method: "POST", body: JSON.stringify({ p_avatar_url: avatarUrl, p_avatar_storage_key: avatarStorageKey }) });
   const payload = rpcPayload(body);
   if (!response.ok || !payload) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The profile photo could not be confirmed by the workspace database." });
   return payload;

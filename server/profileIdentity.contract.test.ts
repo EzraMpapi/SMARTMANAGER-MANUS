@@ -15,6 +15,13 @@ describe("profile identity center source contract", () => {
     expect(migration).not.toContain("REFERENCES public.departments");
   });
 
+  it("calls the live profile identity functions through Supabase's RPC namespace", () => {
+    expect(service).toContain('"rpc/get_current_profile_identity"');
+    expect(service).toContain('"rpc/update_current_profile_identity"');
+    expect(service).toContain('"rpc/set_current_profile_avatar"');
+    expect(service).not.toContain('requestJson<unknown>("get_current_profile_identity"');
+  });
+
   it("keeps role, company, email and avatar storage references outside the personal update allowlist", () => {
     expect(migration).toContain("IF v_key NOT IN (");
     expect(migration).toContain("'notificationPreferences'");

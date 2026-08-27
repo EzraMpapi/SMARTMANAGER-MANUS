@@ -63,9 +63,19 @@ async function setupIdentityPage(page: Page) {
     company: { id: "profile-e2e-company", name: "Mlimani Properties", category: "real_estate", region: "Dar es Salaam", country: "Tanzania" },
   });
   await page.goto("/app", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("button", { name: "Dashboard", exact: true }).first()).toBeVisible();
-  const dismiss = page.getByRole("button", { name: "Dismiss", exact: true }); if (await dismiss.count()) await dismiss.last().click({ force: true });
-  const tour = page.locator('[data-onboarding-tour="true"]'); const skipTour = tour.locator("button").filter({ hasText: "Skip tour" }); if (await skipTour.count()) await skipTour.evaluate((node) => (node as HTMLButtonElement).click()); if (await tour.count()) await expect(tour).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open account identity center", exact: true })).toBeVisible();
+  for (const name of ["Dismiss", "Close onboarding tour", "Skip tour"]) {
+    const buttons = page.getByRole("button", { name, exact: true });
+    for (let index = 0; index < await buttons.count(); index += 1) {
+      const button = buttons.nth(index);
+      if (await button.isVisible().catch(() => false)) {
+        await button.click({ force: true });
+        break;
+      }
+    }
+  }
+  const tour = page.locator('[data-onboarding-tour="true"]');
+  if (await tour.count()) await expect(tour).toHaveCount(0);
 }
 
 test("opens the premium account popover and navigates to the responsive My Profile experience", async ({ page }) => {
@@ -82,7 +92,7 @@ test("opens the premium account popover and navigates to the responsive My Profi
   const fullName = page.getByLabel("Legal / full name", { exact: true });
   await fullName.fill("Asha Updated");
   await page.getByRole("button", { name: "Save personal details", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("confirmed by the workspace");
+  await expect(page.getByRole("status").filter({ hasText: "confirmed by the workspace" })).toBeVisible();
   await page.getByRole("button", { name: "Security", exact: true }).click();
   await expect(page.getByText("Security and access", { exact: true })).toBeVisible();
   await expect(page.getByText("Current session verified", { exact: true })).toBeVisible();
