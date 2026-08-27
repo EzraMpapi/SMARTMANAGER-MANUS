@@ -26,6 +26,7 @@ jobs:
       RENDER_DCL_MAX_MS: "15000"
       RENDER_LOAD_MAX_MS: "20000"
       RENDER_FCP_MAX_MS: "15000"
+      RENDER_API_RESPONSE_MAX_MS: "10000"
 
     steps:
       - name: Checkout source

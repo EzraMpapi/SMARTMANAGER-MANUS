@@ -13,7 +13,36 @@ const thresholds = {
   domContentLoaded: threshold("RENDER_DCL_MAX_MS", 15000),
   load: threshold("RENDER_LOAD_MAX_MS", 20000),
   firstContentfulPaint: threshold("RENDER_FCP_MAX_MS", 15000),
+  apiResponse: threshold("RENDER_API_RESPONSE_MAX_MS", 10000),
 };
+
+const apiTargets = [
+  {
+    name: "public configuration",
+    path: "/api/config/public",
+    expectedStatuses: [200],
+    assertShape: (body: unknown) => {
+      expect(body).toEqual(expect.objectContaining({
+        url: expect.stringMatching(/^https:\/\/.+/),
+        anonKey: expect.any(String),
+      }));
+    },
+  },
+  {
+    name: "billing catalog",
+    path: "/api/billing/catalog",
+    expectedStatuses: [200],
+    assertShape: (body: unknown) => {
+      expect(body).toEqual(expect.objectContaining({ plans: expect.anything() }));
+    },
+  },
+  {
+    name: "protected billing access",
+    path: "/api/billing/access",
+    expectedStatuses: [401, 403],
+    assertShape: () => undefined,
+  },
+] as const;
 
 function assertRenderTarget() {
   const configured = process.env.E2E_BASE_URL?.trim();
@@ -77,5 +106,38 @@ test.describe("Render production performance monitor", () => {
     if (metrics.firstContentfulPaint !== null) {
       expect(metrics.firstContentfulPaint, `First contentful paint exceeded ${thresholds.firstContentfulPaint}ms`).toBeLessThanOrEqual(thresholds.firstContentfulPaint);
     }
+  });
+
+  test("keeps monitored API endpoints available, contract-safe, and within response budgets", async ({ request }, testInfo) => {
+    const apiMetrics = [] as Array<{
+      name: string;
+      path: string;
+      status: number;
+      responseDurationMs: number;
+    }>;
+
+    for (const target of apiTargets) {
+      const startedAt = performance.now();
+      const response = await request.get(target.path, { timeout: thresholds.apiResponse });
+      const responseDurationMs = Math.round(performance.now() - startedAt);
+      const body = await response.json();
+
+      apiMetrics.push({ name: target.name, path: target.path, status: response.status(), responseDurationMs });
+      expect(target.expectedStatuses, `${target.name} returned an unexpected status`).toContain(response.status());
+      expect(responseDurationMs, `${target.name} response exceeded ${thresholds.apiResponse}ms`).toBeLessThanOrEqual(thresholds.apiResponse);
+      target.assertShape(body);
+    }
+
+    const metrics = {
+      target: productionOrigin,
+      observedAt: new Date().toISOString(),
+      apiResponseBudgetMs: thresholds.apiResponse,
+      endpoints: apiMetrics,
+    };
+    await testInfo.attach("render-api-performance-metrics", {
+      body: Buffer.from(`${JSON.stringify(metrics, null, 2)}\n`),
+      contentType: "application/json",
+    });
+    console.log(`RENDER_API_PERFORMANCE_METRICS=${JSON.stringify(metrics)}`);
   });
 });
