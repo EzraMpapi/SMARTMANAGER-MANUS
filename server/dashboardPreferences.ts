@@ -2,9 +2,10 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { ENV } from "./_core/env";
-import { resolveVerifiedProfile } from "./aiApprovals";
+import { canonicalVerifiedRole, resolveVerifiedProfile } from "./aiApprovals";
 
 export const DASHBOARD_PREFERENCE_KEY = "dashboard";
+export const DASHBOARD_PREFERENCES_SCHEMA_VERSION = 1;
 
 export const DASHBOARD_WIDGET_IDS = ["revenue", "salesMix", "quickActions", "products", "cashFlow", "businessHealth", "activity", "actionCenter"] as const;
 export const DASHBOARD_KPI_IDS = ["revenue", "expenses", "net-result", "orders", "receivables"] as const;
@@ -142,11 +143,50 @@ async function request(path: string, token: string, init: RequestInit = {}) {
   return body;
 }
 
+async function requestWithServiceKey(path: string, init: RequestInit = {}) {
+  if (!ENV.supabaseUrl || !ENV.supabaseSecretKey) return null;
+  const response = await fetch(`${ENV.supabaseUrl.replace(/\/$/, "")}/rest/v1/${path}`, {
+    ...init,
+    headers: { apikey: ENV.supabaseSecretKey, authorization: `Bearer ${ENV.supabaseSecretKey}`, "content-type": "application/json", ...(init.headers || {}) },
+  });
+  if (!response.ok) return null;
+  return response.json().catch(() => null);
+}
+
+async function getActiveTeamPreset(profile: { id: string; company_id: string; role: string }, token: string) {
+  const presetsQuery = new URLSearchParams({ select: "id,target_type,target_value,value,schema_version,updated_at", company_id: `eq.${profile.company_id}`, is_active: "eq.true", order: "updated_at.desc", limit: "100" });
+  const presets = await requestWithServiceKey(`dashboard_team_presets?${presetsQuery.toString()}`) as Array<{ id?: string; target_type?: string; target_value?: string; value?: unknown; schema_version?: number; updated_at?: string }> | null;
+  if (!presets?.length) return { value: undefined, updatedAt: null as string | null, schemaVersion: DASHBOARD_PREFERENCES_SCHEMA_VERSION, sourceType: "built_in" as const, sourceId: null as string | null, targetType: null as string | null, targetValue: null as string | null };
+  const employeesQuery = new URLSearchParams({ select: "department_id", company_id: `eq.${profile.company_id}`, profile_id: `eq.${profile.id}`, order: "created_at.desc", limit: "1" });
+  const employees = await requestWithServiceKey(`hr_employees?${employeesQuery.toString()}`) as Array<{ department_id?: string | null }> | null;
+  const departmentId = employees?.[0]?.department_id || null;
+  const departmentPreset = departmentId ? presets.find((row) => row.target_type === "department" && row.target_value === departmentId) : undefined;
+  const rolePreset = presets.find((row) => row.target_type === "role" && row.target_value === canonicalVerifiedRole(profile.role));
+  const selected = departmentPreset || rolePreset;
+  return { value: selected?.value, updatedAt: selected?.updated_at || null, schemaVersion: Number(selected?.schema_version) || DASHBOARD_PREFERENCES_SCHEMA_VERSION, sourceType: selected?.target_type === "department" ? "team_department" as const : selected?.target_type === "role" ? "team_role" as const : "built_in" as const, sourceId: selected?.id ? String(selected.id) : null, targetType: selected?.target_type ? String(selected.target_type) : null, targetValue: selected?.target_value ? String(selected.target_value) : null };
+}
+
 export async function getDashboardPreferences(req: CreateExpressContextOptions["req"]) {
   const { profile, token } = await resolveVerifiedProfile(req);
-  const query = new URLSearchParams({ select: "value,updated_at", company_id: `eq.${profile.company_id}`, user_id: `eq.${profile.id}`, preference_key: `eq.${DASHBOARD_PREFERENCE_KEY}`, limit: "1" });
-  const rows = await request(`user_table_preferences?${query.toString()}`, token) as Array<{ value?: unknown; updated_at?: string }>;
-  return { preferences: normalizePreferences(rows[0]?.value), updatedAt: rows[0]?.updated_at || null };
+  const query = new URLSearchParams({ select: "value,schema_version,updated_at", company_id: `eq.${profile.company_id}`, user_id: `eq.${profile.id}`, preference_key: `eq.${DASHBOARD_PREFERENCE_KEY}`, limit: "1" });
+  const [rows, teamPreset] = await Promise.all([
+    request(`user_table_preferences?${query.toString()}`, token) as Promise<Array<{ value?: unknown; schema_version?: number; updated_at?: string }>>,
+    getActiveTeamPreset(profile, token),
+  ]);
+  const personal = rows[0];
+  return {
+    preferences: normalizePreferences({ ...(teamPreset.value && typeof teamPreset.value === "object" ? teamPreset.value : {}), ...(personal?.value && typeof personal.value === "object" ? personal.value : {}) }),
+    schemaVersion: Number(personal?.schema_version) || teamPreset.schemaVersion || DASHBOARD_PREFERENCES_SCHEMA_VERSION,
+    updatedAt: personal?.updated_at || teamPreset.updatedAt || null,
+    appliedSource: personal ? { sourceType: "personal" as const, sourceId: null, targetType: null, targetValue: null } : { sourceType: teamPreset.sourceType, sourceId: teamPreset.sourceId, targetType: teamPreset.targetType, targetValue: teamPreset.targetValue },
+  };
+}
+
+export async function resetDashboardPreferences(req: CreateExpressContextOptions["req"]) {
+  const { profile, token } = await resolveVerifiedProfile(req);
+  const query = new URLSearchParams({ company_id: `eq.${profile.company_id}`, user_id: `eq.${profile.id}`, preference_key: `eq.${DASHBOARD_PREFERENCE_KEY}` });
+  await request(`user_table_preferences?${query.toString()}`, token, { method: "DELETE" });
+  return getDashboardPreferences(req);
 }
 
 export async function saveDashboardPreferences(req: CreateExpressContextOptions["req"], input: DashboardPreferences) {
@@ -155,7 +195,18 @@ export async function saveDashboardPreferences(req: CreateExpressContextOptions[
   const rows = await request(`user_table_preferences?on_conflict=company_id,user_id,preference_key`, token, {
     method: "POST",
     headers: { ...authHeaders(token, "resolution=merge-duplicates,return=representation") },
-    body: JSON.stringify({ company_id: profile.company_id, user_id: profile.id, preference_key: DASHBOARD_PREFERENCE_KEY, value: preferences, updated_at: new Date().toISOString() }),
+    body: JSON.stringify({
+      company_id: profile.company_id,
+      user_id: profile.id,
+      preference_key: DASHBOARD_PREFERENCE_KEY,
+      schema_version: DASHBOARD_PREFERENCES_SCHEMA_VERSION,
+      value: preferences,
+      updated_at: new Date().toISOString(),
+    }),
   }) as Array<{ updated_at?: string }>;
-  return { preferences, updatedAt: rows[0]?.updated_at || new Date().toISOString() };
+  return {
+    preferences,
+    schemaVersion: DASHBOARD_PREFERENCES_SCHEMA_VERSION,
+    updatedAt: rows[0]?.updated_at || new Date().toISOString(),
+  };
 }

@@ -26,6 +26,8 @@ describe("workspace role and settings regressions", () => {
     expect(preferenceServiceSource).toContain("user_table_preferences");
     expect(preferenceServiceSource).toContain("company_id: profile.company_id");
     expect(preferenceServiceSource).toContain("user_id: profile.id");
+    expect(preferenceServiceSource).toContain("schema_version");
+    expect(preferenceServiceSource).toContain("DASHBOARD_PREFERENCES_SCHEMA_VERSION");
     expect(preferenceServiceSource).toContain("DASHBOARD_NAVIGATION_GROUP_IDS");
     expect(preferenceServiceSource).toContain('requestedNavigationGroups.add("home")');
     expect(contextSource).toContain("trpc.dashboardPreferences.get.useQuery");

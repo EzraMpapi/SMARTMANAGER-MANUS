@@ -23,6 +23,7 @@ const salesDetailSource = readFileSync(new URL("../client/src/components/SalesDe
 const invitationServiceSource = readFileSync(new URL("./teamInvitations.ts", import.meta.url), "utf8");
 const publicAuthSource = readFileSync(new URL("../client/src/components/PublicAuthGateway.jsx", import.meta.url), "utf8");
 const workspaceAuthMigrationSource = readFileSync(new URL("../supabase_workspace_auth_profile_upsert.sql", import.meta.url), "utf8");
+const preferencesDrawerSource = readFileSync(new URL("../client/src/components/DashboardPreferencesDrawer.tsx", import.meta.url), "utf8");
 const passwordAccountProvisioningSource = readFileSync(new URL("./passwordAccountProvisioning.ts", import.meta.url), "utf8");
 const brandLogoSource = readFileSync(new URL("../client/src/components/BrandLogo.tsx", import.meta.url), "utf8");
 const enterpriseAuthSource = readFileSync(new URL("../client/src/components/EnterpriseAuthViews.jsx", import.meta.url), "utf8");
@@ -54,6 +55,10 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('const LazyDashboardPreferencesDrawer = lazy(() => import("./components/DashboardPreferencesDrawer")');
     expect(dashboardSource).not.toContain('import { DashboardPreferencesDrawer } from "./components/DashboardPreferencesDrawer"');
     expect(dashboardSource).toContain('<LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen}');
+    expect(preferencesDrawerSource).toContain('serializeDashboardLayout');
+    expect(preferencesDrawerSource).toContain('importDashboardLayout');
+    expect(preferencesDrawerSource).toContain('aria-label="Export dashboard layout"');
+    expect(preferencesDrawerSource).toContain('aria-label="Import dashboard layout"');
     expect(dashboardSource).toContain('export async function createDashboardPdfDocument');
     expect(dashboardSource).toContain('await import("jspdf")');
     expect(dashboardSource).toContain('async function exportDashboard(format)');

@@ -20,7 +20,9 @@ import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } f
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { getWorkspaceSettings, saveWorkspaceSettings } from "./workspaceSettings";
-import { dashboardPreferencesInput, getDashboardPreferences, saveDashboardPreferences } from "./dashboardPreferences";
+import { dashboardPreferencesInput, getDashboardPreferences, resetDashboardPreferences, saveDashboardPreferences } from "./dashboardPreferences";
+import { dashboardLayoutAnalyticsInput, dashboardLayoutTelemetryEventInput, getDashboardLayoutAnalytics, recordDashboardLayoutTelemetry } from "./dashboardLayoutTelemetry";
+import { activateDashboardTeamPreset, createDashboardTeamPreset, dashboardTeamPresetIdInput, dashboardTeamPresetInput, deleteDashboardTeamPreset, listDashboardTeamPresets } from "./dashboardTeamPresets";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
@@ -950,6 +952,22 @@ export const appRouter = router({
   dashboardPreferences: router({
     get: protectedProcedure.query(({ ctx }) => getDashboardPreferences(ctx.req)),
     save: protectedProcedure.input(dashboardPreferencesInput).mutation(({ ctx, input }) => saveDashboardPreferences(ctx.req, input)),
+    resetToTeamDefault: protectedProcedure.mutation(({ ctx }) => resetDashboardPreferences(ctx.req)),
+  }),
+
+  dashboardLayoutTelemetry: router({
+    record: protectedProcedure.input(dashboardLayoutTelemetryEventInput).mutation(({ ctx, input }) => recordDashboardLayoutTelemetry(ctx.req, input)),
+  }),
+
+  dashboardLayoutAnalytics: router({
+    summary: protectedProcedure.input(dashboardLayoutAnalyticsInput).query(({ ctx, input }) => getDashboardLayoutAnalytics(ctx.req, input)),
+  }),
+
+  dashboardTeamPresets: router({
+    list: protectedProcedure.query(({ ctx }) => listDashboardTeamPresets(ctx.req)),
+    create: protectedProcedure.input(dashboardTeamPresetInput).mutation(({ ctx, input }) => createDashboardTeamPreset(ctx.req, input)),
+    activate: protectedProcedure.input(dashboardTeamPresetIdInput).mutation(({ ctx, input }) => activateDashboardTeamPreset(ctx.req, input)),
+    delete: protectedProcedure.input(dashboardTeamPresetIdInput).mutation(({ ctx, input }) => deleteDashboardTeamPreset(ctx.req, input)),
   }),
 
   teamWorkforce: router({
