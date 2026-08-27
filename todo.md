@@ -333,7 +333,7 @@
 
 ## Live Server Disconnection and Blank-Load Follow-up
 - [x] Diagnose the reported live server-disconnection and blank-load state across the authenticated Vercel route and current-main preview without weakening authentication or tenant isolation.
-- [ ] Implement the narrowest verified repair, add regression coverage, validate the deployed runtime, and synchronize the fix safely.
+- [x] Implement the narrowest verified repair, add regression coverage, validate the deployed runtime, and synchronize the fix safely; the current Vercel production deployment is READY and `https://menejajanja.vercel.app/app` returns the expected HTML shell with HTTP 200.
 
 ## Android APK and Production URL Readiness
 - [x] Inspect the existing Android APK/TWA package, trusted-web-activity configuration, and production web routing for `https://menejajanja.vercel.app`.
