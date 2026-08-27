@@ -48,7 +48,9 @@ test.describe("reference-directed enterprise dashboard", () => {
     const session = await openDashboard(page);
 
     await expect(page.getByRole("navigation", { name: "Mobile workspace navigation" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Open AI Command Center", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Customize dashboard layout", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Notifications", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open account identity center", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Dashboard", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Open menu", exact: true }).click();
     await expect(page.getByRole("navigation", { name: "Operational workspaces" })).toBeVisible();
