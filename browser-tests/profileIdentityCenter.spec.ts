@@ -92,7 +92,7 @@ test("opens the premium account popover and navigates to the responsive My Profi
   const fullName = page.getByLabel("Legal / full name", { exact: true });
   await fullName.fill("Asha Updated");
   await page.getByRole("button", { name: "Save personal details", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("confirmed by the workspace");
+  await expect(page.getByRole("status").filter({ hasText: "confirmed by the workspace" })).toBeVisible();
   await page.getByRole("button", { name: "Security", exact: true }).click();
   await expect(page.getByText("Security and access", { exact: true })).toBeVisible();
   await expect(page.getByText("Current session verified", { exact: true })).toBeVisible();
