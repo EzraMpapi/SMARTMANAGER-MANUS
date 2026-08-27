@@ -1,6 +1,6 @@
 # SMART MANAGER Kiswahili Training Production Package
 
-This package contains the versioned, evidence-based pre-production work for the SMART MANAGER ERP long-form Kiswahili course. It is a **course-production foundation with validated Chapters 01–06 production packs**, not a claim that the 8.5-hour master video has already been rendered.
+This package contains the versioned, evidence-based pre-production work for the SMART MANAGER ERP long-form Kiswahili course. It is a **course-production foundation with validated Chapters 01–18 production packs**, not a claim that the 8.5-hour master video has already been rendered.
 
 ## Included repository deliverables
 
@@ -31,14 +31,24 @@ This package contains the versioned, evidence-based pre-production work for the 
 | [`chapter-13-procurement-na-wasambazaji.md`](./chapter-13-procurement-na-wasambazaji.md) | Privacy-gated Procurement production pack; vendor, quote, price, purchase, receipt, and approval evidence remain unapproved. |
 | [`chapter-14-supply-chain.md`](./chapter-14-supply-chain.md) | Privacy-gated Supply Chain production pack; route, vehicle, GPS, delivery, fleet, and schedule evidence remain unapproved. |
 | [`chapter-15-manufacturing-na-work-orders.md`](./chapter-15-manufacturing-na-work-orders.md) | Privacy-gated Manufacturing production pack retaining the required `imejengwa kwa sehemu` qualifier. |
+| [`chapter-16-financial-management.md`](./chapter-16-financial-management.md) | Privacy-gated Financial Management production pack using only reviewed conceptual and redacted orientation evidence. |
+| [`chapter-17-accounting-na-ledger.md`](./chapter-17-accounting-na-ledger.md) | Privacy-gated Accounting and Ledger production pack; posting, reconciliation, fiscalization, and reporting outcomes remain unclaimed. |
+| [`chapter-18-payroll-na-people-operations.md`](./chapter-18-payroll-na-people-operations.md) | Privacy-gated Payroll and People Operations production pack; employee, wage, tax, payment, and approval UI remain unapproved. |
 | [`chapter-07-09-terminology-validation.md`](./chapter-07-09-terminology-validation.md) | Kiswahili-first terminology audit, corrections, and canonical Sales/POS/CRM term ledger. |
 | [`chapter-01-12-terminology-audit.md`](./chapter-01-12-terminology-audit.md) | Comprehensive chapter-level Kiswahili terminology audit and standardized production glossary for Chapters 01–12. |
+| [`chapter-01-15-terminology-audit.md`](./chapter-01-15-terminology-audit.md) | Comprehensive chapter-level Kiswahili terminology audit and standardized production glossary through Chapter 15. |
 | [`foundation-deck-outline.md`](./foundation-deck-outline.md) | Kiswahili narrative outline for the Chapters 01–06 evidence-based foundation deck. |
 | [`foundation-deck-presentation-script.md`](./foundation-deck-presentation-script.md) | Slide-aligned Kiswahili narration and presenter script for the ten-slide Chapters 01–06 foundation deck. |
 | [`foundation-deck/`](./foundation-deck/) | Editable PPTX slide project for the Chapters 01–06 foundation deck; it references only approved conceptual and redacted external visuals. |
 | [`commercial-deck-outline.md`](./commercial-deck-outline.md) | Kiswahili narrative outline for the eight-slide Chapters 07–09 commercial-foundation deck. |
 | [`commercial-deck-presentation-script.md`](./commercial-deck-presentation-script.md) | Slide-aligned Kiswahili narration and presenter script for the Chapters 07–09 commercial-foundation deck. |
 | [`commercial-foundation-deck/`](./commercial-foundation-deck/) | Editable PPTX slide project for Chapters 07–09; it uses only the approved conceptual Sales plate and the redacted Sales orientation frame. |
+| [`operations-deck-outline.md`](./operations-deck-outline.md) | Kiswahili narrative outline for the eight-slide Chapters 10–12 operations-foundation deck. |
+| [`operations-deck-presentation-script.md`](./operations-deck-presentation-script.md) | Slide-aligned Kiswahili narration and presenter script for the Chapters 10–12 operations deck. |
+| [`operations-foundation-deck/`](./operations-foundation-deck/) | Editable PPTX slide project for Chapters 10–12; it contains only conceptual/controlled evidence statements. |
+| [`animation-assembly-foundation-ch01-15.md`](./animation-assembly-foundation-ch01-15.md) | Reviewable 01–15 animation assembly plan, chapter gates, subtitle/audio ledger, and master-video boundary. |
+| [`animation-asset-ledger.md`](./animation-asset-ledger.md) | External-only media provenance and permitted-use ledger, including the short fictional animation pilot. |
+| [`animation-pilot-validation.md`](./animation-pilot-validation.md) | Technical validation and editorial review requirements for the animation pilot. |
 
 ## External production media
 
@@ -53,6 +63,7 @@ Generated media intentionally remains outside the Git repository to avoid bloati
 | Inventory workflow concept | `chapter-01/inventory-workflow-concept.png` | Generated, reviewed, 2560×1440 PNG; conceptual cutaway only |
 | Finance workflow concept | `chapter-01/finance-workflow-concept.png` | Generated, reviewed, 2560×1440 PNG; conceptual cutaway only |
 | Controlled Dashboard/Finance/Inventory/Sales frames | `kmkm-redacted/*-training-redacted.png` | Generated externally, final privacy review passed; module-shell orientation only |
+| Chapters 01–15 animation assembly pilot | `ch01-15-animation-assembly-pilot.mp4` | Generated externally; technically verified 10.005 s H.264 1280×720, fictional/text-free review artifact only; not a master-video segment |
 
 ## Assembly rule
 
@@ -60,4 +71,4 @@ No master video is assembled until every chapter has a privacy-screened UI captu
 
 ## Next production batch
 
-The next safe batch is People/HR and Finance in the master course sequence. It must create any new UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts. Any external-service or configuration-dependent capability must retain its qualifier.
+The next safe batch is People/HR and Finance in the master course sequence. It must create any new UI evidence only after it passes the capture-readiness gate. Any new UI recording must come from an approved disposable/demo session and must not contain production records, personal data, credentials, tokens, or dynamic counts. Any external-service or configuration-dependent capability must retain its qualifier. The 01–15 animation pilot remains a short review artifact; full master assembly waits for all per-chapter audio, VTT, UI, and QA gates.

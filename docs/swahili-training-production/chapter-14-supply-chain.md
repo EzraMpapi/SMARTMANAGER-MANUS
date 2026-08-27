@@ -1,8 +1,8 @@
-# Sura ya 14 — Supply Chain
+# Sura ya 14 — Mnyororo wa Ugavi (Supply Chain)
 
 **Muda wa mpango:** 12:00.
-**Hadhira:** Timu za operations, logistics, wasimamizi wa ghala, na viongozi wanaoratibu handoff za biashara.
-**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana mnyororo wa ugavi kupitia source, handoff, movement, exception na coordination, bila kudai vehicle, route, GPS, delivery, fleet record, schedule, dispatcher, driver, location, au control result ya tenant yoyote.
+**Hadhira:** Timu za shughuli za uendeshaji, uratibu wa usafirishaji, wasimamizi wa ghala, na viongozi wanaoratibu makabidhiano ya biashara.
+**Ahadi ya kujifunza:** Mtazamaji ataweza kueleza kwa dhana mnyororo wa ugavi kupitia chanzo, makabidhiano, uhamishaji, tofauti inayohitaji mapitio na uratibu, bila kudai gari, njia, GPS, delivery, rekodi ya magari, ratiba, msimamizi wa safari, dereva, eneo, au matokeo ya udhibiti ya kampuni yoyote.
 
 > **Mpaka wa ushahidi:** Supply Chain & Fleet imeorodheshwa kama **imejengwa**, kwa source na controls zinazoshughulikia operational fleet records na scheduled controls. Kwa pack hii, hakuna UI capture ya Supply Chain/Fleet iliyopitiwa kwa faragha; uwezo huo hautumiki kuthibitisha route, delivery, vehicle availability, GPS, driver, or scheduled-control result.[1] [2]
 
@@ -10,9 +10,9 @@
 
 | Muda | Taswira na mwendo | Kusudi la sauti | Kanuni ya ushahidi |
 |---|---|---|---|
-| 00:00–00:25 | Kadi ya `SUPPLY CHAIN: handoff, muktadha, coordination` | Kutaja mada | Motion graphic. |
-| 00:25–01:35 | David na Juma kwenye board ya kubuniwa ya handoff | Kueleza chain kama coordination | Hakuna route/location. |
-| 01:35–02:55 | Diagramu: source → handoff → movement → exception → follow-up | Kuweka vocabulary | Diagramu ya elimu. |
+| 00:00–00:25 | Kadi ya `MNYORORO WA UGAVI: makabidhiano, muktadha, uratibu` | Kutaja mada | Motion graphic. |
+| 00:25–01:35 | David na Juma kwenye board ya kubuniwa ya makabidhiano | Kueleza mnyororo kama uratibu | Hakuna route/location. |
+| 01:35–02:55 | Diagramu: chanzo → makabidhiano → uhamishaji → tofauti → ufuatiliaji | Kuweka vocabulary | Diagramu ya elimu. |
 | 02:55–04:10 | V04 concept kwa lebo ya dhana | Kuunganisha supply chain na operations | Si logistics screen. |
 | 04:10–05:35 | Kadi za “visibility” na “muktadha” | Kuzuia misconception ya real-time tracking | Hakuna GPS/telemetry. |
 | 05:35–07:00 | Scenario ya handoff iliyochelewa ya kubuniwa | Kueleza exception review | Hakuna delivery record. |
@@ -25,25 +25,25 @@
 
 ### 00:00–00:25 — Supply Chain ni mfululizo wa handoff
 
-> Mnyororo wa ugavi si mstari wa ramani pekee. Ni namna ya kuunganisha source, handoff, movement, exception na coordination. Kwa sura hii, tunafundisha dhana. Hatuonyeshi vehicle, route, GPS, driver, location, delivery, schedule au operational fleet record.
+> Mnyororo wa ugavi—Supply Chain—si mstari wa ramani pekee. Ni namna ya kuunganisha chanzo—source—makabidhiano—handoff—uhamishaji—movement—tofauti inayohitaji mapitio—exception—na uratibu—coordination. Kwa sura hii, tunafundisha dhana. Hatuonyeshi gari, njia, GPS, dereva, eneo, delivery, ratiba au rekodi ya uendeshaji wa magari.
 
 ### 00:25–01:35 — Handoff inahitaji owner
 
 > **David:** “Kazi inapohama kutoka upande mmoja kwenda mwingine, tunahitaji kujua nini kinahamishwa, ni nani anapokea muktadha, na hatua inayofuata ni ipi.”
 
-> **Juma:** “Hiyo ndiyo handoff nzuri. Haitegemei kumbukumbu za mdomo pekee; inahitaji maelezo yanayoruhusiwa na owner anayejulikana.”
+> **Juma:** “Hayo ndiyo makabidhiano mazuri. Hayategemei kumbukumbu za mdomo pekee; yanahitaji maelezo yanayoruhusiwa na mwenye jukumu anayejulikana.”
 
 ### 01:35–02:55 — Mnyororo wa dhana
 
-> Mchoro unaonyesha source, handoff, movement, exception, na follow-up. `Movement` hapa ni wazo la mabadiliko ya uendeshaji, si GPS trail au vehicle trip. `Exception` ni signal ya review, si hukumu ya delivery failure. `Follow-up` ni ufuatiliaji wenye owner na muktadha.
+> Mchoro unaonyesha chanzo, makabidhiano, uhamishaji, tofauti inayohitaji mapitio, na ufuatiliaji. Uhamishaji hapa ni wazo la mabadiliko ya uendeshaji, si GPS trail au safari ya gari. Tofauti inayohitaji mapitio ni ishara ya mapitio, si hukumu ya delivery failure. Ufuatiliaji una mwenye jukumu na muktadha.
 
 ### 02:55–04:10 — Uhusiano na shughuli kuu
 
-> V04 inaonyesha high-level operations chain. Tunaitumia kueleza kwamba supply chain inaweza kuhitaji kuzungumza na stock, procurement au shughuli nyingine. Hii haimaanishi kwamba integration, route optimization, stock movement, au fulfillment imethibitishwa katika mazingira ya live.
+> V04 inaonyesha mnyororo wa shughuli wa kiwango cha jumla. Tunaitumia kueleza kwamba mnyororo wa ugavi unaweza kuhitaji kuhusiana na stock, ununuzi au shughuli nyingine. Hii haimaanishi kwamba muunganisho, route optimization, mzunguko wa stock, au fulfillment imethibitishwa katika mazingira yanayotumika.
 
 ### 04:10–05:35 — Visibility si ufuatiliaji wa moja kwa moja
 
-> Neno visibility linaweza kumaanisha uwezo wa timu kuona muktadha unaofaa. Katika sura hii, halimaanishi real-time location, GPS, vehicle status, map, or delivery confirmation. Capabilities za data na UI lazima zionyeshwe tu baada ya capture salama na usanidi husika kuthibitishwa.
+> Mwonekano wa muktadha—visibility—unaweza kumaanisha uwezo wa timu kuona muktadha unaofaa. Katika sura hii, haumaanishi eneo la wakati halisi, GPS, hali ya gari, ramani, au uthibitisho wa delivery. Uwezo wa data na UI lazima uonyeshwe tu baada ya capture salama na usanidi husika kuthibitishwa.
 
 ### 05:35–07:00 — Exception review
 
@@ -53,7 +53,7 @@
 
 ### 07:00–08:30 — Coordination na escalation
 
-> Coordination ni kutengeneza picha moja ya hatua inayofuata. Escalation ni kupeleka issue kwa role au mwenye jukumu sahihi pale inapohitajika. Diagramu haithibitishi role, notification, task creation, scheduled job, au outcome ya escalation.
+> Uratibu ni kutengeneza picha moja ya hatua inayofuata. Upelekeaji wa suala—escalation—ni kupeleka changamoto kwa jukumu au mwenye wajibu sahihi pale inapohitajika. Diagramu haithibitishi jukumu, arifa, uundaji wa kazi, scheduled job, au matokeo ya upelekeaji wa suala.
 
 ### 08:30–09:55 — Fleet na schedule boundary
 
@@ -65,7 +65,7 @@
 
 ### 10:55–12:00 — Hitimisho
 
-> **Ulichojifunza:** Supply Chain inahusu handoff na coordination; movement na exception ni dhana zinazohitaji muktadha; visibility si automatically real-time tracking; na Supply Chain/Fleet UI bado haijapitishwa kwa mafunzo haya.
+> **Ulichojifunza:** Mnyororo wa ugavi unahusu makabidhiano na uratibu; uhamishaji na tofauti inayohitaji mapitio ni dhana zinazohitaji muktadha; mwonekano wa muktadha si automatically real-time tracking; na Supply Chain/Fleet UI bado haijapitishwa kwa mafunzo haya.
 
 > **Kinachofuata:** Sura ya 15 itaangalia Manufacturing na Work Orders kwa qualifier wazi ya imejengwa kwa sehemu, bila kudai uwezo wa kina ambao haujathibitishwa kwa deployment husika.
 
@@ -73,8 +73,8 @@
 
 | Muda | Maandishi ya skrini | Kanuni ya subtitle |
 |---|---|---|
-| 00:08 | `SUPPLY CHAIN: handoff, muktadha, coordination` | Kichwa cha sura. |
-| 01:48 | `Source → handoff → movement → exception → follow-up` | Dhana, si route trace. |
+| 00:08 | `MNYORORO WA UGAVI: makabidhiano, muktadha, uratibu` | Kichwa cha sura. |
+| 01:48 | `Chanzo → makabidhiano → uhamishaji → tofauti → ufuatiliaji` | Dhana, si route trace. |
 | 03:08 | `TASWIRA YA MAELEZO` | Kaa kwenye V04 concept. |
 | 04:25 | `Visibility ≠ real-time tracking` | Usitumie GPS icon kama proof. |
 | 08:45 | `Fleet / schedule: inahitaji evidence na usanidi` | Usiweke status ya success. |

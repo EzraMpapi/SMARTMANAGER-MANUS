@@ -1,0 +1,24 @@
+<slide id="operations_context">
+  <background color="paper"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="title" x="60" y="92" width="820" height="42" font="heading" size="34" color="brand" wrap="false">Operations huanza na uaminifu wa rekodi</text>
+  <text id="subtitle" x="60" y="145" width="1060" height="46" font="body" size="20" color="muted">Sura 10–12 zinaweka chanzo, mapitio na hatua inayofuata mbele ya namba au matokeo.</text>
+  <text id="left-heading" x="60" y="255" width="410" height="28" font="body" size="20" color="brand" wrap="false">MISINGI YA MAFUNZO</text>
+  <text id="left-body" x="60" y="305" width="415" height="170" font="body" size="20" color="ink" line-height="1.34"><p>Inventory: muktadha wa bidhaa na eneo.</p><p>Stock Control: tofauti chini ya mapitio.</p><p>Reports: chanzo na kipindi kabla ya tafsiri.</p></text>
+  <shape id="inventory-card" type="rect" x="570" y="275" width="175" height="175" fill="surface" stroke="muted" stroke-width="1"/>
+  <icon id="inventory-icon" name="package" x="636" y="300" width="42" height="42" color="brand"/>
+  <text id="inventory-text" x="590" y="362" width="135" height="42" font="body" size="20" color="brand" align="center"><p>Inventory</p><p>muktadha</p></text>
+  <shape id="arrow-inventory-stock" type="arrow" x="760" y="342" width="45" height="34" fill="accent" head-ratio="0.32"/>
+  <shape id="stock-card" type="rect" x="820" y="275" width="175" height="175" fill="#F7F1E5" stroke="accent" stroke-width="1"/>
+  <icon id="stock-icon" name="clipboard-list" x="886" y="300" width="42" height="42" color="brand"/>
+  <text id="stock-text" x="840" y="360" width="135" height="48" font="body" size="18" color="brand" align="center"><p>Stock Control</p><p>mapitio</p></text>
+  <shape id="arrow-stock-reports" type="arrow" x="1010" y="342" width="45" height="34" fill="accent" head-ratio="0.32"/>
+  <shape id="reports-card" type="rect" x="1070" y="275" width="150" height="175" fill="surface" stroke="muted" stroke-width="1"/>
+  <icon id="reports-icon" name="file-text" x="1124" y="300" width="42" height="42" color="brand"/>
+  <text id="reports-text" x="1084" y="360" width="122" height="48" font="body" size="18" color="brand" align="center"><p>Reports</p><p>tafsiri</p></text>
+  <shape id="boundary-band" type="rect" x="60" y="545" width="1160" height="65" fill="brand"/>
+  <text id="boundary-text" x="85" y="563" width="1110" height="28" font="body" size="18" color="white" align="center">Mnyororo huu ni wa mafunzo; hauthibitishi idadi, transfer, adjustment, report, export au delivery result.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="#E0D9CE" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="560" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 10–12 Operations Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">02</text>
+</slide>
