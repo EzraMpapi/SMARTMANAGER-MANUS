@@ -5959,6 +5959,187 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
   );
 }
 
+function PremiumExecutiveDashboard({ company, currentUser, invoices, expenses, inventory, crm, leaveRequests, workOrders, subscriptions, posTransactions, alerts, recentActivity, pendingLeave, formatMoney, onNavigate, onQuickAction, onCustomizeDashboard }) {
+  const safeInvoices = invoices?.rows || [];
+  const safeExpenses = expenses?.rows || [];
+  const safeInventory = inventory?.rows || [];
+  const safeCrm = crm?.rows || [];
+  const safePos = posTransactions?.rows || [];
+  const safeLeave = leaveRequests?.rows || [];
+  const safeWorkOrders = workOrders?.rows || [];
+  const safeSubscriptions = subscriptions?.rows || [];
+
+  const [range, setRange] = useState("month");
+  const rangeStart = useMemo(() => {
+    const d = new Date(TODAY);
+    if (range === "week") d.setDate(d.getDate() - 6);
+    else if (range === "month") d.setDate(1);
+    else if (range === "year") d.setMonth(0, 1);
+    return d;
+  }, [range]);
+  const inRange = useCallback((date) => !date || new Date(date) >= rangeStart, [rangeStart]);
+
+  const metrics = useMemo(() => {
+    const periodInvoices = safeInvoices.filter((x) => inRange(x.date));
+    const periodExpenses = safeExpenses.filter((x) => inRange(x.date || x.expenseDate));
+    const billed = periodInvoices.reduce((s, x) => s + lineTotal(x.items || []).total, 0);
+    const collected = periodInvoices.reduce((s, x) => s + (Number(x.amountPaid) || 0), 0);
+    const expenseTotal = periodExpenses.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    const receivable = safeInvoices.filter((x) => x.status !== "Paid").reduce((s, x) => s + Math.max(0, lineTotal(x.items || []).total - (Number(x.amountPaid) || 0)), 0);
+    const inventoryValue = safeInventory.reduce((s, x) => s + (Number(x.qty) || 0) * (Number(x.unitCost) || 0), 0);
+    const lowStock = safeInventory.filter((x) => Number(x.qty) <= Number(x.reorder) && Number(x.reorder) > 0).length;
+    const outOfStock = safeInventory.filter((x) => Number(x.qty) <= 0).length;
+    const openPipeline = safeCrm.filter((x) => !["Won", "Lost"].includes(x.stage)).reduce((s, x) => s + (Number(x.value) || 0), 0);
+    const activeSubscriptions = safeSubscriptions.filter((x) => x.status === "Active");
+    const mrr = activeSubscriptions.reduce((s, x) => s + ((Number(x.amount) || 0) / ({ Monthly: 1, Quarterly: 3, Annual: 12 }[x.cycle] || 1)), 0);
+    return { billed, collected, expenseTotal, profit: collected - expenseTotal, receivable, inventoryValue, lowStock, outOfStock, openPipeline, mrr, orderCount: periodInvoices.length + safePos.filter((x) => inRange(x.date || x.createdAt)).length, customerCount: safeCrm.length };
+  }, [safeInvoices, safeExpenses, safeInventory, safeCrm, safePos, safeSubscriptions, inRange]);
+
+  const chartData = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(TODAY);
+      d.setMonth(d.getMonth() - 5 + i, 1);
+      return d.toISOString().slice(0, 7);
+    });
+    return months.map((month) => ({
+      month: new Date(`${month}-01`).toLocaleDateString("en-US", { month: "short" }),
+      revenue: Math.round(safeInvoices.filter((x) => x.date?.startsWith(month)).reduce((s, x) => s + (Number(x.amountPaid) || 0), 0) / 1000),
+      expenses: Math.round(safeExpenses.filter((x) => (x.date || x.expenseDate)?.startsWith(month)).reduce((s, x) => s + (Number(x.amount) || 0), 0) / 1000),
+    }));
+  }, [safeInvoices, safeExpenses]);
+
+  const topProducts = useMemo(() => {
+    const map = {};
+    safeInvoices.forEach((invoice) => (invoice.items || []).forEach((item) => {
+      const name = item.name || item.item_name || item.productName || "Unnamed product";
+      const qty = Number(item.qty) || 0;
+      const value = qty * (Number(item.rate) || 0);
+      if (!map[name]) map[name] = { name, qty: 0, value: 0 };
+      map[name].qty += qty;
+      map[name].value += value;
+    }));
+    return Object.values(map).sort((a, b) => b.value - a.value).slice(0, 5);
+  }, [safeInvoices]);
+
+  const recentOrders = useMemo(() => safeInvoices.slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))).slice(0, 6), [safeInvoices]);
+
+  const kpis = [
+    { label: "Revenue Collected", value: formatMoney(metrics.collected), detail: `${metrics.billed ? Math.round((metrics.collected / metrics.billed) * 100) : 0}% of billed value`, icon: CircleDollarSign, tone: "emerald", action: () => onQuickAction("finance", { tab: "receivables" }) },
+    { label: "Net Profit", value: `${metrics.profit < 0 ? "−" : ""}${formatMoney(Math.abs(metrics.profit))}`, detail: metrics.profit >= 0 ? "Positive operating result" : "Review expenses", icon: TrendingUp, tone: metrics.profit >= 0 ? "emerald" : "rose", action: () => onNavigate("finance") },
+    { label: "Orders", value: money(metrics.orderCount), detail: "Invoices + POS activity", icon: ShoppingCart, tone: "blue", action: () => onNavigate("sales") },
+    { label: "Customers", value: money(metrics.customerCount), detail: "CRM records in workspace", icon: Users, tone: "violet", action: () => onNavigate("crm") },
+    { label: "Inventory Value", value: formatMoney(metrics.inventoryValue), detail: `${safeInventory.length} stocked SKU${safeInventory.length === 1 ? "" : "s"}`, icon: Package, tone: "cyan", action: () => onNavigate("inventory") },
+    { label: "Receivables", value: formatMoney(metrics.receivable), detail: `${safeInvoices.filter((x) => x.status !== "Paid").length} open invoices`, icon: Landmark, tone: "amber", action: () => onQuickAction("finance", { tab: "receivables" }) },
+  ];
+
+  const toneClasses = {
+    emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
+    rose: "bg-rose-50 text-rose-700 border-rose-100",
+    blue: "bg-blue-50 text-blue-700 border-blue-100",
+    violet: "bg-violet-50 text-violet-700 border-violet-100",
+    cyan: "bg-cyan-50 text-cyan-700 border-cyan-100",
+    amber: "bg-amber-50 text-amber-700 border-amber-100",
+  };
+
+  const firstName = (currentUser?.name || company?.owner || "Manager").split(" ")[0];
+  const todayLabel = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  return (
+    <div className="min-w-0 space-y-5 pb-2">
+      {/* Executive hero */}
+      <section className="relative overflow-hidden rounded-[28px] bg-[#08271D] shadow-[0_18px_55px_rgba(2,44,34,.16)]">
+        <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-emerald-400/20 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-teal-300/10 blur-3xl" />
+        <div className="relative p-5 sm:p-7 lg:p-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-300">
+                <span>Executive Command Center</span><span className="text-white/25">•</span><span className="text-white/45">{todayLabel}</span>
+              </div>
+              <h1 className="text-2xl font-black tracking-[-.04em] text-white sm:text-3xl">Habari, {firstName} <span className="text-emerald-300">👋</span></h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">A real-time view of {company?.name || "your business"}. Monitor performance, cash, customers and operations from one command center.</p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <button type="button" onClick={() => onQuickAction("sales", { tab: "invoices", openForm: true })} className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-3.5 py-2.5 text-xs font-extrabold text-[#062118] shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-300"><Plus size={15}/> New Sale</button>
+              <button type="button" onClick={() => onQuickAction("crm", { tab: "leads" })} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-white/15"><UserPlus size={15}/> Add Customer</button>
+              <button type="button" onClick={onCustomizeDashboard} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2.5 text-xs font-bold text-white/80 transition hover:bg-white/10"><Sliders size={15}/> Customize</button>
+            </div>
+          </div>
+          <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-[10.5px] text-white/55"><span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[.06] px-2.5 py-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_0_4px_rgba(52,211,153,.10)]"/> Live workspace data</span><span className="rounded-full border border-white/10 bg-white/[.06] px-2.5 py-1">{safeInvoices.length + safeInventory.length + safeCrm.length} core records</span></div>
+            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/10 p-1" aria-label="Dashboard date range">
+              {[['week','7 days'],['month','This month'],['year','This year']].map(([id,label]) => <button key={id} type="button" onClick={() => setRange(id)} className={`rounded-lg px-2.5 py-1.5 text-[10.5px] font-bold transition ${range === id ? 'bg-white text-slate-900 shadow-sm' : 'text-white/55 hover:bg-white/10 hover:text-white'}`}>{label}</button>)}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* KPI grid */}
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" aria-label="Business KPIs">
+        {kpis.map((card) => { const Icon = card.icon; return <button key={card.label} type="button" onClick={card.action} className="group min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_4px_20px_rgba(15,23,42,.035)] transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40">
+          <div className="flex items-start justify-between gap-2"><span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${toneClasses[card.tone]}`}><Icon size={17}/></span><ArrowUpRight size={14} className="text-slate-300 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5"/></div>
+          <p className="mt-4 truncate text-[10px] font-extrabold uppercase tracking-[.12em] text-slate-400">{card.label}</p><p className="mt-1 truncate text-lg font-black tracking-[-.03em] text-slate-950 sm:text-xl">{card.value}</p><p className="mt-1 truncate text-[10.5px] text-slate-500">{card.detail}</p>
+        </button>; })}
+      </section>
+
+      {/* Performance row */}
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,.75fr)]">
+        <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500"/><h2 className="text-sm font-extrabold text-slate-950">Revenue & expense performance</h2></div><p className="mt-1 text-[11px] text-slate-500">Monthly trend · values shown in TZS thousands</p></div><button type="button" onClick={() => onNavigate("reports")} className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">View reports <ChevronRight size={13}/></button></div>
+          <div className="h-[250px] w-full min-w-0"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}><defs><linearGradient id="smRevenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10B981" stopOpacity={0.24}/><stop offset="100%" stopColor="#10B981" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} stroke="#EEF2F0"/><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#94A3B8'}}/><YAxis axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#94A3B8'}}/><Tooltip contentStyle={{borderRadius:12,border:'1px solid #E2E8F0',boxShadow:'0 12px 30px rgba(15,23,42,.10)',fontSize:11}} formatter={(v,n)=>[`TZS ${money(v)}k`, n === 'revenue' ? 'Revenue' : 'Expenses']}/><Area type="monotone" dataKey="revenue" stroke="#059669" strokeWidth={2.5} fill="url(#smRevenueFill)"/><Bar dataKey="expenses" fill="#CBD5E1" radius={[4,4,0,0]} maxBarSize={20}/></ComposedChart></ResponsiveContainer></div>
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-[10.5px] text-slate-500"><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-emerald-500"/>Revenue</span><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-slate-300"/>Expenses</span><span className="ml-auto font-bold text-slate-700">Net {metrics.profit >= 0 ? '+' : '−'}{formatMoney(Math.abs(metrics.profit))}</span></div>
+        </div>
+
+        <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5">
+          <div className="flex items-start justify-between gap-3"><div><h2 className="text-sm font-extrabold text-slate-950">Business health</h2><p className="mt-1 text-[11px] text-slate-500">Signals requiring attention</p></div><Gauge size={18} className="text-emerald-600"/></div>
+          <div className="mt-5 space-y-4">
+            {[
+              ['Cash collection', metrics.billed ? Math.min(100, Math.round(metrics.collected / metrics.billed * 100)) : 0, 'emerald'],
+              ['Inventory health', safeInventory.length ? Math.max(0, Math.round((1 - metrics.outOfStock / safeInventory.length) * 100)) : 0, 'cyan'],
+              ['Pipeline coverage', safeCrm.length ? Math.min(100, Math.round((safeCrm.filter(x => !['Won','Lost'].includes(x.stage)).length / safeCrm.length) * 100)) : 0, 'violet'],
+            ].map(([label,value,tone]) => <div key={label}><div className="mb-1.5 flex items-center justify-between"><span className="text-[11.5px] font-semibold text-slate-600">{label}</span><span className="text-[11px] font-black text-slate-900">{value}%</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${tone === 'emerald' ? 'bg-emerald-500' : tone === 'cyan' ? 'bg-cyan-500' : 'bg-violet-500'}`} style={{width:`${value}%`}}/></div></div>)}
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-2"><button type="button" onClick={() => onNavigate("inventory")} className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-left transition hover:border-amber-200"><p className="text-[9.5px] font-extrabold uppercase tracking-wide text-amber-700">Low stock</p><p className="mt-1 text-xl font-black text-amber-900">{metrics.lowStock}</p><p className="text-[10px] text-amber-700/80">{metrics.outOfStock} out of stock</p></button><button type="button" onClick={() => onQuickAction("finance", {tab:"receivables"})} className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-left transition hover:border-rose-200"><p className="text-[9.5px] font-extrabold uppercase tracking-wide text-rose-700">Open AR</p><p className="mt-1 text-xl font-black text-rose-900">{safeInvoices.filter(x => x.status !== 'Paid').length}</p><p className="text-[10px] text-rose-700/80">invoices to review</p></button></div>
+        </div>
+      </section>
+
+      {/* Operational row */}
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.45fr)]">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,.035)]">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-5"><div><h2 className="text-sm font-extrabold text-slate-950">Top products</h2><p className="mt-1 text-[10.5px] text-slate-500">Highest billed line-item value</p></div><button type="button" onClick={() => onNavigate("inventory")} className="text-[11px] font-bold text-emerald-700">View all</button></div>
+          <div className="divide-y divide-slate-100">{topProducts.length ? topProducts.map((p,i) => <div key={p.name} className="flex items-center gap-3 px-4 py-3 sm:px-5"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-[10px] font-black text-slate-500">0{i+1}</span><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold text-slate-800">{p.name}</p><p className="mt-0.5 text-[10px] text-slate-400">{money(p.qty)} units sold</p></div><p className="shrink-0 text-[11.5px] font-extrabold text-slate-900">{formatMoney(p.value)}</p></div>) : <div className="px-5 py-10 text-center text-[11px] text-slate-400">No product line-item data is available yet.</div>}</div>
+        </div>
+
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,.035)]">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-5"><div><h2 className="text-sm font-extrabold text-slate-950">Recent orders</h2><p className="mt-1 text-[10.5px] text-slate-500">Latest confirmed sales activity</p></div><button type="button" onClick={() => onNavigate("sales")} className="text-[11px] font-bold text-emerald-700">View all</button></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left"><thead className="bg-slate-50/70"><tr>{['Order','Customer','Date','Amount','Status'].map(h => <th key={h} className="px-4 py-2.5 text-[9.5px] font-extrabold uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{recentOrders.length ? recentOrders.map((o) => { const total = lineTotal(o.items || []).total; const paid = o.status === 'Paid' || Number(o.amountPaid) >= total; return <tr key={o.id} className="hover:bg-slate-50/60"><td className="px-4 py-3 text-[11px] font-extrabold text-slate-800">{o.id || '—'}</td><td className="max-w-[180px] truncate px-4 py-3 text-[11px] font-semibold text-slate-600">{o.customer || 'Walk-in customer'}</td><td className="px-4 py-3 text-[10.5px] text-slate-400">{o.date || '—'}</td><td className="px-4 py-3 text-[11px] font-extrabold text-slate-900">{formatMoney(total)}</td><td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-[9.5px] font-extrabold ${paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{paid ? 'Paid' : (o.status || 'Pending')}</span></td></tr> }) : <tr><td colSpan="5" className="px-5 py-10 text-center text-[11px] text-slate-400">No orders recorded yet.</td></tr>}</tbody></table></div>
+        </div>
+      </section>
+
+      {/* Attention + activity */}
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5"><div className="flex items-center justify-between"><div><h2 className="text-sm font-extrabold text-slate-950">Attention center</h2><p className="mt-1 text-[10.5px] text-slate-500">Issues and actions that deserve review</p></div><AlertTriangle size={18} className="text-amber-500"/></div><div className="mt-4 space-y-2">{(alerts || []).slice(0,4).map((a,i) => <button key={a.id || i} type="button" onClick={() => onNavigate(a.target || 'dashboard')} className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-left transition hover:border-amber-200 hover:bg-amber-50/40"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-amber-600 shadow-sm"><AlertCircle size={15}/></span><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-slate-800">{a.title || a.message || 'Review workspace signal'}</span><span className="mt-0.5 block truncate text-[10px] text-slate-500">{a.detail || a.description || 'Open the relevant module for more details.'}</span></span><ChevronRight size={14} className="shrink-0 text-slate-300"/></button>)}{(!alerts || alerts.length === 0) && <div className="rounded-xl bg-emerald-50 p-4 text-center"><CheckCircle2 size={20} className="mx-auto text-emerald-600"/><p className="mt-2 text-[11.5px] font-bold text-emerald-800">Everything looks healthy</p><p className="mt-1 text-[10px] text-emerald-700/70">No active workspace alerts require attention.</p></div>}</div></div>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5"><div className="flex items-center justify-between"><div><h2 className="text-sm font-extrabold text-slate-950">Recent activity</h2><p className="mt-1 text-[10.5px] text-slate-500">Confirmed activity across core modules</p></div><Activity size={18} className="text-emerald-600"/></div><div className="mt-4 space-y-1">{(recentActivity || []).slice(0,6).map((a,i) => { const Icon = a.icon || Activity; return <div key={i} className="flex items-center gap-3 rounded-xl p-2.5 hover:bg-slate-50"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100" style={{color:a.color || '#059669'}}><Icon size={14}/></span><div className="min-w-0 flex-1"><p className="truncate text-[11.5px] font-semibold text-slate-800">{a.text}</p><p className="truncate text-[10px] text-slate-400">{a.sub}</p></div><span className="shrink-0 text-[9.5px] text-slate-400">{a.date ? relativeDashboardDay(a.date) : ''}</span></div>; })}{(!recentActivity || recentActivity.length === 0) && <div className="py-8 text-center text-[11px] text-slate-400">No confirmed activity yet.</div>}</div></div>
+      </section>
+
+      {/* Quick actions */}
+      <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-extrabold text-slate-950">Quick actions</h2><p className="mt-1 text-[10.5px] text-slate-500">Jump directly into the work that matters</p></div><Zap size={18} className="text-emerald-500"/></div><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">{[
+        ['New sale',ShoppingCart,() => onQuickAction('sales',{tab:'invoices',openForm:true})],['Add product',Package,() => onNavigate('inventory')],['New customer',UserPlus,() => onQuickAction('crm',{tab:'leads'})],['Create invoice',ReceiptText,() => onQuickAction('sales',{tab:'invoices',openForm:true})],['Record expense',Wallet,() => onQuickAction('finance',{tab:'expenses'})],['Open AI',Brain,() => onNavigate('ai')]
+      ].map(([label,Icon,action]) => <button key={label} type="button" onClick={action} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50/60 px-2 py-2.5 text-[10.5px] font-bold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"><Icon size={14}/>{label}</button>)}</div></section>
+    </div>
+  );
+}
+
+function relativeDashboardDay(dateStr) {
+  if (!dateStr) return "";
+  const days = Math.round((TODAY - new Date(dateStr)) / 86400000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 14) return `${days}d ago`;
+  return String(dateStr).slice(0, 10);
+}
+
+
 function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, suppliers, quotations, scheduledWorkflows, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate, accessToken }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   const roleChangeRows = roleChangeApprovalsQuery?.data?.approvals || [];
@@ -6386,7 +6567,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   if (roleView === "executive") {
     return (
       <>
-        <EnterpriseDashboardOverview
+        {isGlobalAdmin && accessToken && <section aria-label="Global Admin trial-expiry notice panel"><TrialNoticeAdmin api={dashboardTrialNoticeApi} heading="Global Admin trial-expiry notice panel" /></section>}
+        <PremiumExecutiveDashboard
           company={company}
           currentUser={currentUser}
           invoices={invoices}
@@ -6397,17 +6579,13 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           workOrders={workOrders}
           subscriptions={subscriptions}
           posTransactions={posTransactions}
-          financials={financials}
-          revenueExpenseTrend={revenueExpenseTrend}
+          alerts={alerts}
           recentActivity={recentActivity}
-          attentionItems={attentionItems}
           pendingLeave={pendingLeave}
           formatMoney={formatMoney}
           onNavigate={onNavigate}
           onQuickAction={onQuickAction}
           onCustomizeDashboard={() => setPreferencesDrawerOpen(true)}
-          allowedModules={currentRole.allowedModules}
-          writeAccess={currentRole.writeAccess}
         />
         <Suspense fallback={null}>
           <LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
@@ -42122,25 +42300,12 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
   const [open, setOpen] = useState(false);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const closeOnEscape = (event) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      setOpen(false);
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
-
   return (
     <div className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative text-slate-400 hover:text-slate-600"
         aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "")}
-        aria-expanded={open}
-        aria-controls={open ? "notification-center-panel" : undefined}
       >
         <Bell size={17} strokeWidth={1.75} />
         {alerts.length > 0 && (
@@ -42152,9 +42317,6 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div
-            id="notification-center-panel"
-            role="region"
-            aria-label="Notifications"
             className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-xl border border-slate-200/80 shadow-lg z-40 overflow-hidden"
             style={{ animation: "toastIn .15s ease-out" }}
           >
@@ -48084,24 +48246,17 @@ function SmartManager() {
   // level so it works regardless of which module currently has focus.
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
-  const createMenuTriggerRef = useRef(null);
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setPaletteOpen((o) => !o);
       }
-      if (e.key === "Escape") {
-        setPaletteOpen(false);
-        if (createMenuOpen) {
-          setCreateMenuOpen(false);
-          requestAnimationFrame(() => createMenuTriggerRef.current?.focus());
-        }
-      }
+      if (e.key === "Escape") setPaletteOpen(false);
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [createMenuOpen]);
+  }, []);
 
   // Real, per-device dark mode preference for the App Shell — the same
   // localStorage pattern already proven for App Lock, since visual theme
@@ -48346,7 +48501,7 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-reference-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[64px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[64px] sm:px-6 sm:py-0 lg:min-h-[58px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:min-h-[56px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
@@ -48358,7 +48513,7 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <button
-              className="dashboard-topbar-menu-control inline-flex min-h-10 min-w-10 items-center justify-center text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
+              className="dashboard-topbar-menu-control text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -48383,46 +48538,53 @@ function SmartManager() {
             <span className="min-w-0 flex-1 truncate">Search customers, products, invoices, orders...</span>
             <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[8.5px] font-mono text-slate-400">Ctrl + K</kbd>
           </button>}
-          <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-2">
-            <div className="dashboard-topbar-right-rail">
-              <button
-                type="button"
-                onClick={() => canManage && go("settings")}
-                disabled={!canManage}
-                className="dashboard-topbar-workspace hidden min-w-0 items-center gap-2 px-2.5 py-1.5 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 disabled:cursor-default xl:flex"
-                aria-label={`Workspace: ${company?.name || "Current workspace"}`}
-                title={canManage ? "Open workspace settings" : "Current workspace"}
-              >
-                <span className="min-w-0"><span className="block max-w-[132px] truncate text-[10px] font-bold uppercase tracking-[.04em] text-slate-800">{company?.name || "Current workspace"}</span><span className="mt-0.5 block text-[9px] font-medium text-slate-500">Workspace</span></span>
-                <ChevronDown size={13} className="shrink-0 text-slate-500" aria-hidden="true" />
-              </button>
-              {preferences.showConnectionStatus && <span
-                className="dashboard-topbar-presence hidden lg:inline-flex"
-                role="status"
-                aria-label={!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live connection" : "Demo mode connection"}
-                title={IS_CONFIGURED ? "Connected to Supabase" : "Running on built-in demo data — connect Supabase to persist changes"}
-              >
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
-              </span>}
-              {active !== "ai" && visibleModules.some((module) => module.id === "ai") && <button type="button" onClick={() => go("ai")} className="dashboard-topbar-ai-shortcut inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#0B5D3B] text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden" aria-label="Open AI Command Center" title="Open AI Command Center"><Sparkles size={16} aria-hidden="true" /></button>}
-              <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9 sm:min-w-9" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /></button>
+          <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2.5">
+            {preferences.showConnectionStatus && <span
+              className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
+              style={
+                IS_CONFIGURED
+                  ? { backgroundColor: "#16A34A14", color: "#16A34A" }
+                  : { backgroundColor: "#F59E0B14", color: "#F59E0B" }
+              }
+              title={IS_CONFIGURED ? "Connected to Supabase" : "Running on built-in demo data — connect Supabase to persist changes"}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
+              {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
+            </span>}
+            <button
+              type="button"
+              onClick={() => canManage && go("settings")}
+              disabled={!canManage}
+              className="hidden min-w-0 items-center gap-2 border-x border-slate-100 px-3 py-1 text-left transition hover:bg-slate-50 disabled:cursor-default xl:flex"
+              aria-label={`Workspace: ${company?.name || "Current workspace"}`}
+              title={canManage ? "Open workspace settings" : "Current workspace"}
+            >
+              <span className="min-w-0"><span className="block max-w-[124px] truncate text-[10px] font-bold uppercase tracking-[.04em] text-slate-800">{company?.name || "Current workspace"}</span><span className="mt-0.5 block text-[9px] font-medium text-slate-500">Workspace</span></span>
+              <ChevronDown size={13} className="shrink-0 text-slate-500" aria-hidden="true" />
+            </button>
+            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
+            {preferences.showTopBarSearch && <button
+              onClick={() => setPaletteOpen(true)}
+              className="dashboard-topbar-search hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+              aria-label="Open command palette"
+            >
+              <Search size={13} />
+              <span className="hidden md:inline">Search workspace</span>
+              <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
+            </button>}
+            {active !== "ai" && visibleModules.some((module) => module.id === "ai") && <button type="button" onClick={() => go("ai")} className="dashboard-topbar-ai-shortcut inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#0B5D3B] text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:hidden" aria-label="Open AI Command Center" title="Open AI Command Center"><Sparkles size={17} aria-hidden="true" /></button>}
+            <div className="dashboard-topbar-utility-group">
+              <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9 sm:min-w-9 sm:px-2" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
               <div className="dashboard-topbar-notification-slot"><NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} /></div>
-              {criticalAlerts.length > 0 && (
-                <button type="button" onClick={() => go("notifications")} className="dashboard-topbar-alert hidden min-[1800px]:inline-flex" aria-label={`${criticalAlerts.length} critical alert${criticalAlerts.length > 1 ? "s" : ""}`} title="Open critical alerts">
-                  <AlertCircle size={14} aria-hidden="true" />
-                  <span className="font-bold leading-none">{criticalAlerts.length}</span>
-                  <span className="hidden 2xl:inline">Alert{criticalAlerts.length > 1 ? "s" : ""}</span>
-                </button>
-              )}
             </div>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
-            <button ref={createMenuTriggerRef} type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" aria-label="Open create menu" aria-controls={createMenuOpen ? "dashboard-create-menu" : undefined} className="dashboard-topbar-create inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden sm:px-3">
+            <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="dashboard-topbar-create inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden 2xl:inline-flex sm:px-3">
                   <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
                 </button>
                 {createMenuOpen && (
                   <>
-                    <div id="dashboard-create-menu" className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
+                    <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
                       <p className="px-3 pb-1.5 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Create in workspace</p>
                       {quickCreateActions.map((action) => {
                         const ActionIcon = action.icon;
@@ -48433,12 +48595,18 @@ function SmartManager() {
                 )}
               </div>
             )}
-            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="dashboard-topbar-subscription hidden" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             {preferences.showGuidedTour && <div className="dashboard-topbar-tour hidden"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>}
             {preferences.showTopBarDate && <span className="hidden items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-semibold text-slate-400 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
             </span>}
+            {/* ── Smart Alerts badge ── */}
+            {criticalAlerts.length > 0 && (
+              <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden lg:flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1.5 rounded-xl animate-pulse" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
+                <AlertCircle size={13}/>
+                {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
+              </button>
+            )}
             <span className="hidden"><WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} /></span>
             {/* ── Dark mode toggle ── */}
             <button
