@@ -48377,7 +48377,7 @@ function SmartManager() {
           {preferences.showTopBarSearch && <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="dashboard-topbar-primary-search hidden h-10 w-full max-w-[480px] items-center gap-2.5 rounded-full border border-slate-200/90 bg-slate-50/80 px-4 text-left text-[10.5px] font-medium text-slate-500 shadow-[inset_0_1px_2px_rgba(15,23,42,.05)] transition-all hover:border-emerald-300 hover:bg-emerald-50/70 hover:text-emerald-800 hover:shadow-[0_0_0_4px_rgba(22,163,74,.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white lg:flex"
+            className="dashboard-topbar-primary-search hidden h-10 w-full max-w-[460px] items-center gap-2.5 rounded-full border border-slate-200/90 bg-slate-50/80 px-4 text-left text-[10.5px] font-medium text-slate-500 shadow-[inset_0_1px_2px_rgba(15,23,42,.05)] transition-all hover:border-emerald-300 hover:bg-emerald-50/70 hover:text-emerald-800 hover:shadow-[0_0_0_4px_rgba(22,163,74,.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white lg:flex"
             aria-label="Open command palette"
           >
             <Search size={14} aria-hidden="true" />
