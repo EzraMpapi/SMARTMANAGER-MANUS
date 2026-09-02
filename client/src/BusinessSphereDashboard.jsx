@@ -48346,7 +48346,7 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-reference-topbar relative sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[64px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/70 bg-white/80 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.04),0_10px_30px_-24px_rgba(6,78,59,.28)] backdrop-blur-xl backdrop-saturate-150 sm:min-h-[64px] sm:px-6 sm:py-0 lg:min-h-[58px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-reference-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} relative grid min-h-[64px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/70 bg-white/80 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.04),0_10px_30px_-24px_rgba(6,78,59,.28)] backdrop-blur-xl backdrop-saturate-150 sm:min-h-[64px] sm:px-6 sm:py-0 lg:min-h-[58px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
           <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#0E6B44] via-[#16A34A] to-[#0EA5A4] opacity-90" />
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
