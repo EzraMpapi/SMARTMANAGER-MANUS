@@ -48346,11 +48346,12 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-reference-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[64px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[64px] sm:px-6 sm:py-0 lg:min-h-[58px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-reference-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} relative grid min-h-[64px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/70 bg-white/80 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.04),0_10px_30px_-24px_rgba(6,78,59,.28)] backdrop-blur-xl backdrop-saturate-150 sm:min-h-[64px] sm:px-6 sm:py-0 lg:min-h-[58px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+          <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#0E6B44] via-[#16A34A] to-[#0EA5A4] opacity-90" />
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
-              className="dashboard-topbar-menu-control hidden rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 lg:inline-flex"
+              className="dashboard-topbar-menu-control hidden rounded-xl p-2 text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white lg:inline-flex"
               onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")}
               aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
@@ -48358,7 +48359,7 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <button
-              className="dashboard-topbar-menu-control inline-flex min-h-10 min-w-10 items-center justify-center text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
+              className="dashboard-topbar-menu-control inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl p-1.5 -ml-1.5 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -48376,20 +48377,20 @@ function SmartManager() {
           {preferences.showTopBarSearch && <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="dashboard-topbar-primary-search hidden h-9 w-full max-w-[460px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-[10px] font-medium text-slate-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 lg:flex"
+            className="dashboard-topbar-primary-search hidden h-10 w-full max-w-[460px] items-center gap-2.5 rounded-full border border-slate-200/90 bg-slate-50/80 px-4 text-left text-[10.5px] font-medium text-slate-500 shadow-[inset_0_1px_2px_rgba(15,23,42,.05)] transition-all hover:border-emerald-300 hover:bg-emerald-50/70 hover:text-emerald-800 hover:shadow-[0_0_0_4px_rgba(22,163,74,.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white lg:flex"
             aria-label="Open command palette"
           >
             <Search size={14} aria-hidden="true" />
             <span className="min-w-0 flex-1 truncate">Search customers, products, invoices, orders...</span>
-            <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[8.5px] font-mono text-slate-400">Ctrl + K</kbd>
+            <kbd className="rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[8.5px] font-semibold text-slate-500 shadow-sm">Ctrl + K</kbd>
           </button>}
           <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-2">
-            <div className="dashboard-topbar-right-rail">
+            <div className="dashboard-topbar-right-rail flex items-center gap-1.5 rounded-2xl border border-slate-200/70 bg-white/70 p-1 shadow-[0_1px_2px_rgba(15,23,42,.04)] sm:gap-2 sm:px-1.5">
               <button
                 type="button"
                 onClick={() => canManage && go("settings")}
                 disabled={!canManage}
-                className="dashboard-topbar-workspace hidden min-w-0 items-center gap-2 px-2.5 py-1.5 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 disabled:cursor-default xl:flex"
+                className="dashboard-topbar-workspace hidden min-w-0 items-center gap-2 rounded-xl px-2.5 py-1.5 text-left transition hover:bg-emerald-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-default xl:flex"
                 aria-label={`Workspace: ${company?.name || "Current workspace"}`}
                 title={canManage ? "Open workspace settings" : "Current workspace"}
               >
@@ -48402,10 +48403,10 @@ function SmartManager() {
                 aria-label={!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live connection" : "Demo mode connection"}
                 title={IS_CONFIGURED ? "Connected to Supabase" : "Running on built-in demo data — connect Supabase to persist changes"}
               >
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
+                <span className="relative grid h-2.5 w-2.5 place-items-center"><span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} /><span className="relative h-2 w-2 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} /></span>
               </span>}
-              {active !== "ai" && visibleModules.some((module) => module.id === "ai") && <button type="button" onClick={() => go("ai")} className="dashboard-topbar-ai-shortcut inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#0B5D3B] text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden" aria-label="Open AI Command Center" title="Open AI Command Center"><Sparkles size={16} aria-hidden="true" /></button>}
-              <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9 sm:min-w-9" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /></button>
+              {active !== "ai" && visibleModules.some((module) => module.id === "ai") && <button type="button" onClick={() => go("ai")} className="dashboard-topbar-ai-shortcut inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#0E6B44] to-[#16A34A] text-white shadow-[0_6px_16px_-8px_rgba(6,78,59,.65)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white lg:hidden" aria-label="Open AI Command Center" title="Open AI Command Center"><Sparkles size={16} aria-hidden="true" /></button>}
+              <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:min-h-10 sm:min-w-10" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /></button>
               <div className="dashboard-topbar-notification-slot"><NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} /></div>
               {criticalAlerts.length > 0 && (
                 <button type="button" onClick={() => go("notifications")} className="dashboard-topbar-alert hidden min-[1800px]:inline-flex" aria-label={`${criticalAlerts.length} critical alert${criticalAlerts.length > 1 ? "s" : ""}`} title="Open critical alerts">
@@ -48417,7 +48418,7 @@ function SmartManager() {
             </div>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
-            <button ref={createMenuTriggerRef} type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" aria-label="Open create menu" aria-controls={createMenuOpen ? "dashboard-create-menu" : undefined} className="dashboard-topbar-create inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden sm:px-3">
+            <button ref={createMenuTriggerRef} type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" aria-label="Open create menu" aria-controls={createMenuOpen ? "dashboard-create-menu" : undefined} className="dashboard-topbar-create inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-[#0E6B44] to-[#16A34A] px-2.5 py-2 text-[11px] font-bold text-white shadow-[0_8px_18px_-10px_rgba(6,78,59,.7)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white lg:hidden sm:px-3">
                   <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
                 </button>
                 {createMenuOpen && (
@@ -48446,11 +48447,12 @@ function SmartManager() {
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="hidden min-h-8 min-w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-slate-300 hover:text-[#111827]"
+              className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-slate-300 hover:text-[#111827] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
+            <span aria-hidden="true" className="mx-0.5 hidden h-7 w-px bg-slate-200/90 sm:block" />
             <div className="dashboard-topbar-profile-slot"><PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} /></div>
           </div>
         </header>
