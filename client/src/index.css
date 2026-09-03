@@ -1047,3 +1047,137 @@
     display: none !important;
   }
 }
+
+/* Professional dashboard shell — restrained contrast, clear hierarchy, and mobile-safe controls. */
+.dashboard-shell-rail {
+  background: #f8fafc;
+  border-right-color: rgb(226 232 240 / .82);
+}
+
+.dashboard-sidebar-brand {
+  background: linear-gradient(145deg, #0f172a 0%, #111827 66%, #0b5d3b 135%);
+}
+
+.dashboard-sidebar-tools,
+.dashboard-sidebar-footer {
+  background: rgb(248 250 252 / .92);
+}
+
+.dashboard-sidebar-order {
+  background: rgb(255 255 255 / .8);
+}
+
+.dashboard-flat-navigation {
+  scrollbar-color: rgb(148 163 184 / .5) transparent;
+  scrollbar-width: thin;
+}
+
+.dashboard-topbar {
+  isolation: isolate;
+}
+
+.dashboard-topbar-context {
+  min-height: 3rem;
+}
+
+.dashboard-topbar-actions > button,
+.dashboard-topbar-actions > span,
+.dashboard-topbar-actions > div {
+  flex-shrink: 0;
+}
+
+.dashboard-mobile-nav {
+  box-shadow: 0 -10px 28px rgb(15 23 42 / .08);
+}
+
+.dark-shell.dashboard-shell-rail {
+  background: #0f172a;
+  border-right-color: rgb(51 65 85 / .72);
+}
+
+.dark-shell .dashboard-sidebar-tools,
+.dark-shell .dashboard-sidebar-footer {
+  background: rgb(15 23 42 / .94);
+  border-color: rgb(51 65 85 / .72);
+}
+
+.dark-shell .dashboard-sidebar-order {
+  background: rgb(30 41 59 / .82);
+  border-color: rgb(51 65 85 / .76);
+}
+
+.dark-shell .dashboard-topbar-context .text-slate-950,
+.dark-shell .dashboard-topbar-context .text-slate-900,
+.dark-shell .dashboard-topbar-context .text-slate-800 {
+  color: #f8fafc;
+}
+
+.dark-shell .dashboard-topbar,
+.dark-shell.dashboard-shell-header {
+  background: rgb(15 23 42 / .94);
+  border-bottom-color: rgb(51 65 85 / .72);
+}
+
+.dark-shell.dashboard-shell-header .bg-white,
+.dark-shell.dashboard-shell-header .dashboard-topbar-customize,
+.dark-shell.dashboard-shell-header .dashboard-topbar-search,
+.dark-shell.dashboard-shell-header .dashboard-topbar-actions > span.bg-white {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.dark-shell.dashboard-shell-header .text-slate-950,
+.dark-shell.dashboard-shell-header .text-slate-900,
+.dark-shell.dashboard-shell-header .text-slate-800 {
+  color: #f8fafc;
+}
+
+.dark-shell.dashboard-shell-header .text-slate-500 {
+  color: #cbd5e1;
+}
+
+.dark-shell.dashboard-shell-header .text-slate-400 {
+  color: #94a3b8;
+}
+
+.dark-shell.dashboard-shell-header .bg-slate-50,
+.dark-shell.dashboard-shell-header .bg-slate-100 {
+  background-color: #1e293b;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    width: min(88vw, 288px);
+    max-width: 288px;
+  }
+
+  .dashboard-topbar {
+    min-height: 76px;
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-topbar {
+    min-height: 64px;
+    padding-top: max(.65rem, env(safe-area-inset-top));
+    padding-bottom: .65rem;
+  }
+
+  .dashboard-topbar-actions {
+    gap: .35rem;
+  }
+
+  .dashboard-mobile-nav {
+    background: rgb(255 255 255 / .96);
+    box-shadow: 0 -8px 24px rgb(15 23 42 / .1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-sidebar,
+  .dashboard-topbar,
+  .dashboard-mobile-nav,
+  .dashboard-topbar-actions > * {
+    transition: none !important;
+  }
+}

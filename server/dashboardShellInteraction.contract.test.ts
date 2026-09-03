@@ -15,10 +15,15 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-label="Open command palette"');
     expect(dashboard).toContain('aria-hidden={!isDesktopNavigation && !sidebarOpen}');
     expect(dashboard).toContain('window.matchMedia("(min-width: 1024px)")');
-    expect(dashboard).toContain('className={`dashboard-sidebar fixed z-40 inset-y-0 left-0');
+    expect(dashboard).toContain('className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0');
     expect(dashboard).toContain('lg:top-0 lg:z-30 lg:sticky lg:translate-x-0');
     expect(dashboard).toContain('aria-current={isActive ? "page" : undefined}');
     expect(dashboard).toContain('dashboard-flat-navigation');
+    expect(dashboard).toContain('dashboard-sidebar-brand');
+    expect(dashboard).toContain('dashboard-sidebar-tools');
+    expect(dashboard).toContain('dashboard-sidebar-footer');
+    expect(dashboard).toContain('dashboard-shell-header');
+    expect(dashboard).toContain('createMenuOpen ? "z-50" : "z-30"');
   });
 
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
@@ -28,12 +33,13 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
     expect(dashboard).toContain("sm:hidden");
-    expect(dashboard).toContain('dashboard-topbar-search hidden xl:flex');
+    expect(dashboard).toContain('dashboard-topbar-search hidden xl:flex min-w-[178px]');
     expect(dashboard).toContain('dashboard-topbar-tour hidden shrink-0 lg:block');
     expect(dashboard).toContain('dashboard-topbar-customize');
     expect(dashboard).toContain('preferences.showGuidedTour &&');
     expect(dashboard).toContain('preferences.showTopBarSearch &&');
-    expect(dashboard).toContain("inline-flex items-center gap-2 rounded-xl border border-emerald-200");
+    expect(dashboard).toContain('dashboard-topbar-status hidden items-center gap-1.5 rounded-full');
+    expect(dashboard).toContain('inline-flex items-center gap-1.5 rounded-2xl bg-slate-950');
   });
 
   it("keeps grouped navigation role-safe and preserves the compact mobile navigation", () => {

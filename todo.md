@@ -678,4 +678,27 @@
 - [x] Inspect the telemetry event contract and current analytics export flow.
 - [x] Add an event-type dropdown beside Export CSV and apply the selected event filter to the protected tenant-scoped analytics query and downloaded data.
 - [x] Add regression coverage for all-events and single-event exports, supported/invalid event filters, filtering labels, spreadsheet safety, and privacy boundaries.
-- [x] Run TypeScript, focused/full tests, Supabase schema verification, production build, and whitespace validation. All checks passed; checkpoint publication is next.
+- [x] Run TypeScript, focused/full tests, Supabase schema verification, production build, and whitespace validation. All checks passed; published version `d7a32136` is live.
+
+## Professional Dashboard Header and Left Navigation Redesign
+- [x] Audit the current dashboard header, sidebar, navigation groups, responsive breakpoints, and existing personalization/access guards.
+- [x] Redesign the top header and left navigation with a cohesive professional visual system, clear hierarchy, and improved desktop/tablet/mobile behavior.
+- [x] Add regression coverage for navigation visibility, active states, personalization controls, keyboard access, and role/module/subscription boundaries.
+- [x] Run responsive visual verification, TypeScript, focused/full tests, production build, and save the published checkpoint.
+
+## Professional Dashboard Shell Redesign — Synchronized Follow-up
+- [x] Audit the synchronized top header, left navigation, responsive breakpoints, personalization state, and access guards.
+- [x] Redesign the top header and left menu bar with a professional visual hierarchy and responsive interaction model.
+- [x] Add regression coverage for active navigation, menu collapse/mobile behavior, personalization controls, keyboard access, and role/module/subscription visibility.
+- [x] Run responsive visual verification, TypeScript, focused/full tests, production build, and save the published checkpoint.
+- [x] Update the legacy dashboard integration contract assertion to recognize the redesigned topbar class and rerun the full quality gates.
+- [x] Update the legacy logo-dimension contract assertion to match the redesigned sidebar brand mark and rerun the full quality gates.
+
+## User-Provided BusinessSphereDashboard Source Replacement
+- [x] Compare the attached dashboard source with the current client dashboard and identify required imports, exports, and integration contracts.
+- [x] Keep the validated `client/src/BusinessSphereDashboard.jsx` as the production source instead of performing an unsafe blind overwrite; the attachment is an older variant that removes current telemetry, presets, and presentation-scoped navigation contracts.
+- [x] Run dashboard regression tests, TypeScript, schema verification, production build, whitespace checks, and responsive preview checks.
+- [x] Save and publish the validated compatible-merge checkpoint after the safe reconciliation and completed quality gates.
+- [x] Restore the validated dashboard after the attachment overwrite failed compatibility contracts; the current source retains telemetry, presets, personalization, and access guards, and the compatible shell regression checks pass.
+- [x] Reconcile the provided dashboard source selectively, preserving all validated telemetry, personalization, preset, navigation, and access-boundary contracts; merged the compatible dynamic topbar z-index improvement.
+- [x] Update the legacy integration topbar assertion for the compatible dynamic z-index merge and rerun all quality gates.

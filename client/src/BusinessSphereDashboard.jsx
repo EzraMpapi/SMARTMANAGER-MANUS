@@ -48171,7 +48171,7 @@ function SmartManager() {
       {sharedTrialNoticeGate}
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
-    <div className={`h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className={`dashboard-shell h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Ambient background wash — subtle depth behind the content, the way
           Linear/Vercel-style dashboards avoid a flat, lifeless canvas. */}
       <div
@@ -48249,32 +48249,32 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={!isDesktopNavigation && !sidebarOpen}
-          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[264px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+          className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[84px]" : "w-[288px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-[#F8FAFC] transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ boxShadow: "4px 0 24px rgba(17,24,39,.06)" }}
+        style={{ boxShadow: "10px 0 36px rgba(15, 23, 42, .08)" }}
       >
-          <div className={`relative px-3 py-4 border-b border-[#F3F4F6] flex items-center justify-between ${sidebarCollapsed ? "justify-center" : ""}`}>
+          <div className={`dashboard-sidebar-brand relative px-4 py-5 border-b border-white/10 bg-slate-950 flex items-center justify-between ${sidebarCollapsed ? "justify-center" : ""}`}>
           <div className="flex items-center gap-2.5">
-            <span className="rounded-xl bg-emerald-50 p-1 ring-1 ring-emerald-100 shadow-sm"><BrandLogo variant="compact" priority className="h-8 w-8" /></span>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white p-1.5 shadow-[0_8px_20px_rgba(0,0,0,.22)] ring-1 ring-white/15"><BrandLogo variant="compact" priority className="h-7 w-7" /></span>
             {!sidebarCollapsed && <div className="flex flex-col leading-tight">
-              <span className="text-[14.5px] font-semibold tracking-tight brand-wordmark text-slate-950" style={{ fontFamily: "'Poppins'" }}>
+              <span className="text-[15px] font-semibold tracking-tight brand-wordmark text-white" style={{ fontFamily: "'Poppins'" }}>
                 Smart Manager
               </span>
-              <span className="mt-0.5 text-[9px] font-medium uppercase tracking-[.14em] text-emerald-700">Operations hub</span>
+              <span className="mt-1 text-[9px] font-bold uppercase tracking-[.18em] text-emerald-300">Operations hub</span>
             </div>}
           </div>
-          <button className="text-slate-400 hover:text-[#111827] transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+          <button className="text-slate-400 hover:text-white transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} />
           </button>
-          <button type="button" className="hidden rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
+          <button type="button" className="hidden rounded-xl p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
             {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
           </button>
         </div>
 
-        <div className="border-b border-slate-100 px-3 py-3">
-          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition group-hover:text-emerald-700"><Search size={15} /></span>
+        <div className="dashboard-sidebar-tools border-b border-slate-200/70 px-3 py-4">
+          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5 text-left shadow-[0_4px_16px_rgba(15,23,42,.04)] transition hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-slate-950 text-white shadow-sm transition group-hover:bg-emerald-600"><Search size={15} /></span>
             {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-700">Command palette</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Search modules and records</span></span><kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400">⌘K</kbd></>}
           </button>
           {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-2 py-1.5" role="group" aria-label="Sidebar module order">
@@ -48286,21 +48286,21 @@ function SmartManager() {
           </div>}
         </div>
 
-        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 space-y-1 overflow-y-auto px-2.5 py-3" aria-label="Operational workspaces">
-          <div className={`mb-1 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9.5px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Operational workspaces">
+          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-200/70 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
           {displayedNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
             const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
             return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
-              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-[9.5px] font-bold uppercase tracking-[.13em] text-slate-400 transition hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40">
-                <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-emerald-600" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] tracking-normal text-slate-500">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
+              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-white hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40">
+                <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-emerald-600" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-slate-200/70 px-1.5 py-0.5 text-[9px] tracking-normal text-slate-500">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
               </button>}
               {expanded && <div className="space-y-1">{group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = active === item.id;
                 const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800 shadow-[0_4px_12px_rgba(22,163,74,.08)]" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition ${isActive ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-slate-950 bg-slate-950 font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,.16)]" : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-white hover:text-slate-950"}`}>
+                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition ${isActive ? "bg-emerald-400 text-slate-950 shadow-sm" : "bg-white text-slate-400 ring-1 ring-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
                   <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-300" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
                 </button>;
               })}</div>}
@@ -48308,7 +48308,7 @@ function SmartManager() {
           })}
         </nav>
 
-        <div className="relative border-t border-[#F3F4F6] px-3 py-3">
+        <div className="dashboard-sidebar-footer relative border-t border-slate-200/70 bg-white/60 px-3 py-4">
           <button
             type="button"
             onClick={() => go("settings")}
@@ -48333,27 +48333,27 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 z-30 grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[82px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200/80 bg-white/90 px-4 py-3 shadow-[0_8px_28px_rgba(15,23,42,.05)] backdrop-blur-2xl sm:min-h-[82px] sm:px-6 sm:py-3 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
-              className="text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
+              className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-            <BrandLogo variant="compact" priority className="h-8 w-8 sm:hidden" />
-            <div className="hidden min-w-0 items-center gap-2.5 sm:flex">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm"><ActiveModuleIcon size={17} strokeWidth={2.1} /></span>
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 p-1.5 shadow-sm sm:hidden"><BrandLogo variant="compact" priority className="h-6 w-6" /></span>
+            <div className="hidden min-w-0 items-center gap-3 sm:flex">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-100"><ActiveModuleIcon size={18} strokeWidth={2.1} /></span>
               <div className="min-w-0">
-                <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[13px] font-semibold text-slate-900">{company.name}</span><span className="hidden md:inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[.08em] text-slate-500">{currentUser.role}</span></div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-400"><span>Workspace</span><ChevronRight size={11} /><span className="truncate text-emerald-700">{activeModuleLabel}</span></div>
+                <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">{company.name}</span><span className="hidden md:inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.08em] text-slate-500">{currentUser.role}</span></div>
+                <div className="mt-0.5 flex min-w-0 items-center gap-2"><span className="truncate text-[18px] font-black tracking-[-.04em] text-slate-950">{activeModuleLabel}</span><span className="hidden items-center gap-1 text-[10px] font-semibold text-emerald-700 md:inline-flex"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Live workspace</span></div>
               </div>
             </div>
           </div>
-          <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2.5">
+          <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-2">
             {preferences.showConnectionStatus && <span
-              className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
+              className="dashboard-topbar-status hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.1em] lg:flex"
               style={
                 IS_CONFIGURED
                   ? { backgroundColor: "#16A34A14", color: "#16A34A" }
@@ -48364,20 +48364,20 @@ function SmartManager() {
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
               {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
             </span>}
-            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
+            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             {preferences.showTopBarSearch && <button
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search hidden xl:flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+              className="dashboard-topbar-search hidden xl:flex min-w-[178px] items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
               aria-label="Search everything"
             >
               <Search size={13} />
               <span className="hidden md:inline">Search workspace</span>
-              <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
+              <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 sm:inline-block">⌘K</kbd>
             </button>}
-            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
+            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-9 min-w-9 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2.5 text-slate-500 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-10" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
-                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3">
+                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-3 py-2.5 text-[11px] font-bold text-white shadow-[0_8px_18px_rgba(15,23,42,.16)] transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3.5">
                   <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
                 </button>
                 {createMenuOpen && (
@@ -48395,13 +48395,13 @@ function SmartManager() {
               </div>
             )}
             {preferences.showGuidedTour && <div className="dashboard-topbar-tour hidden shrink-0 lg:block"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>}
-            {preferences.showTopBarDate && <span className="hidden xl:inline-flex items-center text-[10.5px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-1.5 select-none">
+            {preferences.showTopBarDate && <span className="hidden xl:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-500 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
             </span>}
             {/* ── Smart Alerts badge ── */}
             {criticalAlerts.length > 0 && (
-              <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden lg:flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1.5 rounded-xl animate-pulse" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
+              <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[10.5px] font-bold text-rose-700 animate-pulse lg:flex" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
                 <AlertCircle size={13}/>
                 {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
               </button>
@@ -48413,7 +48413,7 @@ function SmartManager() {
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="hidden min-h-8 min-w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-slate-300 hover:text-[#111827] lg:flex lg:h-8 lg:w-8"
+              className="hidden min-h-9 min-w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 lg:flex lg:h-10 lg:w-10"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}

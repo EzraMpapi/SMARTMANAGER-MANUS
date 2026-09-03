@@ -79,7 +79,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(enterpriseAuthSource).toContain('rememberMe');
     expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
-    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-8 w-8');
+    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-7 w-7');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
     expect(indexHtmlSource).toContain('rel="icon" type="image/png" sizes="32x32" href="/brand/smart-manager-logo-32.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
@@ -934,7 +934,7 @@ describe("Dashboard shell navigation and layering", () => {
     expect(dashboardSource).toContain("lg:sticky lg:translate-x-0");
     expect(dashboardSource).toContain("navigationGroups.map((group)");
     expect(dashboardSource).toContain('aria-label={`${group.label} navigation group`}');
-    expect(dashboardSource).toContain("dashboard-topbar sticky top-0 z-30");
+    expect(dashboardSource).toContain('dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"}');
   });
 
   it("renders the onboarding tour through document.body so it cannot sit behind shell layers", () => {
