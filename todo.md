@@ -702,3 +702,22 @@
 - [x] Restore the validated dashboard after the attachment overwrite failed compatibility contracts; the current source retains telemetry, presets, personalization, and access guards, and the compatible shell regression checks pass.
 - [x] Reconcile the provided dashboard source selectively, preserving all validated telemetry, personalization, preset, navigation, and access-boundary contracts; merged the compatible dynamic topbar z-index improvement.
 - [x] Update the legacy integration topbar assertion for the compatible dynamic z-index merge and rerun all quality gates.
+
+## Create Menu Topbar Transition
+- [x] Inspect the current Create-menu markup and existing motion/reduced-motion conventions.
+- [x] Add smooth open and close transitions while preserving z-index, click-outside, keyboard, and permission behavior. The menu remains mounted for 180ms during close, animates opacity/transform, and elevates the topbar while open.
+- [x] Add regression coverage for mounted close-state animation, menu/backdrop markers, dynamic layering, and reduced-motion safeguards.
+- [x] Run TypeScript, focused/full tests, Supabase schema verification, production build, whitespace validation, and responsive verification. All checks passed; checkpoint publication is next.
+
+## BusinessSphereDashboard(2) Repository Replacement and Vercel Verification
+- [x] Retrieve and verify the provided attachment, compare it with the active dashboard source, and inspect the target repository branch.
+- [x] Safely reconcile `client/src/BusinessSphereDashboard.jsx` while preserving telemetry, personalization, presets, tenant isolation, and access guards; the attachment was not used as a blind overwrite because it failed six protected contracts.
+- [x] Run full tests, TypeScript, Supabase schema verification, production build, whitespace checks, and review the final diff.
+- [ ] Push the validated changes to `EzraMpapi/SMARTMANAGER-MANUS` and verify the Vercel deployment at `menejajanja.vercel.app`; intentionally pending because the requested attachment is incompatible and the safe merge is not yet a GitHub/Vercel release.
+- [x] Restore the validated dashboard after BusinessSphereDashboard(2).jsx failed six protected contracts; the incompatible overwrite was not pushed to GitHub or Vercel.
+
+## Comprehensive Safe Dashboard Amendment Reconciliation
+- [x] Classify all attachment changes into compatible, mergeable, conflicting, or impossible categories.
+- [x] Apply every compatible amendment that preserves current telemetry, personalization, team presets, shell transitions, tenant isolation, and access guards; merged the safe mobile Dashboard label improvement.
+- [x] Document excluded incompatible amendments and preserve regression coverage for analytics, personalization, navigation presentation, shell layering, and access boundaries.
+- [x] Run full quality gates and responsive verification; all checks passed. GitHub/Vercel push remains intentionally pending until a compatible current-source attachment or an approved forced overwrite is provided.

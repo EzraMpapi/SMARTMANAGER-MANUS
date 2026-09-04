@@ -24,6 +24,10 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('dashboard-sidebar-footer');
     expect(dashboard).toContain('dashboard-shell-header');
     expect(dashboard).toContain('createMenuOpen ? "z-50" : "z-30"');
+    expect(dashboard).toContain('const [createMenuMounted, setCreateMenuMounted] = useState(false);');
+    expect(dashboard).toContain('create-menu-panel');
+    expect(dashboard).toContain('create-menu-backdrop');
+    expect(dashboard).toContain('motion-reduce:transition-none');
   });
 
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {

@@ -48049,6 +48049,16 @@ function SmartManager() {
   // level so it works regardless of which module currently has focus.
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [createMenuMounted, setCreateMenuMounted] = useState(false);
+
+  useEffect(() => {
+    if (createMenuOpen) {
+      setCreateMenuMounted(true);
+      return undefined;
+    }
+    const closeTimer = window.setTimeout(() => setCreateMenuMounted(false), 180);
+    return () => window.clearTimeout(closeTimer);
+  }, [createMenuOpen]);
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -48378,12 +48388,12 @@ function SmartManager() {
             {quickCreateActions.length > 0 && (
               <div className="relative block">
                 <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-3 py-2.5 text-[11px] font-bold text-white shadow-[0_8px_18px_rgba(15,23,42,.16)] transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3.5">
-                  <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
+                  <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" className={`transition-transform duration-200 motion-reduce:transition-none ${createMenuOpen ? "rotate-180" : ""}`} />
                 </button>
-                {createMenuOpen && (
+                {createMenuMounted && (
                   <>
-                    <button type="button" className="fixed inset-0 z-30 cursor-default" aria-label="Close create menu" onClick={() => setCreateMenuOpen(false)} />
-                    <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
+                    <button type="button" className={`create-menu-backdrop fixed inset-0 z-30 cursor-default transition-opacity duration-200 motion-reduce:transition-none ${createMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} aria-label="Close create menu" onClick={() => setCreateMenuOpen(false)} />
+                    <div className={`create-menu-panel absolute right-0 top-full z-40 mt-2 w-60 origin-top-right rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none motion-reduce:transform-none ${createMenuOpen ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-1 scale-[.98] opacity-0"}`} role="menu" aria-label="Create a new record">
                       <p className="px-3 pb-1.5 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Create in workspace</p>
                       {quickCreateActions.map((action) => {
                         const ActionIcon = action.icon;
@@ -48454,7 +48464,7 @@ function SmartManager() {
                   <Icon size={on ? 22 : 20} strokeWidth={on ? 2.2 : 1.75} />
                   {on && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#16A34A]" />}
                 </div>
-                <span className="text-[9.5px] font-medium leading-none mt-1 truncate max-w-[48px]">{m.label.split(" ")[0]}</span>
+                <span className="mt-1 max-w-[62px] whitespace-nowrap text-[9px] font-medium leading-none">{m.id === "dashboard" ? "Dashboard" : m.label.split(" ")[0]}</span>
               </button>
             );
           })}
