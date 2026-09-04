@@ -42118,15 +42118,16 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
   }, [inventory.rows, invoices.rows, expenses.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows]);
 }
 
-function NotificationCenter({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions, onNavigate }) {
+function NotificationCenter({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions, onNavigate, className = "" }) {
   const [open, setOpen] = useState(false);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
   return (
-    <div className="relative">
+    <div className={`relative shrink-0 ${className}`}>
       <button
+        type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative text-slate-400 hover:text-slate-600"
+        className="dashboard-topbar-notifications relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "")}
       >
         <Bell size={17} strokeWidth={1.75} />
@@ -48377,14 +48378,13 @@ function SmartManager() {
             {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             {preferences.showTopBarSearch && <button
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search hidden xl:flex min-w-[178px] items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 xl:h-auto xl:min-h-10 xl:w-auto xl:min-w-[178px] xl:justify-start xl:bg-slate-50 xl:px-3 xl:py-2.5"
               aria-label="Search everything"
             >
               <Search size={13} />
-              <span className="hidden md:inline">Search workspace</span>
+              <span className="hidden xl:inline">Search workspace</span>
               <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 sm:inline-block">⌘K</kbd>
             </button>}
-            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-9 min-w-9 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-2.5 text-slate-500 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-10" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
                 <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-3 py-2.5 text-[11px] font-bold text-white shadow-[0_8px_18px_rgba(15,23,42,.16)] transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3.5">
@@ -48428,8 +48428,10 @@ function SmartManager() {
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
-                        <NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
-            <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+                        <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+            <div className="dashboard-topbar-profile shrink-0">
+              <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+            </div>
           </div>
         </header>
 
