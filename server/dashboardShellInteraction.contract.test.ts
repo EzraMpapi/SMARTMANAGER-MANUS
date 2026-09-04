@@ -37,11 +37,16 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
     expect(dashboard).toContain("sm:hidden");
-    expect(dashboard).toContain('dashboard-topbar-search hidden xl:flex min-w-[178px]');
+    expect(dashboard).toContain('dashboard-topbar-search inline-flex h-10 w-10');
+    expect(dashboard).toContain('xl:min-w-[178px]');
     expect(dashboard).toContain('dashboard-topbar-tour hidden shrink-0 lg:block');
-    expect(dashboard).toContain('dashboard-topbar-customize');
+    expect(dashboard).not.toContain('dashboard-topbar-customize');
+    expect(dashboard).toContain('dashboard-topbar-notifications');
+    expect(dashboard).toContain('dashboard-topbar-profile');
     expect(dashboard).toContain('preferences.showGuidedTour &&');
     expect(dashboard).toContain('preferences.showTopBarSearch &&');
+    expect(dashboard).toContain('aria-label="Personal dashboard customization"');
+    expect(dashboard).toContain('onOpenDashboardCustomization={() => setPreferencesDrawerOpen(true)}');
     expect(dashboard).toContain('dashboard-topbar-status hidden items-center gap-1.5 rounded-full');
     expect(dashboard).toContain('inline-flex items-center gap-1.5 rounded-2xl bg-slate-950');
   });
