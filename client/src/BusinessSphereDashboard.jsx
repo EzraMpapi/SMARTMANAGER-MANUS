@@ -6086,14 +6086,29 @@ function PremiumExecutiveDashboard({ company, currentUser, invoices, expenses, i
 
       {/* Performance row */}
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,.75fr)]">
-        <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500"/><h2 className="text-sm font-extrabold text-slate-950">Revenue & expense performance</h2></div><p className="mt-1 text-[11px] text-slate-500">Monthly trend · values shown in TZS thousands</p></div><button type="button" onClick={() => onNavigate("reports")} className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">View reports <ChevronRight size={13}/></button></div>
+        <div className="min-w-0 rounded-[24px] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-white p-4 shadow-[0_16px_32px_rgba(15,23,42,.05)] ring-1 ring-slate-100 sm:p-5">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]" />
+                <h2 className="text-sm font-extrabold text-slate-950">Revenue & expense performance</h2>
+              </div>
+              <p className="mt-1 text-[11px] text-slate-500">Monthly trend · values shown in TZS thousands</p>
+            </div>
+            <button type="button" onClick={() => onNavigate("reports")} className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100">View reports <ChevronRight size={13}/></button>
+          </div>
           <div className="h-[250px] w-full min-w-0"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}><defs><linearGradient id="smRevenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10B981" stopOpacity={0.24}/><stop offset="100%" stopColor="#10B981" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} stroke="#EEF2F0"/><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#94A3B8'}}/><YAxis axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#94A3B8'}}/><Tooltip contentStyle={{borderRadius:12,border:'1px solid #E2E8F0',boxShadow:'0 12px 30px rgba(15,23,42,.10)',fontSize:11}} formatter={(v,n)=>[`TZS ${money(v)}k`, n === 'revenue' ? 'Revenue' : 'Expenses']}/><Area type="monotone" dataKey="revenue" stroke="#059669" strokeWidth={2.5} fill="url(#smRevenueFill)"/><Bar dataKey="expenses" fill="#CBD5E1" radius={[4,4,0,0]} maxBarSize={20}/></ComposedChart></ResponsiveContainer></div>
-          <div className="mt-3 flex flex-wrap items-center gap-4 text-[10.5px] text-slate-500"><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-emerald-500"/>Revenue</span><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-slate-300"/>Expenses</span><span className="ml-auto font-bold text-slate-700">Net {metrics.profit >= 0 ? '+' : '−'}{formatMoney(Math.abs(metrics.profit))}</span></div>
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-[10.5px] text-slate-500"><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-emerald-500"/>Revenue</span><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-slate-300"/>Expenses</span><span className="ml-auto rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-bold text-slate-700">Net {metrics.profit >= 0 ? '+' : '−'}{formatMoney(Math.abs(metrics.profit))}</span></div>
         </div>
 
-        <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5">
-          <div className="flex items-start justify-between gap-3"><div><h2 className="text-sm font-extrabold text-slate-950">Business health</h2><p className="mt-1 text-[11px] text-slate-500">Signals requiring attention</p></div><Gauge size={18} className="text-emerald-600"/></div>
+        <div className="min-w-0 rounded-[24px] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-white p-4 shadow-[0_16px_32px_rgba(15,23,42,.05)] ring-1 ring-slate-100 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-950">Business health</h2>
+              <p className="mt-1 text-[11px] text-slate-500">Signals requiring attention</p>
+            </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600"><Gauge size={18} /></div>
+          </div>
           <div className="mt-5 space-y-4">
             {[
               ['Cash collection', metrics.billed ? Math.min(100, Math.round(metrics.collected / metrics.billed * 100)) : 0, 'emerald'],
@@ -6101,7 +6116,10 @@ function PremiumExecutiveDashboard({ company, currentUser, invoices, expenses, i
               ['Pipeline coverage', safeCrm.length ? Math.min(100, Math.round((safeCrm.filter(x => !['Won','Lost'].includes(x.stage)).length / safeCrm.length) * 100)) : 0, 'violet'],
             ].map(([label,value,tone]) => <div key={label}><div className="mb-1.5 flex items-center justify-between"><span className="text-[11.5px] font-semibold text-slate-600">{label}</span><span className="text-[11px] font-black text-slate-900">{value}%</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${tone === 'emerald' ? 'bg-emerald-500' : tone === 'cyan' ? 'bg-cyan-500' : 'bg-violet-500'}`} style={{width:`${value}%`}}/></div></div>)}
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-2"><button type="button" onClick={() => onNavigate("inventory")} className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-left transition hover:border-amber-200"><p className="text-[9.5px] font-extrabold uppercase tracking-wide text-amber-700">Low stock</p><p className="mt-1 text-xl font-black text-amber-900">{metrics.lowStock}</p><p className="text-[10px] text-amber-700/80">{metrics.outOfStock} out of stock</p></button><button type="button" onClick={() => onQuickAction("finance", {tab:"receivables"})} className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-left transition hover:border-rose-200"><p className="text-[9.5px] font-extrabold uppercase tracking-wide text-rose-700">Open AR</p><p className="mt-1 text-xl font-black text-rose-900">{safeInvoices.filter(x => x.status !== 'Paid').length}</p><p className="text-[10px] text-rose-700/80">invoices to review</p></button></div>
+          <div className="mt-6 grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => onNavigate("inventory")} className="rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 p-3 text-left transition hover:border-amber-200 hover:-translate-y-0.5"><p className="text-[9.5px] font-extrabold uppercase tracking-wide text-amber-700">Low stock</p><p className="mt-1 text-xl font-black text-amber-900">{metrics.lowStock}</p><p className="text-[10px] text-amber-700/80">{metrics.outOfStock} out of stock</p></button>
+            <button type="button" onClick={() => onQuickAction("finance", {tab:"receivables"})} className="rounded-xl border border-rose-100 bg-gradient-to-br from-rose-50 to-red-50 p-3 text-left transition hover:border-rose-200 hover:-translate-y-0.5"><p className="text-[9.5px] font-extrabold uppercase tracking-wide text-rose-700">Open AR</p><p className="mt-1 text-xl font-black text-rose-900">{safeInvoices.filter(x => x.status !== 'Paid').length}</p><p className="text-[10px] text-rose-700/80">invoices to review</p></button>
+          </div>
         </div>
       </section>
 
