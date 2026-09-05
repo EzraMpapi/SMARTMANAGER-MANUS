@@ -6800,46 +6800,47 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       </section>
 
       {/* ══════════════════ COMMAND STRIP ══════════════════ */}
-      <div className="order-1 rounded-2xl overflow-hidden relative" style={{background:"linear-gradient(135deg,#0D2214 0%,#1a3a2a 55%,#16A34A 130%)"}}>
+      <div className="order-1 relative overflow-hidden rounded-[26px] border border-emerald-100/60 bg-gradient-to-br from-[#0c1f17] via-[#143a2b] to-[#0f5d3d] shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur-sm">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute w-64 h-64 rounded-full opacity-10" style={{background:"radial-gradient(circle,#4ADE80,transparent)",right:"-4rem",top:"-4rem"}}/>
-          <div className="absolute w-32 h-32 rounded-full opacity-10" style={{background:"radial-gradient(circle,#86EFAC,transparent)",left:"30%",bottom:"-2rem"}}/>
+          <div className="absolute -right-12 -top-12 h-64 w-64 rounded-full opacity-10" style={{ background: "radial-gradient(circle,#4ADE80,transparent)" }} />
+          <div className="absolute bottom-[-2rem] left-[30%] h-32 w-32 rounded-full opacity-10" style={{ background: "radial-gradient(circle,#86EFAC,transparent)" }} />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
         </div>
-        <div className="relative px-5 sm:px-7 py-5">
-          {/* Top bar */}
-          <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+        <div className="relative px-5 py-5 sm:px-7">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-[0.16em]">Workspace overview</span>
-                <span className="text-[rgba(255,255,255,.3)]">·</span>
-                <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span>
+              <div className="mb-1 flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">Workspace overview</span>
+                <span className="text-white/30">·</span>
+                <span className="font-mono text-[10.5px] text-white/45">{new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</span>
               </div>
-              <h1 className="text-white text-[22px] font-black tracking-tight leading-none">
-                {(()=>{const h=new Date().getHours();return h<12?"Habari za asubuhi":h<17?"Habari za mchana":"Habari za jioni";})()}, {(company.owner||"Welcome").split(" ")[0]} 👋
+              <h1 className="text-[22px] font-black leading-none tracking-tight text-white">
+                {(() => { const h = new Date().getHours(); return h < 12 ? "Habari za asubuhi" : h < 17 ? "Habari za mchana" : "Habari za jioni"; })()}, {(company.owner || "Welcome").split(" ")[0]} 👋
               </h1>
-              <p className="text-[rgba(255,255,255,.5)] text-[12px] mt-1">{company.name} · {currentUser.role}</p>
+              <p className="mt-1 text-[12px] text-white/60">{company.name} · {currentUser.role}</p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <button
                   onClick={() => setExportMenuOpen((open) => !open)}
                   aria-haspopup="menu"
                   aria-expanded={exportMenuOpen}
-                  className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]"
+                  className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-[12px] font-bold text-white transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
                 >
                   <Download size={13} /> Export Charts <ChevronDown size={13} className={`transition-transform ${exportMenuOpen ? "rotate-180" : ""}`} />
                 </button>
                 {exportMenuOpen && (
-                  <div role="menu" aria-label="Export dashboard chart data" className="absolute right-0 top-full mt-2 z-20 w-72 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                  <div role="menu" aria-label="Export dashboard chart data" className="absolute right-0 top-full z-20 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl">
                     <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{exportFilterSummary}</div>
-                    <button role="menuitem" onClick={() => setExportFiltersOpen((open) => !open)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50">
+                    <button role="menuitem" onClick={() => setExportFiltersOpen((open) => !open)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50">
                       <Sliders size={15} className="text-[#7C3AED]" />
                       <span><span className="block">Filter export</span><span className="block text-[10px] font-normal text-slate-400">Choose date range and modules</span></span>
                       <ChevronDown size={13} className={`ml-auto transition-transform ${exportFiltersOpen ? "rotate-180" : ""}`} />
                     </button>
                     {exportFiltersOpen && (
-                      <div role="group" aria-label="Dashboard export filters" className="mx-1 mb-1 rounded-lg bg-slate-50 p-2.5">
-                        <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div role="group" aria-label="Dashboard export filters" className="mx-1 mb-1 rounded-xl bg-slate-50 p-2.5">
+                        <div className="mb-2 grid grid-cols-2 gap-2">
                           <label className="text-[10px] font-semibold text-slate-500">From<input aria-label="Export start date" type="date" value={exportStartDate} onChange={(event) => setExportStartDate(event.target.value)} className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-700" /></label>
                           <label className="text-[10px] font-semibold text-slate-500">To<input aria-label="Export end date" type="date" value={exportEndDate} onChange={(event) => setExportEndDate(event.target.value)} className="mt-1 w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-700" /></label>
                         </div>
@@ -6855,76 +6856,76 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                         <button onClick={() => { setExportStartDate(""); setExportEndDate(""); setExportModules({ finance: true, sales: true, crm: true, inventory: true, operations: true }); }} className="mt-2 text-[10px] font-semibold text-[#7C3AED] hover:underline">Clear filters</button>
                       </div>
                     )}
-                    <button role="menuitem" onClick={() => exportDashboard("csv")} disabled={Boolean(exportBusy)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                    <button role="menuitem" onClick={() => exportDashboard("csv")} disabled={Boolean(exportBusy)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
                       <FileSpreadsheet size={15} className="text-[#16A34A]" />
                       <span><span className="block">Download CSV</span><span className="block text-[10px] font-normal text-slate-400">Filtered chart sections and KPIs</span></span>
                     </button>
-                    <button role="menuitem" onClick={() => exportDashboard("pdf")} disabled={Boolean(exportBusy)} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                    <button role="menuitem" onClick={() => exportDashboard("pdf")} disabled={Boolean(exportBusy)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
                       <FileText size={15} className="text-[#2563EB]" />
                       <span><span className="block">Download PDF</span><span className="block text-[10px] font-normal text-slate-400">Filtered chart-data report</span></span>
                     </button>
-                    <button role="menuitem" onClick={() => company.id ? setScheduleDialogOpen(true) : notify("Sign in to a live company before scheduling reports.", "error")} className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 hover:bg-slate-50">
+                    <button role="menuitem" onClick={() => company.id ? setScheduleDialogOpen(true) : notify("Sign in to a live company before scheduling reports.", "error")} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50">
                       <Mail size={15} className="text-[#EA580C]" />
                       <span><span className="block">Schedule email report</span><span className="block text-[10px] font-normal text-slate-400">Runs automatically in the background</span></span>
                     </button>
                   </div>
                 )}
               </div>
-              <button onClick={()=>onNavigate("ai")} className="flex items-center gap-1.5 text-[12px] font-bold text-white bg-[#16A34A] px-3.5 py-2 rounded-xl hover:bg-[#15803D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-                <Sparkles size={13}/> Ask AI
+
+              <button onClick={() => onNavigate("ai")} className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-3.5 py-2 text-[12px] font-bold text-white transition hover:bg-[#15803D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                <Sparkles size={13} /> Ask AI
               </button>
-              <button onClick={()=>typeof window.__openDailyBrief==="function"&&window.__openDailyBrief()} className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]">
-                <BarChart3 size={13}/> Daily Brief
+              <button onClick={() => typeof window.__openDailyBrief === "function" && window.__openDailyBrief()} className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-[12px] font-bold text-white transition hover:bg-white/[0.08]">
+                <BarChart3 size={13} /> Daily Brief
               </button>
               <button
                 onClick={() => updatePreference("currency", preferences.currency === "TZS" ? "USD" : "TZS")}
-                className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]"
+                className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-[12px] font-bold text-white transition hover:bg-white/[0.08]"
                 title="Toggle Executive Currency (TZS / USD)"
               >
-                <DollarSign size={13}/> {preferences.currency}
+                <DollarSign size={13} /> {preferences.currency}
               </button>
-              <button onClick={() => setPreferencesDrawerOpen(true)} className="flex items-center gap-1.5 text-[12px] font-bold text-white border border-[rgba(255,255,255,.2)] px-3.5 py-2 rounded-xl hover:bg-[rgba(255,255,255,.08)]">
-                <Sliders size={13}/> Preferences
+              <button onClick={() => setPreferencesDrawerOpen(true)} className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-[12px] font-bold text-white transition hover:bg-white/[0.08]">
+                <Sliders size={13} /> Preferences
               </button>
             </div>
           </div>
 
-	          <div className="mb-4 flex flex-wrap items-center gap-2 text-[10.5px]">
-	            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/70"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live workspace data</span>
-	            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{PERIOD_LABELS[period]} reporting view</span>
-	            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{alerts.length} operational alert{alerts.length === 1 ? "" : "s"}</span>
-	          </div>
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-[10.5px]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/70"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live workspace data</span>
+            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{PERIOD_LABELS[period]} reporting view</span>
+            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{alerts.length} operational alert{alerts.length === 1 ? "" : "s"}</span>
+          </div>
 
-	          <div className="mb-4 flex flex-wrap items-center gap-2.5" aria-label="Reporting period controls">
-	            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">Reporting period</span>
-	            <div role="group" aria-label="Dashboard reporting period" className="inline-flex rounded-xl border border-white/10 bg-black/15 p-1">
-	              {[
-	                ["day", "Day"],
-	                ["week", "Week"],
-	                ["month", "Month"],
-	                ["year", "Year"],
-	              ].map(([value, label]) => {
-	                const selected = period === value;
-	                return (
-	                  <button
-	                    key={value}
-	                    type="button"
-	                    onClick={() => setPeriod(value)}
-	                    aria-pressed={selected}
-	                    className={`rounded-lg px-2.5 py-1.5 text-[10.5px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${selected ? "bg-white text-[#0D2214] shadow-sm" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
-	                  >
-	                    {label}
-	                  </button>
-	                );
-	              })}
-	            </div>
-	            <span className="text-[10.5px] text-white/45">Updates billed, collected, expenses, and profit from confirmed invoice and expense rows.</span>
-	          </div>
+          <div className="mb-4 flex flex-wrap items-center gap-2.5" aria-label="Reporting period controls">
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">Reporting period</span>
+            <div role="group" aria-label="Dashboard reporting period" className="inline-flex rounded-xl border border-white/10 bg-black/15 p-1">
+              {[
+                ["day", "Day"],
+                ["week", "Week"],
+                ["month", "Month"],
+                ["year", "Year"],
+              ].map(([value, label]) => {
+                const selected = period === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPeriod(value)}
+                    aria-pressed={selected}
+                    className={`rounded-lg px-2.5 py-1.5 text-[10.5px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${selected ? "bg-white text-[#0D2214] shadow-sm" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="text-[10.5px] text-white/45">Updates billed, collected, expenses, and profit from confirmed invoice and expense rows.</span>
+          </div>
 
-	          {/* Confirmed-data KPI cards — navigation only; no target, trend, or progress is shown unless it exists in the workspace data. */}
-	          {(() => {
-	            const invRows = invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart);
-	            const expRows = expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart);
+          {(() => {
+            const invRows = invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart);
+            const expRows = expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart);
             const totalBilled = invRows.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total, 0);
             const totalCollected = invRows.reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
             const totalExpenses = expRows.reduce((sum, expense) => sum + (expense.amount || 0), 0);
@@ -6957,7 +6958,13 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             return (
               <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-8" aria-label="Workspace overview metrics">
                 {cards.map((card) => (
-                  <button key={card.label} type="button" onClick={card.onClick} aria-label={`${card.label}: ${card.context}. ${card.action}.`} className="group min-h-[116px] rounded-xl border border-white/10 bg-black/20 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                  <button
+                    key={card.label}
+                    type="button"
+                    onClick={card.onClick}
+                    aria-label={`${card.label}: ${card.context}. ${card.action}.`}
+                    className="group min-h-[116px] rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all hover:-translate-y-0.5 hover:border-emerald-200/50 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-[9.5px] font-bold uppercase tracking-wide text-white/50">{card.label}</p>
                       <ChevronRight size={13} className="mt-0.5 shrink-0 text-white/30 transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" />
