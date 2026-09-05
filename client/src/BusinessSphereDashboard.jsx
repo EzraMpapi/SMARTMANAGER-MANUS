@@ -6046,11 +6046,12 @@ function PremiumExecutiveDashboard({ company, currentUser, invoices, expenses, i
   const todayLabel = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   return (
-    <div className="min-w-0 space-y-5 pb-2">
+    <div className="min-w-0 space-y-6 pb-2">
       {/* Executive hero */}
-      <section className="relative overflow-hidden rounded-[28px] bg-[#08271D] shadow-[0_18px_55px_rgba(2,44,34,.16)]">
+      <section className="relative overflow-hidden rounded-[28px] border border-emerald-200/20 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.18),transparent_38%),linear-gradient(135deg,#052d1f_0%,#0a3a2d_25%,#0d291f_100%)] shadow-[0_24px_70px_rgba(2,44,34,.16)] ring-1 ring-white/5">
         <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-emerald-400/20 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-teal-300/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 left-1/3 h-64 w-64 rounded-full bg-teal-300/10 blur-3xl" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent" />
         <div className="relative p-5 sm:p-7 lg:p-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
@@ -6058,11 +6059,11 @@ function PremiumExecutiveDashboard({ company, currentUser, invoices, expenses, i
                 <span>Executive Command Center</span><span className="text-white/25">•</span><span className="text-white/45">{todayLabel}</span>
               </div>
               <h1 className="text-2xl font-black tracking-[-.04em] text-white sm:text-3xl">Habari, {firstName} <span className="text-emerald-300">👋</span></h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">A real-time view of {company?.name || "your business"}. Monitor performance, cash, customers and operations from one command center.</p>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65">A real-time view of {company?.name || "your business"}. Monitor performance, cash, customers and operations from one premium command center.</p>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
-              <button type="button" onClick={() => onQuickAction("sales", { tab: "invoices", openForm: true })} className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-3.5 py-2.5 text-xs font-extrabold text-[#062118] shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-300"><Plus size={15}/> New Sale</button>
-              <button type="button" onClick={() => onQuickAction("crm", { tab: "leads" })} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-white/15"><UserPlus size={15}/> Add Customer</button>
+              <button type="button" onClick={() => onQuickAction("sales", { tab: "invoices", openForm: true })} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-300 to-emerald-400 px-3.5 py-2.5 text-xs font-extrabold text-[#062118] shadow-[0_12px_28px_rgba(52,211,153,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(52,211,153,0.35)]"><Plus size={15}/> New Sale</button>
+              <button type="button" onClick={() => onQuickAction("crm", { tab: "leads" })} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/8 px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-white/12"><UserPlus size={15}/> Add Customer</button>
               <button type="button" onClick={onCustomizeDashboard} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2.5 text-xs font-bold text-white/80 transition hover:bg-white/10"><Sliders size={15}/> Customize</button>
             </div>
           </div>
@@ -6077,7 +6078,7 @@ function PremiumExecutiveDashboard({ company, currentUser, invoices, expenses, i
 
       {/* KPI grid */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" aria-label="Business KPIs">
-        {kpis.map((card) => { const Icon = card.icon; return <button key={card.label} type="button" onClick={card.action} className="group min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_4px_20px_rgba(15,23,42,.035)] transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40">
+        {kpis.map((card) => { const Icon = card.icon; return <button key={card.label} type="button" onClick={card.action} className="group min-w-0 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-white p-4 text-left shadow-[0_10px_24px_rgba(15,23,42,.04)] transition duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_18px_34px_rgba(16,185,129,.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40">
           <div className="flex items-start justify-between gap-2"><span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${toneClasses[card.tone]}`}><Icon size={17}/></span><ArrowUpRight size={14} className="text-slate-300 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5"/></div>
           <p className="mt-4 truncate text-[10px] font-extrabold uppercase tracking-[.12em] text-slate-400">{card.label}</p><p className="mt-1 truncate text-lg font-black tracking-[-.03em] text-slate-950 sm:text-xl">{card.value}</p><p className="mt-1 truncate text-[10.5px] text-slate-500">{card.detail}</p>
         </button>; })}
