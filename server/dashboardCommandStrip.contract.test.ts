@@ -34,8 +34,8 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("<PremiumProfileMenu");
   });
 
-  it("preserves a centered desktop search and 40px mobile command targets", () => {
-    expect(dashboardCss).toContain("grid-template-columns: minmax(10rem, .5fr) minmax(18rem, 28.75rem) minmax(18rem, 1.5fr);");
+  it("separates the desktop header context from its action rail and preserves 40px mobile targets", () => {
+    expect(dashboardCss).toContain("grid-template-columns: minmax(0, 1fr) auto;");
     expect(dashboardCss).toContain(".dashboard-topbar-right-rail");
     expect(dashboardCss).toContain(".dashboard-topbar-workspace");
     expect(dashboardCss).toContain(".dashboard-topbar-presence,");
