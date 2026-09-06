@@ -79,7 +79,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(enterpriseAuthSource).toContain('rememberMe');
     expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
-    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-8 w-8');
+    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-7 w-7');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
     expect(indexHtmlSource).toContain('rel="icon" type="image/png" sizes="32x32" href="/brand/smart-manager-logo-32.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');
@@ -932,10 +932,11 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
 describe("Dashboard shell navigation and layering", () => {
   it("keeps desktop navigation docked, flat, and visible while retaining mobile drawer behavior", () => {
     expect(dashboardSource).toContain("lg:sticky lg:translate-x-0");
-    expect(dashboardSource).toContain("referenceOrderedNavigationItems.map((item)");
+    expect(dashboardSource).toContain("const flatNavigationItems = useMemo(() => [");
+    expect(dashboardSource).toContain("displayedNavigationGroups.map((group) => {");
     expect(dashboardSource).toContain('aria-label="Operational workspaces"');
     expect(dashboardSource).toContain("getPresentationNavigationGroups(navigationGroups");
-    expect(dashboardSource).toContain('dashboard-topbar dashboard-reference-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"}');
+    expect(dashboardSource).toContain('dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"}');
   });
 
   it("renders the onboarding tour through document.body so it cannot sit behind shell layers", () => {

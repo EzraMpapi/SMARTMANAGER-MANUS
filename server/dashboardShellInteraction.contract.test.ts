@@ -13,7 +13,8 @@ describe("dashboard shell interaction refinement", () => {
   it("keeps the workspace navigation as an accessible left operating rail and exposes the command entry point", () => {
     expect(dashboard).toContain('aria-label="Operational workspaces"');
     expect(dashboard).toContain('aria-label="Open command palette"');
-    expect(dashboard).toContain('aria-hidden={!isDesktopNavigation && !sidebarOpen}');
+    expect(dashboard).toContain('const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;');
+    expect(dashboard).toContain('aria-hidden={sidebarHiddenFromAssistiveTech}');
     expect(dashboard).toContain('window.matchMedia("(min-width: 1024px)")');
     expect(dashboard).toContain('className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0');
     expect(dashboard).toContain('lg:top-0 lg:z-30 lg:sticky lg:translate-x-0');
@@ -40,7 +41,7 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('dashboard-topbar-search inline-flex h-10 w-10');
     expect(dashboard).toContain('xl:min-w-[178px]');
     expect(dashboard).toContain('dashboard-topbar-tour hidden shrink-0 lg:block');
-    expect(dashboard).not.toContain('dashboard-topbar-customize');
+    expect(dashboard).toContain('dashboard-topbar-customize');
     expect(dashboard).toContain('dashboard-topbar-notifications');
     expect(dashboard).toContain('dashboard-topbar-profile');
     expect(dashboard).toContain('preferences.showGuidedTour &&');

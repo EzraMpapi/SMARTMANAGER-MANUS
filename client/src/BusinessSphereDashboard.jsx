@@ -10,7 +10,7 @@ import {
   FileCheck, Trash2, Copy, Landmark, BarChart3, Grid3x3, List,
   FileSpreadsheet, FileImage, File, Folder, FolderOpen, UploadCloud,
   Eye, Percent, Globe, CreditCard, Tag, MessageSquare, MousePointerClick, ChevronUp,
-  ShoppingBag, Minus, Receipt, Banknote, Smartphone, ArrowUpDown, Repeat,
+  ShoppingBag, Minus, Receipt, Banknote, Smartphone, ArrowUpDown, Repeat, WalletCards,
   UserPlus, CalendarCheck, Stethoscope, ScanLine, Pill, FlaskConical, Edit2, Edit3, Heart, Award, GraduationCap, HeartHandshake, Layers, ClipboardCheck,
   Cog, ShieldCheck, Wrench, Kanban, Flag, ListTodo,
   Headphones, Ticket, MessageCircle, CircleHelp, BookOpen, PhoneCall, LoaderCircle, Gauge,
@@ -47609,6 +47609,7 @@ function SmartManager() {
   }, []);
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [isDesktopNavigation, setIsDesktopNavigation] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true"; } catch { return false; }
   });
@@ -48259,7 +48260,7 @@ function SmartManager() {
           green gradient, white-variant text, white/10 borders) was
           removed entirely rather than layered under the new palette. */}
       <aside
-        aria-hidden={!isDesktopNavigation && !sidebarOpen}
+        aria-hidden={sidebarHiddenFromAssistiveTech}
           className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[84px]" : "w-[288px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-[#F8FAFC] transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
@@ -48409,6 +48410,7 @@ function SmartManager() {
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
             </span>}
+            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9 sm:min-w-9 sm:px-2" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
             {/* ── Smart Alerts badge ── */}
             {criticalAlerts.length > 0 && (
               <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[10.5px] font-bold text-rose-700 animate-pulse lg:flex" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
