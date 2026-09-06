@@ -50,6 +50,7 @@ import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext"
 import { useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
+import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
@@ -5959,187 +5960,6 @@ function MarketIntelligencePanel({ snapshotQuery, onNavigate }) {
   );
 }
 
-function PremiumExecutiveDashboard({ company, currentUser, invoices, expenses, inventory, crm, leaveRequests, workOrders, subscriptions, posTransactions, alerts, recentActivity, pendingLeave, formatMoney, onNavigate, onQuickAction, onCustomizeDashboard }) {
-  const safeInvoices = invoices?.rows || [];
-  const safeExpenses = expenses?.rows || [];
-  const safeInventory = inventory?.rows || [];
-  const safeCrm = crm?.rows || [];
-  const safePos = posTransactions?.rows || [];
-  const safeLeave = leaveRequests?.rows || [];
-  const safeWorkOrders = workOrders?.rows || [];
-  const safeSubscriptions = subscriptions?.rows || [];
-
-  const [range, setRange] = useState("month");
-  const rangeStart = useMemo(() => {
-    const d = new Date(TODAY);
-    if (range === "week") d.setDate(d.getDate() - 6);
-    else if (range === "month") d.setDate(1);
-    else if (range === "year") d.setMonth(0, 1);
-    return d;
-  }, [range]);
-  const inRange = useCallback((date) => !date || new Date(date) >= rangeStart, [rangeStart]);
-
-  const metrics = useMemo(() => {
-    const periodInvoices = safeInvoices.filter((x) => inRange(x.date));
-    const periodExpenses = safeExpenses.filter((x) => inRange(x.date || x.expenseDate));
-    const billed = periodInvoices.reduce((s, x) => s + lineTotal(x.items || []).total, 0);
-    const collected = periodInvoices.reduce((s, x) => s + (Number(x.amountPaid) || 0), 0);
-    const expenseTotal = periodExpenses.reduce((s, x) => s + (Number(x.amount) || 0), 0);
-    const receivable = safeInvoices.filter((x) => x.status !== "Paid").reduce((s, x) => s + Math.max(0, lineTotal(x.items || []).total - (Number(x.amountPaid) || 0)), 0);
-    const inventoryValue = safeInventory.reduce((s, x) => s + (Number(x.qty) || 0) * (Number(x.unitCost) || 0), 0);
-    const lowStock = safeInventory.filter((x) => Number(x.qty) <= Number(x.reorder) && Number(x.reorder) > 0).length;
-    const outOfStock = safeInventory.filter((x) => Number(x.qty) <= 0).length;
-    const openPipeline = safeCrm.filter((x) => !["Won", "Lost"].includes(x.stage)).reduce((s, x) => s + (Number(x.value) || 0), 0);
-    const activeSubscriptions = safeSubscriptions.filter((x) => x.status === "Active");
-    const mrr = activeSubscriptions.reduce((s, x) => s + ((Number(x.amount) || 0) / ({ Monthly: 1, Quarterly: 3, Annual: 12 }[x.cycle] || 1)), 0);
-    return { billed, collected, expenseTotal, profit: collected - expenseTotal, receivable, inventoryValue, lowStock, outOfStock, openPipeline, mrr, orderCount: periodInvoices.length + safePos.filter((x) => inRange(x.date || x.createdAt)).length, customerCount: safeCrm.length };
-  }, [safeInvoices, safeExpenses, safeInventory, safeCrm, safePos, safeSubscriptions, inRange]);
-
-  const chartData = useMemo(() => {
-    const months = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(TODAY);
-      d.setMonth(d.getMonth() - 5 + i, 1);
-      return d.toISOString().slice(0, 7);
-    });
-    return months.map((month) => ({
-      month: new Date(`${month}-01`).toLocaleDateString("en-US", { month: "short" }),
-      revenue: Math.round(safeInvoices.filter((x) => x.date?.startsWith(month)).reduce((s, x) => s + (Number(x.amountPaid) || 0), 0) / 1000),
-      expenses: Math.round(safeExpenses.filter((x) => (x.date || x.expenseDate)?.startsWith(month)).reduce((s, x) => s + (Number(x.amount) || 0), 0) / 1000),
-    }));
-  }, [safeInvoices, safeExpenses]);
-
-  const topProducts = useMemo(() => {
-    const map = {};
-    safeInvoices.forEach((invoice) => (invoice.items || []).forEach((item) => {
-      const name = item.name || item.item_name || item.productName || "Unnamed product";
-      const qty = Number(item.qty) || 0;
-      const value = qty * (Number(item.rate) || 0);
-      if (!map[name]) map[name] = { name, qty: 0, value: 0 };
-      map[name].qty += qty;
-      map[name].value += value;
-    }));
-    return Object.values(map).sort((a, b) => b.value - a.value).slice(0, 5);
-  }, [safeInvoices]);
-
-  const recentOrders = useMemo(() => safeInvoices.slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))).slice(0, 6), [safeInvoices]);
-
-  const kpis = [
-    { label: "Revenue Collected", value: formatMoney(metrics.collected), detail: `${metrics.billed ? Math.round((metrics.collected / metrics.billed) * 100) : 0}% of billed value`, icon: CircleDollarSign, tone: "emerald", action: () => onQuickAction("finance", { tab: "receivables" }) },
-    { label: "Net Profit", value: `${metrics.profit < 0 ? "−" : ""}${formatMoney(Math.abs(metrics.profit))}`, detail: metrics.profit >= 0 ? "Positive operating result" : "Review expenses", icon: TrendingUp, tone: metrics.profit >= 0 ? "emerald" : "rose", action: () => onNavigate("finance") },
-    { label: "Orders", value: money(metrics.orderCount), detail: "Invoices + POS activity", icon: ShoppingCart, tone: "blue", action: () => onNavigate("sales") },
-    { label: "Customers", value: money(metrics.customerCount), detail: "CRM records in workspace", icon: Users, tone: "violet", action: () => onNavigate("crm") },
-    { label: "Inventory Value", value: formatMoney(metrics.inventoryValue), detail: `${safeInventory.length} stocked SKU${safeInventory.length === 1 ? "" : "s"}`, icon: Package, tone: "cyan", action: () => onNavigate("inventory") },
-    { label: "Receivables", value: formatMoney(metrics.receivable), detail: `${safeInvoices.filter((x) => x.status !== "Paid").length} open invoices`, icon: Landmark, tone: "amber", action: () => onQuickAction("finance", { tab: "receivables" }) },
-  ];
-
-  const toneClasses = {
-    emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    rose: "bg-rose-50 text-rose-700 border-rose-100",
-    blue: "bg-blue-50 text-blue-700 border-blue-100",
-    violet: "bg-violet-50 text-violet-700 border-violet-100",
-    cyan: "bg-cyan-50 text-cyan-700 border-cyan-100",
-    amber: "bg-amber-50 text-amber-700 border-amber-100",
-  };
-
-  const firstName = (currentUser?.name || company?.owner || "Manager").split(" ")[0];
-  const todayLabel = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-
-  return (
-    <div className="min-w-0 space-y-5 pb-2">
-      {/* Executive hero */}
-      <section className="relative overflow-hidden rounded-[28px] bg-[#08271D] shadow-[0_18px_55px_rgba(2,44,34,.16)]">
-        <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-emerald-400/20 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-teal-300/10 blur-3xl" />
-        <div className="relative p-5 sm:p-7 lg:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-300">
-                <span>Executive Command Center</span><span className="text-white/25">•</span><span className="text-white/45">{todayLabel}</span>
-              </div>
-              <h1 className="text-2xl font-black tracking-[-.04em] text-white sm:text-3xl">Habari, {firstName} <span className="text-emerald-300">👋</span></h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">A real-time view of {company?.name || "your business"}. Monitor performance, cash, customers and operations from one command center.</p>
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <button type="button" onClick={() => onQuickAction("sales", { tab: "invoices", openForm: true })} className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-3.5 py-2.5 text-xs font-extrabold text-[#062118] shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-300"><Plus size={15}/> New Sale</button>
-              <button type="button" onClick={() => onQuickAction("crm", { tab: "leads" })} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-white/15"><UserPlus size={15}/> Add Customer</button>
-              <button type="button" onClick={onCustomizeDashboard} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2.5 text-xs font-bold text-white/80 transition hover:bg-white/10"><Sliders size={15}/> Customize</button>
-            </div>
-          </div>
-          <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2 text-[10.5px] text-white/55"><span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[.06] px-2.5 py-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_0_4px_rgba(52,211,153,.10)]"/> Live workspace data</span><span className="rounded-full border border-white/10 bg-white/[.06] px-2.5 py-1">{safeInvoices.length + safeInventory.length + safeCrm.length} core records</span></div>
-            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/10 p-1" aria-label="Dashboard date range">
-              {[['week','7 days'],['month','This month'],['year','This year']].map(([id,label]) => <button key={id} type="button" onClick={() => setRange(id)} className={`rounded-lg px-2.5 py-1.5 text-[10.5px] font-bold transition ${range === id ? 'bg-white text-slate-900 shadow-sm' : 'text-white/55 hover:bg-white/10 hover:text-white'}`}>{label}</button>)}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* KPI grid */}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6" aria-label="Business KPIs">
-        {kpis.map((card) => { const Icon = card.icon; return <button key={card.label} type="button" onClick={card.action} className="group min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-[0_4px_20px_rgba(15,23,42,.035)] transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40">
-          <div className="flex items-start justify-between gap-2"><span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${toneClasses[card.tone]}`}><Icon size={17}/></span><ArrowUpRight size={14} className="text-slate-300 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5"/></div>
-          <p className="mt-4 truncate text-[10px] font-extrabold uppercase tracking-[.12em] text-slate-400">{card.label}</p><p className="mt-1 truncate text-lg font-black tracking-[-.03em] text-slate-950 sm:text-xl">{card.value}</p><p className="mt-1 truncate text-[10.5px] text-slate-500">{card.detail}</p>
-        </button>; })}
-      </section>
-
-      {/* Performance row */}
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,.75fr)]">
-        <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500"/><h2 className="text-sm font-extrabold text-slate-950">Revenue & expense performance</h2></div><p className="mt-1 text-[11px] text-slate-500">Monthly trend · values shown in TZS thousands</p></div><button type="button" onClick={() => onNavigate("reports")} className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">View reports <ChevronRight size={13}/></button></div>
-          <div className="h-[250px] w-full min-w-0"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}><defs><linearGradient id="smRevenueFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10B981" stopOpacity={0.24}/><stop offset="100%" stopColor="#10B981" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} stroke="#EEF2F0"/><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#94A3B8'}}/><YAxis axisLine={false} tickLine={false} tick={{fontSize:9,fill:'#94A3B8'}}/><Tooltip contentStyle={{borderRadius:12,border:'1px solid #E2E8F0',boxShadow:'0 12px 30px rgba(15,23,42,.10)',fontSize:11}} formatter={(v,n)=>[`TZS ${money(v)}k`, n === 'revenue' ? 'Revenue' : 'Expenses']}/><Area type="monotone" dataKey="revenue" stroke="#059669" strokeWidth={2.5} fill="url(#smRevenueFill)"/><Bar dataKey="expenses" fill="#CBD5E1" radius={[4,4,0,0]} maxBarSize={20}/></ComposedChart></ResponsiveContainer></div>
-          <div className="mt-3 flex flex-wrap items-center gap-4 text-[10.5px] text-slate-500"><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-emerald-500"/>Revenue</span><span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-slate-300"/>Expenses</span><span className="ml-auto font-bold text-slate-700">Net {metrics.profit >= 0 ? '+' : '−'}{formatMoney(Math.abs(metrics.profit))}</span></div>
-        </div>
-
-        <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5">
-          <div className="flex items-start justify-between gap-3"><div><h2 className="text-sm font-extrabold text-slate-950">Business health</h2><p className="mt-1 text-[11px] text-slate-500">Signals requiring attention</p></div><Gauge size={18} className="text-emerald-600"/></div>
-          <div className="mt-5 space-y-4">
-            {[
-              ['Cash collection', metrics.billed ? Math.min(100, Math.round(metrics.collected / metrics.billed * 100)) : 0, 'emerald'],
-              ['Inventory health', safeInventory.length ? Math.max(0, Math.round((1 - metrics.outOfStock / safeInventory.length) * 100)) : 0, 'cyan'],
-              ['Pipeline coverage', safeCrm.length ? Math.min(100, Math.round((safeCrm.filter(x => !['Won','Lost'].includes(x.stage)).length / safeCrm.length) * 100)) : 0, 'violet'],
-            ].map(([label,value,tone]) => <div key={label}><div className="mb-1.5 flex items-center justify-between"><span className="text-[11.5px] font-semibold text-slate-600">{label}</span><span className="text-[11px] font-black text-slate-900">{value}%</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${tone === 'emerald' ? 'bg-emerald-500' : tone === 'cyan' ? 'bg-cyan-500' : 'bg-violet-500'}`} style={{width:`${value}%`}}/></div></div>)}
-          </div>
-          <div className="mt-6 grid grid-cols-2 gap-2"><button type="button" onClick={() => onNavigate("inventory")} className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-left transition hover:border-amber-200"><p className="text-[9.5px] font-extrabold uppercase tracking-wide text-amber-700">Low stock</p><p className="mt-1 text-xl font-black text-amber-900">{metrics.lowStock}</p><p className="text-[10px] text-amber-700/80">{metrics.outOfStock} out of stock</p></button><button type="button" onClick={() => onQuickAction("finance", {tab:"receivables"})} className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-left transition hover:border-rose-200"><p className="text-[9.5px] font-extrabold uppercase tracking-wide text-rose-700">Open AR</p><p className="mt-1 text-xl font-black text-rose-900">{safeInvoices.filter(x => x.status !== 'Paid').length}</p><p className="text-[10px] text-rose-700/80">invoices to review</p></button></div>
-        </div>
-      </section>
-
-      {/* Operational row */}
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.45fr)]">
-        <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,.035)]">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-5"><div><h2 className="text-sm font-extrabold text-slate-950">Top products</h2><p className="mt-1 text-[10.5px] text-slate-500">Highest billed line-item value</p></div><button type="button" onClick={() => onNavigate("inventory")} className="text-[11px] font-bold text-emerald-700">View all</button></div>
-          <div className="divide-y divide-slate-100">{topProducts.length ? topProducts.map((p,i) => <div key={p.name} className="flex items-center gap-3 px-4 py-3 sm:px-5"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-[10px] font-black text-slate-500">0{i+1}</span><div className="min-w-0 flex-1"><p className="truncate text-[12px] font-bold text-slate-800">{p.name}</p><p className="mt-0.5 text-[10px] text-slate-400">{money(p.qty)} units sold</p></div><p className="shrink-0 text-[11.5px] font-extrabold text-slate-900">{formatMoney(p.value)}</p></div>) : <div className="px-5 py-10 text-center text-[11px] text-slate-400">No product line-item data is available yet.</div>}</div>
-        </div>
-
-        <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,.035)]">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-5"><div><h2 className="text-sm font-extrabold text-slate-950">Recent orders</h2><p className="mt-1 text-[10.5px] text-slate-500">Latest confirmed sales activity</p></div><button type="button" onClick={() => onNavigate("sales")} className="text-[11px] font-bold text-emerald-700">View all</button></div>
-          <div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left"><thead className="bg-slate-50/70"><tr>{['Order','Customer','Date','Amount','Status'].map(h => <th key={h} className="px-4 py-2.5 text-[9.5px] font-extrabold uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{recentOrders.length ? recentOrders.map((o) => { const total = lineTotal(o.items || []).total; const paid = o.status === 'Paid' || Number(o.amountPaid) >= total; return <tr key={o.id} className="hover:bg-slate-50/60"><td className="px-4 py-3 text-[11px] font-extrabold text-slate-800">{o.id || '—'}</td><td className="max-w-[180px] truncate px-4 py-3 text-[11px] font-semibold text-slate-600">{o.customer || 'Walk-in customer'}</td><td className="px-4 py-3 text-[10.5px] text-slate-400">{o.date || '—'}</td><td className="px-4 py-3 text-[11px] font-extrabold text-slate-900">{formatMoney(total)}</td><td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-[9.5px] font-extrabold ${paid ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{paid ? 'Paid' : (o.status || 'Pending')}</span></td></tr> }) : <tr><td colSpan="5" className="px-5 py-10 text-center text-[11px] text-slate-400">No orders recorded yet.</td></tr>}</tbody></table></div>
-        </div>
-      </section>
-
-      {/* Attention + activity */}
-      <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5"><div className="flex items-center justify-between"><div><h2 className="text-sm font-extrabold text-slate-950">Attention center</h2><p className="mt-1 text-[10.5px] text-slate-500">Issues and actions that deserve review</p></div><AlertTriangle size={18} className="text-amber-500"/></div><div className="mt-4 space-y-2">{(alerts || []).slice(0,4).map((a,i) => <button key={a.id || i} type="button" onClick={() => onNavigate(a.target || 'dashboard')} className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-left transition hover:border-amber-200 hover:bg-amber-50/40"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-amber-600 shadow-sm"><AlertCircle size={15}/></span><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-slate-800">{a.title || a.message || 'Review workspace signal'}</span><span className="mt-0.5 block truncate text-[10px] text-slate-500">{a.detail || a.description || 'Open the relevant module for more details.'}</span></span><ChevronRight size={14} className="shrink-0 text-slate-300"/></button>)}{(!alerts || alerts.length === 0) && <div className="rounded-xl bg-emerald-50 p-4 text-center"><CheckCircle2 size={20} className="mx-auto text-emerald-600"/><p className="mt-2 text-[11.5px] font-bold text-emerald-800">Everything looks healthy</p><p className="mt-1 text-[10px] text-emerald-700/70">No active workspace alerts require attention.</p></div>}</div></div>
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5"><div className="flex items-center justify-between"><div><h2 className="text-sm font-extrabold text-slate-950">Recent activity</h2><p className="mt-1 text-[10.5px] text-slate-500">Confirmed activity across core modules</p></div><Activity size={18} className="text-emerald-600"/></div><div className="mt-4 space-y-1">{(recentActivity || []).slice(0,6).map((a,i) => { const Icon = a.icon || Activity; return <div key={i} className="flex items-center gap-3 rounded-xl p-2.5 hover:bg-slate-50"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100" style={{color:a.color || '#059669'}}><Icon size={14}/></span><div className="min-w-0 flex-1"><p className="truncate text-[11.5px] font-semibold text-slate-800">{a.text}</p><p className="truncate text-[10px] text-slate-400">{a.sub}</p></div><span className="shrink-0 text-[9.5px] text-slate-400">{a.date ? relativeDashboardDay(a.date) : ''}</span></div>; })}{(!recentActivity || recentActivity.length === 0) && <div className="py-8 text-center text-[11px] text-slate-400">No confirmed activity yet.</div>}</div></div>
-      </section>
-
-      {/* Quick actions */}
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_20px_rgba(15,23,42,.035)] sm:p-5"><div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-extrabold text-slate-950">Quick actions</h2><p className="mt-1 text-[10.5px] text-slate-500">Jump directly into the work that matters</p></div><Zap size={18} className="text-emerald-500"/></div><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">{[
-        ['New sale',ShoppingCart,() => onQuickAction('sales',{tab:'invoices',openForm:true})],['Add product',Package,() => onNavigate('inventory')],['New customer',UserPlus,() => onQuickAction('crm',{tab:'leads'})],['Create invoice',ReceiptText,() => onQuickAction('sales',{tab:'invoices',openForm:true})],['Record expense',Wallet,() => onQuickAction('finance',{tab:'expenses'})],['Open AI',Brain,() => onNavigate('ai')]
-      ].map(([label,Icon,action]) => <button key={label} type="button" onClick={action} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50/60 px-2 py-2.5 text-[10.5px] font-bold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"><Icon size={14}/>{label}</button>)}</div></section>
-    </div>
-  );
-}
-
-function relativeDashboardDay(dateStr) {
-  if (!dateStr) return "";
-  const days = Math.round((TODAY - new Date(dateStr)) / 86400000);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 14) return `${days}d ago`;
-  return String(dateStr).slice(0, 10);
-}
-
-
 function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests, workOrders, subscriptions, employees, posTransactions, suppliers, quotations, scheduledWorkflows, currentUser, roleChangeApprovalsQuery, onQuickAction, onNavigate, accessToken }) {
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   const roleChangeRows = roleChangeApprovalsQuery?.data?.approvals || [];
@@ -6567,8 +6387,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   if (roleView === "executive") {
     return (
       <>
-        {isGlobalAdmin && accessToken && <section aria-label="Global Admin trial-expiry notice panel"><TrialNoticeAdmin api={dashboardTrialNoticeApi} heading="Global Admin trial-expiry notice panel" /></section>}
-        <PremiumExecutiveDashboard
+        <EnterpriseDashboardOverview
           company={company}
           currentUser={currentUser}
           invoices={invoices}
@@ -6578,14 +6397,17 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           leaveRequests={leaveRequests}
           workOrders={workOrders}
           subscriptions={subscriptions}
-          posTransactions={posTransactions}
-          alerts={alerts}
+          financials={financials}
+          revenueExpenseTrend={revenueExpenseTrend}
           recentActivity={recentActivity}
+          attentionItems={attentionItems}
           pendingLeave={pendingLeave}
           formatMoney={formatMoney}
           onNavigate={onNavigate}
           onQuickAction={onQuickAction}
           onCustomizeDashboard={() => setPreferencesDrawerOpen(true)}
+          allowedModules={currentRole.allowedModules}
+          writeAccess={currentRole.writeAccess}
         />
         <Suspense fallback={null}>
           <LazyDashboardPreferencesDrawer isOpen={preferencesDrawerOpen} onClose={() => setPreferencesDrawerOpen(false)} />
@@ -42296,15 +42118,16 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
   }, [inventory.rows, invoices.rows, expenses.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows]);
 }
 
-function NotificationCenter({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions, onNavigate }) {
+function NotificationCenter({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions, onNavigate, className = "" }) {
   const [open, setOpen] = useState(false);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
   return (
-    <div className="relative">
+    <div className={`relative shrink-0 ${className}`}>
       <button
+        type="button"
         onClick={() => setOpen((o) => !o)}
-        className="relative text-slate-400 hover:text-slate-600"
+        className="dashboard-topbar-notifications relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "")}
       >
         <Bell size={17} strokeWidth={1.75} />
@@ -47531,6 +47354,7 @@ function SmartManager() {
   const canManage = currentRole.writeAccess === "full";
   const billingManagerRoles = new Set(["super administrator", "organization owner", "owner", "ceo", "cfo", "finance manager", "admin"]);
   const canManageBilling = billingManagerRoles.has(String(currentUser.role || "").trim().toLowerCase());
+  const canManageTeamPresets = new Set(["organization owner", "ceo", "super administrator", "system administrator"]).has(String(currentUser.role || "").trim().toLowerCase());
 
   const [authView, setAuthView] = useState(() => typeof window === "undefined" ? "login" : authScreenFromSearch(window.location.search));
   const [authContextEmail, setAuthContextEmail] = useState("");
@@ -47785,6 +47609,7 @@ function SmartManager() {
   }, []);
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [isDesktopNavigation, setIsDesktopNavigation] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true"; } catch { return false; }
   });
@@ -47796,10 +47621,6 @@ function SmartManager() {
     media.addEventListener("change", syncNavigationViewport);
     return () => media.removeEventListener("change", syncNavigationViewport);
   }, []);
-  // Desktop CSS keeps the rail visible independently of the drawer state.
-  // Keep semantics aligned with that rendered behavior so a dismissed tour
-  // never leaves a visible desktop module map inaccessible to assistive tech.
-  const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
   useEffect(() => {
     try { window.localStorage.setItem("smart-manager:sidebar-collapsed", String(sidebarCollapsed)); } catch {}
   }, [sidebarCollapsed]);
@@ -47807,13 +47628,7 @@ function SmartManager() {
     setSidebarCollapsed(preferences.sidebarPresentation === "compact");
   }, [preferences.sidebarPresentation]);
   const handleOnboardingVisibilityChange = useCallback((isOpen) => {
-    // An onboarding overlay must not close the desktop navigation rail: doing
-    // so leaves the primary module map unavailable after a tour is dismissed.
-    // On phones, deliberately close an already-open drawer while the overlay
-    // is active so it cannot compete with the focused onboarding interaction.
-    if (isOpen && typeof window !== "undefined" && window.innerWidth < 1024) {
-      setSidebarOpen(false);
-    }
+    setSidebarOpen(isOpen);
   }, []);
 
   // Company profile is editable in Settings; the topbar and dashboard
@@ -48087,16 +47902,6 @@ function SmartManager() {
     ...displayedNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
     ...(displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
   ].sort((left, right) => left.groupOrder - right.groupOrder || left.order - right.order), [displayedNavigationGroups]);
-  const referenceOrderedNavigationItems = useMemo(() => {
-    const referenceOrder = ["dashboard", "sales", "pos", "point of sale", "inventory", "procurement", "finance", "accounting", "crm", "hr & payroll", "projects", "assets", "reports", "analytics", "workflow studio", "e-commerce", "communications", "settings"];
-    const rank = (item) => {
-      const label = String(item.label || "").trim().toLowerCase();
-      const id = String(item.id || "").trim().toLowerCase();
-      const position = referenceOrder.findIndex((referenceItem) => referenceItem === label || referenceItem === id);
-      return position === -1 ? referenceOrder.length + item.groupOrder * 100 + item.order : position;
-    };
-    return [...flatNavigationItems].sort((left, right) => rank(left) - rank(right) || left.label.localeCompare(right.label, "en"));
-  }, [flatNavigationItems]);
   const quickCreateActions = getQuickCreateActions({
     visibleModuleIds: visibleModules.map((module) => module.id),
     canCreate: currentRole.writeAccess !== "none",
@@ -48246,6 +48051,16 @@ function SmartManager() {
   // level so it works regardless of which module currently has focus.
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [createMenuMounted, setCreateMenuMounted] = useState(false);
+
+  useEffect(() => {
+    if (createMenuOpen) {
+      setCreateMenuMounted(true);
+      return undefined;
+    }
+    const closeTimer = window.setTimeout(() => setCreateMenuMounted(false), 180);
+    return () => window.clearTimeout(closeTimer);
+  }, [createMenuOpen]);
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -48368,7 +48183,7 @@ function SmartManager() {
       {sharedTrialNoticeGate}
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
-    <div className={`h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className={`dashboard-shell h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Ambient background wash — subtle depth behind the content, the way
           Linear/Vercel-style dashboards avoid a flat, lifeless canvas. */}
       <div
@@ -48436,63 +48251,92 @@ function SmartManager() {
         />
       )}
 
-      {/* Sidebar — flat operational rail on desktop and an equivalent drawer
-          on mobile. The item source remains flatNavigationItems, which is
-          derived from the existing role-aware navigation contract. */}
+      {/* Sidebar — a docked navigation rail on desktop and a modal drawer on
+          mobile. Desktop reserves layout space so the content never sits under
+          the menu; mobile uses the backdrop above for an intentional drawer.
+          Rebuilt as a light theme matching the design system image exactly
+          (Kadi: "White background, Light shadow, Soft rounded corners") —
+          every dark-theme color from the earlier version (the navy/dark-
+          green gradient, white-variant text, white/10 borders) was
+          removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={sidebarHiddenFromAssistiveTech}
-          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[188px]"} shrink-0 flex flex-col border-r border-white/10 bg-[#033c3a] text-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${
+          className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[84px]" : "w-[288px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-[#F8FAFC] transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ boxShadow: "4px 0 22px rgba(2,44,42,.18)" }}
+        style={{ boxShadow: "10px 0 36px rgba(15, 23, 42, .08)" }}
       >
-          <div className={`relative flex items-center justify-between border-b border-white/10 px-3 py-4 ${sidebarCollapsed ? "justify-center" : ""}`}>
+          <div className={`dashboard-sidebar-brand relative px-4 py-5 border-b border-white/10 bg-slate-950 flex items-center justify-between ${sidebarCollapsed ? "justify-center" : ""}`}>
           <div className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/5"><BrandLogo variant="compact" priority className="h-8 w-8" /></span>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white p-1.5 shadow-[0_8px_20px_rgba(0,0,0,.22)] ring-1 ring-white/15"><BrandLogo variant="compact" priority className="h-7 w-7" /></span>
             {!sidebarCollapsed && <div className="flex flex-col leading-tight">
-              <span className="brand-wordmark whitespace-nowrap text-[12px] font-bold tracking-tight text-white" style={{ fontFamily: "'Poppins'" }}>
-                SMART MANAGER
+              <span className="text-[15px] font-semibold tracking-tight brand-wordmark text-white" style={{ fontFamily: "'Poppins'" }}>
+                Smart Manager
               </span>
-              <span className="mt-0.5 text-[8px] font-bold uppercase tracking-[.15em] text-emerald-300">ERP</span>
+              <span className="mt-1 text-[9px] font-bold uppercase tracking-[.18em] text-emerald-300">Operations hub</span>
             </div>}
           </div>
-          <button className="text-emerald-100 transition-colors hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+          <button className="text-slate-400 hover:text-white transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} />
           </button>
-          <button type="button" className="hidden rounded-lg p-1.5 text-emerald-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
+          <button type="button" className="hidden rounded-xl p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
             {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
           </button>
         </div>
 
-        <nav className="dashboard-flat-navigation relative flex-1 space-y-0.5 overflow-y-auto px-2 py-3" aria-label="Operational workspaces">
-          {referenceOrderedNavigationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = active === item.id;
-            const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-            return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative flex min-h-9 w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-200 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "bg-[#07945e] font-bold text-white shadow-[0_6px_14px_rgba(0,0,0,.14)]" : "text-emerald-50 hover:bg-white/10 hover:text-white"}`}>
-              <span className="flex min-w-0 items-center gap-2"><Icon size={15} strokeWidth={isActive ? 2.25 : 1.9} aria-hidden="true" />{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
-              {!sidebarCollapsed && <span className="flex shrink-0 items-center gap-1">{item.locked && <Lock size={10} className="text-emerald-200/70" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[8px] font-bold text-white" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}<ChevronRight size={12} className={isActive ? "text-emerald-100" : "text-emerald-200/50"} aria-hidden="true" /></span>}
-            </button>;
+        <div className="dashboard-sidebar-tools border-b border-slate-200/70 px-3 py-4">
+          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5 text-left shadow-[0_4px_16px_rgba(15,23,42,.04)] transition hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-slate-950 text-white shadow-sm transition group-hover:bg-emerald-600"><Search size={15} /></span>
+            {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-700">Command palette</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Search modules and records</span></span><kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400">⌘K</kbd></>}
+          </button>
+          {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-2 py-1.5" role="group" aria-label="Sidebar module order">
+            <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">Order</span>
+            <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => updatePreference("navigationSort", "priority")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "priority" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
+              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => updatePreference("navigationSort", "alphabetical")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "alphabetical" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
+            </div>
+          </div>}
+        </div>
+
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Operational workspaces">
+          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-200/70 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
+          {displayedNavigationGroups.map((group) => {
+            const GroupIcon = group.icon;
+            const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
+            return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
+              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-white hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40">
+                <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-emerald-600" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-slate-200/70 px-1.5 py-0.5 text-[9px] tracking-normal text-slate-500">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
+              </button>}
+              {expanded && <div className="space-y-1">{group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = active === item.id;
+                const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
+                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-slate-950 bg-slate-950 font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,.16)]" : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-white hover:text-slate-950"}`}>
+                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition ${isActive ? "bg-emerald-400 text-slate-950 shadow-sm" : "bg-white text-slate-400 ring-1 ring-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+                  <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-300" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
+                </button>;
+              })}</div>}
+            </section>;
           })}
         </nav>
 
-        <div className="relative border-t border-white/10 px-2 py-3">
+        <div className="dashboard-sidebar-footer relative border-t border-slate-200/70 bg-white/60 px-3 py-4">
           <button
             type="button"
             onClick={() => go("settings")}
             aria-label="Open workspace settings"
-            className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-200 ${
-              active === "settings" ? "bg-[#07945e] font-bold text-white" : "text-emerald-50 hover:bg-white/10 hover:text-white"
+            className={`w-full flex items-center justify-between gap-2.5 rounded-xl border px-2.5 py-2.5 text-[12px] transition-colors group ${
+              active === "settings" ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-[#111827]"
             }`}
           >
-            <span className={`flex items-center gap-2 ${sidebarCollapsed ? "justify-center" : ""}`}>
-              <Building2 size={15} strokeWidth={2} />{!sidebarCollapsed && "Workspaces"}
+            <span className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
+              <span className={`grid h-8 w-8 place-items-center rounded-lg ${active === "settings" ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarCollapsed && " Settings"}
             </span>
-            {!canManage && <Lock size={11} className="text-emerald-200/70" />}
+            {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
-          {!sidebarCollapsed && <div className="mt-3 rounded-md border border-white/10 bg-black/10 px-2.5 py-2 text-[9px] leading-snug text-emerald-100/75">
-            <span className="flex items-center gap-1.5 font-semibold text-emerald-50"><span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-400" : "bg-amber-300"}`} />Connection status</span>
-            <span className="mt-1 block">{online ? "Workspace available" : "Connection unavailable"}</span>
+          {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
+            <MapPin size={11} className="shrink-0 text-[#16A34A]" />
+            <span>Bidhaa ya Kitanzania, kwa Wafanyabiashara wa Kitanzania na Duniani.</span>
           </div>}
         </div>
       </aside>
@@ -48501,46 +48345,27 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:min-h-[56px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[82px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200/80 bg-white/90 px-4 py-3 shadow-[0_8px_28px_rgba(15,23,42,.05)] backdrop-blur-2xl sm:min-h-[82px] sm:px-6 sm:py-3 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
-              type="button"
-              className="dashboard-topbar-menu-control hidden rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 lg:inline-flex"
-              onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")}
-              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
-            >
-              <MenuIcon />
-            </button>
-            <button
-              className="dashboard-topbar-menu-control text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
+              className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-            <BrandLogo variant="compact" priority className="h-8 w-8 sm:hidden" />
-            <div className="hidden min-w-0 items-center gap-2.5 sm:flex lg:hidden">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-700 shadow-sm"><ActiveModuleIcon size={17} strokeWidth={2.1} /></span>
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 p-1.5 shadow-sm sm:hidden"><BrandLogo variant="compact" priority className="h-6 w-6" /></span>
+            <div className="hidden min-w-0 items-center gap-3 sm:flex">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-100"><ActiveModuleIcon size={18} strokeWidth={2.1} /></span>
               <div className="min-w-0">
-                <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[13px] font-semibold text-slate-900">{company.name}</span><span className="hidden md:inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[.08em] text-slate-500">{currentUser.role}</span></div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium text-slate-400"><span>Workspace</span><ChevronRight size={11} /><span className="truncate text-emerald-700">{activeModuleLabel}</span></div>
+                <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">{company.name}</span><span className="hidden md:inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.08em] text-slate-500">{currentUser.role}</span></div>
+                <div className="mt-0.5 flex min-w-0 items-center gap-2"><span className="truncate text-[18px] font-black tracking-[-.04em] text-slate-950">{activeModuleLabel}</span><span className="hidden items-center gap-1 text-[10px] font-semibold text-emerald-700 md:inline-flex"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Live workspace</span></div>
               </div>
             </div>
           </div>
-          {preferences.showTopBarSearch && <button
-            type="button"
-            onClick={() => setPaletteOpen(true)}
-            className="dashboard-topbar-primary-search hidden h-9 w-full max-w-[460px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-[10px] font-medium text-slate-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 lg:flex"
-            aria-label="Open command palette"
-          >
-            <Search size={14} aria-hidden="true" />
-            <span className="min-w-0 flex-1 truncate">Search customers, products, invoices, orders...</span>
-            <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[8.5px] font-mono text-slate-400">Ctrl + K</kbd>
-          </button>}
-          <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2.5">
+          <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-2">
             {preferences.showConnectionStatus && <span
-              className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
+              className="dashboard-topbar-status hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.1em] lg:flex"
               style={
                 IS_CONFIGURED
                   ? { backgroundColor: "#16A34A14", color: "#16A34A" }
@@ -48551,40 +48376,25 @@ function SmartManager() {
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
               {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
             </span>}
-            <button
-              type="button"
-              onClick={() => canManage && go("settings")}
-              disabled={!canManage}
-              className="hidden min-w-0 items-center gap-2 border-x border-slate-100 px-3 py-1 text-left transition hover:bg-slate-50 disabled:cursor-default xl:flex"
-              aria-label={`Workspace: ${company?.name || "Current workspace"}`}
-              title={canManage ? "Open workspace settings" : "Current workspace"}
-            >
-              <span className="min-w-0"><span className="block max-w-[124px] truncate text-[10px] font-bold uppercase tracking-[.04em] text-slate-800">{company?.name || "Current workspace"}</span><span className="mt-0.5 block text-[9px] font-medium text-slate-500">Workspace</span></span>
-              <ChevronDown size={13} className="shrink-0 text-slate-500" aria-hidden="true" />
-            </button>
-            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
+            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
             {preferences.showTopBarSearch && <button
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-              aria-label="Open command palette"
+              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 xl:h-auto xl:min-h-10 xl:w-auto xl:min-w-[178px] xl:justify-start xl:bg-slate-50 xl:px-3 xl:py-2.5"
+              aria-label="Search everything"
             >
               <Search size={13} />
-              <span className="hidden md:inline">Search workspace</span>
-              <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
+              <span className="hidden xl:inline">Search workspace</span>
+              <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 sm:inline-block">⌘K</kbd>
             </button>}
-            {active !== "ai" && visibleModules.some((module) => module.id === "ai") && <button type="button" onClick={() => go("ai")} className="dashboard-topbar-ai-shortcut inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#0B5D3B] text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:hidden" aria-label="Open AI Command Center" title="Open AI Command Center"><Sparkles size={17} aria-hidden="true" /></button>}
-            <div className="dashboard-topbar-utility-group">
-              <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9 sm:min-w-9 sm:px-2" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
-              <div className="dashboard-topbar-notification-slot"><NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} /></div>
-            </div>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
-            <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="dashboard-topbar-create inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden 2xl:inline-flex sm:px-3">
-                  <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
+                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-3 py-2.5 text-[11px] font-bold text-white shadow-[0_8px_18px_rgba(15,23,42,.16)] transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3.5">
+                  <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" className={`transition-transform duration-200 motion-reduce:transition-none ${createMenuOpen ? "rotate-180" : ""}`} />
                 </button>
-                {createMenuOpen && (
+                {createMenuMounted && (
                   <>
-                    <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
+                    <button type="button" className={`create-menu-backdrop fixed inset-0 z-30 cursor-default transition-opacity duration-200 motion-reduce:transition-none ${createMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} aria-label="Close create menu" onClick={() => setCreateMenuOpen(false)} />
+                    <div className={`create-menu-panel absolute right-0 top-full z-40 mt-2 w-60 origin-top-right rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none motion-reduce:transform-none ${createMenuOpen ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-1 scale-[.98] opacity-0"}`} role="menu" aria-label="Create a new record">
                       <p className="px-3 pb-1.5 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Create in workspace</p>
                       {quickCreateActions.map((action) => {
                         const ActionIcon = action.icon;
@@ -48595,42 +48405,44 @@ function SmartManager() {
                 )}
               </div>
             )}
-            {preferences.showGuidedTour && <div className="dashboard-topbar-tour hidden"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>}
-            {preferences.showTopBarDate && <span className="hidden items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-semibold text-slate-400 select-none">
+            {preferences.showGuidedTour && <div className="dashboard-topbar-tour hidden shrink-0 lg:block"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>}
+            {preferences.showTopBarDate && <span className="hidden xl:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-500 select-none">
               <Calendar size={12} className="text-slate-400" />
               {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
             </span>}
+            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9 sm:min-w-9 sm:px-2" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
             {/* ── Smart Alerts badge ── */}
             {criticalAlerts.length > 0 && (
-              <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden lg:flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1.5 rounded-xl animate-pulse" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
+              <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[10.5px] font-bold text-rose-700 animate-pulse lg:flex" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
                 <AlertCircle size={13}/>
                 {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
               </button>
             )}
-            <span className="hidden"><WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} /></span>
+            <span className="hidden xl:block"><WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} /></span>
             {/* ── Dark mode toggle ── */}
             <button
               type="button"
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="hidden min-h-8 min-w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-slate-300 hover:text-[#111827]"
+              className="hidden min-h-9 min-w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 lg:flex lg:h-10 lg:w-10"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
-            <div className="dashboard-topbar-profile-slot"><PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} /></div>
+                        <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+            <div className="dashboard-topbar-profile shrink-0">
+              <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+            </div>
           </div>
         </header>
-
-        {createMenuOpen && <button type="button" className="fixed inset-0 z-40 cursor-default" aria-label="Close create menu" onClick={() => setCreateMenuOpen(false)} />}
 
         {IS_CONFIGURED && active !== "billing" && subscriptionAccess.ready && subscriptionAccess.access.trialActive && (
           <FreeTrialBanner access={subscriptionAccess.access} noticeKey={currentUser?.id || session?.userId || ""} onUpgrade={() => go("billing")} />
         )}
 
         {paletteOpen && <CommandPalette modules={visibleModules} crm={crm} invoices={invoices} inventory={inventory} expenses={expenses} onNavigate={go} onNavigateWithIntent={goWithIntent} onClose={() => setPaletteOpen(false)} />}
-        {preferencesDrawerOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard customization" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30"><div className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-xl">Loading dashboard customization…</div></div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setPreferencesDrawerOpen(false)} availableNavigationGroups={navigationGroups.map((group) => ({ id: group.id, label: group.label, shortLabel: group.shortLabel, itemCount: group.items.length }))} /></Suspense>}
+        {preferencesDrawerOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard customization" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30"><div className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-xl">Loading dashboard customization…</div></div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setPreferencesDrawerOpen(false)} availableNavigationGroups={navigationGroups.map((group) => ({ id: group.id, label: group.label, shortLabel: group.shortLabel, itemCount: group.items.length }))} canManageTeamPresets={canManageTeamPresets} /></Suspense>}
 
         {/* AI Command Center — the floating entry point the design spec
             asks for, on every screen. The intelligence behind it is the
@@ -48666,7 +48478,7 @@ function SmartManager() {
           <button
             onClick={() => go("ai")}
             aria-label="Open AI Command Center"
-            className="fixed bottom-6 right-6 z-40 hidden h-14 w-14 min-h-14 min-w-14 items-center justify-center rounded-full text-white shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2 sm:flex"
+            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 min-h-14 min-w-14 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#16A34A] sm:bottom-6 sm:right-6"
             style={{ background: "linear-gradient(135deg, #16A34A, #22C55E)" }}
           >
             <Sparkles size={22} />
@@ -48768,6 +48580,7 @@ function SmartManager() {
           {active === "presentation" && <PresentationProgressView />}
           {active === "profile" && <ProfileIdentityPage currentUser={currentUser} session={session} company={company} onNavigate={go} onSignOut={handleSignOut} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} onThemeChange={(theme) => { if (theme === "dark") setDarkMode(true); if (theme === "light") setDarkMode(false); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} initialTab={intent?.module === "profile" ? intent.profileTab : "overview"} />}
           {active === "settings" && (
+            <>
             <SettingsPage
               company={company}
               setCompany={setCompany}
@@ -48790,6 +48603,8 @@ function SmartManager() {
               exportData={{ crm, invoices, expenses, inventory, employees, posTransactions, suppliers }}
               accountSession={session?.demo ? null : session}
             />
+            {canManageTeamPresets && <div className="mt-5"><DashboardLayoutAnalytics /></div>}
+            </>
           )}
           {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "global-admin", "activity", "profile"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />

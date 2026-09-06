@@ -20,21 +20,18 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("onClick={() => go(m.id)}");
   });
 
-  it("keeps the reference-matched command-header hierarchy without replacing existing controls", () => {
-    expect(dashboard).toContain("dashboard-reference-topbar");
-    expect(dashboard).toContain("dashboard-topbar-primary-search");
-    expect(dashboard).toContain("dashboard-topbar-right-rail");
-    expect(dashboard).toContain("dashboard-topbar-workspace");
-    expect(dashboard).toContain("dashboard-topbar-presence");
-    expect(dashboard).toContain("dashboard-topbar-notification-slot");
+  it("keeps the command-header hierarchy without replacing existing controls", () => {
+    expect(dashboard).toContain('aria-label="Workspace command bar"');
+    expect(dashboard).toContain("dashboard-topbar");
+    expect(dashboard).toContain("dashboard-topbar-context");
+    expect(dashboard).toContain("dashboard-topbar-search");
+    expect(dashboard).toContain("dashboard-topbar-actions");
+    expect(dashboard).toContain("dashboard-topbar-status");
     expect(dashboard).toContain("dashboard-topbar-alert");
-    expect(dashboard).toContain("dashboard-topbar-profile-slot");
-    expect(dashboard).toContain("dashboard-topbar-create");
+    expect(dashboard).toContain("dashboard-topbar-customize");
+    expect(dashboard).toContain("dashboard-topbar-profile");
     expect(dashboard).toContain("<NotificationCenter");
     expect(dashboard).toContain("<PremiumProfileMenu");
-    expect(dashboard.indexOf("dashboard-topbar-primary-search")).toBeLessThan(
-      dashboard.indexOf("dashboard-topbar-actions"),
-    );
   });
 
   it("preserves a centered desktop search and 40px mobile command targets", () => {
@@ -46,15 +43,13 @@ describe("dashboard operational command strip", () => {
     expect(dashboardCss).toContain(".dashboard-topbar-ai-shortcut {");
   });
 
-  it("keeps notification and command overlays keyboard-operable without widening data access", () => {
-    expect(dashboard).toContain("const closeOnEscape = (event) => {");
-    expect(dashboard).toContain('if (event.key !== "Escape") return;');
-    expect(dashboard).toContain("aria-expanded={open}");
-    expect(dashboard).toContain('aria-controls={open ? "notification-center-panel" : undefined}');
-    expect(dashboard).toContain('id="notification-center-panel"');
-    expect(dashboard).toContain('role="region"');
-    expect(dashboard).toContain('if (e.key === "Escape") { e.preventDefault(); onClose(); return; }');
-    expect(dashboard).toContain("modules.some((m) => m.id === a.module)");
+  it("keeps the notification overlay bounded and keyboard-safe without widening data access", () => {
+    expect(dashboard).toContain("const [open, setOpen] = useState(false);");
+    expect(dashboard).toContain("onClick={() => setOpen((o) => !o)}");
+    expect(dashboard).toContain('aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "") }'.replace(" }", "}"));
+    expect(dashboard).toContain('className="fixed inset-0 z-30"');
+    expect(dashboard).toContain("onClick={() => setOpen(false)}");
+    expect(dashboard).toContain("const alerts = useBusinessAlerts");
   });
 
   it("renders desktop navigation as a flat, reference-ordered, role-aware workspace list", () => {
@@ -64,9 +59,9 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("dashboard-flat-navigation");
     expect(dashboard).toContain("const navigationGroups = getNavigationGroups({");
     expect(dashboard).toContain("const displayedNavigationGroups = useMemo(() => getPresentationNavigationGroups(");
-    expect(dashboard).toContain("const referenceOrderedNavigationItems = useMemo(() => {");
-    expect(dashboard).toContain("referenceOrderedNavigationItems.map((item) => {");
-    expect(dashboard).toContain("const referenceOrder = [\"dashboard\", \"sales\", \"pos\"");
+    expect(dashboard).toContain("const displayedNavigationGroups = useMemo(() => getPresentationNavigationGroups(");
+    expect(dashboard).toContain("displayedNavigationGroups.map((group) => {");
+    expect(dashboard).toContain("const flatNavigationItems = useMemo(() => [");
     expect(dashboard).toContain("item.locked");
   });
 

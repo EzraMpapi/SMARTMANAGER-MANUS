@@ -34,7 +34,9 @@ export interface DashboardPreferences {
 interface DashboardPreferencesContextType {
   preferences: DashboardPreferences;
   updatePreference: <K extends keyof DashboardPreferences>(key: K, value: DashboardPreferences[K]) => void;
+  replacePreferences: (next: Partial<DashboardPreferences>) => void;
   resetPreferences: () => void;
+  resetToTeamDefault: () => void;
   formatMoney: (amountInTzs: number, overrideCurrency?: "TZS" | "USD") => string;
   formatLocalDate: (dateStringOrTimestamp: string | number | Date) => string;
   isPersisting: boolean;
@@ -50,6 +52,13 @@ const defaultDepartmentBudgets: Record<string, number> = {
 };
 
 const dashboardNavigationGroupIds = ["home", "sales-crm", "operations", "finance", "people", "specialized", "analytics", "administration"] as const;
+
+function createLayoutSignature(value: unknown) {
+  const json = JSON.stringify(value);
+  let hash = 2166136261;
+  for (let index = 0; index < json.length; index += 1) hash = Math.imul(hash ^ json.charCodeAt(index), 16777619);
+  return `layout-${(hash >>> 0).toString(36).padStart(8, "0")}`;
+}
 
 const defaultPreferences: DashboardPreferences = {
   compactDensity: false,
@@ -80,7 +89,7 @@ const defaultPreferences: DashboardPreferences = {
   showTopBarDate: true,
 };
 
-function normalizePreferences(value: Partial<DashboardPreferences> | null | undefined): DashboardPreferences {
+export function normalizePreferences(value: Partial<DashboardPreferences> | null | undefined): DashboardPreferences {
   const requestedNavigationGroups = Array.isArray(value?.visibleNavigationGroupIds)
     ? new Set(value.visibleNavigationGroupIds.filter((id) => dashboardNavigationGroupIds.includes(id)))
     : new Set(defaultPreferences.visibleNavigationGroupIds);
@@ -113,6 +122,8 @@ export function DashboardPreferencesProvider({ children }: { children: React.Rea
   const liveSession = Boolean(auth.configured && auth.session?.access_token && ["AUTHENTICATED", "PROFILE_LOADING", "WORKSPACE_LOADING", "AUTHORIZED"].includes(auth.status));
   const persistedQuery = trpc.dashboardPreferences.get.useQuery(undefined, { enabled: liveSession, retry: false, staleTime: 5 * 60 * 1000 });
   const saveMutation = trpc.dashboardPreferences.save.useMutation();
+  const resetToTeamDefaultMutation = trpc.dashboardPreferences.resetToTeamDefault.useMutation();
+  const telemetryMutation = trpc.dashboardLayoutTelemetry.record.useMutation();
   const hydratedRef = useRef(false);
   const [preferences, setPreferences] = useState<DashboardPreferences>(() => {
     if (!liveSession && typeof window !== "undefined") {
@@ -130,7 +141,10 @@ export function DashboardPreferencesProvider({ children }: { children: React.Rea
   useEffect(() => {
     if (!liveSession || !persistedQuery.data || hydratedRef.current) return;
     hydratedRef.current = true;
-    setPreferences(normalizePreferences(persistedQuery.data.preferences));
+    const hydratedPreferences = normalizePreferences(persistedQuery.data.preferences);
+    setPreferences(hydratedPreferences);
+    const source = persistedQuery.data.appliedSource || { sourceType: "built_in", sourceId: null, targetType: null, targetValue: null };
+    telemetryMutation.mutate({ eventType: source.sourceType === "personal" ? "layout_applied" : "preset_applied", sourceType: source.sourceType, sourceId: source.sourceId, layoutSignature: createLayoutSignature(hydratedPreferences), targetType: source.targetType === "role" || source.targetType === "department" ? source.targetType : null, targetValue: source.targetValue });
   }, [liveSession, persistedQuery.data]);
 
   useEffect(() => {
@@ -151,7 +165,10 @@ export function DashboardPreferencesProvider({ children }: { children: React.Rea
         setPreferences(previous);
         setPersistenceError(error.message || "Dashboard preferences could not be saved.");
       },
-      onSuccess: () => setPersistenceError(null),
+      onSuccess: () => {
+        setPersistenceError(null);
+        telemetryMutation.mutate({ eventType: "layout_applied", sourceType: "personal", sourceId: null, layoutSignature: createLayoutSignature(next), targetType: null, targetValue: null });
+      },
     });
   };
 
@@ -163,11 +180,35 @@ export function DashboardPreferencesProvider({ children }: { children: React.Rea
     });
   };
 
+  const replacePreferences = (value: Partial<DashboardPreferences>) => {
+    setPreferences((previous) => {
+      const next = normalizePreferences({ ...previous, ...value });
+      persist(next, previous);
+      return next;
+    });
+  };
+
   const resetPreferences = () => {
     setPreferences((previous) => {
       const next = normalizePreferences(defaultPreferences);
       persist(next, previous);
       return next;
+    });
+  };
+
+  const resetToTeamDefault = () => {
+    if (!liveSession) {
+      resetPreferences();
+      return;
+    }
+    setPersistenceError(null);
+    resetToTeamDefaultMutation.mutate(undefined, {
+      onSuccess: (result) => {
+        const next = normalizePreferences(result.preferences);
+        setPreferences(next);
+        telemetryMutation.mutate({ eventType: "personal_reset", sourceType: "built_in", sourceId: null, layoutSignature: createLayoutSignature(next), targetType: null, targetValue: null });
+      },
+      onError: (error) => setPersistenceError(error.message || "The administrator default could not be restored."),
     });
   };
 
@@ -200,7 +241,7 @@ export function DashboardPreferencesProvider({ children }: { children: React.Rea
   };
 
   return (
-    <DashboardPreferencesContext.Provider value={{ preferences, updatePreference, resetPreferences, formatMoney, formatLocalDate, isPersisting: saveMutation.isPending, persistenceError }}>
+    <DashboardPreferencesContext.Provider value={{ preferences, updatePreference, replacePreferences, resetPreferences, resetToTeamDefault, formatMoney, formatLocalDate, isPersisting: saveMutation.isPending || resetToTeamDefaultMutation.isPending, persistenceError }}>
       {children}
     </DashboardPreferencesContext.Provider>
   );
