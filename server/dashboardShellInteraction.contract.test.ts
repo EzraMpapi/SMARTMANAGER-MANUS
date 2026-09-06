@@ -16,12 +16,14 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;');
     expect(dashboard).toContain('aria-hidden={sidebarHiddenFromAssistiveTech}');
     expect(dashboard).toContain('window.matchMedia("(min-width: 1024px)")');
-    expect(dashboard).toContain('className={`dashboard-sidebar fixed z-40 inset-y-0 left-0');
+    expect(dashboard).toContain('className={`dashboard-sidebar ${sidebarCollapsed ? "dashboard-sidebar-collapsed w-[76px]" : "dashboard-sidebar-expanded w-[188px]"} fixed z-40 inset-y-0 left-0');
     expect(dashboard).toContain('${createMenuOpen ? "z-50" : "z-30"}');
     expect(dashboard).toContain('createMenuOpen && <button type="button" className="fixed inset-0 z-40 cursor-default" aria-label="Close create menu"');
     expect(dashboard).toContain('lg:top-0 lg:z-30 lg:sticky lg:translate-x-0');
     expect(dashboard).toContain('aria-current={isActive ? "page" : undefined}');
     expect(dashboard).toContain('dashboard-flat-navigation');
+    expect(dashboard).toContain('dashboard-sidebar-nav-item');
+    expect(dashboard).toContain('dashboard-topbar-utility-group');
   });
 
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
@@ -53,7 +55,7 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('m.id === "dashboard" ? "Dashboard" : m.label.split(" ")[0]');
     expect(dashboard).toContain('aria-label="Open AI Command Center"');
     expect(dashboard).toContain('dashboard-topbar-ai-shortcut');
-    expect(dashboard).toContain('lg:hidden" aria-label="Open AI Command Center"');
+    expect(dashboard).toContain('className="dashboard-topbar-ai-shortcut inline-flex min-h-10 min-w-10');
     expect(dashboard).toContain('bottom-6 right-6 z-40 hidden h-14 w-14 min-h-14 min-w-14');
     expect(dashboard).toContain('createPortal(');
     expect(dashboard).toContain('), document.body)');

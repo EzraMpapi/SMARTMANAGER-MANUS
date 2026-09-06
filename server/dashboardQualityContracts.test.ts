@@ -124,7 +124,8 @@ describe("dashboard quality and boundary contracts", () => {
     expect(overview).toContain("allowedModules = []");
     expect(overview).toContain("writeAccess = \"none\"");
     expect(overview).toContain("const canWrite = writeAccess !== \"none\"");
-    expect(dashboard).toContain("allowedModules={currentRole.allowedModules}");
-    expect(dashboard).toContain("writeAccess={currentRole.writeAccess}");
+    expect(dashboard).toContain("currentRole.allowedModules.includes");
+    expect(dashboard).toContain("currentRole.writeAccess !== \"none\"");
+    expect(dashboard).toContain("canManageBilling");
   });
 });

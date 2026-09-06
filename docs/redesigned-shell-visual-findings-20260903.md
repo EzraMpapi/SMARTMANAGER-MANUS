@@ -1,0 +1,5 @@
+# Visual findings — redesigned dashboard shell
+
+The latest isolated Playwright captures were reviewed after the professional shell refinement. The desktop capture shows a fixed deep-green left operating rail with clear active-state emphasis, a white command header with centered search, compact utility controls, workspace context, subscription/presence status, and a contained profile surface. The content remains visually separated from shell chrome and the active dashboard greeting is visible below the guarded admin notice panel.
+
+The mobile capture shows the header collapsing to a 64px control strip with menu, compact brand mark, customize, notification, create, and profile controls. The fixed bottom navigation remains visible and does not overlap the header or the visible dashboard content. The mobile drawer width remains bounded by the responsive rule, while the desktop rail width is visually expanded through CSS to improve label readability. These findings are from an isolated browser artifact; they are not a real-device network or production-tenant measurement.

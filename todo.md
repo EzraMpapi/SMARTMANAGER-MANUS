@@ -696,3 +696,12 @@
 - [x] Add the demonstrated Escape-key close behavior to the mobile Create menu and restore focus to its trigger.
 - [x] Fix only any demonstrated performance or accessibility defect and rerun the focused audit.
 - [x] Prepare the verified audit summary and generate final report slides.
+- [ ] Replace `client/src/BusinessSphereDashboard.jsx` with the user-uploaded file, validate protected dashboard contracts, and publish through a protected GitHub PR.
+- [x] Restore the isolated dashboard greeting compatibility contract without changing the uploaded dashboard data/session boundaries.
+- [x] Restore the verified top-header accessibility contract for Create and mobile menu, then rerun validation and publish through a protected PR.
+- [x] Update the reference dashboard contract test to verify the uploaded overview’s real tenant-scoped data and role/action boundaries without weakening security coverage.
+- [x] Redesign the dashboard top header and left navigation with a professional responsive information hierarchy while preserving protected routes and existing interactions.
+- [x] Resolve remaining dashboard contract test failures caused by the uploaded replacement without weakening auth, RBAC/RLS, tenant isolation, or real-data boundaries.
+- [x] Run visual, accessibility, isolated browser, Vitest, TypeScript, and production build validation for the redesigned shell before protected publication.
+- [ ] Rework the dashboard top header to match the supplied reference image while preserving existing controls, protected routes, auth, RBAC/RLS, and tenant isolation.
+- [ ] Validate the reference-matched header across desktop/mobile accessibility, keyboard, responsive, type, regression, and production build gates, then publish through a protected GitHub PR.

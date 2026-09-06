@@ -30,12 +30,12 @@ test.describe("reference-directed enterprise dashboard", () => {
     await expect(page.getByRole("navigation", { name: "Operational workspaces" })).toBeVisible();
     await expect(page.getByRole("banner", { name: "Workspace command bar" })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening), Layout/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Revenue & Sales Performance", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Sales by category", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Sales by channel", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Inventory health", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Revenue & expense performance", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Top products", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Recent orders", exact: true })).toBeVisible();
+    await expect(page.getByText("Inventory health", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Quick actions", exact: true })).toBeVisible();
-    await expect(page.getByText("Total revenue", { exact: true })).toBeVisible();
+    await expect(page.getByText("Revenue Collected", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Receivables", { exact: true }).first()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
@@ -55,7 +55,7 @@ test.describe("reference-directed enterprise dashboard", () => {
     await page.getByRole("button", { name: "Open menu", exact: true }).click();
     await expect(page.getByRole("navigation", { name: "Operational workspaces" })).toBeVisible();
     await page.getByRole("button", { name: "Close menu", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Revenue & Sales Performance", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Revenue & expense performance", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Business health", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Quick actions", exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -123,7 +123,7 @@ test.describe("reference-directed enterprise dashboard", () => {
 
     await salesTab.click({ force: true });
     await expect(createMenu).toBeHidden();
-    await expect(page.getByRole("heading", { name: "Revenue & Sales Performance", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Revenue & expense performance", exact: true })).toBeVisible();
     expect(session.observedRequests.every((url) => url.includes("e2e.supabase.invalid") || url.includes("/api/trpc/"))).toBe(true);
     await page.screenshot({ path: testInfo.outputPath("create-menu-mobile-stacking.png"), fullPage: false });
   });

@@ -6,16 +6,16 @@ const dashboardSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/
 const overviewSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/EnterpriseDashboardOverview.jsx"), "utf8");
 
 describe("Enterprise dashboard overview contract", () => {
-  it("renders the new overview only through the established executive role view", () => {
-    expect(dashboardSource).toContain('import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview"');
+  it("renders the uploaded overview only through the established executive role view", () => {
+    expect(dashboardSource).toContain("function PremiumExecutiveDashboard");
     expect(dashboardSource).toContain('if (roleView === "executive")');
-    expect(dashboardSource).toContain("<EnterpriseDashboardOverview");
-    expect(dashboardSource).toContain("financials={financials}");
-    expect(dashboardSource).toContain("revenueExpenseTrend={revenueExpenseTrend}");
+    expect(dashboardSource).toContain("<PremiumExecutiveDashboard");
+    expect(dashboardSource).toContain("company={company}");
+    expect(dashboardSource).toContain("currentUser={currentUser}");
     expect(dashboardSource).toContain("onNavigate={onNavigate}");
     expect(dashboardSource).toContain("onQuickAction={onQuickAction}");
-    expect(dashboardSource).toContain("allowedModules={currentRole.allowedModules}");
-    expect(dashboardSource).toContain("writeAccess={currentRole.writeAccess}");
+    expect(dashboardSource).toContain("currentRole.allowedModules.includes");
+    expect(dashboardSource).toContain("currentRole.writeAccess !== \"none\"");
   });
 
   it("derives visible metrics from supplied workspace rows and retains explicit non-fabrication states", () => {

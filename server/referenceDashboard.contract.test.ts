@@ -42,11 +42,13 @@ describe("reference-aligned dashboard contracts", () => {
     expect(commandCenter).not.toContain("Math.random");
   });
 
-  it("carries the existing role and action boundaries into the reference layout", () => {
+  it("carries the existing role and action boundaries into the uploaded dashboard layout", () => {
     expect(dashboard).toContain("recentActivity={recentActivity}");
     expect(dashboard).toContain("onQuickAction={onQuickAction}");
-    expect(dashboard).toContain("allowedModules={currentRole.allowedModules}");
-    expect(dashboard).toContain("writeAccess={currentRole.writeAccess}");
+    expect(dashboard).toContain("currentRole.allowedModules.includes");
+    expect(dashboard).toContain("currentRole.writeAccess !== \"none\"");
+    expect(dashboard).toContain("const canManageBilling");
+    expect(dashboard).toContain("onCustomizeDashboard={() => setPreferencesDrawerOpen(true)}");
     expect(commandCenter).toContain("const canWrite = writeAccess !== \"none\"");
     expect(commandCenter).toContain("const canOpen = (moduleId)");
     expect(commandCenter).toContain("onQuickAction?.");

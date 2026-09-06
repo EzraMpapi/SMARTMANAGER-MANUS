@@ -6056,7 +6056,7 @@ function PremiumExecutiveDashboard({ company, currentUser, invoices, expenses, i
               <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-300">
                 <span>Executive Command Center</span><span className="text-white/25">•</span><span className="text-white/45">{todayLabel}</span>
               </div>
-              <h1 className="text-2xl font-black tracking-[-.04em] text-white sm:text-3xl">Habari, {firstName} <span className="text-emerald-300">👋</span></h1>
+              <h1 className="text-2xl font-black tracking-[-.04em] text-white sm:text-3xl">{(()=>{const h=new Date().getHours();return h<12?"Good morning":h<17?"Good afternoon":"Good evening";})()}, {firstName} <span className="text-emerald-300">👋</span></h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">A real-time view of {company?.name || "your business"}. Monitor performance, cash, customers and operations from one command center.</p>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
@@ -6815,7 +6815,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                 <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span>
               </div>
               <h1 className="text-white text-[22px] font-black tracking-tight leading-none">
-                {(()=>{const h=new Date().getHours();return h<12?"Habari za asubuhi":h<17?"Habari za mchana":"Habari za jioni";})()}, {(company.owner||"Welcome").split(" ")[0]} 👋
+                {(()=>{const h=new Date().getHours();return h<12?"Good morning":h<17?"Good afternoon":"Good evening";})()}, {(currentUser.name || company.owner || "Layout").split(" ")[0]} 👋
               </h1>
               <p className="text-[rgba(255,255,255,.5)] text-[12px] mt-1">{company.name} · {currentUser.role}</p>
             </div>
@@ -42299,13 +42299,25 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
 function NotificationCenter({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions, onNavigate }) {
   const [open, setOpen] = useState(false);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
+  useEffect(() => {
+    const closeOnEscape = (event) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, []);
 
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setOpen((o) => !o)}
         className="relative text-slate-400 hover:text-slate-600"
         aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={open ? "notification-center-panel" : undefined}
       >
         <Bell size={17} strokeWidth={1.75} />
         {alerts.length > 0 && (
@@ -42317,6 +42329,9 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div
+            id="notification-center-panel"
+            role="region"
+            aria-label="Notification Center"
             className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-xl border border-slate-200/80 shadow-lg z-40 overflow-hidden"
             style={{ animation: "toastIn .15s ease-out" }}
           >
@@ -43672,9 +43687,11 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
-    if (!IS_CONFIGURED) return undefined;
+    if (!IS_CONFIGURED || typeof fetch !== "function") return undefined;
     let active = true;
-    fetch("/api/billing/catalog")
+    const catalogRequest = fetch("/api/billing/catalog");
+    if (!catalogRequest || typeof catalogRequest.then !== "function") return () => { active = false; };
+    catalogRequest
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("catalog unavailable")))
       .then((payload) => { if (active) setOnboardingPlans(Array.isArray(payload?.plans) ? payload.plans : []); })
       .catch(() => { if (active) setOnboardingPlanError("Package choices will be available after workspace creation."); });
@@ -43994,7 +44011,9 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   useEffect(() => {
     if (!IS_CONFIGURED) return undefined;
     let active = true;
-    fetch("/api/billing/catalog")
+    const catalogRequest = fetch("/api/billing/catalog");
+    if (!catalogRequest || typeof catalogRequest.then !== "function") return () => { active = false; };
+    catalogRequest
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("catalog unavailable")))
       .then((payload) => { if (active) setOnboardingPlans(Array.isArray(payload?.plans) ? payload.plans : []); })
       .catch(() => { if (active) setOnboardingPlans([]); });
@@ -48246,6 +48265,7 @@ function SmartManager() {
   // level so it works regardless of which module currently has focus.
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const createMenuTriggerRef = useRef(null);
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -48257,6 +48277,18 @@ function SmartManager() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  useEffect(() => {
+    if (!createMenuOpen) return undefined;
+    const closeCreateOnEscape = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setCreateMenuOpen(false);
+      window.requestAnimationFrame(() => createMenuTriggerRef.current?.focus());
+    };
+    document.addEventListener("keydown", closeCreateOnEscape);
+    return () => document.removeEventListener("keydown", closeCreateOnEscape);
+  }, [createMenuOpen]);
 
   // Real, per-device dark mode preference for the App Shell — the same
   // localStorage pattern already proven for App Lock, since visual theme
@@ -48441,12 +48473,12 @@ function SmartManager() {
           derived from the existing role-aware navigation contract. */}
       <aside
         aria-hidden={sidebarHiddenFromAssistiveTech}
-          className={`dashboard-sidebar fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[76px]" : "w-[188px]"} shrink-0 flex flex-col border-r border-white/10 bg-[#033c3a] text-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${
+          className={`dashboard-sidebar ${sidebarCollapsed ? "dashboard-sidebar-collapsed w-[76px]" : "dashboard-sidebar-expanded w-[188px]"} fixed z-40 inset-y-0 left-0 h-screen shrink-0 flex flex-col border-r border-white/10 bg-[#033c3a] text-white transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "4px 0 22px rgba(2,44,42,.18)" }}
       >
-          <div className={`relative flex items-center justify-between border-b border-white/10 px-3 py-4 ${sidebarCollapsed ? "justify-center" : ""}`}>
+          <div className={`dashboard-sidebar-brand relative flex items-center justify-between border-b border-white/10 px-3 py-4 ${sidebarCollapsed ? "justify-center" : ""}`}>
           <div className="flex items-center gap-2.5">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/5"><BrandLogo variant="compact" priority className="h-8 w-8" /></span>
             {!sidebarCollapsed && <div className="flex flex-col leading-tight">
@@ -48456,7 +48488,7 @@ function SmartManager() {
               <span className="mt-0.5 text-[8px] font-bold uppercase tracking-[.15em] text-emerald-300">ERP</span>
             </div>}
           </div>
-          <button className="text-emerald-100 transition-colors hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+          <button type="button" className="dashboard-sidebar-close inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg text-emerald-100 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} />
           </button>
           <button type="button" className="hidden rounded-lg p-1.5 text-emerald-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
@@ -48469,7 +48501,7 @@ function SmartManager() {
             const Icon = item.icon;
             const isActive = active === item.id;
             const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-            return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative flex min-h-9 w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-200 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "bg-[#07945e] font-bold text-white shadow-[0_6px_14px_rgba(0,0,0,.14)]" : "text-emerald-50 hover:bg-white/10 hover:text-white"}`}>
+            return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`dashboard-sidebar-nav-item relative flex min-h-9 w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-200 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "is-active bg-[#07945e] font-bold text-white shadow-[0_6px_14px_rgba(0,0,0,.14)]" : "text-emerald-50 hover:bg-white/10 hover:text-white"}`}>
               <span className="flex min-w-0 items-center gap-2"><Icon size={15} strokeWidth={isActive ? 2.25 : 1.9} aria-hidden="true" />{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
               {!sidebarCollapsed && <span className="flex shrink-0 items-center gap-1">{item.locked && <Lock size={10} className="text-emerald-200/70" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[8px] font-bold text-white" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}<ChevronRight size={12} className={isActive ? "text-emerald-100" : "text-emerald-200/50"} aria-hidden="true" /></span>}
             </button>;
@@ -48501,7 +48533,8 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:min-h-[56px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-reference-topbar sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[72px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.03)] backdrop-blur-xl sm:min-h-[72px] sm:px-6 sm:py-0 lg:min-h-[56px] lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
@@ -48512,6 +48545,10 @@ function SmartManager() {
             >
               <MenuIcon />
             </button>
+            <div className="dashboard-topbar-brand hidden min-w-0 items-center gap-2.5 lg:flex">
+              <BrandLogo variant="compact" priority decorative className="h-9 w-9 rounded-xl border border-emerald-100 bg-emerald-50" />
+              <span className="truncate text-[14px] font-extrabold tracking-[-.035em] text-[#0B5D3B]">Smart Manager ERP</span>
+            </div>
             <button
               className="dashboard-topbar-menu-control text-slate-500 hover:text-[#111827] hover:bg-slate-100 rounded-lg p-1.5 -ml-1.5 transition-colors lg:hidden"
               onClick={() => setSidebarOpen(true)}
@@ -48540,7 +48577,7 @@ function SmartManager() {
           </button>}
           <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1 sm:gap-2.5">
             {preferences.showConnectionStatus && <span
-              className="hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
+              className="dashboard-topbar-presence hidden lg:flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] px-2.5 py-1 rounded-full"
               style={
                 IS_CONFIGURED
                   ? { backgroundColor: "#16A34A14", color: "#16A34A" }
@@ -48555,11 +48592,24 @@ function SmartManager() {
               type="button"
               onClick={() => canManage && go("settings")}
               disabled={!canManage}
-              className="hidden min-w-0 items-center gap-2 border-x border-slate-100 px-3 py-1 text-left transition hover:bg-slate-50 disabled:cursor-default xl:flex"
+              className="dashboard-topbar-workspace hidden min-w-0 items-center gap-2 border-x border-slate-100 px-3 py-1 text-left transition hover:bg-slate-50 disabled:cursor-default xl:flex"
               aria-label={`Workspace: ${company?.name || "Current workspace"}`}
               title={canManage ? "Open workspace settings" : "Current workspace"}
             >
-              <span className="min-w-0"><span className="block max-w-[124px] truncate text-[10px] font-bold uppercase tracking-[.04em] text-slate-800">{company?.name || "Current workspace"}</span><span className="mt-0.5 block text-[9px] font-medium text-slate-500">Workspace</span></span>
+              <Building2 size={17} className="shrink-0 text-slate-700" aria-hidden="true" />
+              <span className="min-w-0"><span className="block max-w-[124px] truncate text-[10px] font-bold uppercase tracking-[.04em] text-slate-800">{company?.name || "Current workspace"}</span><span className="mt-0.5 block text-[9px] font-medium text-slate-500">Company</span></span>
+              <ChevronDown size={13} className="shrink-0 text-slate-500" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => canManage && go("settings")}
+              disabled={!canManage}
+              className="dashboard-topbar-location hidden min-w-0 items-center gap-2 border-r border-slate-100 px-3 py-1 text-left transition hover:bg-slate-50 disabled:cursor-default xl:flex"
+              aria-label={`Workspace location: ${company?.city || company?.address || "Location not set"}`}
+              title={canManage ? "Open company profile location settings" : "Workspace location"}
+            >
+              <MapPin size={17} className="shrink-0 text-slate-700" aria-hidden="true" />
+              <span className="min-w-0"><span className="block max-w-[124px] truncate text-[10px] font-bold uppercase tracking-[.04em] text-slate-800">{company?.city || company?.address || "Location not set"}</span><span className="mt-0.5 block text-[9px] font-medium text-slate-500">Location</span></span>
               <ChevronDown size={13} className="shrink-0 text-slate-500" aria-hidden="true" />
             </button>
             {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
@@ -48573,18 +48623,19 @@ function SmartManager() {
               <kbd className="hidden sm:inline-block text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>}
             {active !== "ai" && visibleModules.some((module) => module.id === "ai") && <button type="button" onClick={() => go("ai")} className="dashboard-topbar-ai-shortcut inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl bg-[#0B5D3B] text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:hidden" aria-label="Open AI Command Center" title="Open AI Command Center"><Sparkles size={17} aria-hidden="true" /></button>}
-            <div className="dashboard-topbar-utility-group">
+            {visibleModules.some((module) => module.id === "collaboration") && <button type="button" onClick={() => go("collaboration")} className="dashboard-topbar-messages hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 xl:inline-flex" aria-label="Open collaboration messages" title="Open collaboration messages"><MessageSquare size={17} aria-hidden="true" /></button>}
+            <div className="dashboard-topbar-utility-group dashboard-topbar-right-rail">
               <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9 sm:min-w-9 sm:px-2" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
               <div className="dashboard-topbar-notification-slot"><NotificationCenter inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} /></div>
             </div>
             {quickCreateActions.length > 0 && (
               <div className="relative block">
-            <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="dashboard-topbar-create inline-flex items-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden 2xl:inline-flex sm:px-3">
+            <button ref={createMenuTriggerRef} type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" aria-label="Open create menu" aria-controls={createMenuOpen ? "dashboard-create-menu" : undefined} className="dashboard-topbar-create inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl bg-[#0B5D3B] px-2.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#084B30] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 lg:hidden 2xl:inline-flex sm:px-3">
                   <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" />
                 </button>
                 {createMenuOpen && (
                   <>
-                    <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
+                    <div id="dashboard-create-menu" className="absolute right-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl" role="menu" aria-label="Create a new record">
                       <p className="px-3 pb-1.5 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Create in workspace</p>
                       {quickCreateActions.map((action) => {
                         const ActionIcon = action.icon;
@@ -48614,7 +48665,7 @@ function SmartManager() {
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="hidden min-h-8 min-w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-slate-300 hover:text-[#111827]"
+              className="dashboard-topbar-theme inline-flex min-h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-[#111827] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
