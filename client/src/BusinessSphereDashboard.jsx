@@ -1125,9 +1125,10 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   // module has rows, keeps them visible during refreshes so navigation does
   // not blank or flicker the page.
   const isLive = IS_CONFIGURED && !DEMO_OVERRIDE;
-  const [rowsState, setRowsState] = useState(isLive ? [] : seed);
-  const rowsRef = useRef(isLive ? [] : seed);
-  const confirmedRowsRef = useRef(isLive ? [] : seed);
+  const initialRows = Array.isArray(seed) ? seed : [];
+  const [rowsState, setRowsState] = useState(isLive ? [] : initialRows);
+  const rowsRef = useRef(isLive ? [] : initialRows);
+  const confirmedRowsRef = useRef(isLive ? [] : initialRows);
   const [loading, setLoading] = useState(isLive);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -1158,7 +1159,8 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
     try {
       const result = await runCompanyTableQuery(table, { select: selectRef.current, order: orderRef.current });
       const mapper = mapRowRef.current;
-      const confirmedRows = mapper ? result.rows.map(mapper) : result.rows;
+      const sourceRows = Array.isArray(result?.rows) ? result.rows : [];
+      const confirmedRows = mapper ? sourceRows.map(mapper).filter(Boolean) : sourceRows;
       confirmedRowsRef.current = confirmedRows;
       setRows(confirmedRows);
       setUnavailable(result.unavailable);
@@ -5387,6 +5389,8 @@ const filesSeed = [
 
 /* -------------------------------- MARKETING DATA --------------------------------- */
 
+const CHAT_STATUS_COLOR = { Open: "#16A34A", Waiting: "#F59E0B", Closed: "#94A3B8", Resolved: "#2563EB" };
+
 const CAMPAIGN_TYPE_STYLE = {
   Email: { color: "#16A34A", Icon: Mail },
   SMS: { color: "#F59E0B", Icon: MessageSquare },
@@ -6095,7 +6099,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       return d.toISOString().slice(0, 7);
     });
     return months.map((month) => {
-      const revenue = invoices.rows.filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+      const revenue = invoiceRows.filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
       const expensesValue = expenses.rows.filter((expense) => expense.date?.startsWith(month)).reduce((sum, expense) => sum + (expense.amount || 0), 0);
       return { month: new Date(`${month}-01`).toLocaleDateString("en", { month: "short" }), revenue_tzs_k: Math.round(revenue / 1000), expenses_tzs_k: Math.round(expensesValue / 1000), profit_tzs_k: Math.round((revenue - expensesValue) / 1000) };
     });
@@ -15325,6 +15329,8 @@ function InlinePayForm({ onSubmit, max }) {
 }
 
 function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, company }) {
+  const safeOutstanding = Array.isArray(outstanding) ? outstanding : [];
+  const safeRecordPayment = typeof onRecordPayment === "function" ? onRecordPayment : () => {};
   const [view, setView] = useState("aging"); // "aging" | "customer" | "detail"
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
@@ -15334,7 +15340,7 @@ function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, compa
   const BUCKETS = ["Current", "1–30 days", "31–60 days", "61–90 days", "90+ days", "No due date"];
   const BUCKET_COLORS = { "Current": "#16A34A", "1–30 days": "#F59E0B", "31–60 days": "#F97316", "61–90 days": "#EF4444", "90+ days": "#991B1B", "No due date": "#94A3B8" };
 
-  const aged = useMemo(() => outstanding.map((inv) => {
+  const aged = useMemo(() => safeOutstanding.map((inv) => {
     const { total } = lineTotal(inv.items);
     const balance = total - (inv.amountPaid || 0);
     const bucket = agingBucket(inv.dueDate);
@@ -15513,7 +15519,7 @@ function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, compa
                         }}
                         className="text-[11px] font-medium text-[#2563EB] border border-[#2563EB]/30 rounded-lg px-2 py-1 hover:bg-[#2563EB]/5 flex items-center gap-1"
                       ><Mail size={11}/> Email</button>
-                      <button onClick={() => setSelected(inv)} className="text-[11px] font-medium text-white bg-[#16A34A] rounded-lg px-2 py-1 hover:bg-[#15803D]">Pay</button>
+                      <button type="button" onClick={(event) => { event.stopPropagation(); setSelected(inv); }} className="text-[11px] font-medium text-white bg-[#16A34A] rounded-lg px-2 py-1 hover:bg-[#15803D]">Pay</button>
                     </div>
                   </td>
                 </tr>
@@ -15538,7 +15544,7 @@ function Receivables({ outstanding, onMarkPaid, onDelete, onRecordPayment, compa
             <button onClick={() => setSelected(null)} className="text-slate-400 hover:text-slate-600 text-[18px] leading-none">×</button>
           </div>
           <p className="text-[12px] text-slate-500">Balance: TZS {money(Math.round(selected.balance))}k</p>
-          <InlinePayForm onSubmit={(payment) => { onRecordPayment(selected.id, payment); setSelected(null); }} max={selected.balance} />
+          <InlinePayForm onSubmit={(payment) => { safeRecordPayment(selected.id, payment); setSelected(null); }} max={selected.balance} />
         </div>
       )}
     </div>
@@ -16098,7 +16104,7 @@ function ChartOfAccountsView({ invoices, expenses, posTransactions, company }) {
   const assetsHook = useCompanyTable("finance_assets", financeAssetsSeed, { mapRow: mapAssetRow });
 
   const balances = useMemo(() => {
-    const ledger = buildLedger(invoices.rows, expenses, posTransactions || []);
+    const ledger = buildLedger(invoiceRows, expenseRows, posRows);
     const cash = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
     const ar = invoices.rows.filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
     const ap = expenses.filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0);
@@ -16598,26 +16604,30 @@ function BudgetsView({ expenses }) {
 // categorized, not matched to units sold) — named on-screen, not proxied
 // with a formula that would look precise and be wrong.
 function FinancialRatiosView({ invoices, expenses, posTransactions, inventory }) {
+  const invoiceRows = Array.isArray(invoices?.rows) ? invoices.rows : [];
+  const expenseRows = Array.isArray(expenses) ? expenses : [];
+  const inventoryRows = Array.isArray(inventory?.rows) ? inventory.rows : [];
+  const posRows = Array.isArray(posTransactions) ? posTransactions : [];
   const loansHook = useCompanyTable("business_loans", [], { mapRow: (r) => ({ id: r.id, principal: Number(r.principal) || 0, repayments: (r.loan_repayments || []).map((rp) => ({ amount: Number(rp.amount) || 0 })) }), select: "*,loan_repayments(*)" });
 
   const f = useMemo(() => {
     const ledger = buildLedger(invoices.rows, expenses, posTransactions || []);
     const cash   = ledger.length ? ledger[ledger.length - 1].balance : 0;
-    const ar     = invoices.rows.filter(i => i.status !== "Paid").reduce((s,i) => s + (lineTotal(i.items).total - (i.amountPaid||0)), 0);
-    const inv    = computeValuationByCategory(inventory.rows).grandTotal;
-    const ap     = expenses.filter(e => e.status !== "Paid").reduce((s,e) => s + e.amount, 0);
+    const ar     = invoiceRows.filter(i => i.status !== "Paid").reduce((s,i) => s + (lineTotal(i.items).total - (i.amountPaid||0)), 0);
+    const inv    = computeValuationByCategory(inventoryRows).grandTotal;
+    const ap     = expenseRows.filter(e => e.status !== "Paid").reduce((s,e) => s + e.amount, 0);
     const loans  = loansHook.rows.reduce((s,l) => s + Math.max(0, l.principal - l.repayments.reduce((rs,r) => rs+r.amount, 0)), 0);
     const liab   = ap + loans;
     const yearStart = `${TODAY.getFullYear()}-01-01`;
     const revenue = invoices.rows.filter(i => i.date >= yearStart).reduce((s,i) => s + lineTotal(i.items).total, 0)
-      + (posTransactions||[]).filter(t => (t.date||"") >= yearStart).reduce((s,t) => s + t.items.reduce((ts,it) => ts+it.qty*it.price, 0), 0);
-    const expYtd  = expenses.filter(e => e.date >= yearStart).reduce((s,e) => s + e.amount, 0);
+      + posRows.filter(t => (t.date||"") >= yearStart).reduce((s,t) => s + t.items.reduce((ts,it) => ts+it.qty*it.price, 0), 0);
+    const expYtd  = expenseRows.filter(e => e.date >= yearStart).reduce((s,e) => s + e.amount, 0);
     const profit  = revenue - expYtd;
     const dayOfYear = Math.max(1, Math.floor((TODAY - new Date(`${TODAY.getFullYear()}-01-01`)) / 86400000) + 1);
     const equity  = cash + ar + inv - liab;
     const avgMonthlyExp = expYtd / Math.max(1, TODAY.getMonth() + 1);
     return { cash, ar, inv, liab, revenue, profit, dayOfYear, equity, avgMonthlyExp };
-  }, [invoices.rows, expenses, posTransactions, inventory.rows, loansHook.rows]);
+  }, [invoiceRows, expenseRows, posRows, inventoryRows, loansHook.rows]);
 
   const ratios = [
     { label:"Current Ratio",    short:"Liquidity",  value:f.liab>0?((f.cash+f.ar+f.inv)/f.liab).toFixed(2):"∞",   formula:"(Cash + AR + Inv) ÷ Liabilities",        target:1.5, scale:3, good:"↑" },
@@ -18509,7 +18519,7 @@ function WorkingTimetable({ employees, currentUser, canManage }) {
 
 function DutyFormPanel({ employees, onClose, onSubmit }) {
   const [form, setForm] = useState({
-    title:"", assignee: employees.filter(e=>e.status==="Active")[0]?.name||"ALL",
+    title:"", assignee: safeEmployees.filter(e=>e.status==="Active")[0]?.name||"ALL",
     dept:"", date:TODAY.toISOString().slice(0,10),
     startTime:"09:00", endTime:"10:00",
     type:"Operations", priority:"Medium", notes:"",
@@ -19745,7 +19755,9 @@ function BiometricClockPanel({ employees, attendance }) {
 
 function Attendance({ employees }) {
   const attendance = useCompanyTable("hr_attendance", attendanceSeed, { order: { col: "attendance_date", ascending: false }, mapRow: mapAttendanceRow });
-  const { rows, setRows, loading } = attendance;
+  const { rows: rawRows, setRows, loading } = attendance;
+  const rows = Array.isArray(rawRows) ? rawRows : [];
+  const safeEmployees = Array.isArray(employees) ? employees : [];
   const [showForm, setShowForm] = useState(false);
   const todayStr = TODAY.toISOString().slice(0, 10);
 
@@ -19833,7 +19845,7 @@ function Attendance({ employees }) {
         </div>
       </div>
 
-      <BiometricClockPanel employees={employees} attendance={attendance} />
+      <BiometricClockPanel employees={safeEmployees} attendance={{ ...attendance, rows }} />
 
       {/* ── Biometric Verification Summary ── */}
       {(() => {
@@ -31630,7 +31642,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
   async function installTemplate(template) {
     const draft = {
       id: docId("WF"), name: template.name, trigger: template.trigger, enabled: true, lastRun: null,
-      steps: template.steps.map((s, i) => ({ ...s, id: `s${i}-${Date.now()}` })),
+      steps: (Array.isArray(template?.steps) ? template.steps : []).map((s, i) => ({ ...s, id: `s${i}-${Date.now()}` })),
     };
     workflows.setRows((prev) => [draft, ...prev]);
     notify(`Installed: ${template.name} — find it under My Workflows.`);
@@ -31649,7 +31661,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
   // empty), since those are this company own contact data, not
   // something that belongs in a template another company installs.
   async function publishTemplate({ workflow, category, description }) {
-    const sanitizedSteps = workflow.steps.map((s) => (s.type === "draft_email" ? { ...s, config: { ...s.config, recipient: "" } } : s));
+    const sanitizedSteps = (Array.isArray(workflow?.steps) ? workflow.steps : []).map((s) => (s.type === "draft_email" ? { ...s, config: { ...s.config, recipient: "" } } : s));
     const draft = {
       id: `TPL-${Date.now()}`, name: workflow.name, description, category, trigger: workflow.trigger,
       steps: sanitizedSteps, publisherName: company.name, isOfficial: false, installCount: 0,
@@ -31686,7 +31698,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
       }
       setRunTrace((prev) => ({ ...prev, results: [{ stepId: "condition", ok: true, detail: `Condition met — ${verdict.detail}` }] }));
     }
-    for (const step of workflow.steps) {
+    for (const step of (Array.isArray(workflow?.steps) ? workflow.steps : [])) {
       const result = await executeWorkflowStep(step, context);
       setRunTrace((prev) => ({ ...prev, results: [...prev.results, { stepId: step.id, ...result }] }));
     }
@@ -31760,8 +31772,8 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
               <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${w.enabled ? "bg-[#16A34A]/10 text-[#16A34A]" : "bg-slate-100 text-slate-400"}`}>{w.enabled ? "Enabled" : "Disabled"}</span>
             </div>
             <div className="flex items-center gap-1 mb-3 flex-wrap">
-              {w.steps.map((s, i) => {
-                const stepType = WORKFLOW_STEP_TYPES.find((t) => t.id === s.type);
+              {(Array.isArray(w.steps) ? w.steps : []).map((s, i) => {
+                const stepType = WORKFLOW_STEP_TYPES.find((t) => t.id === s?.type);
                 const Icon = stepType?.icon || Circle;
                 const trace = runTrace?.workflowId === w.id ? runTrace.results[i] : null;
                 return (
@@ -32001,7 +32013,8 @@ function WorkflowBuilder({ workflow, onClose, onSave }) {
 function AutomationMarketplace({ templates, loading, onInstall }) {
   const [category, setCategory] = useState("All");
   const [previewing, setPreviewing] = useState(null);
-  const filtered = category === "All" ? templates : templates.filter((t) => t.category === category);
+  const safeTemplates = Array.isArray(templates) ? templates : [];
+  const filtered = category === "All" ? safeTemplates : safeTemplates.filter((t) => t.category === category);
 
   return (
     <div className="space-y-4">
@@ -32029,10 +32042,10 @@ function AutomationMarketplace({ templates, loading, onInstall }) {
             <p className="text-[13.5px] font-semibold text-[#111827] mb-1">{t.name}</p>
             <p className="text-[12px] text-slate-500 leading-relaxed mb-3 flex-1">{t.description}</p>
             <div className="flex items-center gap-1 mb-3 flex-wrap">
-              {t.steps.map((s, i) => {
-                const stepType = WORKFLOW_STEP_TYPES.find((wt) => wt.id === s.type);
+              {(Array.isArray(t.steps) ? t.steps : []).map((step, i) => {
+                const stepType = WORKFLOW_STEP_TYPES.find((wt) => wt.id === step?.type);
                 const Icon = stepType?.icon || Circle;
-                return <div key={i} className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: `${stepType?.color}14` }} title={stepType?.label}><Icon size={11} style={{ color: stepType?.color }} /></div>;
+                return <div key={i} className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: `${stepType?.color || "#94A3B8"}14` }} title={stepType?.label || "Workflow step"}><Icon size={11} style={{ color: stepType?.color || "#94A3B8" }} /></div>;
               })}
             </div>
             <p className="text-[10.5px] text-slate-400 mb-3">By {t.publisherName} · {t.installCount} install{t.installCount === 1 ? "" : "s"}</p>
@@ -32052,7 +32065,8 @@ function AutomationMarketplace({ templates, loading, onInstall }) {
 function PublishTemplatePanel({ workflow, onClose, onPublish }) {
   const [category, setCategory] = useState("Finance");
   const [description, setDescription] = useState("");
-  const hasEmailStep = workflow.steps.some((s) => s.type === "draft_email");
+  const workflowSteps = Array.isArray(workflow?.steps) ? workflow.steps : [];
+  const hasEmailStep = workflowSteps.some((s) => s.type === "draft_email");
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -39840,8 +39854,8 @@ function Campaigns({ campaigns, segments }) {
             <tbody>
               {loading && <SkeletonRows cols={6} />}
               {!loading && rows.map((c) => {
-                const typeMeta = CAMPAIGN_TYPE_STYLE[c.type];
-                const TypeIcon = typeMeta.Icon;
+                const typeMeta = CAMPAIGN_TYPE_STYLE[c.type] || { Icon: Megaphone, color: "#64748B" };
+                const TypeIcon = typeMeta.Icon || Megaphone;
                 const audience = segments.find((s) => s.industry === c.segment)?.count || 0;
                 return (
                   <tr key={c.id} onClick={() => setSelected(c)} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors">
@@ -39860,9 +39874,9 @@ function Campaigns({ campaigns, segments }) {
                     <td className="px-4 py-3">
                       <span
                         className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
-                        style={{ backgroundColor: `${CAMPAIGN_STATUS_COLOR[c.status]}14`, color: CAMPAIGN_STATUS_COLOR[c.status] }}
+                        style={{ backgroundColor: `${(CAMPAIGN_STATUS_COLOR[c.status] || "#64748B")}14`, color: (CAMPAIGN_STATUS_COLOR[c.status] || "#64748B") }}
                       >
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CAMPAIGN_STATUS_COLOR[c.status] }} />
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: (CAMPAIGN_STATUS_COLOR[c.status] || "#64748B") }} />
                         {c.status}
                       </span>
                     </td>
@@ -39905,8 +39919,8 @@ function Campaigns({ campaigns, segments }) {
 }
 
 function CampaignPanel({ campaign, audience, onClose, onAdvance, onDelete }) {
-  const typeMeta = CAMPAIGN_TYPE_STYLE[campaign.type];
-  const TypeIcon = typeMeta.Icon;
+  const typeMeta = CAMPAIGN_TYPE_STYLE[campaign.type] || { Icon: Megaphone, color: "#64748B" };
+  const TypeIcon = typeMeta.Icon || Megaphone;
   const nextStatus = CAMPAIGN_STATUS_NEXT[campaign.status];
 
   return (
@@ -39929,9 +39943,9 @@ function CampaignPanel({ campaign, audience, onClose, onAdvance, onDelete }) {
         <div className="mb-6">
           <span
             className="text-[11px] font-medium px-2 py-1 rounded-full inline-flex items-center gap-1.5"
-            style={{ backgroundColor: `${CAMPAIGN_STATUS_COLOR[campaign.status]}14`, color: CAMPAIGN_STATUS_COLOR[campaign.status] }}
+            style={{ backgroundColor: `${(CAMPAIGN_STATUS_COLOR[campaign.status] || "#64748B")}14`, color: (CAMPAIGN_STATUS_COLOR[campaign.status] || "#64748B") }}
           >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CAMPAIGN_STATUS_COLOR[campaign.status] }} />
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: (CAMPAIGN_STATUS_COLOR[campaign.status] || "#64748B") }} />
             {campaign.status}
           </span>
         </div>

@@ -16,6 +16,7 @@ export async function createAccountPasskeyClient({ supabaseUrl, supabaseAnonKey,
       persistSession: false,
       detectSessionInUrl: false,
       experimental: { passkey: true },
+      flowType: "pkce",
     },
   });
   const { error } = await client.auth.setSession({
@@ -33,6 +34,7 @@ export function createPublicPasskeyClient({ supabaseUrl, supabaseAnonKey }) {
       persistSession: false,
       detectSessionInUrl: false,
       experimental: { passkey: true },
+      flowType: "pkce",
     },
   });
 }
@@ -60,7 +62,13 @@ export async function listAccountPasskeys(client) {
 }
 
 export async function registerAccountPasskey(client) {
-  const { data, error } = await client.auth.registerPasskey();
+  const register = client.auth.registerPasskey || client.auth.passkey?.register;
+  if (typeof register !== "function") {
+    const error = new Error("Passkey creation is not supported by the configured Supabase Auth client.");
+    error.code = "PASSKEY_UNSUPPORTED";
+    throw error;
+  }
+  const { data, error } = await register.call(client.auth);
   if (error) throw error;
   return data;
 }
@@ -78,6 +86,7 @@ export async function revokeAccountPasskey(client, passkeyId) {
 
 export function passkeyUserMessage(error) {
   const code = String(error?.code || "").toLowerCase();
+  if (code === "passkey_unsupported") return "Passkey creation is unavailable in this browser or the configured authentication service. Use HTTPS and update the workspace Auth passkey settings.";
   if (code === "passkey_disabled") return "Account passkeys are not enabled for this workspace yet. An administrator must finish the Supabase relying-party setup first.";
   if (code === "too_many_passkeys") return "This account has reached its passkey limit. Revoke an unused credential before adding another.";
   if (code === "webauthn_credential_exists") return "This device or password manager already has a passkey for this account.";
@@ -88,6 +97,7 @@ export function passkeyUserMessage(error) {
 
 export function passkeySignInUserMessage(error) {
   const code = String(error?.code || "").toLowerCase();
+  if (code === "passkey_unsupported") return "Passkey creation is unavailable in this browser or the configured authentication service. Use HTTPS and update the workspace Auth passkey settings.";
   if (code === "passkey_disabled") return "Passkey sign-in is not enabled for this workspace yet. Use your email or an approved provider, then ask an administrator to complete the Supabase relying-party setup.";
   if (code === "webauthn_credential_not_found") return "No matching Smart Manager passkey was found on this device or password manager. Use your email or another approved sign-in method.";
   if (code === "email_not_confirmed") return "Confirm your email before using a registered passkey to sign in.";
