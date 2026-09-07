@@ -6099,7 +6099,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       return d.toISOString().slice(0, 7);
     });
     return months.map((month) => {
-      const revenue = invoiceRows.filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+      const revenue = invoices.rows.filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
       const expensesValue = expenses.rows.filter((expense) => expense.date?.startsWith(month)).reduce((sum, expense) => sum + (expense.amount || 0), 0);
       return { month: new Date(`${month}-01`).toLocaleDateString("en", { month: "short" }), revenue_tzs_k: Math.round(revenue / 1000), expenses_tzs_k: Math.round(expensesValue / 1000), profit_tzs_k: Math.round((revenue - expensesValue) / 1000) };
     });
@@ -16100,25 +16100,28 @@ const STANDARD_CHART_OF_ACCOUNTS = [
 // touching the write path of every module that moves money — Sales,
 // POS, Procurement, Payroll — a real, separately-scoped project.
 function ChartOfAccountsView({ invoices, expenses, posTransactions, company }) {
+  const invoiceRows = Array.isArray(invoices?.rows) ? invoices.rows : [];
+  const expenseRows = Array.isArray(expenses) ? expenses : [];
+  const posRows = Array.isArray(posTransactions) ? posTransactions : [];
   const [detailed, setDetailed] = useState(company?.businessScale !== "small");
   const assetsHook = useCompanyTable("finance_assets", financeAssetsSeed, { mapRow: mapAssetRow });
 
   const balances = useMemo(() => {
     const ledger = buildLedger(invoiceRows, expenseRows, posRows);
     const cash = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
-    const ar = invoices.rows.filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
-    const ap = expenses.filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0);
+    const ar = invoiceRows.filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
+    const ap = expenseRows.filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0);
     const fixedAssetsNet = assetsHook.rows.reduce((s, a) => s + depreciate(a).bookValue, 0);
-    const revenue = invoices.rows.reduce((s, inv) => s + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0)), 0)
-      + (posTransactions || []).reduce((s, t) => s + Math.round(t.items.reduce((si, it) => si + it.qty * it.price, 0) * (1 + TAX_RATE)), 0);
+    const revenue = invoiceRows.reduce((s, inv) => s + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0)), 0)
+      + posRows.reduce((s, t) => s + Math.round(t.items.reduce((si, it) => si + it.qty * it.price, 0) * (1 + TAX_RATE)), 0);
     const expenseByCategory = {};
-    expenses.forEach((e) => { expenseByCategory[e.category] = (expenseByCategory[e.category] || 0) + e.amount; });
+    expenseRows.forEach((e) => { expenseByCategory[e.category] = (expenseByCategory[e.category] || 0) + e.amount; });
     // Inventory reuses the exact same computation the Balance Sheet uses —
     // requires the real inventory rows, not available at this call site
     // without threading a new prop, so it's read here as its own real,
     // independent instance rather than duplicated arithmetic.
     return { cash, ar, ap, fixedAssetsNet, revenue, expenseByCategory };
-  }, [invoices.rows, expenses, posTransactions, assetsHook.rows]);
+  }, [invoiceRows, expenseRows, posRows, assetsHook.rows]);
 
   const rows = STANDARD_CHART_OF_ACCOUNTS.map((acc) => {
     let debit = 0, credit = 0;
@@ -16611,7 +16614,7 @@ function FinancialRatiosView({ invoices, expenses, posTransactions, inventory })
   const loansHook = useCompanyTable("business_loans", [], { mapRow: (r) => ({ id: r.id, principal: Number(r.principal) || 0, repayments: (r.loan_repayments || []).map((rp) => ({ amount: Number(rp.amount) || 0 })) }), select: "*,loan_repayments(*)" });
 
   const f = useMemo(() => {
-    const ledger = buildLedger(invoices.rows, expenses, posTransactions || []);
+    const ledger = buildLedger(invoiceRows, expenseRows, posRows);
     const cash   = ledger.length ? ledger[ledger.length - 1].balance : 0;
     const ar     = invoiceRows.filter(i => i.status !== "Paid").reduce((s,i) => s + (lineTotal(i.items).total - (i.amountPaid||0)), 0);
     const inv    = computeValuationByCategory(inventoryRows).grandTotal;
@@ -16619,7 +16622,7 @@ function FinancialRatiosView({ invoices, expenses, posTransactions, inventory })
     const loans  = loansHook.rows.reduce((s,l) => s + Math.max(0, l.principal - l.repayments.reduce((rs,r) => rs+r.amount, 0)), 0);
     const liab   = ap + loans;
     const yearStart = `${TODAY.getFullYear()}-01-01`;
-    const revenue = invoices.rows.filter(i => i.date >= yearStart).reduce((s,i) => s + lineTotal(i.items).total, 0)
+    const revenue = invoiceRows.filter(i => i.date >= yearStart).reduce((s,i) => s + lineTotal(i.items).total, 0)
       + posRows.filter(t => (t.date||"") >= yearStart).reduce((s,t) => s + t.items.reduce((ts,it) => ts+it.qty*it.price, 0), 0);
     const expYtd  = expenseRows.filter(e => e.date >= yearStart).reduce((s,e) => s + e.amount, 0);
     const profit  = revenue - expYtd;
