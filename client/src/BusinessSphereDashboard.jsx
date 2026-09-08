@@ -1486,8 +1486,9 @@ function mapTrainingRow(r) {
 function LmsInsightsPanel({ employees }) {
   const training = useCompanyTable("hr_training", [], { order: { col: "created_at", ascending: false }, mapRow: mapTrainingRow, select: "*,hr_employees(full_name)" });
   const t = TODAY.toISOString().slice(0, 10);
+  const employeeRows = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
 
-  const deptOf = (name) => (employees.rows.find((e) => e.name === name)?.department) || "General";
+  const deptOf = (name) => (employeeRows.find((e) => e.name === name)?.department) || "General";
   const byDept = {};
   training.rows.forEach((row) => {
     const d = deptOf(row.employee);
