@@ -49,7 +49,6 @@ import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
-import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
@@ -48362,92 +48361,50 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} grid min-h-[82px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200/80 bg-white/90 px-4 py-3 shadow-[0_8px_28px_rgba(15,23,42,.05)] backdrop-blur-2xl sm:min-h-[82px] sm:px-6 sm:py-3 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
-          <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-[76px] shrink-0 items-center justify-between gap-4 border-b border-slate-200/80 bg-white/90 px-4 py-3 shadow-[0_8px_28px_rgba(15,23,42,.05)] backdrop-blur-2xl sm:min-h-[82px] sm:px-6 sm:py-3 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+          <div className="dashboard-topbar-context flex min-w-0 items-center gap-3">
             <button
-              className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 lg:hidden"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 p-1.5 shadow-sm sm:hidden"><BrandLogo variant="compact" priority className="h-6 w-6" /></span>
-            <div className="hidden min-w-0 items-center gap-3 sm:flex">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-100"><ActiveModuleIcon size={18} strokeWidth={2.1} /></span>
-              <div className="min-w-0">
-                <div className="flex min-w-0 items-center gap-2"><span className="truncate text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">{company.name}</span><span className="hidden md:inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.08em] text-slate-500">{currentUser.role}</span></div>
-                <div className="mt-0.5 flex min-w-0 items-center gap-2"><span className="truncate text-[18px] font-black tracking-[-.04em] text-slate-950">{activeModuleLabel}</span><span className="hidden items-center gap-1 text-[10px] font-semibold text-emerald-700 md:inline-flex"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Live workspace</span></div>
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-slate-200"><BrandLogo variant="compact" priority className="h-7 w-7" /></span>
+              <div className="min-w-0 leading-none">
+                <span className="block truncate text-[15px] font-black tracking-[-.035em] text-slate-950 sm:text-[17px]">SMART MANAGER</span>
+                <span className="mt-1 block text-[8px] font-bold uppercase tracking-[.28em] text-emerald-700 sm:text-[9px]">ERP SYSTEM</span>
               </div>
             </div>
           </div>
           <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-2">
-            {preferences.showConnectionStatus && <span
-              className="dashboard-topbar-status hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.1em] lg:flex"
-              style={
-                IS_CONFIGURED
-                  ? { backgroundColor: "#16A34A14", color: "#16A34A" }
-                  : { backgroundColor: "#F59E0B14", color: "#F59E0B" }
-              }
-              title={IS_CONFIGURED ? "Connected to Supabase" : "Running on built-in demo data — connect Supabase to persist changes"}
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: !online ? "#EF4444" : IS_CONFIGURED ? "#16A34A" : "#F59E0B" }} />
-              {!online ? "Offline — writes paused" : IS_CONFIGURED ? "Live" : "Demo Mode"}
-            </span>}
-            {IS_CONFIGURED && subscriptionAccess.ready && <button type="button" disabled={!canManageBilling} onClick={() => canManageBilling && go("billing")} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-default disabled:opacity-100" title={subscriptionAccess.access.reason} aria-label={`Subscription status: ${subscriptionStateLabel(subscriptionAccess.access)}`}><span className={`h-1.5 w-1.5 rounded-full ${subscriptionAccess.access.allowed ? "bg-emerald-500" : "bg-rose-500"}`} />{subscriptionStateLabel(subscriptionAccess.access)}</button>}
-            {preferences.showTopBarSearch && <button
+            <button
+              type="button"
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 xl:h-auto xl:min-h-10 xl:w-auto xl:min-w-[178px] xl:justify-start xl:bg-slate-50 xl:px-3 xl:py-2.5"
+              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 xl:h-auto xl:min-h-10 xl:w-auto xl:min-w-[230px] xl:justify-start xl:bg-slate-50 xl:px-3 xl:py-2.5"
               aria-label="Search everything"
             >
-              <Search size={13} />
-              <span className="hidden xl:inline">Search workspace</span>
+              <Search size={14} />
+              <span className="hidden xl:inline">Search anything...</span>
               <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 sm:inline-block">⌘K</kbd>
-            </button>}
-            {quickCreateActions.length > 0 && (
-              <div className="relative block">
-                <button type="button" onClick={() => setCreateMenuOpen((open) => !open)} aria-expanded={createMenuOpen} aria-haspopup="menu" className="inline-flex items-center gap-1.5 rounded-2xl bg-slate-950 px-3 py-2.5 text-[11px] font-bold text-white shadow-[0_8px_18px_rgba(15,23,42,.16)] transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:px-3.5">
-                  <Plus size={13} aria-hidden="true" /> <span className="hidden sm:inline">Create</span><ChevronDown size={12} aria-hidden="true" className={`transition-transform duration-200 motion-reduce:transition-none ${createMenuOpen ? "rotate-180" : ""}`} />
-                </button>
-                {createMenuMounted && (
-                  <>
-                    <button type="button" className={`create-menu-backdrop fixed inset-0 z-30 cursor-default transition-opacity duration-200 motion-reduce:transition-none ${createMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"}`} aria-label="Close create menu" onClick={() => setCreateMenuOpen(false)} />
-                    <div className={`create-menu-panel absolute right-0 top-full z-40 mt-2 w-60 origin-top-right rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none motion-reduce:transform-none ${createMenuOpen ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-1 scale-[.98] opacity-0"}`} role="menu" aria-label="Create a new record">
-                      <p className="px-3 pb-1.5 pt-2 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Create in workspace</p>
-                      {quickCreateActions.map((action) => {
-                        const ActionIcon = action.icon;
-                        return <button key={action.id} type="button" role="menuitem" onClick={() => { setCreateMenuOpen(false); goWithIntent(action.module, action.intent); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"><span className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-50 text-emerald-700"><ActionIcon size={14} aria-hidden="true" /></span><span className="min-w-0"><span className="block truncate text-[12px] font-semibold text-slate-800">{action.label}</span><span className="block truncate text-[10px] text-slate-400">{action.description}</span></span></button>;
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-            {preferences.showGuidedTour && <div className="dashboard-topbar-tour hidden shrink-0 lg:block"><OnboardingTour currentUser={currentUser} company={company} visibleModules={visibleModules} onNavigate={go} onTourVisibilityChange={handleOnboardingVisibilityChange} /></div>}
-            {preferences.showTopBarDate && <span className="hidden xl:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-500 select-none">
-              <Calendar size={12} className="text-slate-400" />
-              {TODAY.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-            </span>}
-            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-0 text-slate-500 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 sm:min-h-9 sm:min-w-9 sm:px-2" aria-label="Customize dashboard layout" title="Customize dashboard layout"><Sliders size={15} aria-hidden="true" /><span className="hidden 2xl:inline text-[10.5px] font-bold">Customize</span></button>
-            {/* ── Smart Alerts badge ── */}
-            {criticalAlerts.length > 0 && (
-              <button onClick={()=>go("notifications")} className="dashboard-topbar-alert hidden items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[10.5px] font-bold text-rose-700 animate-pulse lg:flex" style={{background:"#FEF2F2",color:"#991B1B",border:"1px solid #FECACA"}}>
-                <AlertCircle size={13}/>
-                {criticalAlerts.length} Alert{criticalAlerts.length>1?"s":""}
-              </button>
-            )}
-            <span className="hidden xl:block"><WorkspacePresenceBadge userName={currentUser?.name || "Workspace user"} /></span>
+            </button>
+            <button type="button" onClick={() => go("notifications")} className="relative inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 text-slate-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
+              <AlertCircle size={16} aria-hidden="true" />
+              {criticalAlerts.length > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white">{criticalAlerts.length}</span>}
+            </button>
             {/* ── Dark mode toggle ── */}
             <button
               type="button"
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="hidden min-h-9 min-w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 lg:flex lg:h-10 lg:w-10"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
-                        <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+            <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
             <div className="dashboard-topbar-profile shrink-0">
               <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
             </div>
