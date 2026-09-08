@@ -29622,6 +29622,7 @@ function DataQualityView({ crm, invoices, expenses, inventory, employees }) {
   const findings = useMemo(() => {
     const out = [];
     const phoneOk = (p) => !p || /^[+0-9][0-9\s\-]{6,15}$/.test(p.trim());
+    const expenseRows = Array.isArray(expenses?.rows) ? expenses.rows : (Array.isArray(expenses) ? expenses : []);
 
     const seen = {};
     crm.rows.forEach((l) => { const k = l.company.trim().toLowerCase(); (seen[k] = seen[k] || []).push(l.company); });
@@ -29640,7 +29641,7 @@ function DataQualityView({ crm, invoices, expenses, inventory, employees }) {
     const noDue = invoices.rows.filter((i) => i.status !== "Paid" && !i.dueDate);
     out.push({ label: "Unpaid invoices missing due date", count: noDue.length, sample: noDue.slice(0, 3).map((i) => i.id).join(", "), fix: "Sales > Invoices — no due date means invisible to aging, budgets, and the Risk Center." });
 
-    const noMethod = expenses.filter((e) => e.status === "Paid" && !e.method);
+    const noMethod = expenseRows.filter((e) => e.status === "Paid" && !e.method);
     out.push({ label: "Paid expenses missing payment method", count: noMethod.length, sample: noMethod.slice(0, 3).map((e) => e.vendor).join(", "), fix: "Finance > Payables — method gaps weaken the Cash Flow statement's honesty." });
 
     return out;
