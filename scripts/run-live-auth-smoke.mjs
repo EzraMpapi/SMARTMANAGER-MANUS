@@ -75,7 +75,7 @@ try {
     }
   }
   if (consoleErrors.length) throw new Error(`Browser errors: ${consoleErrors.join(" | ")}`);
-  console.log(JSON.stringify({ target: baseURL, authenticatedAs: email, modules: moduleChecks.map((x) => x.name), status: "passed" }, null, 2));
+  console.log(JSON.stringify({ target: baseURL, authenticatedAs: email, header: ["brand", "search", "alerts", "theme", "notifications", "profile"], modules: moduleChecks.map((x) => x.name), status: "passed" }, null, 2));
 } finally {
   await browser.close();
 }
