@@ -47914,6 +47914,17 @@ function SmartManager() {
         ? left.label.localeCompare(right.label, "en")
         : Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.order - right.order),
     })), [active, navigationGroups, preferences.visibleNavigationGroupIds, sidebarModuleOrder]);
+  const [sidebarQuery, setSidebarQuery] = useState("");
+  const filteredNavigationGroups = useMemo(() => {
+    const query = sidebarQuery.trim().toLocaleLowerCase();
+    if (!query) return displayedNavigationGroups;
+    return displayedNavigationGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => `${item.label} ${group.label}`.toLocaleLowerCase().includes(query)),
+      }))
+      .filter((group) => group.items.length > 0 || group.label.toLocaleLowerCase().includes(query));
+  }, [displayedNavigationGroups, sidebarQuery]);
   const flatNavigationItems = useMemo(() => [
     ...displayedNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
     ...(displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
@@ -48301,10 +48312,12 @@ function SmartManager() {
         </div>
 
         <div className="dashboard-sidebar-tools border-b border-slate-200/70 px-3 py-4">
-          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5 text-left shadow-[0_4px_16px_rgba(15,23,42,.04)] transition hover:border-emerald-200 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-slate-950 text-white shadow-sm transition group-hover:bg-emerald-600"><Search size={15} /></span>
-            {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-700">Command palette</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Search modules and records</span></span><kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400">⌘K</kbd></>}
-          </button>
+          <div className={`group flex w-full items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5 text-left shadow-[0_4px_16px_rgba(15,23,42,.04)] transition focus-within:border-emerald-300 focus-within:ring-2 focus-within:ring-emerald-600/10 ${sidebarCollapsed ? "justify-center px-2" : ""}`}>
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-slate-950 text-white shadow-sm transition group-focus-within:bg-emerald-600"><Search size={15} /></span>
+            {!sidebarCollapsed && <><input value={sidebarQuery} onChange={(event) => setSidebarQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") setSidebarQuery(""); }} className="min-w-0 flex-1 bg-transparent text-[11px] font-semibold text-slate-700 outline-none placeholder:text-slate-400" placeholder="Search modules…" aria-label="Search modules" /><button type="button" onClick={() => setPaletteOpen(true)} className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400 transition hover:border-emerald-200 hover:text-emerald-700" aria-label="Open command palette">⌘K</button></>}
+          </div>
+          {!sidebarCollapsed && <button type="button" onClick={() => setPaletteOpen(true)} className="mt-2 flex w-full items-center justify-between rounded-xl border border-dashed border-slate-200 px-3 py-2 text-left text-[10px] font-semibold text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50/70 hover:text-emerald-800" aria-label="Search records and actions"><span className="flex items-center gap-2"><Sparkles size={12} className="text-emerald-600" />Search records &amp; actions</span><ArrowUpRight size={12} /></button>}
+          {!sidebarCollapsed && <button type="button" className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-950 px-3 py-2.5 text-left text-white shadow-[0_8px_20px_rgba(15,23,42,.12)] transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" onClick={() => notify("Workspace selector is ready for multiple company contexts.")} aria-label="Select workspace"><span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-400 text-slate-950"><Building2 size={15} /></span><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold">{company?.name || "Smart Manager workspace"}</span><span className="mt-0.5 block truncate text-[9px] text-slate-400">Active company · Production</span></span><ChevronDown size={14} className="text-slate-400" /></button>}
           {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-2 py-1.5" role="group" aria-label="Sidebar module order">
             <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">Order</span>
             <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
@@ -48316,7 +48329,7 @@ function SmartManager() {
 
         <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Operational workspaces">
           <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-200/70 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
-          {displayedNavigationGroups.map((group) => {
+          {filteredNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
             const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
             return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
