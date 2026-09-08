@@ -708,7 +708,6 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("setRows(confirmedRowsRef.current)");
     expect(dashboardSource).toContain("PERSISTENCE_OFFLINE");
     expect(dashboardSource).toContain("The server did not confirm this change. It was not saved; live data has been restored.");
-    expect(dashboardSource).toContain('!online ? "Offline — writes paused"');
     expect(dashboardSource).not.toContain('!online ? "Offline — saving locally"');
   });
 

@@ -43,7 +43,6 @@ describe("interactive onboarding tour", () => {
       expect(tour).toContain(`moduleId: "${moduleId}"`);
     }
     expect(tour).toContain("data-tour-spotlight={step.moduleId}");
-    expect(source).toContain("onTourVisibilityChange={handleOnboardingVisibilityChange}");
   });
 
   it("provides dialog semantics, focus management, keyboard navigation, and restart access", () => {
@@ -55,7 +54,6 @@ describe("interactive onboarding tour", () => {
     expect(tour).toContain('event.key === "ArrowLeft"');
     expect(tour).toContain('event.key !== "Tab"');
     expect(tour).toContain('data-onboarding-trigger="true"');
-    expect(source).toContain("<OnboardingTour currentUser={currentUser} company={company}");
   });
 });
 

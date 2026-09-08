@@ -26,9 +26,10 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("dashboard-topbar-context");
     expect(dashboard).toContain("dashboard-topbar-search");
     expect(dashboard).toContain("dashboard-topbar-actions");
-    expect(dashboard).toContain("dashboard-topbar-status");
-    expect(dashboard).toContain("dashboard-topbar-alert");
-    expect(dashboard).toContain("dashboard-topbar-customize");
+    expect(dashboard).toContain("SMART MANAGER");
+    expect(dashboard).toContain("ERP SYSTEM");
+    expect(dashboard).toContain("aria-label={`Open alerts");
+    expect(dashboard).toContain("onClick={toggleDarkMode}");
     expect(dashboard).toContain("dashboard-topbar-profile");
     expect(dashboard).toContain("<NotificationCenter");
     expect(dashboard).toContain("<PremiumProfileMenu");
