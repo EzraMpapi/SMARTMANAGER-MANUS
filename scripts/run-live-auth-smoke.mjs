@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium, expect } from "playwright";
 
 const baseURL = process.env.E2E_BASE_URL || "https://smartmanager-manus-render.onrender.com";
 const email = process.env.E2E_TEST_EMAIL;
@@ -26,6 +26,32 @@ try {
   await page.getByRole("button", { name: /sign in securely/i }).click();
   await page.waitForTimeout(3000);
 
+  const header = page.locator('header[aria-label="Workspace command bar"]');
+  await expect(header).toBeVisible();
+  await expect(header.getByText("SMART MANAGER", { exact: true })).toBeVisible();
+  await expect(header.getByText("ERP SYSTEM", { exact: true })).toBeVisible();
+  const search = header.getByRole("button", { name: "Search everything", exact: true });
+  await expect(search).toBeVisible();
+  await search.click();
+  await expect(page.getByRole("dialog").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  const alertButton = header.getByRole("button", { name: /Open alerts/i });
+  await expect(alertButton).toBeVisible();
+  await alertButton.click();
+  const themeToggle = header.getByRole("button", { name: /Switch to (light|dark) mode/i });
+  await expect(themeToggle).toBeVisible();
+  const themeBefore = await themeToggle.getAttribute("aria-pressed");
+  await themeToggle.click();
+  await expect(themeToggle).toHaveAttribute("aria-pressed", themeBefore === "true" ? "false" : "true");
+  const notifications = header.getByRole("button", { name: /Notifications/i });
+  await expect(notifications).toBeVisible();
+  await notifications.click();
+  await expect(header.getByRole("heading", { name: "Notifications", exact: true })).toBeVisible();
+  const profile = header.getByRole("button", { name: "Open account identity center", exact: true });
+  await expect(profile).toBeVisible();
+  await profile.click();
+  await expect(page.locator("#workspace-profile-menu")).toBeVisible();
+
   const moduleChecks = [
     { name: "Finance", pattern: /Finance|Accounts Receivable|Chart of Accounts/i },
     { name: "Reporting", pattern: /Reports|Financial Reports|Scheduled Reports/i },
@@ -49,7 +75,7 @@ try {
     }
   }
   if (consoleErrors.length) throw new Error(`Browser errors: ${consoleErrors.join(" | ")}`);
-  console.log(JSON.stringify({ target: baseURL, authenticatedAs: email, modules: moduleChecks.map((x) => x.name), status: "passed" }, null, 2));
+  console.log(JSON.stringify({ target: baseURL, authenticatedAs: email, header: ["brand", "search", "alerts", "theme", "notifications", "profile"], modules: moduleChecks.map((x) => x.name), status: "passed" }, null, 2));
 } finally {
   await browser.close();
 }

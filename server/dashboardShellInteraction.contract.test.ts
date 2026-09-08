@@ -24,32 +24,25 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('dashboard-sidebar-tools');
     expect(dashboard).toContain('dashboard-sidebar-footer');
     expect(dashboard).toContain('dashboard-shell-header');
-    expect(dashboard).toContain('createMenuOpen ? "z-50" : "z-30"');
-    expect(dashboard).toContain('const [createMenuMounted, setCreateMenuMounted] = useState(false);');
-    expect(dashboard).toContain('create-menu-panel');
-    expect(dashboard).toContain('create-menu-backdrop');
-    expect(dashboard).toContain('motion-reduce:transition-none');
+    expect(dashboard).toContain('aria-label="Workspace command bar"');
   });
 
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
     expect(dashboard).toContain('aria-label="Open menu"');
     expect(dashboard).toContain('aria-label="Search everything"');
-    expect(dashboard).toContain('aria-label="Open workspace settings"');
+    expect(dashboard).toContain('SMART MANAGER');
+    expect(dashboard).toContain('ERP SYSTEM');
+    expect(dashboard).toContain('aria-label={`Open alerts');
     expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
-    expect(dashboard).toContain("sm:hidden");
     expect(dashboard).toContain('dashboard-topbar-search inline-flex h-10 w-10');
-    expect(dashboard).toContain('xl:min-w-[178px]');
-    expect(dashboard).toContain('dashboard-topbar-tour hidden shrink-0 lg:block');
-    expect(dashboard).toContain('dashboard-topbar-customize');
-    expect(dashboard).toContain('dashboard-topbar-notifications');
+    expect(dashboard).toContain('xl:min-w-[230px]');
     expect(dashboard).toContain('dashboard-topbar-profile');
-    expect(dashboard).toContain('preferences.showGuidedTour &&');
-    expect(dashboard).toContain('preferences.showTopBarSearch &&');
-    expect(dashboard).toContain('aria-label="Personal dashboard customization"');
-    expect(dashboard).toContain('onOpenDashboardCustomization={() => setPreferencesDrawerOpen(true)}');
-    expect(dashboard).toContain('dashboard-topbar-status hidden items-center gap-1.5 rounded-full');
-    expect(dashboard).toContain('inline-flex items-center gap-1.5 rounded-2xl bg-slate-950');
+    const topbar = dashboard.slice(dashboard.indexOf('aria-label="Workspace command bar"'), dashboard.indexOf('{IS_CONFIGURED && active !== "billing"'));
+    expect(topbar).not.toContain('Live workspace');
+    expect(topbar).not.toContain('>Create<');
+    expect(topbar).not.toContain('Customize dashboard layout');
+    expect(topbar).not.toContain('WorkspacePresenceBadge');
   });
 
   it("keeps grouped navigation role-safe and preserves the compact mobile navigation", () => {
