@@ -1,4 +1,5 @@
-import { chromium, expect } from "playwright";
+import { chromium } from "playwright";
+import { expect } from "@playwright/test";
 
 const baseURL = process.env.E2E_BASE_URL || "https://smartmanager-manus-render.onrender.com";
 const email = process.env.E2E_TEST_EMAIL;
