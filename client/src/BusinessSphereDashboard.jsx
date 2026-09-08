@@ -47914,17 +47914,6 @@ function SmartManager() {
         ? left.label.localeCompare(right.label, "en")
         : Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.order - right.order),
     })), [active, navigationGroups, preferences.visibleNavigationGroupIds, sidebarModuleOrder]);
-  const [sidebarQuery, setSidebarQuery] = useState("");
-  const filteredNavigationGroups = useMemo(() => {
-    const query = sidebarQuery.trim().toLocaleLowerCase();
-    if (!query) return displayedNavigationGroups;
-    return displayedNavigationGroups
-      .map((group) => ({
-        ...group,
-        items: group.items.filter((item) => `${item.label} ${group.label}`.toLocaleLowerCase().includes(query)),
-      }))
-      .filter((group) => group.items.length > 0 || group.label.toLocaleLowerCase().includes(query));
-  }, [displayedNavigationGroups, sidebarQuery]);
   const flatNavigationItems = useMemo(() => [
     ...displayedNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
     ...(displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
@@ -48312,12 +48301,7 @@ function SmartManager() {
         </div>
 
         <div className="dashboard-sidebar-tools border-b border-slate-200/70 px-3 py-4">
-          <div className={`group flex w-full items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5 text-left shadow-[0_4px_16px_rgba(15,23,42,.04)] transition focus-within:border-emerald-300 focus-within:ring-2 focus-within:ring-emerald-600/10 ${sidebarCollapsed ? "justify-center px-2" : ""}`}>
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-slate-950 text-white shadow-sm transition group-focus-within:bg-emerald-600"><Search size={15} /></span>
-            {!sidebarCollapsed && <><input value={sidebarQuery} onChange={(event) => setSidebarQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") setSidebarQuery(""); }} className="min-w-0 flex-1 bg-transparent text-[11px] font-semibold text-slate-700 outline-none placeholder:text-slate-400" placeholder="Search modules…" aria-label="Search modules" /><button type="button" onClick={() => setPaletteOpen(true)} className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-mono text-slate-400 transition hover:border-emerald-200 hover:text-emerald-700" aria-label="Open command palette">⌘K</button></>}
-          </div>
-          {!sidebarCollapsed && <button type="button" onClick={() => setPaletteOpen(true)} className="mt-2 flex w-full items-center justify-between rounded-xl border border-dashed border-slate-200 px-3 py-2 text-left text-[10px] font-semibold text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50/70 hover:text-emerald-800" aria-label="Search records and actions"><span className="flex items-center gap-2"><Sparkles size={12} className="text-emerald-600" />Search records &amp; actions</span><ArrowUpRight size={12} /></button>}
-          {!sidebarCollapsed && <button type="button" className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-950 px-3 py-2.5 text-left text-white shadow-[0_8px_20px_rgba(15,23,42,.12)] transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" onClick={() => notify("Workspace selector is ready for multiple company contexts.")} aria-label="Select workspace"><span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-400 text-slate-950"><Building2 size={15} /></span><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold">{company?.name || "Smart Manager workspace"}</span><span className="mt-0.5 block truncate text-[9px] text-slate-400">Active company · Production</span></span><ChevronDown size={14} className="text-slate-400" /></button>}
+          {!sidebarCollapsed && <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-slate-50 px-3 py-3 shadow-[0_8px_24px_rgba(11,93,59,.06)]"><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,.12)]" /><span className="text-[9px] font-bold uppercase tracking-[.16em] text-emerald-800">Workspace active</span></div><p className="mt-2 truncate text-[12px] font-bold tracking-[-.01em] text-slate-900">{company?.name || "Smart Manager workspace"}</p><p className="mt-0.5 truncate text-[10px] text-slate-500">Production operations · Tanzania</p></div>}
           {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-2 py-1.5" role="group" aria-label="Sidebar module order">
             <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">Order</span>
             <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
@@ -48329,7 +48313,7 @@ function SmartManager() {
 
         <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Operational workspaces">
           <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-200/70 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
-          {filteredNavigationGroups.map((group) => {
+          {displayedNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
             const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
             return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
@@ -48340,29 +48324,20 @@ function SmartManager() {
                 const Icon = item.icon;
                 const isActive = active === item.id;
                 const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-slate-950 bg-slate-950 font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,.16)]" : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-white hover:text-slate-950"}`}>
-                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition ${isActive ? "bg-emerald-400 text-slate-950 shadow-sm" : "bg-white text-slate-400 ring-1 ring-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-[#0B5D3B] bg-[#0B5D3B] font-semibold text-white shadow-[0_10px_24px_rgba(11,93,59,.18)]" : "border-transparent text-slate-500 hover:border-emerald-100 hover:bg-white hover:text-slate-950"}`}>
+                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition ${isActive ? "bg-emerald-300 text-[#064E3B] shadow-sm" : "bg-white text-slate-400 ring-1 ring-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
                   <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-300" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
                 </button>;
               })}</div>}
             </section>;
           })}
+          {!displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) && <section className="space-y-1" aria-label="Workspace settings">
+            {!sidebarCollapsed && <div className="flex items-center gap-1.5 px-2.5 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-slate-400"><Settings size={12} className="text-emerald-600" aria-hidden="true" /><span>Workspace</span></div>}
+            <button type="button" onClick={() => go("settings")} aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${active === "settings" ? "border-[#0B5D3B] bg-[#0B5D3B] font-semibold text-white shadow-[0_10px_24px_rgba(11,93,59,.18)]" : "border-transparent text-slate-500 hover:border-emerald-100 hover:bg-white hover:text-slate-950"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition ${active === "settings" ? "bg-emerald-300 text-[#064E3B] shadow-sm" : "bg-white text-slate-400 ring-1 ring-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-700"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{!sidebarCollapsed && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-emerald-100" : "text-slate-300"} />}</button>
+          </section>}
         </nav>
 
         <div className="dashboard-sidebar-footer relative border-t border-slate-200/70 bg-white/60 px-3 py-4">
-          <button
-            type="button"
-            onClick={() => go("settings")}
-            aria-label="Open workspace settings"
-            className={`w-full flex items-center justify-between gap-2.5 rounded-xl border px-2.5 py-2.5 text-[12px] transition-colors group ${
-              active === "settings" ? "border-emerald-100 bg-emerald-50 font-semibold text-emerald-800" : "border-transparent text-slate-500 hover:border-slate-100 hover:bg-slate-50 hover:text-[#111827]"
-            }`}
-          >
-            <span className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
-              <span className={`grid h-8 w-8 place-items-center rounded-lg ${active === "settings" ? "bg-white text-emerald-700 shadow-sm" : "bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-emerald-700"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarCollapsed && " Settings"}
-            </span>
-            {!canManage && <Lock size={11} className="text-slate-300" />}
-          </button>
           {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-[#16A34A]" />
             <span>Bidhaa ya Kitanzania, kwa Wafanyabiashara wa Kitanzania na Duniani.</span>
