@@ -29619,29 +29619,33 @@ function LegacyCommandPalette({ isOpen, onClose, onNavigate }) {
 }
 
 function DataQualityView({ crm, invoices, expenses, inventory, employees }) {
+  const crmRows = Array.isArray(crm?.rows) ? crm.rows : (Array.isArray(crm) ? crm : []);
+  const invoiceRows = Array.isArray(invoices?.rows) ? invoices.rows : (Array.isArray(invoices) ? invoices : []);
+  const expenseRows = Array.isArray(expenses?.rows) ? expenses.rows : (Array.isArray(expenses) ? expenses : []);
+  const inventoryRows = Array.isArray(inventory?.rows) ? inventory.rows : (Array.isArray(inventory) ? inventory : []);
+  const employeeRows = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
   const findings = useMemo(() => {
     const out = [];
     const phoneOk = (p) => !p || /^[+0-9][0-9\s\-]{6,15}$/.test(p.trim());
-    const expenseRows = Array.isArray(expenses?.rows) ? expenses.rows : (Array.isArray(expenses) ? expenses : []);
 
     const seen = {};
-    crm.rows.forEach((l) => { const k = l.company.trim().toLowerCase(); (seen[k] = seen[k] || []).push(l.company); });
+    crmRows.forEach((l) => { const company = String(l.company || l.name || "").trim(); if (!company) return; const k = company.toLowerCase(); (seen[k] = seen[k] || []).push(company); });
     const dupCustomers = Object.values(seen).filter((v) => v.length > 1);
     out.push({ label: "Duplicate customers", count: dupCustomers.length, sample: dupCustomers.slice(0, 3).map((v) => v.join(" / ")).join("; "), fix: "CRM > Leads — merge by hand; auto-merging lookalikes is how data gets eaten." });
 
-    const badPhones = [...crm.rows.filter((l) => l.phone && !phoneOk(l.phone)).map((l) => l.company), ...employees.rows.filter((e) => e.phone && !phoneOk(e.phone)).map((e) => e.name)];
+    const badPhones = [...crmRows.filter((l) => l.phone && !phoneOk(l.phone)).map((l) => l.company), ...employeeRows.filter((e) => e.phone && !phoneOk(e.phone)).map((e) => e.name)];
     out.push({ label: "Invalid phone numbers", count: badPhones.length, sample: badPhones.slice(0, 3).join(", "), fix: "Open the named record in CRM or HR — the pattern tolerates +255/07 formats, spaces, and dashes." });
 
-    const missingPhones = crm.rows.filter((l) => !l.phone).map((l) => l.company || l.name).filter(Boolean);
+    const missingPhones = crmRows.filter((l) => !l.phone).map((l) => l.company || l.name).filter(Boolean);
     out.push({ label: "CRM leads missing phone", count: missingPhones.length, sample: missingPhones.slice(0, 3).join(", "), fix: "Use the data-quality cleaning SQL for trusted matches, or collect the real number from the lead before applying a manual mapping." });
 
-    const noEmail = employees.rows.filter((e) => e.status === "Active" && !e.email);
+    const noEmail = employeeRows.filter((e) => e.status === "Active" && !e.email);
     out.push({ label: "Active employees missing email", count: noEmail.length, sample: noEmail.slice(0, 3).map((e) => e.name).join(", "), fix: "HR > Employees — payslips and notifications need a real address." });
 
-    const noExpiry = inventory.rows.filter((it) => !it.expiryDate);
+    const noExpiry = inventoryRows.filter((it) => !it.expiryDate);
     out.push({ label: "Items without expiry dates", count: noExpiry.length, sample: noExpiry.slice(0, 3).map((it) => it.name).join(", "), fix: "Inventory > Stock — undated stock is invisible to Expiry Tracking (section 106's blind-spot rule)." });
 
-    const noDue = invoices.rows.filter((i) => i.status !== "Paid" && !i.dueDate);
+    const noDue = invoiceRows.filter((i) => i.status !== "Paid" && !i.dueDate);
     out.push({ label: "Unpaid invoices missing due date", count: noDue.length, sample: noDue.slice(0, 3).map((i) => i.id).join(", "), fix: "Sales > Invoices — no due date means invisible to aging, budgets, and the Risk Center." });
 
     const noVendor = expenseRows.filter((e) => !e.vendor).map((e) => e.id);
@@ -29651,7 +29655,7 @@ function DataQualityView({ crm, invoices, expenses, inventory, employees }) {
     out.push({ label: "Paid expenses missing payment method", count: noMethod.length, sample: noMethod.slice(0, 3).map((e) => e.vendor).join(", "), fix: "Finance > Payables — method gaps weaken the Cash Flow statement's honesty." });
 
     return out;
-  }, [crm.rows, invoices.rows, expenses, inventory.rows, employees.rows]);
+  }, [crmRows, invoiceRows, expenseRows, inventoryRows, employeeRows]);
 
   const clean = findings.every((f) => f.count === 0);
 
