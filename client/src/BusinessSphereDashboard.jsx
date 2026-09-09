@@ -48409,6 +48409,9 @@ function SmartManager() {
               <AlertCircle size={16} aria-hidden="true" />
               {criticalAlerts.length > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white">{criticalAlerts.length}</span>}
             </button>
+            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40" aria-label="Customize dashboard" title="Customize dashboard">
+              <Sliders size={15} aria-hidden="true" />
+            </button>
             {/* ── Dark mode toggle ── */}
             <button
               type="button"
