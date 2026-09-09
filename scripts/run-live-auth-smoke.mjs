@@ -1,4 +1,5 @@
-import { chromium, expect } from "playwright";
+import { chromium } from "playwright";
+import { expect } from "@playwright/test";
 
 const baseURL = process.env.E2E_BASE_URL || "https://smartmanager-manus-render.onrender.com";
 const email = process.env.E2E_TEST_EMAIL;
@@ -24,7 +25,15 @@ try {
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.getByRole("button", { name: /sign in securely/i }).click();
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(8000);
+  const briefingOverlay = page.locator("div.fixed.inset-0.z-50");
+  if (await briefingOverlay.count()) {
+    await briefingOverlay.getByRole("button").last().click();
+    await expect(briefingOverlay).toHaveCount(0);
+  }
+  if (await page.locator("div.fixed.inset-0.z-50").count()) {
+    await page.locator("div.fixed.inset-0.z-50").getByRole("button").last().click();
+  }
 
   const header = page.locator('header[aria-label="Workspace command bar"]');
   await expect(header).toBeVisible();
@@ -47,6 +56,7 @@ try {
   await expect(notifications).toBeVisible();
   await notifications.click();
   await expect(header.getByRole("heading", { name: "Notifications", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
   const profile = header.getByRole("button", { name: "Open account identity center", exact: true });
   await expect(profile).toBeVisible();
   await profile.click();
