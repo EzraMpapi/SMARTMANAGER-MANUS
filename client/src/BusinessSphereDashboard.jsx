@@ -19828,7 +19828,7 @@ function Attendance({ employees }) {
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
           <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Today Status by Employee</h3>
           <div className="space-y-2 overflow-y-auto max-h-[160px] pr-1">
-            {employees.filter(e=>e.status==="Active").slice(0,8).map(e => {
+            {safeEmployees.filter(e=>e.status==="Active").slice(0,8).map(e => {
               const todayRecord = rows.find(a => a.date===TODAY.toISOString().slice(0,10) && (a.employee===e.name||a.employee===e.fullName));
               const status = todayRecord?.status || "No Record";
               const col = {Present:"#16A34A",Late:"#F59E0B",Absent:"#EF4444"}[status] || "#94A3B8";
@@ -19948,7 +19948,7 @@ function Attendance({ employees }) {
           </table>
         </div>
       </div>
-      {showForm && <AttendanceFormPanel employees={employees} onClose={() => setShowForm(false)} onSubmit={addAttendance} />}
+      {showForm && <AttendanceFormPanel employees={safeEmployees} onClose={() => setShowForm(false)} onSubmit={addAttendance} />}
     </div>
   );
 }
