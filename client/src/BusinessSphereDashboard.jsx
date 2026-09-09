@@ -29629,8 +29629,11 @@ function DataQualityView({ crm, invoices, expenses, inventory, employees }) {
     const dupCustomers = Object.values(seen).filter((v) => v.length > 1);
     out.push({ label: "Duplicate customers", count: dupCustomers.length, sample: dupCustomers.slice(0, 3).map((v) => v.join(" / ")).join("; "), fix: "CRM > Leads — merge by hand; auto-merging lookalikes is how data gets eaten." });
 
-    const badPhones = [...crm.rows.filter((l) => !phoneOk(l.phone)).map((l) => l.company), ...employees.rows.filter((e) => !phoneOk(e.phone)).map((e) => e.name)];
+    const badPhones = [...crm.rows.filter((l) => l.phone && !phoneOk(l.phone)).map((l) => l.company), ...employees.rows.filter((e) => e.phone && !phoneOk(e.phone)).map((e) => e.name)];
     out.push({ label: "Invalid phone numbers", count: badPhones.length, sample: badPhones.slice(0, 3).join(", "), fix: "Open the named record in CRM or HR — the pattern tolerates +255/07 formats, spaces, and dashes." });
+
+    const missingPhones = crm.rows.filter((l) => !l.phone).map((l) => l.company || l.name).filter(Boolean);
+    out.push({ label: "CRM leads missing phone", count: missingPhones.length, sample: missingPhones.slice(0, 3).join(", "), fix: "Use the data-quality cleaning SQL for trusted matches, or collect the real number from the lead before applying a manual mapping." });
 
     const noEmail = employees.rows.filter((e) => e.status === "Active" && !e.email);
     out.push({ label: "Active employees missing email", count: noEmail.length, sample: noEmail.slice(0, 3).map((e) => e.name).join(", "), fix: "HR > Employees — payslips and notifications need a real address." });
@@ -29640,6 +29643,9 @@ function DataQualityView({ crm, invoices, expenses, inventory, employees }) {
 
     const noDue = invoices.rows.filter((i) => i.status !== "Paid" && !i.dueDate);
     out.push({ label: "Unpaid invoices missing due date", count: noDue.length, sample: noDue.slice(0, 3).map((i) => i.id).join(", "), fix: "Sales > Invoices — no due date means invisible to aging, budgets, and the Risk Center." });
+
+    const noVendor = expenseRows.filter((e) => !e.vendor).map((e) => e.id);
+    out.push({ label: "Expenses missing vendor", count: noVendor.length, sample: noVendor.slice(0, 3).join(", "), fix: "Run the data-quality cleaning SQL; only exact same-company expense matches or verified manual mappings are applied." });
 
     const noMethod = expenseRows.filter((e) => e.status === "Paid" && !e.method);
     out.push({ label: "Paid expenses missing payment method", count: noMethod.length, sample: noMethod.slice(0, 3).map((e) => e.vendor).join(", "), fix: "Finance > Payables — method gaps weaken the Cash Flow statement's honesty." });
