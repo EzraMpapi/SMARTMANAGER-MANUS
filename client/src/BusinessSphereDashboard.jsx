@@ -48289,70 +48289,86 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={sidebarHiddenFromAssistiveTech}
-          className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[84px]" : "w-[288px]"} shrink-0 flex flex-col border-r border-slate-200/80 bg-[#F8FAFC] transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+          className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[84px]" : "w-[304px]"} shrink-0 flex flex-col border-r border-[#274a68] bg-[#102c48] text-slate-100 transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ boxShadow: "10px 0 36px rgba(15, 23, 42, .08)" }}
+        style={{ boxShadow: "8px 0 30px rgba(8, 27, 45, .18)" }}
       >
-          <div className={`dashboard-sidebar-brand relative px-4 py-5 border-b border-white/10 bg-slate-950 flex items-center justify-between ${sidebarCollapsed ? "justify-center" : ""}`}>
+          <div className={`dashboard-sidebar-brand relative px-4 py-4 border-b border-[#315574] bg-[#0c243d] flex items-center justify-between ${sidebarCollapsed ? "justify-center" : ""}`}>
           <div className="flex items-center gap-2.5">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white p-1.5 shadow-[0_8px_20px_rgba(0,0,0,.22)] ring-1 ring-white/15"><BrandLogo variant="compact" priority className="h-7 w-7" /></span>
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white p-1.5 shadow-[0_5px_14px_rgba(0,0,0,.2)] ring-1 ring-white/20"><BrandLogo variant="compact" priority className="h-7 w-7" /></span>
             {!sidebarCollapsed && <div className="flex flex-col leading-tight">
               <span className="text-[15px] font-semibold tracking-tight brand-wordmark text-white" style={{ fontFamily: "'Poppins'" }}>
                 Smart Manager
               </span>
-              <span className="mt-1 text-[9px] font-bold uppercase tracking-[.18em] text-emerald-300">Operations hub</span>
+              <span className="mt-1 text-[9px] font-bold uppercase tracking-[.18em] text-cyan-300">Enterprise workspace</span>
             </div>}
           </div>
           <button className="text-slate-400 hover:text-white transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={18} />
           </button>
-          <button type="button" className="hidden rounded-xl p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
+          <button type="button" className="hidden rounded-md p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
             {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
           </button>
         </div>
 
-        <div className="dashboard-sidebar-tools border-b border-slate-200/70 px-3 py-4">
-          {!sidebarCollapsed && <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-slate-50 px-3 py-3 shadow-[0_8px_24px_rgba(11,93,59,.06)]"><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,.12)]" /><span className="text-[9px] font-bold uppercase tracking-[.16em] text-emerald-800">Workspace active</span></div><p className="mt-2 truncate text-[12px] font-bold tracking-[-.01em] text-slate-900">{company?.name || "Smart Manager workspace"}</p><p className="mt-0.5 truncate text-[10px] text-slate-500">Production operations · Tanzania</p><button type="button" aria-label="Open command palette" onClick={() => setPaletteOpen(true)} className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-800 transition hover:text-emerald-950"><Sparkles size={12} />Open command palette <span className="rounded border border-emerald-200 bg-white/70 px-1 py-0.5 font-mono text-[9px] text-emerald-700">⌘K</span></button></div>}
-          {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-white px-2 py-1.5" role="group" aria-label="Sidebar module order">
-            <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">Order</span>
-            <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
-              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => updatePreference("navigationSort", "priority")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "priority" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
-              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => updatePreference("navigationSort", "alphabetical")} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 ${sidebarModuleOrder === "alphabetical" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
+        <div className="dashboard-sidebar-tools border-b border-[#315574] px-3 py-3">
+          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-md border border-[#3a6283] bg-[#173b5c] px-3 py-2.5 text-left shadow-sm transition hover:border-cyan-400/60 hover:bg-[#1b466a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#102c48] ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
+            <span className="grid h-8 w-8 place-items-center rounded-md bg-[#0e243b] text-cyan-200 shadow-sm transition group-hover:bg-[#0f8aa8] group-hover:text-white"><Search size={15} /></span>
+            {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-100">Global search</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Modules, records &amp; actions</span></span><kbd className="rounded border border-[#476b89] bg-[#102c48] px-1.5 py-0.5 text-[9px] font-mono text-slate-300">⌘K</kbd></>}
+          </button>
+          {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-md border border-[#315574] bg-[#112f4d] px-2 py-1.5" role="group" aria-label="Sidebar module order">
+            <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">View</span>
+            <div className="inline-flex rounded bg-[#0c243d] p-0.5">
+              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => updatePreference("navigationSort", "priority")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "priority" ? "bg-[#1d6582] text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
+              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => updatePreference("navigationSort", "alphabetical")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "alphabetical" ? "bg-[#1d6582] text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
             </div>
           </div>}
         </div>
 
         <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Operational workspaces">
-          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Workspace map</span><span className="rounded-full bg-slate-200/70 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">{flatNavigationItems.length}</span></div>
+          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#315a79] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
           {displayedNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
             const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
             return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
-              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-white hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40">
-                <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-emerald-600" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-slate-200/70 px-1.5 py-0.5 text-[9px] tracking-normal text-slate-500">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
+              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-[#173b5c] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40">
+                <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-cyan-300" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-[#294f70] px-1.5 py-0.5 text-[9px] tracking-normal text-slate-200">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
               </button>}
               {expanded && <div className="space-y-1">{group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = active === item.id;
                 const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-[#0B5D3B] bg-[#0B5D3B] font-semibold text-white shadow-[0_10px_24px_rgba(11,93,59,.18)]" : "border-transparent text-slate-500 hover:border-emerald-100 hover:bg-white hover:text-slate-950"}`}>
-                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition ${isActive ? "bg-emerald-300 text-[#064E3B] shadow-sm" : "bg-white text-slate-400 ring-1 ring-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-700"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
-                  <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-300" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-100 px-1 text-[9px] font-bold text-rose-700" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
+                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-md border border-l-[3px] px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-[#2b7191] border-l-cyan-300 bg-[#1d5879] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,.14)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#183e60] hover:text-white"}`}>
+                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md transition ${isActive ? "bg-cyan-300 text-[#10304b] shadow-sm" : "bg-[#193b59] text-slate-300 group-hover:bg-[#265473] group-hover:text-cyan-100"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+                  <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-500" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-300 px-1 text-[9px] font-bold text-rose-950" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
                 </button>;
               })}</div>}
             </section>;
           })}
           {!displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) && <section className="space-y-1" aria-label="Workspace settings">
-            {!sidebarCollapsed && <div className="flex items-center gap-1.5 px-2.5 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-slate-400"><Settings size={12} className="text-emerald-600" aria-hidden="true" /><span>Workspace</span></div>}
-            <button type="button" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${active === "settings" ? "border-[#0B5D3B] bg-[#0B5D3B] font-semibold text-white shadow-[0_10px_24px_rgba(11,93,59,.18)]" : "border-transparent text-slate-500 hover:border-emerald-100 hover:bg-white hover:text-slate-950"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition ${active === "settings" ? "bg-emerald-300 text-[#064E3B] shadow-sm" : "bg-white text-slate-400 ring-1 ring-slate-200 group-hover:bg-emerald-50 group-hover:text-emerald-700"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{!sidebarCollapsed && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-emerald-100" : "text-slate-300"} />}</button>
+            {!sidebarCollapsed && <div className="flex items-center gap-1.5 px-2.5 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-slate-400"><Settings size={12} className="text-cyan-300" aria-hidden="true" /><span>Workspace</span></div>}
+            <button type="button" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${active === "settings" ? "border-[#2b7191] border-l-cyan-300 bg-[#1d5879] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,.14)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#183e60] hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition ${active === "settings" ? "bg-cyan-300 text-[#10304b] shadow-sm" : "bg-[#193b59] text-slate-300 group-hover:bg-[#265473] group-hover:text-cyan-100"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{!sidebarCollapsed && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-cyan-100" : "text-slate-300"} />}</button>
           </section>}
         </nav>
 
-        <div className="dashboard-sidebar-footer relative border-t border-slate-200/70 bg-white/60 px-3 py-4">
+        <div className="dashboard-sidebar-footer relative border-t border-[#315574] bg-[#0c243d] px-3 py-3">
+          <button
+            type="button"
+            onClick={() => go("settings")}
+            aria-label="Open workspace settings"
+            className={`w-full flex items-center justify-between gap-2.5 rounded-md border px-2.5 py-2 text-[12px] transition-colors group ${
+              active === "settings" ? "border-[#2b7191] bg-[#1d5879] font-semibold text-white" : "border-transparent text-slate-300 hover:bg-[#173b5c] hover:text-white"
+            }`}
+          >
+            <span className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
+              <span className={`grid h-7 w-7 place-items-center rounded-md ${active === "settings" ? "bg-cyan-300 text-[#10304b] shadow-sm" : "bg-[#193b59] text-slate-300 group-hover:bg-[#265473] group-hover:text-cyan-100"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarCollapsed && " Settings"}
+            </span>
+            {!canManage && <Lock size={11} className="text-slate-300" />}
+          </button>
           {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
-            <MapPin size={11} className="shrink-0 text-[#16A34A]" />
-            <span>Bidhaa ya Kitanzania, kwa Wafanyabiashara wa Kitanzania na Duniani.</span>
+            <MapPin size={11} className="shrink-0 text-cyan-300" />
+            <span>Enterprise operations platform · Tanzania &amp; global teams.</span>
           </div>}
         </div>
       </aside>
@@ -48392,6 +48408,9 @@ function SmartManager() {
             <button type="button" onClick={() => go("notifications")} className="relative inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 text-slate-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
               <AlertCircle size={16} aria-hidden="true" />
               {criticalAlerts.length > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white">{criticalAlerts.length}</span>}
+            </button>
+            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40" aria-label="Customize dashboard" title="Customize dashboard">
+              <Sliders size={15} aria-hidden="true" />
             </button>
             {/* ── Dark mode toggle ── */}
             <button
