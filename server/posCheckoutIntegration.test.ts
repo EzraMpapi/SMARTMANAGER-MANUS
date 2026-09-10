@@ -36,7 +36,7 @@ describe("POS checkout confirmed persistence integration", () => {
     expect(checkout).toContain("Inventory has not been deducted");
     expect(checkout).toContain("function resumeHeldSale(order)");
     expect(checkout).toContain('status: "Converted"');
-    expect(source).toContain('transactions.rows.filter((t) => t.status === "Completed" && t.date === todayStr)');
+    expect(source).toContain('const today = rowsOf(transactions).filter((t) => t.status === "Completed" && t.date === todayStr);');
     expect(source).toContain('const completedRows = rows.filter((transaction) => transaction.status === "Completed")');
   });
 
