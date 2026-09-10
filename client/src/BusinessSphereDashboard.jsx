@@ -48353,6 +48353,7 @@ function SmartManager() {
         </nav>
 
         <div className="dashboard-sidebar-footer relative border-t border-[#315574] bg-[#0c243d] px-3 py-3">
+<<<<<<< HEAD
           <button
             type="button"
             onClick={() => go("settings")}
@@ -48366,6 +48367,8 @@ function SmartManager() {
             </span>
             {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
+=======
+>>>>>>> 1fc2b30 (Simplify ERP workspace header and resolve conflicts)
           {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-cyan-300" />
             <span>Enterprise operations platform · Tanzania &amp; global teams.</span>
@@ -48377,35 +48380,32 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-[76px] shrink-0 items-center justify-between gap-4 border-b border-slate-200/80 bg-white/90 px-4 py-3 shadow-[0_8px_28px_rgba(15,23,42,.05)] backdrop-blur-2xl sm:min-h-[82px] sm:px-6 sm:py-3 lg:px-8 xl:px-10 2xl:px-12 ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 py-2 shadow-[0_2px_10px_rgba(15,23,42,.04)] backdrop-blur-xl sm:px-6 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-context flex min-w-0 items-center gap-3">
             <button
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 lg:hidden"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-slate-200 bg-white text-slate-600 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-slate-200"><BrandLogo variant="compact" priority className="h-7 w-7" /></span>
-              <div className="min-w-0 leading-none">
-                <span className="block truncate text-[15px] font-black tracking-[-.035em] text-slate-950 sm:text-[17px]">SMART MANAGER</span>
-                <span className="mt-1 block text-[8px] font-bold uppercase tracking-[.28em] text-emerald-700 sm:text-[9px]">ERP SYSTEM</span>
-              </div>
+            <div className="min-w-0 border-l border-slate-200 pl-3 leading-tight">
+              <span className="block truncate text-[13px] font-semibold text-slate-900">Operations workspace</span>
+              <span className="hidden truncate text-[10px] text-slate-500 sm:block">{company?.name || "Smart Manager"}</span>
             </div>
           </div>
           <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 xl:h-auto xl:min-h-10 xl:w-auto xl:min-w-[230px] xl:justify-start xl:bg-slate-50 xl:px-3 xl:py-2.5"
+              className="dashboard-topbar-search inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:h-auto lg:min-h-9 lg:w-auto lg:min-w-[220px] lg:justify-start lg:bg-slate-50 lg:px-3 lg:py-2"
               aria-label="Search everything"
             >
               <Search size={14} />
-              <span className="hidden xl:inline">Search anything...</span>
+              <span className="hidden lg:inline">Search modules, records, and actions</span>
               <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 sm:inline-block">⌘K</kbd>
             </button>
-            <button type="button" onClick={() => go("notifications")} className="relative inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 text-slate-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
+            <button type="button" onClick={() => go("notifications")} className="relative inline-flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
               <AlertCircle size={16} aria-hidden="true" />
               {criticalAlerts.length > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white">{criticalAlerts.length}</span>}
             </button>
@@ -48418,7 +48418,7 @@ function SmartManager() {
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
