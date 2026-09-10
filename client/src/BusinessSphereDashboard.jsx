@@ -48354,7 +48354,6 @@ function SmartManager() {
         </nav>
 
         <div className="dashboard-sidebar-footer relative border-t border-[#315574] bg-[#0c243d] px-3 py-3">
-<<<<<<< HEAD
           <button
             type="button"
             onClick={() => go("settings")}
@@ -48368,8 +48367,6 @@ function SmartManager() {
             </span>
             {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
-=======
->>>>>>> 1fc2b30 (Simplify ERP workspace header and resolve conflicts)
           {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-cyan-300" />
             <span>Enterprise operations platform · Tanzania &amp; global teams.</span>
