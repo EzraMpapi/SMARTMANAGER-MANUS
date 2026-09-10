@@ -247,8 +247,8 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain('["week", "Week"]');
     expect(dashboardSource).toContain('["month", "Month"]');
     expect(dashboardSource).toContain('["year", "Year"]');
-    expect(dashboardSource).toContain('invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart)');
-    expect(dashboardSource).toContain('expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart)');
+    expect(dashboardSource).toContain('rowsOf(invoices).filter((invoice) => !periodStart || (invoice.date || "") >= periodStart)');
+    expect(dashboardSource).toContain('rowsOf(expenses).filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart)');
   });
 
   it("keeps dashboard side-panel empty states truthful and routes users only to existing leave and reporting modules", () => {
