@@ -1,7 +1,6 @@
-function rowsOf(source) { return Array.isArray(source?.rows) ? source.rows : (Array.isArray(source) ? source : []); }
-
 import React, { useMemo, useState } from "react";
 import { AlertCircle, ClipboardList, Factory, Package, Sparkles, TrendingUp, Users, Wallet } from "lucide-react";
+import { rowsOf } from "@/lib/rowsOf";
 
 export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, employees, leaveRequests, runtime }) {
   const {
@@ -17,7 +16,7 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
 
   const cashProjection = useMemo(() => {
     const weeklyExpenseRate = expenseRows.filter((expense) => (today - new Date(expense.date)) / 86400000 <= 56).reduce((sum, expense) => sum + expense.amount, 0) / 8;
-    const currentCash = invoices.rows.reduce((sum, invoice) => sum + (invoice.status === "Paid" ? lineTotal(invoice.items).total : (invoice.amountPaid || 0)), 0) - expenseRows.reduce((sum, expense) => sum + expense.amount, 0);
+    const currentCash = rowsOf(invoices).reduce((sum, invoice) => sum + (invoice.status === "Paid" ? lineTotal(invoice.items).total : (invoice.amountPaid || 0)), 0) - expenseRows.reduce((sum, expense) => sum + expense.amount, 0);
     let running = currentCash;
     const weeks = Array.from({ length: 8 }, (_, index) => {
       const week = index + 1;
@@ -33,7 +32,7 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
   const stockDepletion = useMemo(() => {
     const salesBySku = {};
     rowsOf(invoices).filter((invoice) => (today - new Date(invoice.date)) / 86400000 <= 60).forEach((invoice) => invoice.items.forEach((item) => { if (item.sku) salesBySku[item.sku] = (salesBySku[item.sku] || 0) + item.qty; }));
-    return inventory.rows.map((item) => {
+    return rowsOf(inventory).map((item) => {
       const dailyRate = (salesBySku[item.sku] || 0) / 60;
       return { sku: item.sku, name: item.name, daysLeft: dailyRate > 0 ? Math.round(item.qty / dailyRate) : null };
     }).filter((item) => item.daysLeft !== null && item.daysLeft <= 21).sort((a, b) => a.daysLeft - b.daysLeft);
@@ -41,7 +40,7 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
 
   const churnRisk = useMemo(() => {
     const byCustomer = {};
-    invoices.rows.forEach((invoice) => { (byCustomer[invoice.customer] = byCustomer[invoice.customer] || []).push(new Date(invoice.date)); });
+    rowsOf(invoices).forEach((invoice) => { (byCustomer[invoice.customer] = byCustomer[invoice.customer] || []).push(new Date(invoice.date)); });
     return Object.entries(byCustomer).filter(([, dates]) => dates.length >= 2).map(([customer, dates]) => {
       dates.sort((a, b) => a - b);
       const intervals = dates.slice(1).map((date, index) => (date - dates[index]) / 86400000);
@@ -62,7 +61,7 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
 
   const salesGrowth = useMemo(() => {
     const byMonth = {};
-    invoices.rows.forEach((invoice) => { const month = invoice.date.slice(0, 7); byMonth[month] = (byMonth[month] || 0) + (invoice.status === "Paid" ? lineTotal(invoice.items).total : (invoice.amountPaid || 0)); });
+    rowsOf(invoices).forEach((invoice) => { const month = invoice.date.slice(0, 7); byMonth[month] = (byMonth[month] || 0) + (invoice.status === "Paid" ? lineTotal(invoice.items).total : (invoice.amountPaid || 0)); });
     const months = Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b));
     if (months.length < 2) return { growthRate: null, nextMonthProjection: null };
     const values = months.map(([, value]) => value);
@@ -88,7 +87,7 @@ export function PredictiveAnalyticsWorkspace({ invoices, expenses, inventory, em
     structuring: expenseRows.filter((expense) => expense.amount >= poApprovalThreshold * 0.9 && expense.amount < poApprovalThreshold),
   }), [detectUnusualExpenses, expenseRows, poApprovalThreshold]);
 
-  const maintenanceNeeds = useMemo(() => machines.rows.map((machine) => {
+  const maintenanceNeeds = useMemo(() => rowsOf(machines).map((machine) => {
     const record = rowsOf(maintenance).filter((item) => item.machine === machine.name).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
     if (!record?.nextDueDate) return null;
     return { machine: machine.name, daysUntil: Math.round((new Date(record.nextDueDate) - today) / 86400000) };
