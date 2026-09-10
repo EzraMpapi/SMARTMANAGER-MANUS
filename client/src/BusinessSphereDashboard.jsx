@@ -1,3 +1,5 @@
+function rowsOf(source) { return Array.isArray(source?.rows) ? source.rows : (Array.isArray(source) ? source : []); }
+
 import React, { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -1496,8 +1498,8 @@ function LmsInsightsPanel({ employees }) {
     byDept[d].total += 1;
     if (row.status === "Completed") byDept[d].done += 1;
   });
-  const overdue = training.rows.filter((r) => r.mandatory && r.status !== "Completed" && r.dueDate && r.dueDate < t);
-  const completed = training.rows.filter((r) => r.status === "Completed").slice(0, 6);
+  const overdue = rowsOf(training).filter((r) => r.mandatory && r.status !== "Completed" && r.dueDate && r.dueDate < t);
+  const completed = rowsOf(training).filter((r) => r.status === "Completed").slice(0, 6);
 
   function printCertificate(row) {
     printAsPDF(`Certificate — ${row.course}`, `
@@ -1965,7 +1967,7 @@ function ActivityStream({ currentUser }) {
     if (!dbAudit.loading) {
       setEntries((prev) => {
         const existing = new Set(prev.map((e) => e.id));
-        const fresh = dbAudit.rows.filter((r) => !existing.has(r.id));
+        const fresh = rowsOf(dbAudit).filter((r) => !existing.has(r.id));
         return [...prev, ...fresh].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)).slice(0, 100);
       });
     }
@@ -5109,11 +5111,11 @@ const signaturesSeed = [];
 const KPI_METRICS = [
   { id: "revenue", label: "Revenue Collected", unit: "TZS 000", compute: (d) => d.invoices.rows.reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0) },
   { id: "profit", label: "Net Profit", unit: "TZS 000", compute: (d) => { const rev = d.invoices.rows.reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0); return rev - d.expenses.rows.reduce((s, e) => s + e.amount, 0); } },
-  { id: "receivables", label: "Outstanding Receivables", unit: "TZS 000", compute: (d) => d.invoices.rows.filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0) },
+  { id: "receivables", label: "Outstanding Receivables", unit: "TZS 000", compute: (d) => d.rowsOf(invoices).filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0) },
   { id: "stock_value", label: "Stock Value", unit: "TZS 000", compute: (d) => d.inventory.rows.reduce((s, it) => s + it.qty * it.unitCost, 0) },
-  { id: "pipeline_value", label: "Open Pipeline Value", unit: "TZS 000", compute: (d) => d.crm.rows.filter((l) => l.stage !== "Won" && l.stage !== "Lost").reduce((s, l) => s + l.value, 0) },
-  { id: "headcount", label: "Active Employees", unit: "people", compute: (d) => d.employees.rows.filter((e) => e.status === "Active").length },
-  { id: "win_rate", label: "Sales Win Rate", unit: "%", compute: (d) => { const won = d.crm.rows.filter((l) => l.stage === "Won").length; const closed = won + d.crm.rows.filter((l) => l.stage === "Lost").length; return closed > 0 ? Math.round((won / closed) * 100) : 0; } },
+  { id: "pipeline_value", label: "Open Pipeline Value", unit: "TZS 000", compute: (d) => d.rowsOf(crm).filter((l) => l.stage !== "Won" && l.stage !== "Lost").reduce((s, l) => s + l.value, 0) },
+  { id: "headcount", label: "Active Employees", unit: "people", compute: (d) => d.rowsOf(employees).filter((e) => e.status === "Active").length },
+  { id: "win_rate", label: "Sales Win Rate", unit: "%", compute: (d) => { const won = d.rowsOf(crm).filter((l) => l.stage === "Won").length; const closed = won + d.rowsOf(crm).filter((l) => l.stage === "Lost").length; return closed > 0 ? Math.round((won / closed) * 100) : 0; } },
 ];
 
 const customKpisSeed = [
@@ -5171,9 +5173,9 @@ const WORKFLOW_TRIGGERS = [
 // behind it, so a skipped run states exactly why in real figures.
 const WORKFLOW_CONDITIONS = [
   { id: "none", label: "No condition — always run", evaluate: () => ({ met: true, detail: "No condition set" }) },
-  { id: "overdue-count-gt", label: "Only if overdue invoices exceed…", unit: "invoices", evaluate: (data, v) => { const todayStr = TODAY.toISOString().slice(0, 10); const n = data.invoices.rows.filter((i) => i.status !== "Paid" && i.dueDate && i.dueDate < todayStr).length; return { met: n > Number(v), detail: `${n} overdue invoice(s) vs threshold ${v}` }; } },
-  { id: "low-stock-count-gt", label: "Only if low-stock items exceed…", unit: "items", evaluate: (data, v) => { const n = data.inventory.rows.filter((it) => it.qty <= it.reorder).length; return { met: n > Number(v), detail: `${n} item(s) at/below reorder vs threshold ${v}` }; } },
-  { id: "unpaid-expenses-gt", label: "Only if unpaid expenses exceed… (TZS 000)", unit: "TZS k", evaluate: (data, v) => { const total = data.expenses.rows.filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0); return { met: total > Number(v), detail: `TZS ${money(Math.round(total))}k unpaid vs threshold ${money(Number(v))}k` }; } },
+  { id: "overdue-count-gt", label: "Only if overdue invoices exceed…", unit: "invoices", evaluate: (data, v) => { const todayStr = TODAY.toISOString().slice(0, 10); const n = data.rowsOf(invoices).filter((i) => i.status !== "Paid" && i.dueDate && i.dueDate < todayStr).length; return { met: n > Number(v), detail: `${n} overdue invoice(s) vs threshold ${v}` }; } },
+  { id: "low-stock-count-gt", label: "Only if low-stock items exceed…", unit: "items", evaluate: (data, v) => { const n = data.rowsOf(inventory).filter((it) => it.qty <= it.reorder).length; return { met: n > Number(v), detail: `${n} item(s) at/below reorder vs threshold ${v}` }; } },
+  { id: "unpaid-expenses-gt", label: "Only if unpaid expenses exceed… (TZS 000)", unit: "TZS k", evaluate: (data, v) => { const total = data.rowsOf(expenses).filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0); return { met: total > Number(v), detail: `TZS ${money(Math.round(total))}k unpaid vs threshold ${money(Number(v))}k` }; } },
 ];
 
 // Five step types, deliberately not more — each one wraps a function this
@@ -6039,15 +6041,15 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
 
   const financials = useMemo(() => {
-    const invRows = invoices.rows.filter((inv) => !periodStart || (inv.date || "") >= periodStart);
-    const expRows = expenses.rows.filter((e) => !periodStart || (e.date || e.expenseDate || "") >= periodStart);
+    const invRows = rowsOf(invoices).filter((inv) => !periodStart || (inv.date || "") >= periodStart);
+    const expRows = rowsOf(expenses).filter((e) => !periodStart || (e.date || e.expenseDate || "") >= periodStart);
     const revenue = invRows.reduce((s, inv) => {
       const { total } = lineTotal(inv.items);
       return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0));
     }, 0);
     const expenseTotal = expRows.reduce((s, e) => s + e.amount, 0);
     const profit = revenue - expenseTotal;
-    const outstanding = invoices.rows.filter((inv) => inv.status !== "Paid");
+    const outstanding = rowsOf(invoices).filter((inv) => inv.status !== "Paid");
     const pendingCash = outstanding.reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
     return { revenue, expenseTotal, profit, pendingCash, outstandingCount: outstanding.length };
   }, [invoices.rows, expenses.rows, periodStart]);
@@ -6061,7 +6063,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   // "Sales" — pipeline by stage, live from CRM.
   const pipelineByStage = useMemo(() => {
-    return STAGES.map((stage) => ({ stage, value: crm.rows.filter((l) => l.stage === stage).length }));
+    return STAGES.map((stage) => ({ stage, value: rowsOf(crm).filter((l) => l.stage === stage).length }));
   }, [crm.rows]);
 
   // "Revenue" — top customers by billed value, live from invoices. Mirrors
@@ -6089,7 +6091,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // chart below).
   const workOrdersByStatus = useMemo(() => {
     const statuses = ["Planned", "In Progress", "Completed", "Cancelled"];
-    return statuses.map((status) => ({ status, value: workOrders.rows.filter((w) => w.status === status).length }));
+    return statuses.map((status) => ({ status, value: rowsOf(workOrders).filter((w) => w.status === status).length }));
   }, [workOrders.rows]);
 
   const revenueExpenseTrend = useMemo(() => {
@@ -6099,14 +6101,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       return d.toISOString().slice(0, 7);
     });
     return months.map((month) => {
-      const revenue = invoices.rows.filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
-      const expensesValue = expenses.rows.filter((expense) => expense.date?.startsWith(month)).reduce((sum, expense) => sum + (expense.amount || 0), 0);
+      const revenue = rowsOf(invoices).filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+      const expensesValue = rowsOf(expenses).filter((expense) => expense.date?.startsWith(month)).reduce((sum, expense) => sum + (expense.amount || 0), 0);
       return { month: new Date(`${month}-01`).toLocaleDateString("en", { month: "short" }), revenue_tzs_k: Math.round(revenue / 1000), expenses_tzs_k: Math.round(expensesValue / 1000), profit_tzs_k: Math.round((revenue - expensesValue) / 1000) };
     });
   }, [invoices.rows, expenses.rows]);
 
   const arAging = useMemo(() => {
-    const unpaid = invoices.rows.filter((invoice) => invoice.status !== "Paid");
+    const unpaid = rowsOf(invoices).filter((invoice) => invoice.status !== "Paid");
     const todayMs = TODAY.getTime();
     const buckets = [
       { bucket: "Current", items: unpaid.filter((invoice) => !invoice.dueDate || new Date(invoice.dueDate) >= TODAY) },
@@ -6126,10 +6128,10 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   }, [exportStartDate, exportEndDate]);
 
   const filteredExportRows = useMemo(() => ({
-    invoices: invoices.rows.filter(exportDateMatches),
-    expenses: expenses.rows.filter(exportDateMatches),
-    crm: crm.rows.filter(exportDateMatches),
-    workOrders: workOrders.rows.filter(exportDateMatches),
+    invoices: rowsOf(invoices).filter(exportDateMatches),
+    expenses: rowsOf(expenses).filter(exportDateMatches),
+    crm: rowsOf(crm).filter(exportDateMatches),
+    workOrders: rowsOf(workOrders).filter(exportDateMatches),
     inventory: inventory.rows,
   }), [invoices.rows, expenses.rows, crm.rows, workOrders.rows, inventory.rows, exportDateMatches]);
 
@@ -6197,7 +6199,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     }
   }
 
-  const pendingLeave = useMemo(() => leaveRequests.rows.filter((l) => l.status === "Pending"), [leaveRequests.rows]);
+  const pendingLeave = useMemo(() => rowsOf(leaveRequests).filter((l) => l.status === "Pending"), [leaveRequests.rows]);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
   // The guidance panel intentionally derives only from confirmed rows already
@@ -6308,10 +6310,10 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // are navigation suggestions only: they do not create records, imitate AI
   // reasoning, or turn a missing record into a fabricated alert.
   const attentionItems = [
-    ...inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0).slice(0, 3).map((item) => ({
+    ...rowsOf(inventory).filter((item) => item.qty <= item.reorder && item.reorder > 0).slice(0, 3).map((item) => ({
       id: `inventory-${item.id}`, icon: Package, color: "#DC2626", surface: "#FEF2F2", title: item.name, detail: item.qty <= 0 ? "Out of stock" : `${item.qty} left — reorder at ${item.reorder}`, actionLabel: "Review stock", action: () => onNavigate("inventory"),
     })),
-    ...workOrders.rows.filter((workOrder) => workOrder.status !== "Completed" && workOrder.status !== "Cancelled" && workOrder.dueDate < TODAY.toISOString().slice(0, 10)).slice(0, 2).map((workOrder) => ({
+    ...rowsOf(workOrders).filter((workOrder) => workOrder.status !== "Completed" && workOrder.status !== "Cancelled" && workOrder.dueDate < TODAY.toISOString().slice(0, 10)).slice(0, 2).map((workOrder) => ({
       id: `work-order-${workOrder.id}`, icon: Factory, color: "#D97706", surface: "#FFFBEB", title: workOrder.productName || workOrder.id, detail: `Work order overdue · ${workOrder.dueDate}`, actionLabel: "Review production", action: () => onNavigate("manufacturing"),
     })),
     ...(inventory.rows.length === 0 ? [{ id: "setup-inventory", icon: Package, color: "#2563EB", surface: "#EFF6FF", title: "Start with inventory", detail: "No confirmed stock items yet. Add a product or service to track availability.", actionLabel: "Add product", action: () => onNavigate("inventory") }] : []),
@@ -6749,8 +6751,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
 	          {/* Confirmed-data KPI cards — navigation only; no target, trend, or progress is shown unless it exists in the workspace data. */}
 	          {(() => {
-	            const invRows = invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart);
-	            const expRows = expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart);
+	            const invRows = rowsOf(invoices).filter((invoice) => !periodStart || (invoice.date || "") >= periodStart);
+	            const expRows = rowsOf(expenses).filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart);
             const totalBilled = invRows.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total, 0);
             const totalCollected = invRows.reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
             const totalExpenses = expRows.reduce((sum, expense) => sum + (expense.amount || 0), 0);
@@ -6758,11 +6760,11 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             const overdueInvs = invRows.filter((invoice) => invoice.status !== "Paid" && invoice.dueDate < TODAY.toISOString().slice(0, 10));
             const overdueAmt = overdueInvs.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0);
             const inventoryValue = inventory.rows.reduce((sum, item) => sum + (item.qty || 0) * (item.unitCost || 0), 0);
-            const lowStock = inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0).length;
-            const stockOut = inventory.rows.filter((item) => item.qty <= 0).length;
-            const openLeads = crm.rows.filter((lead) => !["Won", "Lost"].includes(lead.stage));
+            const lowStock = rowsOf(inventory).filter((item) => item.qty <= item.reorder && item.reorder > 0).length;
+            const stockOut = rowsOf(inventory).filter((item) => item.qty <= 0).length;
+            const openLeads = rowsOf(crm).filter((lead) => !["Won", "Lost"].includes(lead.stage));
             const pipelineValue = openLeads.reduce((sum, lead) => sum + (lead.value || 0), 0);
-            const activeSubs = subscriptions.rows.filter((subscription) => subscription.status === "Active");
+            const activeSubs = rowsOf(subscriptions).filter((subscription) => subscription.status === "Active");
             const monthlyRecurringRevenue = activeSubs.reduce((sum, subscription) => {
               const months = { Monthly: 1, Quarterly: 3, Annual: 12 }[subscription.cycle] || 1;
               return sum + (subscription.amount / months);
@@ -6999,8 +7001,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           return d.toISOString().slice(0,7);
         });
         const data = months.map(mo=>{
-          const rev = invoices.rows.filter(i=>i.date?.startsWith(mo)).reduce((s,i)=>s+(i.amountPaid||0),0);
-          const exp = expenses.rows.filter(e=>e.date?.startsWith(mo)).reduce((s,e)=>s+(e.amount||0),0);
+          const rev = rowsOf(invoices).filter(i=>i.date?.startsWith(mo)).reduce((s,i)=>s+(i.amountPaid||0),0);
+          const exp = rowsOf(expenses).filter(e=>e.date?.startsWith(mo)).reduce((s,e)=>s+(e.amount||0),0);
           return {mo:new Date(mo+"-01").toLocaleDateString("en",{month:"short"}),rev:Math.round(rev/1000),exp:Math.round(exp/1000),profit:Math.round((rev-exp)/1000)};
         });
         const hasData = data.some(d=>d.rev>0||d.exp>0);
@@ -7033,7 +7035,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               <h3 className="text-[14px] font-bold text-[#111827] mb-1">AR Aging</h3>
               <p className="text-[11.5px] text-slate-400 mb-3">Outstanding invoices by age</p>
               {(() => {
-                const unpaid = invoices.rows.filter(i=>i.status!=="Paid");
+                const unpaid = rowsOf(invoices).filter(i=>i.status!=="Paid");
                 const todayMs = TODAY.getTime();
                 const buckets = [
                   {label:"Current",    days:0,   col:"#16A34A", items:unpaid.filter(i=>!i.dueDate||new Date(i.dueDate)>=TODAY)},
@@ -7080,7 +7082,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           return d.toISOString().slice(0,7);
         });
         const vatTrendData = rawMonths.map(mo=>{
-          const periodInv = invoices.rows.filter(i=>!periodStart || (i.date||"") >= periodStart);
+          const periodInv = rowsOf(invoices).filter(i=>!periodStart || (i.date||"") >= periodStart);
           const moInv = periodInv.filter(i=>i.date?.startsWith(mo));
           const taxableGross = moInv.reduce((s,i)=>s+lineTotal(i.items||[]).total,0);
           const outputVat = taxableGross * 0.18;
@@ -7161,7 +7163,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                 <button
                   type="button"
                   onClick={() => {
-                    const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
+                    const monthInvoices = rowsOf(invoices).filter(i => (i.date || "").startsWith(drillDownMonth));
                     const filtered = monthInvoices.filter(inv => {
                       const { total } = lineTotal(inv.items || []);
                       const q = drillDownSearch.toLowerCase().trim();
@@ -7211,7 +7213,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
               {(() => {
-                const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
+                const monthInvoices = rowsOf(invoices).filter(i => (i.date || "").startsWith(drillDownMonth));
                 const filteredInvoices = monthInvoices.filter(inv => {
                   const { total } = lineTotal(inv.items || []);
                   const q = drillDownSearch.toLowerCase().trim();
@@ -7239,7 +7241,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                         const d=new Date(drillDownMonth+"-01"); d.setMonth(d.getMonth()-5+i);
                         return d.toISOString().slice(0,7);
                       });
-                      const historicalTotals = allMonths.map(m => invoices.rows.filter(i=>(i.date||"").startsWith(m)).reduce((s,i)=>s+lineTotal(i.items||[]).total*0.18,0));
+                      const historicalTotals = allMonths.map(m => rowsOf(invoices).filter(i=>(i.date||"").startsWith(m)).reduce((s,i)=>s+lineTotal(i.items||[]).total*0.18,0));
                       const avgVat = historicalTotals.reduce((a,b)=>a+b,0) / (historicalTotals.length || 1);
                       const thresholdPercent = vatAnomalySettingsQuery.data?.thresholdPercent ?? 50;
                       const alertsEnabled = vatAnomalySettingsQuery.data?.enabled !== false;
@@ -7498,10 +7500,10 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         </div>
         <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
           {(() => {
-            const overdueInvoices = invoices.rows.filter((invoice) => invoice.status !== "Paid" && invoice.dueDate < TODAY.toISOString().slice(0, 10));
-            const lowStockItems = inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0);
-            const pendingLeaves = leaveRequests.rows.filter((request) => request.status === "Pending");
-            const overdueWorkOrders = workOrders.rows.filter((workOrder) => workOrder.status !== "Completed" && workOrder.dueDate < TODAY.toISOString().slice(0, 10));
+            const overdueInvoices = rowsOf(invoices).filter((invoice) => invoice.status !== "Paid" && invoice.dueDate < TODAY.toISOString().slice(0, 10));
+            const lowStockItems = rowsOf(inventory).filter((item) => item.qty <= item.reorder && item.reorder > 0);
+            const pendingLeaves = rowsOf(leaveRequests).filter((request) => request.status === "Pending");
+            const overdueWorkOrders = rowsOf(workOrders).filter((workOrder) => workOrder.status !== "Completed" && workOrder.dueDate < TODAY.toISOString().slice(0, 10));
             const activeEmployees = (employees?.rows || employees || []).filter((employee) => employee.status === "Active");
             const moduleCards = [
               { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, status: "available", metric: "Workspace overview available", detail: "Uses confirmed dashboard data" },
@@ -7638,7 +7640,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           {(() => {
             const STAGE_COLORS={"New":"#64748B","Contacted":"#2563EB","Qualified":"#7C3AED","Proposal":"#D97706","Negotiation":"#EF4444","Won":"#16A34A","Lost":"#94A3B8"};
             const stageData = ["New","Contacted","Qualified","Proposal","Negotiation"].map(s=>({
-              name:s, count:crm.rows.filter(l=>l.stage===s).length, value:Math.round(crm.rows.filter(l=>l.stage===s).reduce((sum,l)=>sum+(l.value||0),0)/1000),
+              name:s, count:rowsOf(crm).filter(l=>l.stage===s).length, value:Math.round(rowsOf(crm).filter(l=>l.stage===s).reduce((sum,l)=>sum+(l.value||0),0)/1000),
               fill:STAGE_COLORS[s],
             })).filter(d=>d.count>0);
             const totalPipelineValue = stageData.reduce((sum, stage) => sum + stage.value, 0);
@@ -7866,7 +7868,7 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
   const health = useMemo(() => {
     const factors = [];
 
-    const unpaid = invoices.rows.filter((i) => i.status !== "Paid");
+    const unpaid = rowsOf(invoices).filter((i) => i.status !== "Paid");
     const overdue = unpaid.filter((i) => i.dueDate && i.dueDate < todayStr);
     const collectPct = unpaid.length === 0 ? 1 : 1 - overdue.length / unpaid.length;
     factors.push({ label: "Collections", pts: Math.round(collectPct * 30), max: 30, detail: unpaid.length === 0 ? "No unpaid invoices" : `${overdue.length} of ${unpaid.length} unpaid invoices overdue` });
@@ -7876,7 +7878,7 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
     const stockPct = items.length === 0 ? 1 : 1 - low.length / items.length;
     factors.push({ label: "Stock levels", pts: Math.round(stockPct * 25), max: 25, detail: items.length === 0 ? "No inventory tracked" : `${low.length} of ${items.length} items at or below reorder level` });
 
-    const openExp = expenses.rows.filter((e) => e.status !== "Paid");
+    const openExp = rowsOf(expenses).filter((e) => e.status !== "Paid");
     const lateExp = openExp.filter((e) => e.dueDate && e.dueDate < todayStr);
     const payPct = openExp.length === 0 ? 1 : 1 - lateExp.length / openExp.length;
     factors.push({ label: "Payables", pts: Math.round(payPct * 20), max: 20, detail: openExp.length === 0 ? "No open expenses" : `${lateExp.length} of ${openExp.length} open expenses past due` });
@@ -7885,7 +7887,7 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
     const thisM = todayStr.slice(0, 7);
     const lastM = `${TODAY.getFullYear()}-${String(TODAY.getMonth()).padStart(2, "0")}`;
     const revOf = (m) =>
-      invoices.rows.filter((i) => monthOf(i.date) === m).reduce((s, i) => s + lineTotal(i.items).total, 0) +
+      rowsOf(invoices).filter((i) => monthOf(i.date) === m).reduce((s, i) => s + lineTotal(i.items).total, 0) +
       (posTransactions?.rows || []).filter((t) => monthOf(t.date) === m).reduce((s, t) => s + t.items.reduce((ts, it) => ts + it.qty * it.price, 0), 0);
     const rThis = revOf(thisM), rLast = revOf(lastM);
     const momPct = rLast === 0 ? (rThis > 0 ? 1 : 0.5) : Math.max(0, Math.min(1, rThis / rLast));
@@ -7921,9 +7923,9 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
       </div>
       {(() => {
         const m = todayStr.slice(0, 7);
-        const rev = invoices.rows.filter((i) => (i.date || "").startsWith(m)).reduce((s, i) => s + lineTotal(i.items).total, 0)
+        const rev = rowsOf(invoices).filter((i) => (i.date || "").startsWith(m)).reduce((s, i) => s + lineTotal(i.items).total, 0)
           + (posTransactions?.rows || []).filter((t) => (t.date || "").startsWith(m)).reduce((s, t) => s + t.items.reduce((ts, it) => ts + it.qty * it.price, 0), 0);
-        const exp = expenses.rows.filter((e) => (e.date || "").startsWith(m)).reduce((s, e) => s + e.amount, 0);
+        const exp = rowsOf(expenses).filter((e) => (e.date || "").startsWith(m)).reduce((s, e) => s + e.amount, 0);
         const profit = rev - exp;
         return (
           <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-3">
@@ -7999,11 +8001,11 @@ function IndustryInsights({ company, onNavigate }) {
 // this build refuses everywhere.
 function CxPulseCard({ customer }) {
   const feedback = useCompanyTable("customer_feedback", [], { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ id: r.id, customer: r.customer_name, nps: r.nps_score, csat: r.csat_score, comment: r.comment || "" }) });
-  const npsRows = feedback.rows.filter((f) => f.nps !== null && f.nps !== undefined);
+  const npsRows = rowsOf(feedback).filter((f) => f.nps !== null && f.nps !== undefined);
   const nps = npsRows.length === 0 ? null : Math.round(((npsRows.filter((f) => f.nps >= 9).length - npsRows.filter((f) => f.nps <= 6).length) / npsRows.length) * 100);
-  const csatRows = feedback.rows.filter((f) => f.csat);
+  const csatRows = rowsOf(feedback).filter((f) => f.csat);
   const csat = csatRows.length === 0 ? null : (csatRows.reduce((s, f) => s + f.csat, 0) / csatRows.length).toFixed(1);
-  const mineCount = feedback.rows.filter((f) => f.customer === customer).length;
+  const mineCount = rowsOf(feedback).filter((f) => f.customer === customer).length;
   if (feedback.loading) return null;
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 flex flex-wrap items-center gap-x-8 gap-y-2">
@@ -8071,13 +8073,13 @@ function Customer360View({ crm, invoices }) {
 
   const view = useMemo(() => {
     if (!customer) return null;
-    const invs = invoices.rows.filter((i) => i.customer === customer);
+    const invs = rowsOf(invoices).filter((i) => i.customer === customer);
     const events = [];
     invs.forEach((i) => {
       events.push({ date: i.date, kind: "Invoice", detail: `${i.id} issued — TZS ${money(Math.round(lineTotal(i.items).total))}k (${i.status})` });
       (i.payments || []).forEach((p) => events.push({ date: p.date, kind: "Payment", detail: `TZS ${money(Math.round(p.amount))}k received on ${i.id}${p.method ? " · " + p.method : ""}` }));
     });
-    interactions.rows.filter((x) => x.customer === customer).forEach((x) => {
+    rowsOf(interactions).filter((x) => x.customer === customer).forEach((x) => {
       events.push({ date: x.date, kind: x.channel, detail: `${x.direction === "inbound" ? "←" : "→"} ${x.summary}` });
     });
     events.sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -9328,7 +9330,7 @@ function TopBuyers({ leads, invoices, company }) {
     const won = leads.filter(l => l.stage === "Won");
     return won.map(l => {
       const name = (l.company || l.contact || "").toLowerCase();
-      const allInvs = invoices.rows.filter(inv =>
+      const allInvs = rowsOf(invoices).filter(inv =>
         (inv.customer || "").toLowerCase() === name
       );
 
@@ -9931,7 +9933,7 @@ function Customers({ leads, invoices }) {
   const customers = useMemo(() => {
     const won = leads.filter((l) => l.stage === "Won");
     return won.map((l) => {
-      const custInvs = invoices.rows.filter(
+      const custInvs = rowsOf(invoices).filter(
         (inv) => inv.customer?.toLowerCase() === (l.company || l.contact || "").toLowerCase()
       );
       const lifetimeValue = custInvs.reduce((s, inv) => s + lineTotal(inv.items).total, 0);
@@ -10952,7 +10954,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
           <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Sales</h1>
           <p className="text-[13px] text-slate-500 mt-1">
             {tab === "subscriptions"
-              ? `${subscriptions.rows.length} subscriptions · TZS ${money(subscriptions.rows.filter((s) => s.status === "Active").reduce((sum, s) => sum + s.amount, 0))}k active recurring value`
+              ? `${subscriptions.rows.length} subscriptions · TZS ${money(rowsOf(subscriptions).filter((s) => s.status === "Active").reduce((sum, s) => sum + s.amount, 0))}k active recurring value`
               : `${summary.count} ${tab} · TZS ${money(summary.sum)}k combined value`}
           </p>
         </div>
@@ -12594,7 +12596,7 @@ function Inventory({ inventory, suppliersHook }) {
           </button>
           <button onClick={()=>{
             const co2=window.__smartManagerCompany||{};
-            const lowItems=inventory.rows.filter(it=>it.qty<=(it.reorder||0));
+            const lowItems=rowsOf(inventory).filter(it=>it.qty<=(it.reorder||0));
             const tableRows=inventory.rows.slice(0,30).map((it,i)=>`<tr style="background:${i%2===0?"white":"#F8FAFB"}"><td class="bold">${it.name}</td><td>${it.sku||"—"}</td><td>${it.category||"—"}</td><td class="r">${it.qty||0} ${it.unit||""}</td><td class="r">TZS ${money(it.unitCost||0)}</td><td class="r">TZS ${money(Math.round((it.qty||0)*(it.unitCost||0)/1000))}k</td><td><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${it.qty<=0?"#FEE2E2":it.qty<=(it.reorder||0)?"#FEF3C7":"#DCFCE7"};color:${it.qty<=0?"#EF4444":it.qty<=(it.reorder||0)?"#D97706":"#16A34A"}">${it.qty<=0?"Out of Stock":it.qty<=(it.reorder||0)?"Low Stock":"OK"}</span></td></tr>`).join("");
             printReport("Inventory Stock Report",`<div class="kpi-grid"><div class="kpi"><div class="kpi-label">Total SKUs</div><div class="kpi-value">${inventory.rows.length}</div></div><div class="kpi"><div class="kpi-label">Low Stock</div><div class="kpi-value" style="color:#EF4444">${lowItems.length}</div></div><div class="kpi"><div class="kpi-label">Stock Value</div><div class="kpi-value" style="color:#16A34A">TZS ${money(Math.round(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)/1000))}k</div></div></div><table><thead><tr><th>Item</th><th>SKU</th><th>Category</th><th class="r">Stock</th><th class="r">Unit Cost</th><th class="r">Value</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table>`,co2);
           }} className="flex items-center gap-1.5 text-[12px] font-semibold text-white bg-[#0D2214] px-3 py-2 rounded-lg">
@@ -13104,7 +13106,7 @@ function Warehouses({ inventory }) {
   // every other view reads — not a separate count to keep in sync.
   const stats = useMemo(() => {
     return warehouses.map((w) => {
-      const stock = inventory.rows.filter((it) => it.warehouse === w.id);
+      const stock = rowsOf(inventory).filter((it) => it.warehouse === w.id);
       const value = stock.reduce((s, it) => s + it.qty * it.unitCost, 0);
       return { ...w, skuCount: stock.length, value: Math.round(value) };
     });
@@ -13628,14 +13630,14 @@ function InventoryAnalysisView({ inventory }) {
   const heat = useMemo(() => {
     const totalValue = inventory.rows.reduce((s, it) => s + it.qty * it.unitCost, 0) || 1;
     return warehousesHook.rows.map((w) => {
-      const items = inventory.rows.filter((it) => it.warehouse === w.id);
+      const items = rowsOf(inventory).filter((it) => it.warehouse === w.id);
       const value = items.reduce((s, it) => s + it.qty * it.unitCost, 0);
       const low = items.filter((it) => it.qty <= it.reorder).length;
       return { ...w, items: items.length, value, share: value / totalValue, low };
     });
   }, [inventory.rows, warehousesHook.rows]);
 
-  const unassigned = inventory.rows.filter((it) => !warehousesHook.rows.some((w) => w.id === it.warehouse)).length;
+  const unassigned = rowsOf(inventory).filter((it) => !warehousesHook.rows.some((w) => w.id === it.warehouse)).length;
   const CLS_META = { A: { color: "#16A34A", note: "Count often, protect hard — ~80% of your stock value lives here." }, B: { color: "#F59E0B", note: "Review monthly — meaningful value, moderate attention." }, C: { color: "#94A3B8", note: "Order simply, count rarely — the long tail." } };
 
   // Compute per-category stock data for charts
@@ -13730,7 +13732,7 @@ function InventoryAnalysisView({ inventory }) {
         const t = TODAY.toISOString().slice(0, 10);
         const plus = (days) => { const d = new Date(TODAY); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); };
         const d30 = plus(30), d90 = plus(90);
-        const dated = inventory.rows.filter((it) => it.expiryDate);
+        const dated = rowsOf(inventory).filter((it) => it.expiryDate);
         const expired = dated.filter((it) => it.expiryDate < t);
         const soon30 = dated.filter((it) => it.expiryDate >= t && it.expiryDate <= d30);
         const soon90 = dated.filter((it) => it.expiryDate > d30 && it.expiryDate <= d90);
@@ -13845,7 +13847,7 @@ function ReorderAlertsView({ inventory, suppliersHook }) {
 
 
   // Stock health chart data
-  const outOfStock = inventory.rows.filter(it => (it.qtyOnHand ?? it.qty ?? 0) === 0).length;
+  const outOfStock = rowsOf(inventory).filter(it => (it.qtyOnHand ?? it.qty ?? 0) === 0).length;
   const critical   = alerts.filter(a => a.severity === "Critical").length;
   const lowStock   = alerts.filter(a => a.severity === "Low").length;
   const healthy    = inventory.rows.length - outOfStock - critical - lowStock;
@@ -14147,12 +14149,12 @@ function Procurement({ inventory, suppliersHook, expensesHook, currentUser, canM
     order: { col: "start_date", ascending: false }, mapRow: mapProcurementContractRow,
   });
 
-  const pendingApproval = orders.rows.filter((o) => o.status === "Pending Approval");
-  const readyToPay = orders.rows.filter((o) => o.status === "Received");
-  const totalCommitted = orders.rows.filter((o) => !["Draft", "Cancelled"].includes(o.status)).reduce((s, o) => s + poTotal(o.items), 0);
+  const pendingApproval = rowsOf(orders).filter((o) => o.status === "Pending Approval");
+  const readyToPay = rowsOf(orders).filter((o) => o.status === "Received");
+  const totalCommitted = rowsOf(orders).filter((o) => !["Draft", "Cancelled"].includes(o.status)).reduce((s, o) => s + poTotal(o.items), 0);
 
   const PROC_KPIS = [
-    { label: "Open Purchase Orders", value: String(orders.rows.filter((o) => !["Paid", "Cancelled"].includes(o.status)).length), delta: `${orders.rows.length} total`, up: true, icon: ClipboardCheck },
+    { label: "Open Purchase Orders", value: String(rowsOf(orders).filter((o) => !["Paid", "Cancelled"].includes(o.status)).length), delta: `${orders.rows.length} total`, up: true, icon: ClipboardCheck },
     { label: "Pending Approval", value: String(pendingApproval.length), delta: "Needs sign-off", up: false, icon: AlertCircle },
     { label: "Committed Spend", value: `TZS ${money(Math.round(totalCommitted))}k`, delta: "Active POs", up: true, icon: CircleDollarSign },
     { label: "Awaiting Payment", value: String(readyToPay.length), delta: "Received, unpaid", up: false, icon: Banknote },
@@ -14508,7 +14510,7 @@ function PurchaseOrderPanel({ order, onClose, onReceive, onCancel }) {
 }
 
 function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit }) {
-  const suppliers = suppliersHook.rows.filter((s) => s.status === "Active");
+  const suppliers = rowsOf(suppliersHook).filter((s) => s.status === "Active");
   const [supplier, setSupplier] = useState(suppliers[0]?.name || "");
   const [expectedDate, setExpectedDate] = useState("");
   const [requestedBy, setRequestedBy] = useState("");
@@ -14950,7 +14952,7 @@ function SupplierPortal({ suppliersHook, orders }) {
   const suppliers = suppliersHook.rows;
   const stats = useMemo(() => {
     return suppliers.map((s) => {
-      const supplierOrders = orders.rows.filter((o) => o.supplier === s.name);
+      const supplierOrders = rowsOf(orders).filter((o) => o.supplier === s.name);
       const totalSpend = supplierOrders.filter((o) => o.status !== "Cancelled").reduce((sum, o) => sum + poTotal(o.items), 0);
       const openOrders = supplierOrders.filter((o) => !["Paid", "Cancelled"].includes(o.status)).length;
       return { ...s, orderCount: supplierOrders.length, totalSpend, openOrders };
@@ -16826,7 +16828,7 @@ function LoansView() {
     borrowed: loans.rows.reduce((s, l) => s + l.principal, 0),
     repaid: loans.rows.reduce((s, l) => s + totalRepaid(l), 0),
   };
-  const filtered = filter === "All" ? loans.rows : loans.rows.filter((l) => l.status === filter);
+  const filtered = filter === "All" ? loans.rows : rowsOf(loans).filter((l) => l.status === filter);
 
   async function addLoan(e) {
     e.preventDefault();
@@ -17093,7 +17095,7 @@ function OtherDebtorsView() {
     owed: debtors.rows.reduce((s, d) => s + d.amountOwed, 0),
     collected: debtors.rows.reduce((s, d) => s + d.amountCollected, 0),
   };
-  const filtered = filter === "All" ? debtors.rows : debtors.rows.filter((d) => d.status === filter);
+  const filtered = filter === "All" ? debtors.rows : rowsOf(debtors).filter((d) => d.status === filter);
 
   async function addDebtor(e) {
     e.preventDefault();
@@ -17313,14 +17315,14 @@ function TaxCenterView({ invoices, expenses, employeesHook, company }) {
 
   const figures = useMemo(() => {
     if (!cfg.active) return null;
-    const outputVat = invoices.rows.filter((i) => i.date >= yearStart).reduce((s, i) => s + lineTotal(i.items).tax, 0);
-    const staff = employeesHook.rows.filter((e) => e.status === "Active");
+    const outputVat = rowsOf(invoices).filter((i) => i.date >= yearStart).reduce((s, i) => s + lineTotal(i.items).tax, 0);
+    const staff = rowsOf(employeesHook).filter((e) => e.status === "Active");
     const payroll = staff.reduce((s, e) => s + e.salary, 0);
     const payeRows = staff.map((e) => ({ name: e.name, salary: e.salary, paye: cfg.paye(e.salary) }));
     const payeTotal = payeRows.reduce((s, r) => s + r.paye, 0);
     const sdl = payroll * cfg.sdlRate;
     const wcf = payroll * cfg.wcfRate;
-    const revenue = invoices.rows.filter((i) => i.date >= yearStart).reduce((s, i) => s + lineTotal(i.items).total, 0);
+    const revenue = rowsOf(invoices).filter((i) => i.date >= yearStart).reduce((s, i) => s + lineTotal(i.items).total, 0);
     const expTotal = expenses.filter((e) => e.date >= yearStart).reduce((s, e) => s + e.amount, 0);
     const profit = revenue - expTotal;
     const corp = Math.max(0, profit) * cfg.corporateRate;
@@ -19715,7 +19717,7 @@ function BiometricClockPanel({ employees, attendance }) {
     );
   }
 
-  const active = employees.rows.filter((e) => e.status === "Active");
+  const active = rowsOf(employees).filter((e) => e.status === "Active");
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -22459,10 +22461,10 @@ function SupplyChain() {
   const vehicles = useCompanyTable("scm_vehicles", vehiclesSeed, { order: { col: "reg", ascending: true }, mapRow: mapVehicleRow });
 
   const stats = useMemo(() => {
-    const active = shipments.rows.filter((s) => s.status !== "Delivered").length;
-    const inTransit = shipments.rows.filter((s) => s.status === "In Transit").length;
-    const delivered = shipments.rows.filter((s) => s.status === "Delivered").length;
-    const availableVehicles = vehicles.rows.filter((v) => v.status === "Available").length;
+    const active = rowsOf(shipments).filter((s) => s.status !== "Delivered").length;
+    const inTransit = rowsOf(shipments).filter((s) => s.status === "In Transit").length;
+    const delivered = rowsOf(shipments).filter((s) => s.status === "Delivered").length;
+    const availableVehicles = rowsOf(vehicles).filter((v) => v.status === "Available").length;
     return { active, inTransit, delivered, availableVehicles, fleetSize: vehicles.rows.length };
   }, [shipments.rows, vehicles.rows]);
 
@@ -22541,7 +22543,7 @@ function SupplyChain() {
               const sdata = Object.entries(
                 shipments.rows.reduce((m,s)=>({...m,[s.status]:(m[s.status]||0)+1}),{})
               ).map(([name,value])=>({name,value,fill:STATUS_CFG[name]||"#6B7280"}));
-              const onTime   = shipments.rows.filter(s=>s.status==="Delivered").length;
+              const onTime   = rowsOf(shipments).filter(s=>s.status==="Delivered").length;
               const onTimeRate = shipments.rows.length > 0 ? Math.round(onTime/shipments.rows.length*100) : 0;
               return (
                 <div className="flex items-center gap-4">
@@ -22579,7 +22581,7 @@ function SupplyChain() {
               const months = Array.from({length:6},(_,i)=>{
                 const d = new Date(TODAY.getFullYear(),TODAY.getMonth()-5+i,1);
                 const key = d.toISOString().slice(0,7);
-                const ms = shipments.rows.filter(s=>(s.dispatchDate||"").startsWith(key));
+                const ms = rowsOf(shipments).filter(s=>(s.dispatchDate||"").startsWith(key));
                 return {
                   month:d.toLocaleString("default",{month:"short"}),
                   delivered:ms.filter(s=>s.status==="Delivered").length,
@@ -23047,10 +23049,10 @@ function ECommerce({ inventory, onNavigate }) {
     const allOrders = orders.rows;
     const live = allOrders.filter((o) => o.status !== "Cancelled");
     const revenue = live.reduce((s, o) => s + o.total, 0);
-    const published = products.rows.filter((p) => p.published).length;
+    const published = rowsOf(products).filter((p) => p.published).length;
     const statusCount = (status) => allOrders.filter((o) => o.status === status).length;
-    const lowStock = inventory.rows.filter((item) => Number(item.qty) <= Number(item.reorder || item.reorderLevel || 0) && Number(item.reorder || item.reorderLevel || 0) > 0).length;
-    const valuedRows = inventory.rows.filter((item) => Number.isFinite(Number(item.unitCost)) && Number(item.unitCost) >= 0);
+    const lowStock = rowsOf(inventory).filter((item) => Number(item.qty) <= Number(item.reorder || item.reorderLevel || 0) && Number(item.reorder || item.reorderLevel || 0) > 0).length;
+    const valuedRows = rowsOf(inventory).filter((item) => Number.isFinite(Number(item.unitCost)) && Number(item.unitCost) >= 0);
     const inventoryValue = valuedRows.reduce((s, item) => s + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
     return {
       revenue, count: live.length,
@@ -24502,14 +24504,14 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
     const cashPaidExpenses = periodEntries.reduce((s, e) => s + e.debit, 0);
     const netOperating = cashFromReceivables + cashFromPOS - cashPaidExpenses;
 
-    const assetPurchases = assetsHook.rows.filter((a) => a.acquisitionDate >= periodStart).reduce((s, a) => s + a.cost, 0);
+    const assetPurchases = rowsOf(assetsHook).filter((a) => a.acquisitionDate >= periodStart).reduce((s, a) => s + a.cost, 0);
     const netInvesting = -assetPurchases;
 
     // Real financing activity: money borrowed in this period is a real
     // cash inflow; money repaid on any loan in this period is a real
     // cash outflow — the same two-sided real ledger the Loans tab itself
     // manages, read here rather than recomputed.
-    const loanProceeds = loansHook.rows.filter((l) => l.borrowedDate >= periodStart).reduce((s, l) => s + l.principal, 0);
+    const loanProceeds = rowsOf(loansHook).filter((l) => l.borrowedDate >= periodStart).reduce((s, l) => s + l.principal, 0);
     const loanRepayments = loansHook.rows.reduce((s, l) => s + l.repayments.filter((r) => r.date >= periodStart).reduce((rs, r) => rs + r.amount, 0), 0);
     const netFinancing = loanProceeds - loanRepayments;
 
@@ -25467,7 +25469,7 @@ function IntegrationConnections({ canManage, currentUser }) {
 // using the same recordPayment() function every other payment method
 // already goes through.
 function MobileMoneyReconciliation({ invoices, currentUser }) {
-  const outstanding = invoices.rows.filter((inv) => inv.status !== "Paid");
+  const outstanding = rowsOf(invoices).filter((inv) => inv.status !== "Paid");
   const [invoiceId, setInvoiceId] = useState(outstanding[0]?.id || "");
   const [provider, setProvider] = useState(MOBILE_MONEY_PROVIDERS[0]);
   const [reference, setReference] = useState("");
@@ -25567,7 +25569,7 @@ function MobileMoneyReconciliation({ invoices, currentUser }) {
 function BankStatementImport({ invoices, expenses }) {
   const [transactions, setTransactions] = useState([]);
   const [fileName, setFileName] = useState("");
-  const outstanding = invoices.rows.filter((inv) => inv.status !== "Paid");
+  const outstanding = rowsOf(invoices).filter((inv) => inv.status !== "Paid");
 
   function handleFile(e) {
     const file = e.target.files?.[0];
@@ -26130,7 +26132,7 @@ function FilePanel({ file, company, onClose, onDelete, onAddVersion, deleting = 
   // (section 25), not a second, parallel signature system. A document's
   // signatures are just that same table filtered to this document's id.
   const signatures = useCompanyTable("signatures", signaturesSeed, { order: { col: "signed_at", ascending: false }, mapRow: mapSignatureRow });
-  const fileSignatures = signatures.rows.filter((s) => s.documentRef === file.id);
+  const fileSignatures = rowsOf(signatures).filter((s) => s.documentRef === file.id);
 
   async function generateSummary() {
     if (!file.content?.trim()) return;
@@ -26478,10 +26480,10 @@ function Projects({ filesHook, expensesHook }) {
 
   const todayStr = TODAY.toISOString().slice(0, 10);
   const stats = useMemo(() => {
-    const active = projects.rows.filter((p) => p.status === "Active").length;
+    const active = rowsOf(projects).filter((p) => p.status === "Active").length;
     const totalBudget = projects.rows.reduce((s, p) => s + p.budget, 0);
-    const dueSoonTasks = tasks.rows.filter((t) => t.status !== "Done" && t.dueDate && t.dueDate >= todayStr && daysBetween(new Date(t.dueDate), TODAY) <= 7).length;
-    const overdueMilestones = milestones.rows.filter((m) => milestoneStatus(m) === "Overdue").length;
+    const dueSoonTasks = rowsOf(tasks).filter((t) => t.status !== "Done" && t.dueDate && t.dueDate >= todayStr && daysBetween(new Date(t.dueDate), TODAY) <= 7).length;
+    const overdueMilestones = rowsOf(milestones).filter((m) => milestoneStatus(m) === "Overdue").length;
     return { active, totalBudget, dueSoonTasks, overdueMilestones };
   }, [projects.rows, tasks.rows, milestones.rows]);
 
@@ -26567,8 +26569,8 @@ function Projects({ filesHook, expensesHook }) {
       </tr>`).join("");
     const kpis = `<div class="kpi-grid">
       <div class="kpi"><div class="kpi-label">Total Projects</div><div class="kpi-value">${projects.rows.length}</div></div>
-      <div class="kpi"><div class="kpi-label">Active</div><div class="kpi-value" style="color:#2563EB">${projects.rows.filter(p=>p.status==="Active"||p.status==="In Progress").length}</div></div>
-      <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-value" style="color:#16A34A">${projects.rows.filter(p=>p.status==="Completed").length}</div></div>
+      <div class="kpi"><div class="kpi-label">Active</div><div class="kpi-value" style="color:#2563EB">${rowsOf(projects).filter(p=>p.status==="Active"||p.status==="In Progress").length}</div></div>
+      <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-value" style="color:#16A34A">${rowsOf(projects).filter(p=>p.status==="Completed").length}</div></div>
       <div class="kpi"><div class="kpi-label">Total Budget</div><div class="kpi-value" style="color:#7C3AED">TZS ${money(projects.rows.reduce((s,p)=>s+(p.budget||0),0))}k</div></div>
     </div>`;
     printReport("Project Status Report", kpis+`<table>
@@ -26616,7 +26618,7 @@ function Projects({ filesHook, expensesHook }) {
             <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Project Status Breakdown</h3>
             {(() => {
               const statusData = ["Planning","Active","On Hold","Completed","Cancelled"].map(s=>({
-                name:s, value:projects.rows.filter(p=>p.status===s).length,
+                name:s, value:rowsOf(projects).filter(p=>p.status===s).length,
                 fill:{Planning:"#94A3B8",Active:"#16A34A","On Hold":"#F59E0B",Completed:"#2563EB",Cancelled:"#EF4444"}[s],
               })).filter(d=>d.value>0);
               return statusData.length === 0 ? null : (
@@ -26648,8 +26650,8 @@ function Projects({ filesHook, expensesHook }) {
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
             <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Budget Utilization</h3>
             {(() => {
-              const budgetData = projects.rows.filter(p=>p.budget>0).slice(0,6).map(p=>{
-                const spent = projectExpenses.rows.filter(e=>e.projectId===p.id).reduce((s,e)=>s+e.amount,0);
+              const budgetData = rowsOf(projects).filter(p=>p.budget>0).slice(0,6).map(p=>{
+                const spent = rowsOf(projectExpenses).filter(e=>e.projectId===p.id).reduce((s,e)=>s+e.amount,0);
                 const pct   = Math.round(spent/p.budget*100);
                 return {
                   name: p.name.length>14 ? p.name.slice(0,12)+"…" : p.name,
@@ -26682,7 +26684,7 @@ function Projects({ filesHook, expensesHook }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.loading && Array.from({ length: 3 }).map((_, i) => <div key={i} className="bg-white rounded-xl border border-slate-200/80 h-36 skeleton-shimmer" />)}
         {!projects.loading && projects.rows.map((p) => {
-          const projectTasks = tasks.rows.filter((t) => t.projectId === p.id);
+          const projectTasks = rowsOf(tasks).filter((t) => t.projectId === p.id);
           const doneCount = projectTasks.filter((t) => t.status === "Done").length;
           const progress = projectTasks.length ? Math.round((doneCount / projectTasks.length) * 100) : 0;
           return (
@@ -26716,7 +26718,7 @@ function Projects({ filesHook, expensesHook }) {
           marker at the business date. Projects missing either date are
           counted honestly below rather than drawn as guesses. */}
       {(() => {
-        const dated = projects.rows.filter((p) => p.startDate && p.endDate && p.endDate >= p.startDate);
+        const dated = rowsOf(projects).filter((p) => p.startDate && p.endDate && p.endDate >= p.startDate);
         if (dated.length === 0) return null;
         const min = dated.map((p) => p.startDate).sort()[0];
         const max = dated.map((p) => p.endDate).sort().slice(-1)[0];
@@ -26752,7 +26754,7 @@ function Projects({ filesHook, expensesHook }) {
           data already recorded, with unassigned work named as its own
           row because invisible work is how teams drown. */}
       {(() => {
-        const open = tasks.rows.filter((t) => t.status !== "Done");
+        const open = rowsOf(tasks).filter((t) => t.status !== "Done");
         if (open.length === 0) return null;
         const byPerson = {};
         open.forEach((t) => { const k = t.assignee || "Unassigned"; byPerson[k] = (byPerson[k] || 0) + 1; });
@@ -26830,8 +26832,8 @@ const PROJECT_DETAIL_TABS = [
 
 function ProjectDetail({ project, onBack, onSetStatus, statusSaving = false, tasksHook, milestonesHook, expensesHook, financeExpensesHook, filesHook, currentUser }) {
   const [tab, setTab] = useState("tasks");
-  const projectTasks = tasksHook.rows.filter((t) => t.projectId === project.id);
-  const projectMilestones = milestonesHook.rows.filter((m) => m.projectId === project.id);
+  const projectTasks = rowsOf(tasksHook).filter((t) => t.projectId === project.id);
+  const projectMilestones = rowsOf(milestonesHook).filter((m) => m.projectId === project.id);
 
   return (
     <div className="space-y-5">
@@ -27292,7 +27294,7 @@ function MilestoneFormPanel({ onClose, onSubmit, saving = false }) {
 // Documents table, filtered to this project via linkedRecord, so a file
 // uploaded from either screen shows up consistently in both.
 function ProjectFiles({ project, filesHook }) {
-  const linkedFiles = filesHook.rows.filter((f) => f.linkedRecord === project.id);
+  const linkedFiles = rowsOf(filesHook).filter((f) => f.linkedRecord === project.id);
 
   return (
     <div className="space-y-4">
@@ -28742,9 +28744,9 @@ function PeriodClosesView({ invoices, expenses, currentUser }) {
   // Compute period P&L from real invoice and expense rows
   function periodStats(p) {
     const inRange = (d) => d && d >= p.startDate && d <= p.endDate;
-    const rev = invoices.rows.filter((i) => inRange(i.issueDate) && i.status === "Paid")
+    const rev = rowsOf(invoices).filter((i) => inRange(i.issueDate) && i.status === "Paid")
       .reduce((s, i) => s + lineTotal(i.items).total, 0);
-    const exp = expenses.rows.filter((e) => inRange(e.expenseDate) && e.status === "Paid")
+    const exp = rowsOf(expenses).filter((e) => inRange(e.expenseDate) && e.status === "Paid")
       .reduce((s, e) => s + (e.amount || 0), 0);
     return { rev, exp, profit: rev - exp };
   }
@@ -28943,8 +28945,8 @@ function BankReconciliationView({ invoices, expenses }) {
     }).filter((l) => l.amount > 0);
 
     const ledgerCredits = [
-      ...invoices.rows.filter((i) => i.status === "Paid").map((i) => ({ id: i.id, label: i.customer, amount: Math.round(lineTotal(i.items).total), type: "Receipt" })),
-      ...expenses.rows.filter((e) => e.status === "Paid").map((e) => ({ id: e.id, label: e.vendor, amount: Math.round(e.amount || 0), type: "Payment" })),
+      ...rowsOf(invoices).filter((i) => i.status === "Paid").map((i) => ({ id: i.id, label: i.customer, amount: Math.round(lineTotal(i.items).total), type: "Receipt" })),
+      ...rowsOf(expenses).filter((e) => e.status === "Paid").map((e) => ({ id: e.id, label: e.vendor, amount: Math.round(e.amount || 0), type: "Payment" })),
     ];
 
     const usedLedger = new Set();
@@ -29099,12 +29101,12 @@ function MicrofinanceModule({ currentUser }) {
   const [repayModal, setRepayModal] = useState(null);
   const [repayAmt,   setRepayAmt]   = useState("");
 
-  const activeLoans    = loans.rows.filter((l) => l.status === "Active");
+  const activeLoans    = rowsOf(loans).filter((l) => l.status === "Active");
   const totalPortfolio = activeLoans.reduce((s,l) => s + l.balance, 0);
   const totalClients   = clients.rows.length;
-  const atRisk         = loans.rows.filter((l) => l.status === "Defaulted" || l.status === "Overdue");
-  const totalSavings   = savings.rows.filter(r=>r.type==="Deposit").reduce((s,r)=>s+r.amount,0)
-                       - savings.rows.filter(r=>r.type==="Withdrawal").reduce((s,r)=>s+r.amount,0);
+  const atRisk         = rowsOf(loans).filter((l) => l.status === "Defaulted" || l.status === "Overdue");
+  const totalSavings   = rowsOf(savings).filter(r=>r.type==="Deposit").reduce((s,r)=>s+r.amount,0)
+                       - rowsOf(savings).filter(r=>r.type==="Withdrawal").reduce((s,r)=>s+r.amount,0);
 
   const MFI_TABS = [
     { id:"overview",  label:"Overview",   icon: LayoutDashboard },
@@ -29194,7 +29196,7 @@ function MicrofinanceModule({ currentUser }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              {l:"Active Clients",v:totalClients,sub:clients.rows.filter(c=>c.status==="Active").length+" active",c:"#059669",I:Users},
+              {l:"Active Clients",v:totalClients,sub:rowsOf(clients).filter(c=>c.status==="Active").length+" active",c:"#059669",I:Users},
               {l:"Loan Portfolio",v:"TZS "+money(totalPortfolio)+"k",sub:activeLoans.length+" active loans",c:"#2563EB",I:CircleDollarSign},
               {l:"Savings (Net)",  v:"TZS "+money(totalSavings)+"k",sub:"Total deposits held",c:"#7C3AED",I:Wallet},
               {l:"PAR > 30 days",  v:PAR30_ratio+"%",sub:"TZS "+money(PAR30)+"k at risk",c:PAR30_ratio>5?"#EF4444":"#16A34A",I:AlertCircle},
@@ -29239,9 +29241,9 @@ function MicrofinanceModule({ currentUser }) {
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Portfolio Quality</p>
               {(() => {
                 const qualData = [
-                  {name:"Active",  value:loans.rows.filter(l=>l.status==="Active").length,  fill:"#059669"},
-                  {name:"Closed",  value:loans.rows.filter(l=>l.status==="Closed").length,  fill:"#94A3B8"},
-                  {name:"Defaulted",value:loans.rows.filter(l=>l.status==="Defaulted").length,fill:"#EF4444"},
+                  {name:"Active",  value:rowsOf(loans).filter(l=>l.status==="Active").length,  fill:"#059669"},
+                  {name:"Closed",  value:rowsOf(loans).filter(l=>l.status==="Closed").length,  fill:"#94A3B8"},
+                  {name:"Defaulted",value:rowsOf(loans).filter(l=>l.status==="Defaulted").length,fill:"#EF4444"},
                   {name:"Overdue", value:atRisk.length,                                     fill:"#F59E0B"},
                 ].filter(d=>d.value>0);
                 return qualData.length===0?<p className="text-slate-400 text-center py-4">No loans</p>:(
@@ -29289,7 +29291,7 @@ function MicrofinanceModule({ currentUser }) {
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
             <table className="w-full text-[12.5px]"><thead><tr className="border-b border-slate-100 bg-slate-50">{["Client","Phone","National ID","Village","Status","Loans"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
               <tbody>{clients.rows.map((cl)=>{
-                const clLoans = loans.rows.filter(l=>l.clientId===cl.id&&l.status==="Active");
+                const clLoans = rowsOf(loans).filter(l=>l.clientId===cl.id&&l.status==="Active");
                 return (
                   <tr key={cl.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                     <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{background:"#059669"}}>{cl.name.charAt(0)}</div><span className="font-medium text-[#111827]">{cl.name}</span></div></td>
@@ -29355,7 +29357,7 @@ function MicrofinanceModule({ currentUser }) {
       {tab === "savings" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Total Deposits</p><p className="text-[20px] font-bold text-[#7C3AED]">TZS {money(savings.rows.filter(r=>r.type==="Deposit").reduce((s,r)=>s+r.amount,0))}k</p></div>
+            <div className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Total Deposits</p><p className="text-[20px] font-bold text-[#7C3AED]">TZS {money(rowsOf(savings).filter(r=>r.type==="Deposit").reduce((s,r)=>s+r.amount,0))}k</p></div>
             <div className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Net Balance</p><p className="text-[20px] font-bold text-[#059669]">TZS {money(totalSavings)}k</p></div>
             <div className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Savers</p><p className="text-[20px] font-bold text-[#111827]">{[...new Set(savings.rows.map(r=>r.clientId))].length}</p></div>
           </div>
@@ -29418,13 +29420,13 @@ function MicrofinanceModule({ currentUser }) {
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5">
             <h3 className="text-[15px] font-semibold text-[#111827] mb-4">MFI Performance Summary</h3>
             <div className="grid grid-cols-2 gap-3 mb-5">
-              {[["Total Disbursed",money(loans.rows.reduce((s,l)=>s+l.principal,0))+"k"],["Loans Closed",loans.rows.filter(l=>l.status==="Closed").length],["Recovery Rate",loans.rows.length>0?(loans.rows.filter(l=>l.status==="Closed").length/loans.rows.length*100).toFixed(0)+"%":"—"],["Monthly Revenue","TZS "+money(monthlyRevenue)+"k"]].map(([l,v])=>(
+              {[["Total Disbursed",money(loans.rows.reduce((s,l)=>s+l.principal,0))+"k"],["Loans Closed",rowsOf(loans).filter(l=>l.status==="Closed").length],["Recovery Rate",loans.rows.length>0?(rowsOf(loans).filter(l=>l.status==="Closed").length/loans.rows.length*100).toFixed(0)+"%":"—"],["Monthly Revenue","TZS "+money(monthlyRevenue)+"k"]].map(([l,v])=>(
                 <div key={l} className="bg-slate-50 rounded-xl p-3"><p className="text-[11px] text-slate-400">{l}</p><p className="text-[18px] font-bold text-[#059669] mt-0.5">TZS {isNaN(Number(v.replace(/[^0-9]/g,"")))?"" : v.includes("%")||v.includes("k")||!isNaN(Number(v)) ? v : "TZS "+v}</p></div>
               ))}
             </div>
             <div className="space-y-2">
               {clients.rows.slice(0,5).map((cl)=>{
-                const clLoans = loans.rows.filter(l=>l.clientId===cl.id);
+                const clLoans = rowsOf(loans).filter(l=>l.clientId===cl.id);
                 const outstanding = clLoans.filter(l=>l.status==="Active").reduce((s,l)=>s+l.balance,0);
                 return (
                   <div key={cl.id} className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100">
@@ -29757,13 +29759,13 @@ function RiskCenterView({ invoices, expenses, inventory, employees }) {
     const level = (pct) => (pct >= 0.66 ? { label: "High", color: "#EF4444" } : pct >= 0.33 ? { label: "Medium", color: "#F59E0B" } : { label: "Low", color: "#16A34A" });
 
     // Financial — overdue receivables share + expense cover
-    const unpaid = invoices.rows.filter((i) => i.status !== "Paid");
+    const unpaid = rowsOf(invoices).filter((i) => i.status !== "Paid");
     const overdue = unpaid.filter((i) => i.dueDate && i.dueDate < t);
     const finPct = unpaid.length === 0 ? 0 : overdue.length / unpaid.length;
     out.push({ cat: "Financial", pct: finPct, basis: unpaid.length === 0 ? "No unpaid invoices" : `${overdue.length} of ${unpaid.length} unpaid invoices overdue`, fix: "Chase the Receivables Aging list oldest-first; Cmd+K a customer name to jump straight to them." });
 
     // Operational — low/out-of-stock exposure
-    const low = inventory.rows.filter((it) => it.qty <= it.reorder);
+    const low = rowsOf(inventory).filter((it) => it.qty <= it.reorder);
     const opPct = inventory.rows.length === 0 ? 0 : low.length / inventory.rows.length;
     out.push({ cat: "Operational", pct: opPct, basis: inventory.rows.length === 0 ? "No inventory tracked" : `${low.length} of ${inventory.rows.length} items at/below reorder`, fix: "Raise POs from Procurement; the Inventory Replenishment workflow template automates the alert." });
 
@@ -29774,13 +29776,13 @@ function RiskCenterView({ invoices, expenses, inventory, employees }) {
     out.push({ cat: "Cybersecurity", pct: cyPct, basis: `This device: App Lock ${lock ? "on" : "OFF"}, biometric unlock ${bio ? "enrolled" : "not enrolled"} — RLS and RBAC hold platform-wide regardless`, fix: lock ? "Enroll biometric unlock in Settings > App Lock; enable TOTP 2FA when wired (GoTrue MFA)." : "Turn on App Lock in Settings — one PIN, this device, right now." });
 
     // Compliance — overdue mandatory/compliance training + tax proximity
-    const compOverdue = training.rows.filter((r) => (r.mandatory || r.compliance) && r.status !== "Completed" && r.dueDate && r.dueDate < t);
-    const compAll = training.rows.filter((r) => r.mandatory || r.compliance);
+    const compOverdue = rowsOf(training).filter((r) => (r.mandatory || r.compliance) && r.status !== "Completed" && r.dueDate && r.dueDate < t);
+    const compAll = rowsOf(training).filter((r) => r.mandatory || r.compliance);
     const cpPct = compAll.length === 0 ? 0.2 : Math.min(1, compOverdue.length / compAll.length + 0.1);
     out.push({ cat: "Compliance", pct: cpPct, basis: compAll.length === 0 ? "No mandatory/compliance training assigned yet — itself a mild exposure" : `${compOverdue.length} of ${compAll.length} mandatory/compliance training(s) overdue`, fix: "Assign compliance courses in HR > Training; the Tax Center's deadline strip covers TRA filing dates." });
 
     // Supply chain — stock exposure proxy, honestly labeled
-    const outOfStock = inventory.rows.filter((it) => it.qty === 0);
+    const outOfStock = rowsOf(inventory).filter((it) => it.qty === 0);
     const scPct = inventory.rows.length === 0 ? 0 : Math.min(1, (outOfStock.length * 2 + low.length) / Math.max(1, inventory.rows.length));
     out.push({ cat: "Supply Chain", pct: scPct, basis: `${outOfStock.length} item(s) fully out of stock — proxy measure: per-item supplier links do not exist yet, so concentration risk is not computable`, fix: "Add second suppliers for A-class items (Smart Analysis names them); track lead times in Suppliers." });
 
@@ -29955,13 +29957,13 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
   const expenseTotal  = expenses.rows.reduce((s, e) => s + e.amount, 0);
   const profit        = revenue - expenseTotal;
   const margin        = revenue > 0 ? (profit / revenue * 100).toFixed(1) : 0;
-  const openPipeline  = crm.rows.filter(l => !["Won","Lost"].includes(l.stage)).reduce((s, l) => s + l.value, 0);
+  const openPipeline  = rowsOf(crm).filter(l => !["Won","Lost"].includes(l.stage)).reduce((s, l) => s + l.value, 0);
   const stockValue    = inventory.rows.reduce((s, it) => s + it.qty * it.unitCost, 0);
-  const activeEmp     = employees.rows.filter(e => e.status === "Active").length;
-  const wonCount      = crm.rows.filter(l => l.stage === "Won").length;
-  const closedCount   = wonCount + crm.rows.filter(l => l.stage === "Lost").length;
+  const activeEmp     = rowsOf(employees).filter(e => e.status === "Active").length;
+  const wonCount      = rowsOf(crm).filter(l => l.stage === "Won").length;
+  const closedCount   = wonCount + rowsOf(crm).filter(l => l.stage === "Lost").length;
   const winRate       = closedCount > 0 ? Math.round(wonCount / closedCount * 100) : 0;
-  const overdueInvs   = invoices.rows.filter(inv => inv.status !== "Paid" && inv.dueDate && new Date(inv.dueDate) < TODAY);
+  const overdueInvs   = rowsOf(invoices).filter(inv => inv.status !== "Paid" && inv.dueDate && new Date(inv.dueDate) < TODAY);
   const overdueValue  = overdueInvs.reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid||0)), 0);
 
   // ── Confirmed six-month trend ────────────────────────────────────────
@@ -29973,8 +29975,8 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
     return { key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`, label: date.toLocaleDateString(undefined, { month: "short" }) };
   }), []);
   const trendData = useMemo(() => trendMonths.map(({ key, label }) => {
-    const monthInvoices = invoices.rows.filter((inv) => String(inv.date || "").startsWith(key));
-    const monthExpenses = expenses.rows.filter((expense) => String(expense.date || "").startsWith(key));
+    const monthInvoices = rowsOf(invoices).filter((inv) => String(inv.date || "").startsWith(key));
+    const monthExpenses = rowsOf(expenses).filter((expense) => String(expense.date || "").startsWith(key));
     const monthRevenue = monthInvoices.reduce((sum, inv) => sum + (inv.status === "Paid" ? lineTotal(inv.items || []).total : (inv.amountPaid || 0)), 0);
     const monthExpenseTotal = monthExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
     return { month: label, revenue: Math.round(monthRevenue / 1000), expenses: Math.round(monthExpenseTotal / 1000), profit: Math.round((monthRevenue - monthExpenseTotal) / 1000) };
@@ -29986,7 +29988,7 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
     (profit > 0 ? 25 : 0) +
     (winRate > 50 ? 20 : winRate > 30 ? 10 : 0) +
     (overdueValue === 0 ? 20 : overdueValue < revenue * 0.1 ? 10 : 0) +
-    (inventory.rows.filter(it => it.qty <= (it.reorderLevel||5)).length === 0 ? 15 : 5) +
+    (rowsOf(inventory).filter(it => it.qty <= (it.reorderLevel||5)).length === 0 ? 15 : 5) +
     (activeEmp > 0 ? 20 : 0)
   )));
   const healthColor = healthScore >= 80 ? "#16A34A" : healthScore >= 60 ? "#F59E0B" : "#EF4444";
@@ -29995,7 +29997,7 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
   const KPIS = [
     { label:"Revenue",         value:"TZS "+money(Math.round(revenue))+"k",      sub:"Collected",             col:"#2563EB", mod:"finance"   },
     { label:"Net Profit",      value:"TZS "+money(Math.round(Math.abs(profit)))+"k", sub:(profit>=0?"Profit":"Loss")+" · "+margin+"%", col:profit>=0?"#16A34A":"#EF4444", mod:"reports" },
-    { label:"Pipeline",        value:"TZS "+money(Math.round(openPipeline))+"k", sub:crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).length+" open deals", col:"#7C3AED", mod:"crm" },
+    { label:"Pipeline",        value:"TZS "+money(Math.round(openPipeline))+"k", sub:rowsOf(crm).filter(l=>!["Won","Lost"].includes(l.stage)).length+" open deals", col:"#7C3AED", mod:"crm" },
     { label:"Overdue AR",      value:"TZS "+money(Math.round(overdueValue))+"k", sub:overdueInvs.length+" invoices overdue", col:overdueValue>0?"#EF4444":"#16A34A", mod:"finance" },
     { label:"Stock Value",     value:"TZS "+money(Math.round(stockValue))+"k",   sub:inventory.rows.length+" SKUs",           col:"#D97706",  mod:"inventory" },
     { label:"Win Rate",        value:winRate+"%",                                 sub:wonCount+" won / "+closedCount+" closed",col:winRate>=50?"#16A34A":"#F59E0B", mod:"crm" },
@@ -30051,7 +30053,7 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
             ["Profitable", profit>0, "Positive net profit"],
             ["Win Rate >50%", winRate>50, "Strong deal closure"],
             ["No Overdue AR", overdueValue===0, "All invoices current"],
-            ["Stock Healthy", inventory.rows.filter(it=>it.qty<=(it.reorderLevel||5)).length===0, "No low-stock items"],
+            ["Stock Healthy", rowsOf(inventory).filter(it=>it.qty<=(it.reorderLevel||5)).length===0, "No low-stock items"],
             ["Team Active", activeEmp>0, "Staff onboarded"],
           ].map(([l, ok, hint]) => (
             <div key={l} className="flex items-center gap-2 py-1.5 border-b border-slate-50 last:border-0">
@@ -30133,7 +30135,7 @@ function FinancialDashboard({ invoices, expenses, posTransactions, onNavigate })
   const expenseTotal   = expenses.rows.reduce((s,e) => s+e.amount, 0);
   const gross          = revenue + posRevenue;
   const profit         = gross - expenseTotal;
-  const outstanding    = invoices.rows.filter(inv => inv.status !== "Paid" && inv.status !== "Cancelled");
+  const outstanding    = rowsOf(invoices).filter(inv => inv.status !== "Paid" && inv.status !== "Cancelled");
   const receivables    = outstanding.reduce((s,inv) => s + (lineTotal(inv.items).total-(inv.amountPaid||0)), 0);
 
   // Expense breakdown by category
@@ -30145,9 +30147,9 @@ function FinancialDashboard({ invoices, expenses, posTransactions, onNavigate })
 
   // Revenue by invoice status
   const statusData = useMemo(() => {
-    const paid    = invoices.rows.filter(i=>i.status==="Paid").reduce((s,i)=>s+lineTotal(i.items).total,0);
-    const partial = invoices.rows.filter(i=>i.status==="Partial").reduce((s,i)=>s+(i.amountPaid||0),0);
-    const unpaid  = invoices.rows.filter(i=>i.status==="Unpaid"||i.status==="Overdue").reduce((s,i)=>s+lineTotal(i.items).total,0);
+    const paid    = rowsOf(invoices).filter(i=>i.status==="Paid").reduce((s,i)=>s+lineTotal(i.items).total,0);
+    const partial = rowsOf(invoices).filter(i=>i.status==="Partial").reduce((s,i)=>s+(i.amountPaid||0),0);
+    const unpaid  = rowsOf(invoices).filter(i=>i.status==="Unpaid"||i.status==="Overdue").reduce((s,i)=>s+lineTotal(i.items).total,0);
     return [
       {name:"Paid",    value:Math.round(paid/1000),    fill:"#16A34A"},
       {name:"Partial", value:Math.round(partial/1000), fill:"#F59E0B"},
@@ -30243,11 +30245,11 @@ function FinancialDashboard({ invoices, expenses, posTransactions, onNavigate })
 
 function HRDashboard({ employees, leaveRequests, onNavigate }) {
   const nav = onNavigate || (() => {});
-  const active   = employees.rows.filter(e=>e.status==="Active").length;
-  const onLeave  = employees.rows.filter(e=>e.status==="On Leave").length;
-  const inactive = employees.rows.filter(e=>e.status==="Inactive").length;
-  const payroll  = employees.rows.filter(e=>e.status!=="Inactive").reduce((s,e)=>s+e.salary,0);
-  const pendingLeave = leaveRequests.rows.filter(l=>l.status==="Pending").length;
+  const active   = rowsOf(employees).filter(e=>e.status==="Active").length;
+  const onLeave  = rowsOf(employees).filter(e=>e.status==="On Leave").length;
+  const inactive = rowsOf(employees).filter(e=>e.status==="Inactive").length;
+  const payroll  = rowsOf(employees).filter(e=>e.status!=="Inactive").reduce((s,e)=>s+e.salary,0);
+  const pendingLeave = rowsOf(leaveRequests).filter(l=>l.status==="Pending").length;
 
   // Department breakdown
   const byDept = useMemo(() => {
@@ -30277,7 +30279,7 @@ function HRDashboard({ employees, leaveRequests, onNavigate }) {
     { subject:"Retention",  value:employees.rows.length>0 ? Math.round((1-inactive/(employees.rows.length||1))*100) : 90 },
     { subject:"Leave Mgmt", value:pendingLeave===0 ? 100 : Math.round((1-pendingLeave/10)*80)           },
     { subject:"Payroll",    value:payroll>0 ? Math.min(100, Math.round(payroll/employees.rows.length/20)) : 0 },
-    { subject:"Diversity",  value:(() => { const f=employees.rows.filter(e=>e.gender==="F").length; return employees.rows.length>0?Math.round(f/employees.rows.length*200):50; })() },
+    { subject:"Diversity",  value:(() => { const f=rowsOf(employees).filter(e=>e.gender==="F").length; return employees.rows.length>0?Math.round(f/employees.rows.length*200):50; })() },
     { subject:"Engagement", value:75 },
   ];
 
@@ -30390,16 +30392,16 @@ function SalesDashboard({ invoices, crm, onNavigate }) {
 
   const stageData = useMemo(() => STAGES.map(stage => ({
     stage,
-    count: crm.rows.filter(l => l.stage === stage).length,
-    value: crm.rows.filter(l => l.stage === stage).reduce((s,l)=>s+l.value,0),
+    count: rowsOf(crm).filter(l => l.stage === stage).length,
+    value: rowsOf(crm).filter(l => l.stage === stage).reduce((s,l)=>s+l.value,0),
     fill:  STAGE_COLORS[stage],
   })), [crm.rows]);
 
-  const openLeads       = crm.rows.filter(l => !["Won","Lost"].includes(l.stage));
+  const openLeads       = rowsOf(crm).filter(l => !["Won","Lost"].includes(l.stage));
   const pipelineValue   = openLeads.reduce((s,l)=>s+l.value,0);
   const weightedForecast= openLeads.reduce((s,l)=>s+l.value*((STAGE_PROBABILITY[l.stage]||0)/100),0);
-  const wonCount        = crm.rows.filter(l=>l.stage==="Won").length;
-  const lostCount       = crm.rows.filter(l=>l.stage==="Lost").length;
+  const wonCount        = rowsOf(crm).filter(l=>l.stage==="Won").length;
+  const lostCount       = rowsOf(crm).filter(l=>l.stage==="Lost").length;
   const closedCount     = wonCount + lostCount;
   const winRate         = closedCount>0 ? Math.round(wonCount/closedCount*100) : 0;
 
@@ -30411,7 +30413,7 @@ function SalesDashboard({ invoices, crm, onNavigate }) {
     return { month:m, revenue:Math.round(base*factor/1000), invoices:Math.max(1,Math.round(invoices.rows.length*factor)) };
   });
   monthlyRevenue[5].revenue = Math.round(invoices.rows.reduce((s,inv)=>s+(inv.status==="Paid"?lineTotal(inv.items).total:(inv.amountPaid||0)),0)/1000);
-  monthlyRevenue[5].invoices = invoices.rows.filter(i=>i.status==="Paid").length;
+  monthlyRevenue[5].invoices = rowsOf(invoices).filter(i=>i.status==="Paid").length;
 
   return (
     <div className="space-y-4">
@@ -30476,9 +30478,9 @@ function SalesDashboard({ invoices, crm, onNavigate }) {
 
 function OperationsDashboard({ inventory, workOrders, onNavigate }) {
   const stockValue   = inventory.rows.reduce((s,it)=>s+it.qty*it.unitCost,0);
-  const lowStock     = inventory.rows.filter(it=>stockStatus(it.qty,it.reorder)==="Low Stock").length;
-  const outOfStock   = inventory.rows.filter(it=>stockStatus(it.qty,it.reorder)==="Out of Stock").length;
-  const activeOrders = workOrders.rows.filter(w=>["In Progress","Planned"].includes(w.status)).length;
+  const lowStock     = rowsOf(inventory).filter(it=>stockStatus(it.qty,it.reorder)==="Low Stock").length;
+  const outOfStock   = rowsOf(inventory).filter(it=>stockStatus(it.qty,it.reorder)==="Out of Stock").length;
+  const activeOrders = rowsOf(workOrders).filter(w=>["In Progress","Planned"].includes(w.status)).length;
   const nav          = onNavigate || (()=>{});
 
   // Inventory by category
@@ -30495,13 +30497,13 @@ function OperationsDashboard({ inventory, workOrders, onNavigate }) {
   // Work order status
   const woStatus = ["Planned","In Progress","Completed","Cancelled"].map(status=>({
     name:status,
-    value:workOrders.rows.filter(w=>w.status===status).length,
+    value:rowsOf(workOrders).filter(w=>w.status===status).length,
     fill:{Planned:"#3B82F6","In Progress":"#F59E0B",Completed:"#16A34A",Cancelled:"#EF4444"}[status],
   })).filter(d=>d.value>0);
 
   // Stock health breakdown
   const stockHealth = [
-    {name:"In Stock",  value:inventory.rows.filter(it=>stockStatus(it.qty,it.reorder)==="In Stock").length,  fill:"#16A34A"},
+    {name:"In Stock",  value:rowsOf(inventory).filter(it=>stockStatus(it.qty,it.reorder)==="In Stock").length,  fill:"#16A34A"},
     {name:"Low Stock", value:lowStock,  fill:"#F59E0B"},
     {name:"Out of Stock",value:outOfStock,fill:"#EF4444"},
   ].filter(d=>d.value>0);
@@ -30753,7 +30755,7 @@ function HeatMaps({ invoices, inventory }) {
     categories.forEach((cat) => {
       grid[cat] = {};
       warehouseList.forEach((wh) => {
-        const items = inventory.rows.filter((it) => it.category === cat && it.warehouse === wh);
+        const items = rowsOf(inventory).filter((it) => it.category === cat && it.warehouse === wh);
         grid[cat][wh] = items.reduce((s, it) => s + it.qty * it.unitCost, 0);
       });
     });
@@ -30948,7 +30950,7 @@ function Benchmarking({ data }) {
   const computedValues = {
     gross_margin: revenue > 0 ? Math.round(((revenue - totalExpenses) / revenue) * 100) : 0,
     receivables_days: (() => {
-      const outstanding = data.invoices.rows.filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
+      const outstanding = data.rowsOf(invoices).filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
       return revenue > 0 ? Math.round((outstanding / revenue) * 30) : 0; // a rough, real approximation: receivables as a share of revenue, scaled to a 30-day period
     })(),
     stock_turnover: (() => {
@@ -31192,7 +31194,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
   // the trailing 60 days ÷ 60), projected against real current quantity.
   const stockDepletion = useMemo(() => {
     const salesBySku = {};
-    invoices.rows.filter((inv) => (TODAY - new Date(inv.date)) / 86400000 <= 60).forEach((inv) => {
+    rowsOf(invoices).filter((inv) => (TODAY - new Date(inv.date)) / 86400000 <= 60).forEach((inv) => {
       inv.items.forEach((it) => { if (it.sku) salesBySku[it.sku] = (salesBySku[it.sku] || 0) + it.qty; });
     });
     return inventory.rows
@@ -31233,9 +31235,9 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
   // supports — no engagement surveys, performance trends, or compensation
   // data exist to build anything stronger.
   const turnoverRisk = useMemo(() => {
-    return employees.rows.filter((e) => e.status === "Active").map((e) => {
+    return rowsOf(employees).filter((e) => e.status === "Active").map((e) => {
       const tenureDays = e.hireDate ? (TODAY - new Date(e.hireDate)) / 86400000 : null;
-      const recentLeave = leaveRequests.rows.filter((l) => l.employee === e.name && (TODAY - new Date(l.startDate)) / 86400000 <= 90).length;
+      const recentLeave = rowsOf(leaveRequests).filter((l) => l.employee === e.name && (TODAY - new Date(l.startDate)) / 86400000 <= 90).length;
       const flags = [];
       if (tenureDays !== null && tenureDays < 90) flags.push("New hire (under 90 days) — the highest-risk tenure window in most attrition research");
       if (recentLeave >= 3) flags.push(`${recentLeave} leave requests in the last 90 days — notably more frequent than typical`);
@@ -31267,8 +31269,8 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
   // 6. Budget Overruns — real burn-rate projection: current spend ÷ time
   // elapsed, extended across the project full real timeline.
   const budgetOverruns = useMemo(() => {
-    return projects.rows.filter((p) => p.status !== "Completed" && p.status !== "Cancelled" && p.budget > 0).map((p) => {
-      const spent = projectExpenses.rows.filter((pe) => pe.projectId === p.id).reduce((s, pe) => s + pe.amount, 0);
+    return rowsOf(projects).filter((p) => p.status !== "Completed" && p.status !== "Cancelled" && p.budget > 0).map((p) => {
+      const spent = rowsOf(projectExpenses).filter((pe) => pe.projectId === p.id).reduce((s, pe) => s + pe.amount, 0);
       const start = new Date(p.startDate), end = p.endDate ? new Date(p.endDate) : null;
       const elapsedDays = Math.max(1, (TODAY - start) / 86400000);
       const totalDays = end ? Math.max(elapsedDays, (end - start) / 86400000) : elapsedDays * 2;
@@ -31284,7 +31286,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
   // checked against this company own real PO approval threshold.
   const fraudRisk = useMemo(() => {
     const unusual = detectUnusualExpenses(expenses.rows);
-    const structuring = expenses.rows.filter((e) => e.amount >= PO_APPROVAL_THRESHOLD * 0.9 && e.amount < PO_APPROVAL_THRESHOLD);
+    const structuring = rowsOf(expenses).filter((e) => e.amount >= PO_APPROVAL_THRESHOLD * 0.9 && e.amount < PO_APPROVAL_THRESHOLD);
     return { unusual, structuring };
   }, [expenses.rows]);
 
@@ -31293,7 +31295,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
   // surfaces the ones approaching or past it.
   const maintenanceNeeds = useMemo(() => {
     return machines.rows.map((m) => {
-      const records = maintenance.rows.filter((r) => r.machine === m.name).sort((a, b) => (a.date < b.date ? 1 : -1));
+      const records = rowsOf(maintenance).filter((r) => r.machine === m.name).sort((a, b) => (a.date < b.date ? 1 : -1));
       const last = records[0];
       if (!last?.nextDueDate) return null;
       const daysUntil = Math.round((new Date(last.nextDueDate) - TODAY) / 86400000);
@@ -31438,7 +31440,7 @@ function ScenarioPlanner({ invoices, expenses, employees }) {
 
   const baseline = useMemo(() => {
     const pnl = computePnLFigures(invoices, expenses);
-    const activeEmployees = employees.rows.filter((e) => e.status === "Active");
+    const activeEmployees = rowsOf(employees).filter((e) => e.status === "Active");
     const avgSalary = activeEmployees.length > 0 ? activeEmployees.reduce((s, e) => s + e.salary, 0) / activeEmployees.length : 0;
     const monthlyPayroll = activeEmployees.reduce((s, e) => s + e.salary, 0);
     const categories = [...new Set(expenses.map((e) => e.category))];
@@ -31726,7 +31728,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
     }
   }
 
-  const readyToRun = workflows.rows.filter((w) => w.enabled && w.trigger !== "manual" && alerts.some((a) => a.id === w.trigger));
+  const readyToRun = rowsOf(workflows).filter((w) => w.enabled && w.trigger !== "manual" && alerts.some((a) => a.id === w.trigger));
 
   return (
     <div className="space-y-5">
@@ -32170,7 +32172,7 @@ function ResourceSchedulerPanel({ currentUser }) {
     }
   }
 
-  const upcoming = bookings.rows.filter((b) => b.date >= t).slice(0, 6);
+  const upcoming = rowsOf(bookings).filter((b) => b.date >= t).slice(0, 6);
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 mb-4">
@@ -33856,7 +33858,7 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
 
     events.rows.forEach((e) => add(e.date, { id: e.id, title: e.title, category: "meetings", color: "#16A34A" }));
 
-    leaveRequests.rows.filter((l) => l.status === "Approved").forEach((l) => {
+    rowsOf(leaveRequests).filter((l) => l.status === "Approved").forEach((l) => {
       let d = new Date(l.startDate);
       const end = new Date(l.endDate);
       while (d <= end) {
@@ -33865,15 +33867,15 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
       }
     });
 
-    workOrders.rows.filter((w) => w.status !== "Completed" && w.dueDate).forEach((w) => {
+    rowsOf(workOrders).filter((w) => w.status !== "Completed" && w.dueDate).forEach((w) => {
       add(w.dueDate, { id: w.id, title: `${w.product} — production due`, category: "production", color: "#5B6472" });
     });
 
-    crm.rows.filter((l) => l.expectedCloseDate && l.stage !== "Won" && l.stage !== "Lost").forEach((l) => {
+    rowsOf(crm).filter((l) => l.expectedCloseDate && l.stage !== "Won" && l.stage !== "Lost").forEach((l) => {
       add(l.expectedCloseDate, { id: l.id, title: `${l.company} — expected close`, category: "sales", color: "#22C55E" });
     });
 
-    invoices.rows.filter((inv) => inv.status !== "Paid" && inv.dueDate).forEach((inv) => {
+    rowsOf(invoices).filter((inv) => inv.status !== "Paid" && inv.dueDate).forEach((inv) => {
       add(inv.dueDate, { id: inv.id, title: `${inv.customer} — payment due (${inv.id})`, category: "payments", color: "#EF4444" });
     });
 
@@ -34250,7 +34252,7 @@ function TeamWorkspaces({ employees, currentUser }) {
               <label className="text-[11px] text-slate-600 flex items-center gap-1"><input type="checkbox" checked={exportColumns.department} onChange={(e) => setExportColumns(c => ({...c, department: e.target.checked}))} /> Dept</label>
               <label className="text-[11px] text-slate-600 flex items-center gap-1"><input type="checkbox" checked={exportColumns.role} onChange={(e) => setExportColumns(c => ({...c, role: e.target.checked}))} /> Role</label>
               <button onClick={() => {
-                const filteredEmployees = employees.rows.filter(e => selectedExportDept === "All" || e.department === selectedExportDept);
+                const filteredEmployees = rowsOf(employees).filter(e => selectedExportDept === "All" || e.department === selectedExportDept);
                 const headers = [];
                 if (exportColumns.id) headers.push("Roster ID");
                 if (exportColumns.name) headers.push("Employee Name");
@@ -34266,7 +34268,7 @@ function TeamWorkspaces({ employees, currentUser }) {
                     if (exportColumns.name) row.push(`"${e.name.replace(/"/g, '""')}"`);
                     if (exportColumns.department) row.push(`"${(e.department || "General").replace(/"/g, '""')}"`);
                     if (exportColumns.role) row.push(`"${(e.role || "Staff").replace(/"/g, '""')}"`);
-                    if (exportColumns.workspaces) row.push(`"${workspaces.rows.filter(w => (w.members || "").includes(e.name)).map(w => w.name).join("; ") || "General"}"`);
+                    if (exportColumns.workspaces) row.push(`"${rowsOf(workspaces).filter(w => (w.members || "").includes(e.name)).map(w => w.name).join("; ") || "General"}"`);
                     return row.join(",");
                   })
                 ].join("\n");
@@ -34518,7 +34520,7 @@ function NotebookView({ currentUser }) {
   // ever shows for the person who created it — everyone else's session
   // filters it out before it ever renders, not just visually de-
   // emphasized while still technically present in the DOM.
-  const visible = notes.rows.filter((n) => n.visibility === "Team" || n.createdBy === currentUser.name);
+  const visible = rowsOf(notes).filter((n) => n.visibility === "Team" || n.createdBy === currentUser.name);
   const active = visible.filter((n) => n.status === "Active");
   const completed = visible.filter((n) => n.status === "Completed");
   const filtered = filter === "active" ? active : filter === "completed" ? completed : visible;
@@ -34669,11 +34671,11 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
   const channels = useCompanyTable("notification_channels", notificationChannelsSeed, { mapRow: mapNotificationChannelRow });
   const rules = useCompanyTable("notification_rules", notificationRulesSeed, { mapRow: mapNotificationRuleRow });
   const log = useCompanyTable("notification_log", notificationLogSeed, { order: { col: "created_at", ascending: false }, mapRow: mapNotificationLogRow });
-  const notificationRows = log.rows.filter((row) => !row.recipientUserId || row.recipientUserId === currentUser?.id);
+  const notificationRows = rowsOf(log).filter((row) => !row.recipientUserId || row.recipientUserId === currentUser?.id);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
-  const enabledCount = channels.rows.filter((c) => c.enabled).length;
-  const functionalEnabled = channels.rows.filter((c) => c.enabled && NOTIFICATION_CHANNELS.find((n) => n.id === c.id)?.functional).length;
+  const enabledCount = rowsOf(channels).filter((c) => c.enabled).length;
+  const functionalEnabled = rowsOf(channels).filter((c) => c.enabled && NOTIFICATION_CHANNELS.find((n) => n.id === c.id)?.functional).length;
 
   // Notification inbox — derives from smart alerts + audit log + approvals
   const [readIds, setReadIds] = useState(() => {
@@ -37814,7 +37816,7 @@ function DepartmentsManager({ employeesHook }) {
       setSaving(false);
     }
   }
-  const headcount = (name) => employeesHook.rows.filter((e) => (e.department || "").toLowerCase() === name.toLowerCase()).length;
+  const headcount = (name) => rowsOf(employeesHook).filter((e) => (e.department || "").toLowerCase() === name.toLowerCase()).length;
   const untracked = [...new Set(employeesHook.rows.map((e) => e.department || "General"))].filter((d) => !departments.rows.some((x) => x.name.toLowerCase() === d.toLowerCase()));
 
   async function addDept(e) {
@@ -38310,7 +38312,7 @@ function buildBusinessSnapshot({ company, invoices, inventory, crm, expenses, em
   if (scope.includes("hr")) {
     snapshot.employees = employees.rows.map((e) => ({ name: e.name, role: e.role, department: e.department, status: e.status, salary_tzs_k: e.salary }));
     snapshot.leave_requests = leaveRequests.rows.map((l) => ({ employee: l.employee, type: l.type, startDate: l.startDate, endDate: l.endDate, status: l.status }));
-    snapshot.hr_totals = { monthly_payroll_tzs_k: employees.rows.filter((e) => e.status !== "Inactive").reduce((s, e) => s + e.salary, 0) };
+    snapshot.hr_totals = { monthly_payroll_tzs_k: rowsOf(employees).filter((e) => e.status !== "Inactive").reduce((s, e) => s + e.salary, 0) };
   }
 
   return snapshot;
@@ -38901,7 +38903,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       }
 
       if (name === "approve_leave") {
-        const candidates = data.leaveRequests.rows.filter((l) => l.employee === toolInput.employee && l.status === "Pending" && (!toolInput.type || l.type === toolInput.type));
+        const candidates = data.rowsOf(leaveRequests).filter((l) => l.employee === toolInput.employee && l.status === "Pending" && (!toolInput.type || l.type === toolInput.type));
         if (candidates.length === 0) return "Error: no pending leave request found for " + toolInput.employee + (toolInput.type ? " (" + toolInput.type + ")" : "") + ". Check the snapshot.";
         const target = candidates[0];
         data.leaveRequests.setRows((prev) => prev.map((l) => (l.id === target.id ? { ...l, status: "Approved" } : l)));
@@ -39639,8 +39641,8 @@ function Marketing({ crm }) {
   }, [crm.rows]);
 
   const stats = useMemo(() => {
-    const active = campaigns.rows.filter((c) => c.status !== "Sent").length;
-    const sent = campaigns.rows.filter((c) => c.status === "Sent");
+    const active = rowsOf(campaigns).filter((c) => c.status !== "Sent").length;
+    const sent = rowsOf(campaigns).filter((c) => c.status === "Sent");
     const reach = sent.reduce((s, c) => {
       const seg = segments.find((x) => x.industry === c.segment);
       return s + (seg?.count || 0);
@@ -40153,7 +40155,7 @@ function BulkSmsView({ crm }) {
   async function saveGroup(e) {
     e.preventDefault();
     if (!groupName.trim() || selectedLeads.size === 0) return;
-    const members = crm.rows.filter((l) => selectedLeads.has(l.id)).map((l) => ({ name: l.company, phone: l.phone }));
+    const members = rowsOf(crm).filter((l) => selectedLeads.has(l.id)).map((l) => ({ name: l.company, phone: l.phone }));
     const draft = { id: `GRP-${Date.now()}`, name: groupName.trim(), members };
     groups.setRows((prev) => [draft, ...prev]);
     setShowGroupForm(false);
@@ -40237,13 +40239,13 @@ function BulkSmsView({ crm }) {
               <div>
                 <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Select real customers from CRM ({selectedLeads.size} selected)</label>
                 <div className="max-h-64 overflow-y-auto border border-slate-100 rounded-lg divide-y divide-slate-50">
-                  {crm.rows.filter((l) => l.phone).map((l) => (
+                  {rowsOf(crm).filter((l) => l.phone).map((l) => (
                     <label key={l.id} className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-slate-50">
                       <input type="checkbox" checked={selectedLeads.has(l.id)} onChange={(e) => setSelectedLeads((prev) => { const next = new Set(prev); if (e.target.checked) next.add(l.id); else next.delete(l.id); return next; })} />
                       <div className="min-w-0"><p className="text-[12.5px] text-[#111827] truncate">{l.company}</p><p className="text-[10.5px] text-slate-400">{l.phone}</p></div>
                     </label>
                   ))}
-                  {crm.rows.filter((l) => l.phone).length === 0 && <p className="text-[11.5px] text-slate-400 text-center py-4">No CRM leads with a phone number yet.</p>}
+                  {rowsOf(crm).filter((l) => l.phone).length === 0 && <p className="text-[11.5px] text-slate-400 text-center py-4">No CRM leads with a phone number yet.</p>}
                 </div>
               </div>
             </div>
@@ -40322,13 +40324,13 @@ function PosShiftPanel({ transactions, currentUser }) {
 
   const sales = useMemo(() => {
     if (!open) return { count: 0, gross: 0, cash: 0, other: 0 };
-    const rows = transactions.rows.filter((t) => t.createdAt && t.createdAt >= open.openedAt);
+    const rows = rowsOf(transactions).filter((t) => t.createdAt && t.createdAt >= open.openedAt);
     const cash = rows.filter((t) => t.method === "Cash").reduce((s, t) => s + valueOf(t), 0);
     const gross = rows.reduce((s, t) => s + valueOf(t), 0);
     return { count: rows.length, gross, cash, other: gross - cash };
   }, [transactions.rows, open]);
 
-  const mine = open ? moves.rows.filter((m) => m.shiftId === (open.dbId || open.id)) : [];
+  const mine = open ? rowsOf(moves).filter((m) => m.shiftId === (open.dbId || open.id)) : [];
   const payIns = mine.filter((m) => m.kind === "Pay In").reduce((s, m) => s + m.amount, 0);
   const payOuts = mine.filter((m) => m.kind === "Pay Out").reduce((s, m) => s + m.amount, 0);
   const expected = open ? open.openingFloat + sales.cash + payIns - payOuts : 0;
@@ -40598,7 +40600,7 @@ function POS({ inventory, transactionsHook, transactionItemsHook, company, curre
 
   const todayStr = TODAY.toISOString().slice(0, 10);
   const stats = useMemo(() => {
-    const today = transactions.rows.filter((t) => t.status === "Completed" && t.date === todayStr);
+    const today = rowsOf(transactions).filter((t) => t.status === "Completed" && t.date === todayStr);
     const revenue = today.reduce((s, t) => s + t.items.reduce((si, it) => si + it.qty * it.price, 0) * (1 + TAX_RATE), 0);
     const itemsSold = today.reduce((s, t) => s + t.items.reduce((si, it) => si + it.qty, 0), 0);
     return { count: today.length, revenue, itemsSold, avg: today.length ? revenue / today.length : 0 };
@@ -40676,9 +40678,9 @@ function PosReconciliationDashboard({ currentUser }) {
   const reconciliation = useCompanyTable("pos_sync_events", [], { order: { col: "updated_at", ascending: false } });
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const rows = useMemo(() => reconciliation.rows.filter((row) => statusFilter === "all" || row.status === statusFilter), [reconciliation.rows, statusFilter]);
-  const syncedCount = reconciliation.rows.filter((row) => row.status === "synced").length;
-  const attentionCount = reconciliation.rows.filter((row) => row.status === "needs_attention").length;
+  const rows = useMemo(() => rowsOf(reconciliation).filter((row) => statusFilter === "all" || row.status === statusFilter), [reconciliation.rows, statusFilter]);
+  const syncedCount = rowsOf(reconciliation).filter((row) => row.status === "synced").length;
+  const attentionCount = rowsOf(reconciliation).filter((row) => row.status === "needs_attention").length;
   const displayDate = (value) => value ? new Date(value).toLocaleString() : "—";
   const canExport = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager", "HR Manager", "Sales Manager", "Procurement Officer", "Warehouse Manager", "Project Manager"].includes(canonicalRoleId(currentUser?.role));
 
@@ -40799,7 +40801,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   const tax = Math.round(subtotal * TAX_RATE);
   const total = subtotal + tax;
   const paymentSummary = useMemo(() => calculatePosPaymentSummary(payments, total), [payments, total]);
-  const heldOrders = useMemo(() => transactions.rows.filter((transaction) => transaction.status === "Held"), [transactions.rows]);
+  const heldOrders = useMemo(() => rowsOf(transactions).filter((transaction) => transaction.status === "Held"), [transactions.rows]);
   const selectedCustomer = useMemo(() => (customers || []).find((customer) => customer.dbId === customerId || customer.id === customerId) || null, [customers, customerId]);
   const usesCustomerCredit = paymentSummary.allocations.some((payment) => payment.method === "Customer Credit");
 
@@ -42069,7 +42071,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
     const alerts = [];
     const todayStr = TODAY.toISOString().slice(0, 10);
 
-    const outOfStock = inventory.rows.filter((it) => it.qty <= 0);
+    const outOfStock = rowsOf(inventory).filter((it) => it.qty <= 0);
     if (outOfStock.length) {
       alerts.push({
         id: "out-of-stock", icon: Ban, color: "#EF4444", target: "inventory",
@@ -42078,7 +42080,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const lowStock = inventory.rows.filter((it) => it.qty > 0 && it.qty <= it.reorder);
+    const lowStock = rowsOf(inventory).filter((it) => it.qty > 0 && it.qty <= it.reorder);
     if (lowStock.length) {
       alerts.push({
         id: "low-stock", icon: AlertCircle, color: "#F59E0B", target: "inventory",
@@ -42087,7 +42089,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const overdue = invoices.rows.filter((inv) => inv.status !== "Paid" && inv.dueDate && inv.dueDate < todayStr);
+    const overdue = rowsOf(invoices).filter((inv) => inv.status !== "Paid" && inv.dueDate && inv.dueDate < todayStr);
     if (overdue.length) {
       const total = overdue.reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
       alerts.push({
@@ -42097,7 +42099,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const pendingExpenses = expenses.rows.filter((e) => e.status === "Pending");
+    const pendingExpenses = rowsOf(expenses).filter((e) => e.status === "Pending");
     if (pendingExpenses.length) {
       alerts.push({
         id: "pending-expenses", icon: Wallet, color: "#F59E0B", target: "finance",
@@ -42115,7 +42117,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const pendingLeave = leaveRequests.rows.filter((l) => l.status === "Pending");
+    const pendingLeave = rowsOf(leaveRequests).filter((l) => l.status === "Pending");
     if (pendingLeave.length) {
       alerts.push({
         id: "pending-leave", icon: Clock, color: "#F59E0B", target: "hr",
@@ -42124,7 +42126,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const overdueOrders = workOrders.rows.filter((w) => w.status !== "Completed" && w.status !== "Cancelled" && w.dueDate && w.dueDate < todayStr);
+    const overdueOrders = rowsOf(workOrders).filter((w) => w.status !== "Completed" && w.status !== "Cancelled" && w.dueDate && w.dueDate < todayStr);
     if (overdueOrders.length) {
       alerts.push({
         id: "overdue-work-orders", icon: Factory, color: "#F59E0B", target: "manufacturing",
@@ -42133,7 +42135,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const dueSubscriptions = subscriptions.rows.filter((s) => s.status === "Active" && s.nextBillingDate < todayStr);
+    const dueSubscriptions = rowsOf(subscriptions).filter((s) => s.status === "Active" && s.nextBillingDate < todayStr);
     if (dueSubscriptions.length) {
       alerts.push({
         id: "subscriptions-due", icon: Repeat, color: "#F59E0B", target: "sales",
@@ -42460,10 +42462,10 @@ function CustomerPortal({ currentUser, invoices, filesHook, onSignOut }) {
   // has something real to show, and says so plainly rather than quietly
   // showing every customer's invoices as if that were normal.
   const effectiveCustomer = currentUser.customerRef || invoices.rows[0]?.customer || "Demo Customer";
-  const myInvoices = invoices.rows.filter((inv) => inv.customer === effectiveCustomer);
-  const myOrders = orders.rows.filter((o) => o.customer === effectiveCustomer);
-  const myTickets = tickets.rows.filter((t) => t.customer === effectiveCustomer);
-  const myDocuments = filesHook.rows.filter((f) => myInvoices.some((i) => i.id === f.linkedRecord) || myOrders.some((o) => o.id === f.linkedRecord));
+  const myInvoices = rowsOf(invoices).filter((inv) => inv.customer === effectiveCustomer);
+  const myOrders = rowsOf(orders).filter((o) => o.customer === effectiveCustomer);
+  const myTickets = rowsOf(tickets).filter((t) => t.customer === effectiveCustomer);
+  const myDocuments = rowsOf(filesHook).filter((f) => myInvoices.some((i) => i.id === f.linkedRecord) || myOrders.some((o) => o.id === f.linkedRecord));
 
   const stripe = connections.rows.find((c) => c.id === "stripe");
   const paypal = connections.rows.find((c) => c.id === "paypal");
@@ -42822,10 +42824,10 @@ function ExternalSupplierPortal({ currentUser, onSignOut }) {
   const files = useCompanyTable("documents", filesSeed, { mapRow: mapFileRow });
 
   const effectiveSupplier = currentUser.customerRef || purchaseOrders.rows[0]?.supplier || "Demo Supplier";
-  const myOrders = purchaseOrders.rows.filter((po) => po.supplier === effectiveSupplier);
-  const myContracts = contracts.rows.filter((c) => c.supplier === effectiveSupplier);
-  const myPayments = expenses.rows.filter((e) => e.vendor === effectiveSupplier);
-  const myDocuments = files.rows.filter((f) => myOrders.some((po) => po.id === f.linkedRecord));
+  const myOrders = rowsOf(purchaseOrders).filter((po) => po.supplier === effectiveSupplier);
+  const myContracts = rowsOf(contracts).filter((c) => c.supplier === effectiveSupplier);
+  const myPayments = rowsOf(expenses).filter((e) => e.vendor === effectiveSupplier);
+  const myDocuments = rowsOf(files).filter((f) => myOrders.some((po) => po.id === f.linkedRecord));
 
   const PORTAL_TABS = [
     { id: "orders", label: "Purchase Orders", icon: ClipboardList },
@@ -42912,7 +42914,7 @@ function SupplierInvoiceUploadTab({ myOrders, filesHook }) {
   const [selectedPO, setSelectedPO] = useState(myOrders[0]?.id || "");
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
-  const uploadedForPO = filesHook.rows.filter((f) => f.linkedRecord === selectedPO && f.folder === "Purchase Orders");
+  const uploadedForPO = rowsOf(filesHook).filter((f) => f.linkedRecord === selectedPO && f.folder === "Purchase Orders");
 
   async function upload(e) {
     e.preventDefault();
@@ -44064,9 +44066,9 @@ function VicobaSaccosModule({ currentUser }) {
 
   const totalShares       = members.rows.reduce((s,m) => s + m.shares, 0);
   const totalFund         = members.rows.reduce((s,m) => s + m.contributions, 0);
-  const activeLoans       = loans.rows.filter((l) => l.status === "Active");
+  const activeLoans       = rowsOf(loans).filter((l) => l.status === "Active");
   const totalLoanPortfolio= activeLoans.reduce((s,l) => s + l.balance, 0);
-  const defaulted         = loans.rows.filter((l) => l.status === "Defaulted");
+  const defaulted         = rowsOf(loans).filter((l) => l.status === "Defaulted");
   const SHARE_PRICE       = 20; // TZS 20k per share
 
   const VICOBA_TABS = [
@@ -44162,7 +44164,7 @@ function VicobaSaccosModule({ currentUser }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { label:"Total Members", value: members.rows.length, sub: members.rows.filter(m=>m.status==="Active").length+" active", icon: Users, color:"#2563EB" },
+              { label:"Total Members", value: members.rows.length, sub: rowsOf(members).filter(m=>m.status==="Active").length+" active", icon: Users, color:"#2563EB" },
               { label:"Group Fund",    value: "TZS "+money(totalFund)+"k", sub:"Total contributions", icon: Wallet, color:"#16A34A" },
               { label:"Loan Portfolio",value: "TZS "+money(totalLoanPortfolio)+"k", sub: activeLoans.length+" active loans", icon: CircleDollarSign, color:"#F59E0B" },
               { label:"Defaulted",     value: "TZS "+money(defaulted.reduce((s,l)=>s+l.balance,0))+"k", sub: defaulted.length+" loans at risk", icon: AlertCircle, color:"#EF4444" },
@@ -44207,9 +44209,9 @@ function VicobaSaccosModule({ currentUser }) {
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Loan Portfolio Status</p>
               {(() => {
                 const loanStatusData = [
-                  {name:"Active",   value:loans.rows.filter(l=>l.status==="Active").length,   fill:"#2563EB"},
-                  {name:"Repaid",   value:loans.rows.filter(l=>l.status==="Repaid").length,   fill:"#16A34A"},
-                  {name:"Defaulted",value:loans.rows.filter(l=>l.status==="Defaulted").length,fill:"#EF4444"},
+                  {name:"Active",   value:rowsOf(loans).filter(l=>l.status==="Active").length,   fill:"#2563EB"},
+                  {name:"Repaid",   value:rowsOf(loans).filter(l=>l.status==="Repaid").length,   fill:"#16A34A"},
+                  {name:"Defaulted",value:rowsOf(loans).filter(l=>l.status==="Defaulted").length,fill:"#EF4444"},
                 ].filter(d=>d.value>0);
                 return loanStatusData.length===0?<p className="text-slate-400 text-center py-4">No loans yet</p>:(
                   <div className="flex items-center gap-4">
@@ -44491,7 +44493,7 @@ function VitalsTriageView({ patients, currentUser, HC_BLUE }) {
     if (IS_CONFIGURED) { try { await sb("hc_vitals").insert({ patient_id:row.patientId, patient_name:row.patient, entry_date:row.date, bp:row.bp, pulse:Number(row.pulse), temperature:Number(row.temp), weight:Number(row.weight), height:Number(row.height), spo2:Number(row.spo2), pain_score:Number(row.pain), notes:row.notes }).run(); } catch(_e){} }
   }
 
-  const urgentPatients = patients.rows.filter(p => p.status === "Urgent" || p.status === "Critical");
+  const urgentPatients = rowsOf(patients).filter(p => p.status === "Urgent" || p.status === "Critical");
 
   return (
     <div className="space-y-4">
@@ -44612,7 +44614,7 @@ function RadiologyView({ patients, doctors, currentUser, HC_BLUE, HC_TEAL }) {
     setReportingId(null); setFindings("");
   }
 
-  const stats = { total: orders.rows.length, pending: orders.rows.filter(o=>o.status==="Pending").length, reported: orders.rows.filter(o=>o.status==="Reported").length, urgent: orders.rows.filter(o=>o.priority==="Urgent").length };
+  const stats = { total: orders.rows.length, pending: rowsOf(orders).filter(o=>o.status==="Pending").length, reported: rowsOf(orders).filter(o=>o.status==="Reported").length, urgent: rowsOf(orders).filter(o=>o.priority==="Urgent").length };
 
   return (
     <div className="space-y-4">
@@ -44700,8 +44702,8 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
   const [customService, setCustomService] = useState({ name:"", amount:"" });
 
   const PAYMENT_METHODS = ["Cash","Bank Transfer","Insurance","Mobile Money","Card","Credit"];
-  const totalRevenue = invoices.rows.filter(i=>i.status==="Paid").reduce((s,i)=>s+i.total,0);
-  const outstanding  = invoices.rows.filter(i=>i.status==="Unpaid"||i.status==="Partial").reduce((s,i)=>s+i.balance,0);
+  const totalRevenue = rowsOf(invoices).filter(i=>i.status==="Paid").reduce((s,i)=>s+i.total,0);
+  const outstanding  = rowsOf(invoices).filter(i=>i.status==="Unpaid"||i.status==="Partial").reduce((s,i)=>s+i.balance,0);
 
   function addService(name, amount) {
     setGenForm(f => ({ ...f, services: [...f.services, { name, amount: Number(amount) }] }));
@@ -44736,7 +44738,7 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[["Total Invoices", invoices.rows.length, HC_BLUE],["Revenue (Paid)","TZS "+money(totalRevenue)+"k","#16A34A"],["Outstanding","TZS "+money(outstanding)+"k","#EF4444"],["Paid",invoices.rows.filter(i=>i.status==="Paid").length,"#059669"]].map(([l,v,col])=>(
+        {[["Total Invoices", invoices.rows.length, HC_BLUE],["Revenue (Paid)","TZS "+money(totalRevenue)+"k","#16A34A"],["Outstanding","TZS "+money(outstanding)+"k","#EF4444"],["Paid",rowsOf(invoices).filter(i=>i.status==="Paid").length,"#059669"]].map(([l,v,col])=>(
           <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[22px] font-bold" style={{color:col}}>{v}</p></div>
         ))}
       </div>
@@ -44895,7 +44897,7 @@ function SchoolManagementModule({ currentUser, company }) {
   ];
 
   const totalStudents  = students.rows.length;
-  const activeStudents = students.rows.filter(s => s.status === "Active").length;
+  const activeStudents = rowsOf(students).filter(s => s.status === "Active").length;
   const totalFees      = fees.rows.reduce((s, f) => s + f.amount, 0);
   const collectedFees  = fees.rows.reduce((s, f) => s + f.paid, 0);
   const feeCollection  = totalFees > 0 ? (collectedFees / totalFees * 100).toFixed(1) : 0;
@@ -44949,7 +44951,7 @@ function SchoolManagementModule({ currentUser, company }) {
     notify("Exam scheduled: " + row.name);
   }
 
-  const filteredStudents = students.rows.filter(s => !searchQ || s.name.toLowerCase().includes(searchQ.toLowerCase()) || s.admNo.includes(searchQ));
+  const filteredStudents = rowsOf(students).filter(s => !searchQ || s.name.toLowerCase().includes(searchQ.toLowerCase()) || s.admNo.includes(searchQ));
 
   const StatusChip = ({ s }) => {
     const cfg = { Active:["#DCFCE7","#16A34A"], Inactive:["#FEE2E2","#EF4444"], Paid:["#DCFCE7","#16A34A"], Partial:["#FEF3C7","#D97706"], Unpaid:["#FEE2E2","#EF4444"], Completed:["#DBEAFE","#2563EB"], Scheduled:["#F5F3FF","#7C3AED"] };
@@ -44971,7 +44973,7 @@ function SchoolManagementModule({ currentUser, company }) {
             <p className="text-[12px]" style={{color:"rgba(255,255,255,.65)"}}>Students · Teachers · Classes · Exams · Fees · Library · Transport</p>
           </div>
           <div className="flex gap-3">
-            {[["Students", activeStudents, "#DBEAFE", "#1E40AF"], ["Teachers", teachers.rows.filter(t=>t.status==="Active").length, "#D1FAE5", "#065F46"], ["Fee Rate", feeCollection+"%", "#FEF3C7", "#92400E"]].map(([l,v,bg,col])=>(
+            {[["Students", activeStudents, "#DBEAFE", "#1E40AF"], ["Teachers", rowsOf(teachers).filter(t=>t.status==="Active").length, "#D1FAE5", "#065F46"], ["Fee Rate", feeCollection+"%", "#FEF3C7", "#92400E"]].map(([l,v,bg,col])=>(
               <div key={l} className="rounded-xl px-4 py-2.5 text-center" style={{background:"rgba(255,255,255,.12)"}}>
                 <p className="text-[20px] font-bold text-white">{v}</p>
                 <p className="text-[10.5px] text-white/60">{l}</p>
@@ -44999,7 +45001,7 @@ function SchoolManagementModule({ currentUser, company }) {
               { l:"Total Students",   v:totalStudents,    sub:activeStudents+" active",      c:"#1E3A8A", I:Users },
               { l:"Total Teachers",   v:teachers.rows.length, sub:"Academic staff",         c:"#059669", I:UserCheck },
               { l:"Fee Collected",    v:"TZS "+money(collectedFees)+"k", sub:feeCollection+"% of total", c:SCH_GOLD, I:CircleDollarSign },
-              { l:"Outstanding Fees", v:"TZS "+money(outstanding)+"k",   sub:fees.rows.filter(f=>f.status!=="Paid").length+" students", c:"#EF4444", I:AlertCircle },
+              { l:"Outstanding Fees", v:"TZS "+money(outstanding)+"k",   sub:rowsOf(fees).filter(f=>f.status!=="Paid").length+" students", c:"#EF4444", I:AlertCircle },
             ].map(k => (
               <div key={k.l} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
                 <div className="flex items-start justify-between">
@@ -45014,7 +45016,7 @@ function SchoolManagementModule({ currentUser, company }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Enrolment by Level</p>
               {SCHOOL_LEVELS.map(level => {
-                const n = students.rows.filter(s => s.class?.startsWith(level)).length;
+                const n = rowsOf(students).filter(s => s.class?.startsWith(level)).length;
                 const pct = totalStudents > 0 ? n/totalStudents*100 : 0;
                 return (
                   <div key={level} className="flex items-center gap-2 mb-2.5">
@@ -45029,9 +45031,9 @@ function SchoolManagementModule({ currentUser, company }) {
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Fee Collection Status</p>
               {(() => {
                 const feeData = [
-                  {name:"Paid",    value:fees.rows.filter(f=>f.status==="Paid").length,    fill:"#16A34A"},
-                  {name:"Partial", value:fees.rows.filter(f=>f.status==="Partial").length, fill:"#D97706"},
-                  {name:"Unpaid",  value:fees.rows.filter(f=>f.status==="Unpaid").length,  fill:"#EF4444"},
+                  {name:"Paid",    value:rowsOf(fees).filter(f=>f.status==="Paid").length,    fill:"#16A34A"},
+                  {name:"Partial", value:rowsOf(fees).filter(f=>f.status==="Partial").length, fill:"#D97706"},
+                  {name:"Unpaid",  value:rowsOf(fees).filter(f=>f.status==="Unpaid").length,  fill:"#EF4444"},
                 ].filter(d=>d.value>0);
                 if (!feeData.length) return <p className="text-slate-400 text-center py-4">No fee records</p>;
                 return (
@@ -45110,7 +45112,7 @@ function SchoolManagementModule({ currentUser, company }) {
             </table>
             <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
               <p className="text-[11.5px] text-slate-400">Showing {filteredStudents.length} of {students.rows.length} students</p>
-              <p className="text-[11.5px] font-medium text-slate-600">{students.rows.filter(s=>s.gender==="F").length} Female · {students.rows.filter(s=>s.gender==="M").length} Male</p>
+              <p className="text-[11.5px] font-medium text-slate-600">{rowsOf(students).filter(s=>s.gender==="F").length} Female · {rowsOf(students).filter(s=>s.gender==="M").length} Male</p>
             </div>
           </div>
         </div>
@@ -45120,7 +45122,7 @@ function SchoolManagementModule({ currentUser, company }) {
       {tab==="teachers" && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[["Teaching Staff", teachers.rows.length, SCH_BLUE], ["Active", teachers.rows.filter(t=>t.status==="Active").length, "#059669"], ["Avg Experience", (teachers.rows.reduce((s,t)=>s+t.experience,0)/Math.max(teachers.rows.length,1)).toFixed(1)+" yrs", SCH_GOLD], ["Monthly Payroll", "TZS "+money(teachers.rows.reduce((s,t)=>s+t.salary,0))+"k", "#7C3AED"]].map(([l,v,col])=>(
+            {[["Teaching Staff", teachers.rows.length, SCH_BLUE], ["Active", rowsOf(teachers).filter(t=>t.status==="Active").length, "#059669"], ["Avg Experience", (teachers.rows.reduce((s,t)=>s+t.experience,0)/Math.max(teachers.rows.length,1)).toFixed(1)+" yrs", SCH_GOLD], ["Monthly Payroll", "TZS "+money(teachers.rows.reduce((s,t)=>s+t.salary,0))+"k", "#7C3AED"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[20px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
@@ -45327,7 +45329,7 @@ function SchoolManagementModule({ currentUser, company }) {
       {tab==="transport" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            {[["Routes", transport.rows.length, SCH_BLUE], ["Students", transport.rows.reduce((s,r)=>s+r.students,0), "#16A34A"], ["Active Buses", transport.rows.filter(r=>r.status==="Active").length, SCH_GOLD]].map(([l,v,col])=>(
+            {[["Routes", transport.rows.length, SCH_BLUE], ["Students", transport.rows.reduce((s,r)=>s+r.students,0), "#16A34A"], ["Active Buses", rowsOf(transport).filter(r=>r.status==="Active").length, SCH_GOLD]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[22px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
@@ -45399,14 +45401,14 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
 
   // Analytics
   const totalSkus       = drugs.rows.length;
-  const lowStock        = stock.rows.filter(s => s.qty <= s.minQty);
+  const lowStock        = rowsOf(stock).filter(s => s.qty <= s.minQty);
   const today           = new Date();
   const in90days        = new Date(today.getTime() + 90*24*60*60*1000);
-  const expiringItems   = stock.rows.filter(s => new Date(s.expiry) <= in90days);
-  const expiredItems    = stock.rows.filter(s => new Date(s.expiry) < today);
+  const expiringItems   = rowsOf(stock).filter(s => new Date(s.expiry) <= in90days);
+  const expiredItems    = rowsOf(stock).filter(s => new Date(s.expiry) < today);
   const stockValue      = stock.rows.reduce((sum, s) => sum + s.qty * s.unitCost, 0);
-  const todayRevenue    = dispense.rows.filter(d => d.date === today.toISOString().slice(0,10)).reduce((s,d) => s+d.price, 0);
-  const pendingDispense = dispense.rows.filter(d => d.status === "Pending");
+  const todayRevenue    = rowsOf(dispense).filter(d => d.date === today.toISOString().slice(0,10)).reduce((s,d) => s+d.price, 0);
+  const pendingDispense = rowsOf(dispense).filter(d => d.status === "Pending");
 
   const daysToExpiry = (dateStr) => Math.ceil((new Date(dateStr) - today) / (1000*60*60*24));
   const expiryColor  = (days) => days < 0 ? "#EF4444" : days < 30 ? "#EF4444" : days < 60 ? "#F59E0B" : "#16A34A";
@@ -45473,7 +45475,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
     logAudit("Dispensed: " + drug?.name, "Pharmacy", currentUser?.name||"System", row.patient + " × " + quantity);
   }
 
-  const filteredDrugs = drugs.rows.filter(d => !searchDrug || d.name.toLowerCase().includes(searchDrug.toLowerCase()) || d.genericName?.toLowerCase().includes(searchDrug.toLowerCase()) || d.category?.toLowerCase().includes(searchDrug.toLowerCase()));
+  const filteredDrugs = rowsOf(drugs).filter(d => !searchDrug || d.name.toLowerCase().includes(searchDrug.toLowerCase()) || d.genericName?.toLowerCase().includes(searchDrug.toLowerCase()) || d.category?.toLowerCase().includes(searchDrug.toLowerCase()));
 
   const StatusPill = ({ s, mini }) => {
     const cfg = { Active:["#DCFCE7","#16A34A"], Dispensed:["#DCFCE7","#16A34A"], Pending:["#FEF3C7","#D97706"], Expired:["#FEE2E2","#EF4444"], "Low Stock":["#FEF3C7","#D97706"] };
@@ -45533,8 +45535,8 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Stock by Category</p>
               {["Antibiotic","Analgesic","Antidiabetic","Antihypertensive","Insulin"].map(cat => {
-                const catDrugs = drugs.rows.filter(d => d.category === cat);
-                const catStock = stock.rows.filter(s => catDrugs.some(d => d.id === s.drugId)).reduce((sum,s)=>sum+s.qty,0);
+                const catDrugs = rowsOf(drugs).filter(d => d.category === cat);
+                const catStock = rowsOf(stock).filter(s => catDrugs.some(d => d.id === s.drugId)).reduce((sum,s)=>sum+s.qty,0);
                 const total = stock.rows.reduce((sum,s)=>sum+s.qty,0);
                 const pct = total > 0 ? catStock/total*100 : 0;
                 if (!catStock) return null;
@@ -45725,7 +45727,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
             </div>
           )}
           <div className="grid grid-cols-3 gap-3">
-            {[["Expired",expiredItems.filter(s=>daysToExpiry(s.expiry)<0).length,"#EF4444"],["Expiring < 30 days",stock.rows.filter(s=>{const d=daysToExpiry(s.expiry);return d>=0&&d<30}).length,"#F59E0B"],["Expiring < 90 days",expiringItems.filter(s=>daysToExpiry(s.expiry)>=0).length,"#D97706"]].map(([l,v,col])=>(
+            {[["Expired",expiredItems.filter(s=>daysToExpiry(s.expiry)<0).length,"#EF4444"],["Expiring < 30 days",rowsOf(stock).filter(s=>{const d=daysToExpiry(s.expiry);return d>=0&&d<30}).length,"#F59E0B"],["Expiring < 90 days",expiringItems.filter(s=>daysToExpiry(s.expiry)>=0).length,"#D97706"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border p-4 text-center" style={{borderColor:col+"40"}}><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[24px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
@@ -45767,7 +45769,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
             <div className="flex items-center justify-between mb-3"><p className="text-[13.5px] font-semibold text-[#111827]">Revenue by Drug</p></div>
             {drugs.rows.map(d => {
-              const drugSales = dispense.rows.filter(dp => dp.drug === d.name).reduce((s,dp)=>s+dp.price,0);
+              const drugSales = rowsOf(dispense).filter(dp => dp.drug === d.name).reduce((s,dp)=>s+dp.price,0);
               if (!drugSales) return null;
               const totalRev  = dispense.rows.reduce((s,dp)=>s+dp.price,0);
               const pct = totalRev > 0 ? drugSales/totalRev*100 : 0;
@@ -45787,11 +45789,11 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
       {tab === "analytics" && (() => {
         const catData = PHM_DRUG_CATEGORIES.map((cat,i)=>({
           name: cat.length > 12 ? cat.slice(0,10)+"…" : cat,
-          value: stock.rows.filter(s=>drugs.rows.find(d=>d.id===s.drugId)?.category===cat).reduce((s,r)=>s+r.stock,0),
+          value: rowsOf(stock).filter(s=>drugs.rows.find(d=>d.id===s.drugId)?.category===cat).reduce((s,r)=>s+r.stock,0),
           fill:["#059669","#2563EB","#D97706","#7C3AED","#EF4444","#0891B2","#DC2626","#0F766E"][i%8],
         })).filter(d=>d.value>0);
 
-        const expiringData = stock.rows.filter(s=>{
+        const expiringData = rowsOf(stock).filter(s=>{
           if(!s.expiryDate) return false;
           const days = Math.ceil((new Date(s.expiryDate)-new Date())/86400000);
           return days > 0 && days <= 90;
@@ -45803,7 +45805,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
 
         const dispensedData = drugs.rows.slice(0,6).map(d=>({
           name: d.name.slice(0,14),
-          value: dispense.rows.filter(r=>r.drugId===d.id).reduce((s,r)=>s+(r.qty||0),0),
+          value: rowsOf(dispense).filter(r=>r.drugId===d.id).reduce((s,r)=>s+(r.qty||0),0),
           fill:"#059669",
         })).filter(d=>d.value>0).sort((a,b)=>b.value-a.value).slice(0,6);
 
@@ -45812,9 +45814,9 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 ["Total SKUs",String(drugs.rows.length),"#059669"],
-                ["Low Stock",String(stock.rows.filter(s=>s.stock<=s.reorder&&s.reorder>0).length),"#EF4444"],
+                ["Low Stock",String(rowsOf(stock).filter(s=>s.stock<=s.reorder&&s.reorder>0).length),"#EF4444"],
                 ["Expiring (90d)",String(expiringData.length),"#F59E0B"],
-                ["Dispensed Today",String(dispense.rows.filter(d=>d.date===TODAY.toISOString().slice(0,10)).reduce((s,r)=>s+(r.qty||0),0)),"#2563EB"],
+                ["Dispensed Today",String(rowsOf(dispense).filter(d=>d.date===TODAY.toISOString().slice(0,10)).reduce((s,r)=>s+(r.qty||0),0)),"#2563EB"],
               ].map(([l,v,col])=>(
                 <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center">
                   <p className="text-[10.5px] text-slate-400 uppercase tracking-wide mb-1">{l}</p>
@@ -46007,19 +46009,19 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
 
   // Portfolio metrics
   const totalDeposits   = accounts.rows.reduce((s,a) => s + a.balance, 0);
-  const totalPortfolio  = loans.rows.filter(l => l.status !== "Closed").reduce((s,l) => s + l.balance, 0);
-  const atRisk          = loans.rows.filter(l => l.dpd > 0);
+  const totalPortfolio  = rowsOf(loans).filter(l => l.status !== "Closed").reduce((s,l) => s + l.balance, 0);
+  const atRisk          = rowsOf(loans).filter(l => l.dpd > 0);
   const parAmount       = atRisk.reduce((s,l) => s + l.balance, 0);
   const parRatio        = totalPortfolio > 0 ? (parAmount / totalPortfolio * 100).toFixed(2) : 0;
-  const monthlyInterest = loans.rows.filter(l=>l.status==="Active").reduce((s,l) => s + (l.balance * l.rate / 100 / 12), 0);
+  const monthlyInterest = rowsOf(loans).filter(l=>l.status==="Active").reduce((s,l) => s + (l.balance * l.rate / 100 / 12), 0);
   const totalMembers    = members.rows.length;
 
   const aging = {
-    current:    loans.rows.filter(l => l.dpd === 0 && l.status !== "Closed").length,
-    "1-30":     loans.rows.filter(l => l.dpd > 0 && l.dpd <= 30).length,
-    "31-60":    loans.rows.filter(l => l.dpd > 30 && l.dpd <= 60).length,
-    "61-90":    loans.rows.filter(l => l.dpd > 60 && l.dpd <= 90).length,
-    ">90":      loans.rows.filter(l => l.dpd > 90).length,
+    current:    rowsOf(loans).filter(l => l.dpd === 0 && l.status !== "Closed").length,
+    "1-30":     rowsOf(loans).filter(l => l.dpd > 0 && l.dpd <= 30).length,
+    "31-60":    rowsOf(loans).filter(l => l.dpd > 30 && l.dpd <= 60).length,
+    "61-90":    rowsOf(loans).filter(l => l.dpd > 60 && l.dpd <= 90).length,
+    ">90":      rowsOf(loans).filter(l => l.dpd > 90).length,
   };
 
   // EMI calculator
@@ -46077,7 +46079,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {parRatio > 5 && <div className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-2 rounded-xl text-[12px] font-bold animate-pulse"><AlertCircle size={13}/>PAR {parRatio}%</div>}
-            {[["Members",totalMembers],[accounts.rows.filter(a=>a.status==="Active").length+" Accounts",""],["TZS "+money(totalDeposits)+"k","Deposits"],["TZS "+money(totalPortfolio)+"k","Portfolio"]].map(([v,l])=>l?(
+            {[["Members",totalMembers],[rowsOf(accounts).filter(a=>a.status==="Active").length+" Accounts",""],["TZS "+money(totalDeposits)+"k","Deposits"],["TZS "+money(totalPortfolio)+"k","Portfolio"]].map(([v,l])=>l?(
               <div key={l} className="text-center rounded-xl px-4 py-2.5" style={{background:"rgba(255,255,255,.10)"}}>
                 <p className="text-[18px] font-bold text-white">{v}</p>
                 <p className="text-[10.5px] text-white/55">{l}</p>
@@ -46104,8 +46106,8 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              {l:"Total Deposits",    v:"TZS "+money(totalDeposits)+"k",     sub:accounts.rows.filter(a=>a.status==="Active").length+" active accounts", c:BNK_NAVY,  I:PiggyBank},
-              {l:"Loan Portfolio",    v:"TZS "+money(totalPortfolio)+"k",    sub:loans.rows.filter(l=>l.status==="Active").length+" active loans",        c:BNK_TEAL,  I:CircleDollarSign},
+              {l:"Total Deposits",    v:"TZS "+money(totalDeposits)+"k",     sub:rowsOf(accounts).filter(a=>a.status==="Active").length+" active accounts", c:BNK_NAVY,  I:PiggyBank},
+              {l:"Loan Portfolio",    v:"TZS "+money(totalPortfolio)+"k",    sub:rowsOf(loans).filter(l=>l.status==="Active").length+" active loans",        c:BNK_TEAL,  I:CircleDollarSign},
               {l:"Monthly Int. Income",v:"TZS "+money(monthlyInterest)+"k",  sub:"Projected",                                                             c:BNK_GOLD,  I:TrendingUp},
               {l:"PAR Ratio",         v:parRatio+"%",                         sub:atRisk.length+" loans at risk",                                          c:Number(parRatio)>5?"#EF4444":"#16A34A",I:AlertCircle},
             ].map(k=>(
@@ -46137,7 +46139,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Deposits by Account Type</p>
               {["Savings","Current","Business","Fixed Deposit"].map(type => {
-                const bal = accounts.rows.filter(a=>a.type===type).reduce((s,a)=>s+a.balance,0);
+                const bal = rowsOf(accounts).filter(a=>a.type===type).reduce((s,a)=>s+a.balance,0);
                 const pct = totalDeposits > 0 ? bal/totalDeposits*100 : 0;
                 if (!bal) return null;
                 return (
@@ -46154,7 +46156,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Portfolio by Product</p>
               {["Personal Loan","Business Loan","SME Loan","Agricultural","Group Loan"].map(prod => {
-                const bal = loans.rows.filter(l=>l.product===prod).reduce((s,l)=>s+l.balance,0);
+                const bal = rowsOf(loans).filter(l=>l.product===prod).reduce((s,l)=>s+l.balance,0);
                 const pct = totalPortfolio > 0 ? bal/totalPortfolio*100 : 0;
                 if (!bal) return null;
                 return (
@@ -46175,7 +46177,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
         <div className="space-y-3">
           <div className="grid grid-cols-4 gap-3">
             {["Savings","Current","Business","Fixed Deposit"].map(type => {
-              const accts = accounts.rows.filter(a=>a.type===type);
+              const accts = rowsOf(accounts).filter(a=>a.type===type);
               return (
                 <div key={type} className="bg-white rounded-xl border border-slate-200/80 p-4">
                   <p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{type}</p>
@@ -46216,7 +46218,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
       {tab==="members" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            {[["Total Members",totalMembers,BNK_NAVY],["KYC Verified",members.rows.filter(m=>m.kycStatus==="Verified").length,"#16A34A"],["Pending KYC",members.rows.filter(m=>m.kycStatus==="Pending").length,"#D97706"]].map(([l,v,col])=>(
+            {[["Total Members",totalMembers,BNK_NAVY],["KYC Verified",rowsOf(members).filter(m=>m.kycStatus==="Verified").length,"#16A34A"],["Pending KYC",rowsOf(members).filter(m=>m.kycStatus==="Pending").length,"#D97706"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[24px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
@@ -46268,8 +46270,8 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
               printReport("Loan Portfolio Report",`
                 <div class="kpi-grid">
                   <div class="kpi"><div class="kpi-label">Total Portfolio</div><div class="kpi-value" style="color:${BNK_NAVY}">TZS ${money(totalPortfolio)}k</div></div>
-                  <div class="kpi"><div class="kpi-label">Active Loans</div><div class="kpi-value" style="color:${BNK_TEAL}">${loans.rows.filter(l=>l.status==="Active").length}</div></div>
-                  <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-value" style="color:#EF4444">${loans.rows.filter(l=>l.status==="Overdue").length}</div></div>
+                  <div class="kpi"><div class="kpi-label">Active Loans</div><div class="kpi-value" style="color:${BNK_TEAL}">${rowsOf(loans).filter(l=>l.status==="Active").length}</div></div>
+                  <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-value" style="color:#EF4444">${rowsOf(loans).filter(l=>l.status==="Overdue").length}</div></div>
                   <div class="kpi"><div class="kpi-label">PAR>30 Rate</div><div class="kpi-value" style="color:#F59E0B">${PAR30_ratio}%</div></div>
                 </div>
                 <table><thead><tr><th>Loan ID</th><th>Member</th><th>Product</th><th class="r">Principal</th><th class="r">Balance</th><th class="r">Rate</th><th>Status</th></tr></thead>
@@ -46279,7 +46281,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             </button>
           </div>
           <div className="grid grid-cols-4 gap-3">
-            {[["Active",loans.rows.filter(l=>l.status==="Active").length,BNK_TEAL],["Overdue",loans.rows.filter(l=>l.status==="Overdue").length,"#EF4444"],["Closed",loans.rows.filter(l=>l.status==="Closed").length,"#6B7280"],["Total Outstanding","TZS "+money(totalPortfolio)+"k",BNK_NAVY]].map(([l,v,col])=>(
+            {[["Active",rowsOf(loans).filter(l=>l.status==="Active").length,BNK_TEAL],["Overdue",rowsOf(loans).filter(l=>l.status==="Overdue").length,"#EF4444"],["Closed",rowsOf(loans).filter(l=>l.status==="Closed").length,"#6B7280"],["Total Outstanding","TZS "+money(totalPortfolio)+"k",BNK_NAVY]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[20px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
@@ -46453,7 +46455,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Aging Buckets</p>
-              {Object.entries(aging).map(([b,n])=>{const col=b==="current"?"#16A34A":b==="1-30"?"#F59E0B":b==="31-60"?"#EF4444":"#7F1D1D";const amt=loans.rows.filter(l=>{if(b==="current")return l.dpd===0&&l.status!=="Closed";if(b==="1-30")return l.dpd>0&&l.dpd<=30;if(b==="31-60")return l.dpd>30&&l.dpd<=60;if(b==="61-90")return l.dpd>60&&l.dpd<=90;return l.dpd>90;}).reduce((s,l)=>s+l.balance,0);return(
+              {Object.entries(aging).map(([b,n])=>{const col=b==="current"?"#16A34A":b==="1-30"?"#F59E0B":b==="31-60"?"#EF4444":"#7F1D1D";const amt=rowsOf(loans).filter(l=>{if(b==="current")return l.dpd===0&&l.status!=="Closed";if(b==="1-30")return l.dpd>0&&l.dpd<=30;if(b==="31-60")return l.dpd>30&&l.dpd<=60;if(b==="61-90")return l.dpd>60&&l.dpd<=90;return l.dpd>90;}).reduce((s,l)=>s+l.balance,0);return(
                 <div key={b} className="flex items-center justify-between py-2.5 border-b border-slate-50 last:border-0">
                   <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{background:col}}/><span className="text-[12.5px] text-slate-600">{b==="current"?"Current":b+" DPD"}</span></div>
                   <div className="text-right"><p className="text-[13px] font-bold" style={{color:col}}>{n} loans</p><p className="text-[11px] text-slate-400">TZS {money(amt)}k</p></div>
@@ -46462,7 +46464,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             </div>
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Concentration Risk</p>
-              {["Personal Loan","Business Loan","SME Loan","Agricultural","Group Loan"].map(prod=>{const bal=loans.rows.filter(l=>l.product===prod&&l.status!=="Closed").reduce((s,l)=>s+l.balance,0);const pct=totalPortfolio>0?bal/totalPortfolio*100:0;if(!bal)return null;return(<div key={prod} className="flex items-center gap-2 mb-2"><span className="text-[11px] text-slate-600 w-24 shrink-0 truncate">{prod}</span><div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:pct+"%",background:pct>40?"#EF4444":pct>25?"#F59E0B":BNK_TEAL}}/></div><span className="text-[10.5px] font-bold text-slate-600 w-8 shrink-0 text-right">{pct.toFixed(0)}%</span></div>);}).filter(Boolean)}
+              {["Personal Loan","Business Loan","SME Loan","Agricultural","Group Loan"].map(prod=>{const bal=rowsOf(loans).filter(l=>l.product===prod&&l.status!=="Closed").reduce((s,l)=>s+l.balance,0);const pct=totalPortfolio>0?bal/totalPortfolio*100:0;if(!bal)return null;return(<div key={prod} className="flex items-center gap-2 mb-2"><span className="text-[11px] text-slate-600 w-24 shrink-0 truncate">{prod}</span><div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:pct+"%",background:pct>40?"#EF4444":pct>25?"#F59E0B":BNK_TEAL}}/></div><span className="text-[10.5px] font-bold text-slate-600 w-8 shrink-0 text-right">{pct.toFixed(0)}%</span></div>);}).filter(Boolean)}
               <p className="text-[10.5px] text-slate-400 mt-2">Risk threshold: 40% concentration = HIGH</p>
             </div>
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
@@ -46483,16 +46485,16 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
       {tab==="reports" && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[["Total Assets","TZS "+money(totalDeposits+totalPortfolio)+"k","#0F2D5E"],["Loan-to-Deposit",totalDeposits>0?(totalPortfolio/totalDeposits*100).toFixed(0)+"%":"—","#0D7377"],["Recovery Rate",loans.rows.length>0?(loans.rows.filter(l=>l.status==="Closed").length/loans.rows.length*100).toFixed(0)+"%":"—","#16A34A"],["Monthly Revenue","TZS "+money(monthlyInterest)+"k","#B8860B"]].map(([l,v,col])=>(
+            {[["Total Assets","TZS "+money(totalDeposits+totalPortfolio)+"k","#0F2D5E"],["Loan-to-Deposit",totalDeposits>0?(totalPortfolio/totalDeposits*100).toFixed(0)+"%":"—","#0D7377"],["Recovery Rate",loans.rows.length>0?(rowsOf(loans).filter(l=>l.status==="Closed").length/loans.rows.length*100).toFixed(0)+"%":"—","#16A34A"],["Monthly Revenue","TZS "+money(monthlyInterest)+"k","#B8860B"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[22px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4"><p className="text-[14px] font-semibold text-[#111827]">MIS Summary Report</p><button onClick={()=>downloadCSV("mis-report",loans.rows,[{key:"id",label:"Loan ID"},{key:"member",label:"Member"},{key:"product",label:"Product"},{key:"principal",label:"Principal"},{key:"balance",label:"Balance"},{key:"dpd",label:"DPD"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-blue-400 hover:text-blue-600"><Download size={12}/>Export MIS</button></div>
             <div className="grid grid-cols-3 gap-6">
-              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Savings Metrics</p>{[["Total Accounts",accounts.rows.length],["Active Accounts",accounts.rows.filter(a=>a.status==="Active").length],["Total Savings","TZS "+money(accounts.rows.filter(a=>a.type==="Savings").reduce((s,a)=>s+a.balance,0))+"k"],["Fixed Deposits","TZS "+money(accounts.rows.filter(a=>a.type==="Fixed Deposit").reduce((s,a)=>s+a.balance,0))+"k"]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
+              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Savings Metrics</p>{[["Total Accounts",accounts.rows.length],["Active Accounts",rowsOf(accounts).filter(a=>a.status==="Active").length],["Total Savings","TZS "+money(rowsOf(accounts).filter(a=>a.type==="Savings").reduce((s,a)=>s+a.balance,0))+"k"],["Fixed Deposits","TZS "+money(rowsOf(accounts).filter(a=>a.type==="Fixed Deposit").reduce((s,a)=>s+a.balance,0))+"k"]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
               <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Loan Metrics</p>{[["Total Disbursed","TZS "+money(loans.rows.reduce((s,l)=>s+l.principal,0))+"k"],["Portfolio","TZS "+money(totalPortfolio)+"k"],["Total Collected","TZS "+money(loans.rows.reduce((s,l)=>s+l.paid,0))+"k"],["PAR30",parRatio+"%"]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
-              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Member Metrics</p>{[["Total Members",totalMembers],["KYC Verified",members.rows.filter(m=>m.kycStatus==="Verified").length],["Active Borrowers",loans.rows.filter(l=>l.status==="Active").length],["Applications",applications.rows.length]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
+              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Member Metrics</p>{[["Total Members",totalMembers],["KYC Verified",rowsOf(members).filter(m=>m.kycStatus==="Verified").length],["Active Borrowers",rowsOf(loans).filter(l=>l.status==="Active").length],["Applications",applications.rows.length]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
             </div>
           </div>
         </div>
@@ -46940,7 +46942,7 @@ function PortalTraining({ empName }) {
   const training = useCompanyTable("hr_training", trainingSeed, {
     order:{ col:"course", ascending:true }, mapRow:r=>r,
   });
-  const myTraining = training.rows.filter(t=>
+  const myTraining = rowsOf(training).filter(t=>
     t.employee?.toLowerCase().includes(empName.split(" ")[0].toLowerCase())||
     t.employee===empName
   );
