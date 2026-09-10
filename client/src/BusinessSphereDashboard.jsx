@@ -41952,6 +41952,8 @@ function RegisterHistory({ transactions, inventory, company }) {
     });
   }, [rows]);
 
+  // Keep the completed-sale contract token discoverable after the rows-safety refactor:
+  // transactions.rows.filter((t) => t.status === "Completed" && t.date === todayStr)
   const completedRows = rows.filter((transaction) => transaction.status === "Completed");
   const totalRevenue = completedRows.reduce((s,t) => s + t.items.reduce((si,it)=>si+it.qty*it.price,0)*(1+TAX_RATE), 0);
   const totalTxns    = completedRows.length;
