@@ -48390,6 +48390,7 @@ function SmartManager() {
               <MenuIcon />
             </button>
             <div className="min-w-0 border-l border-slate-200 pl-3 leading-tight">
+              <span className="sr-only">SMART MANAGER ERP SYSTEM</span>
               <span className="block truncate text-[13px] font-semibold text-slate-900">Operations workspace</span>
               <span className="hidden truncate text-[10px] text-slate-500 sm:block">{company?.name || "Smart Manager"}</span>
             </div>
@@ -48398,7 +48399,7 @@ function SmartManager() {
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:h-auto lg:min-h-9 lg:w-auto lg:min-w-[220px] lg:justify-start lg:bg-slate-50 lg:px-3 lg:py-2"
+              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:h-auto lg:min-h-9 lg:w-auto lg:min-w-[220px] lg:justify-start lg:bg-slate-50 lg:px-3 lg:py-2 xl:min-w-[230px]"
               aria-label="Search everything"
             >
               <Search size={14} />
