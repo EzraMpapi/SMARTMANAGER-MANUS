@@ -42165,7 +42165,7 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="dashboard-topbar-notifications relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+        className="dashboard-topbar-notifications relative flex h-10 w-10 items-center justify-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "")}
         aria-expanded={open}
       >
@@ -48411,50 +48411,34 @@ function SmartManager() {
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
         <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-16 shrink-0 items-center gap-2 border-b border-slate-200 bg-white/95 px-3 py-2.5 shadow-[0_1px_0_rgba(15,23,42,.05),0_10px_24px_-18px_rgba(15,23,42,.25)] backdrop-blur-xl sm:gap-3 sm:px-5 lg:gap-4 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
-          {/* Left — menu trigger + workspace identity */}
+          {/* Left — menu trigger; workspace identity lives in the sidebar */}
           <div className="dashboard-topbar-context flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <button
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:hidden"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-600 shadow-none transition-colors hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-            <div className="hidden h-8 w-px shrink-0 bg-slate-200 lg:block" aria-hidden="true" />
-            <div className="min-w-0 leading-tight">
-              <div className="hidden items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-slate-400 sm:flex">
-                <Building2 size={11} className="shrink-0 text-cyan-600" aria-hidden="true" />
-                <span className="truncate">{company?.name || "Smart Manager"}</span>
-              </div>
-              <span className="sr-only">SMART MANAGER · ERP SYSTEM</span>
-            </div>
+            <span className="sr-only">SMART MANAGER · ERP SYSTEM</span>
           </div>
 
-          {/* Center — global search, the primary command surface on desktop */}
-          <div className="hidden min-w-0 flex-1 justify-center md:flex">
+          {/* Center — icon-only command palette trigger */}
+          <div className="flex min-w-0 items-center justify-center">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:h-auto lg:min-h-9 lg:w-auto lg:min-w-[220px] lg:justify-start lg:bg-slate-50 lg:px-3 lg:py-2 xl:min-w-[230px]"
+              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-500 shadow-none transition-colors hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
               aria-label="Search everything"
+              title="Search everything"
             >
-              <Search size={15} className="shrink-0 text-slate-400 transition-colors group-hover:text-cyan-700" aria-hidden="true" />
-              <span className="flex-1 truncate">Search modules, records, and actions</span>
-              <kbd className="hidden shrink-0 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
+              <Search size={18} aria-hidden="true" />
             </button>
           </div>
 
           {/* Right — quick actions, status, and identity */}
           <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
-            <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 md:hidden"
-              aria-label="Search everything"
-            >
-              <Search size={16} aria-hidden="true" />
-            </button>
-            <button type="button" onClick={() => go("notifications")} className="relative grid h-9 min-w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
+            <button type="button" onClick={() => go("notifications")} className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent p-0 text-slate-500 shadow-none transition hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
               <AlertCircle size={16} aria-hidden="true" />
               {criticalAlerts.length > 0 && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white ring-2 ring-white">{criticalAlerts.length}</span>}
             </button>
@@ -48464,7 +48448,7 @@ function SmartManager() {
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition-all hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
