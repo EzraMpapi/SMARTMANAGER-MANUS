@@ -29,6 +29,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
 import { trpc } from "./lib/trpc";
+import { rowsOf } from "./lib/rowsOf";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "./lib/authErrors";
 import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
 import { addProductToPosCart, calculatePosPaymentSummary, createPosSaleAttempt, productMatchesPosLookup } from "./lib/posTransactionEngine";
@@ -1158,7 +1159,7 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
     try {
       const result = await runCompanyTableQuery(table, { select: selectRef.current, order: orderRef.current });
       const mapper = mapRowRef.current;
-      const sourceRows = Array.isArray(result?.rows) ? result.rows : [];
+      const sourceRows = Array.isArray(result?.rows) ? rowsOf(result) : [];
       const confirmedRows = mapper ? sourceRows.map(mapper).filter(Boolean) : sourceRows;
       confirmedRowsRef.current = confirmedRows;
       setRows(confirmedRows);
@@ -1486,18 +1487,18 @@ function mapTrainingRow(r) {
 function LmsInsightsPanel({ employees }) {
   const training = useCompanyTable("hr_training", [], { order: { col: "created_at", ascending: false }, mapRow: mapTrainingRow, select: "*,hr_employees(full_name)" });
   const t = TODAY.toISOString().slice(0, 10);
-  const employeeRows = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
+  const employeeRows = Array.isArray(employees?.rows) ? rowsOf(employees) : (Array.isArray(employees) ? employees : []);
 
   const deptOf = (name) => (employeeRows.find((e) => e.name === name)?.department) || "General";
   const byDept = {};
-  training.rows.forEach((row) => {
+  rowsOf(training).forEach((row) => {
     const d = deptOf(row.employee);
     byDept[d] = byDept[d] || { total: 0, done: 0 };
     byDept[d].total += 1;
     if (row.status === "Completed") byDept[d].done += 1;
   });
-  const overdue = training.rows.filter((r) => r.mandatory && r.status !== "Completed" && r.dueDate && r.dueDate < t);
-  const completed = training.rows.filter((r) => r.status === "Completed").slice(0, 6);
+  const overdue = rowsOf(training).filter((r) => r.mandatory && r.status !== "Completed" && r.dueDate && r.dueDate < t);
+  const completed = rowsOf(training).filter((r) => r.status === "Completed").slice(0, 6);
 
   function printCertificate(row) {
     printAsPDF(`Certificate — ${row.course}`, `
@@ -1532,7 +1533,7 @@ function LmsInsightsPanel({ employees }) {
               <span className="text-[11.5px] font-mono text-slate-500 shrink-0">{s.done}/{s.total}</span>
             </div>
           ))}
-          {!training.loading && training.rows.length === 0 && <p className="text-[12px] text-slate-400 text-center py-3">No training assignments yet.</p>}
+          {!training.loading && rowsOf(training).length === 0 && <p className="text-[12px] text-slate-400 text-center py-3">No training assignments yet.</p>}
         </div>
       </div>
 
@@ -1965,11 +1966,11 @@ function ActivityStream({ currentUser }) {
     if (!dbAudit.loading) {
       setEntries((prev) => {
         const existing = new Set(prev.map((e) => e.id));
-        const fresh = dbAudit.rows.filter((r) => !existing.has(r.id));
+        const fresh = rowsOf(dbAudit).filter((r) => !existing.has(r.id));
         return [...prev, ...fresh].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1)).slice(0, 100);
       });
     }
-  }, [dbAudit.loading, dbAudit.rows.length]);
+  }, [dbAudit.loading, rowsOf(dbAudit).length]);
 
   useEffect(() => {
     const handler = (entry) => setEntries((prev) => [entry, ...prev].slice(0, 100));
@@ -2171,7 +2172,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
     // `employees` is the shared useCompanyTable result in the authenticated
     // dashboard, while standalone callers may still supply an array. Normalize
     // both shapes before the briefing applies filter/reduce operations.
-    const emps      = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
+    const emps      = Array.isArray(employees?.rows) ? rowsOf(employees) : (Array.isArray(employees) ? employees : []);
     const activeEmps= emps.filter(e => e.status === "Active");
     const onLeave   = (leaveRequests?.rows || []).filter(l =>
       l.status === "Approved" && l.startDate <= today && l.endDate >= today
@@ -4077,7 +4078,7 @@ async function recordConfirmedIndustryFocusAudit(previousFocus, nextFocus, actor
 // confirmed database response. This deliberately avoids a local-only payment
 // success state when RLS, session context, or the database rejects a write.
 async function recordPayment(invoicesHook, invoiceDocumentId, payment, actor) {
-  const inv = invoicesHook.rows.find((d) => d.id === invoiceDocumentId);
+  const inv = rowsOf(invoicesHook).find((d) => d.id === invoiceDocumentId);
   if (!inv) return null;
   const { total } = lineTotal(inv.items);
   const normalizedReference = String(payment.reference || "").trim().toLowerCase();
@@ -5107,13 +5108,13 @@ const signaturesSeed = [];
 // against it, rather than being stuck with whatever KPIs a developer
 // hardcoded onto a dashboard.
 const KPI_METRICS = [
-  { id: "revenue", label: "Revenue Collected", unit: "TZS 000", compute: (d) => d.invoices.rows.reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0) },
-  { id: "profit", label: "Net Profit", unit: "TZS 000", compute: (d) => { const rev = d.invoices.rows.reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0); return rev - d.expenses.rows.reduce((s, e) => s + e.amount, 0); } },
-  { id: "receivables", label: "Outstanding Receivables", unit: "TZS 000", compute: (d) => d.invoices.rows.filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0) },
-  { id: "stock_value", label: "Stock Value", unit: "TZS 000", compute: (d) => d.inventory.rows.reduce((s, it) => s + it.qty * it.unitCost, 0) },
-  { id: "pipeline_value", label: "Open Pipeline Value", unit: "TZS 000", compute: (d) => d.crm.rows.filter((l) => l.stage !== "Won" && l.stage !== "Lost").reduce((s, l) => s + l.value, 0) },
-  { id: "headcount", label: "Active Employees", unit: "people", compute: (d) => d.employees.rows.filter((e) => e.status === "Active").length },
-  { id: "win_rate", label: "Sales Win Rate", unit: "%", compute: (d) => { const won = d.crm.rows.filter((l) => l.stage === "Won").length; const closed = won + d.crm.rows.filter((l) => l.stage === "Lost").length; return closed > 0 ? Math.round((won / closed) * 100) : 0; } },
+  { id: "revenue", label: "Revenue Collected", unit: "TZS 000", compute: (d) => rowsOf(d.invoices).reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0) },
+  { id: "profit", label: "Net Profit", unit: "TZS 000", compute: (d) => { const rev = rowsOf(d.invoices).reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0); return rev - rowsOf(d.expenses).reduce((s, e) => s + e.amount, 0); } },
+  { id: "receivables", label: "Outstanding Receivables", unit: "TZS 000", compute: (d) => rowsOf(d.invoices).filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0) },
+  { id: "stock_value", label: "Stock Value", unit: "TZS 000", compute: (d) => rowsOf(d.inventory).reduce((s, it) => s + it.qty * it.unitCost, 0) },
+  { id: "pipeline_value", label: "Open Pipeline Value", unit: "TZS 000", compute: (d) => rowsOf(d.crm).filter((l) => l.stage !== "Won" && l.stage !== "Lost").reduce((s, l) => s + l.value, 0) },
+  { id: "headcount", label: "Active Employees", unit: "people", compute: (d) => rowsOf(d.employees).filter((e) => e.status === "Active").length },
+  { id: "win_rate", label: "Sales Win Rate", unit: "%", compute: (d) => { const won = rowsOf(d.crm).filter((l) => l.stage === "Won").length; const closed = won + rowsOf(d.crm).filter((l) => l.stage === "Lost").length; return closed > 0 ? Math.round((won / closed) * 100) : 0; } },
 ];
 
 const customKpisSeed = [
@@ -5171,9 +5172,9 @@ const WORKFLOW_TRIGGERS = [
 // behind it, so a skipped run states exactly why in real figures.
 const WORKFLOW_CONDITIONS = [
   { id: "none", label: "No condition — always run", evaluate: () => ({ met: true, detail: "No condition set" }) },
-  { id: "overdue-count-gt", label: "Only if overdue invoices exceed…", unit: "invoices", evaluate: (data, v) => { const todayStr = TODAY.toISOString().slice(0, 10); const n = data.invoices.rows.filter((i) => i.status !== "Paid" && i.dueDate && i.dueDate < todayStr).length; return { met: n > Number(v), detail: `${n} overdue invoice(s) vs threshold ${v}` }; } },
-  { id: "low-stock-count-gt", label: "Only if low-stock items exceed…", unit: "items", evaluate: (data, v) => { const n = data.inventory.rows.filter((it) => it.qty <= it.reorder).length; return { met: n > Number(v), detail: `${n} item(s) at/below reorder vs threshold ${v}` }; } },
-  { id: "unpaid-expenses-gt", label: "Only if unpaid expenses exceed… (TZS 000)", unit: "TZS k", evaluate: (data, v) => { const total = data.expenses.rows.filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0); return { met: total > Number(v), detail: `TZS ${money(Math.round(total))}k unpaid vs threshold ${money(Number(v))}k` }; } },
+  { id: "overdue-count-gt", label: "Only if overdue invoices exceed…", unit: "invoices", evaluate: (data, v) => { const todayStr = TODAY.toISOString().slice(0, 10); const n = rowsOf(data.invoices).filter((i) => i.status !== "Paid" && i.dueDate && i.dueDate < todayStr).length; return { met: n > Number(v), detail: `${n} overdue invoice(s) vs threshold ${v}` }; } },
+  { id: "low-stock-count-gt", label: "Only if low-stock items exceed…", unit: "items", evaluate: (data, v) => { const n = rowsOf(data.inventory).filter((it) => it.qty <= it.reorder).length; return { met: n > Number(v), detail: `${n} item(s) at/below reorder vs threshold ${v}` }; } },
+  { id: "unpaid-expenses-gt", label: "Only if unpaid expenses exceed… (TZS 000)", unit: "TZS k", evaluate: (data, v) => { const total = rowsOf(data.expenses).filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0); return { met: total > Number(v), detail: `TZS ${money(Math.round(total))}k unpaid vs threshold ${money(Number(v))}k` }; } },
 ];
 
 // Five step types, deliberately not more — each one wraps a function this
@@ -5559,7 +5560,7 @@ export function serializeDashboardSectionsToCsv(sections = []) {
   sections.forEach((section) => {
     lines.push("");
     lines.push(escapeCsv(section.title || "Chart data"));
-    const rows = Array.isArray(section.rows) ? section.rows : [];
+    const rows = Array.isArray(rowsOf(section)) ? rowsOf(section) : [];
     if (rows.length === 0) return;
     const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
     lines.push(headers.map(escapeCsv).join(","));
@@ -5579,7 +5580,7 @@ export function buildDashboardChartSections({
     { title: "Inventory Value by Category", module: "inventory", rows: stockByCategory },
     { title: "Work Orders by Status", module: "operations", rows: workOrdersByStatus },
     { title: "Top Customers by Billed Value", module: "sales", rows: topCustomers },
-  ].filter((section) => Array.isArray(section.rows) && section.rows.length > 0);
+  ].filter((section) => Array.isArray(rowsOf(section)) && rowsOf(section).length > 0);
 }
 
 export function filterDashboardChartSections(sections = [], enabledModules = {}) {
@@ -5628,7 +5629,7 @@ export async function createDashboardPdfDocument({ companyName = "BusinessSphere
   y = 96;
 
   sections.forEach((section) => {
-    const rows = Array.isArray(section.rows) ? section.rows : [];
+    const rows = Array.isArray(rowsOf(section)) ? rowsOf(section) : [];
     if (rows.length === 0) return;
     const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
     if (headers.length === 0) return;
@@ -6039,18 +6040,18 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
 
   const financials = useMemo(() => {
-    const invRows = invoices.rows.filter((inv) => !periodStart || (inv.date || "") >= periodStart);
-    const expRows = expenses.rows.filter((e) => !periodStart || (e.date || e.expenseDate || "") >= periodStart);
+    const invRows = rowsOf(invoices).filter((inv) => !periodStart || (inv.date || "") >= periodStart);
+    const expRows = rowsOf(expenses).filter((e) => !periodStart || (e.date || e.expenseDate || "") >= periodStart);
     const revenue = invRows.reduce((s, inv) => {
       const { total } = lineTotal(inv.items);
       return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0));
     }, 0);
     const expenseTotal = expRows.reduce((s, e) => s + e.amount, 0);
     const profit = revenue - expenseTotal;
-    const outstanding = invoices.rows.filter((inv) => inv.status !== "Paid");
+    const outstanding = rowsOf(invoices).filter((inv) => inv.status !== "Paid");
     const pendingCash = outstanding.reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
     return { revenue, expenseTotal, profit, pendingCash, outstandingCount: outstanding.length };
-  }, [invoices.rows, expenses.rows, periodStart]);
+  }, [rowsOf(invoices), rowsOf(expenses), periodStart]);
 
   const financeKpis = [
     { label: "Revenue Collected", value: `TZS ${money(Math.round(financials.revenue))}k`, delta: PERIOD_LABELS[period], up: true, icon: CircleDollarSign },
@@ -6061,27 +6062,27 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   // "Sales" — pipeline by stage, live from CRM.
   const pipelineByStage = useMemo(() => {
-    return STAGES.map((stage) => ({ stage, value: crm.rows.filter((l) => l.stage === stage).length }));
-  }, [crm.rows]);
+    return STAGES.map((stage) => ({ stage, value: rowsOf(crm).filter((l) => l.stage === stage).length }));
+  }, [rowsOf(crm)]);
 
   // "Revenue" — top customers by billed value, live from invoices. Mirrors
   // Reports' Sales & Revenue report at a glance rather than duplicating a
   // second calculation for the same number.
   const topCustomers = useMemo(() => {
     const map = {};
-    invoices.rows.forEach((inv) => {
+    rowsOf(invoices).forEach((inv) => {
       const { total } = lineTotal(inv.items);
       map[inv.customer] = (map[inv.customer] || 0) + total;
     });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([customer, value]) => ({ customer, value }));
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   // "Inventory" — stock value by category, live.
   const stockByCategory = useMemo(() => {
     const map = {};
-    inventory.rows.forEach((it) => { map[it.category] = (map[it.category] || 0) + it.qty * it.unitCost; });
+    rowsOf(inventory).forEach((it) => { map[it.category] = (map[it.category] || 0) + it.qty * it.unitCost; });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([category, value]) => ({ category, value: Math.round(value) }));
-  }, [inventory.rows]);
+  }, [rowsOf(inventory)]);
 
   // Work orders by status — genuinely Manufacturing's own metric now that
   // Projects is a real module in its own right; this chart never needed
@@ -6089,8 +6090,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // chart below).
   const workOrdersByStatus = useMemo(() => {
     const statuses = ["Planned", "In Progress", "Completed", "Cancelled"];
-    return statuses.map((status) => ({ status, value: workOrders.rows.filter((w) => w.status === status).length }));
-  }, [workOrders.rows]);
+    return statuses.map((status) => ({ status, value: rowsOf(workOrders).filter((w) => w.status === status).length }));
+  }, [rowsOf(workOrders)]);
 
   const revenueExpenseTrend = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => {
@@ -6099,14 +6100,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       return d.toISOString().slice(0, 7);
     });
     return months.map((month) => {
-      const revenue = invoices.rows.filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
-      const expensesValue = expenses.rows.filter((expense) => expense.date?.startsWith(month)).reduce((sum, expense) => sum + (expense.amount || 0), 0);
+      const revenue = rowsOf(invoices).filter((invoice) => invoice.date?.startsWith(month)).reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
+      const expensesValue = rowsOf(expenses).filter((expense) => expense.date?.startsWith(month)).reduce((sum, expense) => sum + (expense.amount || 0), 0);
       return { month: new Date(`${month}-01`).toLocaleDateString("en", { month: "short" }), revenue_tzs_k: Math.round(revenue / 1000), expenses_tzs_k: Math.round(expensesValue / 1000), profit_tzs_k: Math.round((revenue - expensesValue) / 1000) };
     });
-  }, [invoices.rows, expenses.rows]);
+  }, [rowsOf(invoices), rowsOf(expenses)]);
 
   const arAging = useMemo(() => {
-    const unpaid = invoices.rows.filter((invoice) => invoice.status !== "Paid");
+    const unpaid = rowsOf(invoices).filter((invoice) => invoice.status !== "Paid");
     const todayMs = TODAY.getTime();
     const buckets = [
       { bucket: "Current", items: unpaid.filter((invoice) => !invoice.dueDate || new Date(invoice.dueDate) >= TODAY) },
@@ -6115,7 +6116,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       { bucket: "60+ days", items: unpaid.filter((invoice) => invoice.dueDate && (todayMs - new Date(invoice.dueDate).getTime()) > 60 * 86400000) },
     ];
     return buckets.map(({ bucket, items }) => ({ bucket, invoice_count: items.length, amount_tzs_k: Math.round(items.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0) / 1000) }));
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   const exportDateMatches = useCallback((row) => {
     if (!exportStartDate && !exportEndDate) return true;
@@ -6126,12 +6127,12 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   }, [exportStartDate, exportEndDate]);
 
   const filteredExportRows = useMemo(() => ({
-    invoices: invoices.rows.filter(exportDateMatches),
-    expenses: expenses.rows.filter(exportDateMatches),
-    crm: crm.rows.filter(exportDateMatches),
-    workOrders: workOrders.rows.filter(exportDateMatches),
-    inventory: inventory.rows,
-  }), [invoices.rows, expenses.rows, crm.rows, workOrders.rows, inventory.rows, exportDateMatches]);
+    invoices: rowsOf(invoices).filter(exportDateMatches),
+    expenses: rowsOf(expenses).filter(exportDateMatches),
+    crm: rowsOf(crm).filter(exportDateMatches),
+    workOrders: rowsOf(workOrders).filter(exportDateMatches),
+    inventory: rowsOf(inventory),
+  }), [rowsOf(invoices), rowsOf(expenses), rowsOf(crm), rowsOf(workOrders), rowsOf(inventory), exportDateMatches]);
 
   const filteredExportSections = useMemo(() => {
     const exportInvoices = filteredExportRows.invoices;
@@ -6197,7 +6198,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     }
   }
 
-  const pendingLeave = useMemo(() => leaveRequests.rows.filter((l) => l.status === "Pending"), [leaveRequests.rows]);
+  const pendingLeave = useMemo(() => rowsOf(leaveRequests).filter((l) => l.status === "Pending"), [rowsOf(leaveRequests)]);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
   // The guidance panel intentionally derives only from confirmed rows already
@@ -6215,7 +6216,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         target: alerts[0]?.target || "dashboard",
       };
     }
-    if (invoices.rows.length === 0) {
+    if (rowsOf(invoices).length === 0) {
       return {
         icon: ReceiptText,
         accent: "#16A34A",
@@ -6226,7 +6227,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         target: "sales",
       };
     }
-    if (crm.rows.length === 0) {
+    if (rowsOf(crm).length === 0) {
       return {
         icon: Users,
         accent: "#7C3AED",
@@ -6237,7 +6238,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         target: "crm",
       };
     }
-    if (inventory.rows.length === 0) {
+    if (rowsOf(inventory).length === 0) {
       return {
         icon: Package,
         accent: "#0891B2",
@@ -6257,7 +6258,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       actionLabel: "Open reports",
       target: "reports",
     };
-  }, [alerts, crm.rows.length, inventory.rows.length, invoices.rows.length]);
+  }, [alerts, rowsOf(crm).length, rowsOf(inventory).length, rowsOf(invoices).length]);
 
 
   // Recent Activity — a real merged feed, not a fabricated log. Built only
@@ -6279,21 +6280,21 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
   const recentActivity = useMemo(() => {
     const items = [];
-    invoices.rows.forEach((inv) => {
+    rowsOf(invoices).forEach((inv) => {
       if (inv.status === "Paid") {
         items.push({ date: inv.date, icon: ReceiptText, color: "#16A34A", text: `Invoice ${inv.id} paid`, sub: inv.customer });
       } else {
         items.push({ date: inv.date, icon: ReceiptText, color: "#5B6472", text: `Invoice ${inv.id} issued`, sub: inv.customer });
       }
     });
-    expenses.rows.forEach((e) => {
+    rowsOf(expenses).forEach((e) => {
       items.push({ date: e.date, icon: Wallet, color: "#F59E0B", text: `Expense recorded — ${e.category}`, sub: `TZS ${money(e.amount)}k · ${e.vendor}` });
     });
-    leaveRequests.rows.forEach((l) => {
+    rowsOf(leaveRequests).forEach((l) => {
       items.push({ date: l.startDate, icon: Clock, color: l.status === "Approved" ? "#16A34A" : "#F59E0B", text: `Leave ${l.status.toLowerCase()} — ${l.type}`, sub: l.employee });
     });
     return items.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 6);
-  }, [invoices.rows, expenses.rows, leaveRequests.rows]);
+  }, [rowsOf(invoices), rowsOf(expenses), rowsOf(leaveRequests)]);
 
   const quickActions = [
     { label: "Create Invoice", icon: ReceiptText, action: () => onQuickAction("sales", { tab: "invoices", openForm: true }) },
@@ -6308,15 +6309,15 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // are navigation suggestions only: they do not create records, imitate AI
   // reasoning, or turn a missing record into a fabricated alert.
   const attentionItems = [
-    ...inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0).slice(0, 3).map((item) => ({
+    ...rowsOf(inventory).filter((item) => item.qty <= item.reorder && item.reorder > 0).slice(0, 3).map((item) => ({
       id: `inventory-${item.id}`, icon: Package, color: "#DC2626", surface: "#FEF2F2", title: item.name, detail: item.qty <= 0 ? "Out of stock" : `${item.qty} left — reorder at ${item.reorder}`, actionLabel: "Review stock", action: () => onNavigate("inventory"),
     })),
-    ...workOrders.rows.filter((workOrder) => workOrder.status !== "Completed" && workOrder.status !== "Cancelled" && workOrder.dueDate < TODAY.toISOString().slice(0, 10)).slice(0, 2).map((workOrder) => ({
+    ...rowsOf(workOrders).filter((workOrder) => workOrder.status !== "Completed" && workOrder.status !== "Cancelled" && workOrder.dueDate < TODAY.toISOString().slice(0, 10)).slice(0, 2).map((workOrder) => ({
       id: `work-order-${workOrder.id}`, icon: Factory, color: "#D97706", surface: "#FFFBEB", title: workOrder.productName || workOrder.id, detail: `Work order overdue · ${workOrder.dueDate}`, actionLabel: "Review production", action: () => onNavigate("manufacturing"),
     })),
-    ...(inventory.rows.length === 0 ? [{ id: "setup-inventory", icon: Package, color: "#2563EB", surface: "#EFF6FF", title: "Start with inventory", detail: "No confirmed stock items yet. Add a product or service to track availability.", actionLabel: "Add product", action: () => onNavigate("inventory") }] : []),
-    ...(invoices.rows.length === 0 ? [{ id: "setup-invoice", icon: ReceiptText, color: "#16A34A", surface: "#F0FDF4", title: "Start tracking revenue", detail: "No confirmed invoices yet. Create an invoice when a sale is ready to record.", actionLabel: "Create invoice", action: () => onQuickAction("sales", { tab: "invoices", openForm: true }) }] : []),
-    ...(crm.rows.length === 0 ? [{ id: "setup-crm", icon: Users, color: "#7C3AED", surface: "#F5F3FF", title: "Build your pipeline", detail: "No confirmed leads yet. Add a lead to begin tracking customer opportunities.", actionLabel: "Add lead", action: () => onQuickAction("crm", { tab: "leads" }) }] : []),
+    ...(rowsOf(inventory).length === 0 ? [{ id: "setup-inventory", icon: Package, color: "#2563EB", surface: "#EFF6FF", title: "Start with inventory", detail: "No confirmed stock items yet. Add a product or service to track availability.", actionLabel: "Add product", action: () => onNavigate("inventory") }] : []),
+    ...(rowsOf(invoices).length === 0 ? [{ id: "setup-invoice", icon: ReceiptText, color: "#16A34A", surface: "#F0FDF4", title: "Start tracking revenue", detail: "No confirmed invoices yet. Create an invoice when a sale is ready to record.", actionLabel: "Create invoice", action: () => onQuickAction("sales", { tab: "invoices", openForm: true }) }] : []),
+    ...(rowsOf(crm).length === 0 ? [{ id: "setup-crm", icon: Users, color: "#7C3AED", surface: "#F5F3FF", title: "Build your pipeline", detail: "No confirmed leads yet. Add a lead to begin tracking customer opportunities.", actionLabel: "Add lead", action: () => onQuickAction("crm", { tab: "leads" }) }] : []),
   ].slice(0, 5);
 
   // Shared across every focused role view below, so Approvals and Recent
@@ -6749,20 +6750,20 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
 	          {/* Confirmed-data KPI cards — navigation only; no target, trend, or progress is shown unless it exists in the workspace data. */}
 	          {(() => {
-	            const invRows = invoices.rows.filter((invoice) => !periodStart || (invoice.date || "") >= periodStart);
-	            const expRows = expenses.rows.filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart);
+	            const invRows = rowsOf(invoices).filter((invoice) => !periodStart || (invoice.date || "") >= periodStart);
+	            const expRows = rowsOf(expenses).filter((expense) => !periodStart || (expense.date || expense.expenseDate || "") >= periodStart);
             const totalBilled = invRows.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total, 0);
             const totalCollected = invRows.reduce((sum, invoice) => sum + (invoice.amountPaid || 0), 0);
             const totalExpenses = expRows.reduce((sum, expense) => sum + (expense.amount || 0), 0);
             const grossProfit = totalCollected - totalExpenses;
             const overdueInvs = invRows.filter((invoice) => invoice.status !== "Paid" && invoice.dueDate < TODAY.toISOString().slice(0, 10));
             const overdueAmt = overdueInvs.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0);
-            const inventoryValue = inventory.rows.reduce((sum, item) => sum + (item.qty || 0) * (item.unitCost || 0), 0);
-            const lowStock = inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0).length;
-            const stockOut = inventory.rows.filter((item) => item.qty <= 0).length;
-            const openLeads = crm.rows.filter((lead) => !["Won", "Lost"].includes(lead.stage));
+            const inventoryValue = rowsOf(inventory).reduce((sum, item) => sum + (item.qty || 0) * (item.unitCost || 0), 0);
+            const lowStock = rowsOf(inventory).filter((item) => item.qty <= item.reorder && item.reorder > 0).length;
+            const stockOut = rowsOf(inventory).filter((item) => item.qty <= 0).length;
+            const openLeads = rowsOf(crm).filter((lead) => !["Won", "Lost"].includes(lead.stage));
             const pipelineValue = openLeads.reduce((sum, lead) => sum + (lead.value || 0), 0);
-            const activeSubs = subscriptions.rows.filter((subscription) => subscription.status === "Active");
+            const activeSubs = rowsOf(subscriptions).filter((subscription) => subscription.status === "Active");
             const monthlyRecurringRevenue = activeSubs.reduce((sum, subscription) => {
               const months = { Monthly: 1, Quarterly: 3, Annual: 12 }[subscription.cycle] || 1;
               return sum + (subscription.amount / months);
@@ -6774,7 +6775,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               { label: "Collected", value: formatMoney(totalCollected), color: "#60A5FA", context: totalBilled > 0 ? `${Math.round((totalCollected / totalBilled) * 100)}% of billed value collected` : `No invoices to collect in ${periodText}`, action: "Open receivables", onClick: () => onQuickAction("finance", { tab: "receivables" }) },
               { label: "Overdue AR", value: formatMoney(overdueAmt), color: overdueAmt > 0 ? "#F87171" : "#4ADE80", context: overdueInvs.length ? `${overdueInvs.length} invoice${overdueInvs.length === 1 ? "" : "s"} overdue` : "No overdue invoices", action: "Review receivables", onClick: () => onQuickAction("finance", { tab: "receivables" }) },
               { label: "Gross P&L", value: `${grossProfit >= 0 ? "+" : "−"}${formatMoney(Math.abs(grossProfit))}`, color: grossProfit >= 0 ? "#4ADE80" : "#F87171", context: hasFinanceData ? "Collected less expenses" : `No invoice or expense entries in ${periodText}`, action: "Open finance", onClick: () => onNavigate("finance") },
-              { label: "Inventory", value: formatMoney(inventoryValue), color: "#C4B5FD", context: inventory.rows.length ? `${inventory.rows.length} stocked SKU${inventory.rows.length === 1 ? "" : "s"}` : "No stock items recorded", action: "Open inventory", onClick: () => onNavigate("inventory") },
+              { label: "Inventory", value: formatMoney(inventoryValue), color: "#C4B5FD", context: rowsOf(inventory).length ? `${rowsOf(inventory).length} stocked SKU${rowsOf(inventory).length === 1 ? "" : "s"}` : "No stock items recorded", action: "Open inventory", onClick: () => onNavigate("inventory") },
               { label: "Low Stock", value: String(lowStock), color: lowStock > 0 ? "#F87171" : "#4ADE80", context: lowStock ? `${stockOut} out of stock · ${lowStock} need review` : "No stock needs attention", action: "Review inventory", onClick: () => onNavigate("inventory") },
               { label: "Pipeline", value: formatMoney(pipelineValue), color: "#F9A8D4", context: openLeads.length ? `${openLeads.length} open deal${openLeads.length === 1 ? "" : "s"}` : "No open deals recorded", action: "Open CRM", onClick: () => onNavigate("crm") },
               { label: "MRR", value: formatMoney(monthlyRecurringRevenue), color: "#34D399", context: activeSubs.length ? `${activeSubs.length} active subscription${activeSubs.length === 1 ? "" : "s"}` : "No active subscriptions", action: "Open sales", onClick: () => onNavigate("sales") },
@@ -6999,8 +7000,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           return d.toISOString().slice(0,7);
         });
         const data = months.map(mo=>{
-          const rev = invoices.rows.filter(i=>i.date?.startsWith(mo)).reduce((s,i)=>s+(i.amountPaid||0),0);
-          const exp = expenses.rows.filter(e=>e.date?.startsWith(mo)).reduce((s,e)=>s+(e.amount||0),0);
+          const rev = rowsOf(invoices).filter(i=>i.date?.startsWith(mo)).reduce((s,i)=>s+(i.amountPaid||0),0);
+          const exp = rowsOf(expenses).filter(e=>e.date?.startsWith(mo)).reduce((s,e)=>s+(e.amount||0),0);
           return {mo:new Date(mo+"-01").toLocaleDateString("en",{month:"short"}),rev:Math.round(rev/1000),exp:Math.round(exp/1000),profit:Math.round((rev-exp)/1000)};
         });
         const hasData = data.some(d=>d.rev>0||d.exp>0);
@@ -7033,7 +7034,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               <h3 className="text-[14px] font-bold text-[#111827] mb-1">AR Aging</h3>
               <p className="text-[11.5px] text-slate-400 mb-3">Outstanding invoices by age</p>
               {(() => {
-                const unpaid = invoices.rows.filter(i=>i.status!=="Paid");
+                const unpaid = rowsOf(invoices).filter(i=>i.status!=="Paid");
                 const todayMs = TODAY.getTime();
                 const buckets = [
                   {label:"Current",    days:0,   col:"#16A34A", items:unpaid.filter(i=>!i.dueDate||new Date(i.dueDate)>=TODAY)},
@@ -7080,7 +7081,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           return d.toISOString().slice(0,7);
         });
         const vatTrendData = rawMonths.map(mo=>{
-          const periodInv = invoices.rows.filter(i=>!periodStart || (i.date||"") >= periodStart);
+          const periodInv = rowsOf(invoices).filter(i=>!periodStart || (i.date||"") >= periodStart);
           const moInv = periodInv.filter(i=>i.date?.startsWith(mo));
           const taxableGross = moInv.reduce((s,i)=>s+lineTotal(i.items||[]).total,0);
           const outputVat = taxableGross * 0.18;
@@ -7161,7 +7162,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                 <button
                   type="button"
                   onClick={() => {
-                    const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
+                    const monthInvoices = rowsOf(invoices).filter(i => (i.date || "").startsWith(drillDownMonth));
                     const filtered = monthInvoices.filter(inv => {
                       const { total } = lineTotal(inv.items || []);
                       const q = drillDownSearch.toLowerCase().trim();
@@ -7211,7 +7212,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
 
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
               {(() => {
-                const monthInvoices = invoices.rows.filter(i => (i.date || "").startsWith(drillDownMonth));
+                const monthInvoices = rowsOf(invoices).filter(i => (i.date || "").startsWith(drillDownMonth));
                 const filteredInvoices = monthInvoices.filter(inv => {
                   const { total } = lineTotal(inv.items || []);
                   const q = drillDownSearch.toLowerCase().trim();
@@ -7239,7 +7240,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                         const d=new Date(drillDownMonth+"-01"); d.setMonth(d.getMonth()-5+i);
                         return d.toISOString().slice(0,7);
                       });
-                      const historicalTotals = allMonths.map(m => invoices.rows.filter(i=>(i.date||"").startsWith(m)).reduce((s,i)=>s+lineTotal(i.items||[]).total*0.18,0));
+                      const historicalTotals = allMonths.map(m => rowsOf(invoices).filter(i=>(i.date||"").startsWith(m)).reduce((s,i)=>s+lineTotal(i.items||[]).total*0.18,0));
                       const avgVat = historicalTotals.reduce((a,b)=>a+b,0) / (historicalTotals.length || 1);
                       const thresholdPercent = vatAnomalySettingsQuery.data?.thresholdPercent ?? 50;
                       const alertsEnabled = vatAnomalySettingsQuery.data?.enabled !== false;
@@ -7498,25 +7499,25 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         </div>
         <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
           {(() => {
-            const overdueInvoices = invoices.rows.filter((invoice) => invoice.status !== "Paid" && invoice.dueDate < TODAY.toISOString().slice(0, 10));
-            const lowStockItems = inventory.rows.filter((item) => item.qty <= item.reorder && item.reorder > 0);
-            const pendingLeaves = leaveRequests.rows.filter((request) => request.status === "Pending");
-            const overdueWorkOrders = workOrders.rows.filter((workOrder) => workOrder.status !== "Completed" && workOrder.dueDate < TODAY.toISOString().slice(0, 10));
+            const overdueInvoices = rowsOf(invoices).filter((invoice) => invoice.status !== "Paid" && invoice.dueDate < TODAY.toISOString().slice(0, 10));
+            const lowStockItems = rowsOf(inventory).filter((item) => item.qty <= item.reorder && item.reorder > 0);
+            const pendingLeaves = rowsOf(leaveRequests).filter((request) => request.status === "Pending");
+            const overdueWorkOrders = rowsOf(workOrders).filter((workOrder) => workOrder.status !== "Completed" && workOrder.dueDate < TODAY.toISOString().slice(0, 10));
             const activeEmployees = (employees?.rows || employees || []).filter((employee) => employee.status === "Active");
             const moduleCards = [
               { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, status: "available", metric: "Workspace overview available", detail: "Uses confirmed dashboard data" },
-              { id: "crm", label: "CRM", icon: Users, status: crm.rows.length ? "tracking" : "noData", metric: crm.rows.length ? `${crm.rows.length} confirmed lead${crm.rows.length === 1 ? "" : "s"}` : "No confirmed leads", detail: crm.rows.length ? "Review pipeline records" : "Open CRM to add or review leads" },
-              { id: "sales", label: "Sales", icon: ReceiptText, status: overdueInvoices.length ? "attention" : (invoices.rows.length ? "tracking" : "noData"), metric: overdueInvoices.length ? `${overdueInvoices.length} overdue invoice${overdueInvoices.length === 1 ? "" : "s"}` : (invoices.rows.length ? `${invoices.rows.length} invoice${invoices.rows.length === 1 ? "" : "s"} tracked` : "No confirmed invoices"), detail: overdueInvoices.length ? "Review receivables" : "Open sales records" },
-              { id: "inventory", label: "Inventory", icon: Package, status: lowStockItems.length ? "attention" : (inventory.rows.length ? "tracking" : "noData"), metric: lowStockItems.length ? `${lowStockItems.length} item${lowStockItems.length === 1 ? "" : "s"} need review` : (inventory.rows.length ? `${inventory.rows.length} stocked SKU${inventory.rows.length === 1 ? "" : "s"}` : "No confirmed stock items"), detail: lowStockItems.length ? "Review stock levels" : "Open inventory records" },
+              { id: "crm", label: "CRM", icon: Users, status: rowsOf(crm).length ? "tracking" : "noData", metric: rowsOf(crm).length ? `${rowsOf(crm).length} confirmed lead${rowsOf(crm).length === 1 ? "" : "s"}` : "No confirmed leads", detail: rowsOf(crm).length ? "Review pipeline records" : "Open CRM to add or review leads" },
+              { id: "sales", label: "Sales", icon: ReceiptText, status: overdueInvoices.length ? "attention" : (rowsOf(invoices).length ? "tracking" : "noData"), metric: overdueInvoices.length ? `${overdueInvoices.length} overdue invoice${overdueInvoices.length === 1 ? "" : "s"}` : (rowsOf(invoices).length ? `${rowsOf(invoices).length} invoice${rowsOf(invoices).length === 1 ? "" : "s"} tracked` : "No confirmed invoices"), detail: overdueInvoices.length ? "Review receivables" : "Open sales records" },
+              { id: "inventory", label: "Inventory", icon: Package, status: lowStockItems.length ? "attention" : (rowsOf(inventory).length ? "tracking" : "noData"), metric: lowStockItems.length ? `${lowStockItems.length} item${lowStockItems.length === 1 ? "" : "s"} need review` : (rowsOf(inventory).length ? `${rowsOf(inventory).length} stocked SKU${rowsOf(inventory).length === 1 ? "" : "s"}` : "No confirmed stock items"), detail: lowStockItems.length ? "Review stock levels" : "Open inventory records" },
               { id: "procurement", label: "Procurement", icon: ShoppingBag, status: "unavailable", metric: "No root-level signal", detail: "Open procurement to review records" },
-              { id: "finance", label: "Finance", icon: CircleDollarSign, status: (invoices.rows.length || expenses.rows.length) ? "tracking" : "noData", metric: (invoices.rows.length || expenses.rows.length) ? `${invoices.rows.length} invoice${invoices.rows.length === 1 ? "" : "s"} · ${expenses.rows.length} expense${expenses.rows.length === 1 ? "" : "s"}` : "No confirmed finance entries", detail: "Open finance records" },
+              { id: "finance", label: "Finance", icon: CircleDollarSign, status: (rowsOf(invoices).length || rowsOf(expenses).length) ? "tracking" : "noData", metric: (rowsOf(invoices).length || rowsOf(expenses).length) ? `${rowsOf(invoices).length} invoice${rowsOf(invoices).length === 1 ? "" : "s"} · ${rowsOf(expenses).length} expense${rowsOf(expenses).length === 1 ? "" : "s"}` : "No confirmed finance entries", detail: "Open finance records" },
               { id: "hr", label: "Human Resources", icon: UserCheck, status: pendingLeaves.length ? "attention" : (activeEmployees.length ? "tracking" : "noData"), metric: pendingLeaves.length ? `${pendingLeaves.length} leave request${pendingLeaves.length === 1 ? "" : "s"} pending` : (activeEmployees.length ? `${activeEmployees.length} active employee${activeEmployees.length === 1 ? "" : "s"}` : "No confirmed HR records"), detail: pendingLeaves.length ? "Review leave requests" : "Open HR records" },
-              { id: "manufacturing", label: "Manufacturing", icon: Factory, status: overdueWorkOrders.length ? "attention" : (workOrders.rows.length ? "tracking" : "noData"), metric: overdueWorkOrders.length ? `${overdueWorkOrders.length} work order${overdueWorkOrders.length === 1 ? "" : "s"} overdue` : (workOrders.rows.length ? `${workOrders.rows.length} work order${workOrders.rows.length === 1 ? "" : "s"} tracked` : "No confirmed work orders"), detail: overdueWorkOrders.length ? "Review production schedule" : "Open manufacturing records" },
+              { id: "manufacturing", label: "Manufacturing", icon: Factory, status: overdueWorkOrders.length ? "attention" : (rowsOf(workOrders).length ? "tracking" : "noData"), metric: overdueWorkOrders.length ? `${overdueWorkOrders.length} work order${overdueWorkOrders.length === 1 ? "" : "s"} overdue` : (rowsOf(workOrders).length ? `${rowsOf(workOrders).length} work order${rowsOf(workOrders).length === 1 ? "" : "s"} tracked` : "No confirmed work orders"), detail: overdueWorkOrders.length ? "Review production schedule" : "Open manufacturing records" },
               { id: "projects", label: "Projects", icon: FolderKanban, status: "unavailable", metric: "No root-level signal", detail: "Open projects to review work" },
               { id: "support", label: "Customer Support", icon: Headphones, status: "unavailable", metric: "Ticket data stays in Support", detail: "Open the support inbox" },
               { id: "analytics", label: "Analytics", icon: BarChart3, status: "available", metric: "Uses confirmed source modules", detail: "Open analytics views" },
               { id: "reports", label: "Reports", icon: FileText, status: "available", metric: "Exports confirmed dashboard data", detail: "Open reporting workspace" },
-              { id: "pos", label: "Point of Sale", icon: ScanLine, status: posTransactions.rows.length ? "tracking" : "noData", metric: posTransactions.rows.length ? `${posTransactions.rows.length} confirmed transaction${posTransactions.rows.length === 1 ? "" : "s"}` : "No confirmed POS transactions", detail: "Open point of sale" },
+              { id: "pos", label: "Point of Sale", icon: ScanLine, status: rowsOf(posTransactions).length ? "tracking" : "noData", metric: rowsOf(posTransactions).length ? `${rowsOf(posTransactions).length} confirmed transaction${rowsOf(posTransactions).length === 1 ? "" : "s"}` : "No confirmed POS transactions", detail: "Open point of sale" },
               { id: "marketing", label: "Marketing", icon: Megaphone, status: "unavailable", metric: "No root-level signal", detail: "Open marketing workspace" },
               { id: "ecommerce", label: "Ecommerce", icon: Store, status: "unavailable", metric: "No root-level signal", detail: "Open ecommerce workspace" },
               { id: "collaboration", label: "Collaboration", icon: MessageCircle, status: "unavailable", metric: "No root-level signal", detail: "Open collaboration workspace" },
@@ -7569,7 +7570,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           <p className="text-[11.5px] text-slate-400 mb-3">Billed revenue from confirmed invoices (TZS k)</p>
           {(() => {
             const custData = Object.entries(
-              invoices.rows.reduce((m,inv)=>{
+              rowsOf(invoices).reduce((m,inv)=>{
                 const val=lineTotal(inv.items||[]).total;
                 m[inv.customer]=(m[inv.customer]||0)+val;
                 return m;
@@ -7599,7 +7600,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           <p className="text-[11.5px] text-slate-400 mb-3">Confirmed stock value distribution</p>
           {(() => {
             const cats = {};
-            inventory.rows.forEach(it=>{
+            rowsOf(inventory).forEach(it=>{
               const cat=it.category||"Other";
               cats[cat]=(cats[cat]||0)+(it.qty||0)*(it.unitCost||0);
             });
@@ -7634,11 +7635,11 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         {/* CRM Pipeline Funnel */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
           <h3 className="text-[13.5px] font-bold text-[#111827] mb-1">Sales Pipeline</h3>
-          <p className="text-[11.5px] text-slate-400 mb-3">{crm.rows.length ? "Confirmed leads by stage; value shown when recorded" : "Add confirmed leads to visualize pipeline stages"}</p>
+          <p className="text-[11.5px] text-slate-400 mb-3">{rowsOf(crm).length ? "Confirmed leads by stage; value shown when recorded" : "Add confirmed leads to visualize pipeline stages"}</p>
           {(() => {
             const STAGE_COLORS={"New":"#64748B","Contacted":"#2563EB","Qualified":"#7C3AED","Proposal":"#D97706","Negotiation":"#EF4444","Won":"#16A34A","Lost":"#94A3B8"};
             const stageData = ["New","Contacted","Qualified","Proposal","Negotiation"].map(s=>({
-              name:s, count:crm.rows.filter(l=>l.stage===s).length, value:Math.round(crm.rows.filter(l=>l.stage===s).reduce((sum,l)=>sum+(l.value||0),0)/1000),
+              name:s, count:rowsOf(crm).filter(l=>l.stage===s).length, value:Math.round(rowsOf(crm).filter(l=>l.stage===s).reduce((sum,l)=>sum+(l.value||0),0)/1000),
               fill:STAGE_COLORS[s],
             })).filter(d=>d.count>0);
             const totalPipelineValue = stageData.reduce((sum, stage) => sum + stage.value, 0);
@@ -7761,11 +7762,11 @@ function GettingStartedChecklist({ inventory, crm, invoices, expenses, posTransa
   const [dismissed, setDismissed] = useState(false);
 
   const steps = [
-    { id: "product", label: "Add your first product or service", done: inventory.rows.length > 0, module: "inventory" },
-    { id: "customer", label: "Add your first customer", done: crm.rows.length > 0, module: "crm" },
-    { id: "invoice", label: "Create your first invoice", done: invoices.rows.length > 0, module: "sales" },
-    { id: "payment", label: "Record your first payment or sale", done: invoices.rows.some((inv) => inv.status === "Paid" || (inv.amountPaid || 0) > 0) || posTransactions.rows.length > 0, module: "finance" },
-    { id: "expense", label: "Record your first expense", done: expenses.rows.length > 0, module: "finance" },
+    { id: "product", label: "Add your first product or service", done: rowsOf(inventory).length > 0, module: "inventory" },
+    { id: "customer", label: "Add your first customer", done: rowsOf(crm).length > 0, module: "crm" },
+    { id: "invoice", label: "Create your first invoice", done: rowsOf(invoices).length > 0, module: "sales" },
+    { id: "payment", label: "Record your first payment or sale", done: rowsOf(invoices).some((inv) => inv.status === "Paid" || (inv.amountPaid || 0) > 0) || rowsOf(posTransactions).length > 0, module: "finance" },
+    { id: "expense", label: "Record your first expense", done: rowsOf(expenses).length > 0, module: "finance" },
   ];
   const completedCount = steps.filter((s) => s.done).length;
   const allDone = completedCount === steps.length;
@@ -7805,9 +7806,9 @@ function GettingStartedChecklist({ inventory, crm, invoices, expenses, posTransa
 // signals already available in the tenant — it never guesses a future value.
 function AnalyticsReadiness({ invoices, crm, inventory, expenses, onNavigate }) {
   const signals = [
-    { id: "finance", label: "Finance records", detail: `${invoices.rows.length} confirmed invoice${invoices.rows.length === 1 ? "" : "s"} and ${expenses.rows.length} expense${expenses.rows.length === 1 ? "" : "s"}`, ready: invoices.rows.length + expenses.rows.length > 0, module: "finance" },
-    { id: "pipeline", label: "Pipeline records", detail: `${crm.rows.length} confirmed lead${crm.rows.length === 1 ? "" : "s"}`, ready: crm.rows.length > 0, module: "crm" },
-    { id: "inventory", label: "Inventory records", detail: `${inventory.rows.length} confirmed item${inventory.rows.length === 1 ? "" : "s"}`, ready: inventory.rows.length > 0, module: "inventory" },
+    { id: "finance", label: "Finance records", detail: `${rowsOf(invoices).length} confirmed invoice${rowsOf(invoices).length === 1 ? "" : "s"} and ${rowsOf(expenses).length} expense${rowsOf(expenses).length === 1 ? "" : "s"}`, ready: rowsOf(invoices).length + rowsOf(expenses).length > 0, module: "finance" },
+    { id: "pipeline", label: "Pipeline records", detail: `${rowsOf(crm).length} confirmed lead${rowsOf(crm).length === 1 ? "" : "s"}`, ready: rowsOf(crm).length > 0, module: "crm" },
+    { id: "inventory", label: "Inventory records", detail: `${rowsOf(inventory).length} confirmed item${rowsOf(inventory).length === 1 ? "" : "s"}`, ready: rowsOf(inventory).length > 0, module: "inventory" },
   ];
   const readyCount = signals.filter((signal) => signal.ready).length;
 
@@ -7866,17 +7867,17 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
   const health = useMemo(() => {
     const factors = [];
 
-    const unpaid = invoices.rows.filter((i) => i.status !== "Paid");
+    const unpaid = rowsOf(invoices).filter((i) => i.status !== "Paid");
     const overdue = unpaid.filter((i) => i.dueDate && i.dueDate < todayStr);
     const collectPct = unpaid.length === 0 ? 1 : 1 - overdue.length / unpaid.length;
     factors.push({ label: "Collections", pts: Math.round(collectPct * 30), max: 30, detail: unpaid.length === 0 ? "No unpaid invoices" : `${overdue.length} of ${unpaid.length} unpaid invoices overdue` });
 
-    const items = inventory.rows;
+    const items = rowsOf(inventory);
     const low = items.filter((it) => it.qty <= it.reorder);
     const stockPct = items.length === 0 ? 1 : 1 - low.length / items.length;
     factors.push({ label: "Stock levels", pts: Math.round(stockPct * 25), max: 25, detail: items.length === 0 ? "No inventory tracked" : `${low.length} of ${items.length} items at or below reorder level` });
 
-    const openExp = expenses.rows.filter((e) => e.status !== "Paid");
+    const openExp = rowsOf(expenses).filter((e) => e.status !== "Paid");
     const lateExp = openExp.filter((e) => e.dueDate && e.dueDate < todayStr);
     const payPct = openExp.length === 0 ? 1 : 1 - lateExp.length / openExp.length;
     factors.push({ label: "Payables", pts: Math.round(payPct * 20), max: 20, detail: openExp.length === 0 ? "No open expenses" : `${lateExp.length} of ${openExp.length} open expenses past due` });
@@ -7885,7 +7886,7 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
     const thisM = todayStr.slice(0, 7);
     const lastM = `${TODAY.getFullYear()}-${String(TODAY.getMonth()).padStart(2, "0")}`;
     const revOf = (m) =>
-      invoices.rows.filter((i) => monthOf(i.date) === m).reduce((s, i) => s + lineTotal(i.items).total, 0) +
+      rowsOf(invoices).filter((i) => monthOf(i.date) === m).reduce((s, i) => s + lineTotal(i.items).total, 0) +
       (posTransactions?.rows || []).filter((t) => monthOf(t.date) === m).reduce((s, t) => s + t.items.reduce((ts, it) => ts + it.qty * it.price, 0), 0);
     const rThis = revOf(thisM), rLast = revOf(lastM);
     const momPct = rLast === 0 ? (rThis > 0 ? 1 : 0.5) : Math.max(0, Math.min(1, rThis / rLast));
@@ -7893,7 +7894,7 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
 
     const score = factors.reduce((s, f) => s + f.pts, 0);
     return { score, factors };
-  }, [invoices.rows, inventory.rows, expenses.rows, posTransactions?.rows, todayStr]);
+  }, [rowsOf(invoices), rowsOf(inventory), rowsOf(expenses), posTransactions?.rows, todayStr]);
 
   const band = health.score >= 80 ? { label: "Excellent", color: "#16A34A" } : health.score >= 60 ? { label: "Good", color: "#22C55E" } : health.score >= 40 ? { label: "Needs attention", color: "#F59E0B" } : { label: "At risk", color: "#EF4444" };
   const r = 34, circ = 2 * Math.PI * r, dash = (health.score / 100) * circ;
@@ -7921,9 +7922,9 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
       </div>
       {(() => {
         const m = todayStr.slice(0, 7);
-        const rev = invoices.rows.filter((i) => (i.date || "").startsWith(m)).reduce((s, i) => s + lineTotal(i.items).total, 0)
+        const rev = rowsOf(invoices).filter((i) => (i.date || "").startsWith(m)).reduce((s, i) => s + lineTotal(i.items).total, 0)
           + (posTransactions?.rows || []).filter((t) => (t.date || "").startsWith(m)).reduce((s, t) => s + t.items.reduce((ts, it) => ts + it.qty * it.price, 0), 0);
-        const exp = expenses.rows.filter((e) => (e.date || "").startsWith(m)).reduce((s, e) => s + e.amount, 0);
+        const exp = rowsOf(expenses).filter((e) => (e.date || "").startsWith(m)).reduce((s, e) => s + e.amount, 0);
         const profit = rev - exp;
         return (
           <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-3">
@@ -7999,11 +8000,11 @@ function IndustryInsights({ company, onNavigate }) {
 // this build refuses everywhere.
 function CxPulseCard({ customer }) {
   const feedback = useCompanyTable("customer_feedback", [], { order: { col: "created_at", ascending: false }, mapRow: (r) => ({ id: r.id, customer: r.customer_name, nps: r.nps_score, csat: r.csat_score, comment: r.comment || "" }) });
-  const npsRows = feedback.rows.filter((f) => f.nps !== null && f.nps !== undefined);
+  const npsRows = rowsOf(feedback).filter((f) => f.nps !== null && f.nps !== undefined);
   const nps = npsRows.length === 0 ? null : Math.round(((npsRows.filter((f) => f.nps >= 9).length - npsRows.filter((f) => f.nps <= 6).length) / npsRows.length) * 100);
-  const csatRows = feedback.rows.filter((f) => f.csat);
+  const csatRows = rowsOf(feedback).filter((f) => f.csat);
   const csat = csatRows.length === 0 ? null : (csatRows.reduce((s, f) => s + f.csat, 0) / csatRows.length).toFixed(1);
-  const mineCount = feedback.rows.filter((f) => f.customer === customer).length;
+  const mineCount = rowsOf(feedback).filter((f) => f.customer === customer).length;
   if (feedback.loading) return null;
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 flex flex-wrap items-center gap-x-8 gap-y-2">
@@ -8016,7 +8017,7 @@ function CxPulseCard({ customer }) {
 }
 
 function Customer360View({ crm, invoices }) {
-  const customers = useMemo(() => [...new Set(invoices.rows.map((i) => i.customer))].sort(), [invoices.rows]);
+  const customers = useMemo(() => [...new Set(rowsOf(invoices).map((i) => i.customer))].sort(), [rowsOf(invoices)]);
   const [selected, setSelected] = useState("");
   const customer = selected || customers[0] || "";
 
@@ -8034,7 +8035,7 @@ function Customer360View({ crm, invoices }) {
   };
 
   function printStatement() {
-    if (customer) printCustomerStatement(customer, invoices.rows);
+    if (customer) printCustomerStatement(customer, rowsOf(invoices));
   }
 
   // Omnichannel spine — closing the gap section 108 named. Channel-tagged
@@ -8071,18 +8072,18 @@ function Customer360View({ crm, invoices }) {
 
   const view = useMemo(() => {
     if (!customer) return null;
-    const invs = invoices.rows.filter((i) => i.customer === customer);
+    const invs = rowsOf(invoices).filter((i) => i.customer === customer);
     const events = [];
     invs.forEach((i) => {
       events.push({ date: i.date, kind: "Invoice", detail: `${i.id} issued — TZS ${money(Math.round(lineTotal(i.items).total))}k (${i.status})` });
       (i.payments || []).forEach((p) => events.push({ date: p.date, kind: "Payment", detail: `TZS ${money(Math.round(p.amount))}k received on ${i.id}${p.method ? " · " + p.method : ""}` }));
     });
-    interactions.rows.filter((x) => x.customer === customer).forEach((x) => {
+    rowsOf(interactions).filter((x) => x.customer === customer).forEach((x) => {
       events.push({ date: x.date, kind: x.channel, detail: `${x.direction === "inbound" ? "←" : "→"} ${x.summary}` });
     });
     events.sort((a, b) => (a.date < b.date ? 1 : -1));
     const revenue = invs.reduce((s, i) => s + lineTotal(i.items).total, 0);
-    const totalRev = invoices.rows.reduce((s, i) => s + lineTotal(i.items).total, 0) || 1;
+    const totalRev = rowsOf(invoices).reduce((s, i) => s + lineTotal(i.items).total, 0) || 1;
     const revPts = Math.round(Math.min(1, (revenue / totalRev) * 4) * 40); // 25% of all revenue = full marks
     const lastDate = events.length ? events.map((e) => e.date).sort().slice(-1)[0] : null;
     const daysSince = lastDate ? Math.floor((TODAY - new Date(lastDate)) / 86400000) : 999;
@@ -8098,7 +8099,7 @@ function Customer360View({ crm, invoices }) {
         { label: "Recency", pts: recPts, max: 30, note: lastDate ? `last activity ${daysSince} day(s) ago` : "no activity recorded" },
         { label: "Payment reliability", pts: relPts, max: 30, note: unpaid.length === 0 ? "nothing outstanding" : `${overdue.length} of ${unpaid.length} unpaid invoice(s) overdue` },
       ] };
-  }, [customer, invoices.rows, interactions.rows]);
+  }, [customer, rowsOf(invoices), rowsOf(interactions)]);
 
   return (
     <div className="space-y-4">
@@ -9328,7 +9329,7 @@ function TopBuyers({ leads, invoices, company }) {
     const won = leads.filter(l => l.stage === "Won");
     return won.map(l => {
       const name = (l.company || l.contact || "").toLowerCase();
-      const allInvs = invoices.rows.filter(inv =>
+      const allInvs = rowsOf(invoices).filter(inv =>
         (inv.customer || "").toLowerCase() === name
       );
 
@@ -9370,7 +9371,7 @@ function TopBuyers({ leads, invoices, company }) {
     })
     .filter(c => c.yearInvs.length > 0 || c.lifetimeSpend > 0)
     .sort((a,b) => b.annualSpend - a.annualSpend);
-  }, [leads, invoices.rows, yearFilter]);
+  }, [leads, rowsOf(invoices), yearFilter]);
 
   const selected = ranked.find(c => c.id === selectedId);
 
@@ -9931,7 +9932,7 @@ function Customers({ leads, invoices }) {
   const customers = useMemo(() => {
     const won = leads.filter((l) => l.stage === "Won");
     return won.map((l) => {
-      const custInvs = invoices.rows.filter(
+      const custInvs = rowsOf(invoices).filter(
         (inv) => inv.customer?.toLowerCase() === (l.company || l.contact || "").toLowerCase()
       );
       const lifetimeValue = custInvs.reduce((s, inv) => s + lineTotal(inv.items).total, 0);
@@ -9939,7 +9940,7 @@ function Customers({ leads, invoices }) {
       const lastActivity  = custInvs.length ? custInvs.sort((a,b)=>b.date?.localeCompare(a.date||""))[0]?.date : l.lastActivity;
       return { ...l, invoiceCount: custInvs.length, lifetimeValue, outstanding, lastActivity };
     }).sort((a,b) => b.lifetimeValue - a.lifetimeValue);
-  }, [leads, invoices.rows]);
+  }, [leads, rowsOf(invoices)]);
 
   const totalLifetime   = customers.reduce((s,c) => s + c.lifetimeValue, 0);
   const totalOutstanding= customers.reduce((s,c) => s + c.outstanding, 0);
@@ -10060,7 +10061,7 @@ function PartiesLedger({ leads, invoices, expenses, suppliers }) {
     const customerParties = leads
       .filter((l) => l.stage === "Won")
       .map((l) => {
-        const balance = invoices.rows
+        const balance = rowsOf(invoices)
           .filter((inv) => inv.customer === l.company && inv.status !== "Paid")
           .reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
         return { id:`cust-${l.id}`, name:l.company, sub:l.phone||l.email||"", type:"customer", balance, direction:"receive" };
@@ -10075,7 +10076,7 @@ function PartiesLedger({ leads, invoices, expenses, suppliers }) {
       }).filter((p) => p.balance > 0);
 
     return [...customerParties, ...supplierParties].sort((a, b) => b.balance - a.balance);
-  }, [leads, invoices.rows, expenses?.rows, suppliers?.rows]);
+  }, [leads, rowsOf(invoices), expenses?.rows, suppliers?.rows]);
 
   const filtered     = filter === "all" ? parties : parties.filter((p) => p.type === filter.slice(0,-1));
   const totalReceive = parties.filter((p) => p.direction === "receive").reduce((s, p) => s + p.balance, 0);
@@ -10416,7 +10417,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
 
   const subscriptions = subscriptionsHook;
   const hooksByTab = { quotations, orders, invoices };
-  const dataByTab = { quotations: quotations.rows, orders: orders.rows, invoices: invoices.rows };
+  const dataByTab = { quotations: rowsOf(quotations), orders: rowsOf(orders), invoices: rowsOf(invoices) };
   const errorByTab = { quotations: quotations.error, orders: orders.error, invoices: invoices.error };
   const loadingByTab = { quotations: quotations.loading, orders: orders.loading, invoices: invoices.loading };
   // Subscriptions is not a document tab — it's handled by its own
@@ -10760,9 +10761,9 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
   async function addDocument(form) {
     // ── Credit limit gate (invoices only) ─────────────────────────────────
     if (tab === "invoices" && crm?.rows) {
-      const lead = crm.rows.find((l) => l.company?.toLowerCase() === form.customer.trim().toLowerCase());
+      const lead = rowsOf(crm).find((l) => l.company?.toLowerCase() === form.customer.trim().toLowerCase());
       if (lead?.creditLimit > 0) {
-        const outstanding = hooksByTab.invoices.rows
+        const outstanding = rowsOf(hooksByTab.invoices)
           .filter((i) => i.customer?.toLowerCase() === form.customer.trim().toLowerCase() && i.status !== "Paid")
           .reduce((s, i) => s + (lineTotal(i.items).total - (i.amountPaid || 0)), 0);
         const newTotal = lineTotal(form.items.filter((it) => it.name.trim())).total;
@@ -10847,7 +10848,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
           items.map((it) => ({ return_id: header.id, item_name: it.name, item_sku: it.sku || null, qty: it.qty, rate: it.rate }))
         ).run();
         for (const it of items) {
-          const invItem = inventory.rows.find((i) => (it.sku ? i.sku === it.sku : i.name.toLowerCase() === it.name.toLowerCase()));
+          const invItem = rowsOf(inventory).find((i) => (it.sku ? i.sku === it.sku : i.name.toLowerCase() === it.name.toLowerCase()));
           if (invItem) {
             await sb("inventory_items").eq("sku", invItem.sku).update({ qty_on_hand: invItem.qty + it.qty }).single().run();
             await sb("inventory_stock_movements").insert({ item_id: invItem.sku, movement: "In", qty: it.qty, reference: `${order.id} return` }).run();
@@ -10884,7 +10885,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
     // (services, labor, install fees) are correctly left alone.
     const deductions = [];
     if (kind === "orders" && nextStatus === "Fulfilled" && doc) {
-      inventory.rows.forEach((item) => {
+      rowsOf(inventory).forEach((item) => {
         const line = doc.items.find((li) => (li.sku ? li.sku === item.sku : li.name.toLowerCase() === item.name.toLowerCase()));
         if (line) deductions.push({ sku: item.sku, qty: line.qty, prevQty: item.qty });
       });
@@ -10952,7 +10953,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
           <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Sales</h1>
           <p className="text-[13px] text-slate-500 mt-1">
             {tab === "subscriptions"
-              ? `${subscriptions.rows.length} subscriptions · TZS ${money(subscriptions.rows.filter((s) => s.status === "Active").reduce((sum, s) => sum + s.amount, 0))}k active recurring value`
+              ? `${rowsOf(subscriptions).length} subscriptions · TZS ${money(rowsOf(subscriptions).filter((s) => s.status === "Active").reduce((sum, s) => sum + s.amount, 0))}k active recurring value`
               : `${summary.count} ${tab} · TZS ${money(summary.sum)}k combined value`}
           </p>
         </div>
@@ -10998,7 +10999,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
         <>
           {/* ── Quick analytics strip — visible on every Sales sub-tab ─── */}
           {tab === "invoices" && (() => {
-            const invRows = invoices.rows;
+            const invRows = rowsOf(invoices);
             const statusData = [
               {name:"Paid",    value:invRows.filter(i=>i.status==="Paid").length,    fill:"#16A34A"},
               {name:"Partial", value:invRows.filter(i=>i.status==="Partial").length, fill:"#3B82F6"},
@@ -11632,7 +11633,7 @@ function DocFormPanel({ kind, onClose, onSubmit, inventory }) {
   // the line to that SKU and pre-fills the rate from unit cost. Free-text
   // lines (services, labor) simply stay unlinked — that is valid too.
   function setItemName(i, val) {
-    const match = inventory.rows.find((it) => it.name.toLowerCase() === val.toLowerCase());
+    const match = rowsOf(inventory).find((it) => it.name.toLowerCase() === val.toLowerCase());
     setForm((f) => ({
       ...f,
       items: f.items.map((it, idx) => {
@@ -11722,7 +11723,7 @@ function DocFormPanel({ kind, onClose, onSubmit, inventory }) {
               </button>
             </div>
             <datalist id="inventory-item-names">
-              {inventory.rows.map((it) => <option key={it.sku} value={it.name} />)}
+              {rowsOf(inventory).map((it) => <option key={it.sku} value={it.name} />)}
             </datalist>
             <div className="space-y-2">
               {form.items.map((it, i) => (
@@ -12208,7 +12209,7 @@ const INV_TABS = [
 ];
 
 function InventoryDashboard({ inventory, suppliersHook }) {
-  const rows       = inventory.rows || [];
+  const rows       = rowsOf(inventory) || [];
   const suppliers  = suppliersHook?.rows || [];
   const today      = new Date();
 
@@ -12376,7 +12377,7 @@ function Inventory({ inventory, suppliersHook }) {
   const stockColumns = [{ id: "item", label: "Item", required: true }, { id: "category", label: "Category" }, { id: "warehouse", label: "Warehouse" }, { id: "onHand", label: "On hand" }, { id: "status", label: "Status" }, { id: "expiry", label: "Expiry" }, { id: "value", label: "Value" }, { id: "detail", label: "Detail", required: true }];
   const { rows: items, setRows: setItems, loading, error } = inventory;
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
-  const warehouses = warehousesHook.rows;
+  const warehouses = rowsOf(warehousesHook);
 
   // Real bulk import — genuinely creates inventory_items rows, the exact
   // same table and shape the manual "Add Item" form writes to. A missing
@@ -12588,15 +12589,15 @@ function Inventory({ inventory, suppliersHook }) {
           <p className="text-[13px] text-slate-500 mt-1">Stock, warehouses, transfers, batches, and suppliers in one place</p>
         </div>
         <div className="sm-mobile-action-group flex gap-2 shrink-0">
-          <button onClick={()=>downloadCSV("inventory",inventory.rows.map(it=>({SKU:it.sku||"",Name:it.name,Category:it.category||"",Qty:it.qty||0,UnitCost:it.unitCost||0,Value_k:Math.round((it.qty||0)*(it.unitCost||0)/1000),ReorderPoint:it.reorder||0,Status:it.qty<=0?"Out of Stock":it.qty<=(it.reorder||0)?"Low Stock":"OK"})),[{key:"SKU",label:"SKU"},{key:"Name",label:"Name"},{key:"Category",label:"Category"},{key:"Qty",label:"Qty"},{key:"UnitCost",label:"Unit Cost"},{key:"Value_k",label:"Value (TZS k)"},{key:"ReorderPoint",label:"Reorder At"},{key:"Status",label:"Status"}])}
+          <button onClick={()=>downloadCSV("inventory",rowsOf(inventory).map(it=>({SKU:it.sku||"",Name:it.name,Category:it.category||"",Qty:it.qty||0,UnitCost:it.unitCost||0,Value_k:Math.round((it.qty||0)*(it.unitCost||0)/1000),ReorderPoint:it.reorder||0,Status:it.qty<=0?"Out of Stock":it.qty<=(it.reorder||0)?"Low Stock":"OK"})),[{key:"SKU",label:"SKU"},{key:"Name",label:"Name"},{key:"Category",label:"Category"},{key:"Qty",label:"Qty"},{key:"UnitCost",label:"Unit Cost"},{key:"Value_k",label:"Value (TZS k)"},{key:"ReorderPoint",label:"Reorder At"},{key:"Status",label:"Status"}])}
             className="flex items-center gap-1.5 text-[12px] font-semibold text-[#16A34A] border border-[#16A34A]/25 bg-[#F0FDF4] px-3 py-2 rounded-lg">
             <Download size={12}/> CSV
           </button>
           <button onClick={()=>{
             const co2=window.__smartManagerCompany||{};
-            const lowItems=inventory.rows.filter(it=>it.qty<=(it.reorder||0));
-            const tableRows=inventory.rows.slice(0,30).map((it,i)=>`<tr style="background:${i%2===0?"white":"#F8FAFB"}"><td class="bold">${it.name}</td><td>${it.sku||"—"}</td><td>${it.category||"—"}</td><td class="r">${it.qty||0} ${it.unit||""}</td><td class="r">TZS ${money(it.unitCost||0)}</td><td class="r">TZS ${money(Math.round((it.qty||0)*(it.unitCost||0)/1000))}k</td><td><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${it.qty<=0?"#FEE2E2":it.qty<=(it.reorder||0)?"#FEF3C7":"#DCFCE7"};color:${it.qty<=0?"#EF4444":it.qty<=(it.reorder||0)?"#D97706":"#16A34A"}">${it.qty<=0?"Out of Stock":it.qty<=(it.reorder||0)?"Low Stock":"OK"}</span></td></tr>`).join("");
-            printReport("Inventory Stock Report",`<div class="kpi-grid"><div class="kpi"><div class="kpi-label">Total SKUs</div><div class="kpi-value">${inventory.rows.length}</div></div><div class="kpi"><div class="kpi-label">Low Stock</div><div class="kpi-value" style="color:#EF4444">${lowItems.length}</div></div><div class="kpi"><div class="kpi-label">Stock Value</div><div class="kpi-value" style="color:#16A34A">TZS ${money(Math.round(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)/1000))}k</div></div></div><table><thead><tr><th>Item</th><th>SKU</th><th>Category</th><th class="r">Stock</th><th class="r">Unit Cost</th><th class="r">Value</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table>`,co2);
+            const lowItems=rowsOf(inventory).filter(it=>it.qty<=(it.reorder||0));
+            const tableRows=rowsOf(inventory).slice(0,30).map((it,i)=>`<tr style="background:${i%2===0?"white":"#F8FAFB"}"><td class="bold">${it.name}</td><td>${it.sku||"—"}</td><td>${it.category||"—"}</td><td class="r">${it.qty||0} ${it.unit||""}</td><td class="r">TZS ${money(it.unitCost||0)}</td><td class="r">TZS ${money(Math.round((it.qty||0)*(it.unitCost||0)/1000))}k</td><td><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${it.qty<=0?"#FEE2E2":it.qty<=(it.reorder||0)?"#FEF3C7":"#DCFCE7"};color:${it.qty<=0?"#EF4444":it.qty<=(it.reorder||0)?"#D97706":"#16A34A"}">${it.qty<=0?"Out of Stock":it.qty<=(it.reorder||0)?"Low Stock":"OK"}</span></td></tr>`).join("");
+            printReport("Inventory Stock Report",`<div class="kpi-grid"><div class="kpi"><div class="kpi-label">Total SKUs</div><div class="kpi-value">${rowsOf(inventory).length}</div></div><div class="kpi"><div class="kpi-label">Low Stock</div><div class="kpi-value" style="color:#EF4444">${lowItems.length}</div></div><div class="kpi"><div class="kpi-label">Stock Value</div><div class="kpi-value" style="color:#16A34A">TZS ${money(Math.round(rowsOf(inventory).reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)/1000))}k</div></div></div><table><thead><tr><th>Item</th><th>SKU</th><th>Category</th><th class="r">Stock</th><th class="r">Unit Cost</th><th class="r">Value</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table>`,co2);
           }} className="flex items-center gap-1.5 text-[12px] font-semibold text-white bg-[#0D2214] px-3 py-2 rounded-lg">
             <Printer size={12}/> PDF
           </button>
@@ -13104,11 +13105,11 @@ function Warehouses({ inventory }) {
   // every other view reads — not a separate count to keep in sync.
   const stats = useMemo(() => {
     return warehouses.map((w) => {
-      const stock = inventory.rows.filter((it) => it.warehouse === w.id);
+      const stock = rowsOf(inventory).filter((it) => it.warehouse === w.id);
       const value = stock.reduce((s, it) => s + it.qty * it.unitCost, 0);
       return { ...w, skuCount: stock.length, value: Math.round(value) };
     });
-  }, [warehouses, inventory.rows]);
+  }, [warehouses, rowsOf(inventory)]);
 
   async function addWarehouse(form) {
     const draft = { id: `WH-${form.name.slice(0, 3).toUpperCase()}${Math.floor(Math.random() * 90)}`, name: form.name, city: form.city };
@@ -13124,7 +13125,7 @@ function Warehouses({ inventory }) {
   }
 
   async function deleteWarehouse(id) {
-    const inUse = inventory.rows.some((it) => it.warehouse === id);
+    const inUse = rowsOf(inventory).some((it) => it.warehouse === id);
     if (inUse) {
       notify("Can't remove a warehouse that still holds stock — transfer or clear its items first.", "error");
       return;
@@ -13221,11 +13222,11 @@ function Transfers({ inventory }) {
   const transfers = useCompanyTable("inventory_transfers", transfersSeed, { order: { col: "created_at", ascending: false }, mapRow: mapTransferRow });
   const { rows, setRows, loading } = transfers;
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
-  const warehouses = warehousesHook.rows;
+  const warehouses = rowsOf(warehousesHook);
   const [showForm, setShowForm] = useState(false);
 
   async function addTransfer(form) {
-    const item = inventory.rows.find((it) => it.sku === form.sku);
+    const item = rowsOf(inventory).find((it) => it.sku === form.sku);
     if (!item) return;
     const draft = {
       id: docId("TRF"), sku: form.sku, itemName: item.name, qty: item.qty,
@@ -13320,10 +13321,10 @@ function Transfers({ inventory }) {
 }
 
 function TransferFormPanel({ inventory, warehouses, onClose, onSubmit }) {
-  const [sku, setSku] = useState(inventory.rows[0]?.sku || "");
+  const [sku, setSku] = useState(rowsOf(inventory)[0]?.sku || "");
   const [toWarehouse, setToWarehouse] = useState("");
   const [notes, setNotes] = useState("");
-  const item = inventory.rows.find((it) => it.sku === sku);
+  const item = rowsOf(inventory).find((it) => it.sku === sku);
   const destinations = warehouses.filter((w) => w.id !== item?.warehouse);
   const valid = item && toWarehouse;
 
@@ -13344,7 +13345,7 @@ function TransferFormPanel({ inventory, warehouses, onClose, onSubmit }) {
         <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Item">
             <select className={inputClass} value={sku} onChange={(e) => { setSku(e.target.value); setToWarehouse(""); }}>
-              {inventory.rows.map((it) => <option key={it.sku} value={it.sku}>{it.name} ({it.sku})</option>)}
+              {rowsOf(inventory).map((it) => <option key={it.sku} value={it.sku}>{it.name} ({it.sku})</option>)}
             </select>
           </FormField>
           {item && (
@@ -13379,7 +13380,7 @@ function Batches({ inventory }) {
   const [showForm, setShowForm] = useState(false);
 
   async function addBatch(form) {
-    const item = inventory.rows.find((it) => it.sku === form.sku);
+    const item = rowsOf(inventory).find((it) => it.sku === form.sku);
     if (!item) return;
     const draft = {
       id: docId("BATCH"), sku: form.sku, itemName: item.name, batchNumber: form.batchNumber,
@@ -13453,7 +13454,7 @@ function Batches({ inventory }) {
 }
 
 function BatchFormPanel({ inventory, onClose, onSubmit }) {
-  const [form, setForm] = useState({ sku: inventory.rows[0]?.sku || "", batchNumber: "", qty: "", expiryDate: "", supplier: "" });
+  const [form, setForm] = useState({ sku: rowsOf(inventory)[0]?.sku || "", batchNumber: "", qty: "", expiryDate: "", supplier: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.batchNumber.trim() || !(Number(form.qty) > 0)) return; onSubmit(form); }
 
@@ -13468,7 +13469,7 @@ function BatchFormPanel({ inventory, onClose, onSubmit }) {
         <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Item">
             <select className={inputClass} value={form.sku} onChange={(e) => set("sku", e.target.value)}>
-              {inventory.rows.map((it) => <option key={it.sku} value={it.sku}>{it.name} ({it.sku})</option>)}
+              {rowsOf(inventory).map((it) => <option key={it.sku} value={it.sku}>{it.name} ({it.sku})</option>)}
             </select>
           </FormField>
           <FormField label="Batch / Lot number" required>
@@ -13615,7 +13616,7 @@ function InventoryAnalysisView({ inventory }) {
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
 
   const abc = useMemo(() => {
-    const valued = inventory.rows.map((it) => ({ ...it, value: it.qty * it.unitCost })).sort((a, b) => b.value - a.value);
+    const valued = rowsOf(inventory).map((it) => ({ ...it, value: it.qty * it.unitCost })).sort((a, b) => b.value - a.value);
     const total = valued.reduce((s, it) => s + it.value, 0) || 1;
     let running = 0;
     return valued.map((it) => {
@@ -13623,25 +13624,25 @@ function InventoryAnalysisView({ inventory }) {
       const cum = (running / total) * 100;
       return { ...it, share: (it.value / total) * 100, cum, cls: cum <= 80 ? "A" : cum <= 95 ? "B" : "C" };
     });
-  }, [inventory.rows]);
+  }, [rowsOf(inventory)]);
 
   const heat = useMemo(() => {
-    const totalValue = inventory.rows.reduce((s, it) => s + it.qty * it.unitCost, 0) || 1;
-    return warehousesHook.rows.map((w) => {
-      const items = inventory.rows.filter((it) => it.warehouse === w.id);
+    const totalValue = rowsOf(inventory).reduce((s, it) => s + it.qty * it.unitCost, 0) || 1;
+    return rowsOf(warehousesHook).map((w) => {
+      const items = rowsOf(inventory).filter((it) => it.warehouse === w.id);
       const value = items.reduce((s, it) => s + it.qty * it.unitCost, 0);
       const low = items.filter((it) => it.qty <= it.reorder).length;
       return { ...w, items: items.length, value, share: value / totalValue, low };
     });
-  }, [inventory.rows, warehousesHook.rows]);
+  }, [rowsOf(inventory), rowsOf(warehousesHook)]);
 
-  const unassigned = inventory.rows.filter((it) => !warehousesHook.rows.some((w) => w.id === it.warehouse)).length;
+  const unassigned = rowsOf(inventory).filter((it) => !rowsOf(warehousesHook).some((w) => w.id === it.warehouse)).length;
   const CLS_META = { A: { color: "#16A34A", note: "Count often, protect hard — ~80% of your stock value lives here." }, B: { color: "#F59E0B", note: "Review monthly — meaningful value, moderate attention." }, C: { color: "#94A3B8", note: "Order simply, count rarely — the long tail." } };
 
   // Compute per-category stock data for charts
   const catValue = useMemo(()=>{
     const cats = {};
-    inventory.rows.forEach(it=>{
+    rowsOf(inventory).forEach(it=>{
       const cat = it.category || "Uncategorised";
       if (!cats[cat]) cats[cat]={name:cat,value:0,count:0,low:0};
       cats[cat].value  += (it.qty||0)*(it.unitCost||0);
@@ -13649,18 +13650,18 @@ function InventoryAnalysisView({ inventory }) {
       cats[cat].low    += (it.qty||0)<=(it.reorder||0)?1:0;
     });
     return Object.values(cats).sort((a,b)=>b.value-a.value);
-  },[inventory.rows]);
+  },[rowsOf(inventory)]);
 
   const stockLevels = useMemo(()=>
-    [...inventory.rows].sort((a,b)=>(b.qty*b.unitCost)-(a.qty*a.unitCost)).slice(0,8)
+    [...rowsOf(inventory)].sort((a,b)=>(b.qty*b.unitCost)-(a.qty*a.unitCost)).slice(0,8)
       .map(it=>({ name:it.name?.length>16?it.name.slice(0,14)+"…":it.name, qty:it.qty, value:Math.round((it.qty||0)*(it.unitCost||0)/1000) }))
-  ,[inventory.rows]);
+  ,[rowsOf(inventory)]);
 
   return (
     <div className="space-y-5">
 
       {/* Stock Value Charts */}
-      {inventory.rows.length > 0 && (
+      {rowsOf(inventory).length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
             <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Top Items by Stock Value (TZS k)</h3>
@@ -13730,11 +13731,11 @@ function InventoryAnalysisView({ inventory }) {
         const t = TODAY.toISOString().slice(0, 10);
         const plus = (days) => { const d = new Date(TODAY); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); };
         const d30 = plus(30), d90 = plus(90);
-        const dated = inventory.rows.filter((it) => it.expiryDate);
+        const dated = rowsOf(inventory).filter((it) => it.expiryDate);
         const expired = dated.filter((it) => it.expiryDate < t);
         const soon30 = dated.filter((it) => it.expiryDate >= t && it.expiryDate <= d30);
         const soon90 = dated.filter((it) => it.expiryDate > d30 && it.expiryDate <= d90);
-        const noDate = inventory.rows.length - dated.length;
+        const noDate = rowsOf(inventory).length - dated.length;
         const watch = [...expired, ...soon30].sort((a, b) => (a.expiryDate < b.expiryDate ? -1 : 1)).slice(0, 6);
         return (
           <>
@@ -13820,7 +13821,7 @@ function ReorderAlertsView({ inventory, suppliersHook }) {
   const [dismissed, setDismissed] = useState(new Set());
   const [ordered, setOrdered] = useState(new Set());
 
-  const alerts = inventory.rows
+  const alerts = rowsOf(inventory)
     .filter((item) => {
       const reorderPt = item.reorderPoint || item.minQty || 10;
       return (item.qtyOnHand ?? item.qty ?? 0) <= reorderPt && !dismissed.has(item.sku || item.id);
@@ -13845,10 +13846,10 @@ function ReorderAlertsView({ inventory, suppliersHook }) {
 
 
   // Stock health chart data
-  const outOfStock = inventory.rows.filter(it => (it.qtyOnHand ?? it.qty ?? 0) === 0).length;
+  const outOfStock = rowsOf(inventory).filter(it => (it.qtyOnHand ?? it.qty ?? 0) === 0).length;
   const critical   = alerts.filter(a => a.severity === "Critical").length;
   const lowStock   = alerts.filter(a => a.severity === "Low").length;
-  const healthy    = inventory.rows.length - outOfStock - critical - lowStock;
+  const healthy    = rowsOf(inventory).length - outOfStock - critical - lowStock;
   const healthData = [
     {name:"Healthy",      value:healthy,    fill:"#16A34A"},
     {name:"Low Stock",    value:lowStock,   fill:"#F59E0B"},
@@ -13866,7 +13867,7 @@ function ReorderAlertsView({ inventory, suppliersHook }) {
   return (
     <div className="space-y-4">
       {/* Stock health overview */}
-      {inventory.rows.length > 0 && (
+      {rowsOf(inventory).length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Health PieChart */}
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
@@ -13990,7 +13991,7 @@ function StockAuditView({ inventory }) {
   const [selected, setSelected] = useState(null);
 
   async function startAudit() {
-    const draft = { id: `AUD-${Date.now()}`, date: TODAY.toISOString().slice(0, 10), status: "In Progress", notes: "", items: inventory.rows.map((it) => ({ id: `${it.id}-item`, sku: it.sku, name: it.name, expectedQty: it.qty, countedQty: null })) };
+    const draft = { id: `AUD-${Date.now()}`, date: TODAY.toISOString().slice(0, 10), status: "In Progress", notes: "", items: rowsOf(inventory).map((it) => ({ id: `${it.id}-item`, sku: it.sku, name: it.name, expectedQty: it.qty, countedQty: null })) };
     audits.setRows((prev) => [draft, ...prev]);
     setSelected(draft.id);
     notify(`Stock audit started — ${draft.items.length} items to count, real quantities frozen at this moment.`);
@@ -14022,7 +14023,7 @@ function StockAuditView({ inventory }) {
     }
   }
 
-  const selectedAudit = audits.rows.find((a) => a.id === selected);
+  const selectedAudit = rowsOf(audits).find((a) => a.id === selected);
 
   if (selectedAudit) {
     const variances = selectedAudit.items.filter((it) => it.countedQty !== null && it.countedQty !== it.expectedQty);
@@ -14076,9 +14077,9 @@ function StockAuditView({ inventory }) {
         <button onClick={startAudit} className="btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Plus size={14} /> Start Audit</button>
       </div>
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm divide-y divide-slate-50">
-        {!audits.loading && audits.rows.length === 0 && <EmptyState icon={ClipboardCheck} title="No audits yet" hint="Start one to freeze today's recorded quantities and reconcile them against a real physical count." actionLabel="Start Audit" onAction={startAudit} />}
+        {!audits.loading && rowsOf(audits).length === 0 && <EmptyState icon={ClipboardCheck} title="No audits yet" hint="Start one to freeze today's recorded quantities and reconcile them against a real physical count." actionLabel="Start Audit" onAction={startAudit} />}
         {audits.loading && <p className="text-[12.5px] text-slate-400 text-center py-8">Loading...</p>}
-        {audits.rows.map((a) => (
+        {rowsOf(audits).map((a) => (
           <button key={a.id} onClick={() => setSelected(a.id)} className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-slate-50 transition-colors">
             <div><p className="text-[13px] font-medium text-[#111827]">Audit · {a.date}</p><p className="text-[11px] text-slate-400">{a.items.length} items</p></div>
             <span className={`text-[10.5px] font-medium px-2 py-0.5 rounded-full ${a.status === "Completed" ? "bg-[#16A34A]/10 text-[#16A34A]" : "bg-[#F59E0B]/10 text-[#F59E0B]"}`}>{a.status}</span>
@@ -14147,12 +14148,12 @@ function Procurement({ inventory, suppliersHook, expensesHook, currentUser, canM
     order: { col: "start_date", ascending: false }, mapRow: mapProcurementContractRow,
   });
 
-  const pendingApproval = orders.rows.filter((o) => o.status === "Pending Approval");
-  const readyToPay = orders.rows.filter((o) => o.status === "Received");
-  const totalCommitted = orders.rows.filter((o) => !["Draft", "Cancelled"].includes(o.status)).reduce((s, o) => s + poTotal(o.items), 0);
+  const pendingApproval = rowsOf(orders).filter((o) => o.status === "Pending Approval");
+  const readyToPay = rowsOf(orders).filter((o) => o.status === "Received");
+  const totalCommitted = rowsOf(orders).filter((o) => !["Draft", "Cancelled"].includes(o.status)).reduce((s, o) => s + poTotal(o.items), 0);
 
   const PROC_KPIS = [
-    { label: "Open Purchase Orders", value: String(orders.rows.filter((o) => !["Paid", "Cancelled"].includes(o.status)).length), delta: `${orders.rows.length} total`, up: true, icon: ClipboardCheck },
+    { label: "Open Purchase Orders", value: String(rowsOf(orders).filter((o) => !["Paid", "Cancelled"].includes(o.status)).length), delta: `${rowsOf(orders).length} total`, up: true, icon: ClipboardCheck },
     { label: "Pending Approval", value: String(pendingApproval.length), delta: "Needs sign-off", up: false, icon: AlertCircle },
     { label: "Committed Spend", value: `TZS ${money(Math.round(totalCommitted))}k`, delta: "Active POs", up: true, icon: CircleDollarSign },
     { label: "Awaiting Payment", value: String(readyToPay.length), delta: "Received, unpaid", up: false, icon: Banknote },
@@ -14259,7 +14260,7 @@ function PurchaseOrders({ orders, inventory, suppliersHook }) {
       try {
         const inventoryUpdates = [];
         for (const it of order.items) {
-          const item = inventory.rows.find((i) => i.sku === it.sku);
+          const item = rowsOf(inventory).find((i) => i.sku === it.sku);
           if (!item) throw new Error(`Inventory item ${it.sku} is unavailable for receipt.`);
           const newQty = (item?.qty || 0) + it.qty;
           const savedItem = await sb("inventory_items").eq("sku", it.sku).update({ qty_on_hand: newQty }).single().run();
@@ -14508,11 +14509,11 @@ function PurchaseOrderPanel({ order, onClose, onReceive, onCancel }) {
 }
 
 function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit }) {
-  const suppliers = suppliersHook.rows.filter((s) => s.status === "Active");
+  const suppliers = rowsOf(suppliersHook).filter((s) => s.status === "Active");
   const [supplier, setSupplier] = useState(suppliers[0]?.name || "");
   const [expectedDate, setExpectedDate] = useState("");
   const [requestedBy, setRequestedBy] = useState("");
-  const [items, setItems] = useState([{ sku: inventory.rows[0]?.sku || "", qty: "", cost: "" }]);
+  const [items, setItems] = useState([{ sku: rowsOf(inventory)[0]?.sku || "", qty: "", cost: "" }]);
   const [submitting, setSubmitting] = useState(false);
 
   function updateItem(i, key, val) {
@@ -14520,13 +14521,13 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
       if (idx !== i) return it;
       const next = { ...it, [key]: val };
       if (key === "sku") {
-        const invItem = inventory.rows.find((x) => x.sku === val);
+        const invItem = rowsOf(inventory).find((x) => x.sku === val);
         if (invItem) next.cost = invItem.unitCost;
       }
       return next;
     }));
   }
-  function addRow() { setItems((prev) => [...prev, { sku: inventory.rows[0]?.sku || "", qty: "", cost: "" }]); }
+  function addRow() { setItems((prev) => [...prev, { sku: rowsOf(inventory)[0]?.sku || "", qty: "", cost: "" }]); }
   function removeRow(i) { setItems((prev) => prev.filter((_, idx) => idx !== i)); }
 
   const validItems = items.filter((it) => it.sku && Number(it.qty) > 0);
@@ -14540,7 +14541,7 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
     try {
       await onSubmit({
         supplier, expectedDate, requestedBy,
-        items: validItems.map((it) => ({ sku: it.sku, name: inventory.rows.find((x) => x.sku === it.sku)?.name || it.sku, qty: Number(it.qty), cost: Number(it.cost) || 0 })),
+        items: validItems.map((it) => ({ sku: it.sku, name: rowsOf(inventory).find((x) => x.sku === it.sku)?.name || it.sku, qty: Number(it.qty), cost: Number(it.cost) || 0 })),
       });
     } finally {
       setSubmitting(false);
@@ -14568,7 +14569,7 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
               {items.map((it, i) => (
                 <div key={i} className="flex gap-2 items-start">
                   <select className={`${inputClass} flex-1`} value={it.sku} onChange={(e) => updateItem(i, "sku", e.target.value)}>
-                    {inventory.rows.map((inv) => <option key={inv.sku} value={inv.sku}>{inv.name}</option>)}
+                    {rowsOf(inventory).map((inv) => <option key={inv.sku} value={inv.sku}>{inv.name}</option>)}
                   </select>
                   <input type="number" min="0" className={`${inputClass} w-16`} value={it.qty} onChange={(e) => updateItem(i, "qty", e.target.value)} placeholder="Qty" />
                   <input type="number" min="0" className={`${inputClass} w-20`} value={it.cost} onChange={(e) => updateItem(i, "cost", e.target.value)} placeholder="Cost" />
@@ -14741,7 +14742,7 @@ function ProcurementContracts({ contracts, suppliersHook }) {
 }
 
 function ContractFormPanel({ suppliersHook, onClose, onSubmit }) {
-  const suppliers = suppliersHook.rows;
+  const suppliers = rowsOf(suppliersHook);
   const [form, setForm] = useState({ supplier: suppliers[0]?.name || "", type: CONTRACT_TYPES[0], startDate: TODAY.toISOString().slice(0, 10), endDate: "", value: "", notes: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.supplier) return; onSubmit(form); }
@@ -14947,15 +14948,15 @@ function VendorPayments({ orders, expensesHook }) {
 
 // ather than a separate record.
 function SupplierPortal({ suppliersHook, orders }) {
-  const suppliers = suppliersHook.rows;
+  const suppliers = rowsOf(suppliersHook);
   const stats = useMemo(() => {
     return suppliers.map((s) => {
-      const supplierOrders = orders.rows.filter((o) => o.supplier === s.name);
+      const supplierOrders = rowsOf(orders).filter((o) => o.supplier === s.name);
       const totalSpend = supplierOrders.filter((o) => o.status !== "Cancelled").reduce((sum, o) => sum + poTotal(o.items), 0);
       const openOrders = supplierOrders.filter((o) => !["Paid", "Cancelled"].includes(o.status)).length;
       return { ...s, orderCount: supplierOrders.length, totalSpend, openOrders };
     });
-  }, [suppliers, orders.rows]);
+  }, [suppliers, rowsOf(orders)]);
 
   return (
     <div className="space-y-5">
@@ -15205,7 +15206,7 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
         {FIN_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "overview" && <FinanceOverview invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} />}
+      {tab === "overview" && <FinanceOverview invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} />}
       {tab === "receivables" && (
         <Receivables
           outstanding={outstanding}
@@ -15219,15 +15220,15 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
       {tab === "expenses" && (
         <Expenses expenses={expenses} onAdd={addExpense} onSetStatus={setExpenseStatus} onDelete={deleteExpense} loading={expLoading} />
       )}
-      {tab === "ledger" && <GeneralLedger invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} />}
-      {tab === "chart-of-accounts" && <ChartOfAccountsView invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} company={company} />}
+      {tab === "ledger" && <GeneralLedger invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} />}
+      {tab === "chart-of-accounts" && <ChartOfAccountsView invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} company={company} />}
       {tab === "budgets" && <BudgetsView expenses={expenses} />}
       {tab === "scan" && <DocumentScannerView expensesHook={expensesHook} />}
-      {tab === "ratios" && <FinancialRatiosView invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} inventory={inventoryHook} />}
+      {tab === "ratios" && <FinancialRatiosView invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} inventory={inventoryHook} />}
       {tab === "loans" && <LoansView />}
       {tab === "other-debtors" && <OtherDebtorsView />}
       {tab === "other-income" && <OtherIncomeView />}
-      {tab === "banking" && <Banking invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} />}
+      {tab === "banking" && <Banking invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} />}
       {tab === "tax" && <TaxCenterView invoices={allInvoices} expenses={expenses} employeesHook={employeesHook} company={company} />}
       {tab === "assets" && <Assets />}
     </div>
@@ -16100,7 +16101,7 @@ const STANDARD_CHART_OF_ACCOUNTS = [
 // touching the write path of every module that moves money — Sales,
 // POS, Procurement, Payroll — a real, separately-scoped project.
 function ChartOfAccountsView({ invoices, expenses, posTransactions, company }) {
-  const invoiceRows = Array.isArray(invoices?.rows) ? invoices.rows : [];
+  const invoiceRows = Array.isArray(invoices?.rows) ? rowsOf(invoices) : [];
   const expenseRows = Array.isArray(expenses) ? expenses : [];
   const posRows = Array.isArray(posTransactions) ? posTransactions : [];
   const [detailed, setDetailed] = useState(company?.businessScale !== "small");
@@ -16111,7 +16112,7 @@ function ChartOfAccountsView({ invoices, expenses, posTransactions, company }) {
     const cash = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
     const ar = invoiceRows.filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
     const ap = expenseRows.filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0);
-    const fixedAssetsNet = assetsHook.rows.reduce((s, a) => s + depreciate(a).bookValue, 0);
+    const fixedAssetsNet = rowsOf(assetsHook).reduce((s, a) => s + depreciate(a).bookValue, 0);
     const revenue = invoiceRows.reduce((s, inv) => s + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0)), 0)
       + posRows.reduce((s, t) => s + Math.round(t.items.reduce((si, it) => si + it.qty * it.price, 0) * (1 + TAX_RATE)), 0);
     const expenseByCategory = {};
@@ -16121,7 +16122,7 @@ function ChartOfAccountsView({ invoices, expenses, posTransactions, company }) {
     // without threading a new prop, so it's read here as its own real,
     // independent instance rather than duplicated arithmetic.
     return { cash, ar, ap, fixedAssetsNet, revenue, expenseByCategory };
-  }, [invoiceRows, expenseRows, posRows, assetsHook.rows]);
+  }, [invoiceRows, expenseRows, posRows, rowsOf(assetsHook)]);
 
   const rows = STANDARD_CHART_OF_ACCOUNTS.map((acc) => {
     let debit = 0, credit = 0;
@@ -16240,7 +16241,7 @@ function BudgetsView({ expenses }) {
   const monthStart = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}-01`;
 
   const lines = EXPENSE_CATEGORIES_LIST.map((cat) => {
-    const budget = budgets.rows.find((b) => b.category === cat);
+    const budget = rowsOf(budgets).find((b) => b.category === cat);
     const actual = expenses.filter((e) => e.category === cat && e.date >= monthStart).reduce((s, e) => s + e.amount, 0);
     const pct = budget && budget.monthlyLimit > 0 ? (actual / budget.monthlyLimit) * 100 : null;
     return { category: cat, budget, actual, pct };
@@ -16270,7 +16271,7 @@ function BudgetsView({ expenses }) {
   async function saveBudget(category) {
     const limit = Number(draftLimit);
     if (isNaN(limit) || limit < 0) return;
-    const existing = budgets.rows.find((b) => b.category === category);
+    const existing = rowsOf(budgets).find((b) => b.category === category);
     if (existing) {
       budgets.setRows((prev) => prev.map((b) => (b.category === category ? { ...b, monthlyLimit: limit } : b)));
     } else {
@@ -16304,7 +16305,7 @@ function BudgetsView({ expenses }) {
 
   // Chart data: budget vs actual per category
   const chartData = EXPENSE_CATEGORIES_LIST.map(cat => {
-    const budget  = budgets.rows.find(b => b.category === cat);
+    const budget  = rowsOf(budgets).find(b => b.category === cat);
     const actual  = expenses.filter(e => e.category === cat && e.date >= monthStart).reduce((s,e) => s+e.amount, 0);
     const limit   = budget?.monthlyLimit || 0;
     return { name: cat.length > 12 ? cat.slice(0,12)+"…" : cat, actual:Math.round(actual), budget:limit, over:actual>limit&&limit>0 };
@@ -16607,9 +16608,9 @@ function BudgetsView({ expenses }) {
 // categorized, not matched to units sold) — named on-screen, not proxied
 // with a formula that would look precise and be wrong.
 function FinancialRatiosView({ invoices, expenses, posTransactions, inventory }) {
-  const invoiceRows = Array.isArray(invoices?.rows) ? invoices.rows : [];
+  const invoiceRows = Array.isArray(invoices?.rows) ? rowsOf(invoices) : [];
   const expenseRows = Array.isArray(expenses) ? expenses : [];
-  const inventoryRows = Array.isArray(inventory?.rows) ? inventory.rows : [];
+  const inventoryRows = Array.isArray(inventory?.rows) ? rowsOf(inventory) : [];
   const posRows = Array.isArray(posTransactions) ? posTransactions : [];
   const loansHook = useCompanyTable("business_loans", [], { mapRow: (r) => ({ id: r.id, principal: Number(r.principal) || 0, repayments: (r.loan_repayments || []).map((rp) => ({ amount: Number(rp.amount) || 0 })) }), select: "*,loan_repayments(*)" });
 
@@ -16619,7 +16620,7 @@ function FinancialRatiosView({ invoices, expenses, posTransactions, inventory })
     const ar     = invoiceRows.filter(i => i.status !== "Paid").reduce((s,i) => s + (lineTotal(i.items).total - (i.amountPaid||0)), 0);
     const inv    = computeValuationByCategory(inventoryRows).grandTotal;
     const ap     = expenseRows.filter(e => e.status !== "Paid").reduce((s,e) => s + e.amount, 0);
-    const loans  = loansHook.rows.reduce((s,l) => s + Math.max(0, l.principal - l.repayments.reduce((rs,r) => rs+r.amount, 0)), 0);
+    const loans  = rowsOf(loansHook).reduce((s,l) => s + Math.max(0, l.principal - l.repayments.reduce((rs,r) => rs+r.amount, 0)), 0);
     const liab   = ap + loans;
     const yearStart = `${TODAY.getFullYear()}-01-01`;
     const revenue = invoiceRows.filter(i => i.date >= yearStart).reduce((s,i) => s + lineTotal(i.items).total, 0)
@@ -16630,7 +16631,7 @@ function FinancialRatiosView({ invoices, expenses, posTransactions, inventory })
     const equity  = cash + ar + inv - liab;
     const avgMonthlyExp = expYtd / Math.max(1, TODAY.getMonth() + 1);
     return { cash, ar, inv, liab, revenue, profit, dayOfYear, equity, avgMonthlyExp };
-  }, [invoiceRows, expenseRows, posRows, inventoryRows, loansHook.rows]);
+  }, [invoiceRows, expenseRows, posRows, inventoryRows, rowsOf(loansHook)]);
 
   const ratios = [
     { label:"Current Ratio",    short:"Liquidity",  value:f.liab>0?((f.cash+f.ar+f.inv)/f.liab).toFixed(2):"∞",   formula:"(Cash + AR + Inv) ÷ Liabilities",        target:1.5, scale:3, good:"↑" },
@@ -16822,11 +16823,11 @@ function LoansView() {
   function outstandingBalance(loan) { return Math.max(0, loan.principal - totalRepaid(loan)); }
 
   const totals = {
-    outstanding: loans.rows.reduce((s, l) => s + outstandingBalance(l), 0),
-    borrowed: loans.rows.reduce((s, l) => s + l.principal, 0),
-    repaid: loans.rows.reduce((s, l) => s + totalRepaid(l), 0),
+    outstanding: rowsOf(loans).reduce((s, l) => s + outstandingBalance(l), 0),
+    borrowed: rowsOf(loans).reduce((s, l) => s + l.principal, 0),
+    repaid: rowsOf(loans).reduce((s, l) => s + totalRepaid(l), 0),
   };
-  const filtered = filter === "All" ? loans.rows : loans.rows.filter((l) => l.status === filter);
+  const filtered = filter === "All" ? rowsOf(loans) : rowsOf(loans).filter((l) => l.status === filter);
 
   async function addLoan(e) {
     e.preventDefault();
@@ -17089,11 +17090,11 @@ function OtherDebtorsView() {
   const [form, setForm] = useState({ debtorType: "Customer", name: "", phone: "", amountOwed: "", description: "", dueDate: "" });
 
   const totals = {
-    outstanding: debtors.rows.reduce((s, d) => s + Math.max(0, d.amountOwed - d.amountCollected), 0),
-    owed: debtors.rows.reduce((s, d) => s + d.amountOwed, 0),
-    collected: debtors.rows.reduce((s, d) => s + d.amountCollected, 0),
+    outstanding: rowsOf(debtors).reduce((s, d) => s + Math.max(0, d.amountOwed - d.amountCollected), 0),
+    owed: rowsOf(debtors).reduce((s, d) => s + d.amountOwed, 0),
+    collected: rowsOf(debtors).reduce((s, d) => s + d.amountCollected, 0),
   };
-  const filtered = filter === "All" ? debtors.rows : debtors.rows.filter((d) => d.status === filter);
+  const filtered = filter === "All" ? rowsOf(debtors) : rowsOf(debtors).filter((d) => d.status === filter);
 
   async function addDebtor(e) {
     e.preventDefault();
@@ -17200,7 +17201,7 @@ function OtherIncomeView() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", amount: "", description: "", paymentMethod: "Cash", date: TODAY.toISOString().slice(0, 10) });
 
-  const total = income.rows.reduce((s, i) => s + i.amount, 0);
+  const total = rowsOf(income).reduce((s, i) => s + i.amount, 0);
 
   async function addIncome(e) {
     e.preventDefault();
@@ -17236,9 +17237,9 @@ function OtherIncomeView() {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm divide-y divide-slate-50">
-        {!income.loading && income.rows.length === 0 && <EmptyState icon={Wallet} title="No other income recorded" hint="Real non-sales revenue this system's P&L would otherwise miss entirely." actionLabel="Add Income" onAction={() => setShowForm(true)} />}
+        {!income.loading && rowsOf(income).length === 0 && <EmptyState icon={Wallet} title="No other income recorded" hint="Real non-sales revenue this system's P&L would otherwise miss entirely." actionLabel="Add Income" onAction={() => setShowForm(true)} />}
         {income.loading && <p className="text-[12.5px] text-slate-400 text-center py-8">Loading...</p>}
-        {income.rows.map((i) => {
+        {rowsOf(income).map((i) => {
           const Icon = PAY_ICONS[i.paymentMethod] || Banknote;
           return (
             <div key={i.id} className="flex items-center gap-3 px-4 py-3.5">
@@ -17313,19 +17314,19 @@ function TaxCenterView({ invoices, expenses, employeesHook, company }) {
 
   const figures = useMemo(() => {
     if (!cfg.active) return null;
-    const outputVat = invoices.rows.filter((i) => i.date >= yearStart).reduce((s, i) => s + lineTotal(i.items).tax, 0);
-    const staff = employeesHook.rows.filter((e) => e.status === "Active");
+    const outputVat = rowsOf(invoices).filter((i) => i.date >= yearStart).reduce((s, i) => s + lineTotal(i.items).tax, 0);
+    const staff = rowsOf(employeesHook).filter((e) => e.status === "Active");
     const payroll = staff.reduce((s, e) => s + e.salary, 0);
     const payeRows = staff.map((e) => ({ name: e.name, salary: e.salary, paye: cfg.paye(e.salary) }));
     const payeTotal = payeRows.reduce((s, r) => s + r.paye, 0);
     const sdl = payroll * cfg.sdlRate;
     const wcf = payroll * cfg.wcfRate;
-    const revenue = invoices.rows.filter((i) => i.date >= yearStart).reduce((s, i) => s + lineTotal(i.items).total, 0);
+    const revenue = rowsOf(invoices).filter((i) => i.date >= yearStart).reduce((s, i) => s + lineTotal(i.items).total, 0);
     const expTotal = expenses.filter((e) => e.date >= yearStart).reduce((s, e) => s + e.amount, 0);
     const profit = revenue - expTotal;
     const corp = Math.max(0, profit) * cfg.corporateRate;
     return { outputVat, staff: staff.length, payroll, payeRows, payeTotal, sdl, wcf, profit, corp };
-  }, [invoices.rows, expenses, employeesHook.rows, cfg, yearStart]);
+  }, [rowsOf(invoices), expenses, rowsOf(employeesHook), cfg, yearStart]);
 
   const Card = ({ title, value, note }) => (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
@@ -17462,7 +17463,7 @@ function TaxCenterView({ invoices, expenses, employeesHook, company }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <TRAReturnCard title="PAYE Monthly Return" formCode="PAYE.1" deadline="7th of next month"
               fields={[ { l:"Employer TIN", v: company.tin||"—" }, { l:"No. of Employees", v: String(figures.staff) }, { l:"Gross Payroll (TZS)", v: money(Math.round(figures.payroll*1000)) }, { l:"Total PAYE Due", v: `TZS ${money(Math.round(figures.payeTotal*1000))}` } ]}
-              onPrint={() => printTRAReturn("PAYE Return", figures, company, employeesHook.rows)} />
+              onPrint={() => printTRAReturn("PAYE Return", figures, company, rowsOf(employeesHook))} />
             <TRAReturnCard title="VAT Monthly Return" formCode="VAT.1" deadline="20th of next month"
               fields={[ { l:"Taxpayer TIN", v: company.tin||"—" }, { l:"Output VAT (Sales)", v: `TZS ${money(Math.round(figures.outputVat*1000))}` }, { l:"Input VAT", v:"Enter from purchase invoices" }, { l:"Net VAT Payable", v:`TZS ${money(Math.round(figures.outputVat*1000))} (before input credit)` } ]}
               onPrint={() => printTRAReturn("VAT Return", figures, company, [])} />
@@ -19627,7 +19628,7 @@ function BiometricClockPanel({ employees, attendance }) {
 
   const credKey = (emp) => `bs_bio_cred_${emp.id}`;
   const isEnrolled = (emp) => !!window.localStorage.getItem(credKey(emp));
-  const todayRow = (emp) => attendance.rows.find((a) => a.employee === emp.name && a.date === todayStr && a.clockIn);
+  const todayRow = (emp) => rowsOf(attendance).find((a) => a.employee === emp.name && a.date === todayStr && a.clockIn);
 
   async function enroll(emp) {
     setBusyId(emp.id);
@@ -19715,7 +19716,7 @@ function BiometricClockPanel({ employees, attendance }) {
     );
   }
 
-  const active = employees.rows.filter((e) => e.status === "Active");
+  const active = rowsOf(employees).filter((e) => e.status === "Active");
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -21091,11 +21092,11 @@ function Manufacturing({ inventory, workOrdersHook, expensesHook }) {
     const wipValue = workOrders
       .filter((w) => w.status !== "Cancelled")
       .reduce((s, w) => {
-        const bom = boms.rows.find((b) => b.id === w.bomId);
-        return s + (bom ? bomUnitCost(bom, inventory.rows) * w.qty : 0);
+        const bom = rowsOf(boms).find((b) => b.id === w.bomId);
+        return s + (bom ? bomUnitCost(bom, rowsOf(inventory)) * w.qty : 0);
       }, 0);
     return { inProgress, planned, completedThisMonth, wipValue };
-  }, [workOrders, boms.rows, inventory.rows]);
+  }, [workOrders, rowsOf(boms), rowsOf(inventory)]);
 
   const MFG_KPIS = [
     { label: "In Progress", value: String(stats.inProgress), delta: "Work orders", up: true, icon: Factory },
@@ -21145,7 +21146,7 @@ function Manufacturing({ inventory, workOrdersHook, expensesHook }) {
           fill:["#F59E0B","#2563EB","#16A34A","#EF4444","#94A3B8"][i],
         })).filter(d=>d.value>0);
         const woByCat = Object.entries(
-          workOrders.reduce((m,w)=>{const bom=boms.rows.find(b=>b.id===w.bomId);const cat=bom?.product_name||w.productName||"Unknown";m[cat]=(m[cat]||0)+1;return m;},{})
+          workOrders.reduce((m,w)=>{const bom=rowsOf(boms).find(b=>b.id===w.bomId);const cat=bom?.product_name||w.productName||"Unknown";m[cat]=(m[cat]||0)+1;return m;},{})
         ).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([name,value],i)=>({
           name:name.length>14?name.slice(0,12)+"…":name,
           value,
@@ -21258,7 +21259,7 @@ function BOMs({ boms, inventory }) {
             <p className="text-[14px] font-semibold text-[#111827] mt-0.5 mb-3">{bom.product}</p>
             <div className="flex items-center justify-between text-[12px] text-slate-500">
               <span>{bom.components.length} components</span>
-              <span className="font-mono font-medium text-[#111827]">TZS {money(bomUnitCost(bom, inventory.rows))}k / {bom.outputUnit}</span>
+              <span className="font-mono font-medium text-[#111827]">TZS {money(bomUnitCost(bom, rowsOf(inventory)))}k / {bom.outputUnit}</span>
             </div>
           </button>
         ))}
@@ -21276,7 +21277,7 @@ function BOMs({ boms, inventory }) {
 }
 
 function BOMPanel({ bom, inventory, onClose, onDelete }) {
-  const materialsCost = bom.components.reduce((s, c) => s + bomComponentCost(c.sku, inventory.rows) * c.qty, 0);
+  const materialsCost = bom.components.reduce((s, c) => s + bomComponentCost(c.sku, rowsOf(inventory)) * c.qty, 0);
   const totalCost = materialsCost + bom.laborCost;
 
   return (
@@ -21297,14 +21298,14 @@ function BOMPanel({ bom, inventory, onClose, onDelete }) {
           <p className="text-[11px] text-slate-400 mb-2 uppercase tracking-wide">Components (per {bom.outputUnit})</p>
           <div className="border border-slate-100 rounded-lg overflow-hidden mb-5">
             {bom.components.map((c, i) => {
-              const item = inventory.rows.find((it) => it.sku === c.sku);
+              const item = rowsOf(inventory).find((it) => it.sku === c.sku);
               return (
                 <div key={i} className={`flex items-center justify-between px-3 py-2.5 text-[13px] ${i !== bom.components.length - 1 ? "border-b border-slate-50" : ""}`}>
                   <div className="min-w-0 pr-2">
                     <p className="text-slate-700 truncate">{item?.name || c.sku}</p>
-                    <p className="text-[11px] text-slate-400 font-mono">{c.qty} × TZS {money(bomComponentCost(c.sku, inventory.rows))}k</p>
+                    <p className="text-[11px] text-slate-400 font-mono">{c.qty} × TZS {money(bomComponentCost(c.sku, rowsOf(inventory)))}k</p>
                   </div>
-                  <span className="font-mono text-[#111827] shrink-0">{money(c.qty * bomComponentCost(c.sku, inventory.rows))}k</span>
+                  <span className="font-mono text-[#111827] shrink-0">{money(c.qty * bomComponentCost(c.sku, rowsOf(inventory)))}k</span>
                 </div>
               );
             })}
@@ -21332,16 +21333,16 @@ function BOMFormPanel({ inventory, onClose, onSubmit }) {
   const [product, setProduct] = useState("");
   const [outputUnit, setOutputUnit] = useState("unit");
   const [laborCost, setLaborCost] = useState("");
-  const [components, setComponents] = useState([{ sku: inventory.rows[0]?.sku || "", qty: "" }]);
+  const [components, setComponents] = useState([{ sku: rowsOf(inventory)[0]?.sku || "", qty: "" }]);
 
   function updateComponent(i, key, val) {
     setComponents((prev) => prev.map((c, idx) => (idx === i ? { ...c, [key]: val } : c)));
   }
-  function addComponent() { setComponents((prev) => [...prev, { sku: inventory.rows[0]?.sku || "", qty: "" }]); }
+  function addComponent() { setComponents((prev) => [...prev, { sku: rowsOf(inventory)[0]?.sku || "", qty: "" }]); }
   function removeComponent(i) { setComponents((prev) => prev.filter((_, idx) => idx !== i)); }
 
   const validComponents = components.filter((c) => c.sku && Number(c.qty) > 0).map((c) => ({ sku: c.sku, qty: Number(c.qty) }));
-  const materialsCost = validComponents.reduce((s, c) => s + bomComponentCost(c.sku, inventory.rows) * c.qty, 0);
+  const materialsCost = validComponents.reduce((s, c) => s + bomComponentCost(c.sku, rowsOf(inventory)) * c.qty, 0);
   const totalCost = materialsCost + (Number(laborCost) || 0);
   const valid = product.trim() && validComponents.length > 0;
 
@@ -21374,7 +21375,7 @@ function BOMFormPanel({ inventory, onClose, onSubmit }) {
               {components.map((c, i) => (
                 <div key={i} className="flex gap-2 items-start">
                   <select className={`${inputClass} flex-1`} value={c.sku} onChange={(e) => updateComponent(i, "sku", e.target.value)}>
-                    {inventory.rows.map((it) => <option key={it.sku} value={it.sku}>{it.name}</option>)}
+                    {rowsOf(inventory).map((it) => <option key={it.sku} value={it.sku}>{it.name}</option>)}
                   </select>
                   <input type="number" min="0" className={`${inputClass} w-20`} value={c.qty} onChange={(e) => updateComponent(i, "qty", e.target.value)} placeholder="Qty" />
                   {components.length > 1 && (
@@ -21411,7 +21412,7 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
     const draft = {
       id: docId("WO"),
       bomId: form.bomId,
-      product: boms.rows.find((b) => b.id === form.bomId)?.product || "Custom build",
+      product: rowsOf(boms).find((b) => b.id === form.bomId)?.product || "Custom build",
       qty: Number(form.qty) || 1,
       status: "Planned",
       startDate: form.startDate,
@@ -21449,11 +21450,11 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
       try {
         const inventoryUpdates = [];
         if (next === "Completed") {
-          const bom = boms.rows.find((b) => b.id === order.bomId);
+          const bom = rowsOf(boms).find((b) => b.id === order.bomId);
           if (!bom) throw new Error("The work order Bill of Materials is unavailable.");
           for (const c of bom.components) {
             const consumed = c.qty * order.qty;
-            const item = inventory.rows.find((it) => it.sku === c.sku);
+            const item = rowsOf(inventory).find((it) => it.sku === c.sku);
             if (!item || item.qty < consumed) throw new Error(`Insufficient confirmed stock for ${c.sku}.`);
             const savedItem = await sb("inventory_items").eq("sku", c.sku).update({ qty_on_hand: item.qty - consumed }).single().run();
             inventoryUpdates.push(mapInventoryRow(savedItem));
@@ -21478,7 +21479,7 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
     }
 
     if (next === "Completed") {
-      const bom = boms.rows.find((b) => b.id === order.bomId);
+      const bom = rowsOf(boms).find((b) => b.id === order.bomId);
       if (bom) {
         const shortages = [];
         inventory.setRows((prev) => prev.map((it) => {
@@ -21528,7 +21529,7 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
   const completionRate = total > 0 ? Math.round(completed / total * 100) : 0;
   const wipValue  = workOrders
     .filter(w => w.status !== "Cancelled")
-    .reduce((s,w) => { const b = boms.rows.find(b => b.id === w.bomId); return s + (b ? bomUnitCost(b, inventory.rows) * w.qty : 0); }, 0);
+    .reduce((s,w) => { const b = rowsOf(boms).find(b => b.id === w.bomId); return s + (b ? bomUnitCost(b, rowsOf(inventory)) * w.qty : 0); }, 0);
 
   // Status breakdown for donut chart
   const statusChart = [
@@ -21703,15 +21704,15 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
 }
 
 function WorkOrderPanel({ order, onClose, onAdvance, onDelete, inventory, boms }) {
-  const bom = boms.rows.find((b) => b.id === order.bomId);
+  const bom = rowsOf(boms).find((b) => b.id === order.bomId);
   const nextStatus = WO_STATUS_NEXT[order.status];
-  const unitCost = bom ? bomUnitCost(bom, inventory.rows) : 0;
+  const unitCost = bom ? bomUnitCost(bom, rowsOf(inventory)) : 0;
   const [saving, setSaving] = useState(false);
 
   // Live sufficiency check against the shared Inventory table — a component
   // is short if the required qty exceeds what is actually on hand right now.
   const requirements = (bom?.components || []).map((c) => {
-    const item = inventory.rows.find((it) => it.sku === c.sku);
+    const item = rowsOf(inventory).find((it) => it.sku === c.sku);
     const required = c.qty * order.qty;
     const onHand = item?.qty ?? 0;
     return { sku: c.sku, name: item?.name || c.sku, unit: item?.unit || "", required, onHand, short: required > onHand };
@@ -21827,11 +21828,11 @@ function WorkOrderPanel({ order, onClose, onAdvance, onDelete, inventory, boms }
 }
 
 function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
-  const [form, setForm] = useState({ bomId: boms.rows[0]?.id || "", qty: "", startDate: TODAY.toISOString().slice(0, 10), dueDate: "", assignedTo: "" });
+  const [form, setForm] = useState({ bomId: rowsOf(boms)[0]?.id || "", qty: "", startDate: TODAY.toISOString().slice(0, 10), dueDate: "", assignedTo: "" });
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const valid = Number(form.qty) > 0 && form.dueDate;
-  const bom = boms.rows.find((b) => b.id === form.bomId);
+  const bom = rowsOf(boms).find((b) => b.id === form.bomId);
 
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   async function handleSubmit(e) {
@@ -21861,7 +21862,7 @@ function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
         <div className="px-5 sm:px-6 py-5 flex-1 space-y-4">
           <FormField label="Bill of Materials">
             <select className={inputClass} value={form.bomId} onChange={(e) => set("bomId", e.target.value)}>
-              {boms.rows.map((b) => <option key={b.id} value={b.id}>{b.product}</option>)}
+              {rowsOf(boms).map((b) => <option key={b.id} value={b.id}>{b.product}</option>)}
             </select>
           </FormField>
 
@@ -21886,7 +21887,7 @@ function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
 
           {bom && (
             <div className="bg-slate-50 rounded-lg p-3 text-[12.5px] text-slate-500">
-              Est. cost: <span className="font-mono text-[#111827] font-medium">TZS {money(Math.round(bomUnitCost(bom, inventory.rows) * (Number(form.qty) || 0)))}k</span> for {form.qty || 0} {bom.outputUnit}(s)
+              Est. cost: <span className="font-mono text-[#111827] font-medium">TZS {money(Math.round(bomUnitCost(bom, rowsOf(inventory)) * (Number(form.qty) || 0)))}k</span> for {form.qty || 0} {bom.outputUnit}(s)
             </div>
           )}
         </div>
@@ -22459,12 +22460,12 @@ function SupplyChain() {
   const vehicles = useCompanyTable("scm_vehicles", vehiclesSeed, { order: { col: "reg", ascending: true }, mapRow: mapVehicleRow });
 
   const stats = useMemo(() => {
-    const active = shipments.rows.filter((s) => s.status !== "Delivered").length;
-    const inTransit = shipments.rows.filter((s) => s.status === "In Transit").length;
-    const delivered = shipments.rows.filter((s) => s.status === "Delivered").length;
-    const availableVehicles = vehicles.rows.filter((v) => v.status === "Available").length;
-    return { active, inTransit, delivered, availableVehicles, fleetSize: vehicles.rows.length };
-  }, [shipments.rows, vehicles.rows]);
+    const active = rowsOf(shipments).filter((s) => s.status !== "Delivered").length;
+    const inTransit = rowsOf(shipments).filter((s) => s.status === "In Transit").length;
+    const delivered = rowsOf(shipments).filter((s) => s.status === "Delivered").length;
+    const availableVehicles = rowsOf(vehicles).filter((v) => v.status === "Available").length;
+    return { active, inTransit, delivered, availableVehicles, fleetSize: rowsOf(vehicles).length };
+  }, [rowsOf(shipments), rowsOf(vehicles)]);
 
   const SCM_KPIS = [
     { label: "Active Shipments", value: String(stats.active), delta: "Not yet delivered", up: true, icon: Truck },
@@ -22531,7 +22532,7 @@ function SupplyChain() {
       </div>
 
       {/* Delivery analytics */}
-      {shipments.rows.length > 0 && (
+      {rowsOf(shipments).length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Delivery status PieChart */}
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
@@ -22539,10 +22540,10 @@ function SupplyChain() {
             {(() => {
               const STATUS_CFG = {Delivered:"#16A34A","In Transit":"#F59E0B",Dispatched:"#3B82F6",Pending:"#94A3B8"};
               const sdata = Object.entries(
-                shipments.rows.reduce((m,s)=>({...m,[s.status]:(m[s.status]||0)+1}),{})
+                rowsOf(shipments).reduce((m,s)=>({...m,[s.status]:(m[s.status]||0)+1}),{})
               ).map(([name,value])=>({name,value,fill:STATUS_CFG[name]||"#6B7280"}));
-              const onTime   = shipments.rows.filter(s=>s.status==="Delivered").length;
-              const onTimeRate = shipments.rows.length > 0 ? Math.round(onTime/shipments.rows.length*100) : 0;
+              const onTime   = rowsOf(shipments).filter(s=>s.status==="Delivered").length;
+              const onTimeRate = rowsOf(shipments).length > 0 ? Math.round(onTime/rowsOf(shipments).length*100) : 0;
               return (
                 <div className="flex items-center gap-4">
                   <ResponsiveContainer width="55%" height={130}>
@@ -22579,7 +22580,7 @@ function SupplyChain() {
               const months = Array.from({length:6},(_,i)=>{
                 const d = new Date(TODAY.getFullYear(),TODAY.getMonth()-5+i,1);
                 const key = d.toISOString().slice(0,7);
-                const ms = shipments.rows.filter(s=>(s.dispatchDate||"").startsWith(key));
+                const ms = rowsOf(shipments).filter(s=>(s.dispatchDate||"").startsWith(key));
                 return {
                   month:d.toLocaleString("default",{month:"short"}),
                   delivered:ms.filter(s=>s.status==="Delivered").length,
@@ -22799,7 +22800,7 @@ function Shipments({ shipments, vehicles, onVehicleStatus, vehicleSaving = null 
       {selected && (
         <ShipmentPanel shipment={selected} onClose={() => setSelected(null)} onAdvance={advanceShipment} onDelete={deleteShipment} advancing={advancingShipmentId === selected.id} deleting={deletingShipmentId === selected.id} vehicleSaving={Boolean(vehicleSaving && selected.vehicle === vehicleSaving)} />
       )}
-      {showForm && <ShipmentFormPanel vehicles={vehicles.rows} onClose={() => setShowForm(false)} onSubmit={addShipment} saving={savingShipment} />}
+      {showForm && <ShipmentFormPanel vehicles={rowsOf(vehicles)} onClose={() => setShowForm(false)} onSubmit={addShipment} saving={savingShipment} />}
     </div>
   );
 }
@@ -23044,24 +23045,24 @@ function ECommerce({ inventory, onNavigate }) {
   });
 
   const stats = useMemo(() => {
-    const allOrders = orders.rows;
+    const allOrders = rowsOf(orders);
     const live = allOrders.filter((o) => o.status !== "Cancelled");
     const revenue = live.reduce((s, o) => s + o.total, 0);
-    const published = products.rows.filter((p) => p.published).length;
+    const published = rowsOf(products).filter((p) => p.published).length;
     const statusCount = (status) => allOrders.filter((o) => o.status === status).length;
-    const lowStock = inventory.rows.filter((item) => Number(item.qty) <= Number(item.reorder || item.reorderLevel || 0) && Number(item.reorder || item.reorderLevel || 0) > 0).length;
-    const valuedRows = inventory.rows.filter((item) => Number.isFinite(Number(item.unitCost)) && Number(item.unitCost) >= 0);
+    const lowStock = rowsOf(inventory).filter((item) => Number(item.qty) <= Number(item.reorder || item.reorderLevel || 0) && Number(item.reorder || item.reorderLevel || 0) > 0).length;
+    const valuedRows = rowsOf(inventory).filter((item) => Number.isFinite(Number(item.unitCost)) && Number(item.unitCost) >= 0);
     const inventoryValue = valuedRows.reduce((s, item) => s + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
     return {
       revenue, count: live.length,
       avg: live.length ? Math.round(revenue / live.length) : 0,
-      published, total: products.rows.length,
+      published, total: rowsOf(products).length,
       pending: statusCount("Payment Pending") + statusCount("Pending"),
       processing: statusCount("Processing"), shipped: statusCount("Shipped"), delivered: statusCount("Delivered"),
       cancelled: statusCount("Cancelled"), lowStock,
       inventoryValue: valuedRows.length ? inventoryValue : null,
     };
-  }, [orders.rows, products.rows, inventory.rows]);
+  }, [rowsOf(orders), rowsOf(products), rowsOf(inventory)]);
 
   const ECOM_KPIS = [
     { label: "Online Revenue", value: `TZS ${money(stats.revenue)}k`, delta: "Confirmed non-cancelled orders", up: true, icon: CircleDollarSign },
@@ -23123,7 +23124,7 @@ function Storefront({ products, inventory }) {
 
   const filtered = useMemo(() => {
     const matching = rows.filter((p) => {
-      const stockItem = inventory.rows.find((it) => it.sku === p.sku);
+      const stockItem = rowsOf(inventory).find((it) => it.sku === p.sku);
       const stockState = stockItem ? stockStatus(stockItem.qty, stockItem.reorder || stockItem.reorderLevel || 0) : "Unavailable";
       const matchesCat = category === "all" || p.category === category;
       const matchesQ = !query.trim() || `${p.name} ${p.sku} ${p.category}`.toLowerCase().includes(query.toLowerCase());
@@ -23131,7 +23132,7 @@ function Storefront({ products, inventory }) {
       return matchesCat && matchesQ && matchesStock;
     });
     return [...matching].sort((a, b) => sortBy === "price-low" ? a.price - b.price : sortBy === "price-high" ? b.price - a.price : sortBy === "newest" ? String(b.sku).localeCompare(String(a.sku)) : String(a.name).localeCompare(String(b.name)));
-  }, [rows, inventory.rows, category, stockFilter, sortBy, query]);
+  }, [rows, rowsOf(inventory), category, stockFilter, sortBy, query]);
 
   async function togglePublished(sku) {
     setRows((prev) => prev.map((p) => (p.sku === sku ? { ...p, published: !p.published } : p)));
@@ -23216,7 +23217,7 @@ function Storefront({ products, inventory }) {
       ) : view === "grid" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((p) => {
-            const stockItem = inventory.rows.find((it) => it.sku === p.sku);
+            const stockItem = rowsOf(inventory).find((it) => it.sku === p.sku);
             const status = stockItem ? stockStatus(stockItem.qty, stockItem.reorder) : null;
             return (
               <div
@@ -23751,7 +23752,7 @@ function AIInsights({ company, reportName, summary }) {
 
 function Reports({ invoices, inventory, expensesHook, company, schedulesHook, posTransactions, onNavigate, currentUser }) {
   const [tab, setTab] = useState("sales");
-  const expenses = expensesHook.rows;
+  const expenses = rowsOf(expensesHook);
 
   return (
     <div className="space-y-5">
@@ -23805,7 +23806,7 @@ function Reports({ invoices, inventory, expensesHook, company, schedulesHook, po
 // places would let them drift apart the moment either one changed.
 function computeSalesByCustomer(invoices) {
   const map = {};
-  invoices.rows.forEach((inv) => {
+  rowsOf(invoices).forEach((inv) => {
     const { total } = lineTotal(inv.items);
     const collected = inv.status === "Paid" ? total : (inv.amountPaid || 0);
     const row = map[inv.customer] || { customer: inv.customer, count: 0, billed: 0, collected: 0 };
@@ -23917,14 +23918,14 @@ function printReport(title, rows, company={}) {
 function SalesReport({ invoices, company }) {
   // Revenue by customer — the Odoo "Sales Analysis" grouping every ERP owner
   // reaches for first: who was billed what, what is collected, what is owed.
-  const { byCustomer, totals } = useMemo(() => computeSalesByCustomer(invoices), [invoices.rows]);
+  const { byCustomer, totals } = useMemo(() => computeSalesByCustomer(invoices), [rowsOf(invoices)]);
 
   const chartData = byCustomer.slice(0, 8).map((r) => ({ name: r.customer.length > 14 ? r.customer.slice(0, 14) + "…" : r.customer, billed: r.billed, collected: r.collected }));
 
 
   const productSales = useMemo(() => {
     const map = {};
-    invoices.rows.forEach(inv => {
+    rowsOf(invoices).forEach(inv => {
       (inv.items||[]).forEach(it => {
         const key = it.name||"Unknown";
         if (!map[key]) map[key]={name:key,qty:0,revenue:0,count:0};
@@ -23935,7 +23936,7 @@ function SalesReport({ invoices, company }) {
     });
     return Object.values(map).sort((a,b)=>b.revenue-a.revenue).slice(0,8)
       .map(d=>({...d,revenue:Math.round(d.revenue/1000)}));
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   function printSales() {
     const { byCustomer, totals } = computeSalesByCustomer(invoices);
@@ -24074,7 +24075,7 @@ function SalesReport({ invoices, company }) {
 
 function computeValuationByCategory(inventory) {
   const map = {};
-  inventory.rows.forEach((it) => {
+  rowsOf(inventory).forEach((it) => {
     const value = it.qty * it.unitCost;
     const cat = map[it.category] || { category: it.category, items: [], value: 0 };
     cat.items.push({ ...it, value });
@@ -24090,18 +24091,18 @@ function computeValuationByCategory(inventory) {
 function ValuationReport({ inventory, company }) {
   // Zoho-style stock valuation: on-hand quantity × unit cost per item,
   // subtotaled by category, with the grand total the balance sheet wants.
-  const { byCategory, grandTotal } = useMemo(() => computeValuationByCategory(inventory), [inventory.rows]);
+  const { byCategory, grandTotal } = useMemo(() => computeValuationByCategory(inventory), [rowsOf(inventory)]);
   const chartData = byCategory.map((c) => ({ name: c.category, value: Math.round(c.value) }));
 
   function exportValuation() {
-    downloadCSV("inventory-valuation", inventory.rows.map(it=>({
+    downloadCSV("inventory-valuation", rowsOf(inventory).map(it=>({
       Name:it.name, SKU:it.sku||"", Category:it.category||"",
       Qty:it.qty||0, UnitCost:it.unitCost||0, Value_k:Math.round((it.qty||0)*(it.unitCost||0)/1000),
     })),[{key:"Name",label:"Item"},{key:"SKU",label:"SKU"},{key:"Category",label:"Category"},{key:"Qty",label:"Qty"},{key:"UnitCost",label:"Unit Cost"},{key:"Value_k",label:"Value (TZS k)"}]);
   }
   return (
     <div className="space-y-4">
-      <ReportToolbar title="Inventory Valuation" onPrint={()=>printReport("Inventory Valuation",`<p style="padding:16px;color:#6B7280;font-size:12px">${inventory.rows.length} SKUs · Total value TZS ${money(Math.round(inventory.rows.reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)/1000))}k</p>`,company)} onCSV={exportValuation}/>
+      <ReportToolbar title="Inventory Valuation" onPrint={()=>printReport("Inventory Valuation",`<p style="padding:16px;color:#6B7280;font-size:12px">${rowsOf(inventory).length} SKUs · Total value TZS ${money(Math.round(rowsOf(inventory).reduce((s,it)=>s+(it.qty||0)*(it.unitCost||0),0)/1000))}k</p>`,company)} onCSV={exportValuation}/>
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
         <h3 className="text-[14px] font-semibold text-[#111827] mb-1">Stock Value by Category</h3>
         <p className="text-[11.5px] text-slate-400 mb-4">TZS thousands</p>
@@ -24175,7 +24176,7 @@ function ValuationReport({ inventory, company }) {
 
 function computePnLFigures(invoices, expenses) {
   let collected = 0, billed = 0;
-  invoices.rows.forEach((inv) => {
+  rowsOf(invoices).forEach((inv) => {
     const { total } = lineTotal(inv.items);
     billed += total;
     collected += inv.status === "Paid" ? total : (inv.amountPaid || 0);
@@ -24190,7 +24191,7 @@ function computePnLFigures(invoices, expenses) {
 }
 
 function PnLReport({ invoices, expenses, company }) {
-  const figures = useMemo(() => computePnLFigures(invoices, expenses), [invoices.rows, expenses]);
+  const figures = useMemo(() => computePnLFigures(invoices, expenses), [rowsOf(invoices), expenses]);
 
   // 6-month trend — derive from invoice/expense dates
   const months = useMemo(() => {
@@ -24198,7 +24199,7 @@ function PnLReport({ invoices, expenses, company }) {
       const d = new Date(TODAY.getFullYear(), TODAY.getMonth()-5+i, 1);
       const key = d.toISOString().slice(0,7);
       const label = d.toLocaleString("default",{month:"short"});
-      const revenue = invoices.rows
+      const revenue = rowsOf(invoices)
         .filter(inv => (inv.date||"").startsWith(key) && inv.status==="Paid")
         .reduce((s,inv) => s + lineTotal(inv.items).total, 0);
       const costs = expenses
@@ -24206,7 +24207,7 @@ function PnLReport({ invoices, expenses, company }) {
         .reduce((s,e) => s + e.amount, 0);
       return { month:label, revenue:Math.round(revenue/1000), costs:Math.round(costs/1000), profit:Math.round((revenue-costs)/1000) };
     });
-  }, [invoices.rows, expenses]);
+  }, [rowsOf(invoices), expenses]);
 
   const Row = ({label, value, indent, bold, color}) => (
     <div className={`flex justify-between py-2 text-[13px] ${indent?"pl-5":""} ${bold?"font-semibold text-[#111827]":"text-slate-600"}`}>
@@ -24338,26 +24339,26 @@ function BalanceSheetReport({ invoices, expenses, inventory, posTransactions, co
   const loansHook = useCompanyTable("business_loans", [], { mapRow: (r) => ({ id: r.id, dbId: r.id, principal: Number(r.principal) || 0, repayments: (r.loan_repayments || []).map((rp) => ({ amount: Number(rp.amount) || 0 })) }), select: "*,loan_repayments(*)" });
 
   const figures = useMemo(() => {
-    const ledger = buildLedger(invoices.rows, expenses, posTransactions || []);
+    const ledger = buildLedger(rowsOf(invoices), expenses, posTransactions || []);
     const cash = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
 
-    const accountsReceivable = invoices.rows
+    const accountsReceivable = rowsOf(invoices)
       .filter((inv) => inv.status !== "Paid")
       .reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
 
-    const inventoryValue = computeValuationByCategory(inventory.rows).grandTotal;
+    const inventoryValue = computeValuationByCategory(rowsOf(inventory)).grandTotal;
 
-    const fixedAssetsNet = assetsHook.rows.reduce((s, a) => s + depreciate(a).bookValue, 0);
+    const fixedAssetsNet = rowsOf(assetsHook).reduce((s, a) => s + depreciate(a).bookValue, 0);
 
     const accountsPayable = expenses.filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0);
-    const loansOutstanding = loansHook.rows.reduce((s, l) => s + Math.max(0, l.principal - l.repayments.reduce((rs, r) => rs + r.amount, 0)), 0);
+    const loansOutstanding = rowsOf(loansHook).reduce((s, l) => s + Math.max(0, l.principal - l.repayments.reduce((rs, r) => rs + r.amount, 0)), 0);
 
     const totalAssets = cash + accountsReceivable + inventoryValue + fixedAssetsNet;
     const totalLiabilities = accountsPayable + loansOutstanding;
     const equity = totalAssets - totalLiabilities;
 
     return { cash, accountsReceivable, inventoryValue, fixedAssetsNet, totalAssets, accountsPayable, loansOutstanding, totalLiabilities, equity };
-  }, [invoices.rows, expenses, inventory.rows, posTransactions, assetsHook.rows, loansHook.rows]);
+  }, [rowsOf(invoices), expenses, rowsOf(inventory), posTransactions, rowsOf(assetsHook), rowsOf(loansHook)]);
 
   const Row = ({ label, value, indent, bold, color }) => (
     <div className={`flex justify-between py-2 text-[13px] ${indent ? "pl-5" : ""} ${bold ? "font-semibold text-[#111827]" : "text-slate-600"}`}>
@@ -24494,7 +24495,7 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
 
 
   const figures = useMemo(() => {
-    const ledger = buildLedger(invoices.rows, expenses, posTransactions || []);
+    const ledger = buildLedger(rowsOf(invoices), expenses, posTransactions || []);
     const periodEntries = ledger.filter((e) => e.date >= periodStart);
 
     const cashFromReceivables = periodEntries.filter((e) => e.description.startsWith("Payment received") || e.description.includes("paid in full")).reduce((s, e) => s + e.credit, 0);
@@ -24502,21 +24503,21 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
     const cashPaidExpenses = periodEntries.reduce((s, e) => s + e.debit, 0);
     const netOperating = cashFromReceivables + cashFromPOS - cashPaidExpenses;
 
-    const assetPurchases = assetsHook.rows.filter((a) => a.acquisitionDate >= periodStart).reduce((s, a) => s + a.cost, 0);
+    const assetPurchases = rowsOf(assetsHook).filter((a) => a.acquisitionDate >= periodStart).reduce((s, a) => s + a.cost, 0);
     const netInvesting = -assetPurchases;
 
     // Real financing activity: money borrowed in this period is a real
     // cash inflow; money repaid on any loan in this period is a real
     // cash outflow — the same two-sided real ledger the Loans tab itself
     // manages, read here rather than recomputed.
-    const loanProceeds = loansHook.rows.filter((l) => l.borrowedDate >= periodStart).reduce((s, l) => s + l.principal, 0);
-    const loanRepayments = loansHook.rows.reduce((s, l) => s + l.repayments.filter((r) => r.date >= periodStart).reduce((rs, r) => rs + r.amount, 0), 0);
+    const loanProceeds = rowsOf(loansHook).filter((l) => l.borrowedDate >= periodStart).reduce((s, l) => s + l.principal, 0);
+    const loanRepayments = rowsOf(loansHook).reduce((s, l) => s + l.repayments.filter((r) => r.date >= periodStart).reduce((rs, r) => rs + r.amount, 0), 0);
     const netFinancing = loanProceeds - loanRepayments;
 
     const netChange = netOperating + netInvesting + netFinancing;
 
     return { cashFromReceivables, cashFromPOS, cashPaidExpenses, netOperating, assetPurchases, netInvesting, loanProceeds, loanRepayments, netFinancing, netChange };
-  }, [invoices.rows, expenses, posTransactions, assetsHook.rows, loansHook.rows, periodStart]);
+  }, [rowsOf(invoices), expenses, posTransactions, rowsOf(assetsHook), rowsOf(loansHook), periodStart]);
   // 3-activity summary for chart
   const chartData = [
     {name:"Operating",  value:figures.netOperating,  fill:figures.netOperating>=0?"#16A34A":"#EF4444"},
@@ -24529,10 +24530,10 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
   const cashTrend = useMemo(()=>Array.from({length:6},(_,i)=>{
     const d = new Date(TODAY.getFullYear(), TODAY.getMonth()-5+i, 1);
     const ds = d.toISOString().slice(0,7);
-    const ledger = buildLedger(invoices.rows, expenses, posTransactions||[]);
+    const ledger = buildLedger(rowsOf(invoices), expenses, posTransactions||[]);
     const balance = ledger.filter(e=>e.date.startsWith(ds)).reduce((s,e)=>s+e.credit-e.debit,0);
     return {month:d.toLocaleString("default",{month:"short"}), cash:Math.round(balance/1000)};
-  }),[invoices.rows,expenses,posTransactions]);
+  }),[rowsOf(invoices),expenses,posTransactions]);
 
   const Row = ({ label, value, indent, bold, color }) => (
     <div className={`flex justify-between py-2 text-[13px] ${indent ? "pl-5" : ""} ${bold ? "font-semibold text-[#111827]" : "text-slate-600"}`}>
@@ -24547,7 +24548,7 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
   }
   return (
     <div className="space-y-4 max-w-3xl">
-      <ReportToolbar title="Cash Flow Statement" onPrint={()=>printReport("Cash Flow Statement",`<p style="padding:16px;font-size:12px;color:#6B7280">Cash flow computed from ${invoices.rows.length} invoices and ${expenses.rows.length} expenses. Generated: ${new Date().toLocaleDateString()}</p>`,company)} onCSV={exportCFCsv}/>
+      <ReportToolbar title="Cash Flow Statement" onPrint={()=>printReport("Cash Flow Statement",`<p style="padding:16px;font-size:12px;color:#6B7280">Cash flow computed from ${rowsOf(invoices).length} invoices and ${rowsOf(expenses).length} expenses. Generated: ${new Date().toLocaleDateString()}</p>`,company)} onCSV={exportCFCsv}/>
       {/* Cash flow summary chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
@@ -24694,7 +24695,7 @@ function BusinessCreditProfile({ invoices, expenses, company }) {
     // Intelligence's Sales Growth Projection (section 42), not a separate
     // guess.
     const byMonth = {};
-    invoices.rows.forEach((inv) => {
+    rowsOf(invoices).forEach((inv) => {
       const key = inv.date.slice(0, 7);
       byMonth[key] = (byMonth[key] || 0) + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0));
     });
@@ -24721,7 +24722,7 @@ function BusinessCreditProfile({ invoices, expenses, company }) {
     factors.push({ label: "Business tenure", detail: company.createdAt ? `${tenureYears.toFixed(1)} years on this platform since ${company.createdAt}` : "No registration date on record", points: tenurePoints, max: 25 });
 
     return { score: Math.min(100, Math.max(0, score)), factors, reliabilityPct, generatedOn: TODAY.toISOString().slice(0, 10) };
-  }, [invoices.rows, expenses, company.createdAt]);
+  }, [rowsOf(invoices), expenses, company.createdAt]);
 
   const band = profile.score >= 80 ? { label: "Strong", color: "#16A34A" } : profile.score >= 60 ? { label: "Fair", color: "#F59E0B" } : { label: "Developing", color: "#EF4444" };
 
@@ -24912,7 +24913,7 @@ function LegacyLocalScheduledReports({ invoices, inventory, expensesHook, compan
       headers = ["Category", "SKU", "Item", "Qty", "Unit", "Unit Cost (TZS 000)", "Value (TZS 000)"];
       rows2 = [...byCategory.flatMap((c) => c.items.map((it) => [c.category, it.sku, it.name, it.qty, it.unit, it.unitCost, Math.round(it.value)])), ["GRAND TOTAL", "", "", "", "", "", Math.round(grandTotal)]];
     } else {
-      const figures = computePnLFigures(invoices, expensesHook.rows);
+      const figures = computePnLFigures(invoices, rowsOf(expensesHook));
       title = "Profit & Loss Statement"; filename = `profit-and-loss-${today}`; sheetName = "Profit and Loss";
       headers = ["Line", "Amount (TZS 000)"];
       rows2 = [["Revenue collected", Math.round(figures.collected)], ["Total billed (incl. uncollected)", Math.round(figures.billed)],
@@ -24993,7 +24994,7 @@ function ARAgingReport({ invoices, company }) {
   const today = new Date();
   const buckets = useMemo(() => {
     const result = { current:[], days30:[], days60:[], days90:[], over90:[] };
-    (invoices.rows || []).filter(inv => inv.status !== "Paid" && inv.status !== "Cancelled").forEach(inv => {
+    (rowsOf(invoices) || []).filter(inv => inv.status !== "Paid" && inv.status !== "Cancelled").forEach(inv => {
       const due   = new Date(inv.dueDate || inv.due_date);
       const days  = Math.floor((today - due) / 86400000);
       const bal   = inv.totalAmount - (inv.amountPaid||inv.amount_paid||0) || inv.total || 0;
@@ -25005,7 +25006,7 @@ function ARAgingReport({ invoices, company }) {
       else               result.over90.push(item);
     });
     return result;
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   const bucketDefs = [
     { key:"current", label:"Current (Not Yet Due)",  col:"#16A34A", bg:"#F0FDF4" },
@@ -25018,7 +25019,7 @@ function ARAgingReport({ invoices, company }) {
   const totalReceivables = Object.values(buckets).flat().reduce((s,i)=>s+i.balance,0);
 
   function exportARAging() {
-    const rows3 = [...invoices.rows].map(inv=>{
+    const rows3 = [...rowsOf(invoices)].map(inv=>{
       const bal=lineTotal(inv.items||[]).total-(inv.amountPaid||0);
       const days=inv.dueDate?Math.max(0,Math.ceil((Date.now()-new Date(inv.dueDate))/86400000)):0;
       return {Customer:inv.customer,Invoice:inv.id,DueDate:inv.dueDate||"",Days:days,Balance_k:Math.round(bal/1000),Status:inv.status};
@@ -25027,7 +25028,7 @@ function ARAgingReport({ invoices, company }) {
   }
   return (
     <div className="space-y-4">
-      <ReportToolbar title="AR Aging Report" onPrint={()=>printReport("AR Aging Report",`<p style="padding:16px;color:#6B7280;font-size:12px">Accounts receivable aging from ${invoices.rows.length} invoices. Generated: ${new Date().toLocaleDateString()}</p>`,company)} onCSV={exportARAging}/>
+      <ReportToolbar title="AR Aging Report" onPrint={()=>printReport("AR Aging Report",`<p style="padding:16px;color:#6B7280;font-size:12px">Accounts receivable aging from ${rowsOf(invoices).length} invoices. Generated: ${new Date().toLocaleDateString()}</p>`,company)} onCSV={exportARAging}/>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {bucketDefs.map(b => {
           const items = buckets[b.key] || [];
@@ -25096,7 +25097,7 @@ function TaxVATReport({ invoices, expenses, company }) {
   });
 
   const taxData = useMemo(() => months.map(m => {
-    const monthInvs = (invoices.rows||[]).filter(inv=>(inv.dueDate||inv.due_date||"").startsWith(m.key));
+    const monthInvs = (rowsOf(invoices)||[]).filter(inv=>(inv.dueDate||inv.due_date||"").startsWith(m.key));
     const monthExps = (expenses||[]).filter(exp=>(exp.expense_date||exp.date||"").startsWith(m.key));
     const outputVAT = monthInvs.reduce((s,inv)=>{
       const amt = inv.totalAmount||inv.total||0;
@@ -25107,7 +25108,7 @@ function TaxVATReport({ invoices, expenses, company }) {
       return s + (amt * taxRate / (100 + taxRate));
     }, 0);
     return { ...m, outputVAT:Math.round(outputVAT), inputVAT:Math.round(inputVAT), netVAT:Math.round(outputVAT-inputVAT) };
-  }), [invoices.rows, expenses, taxRate]);
+  }), [rowsOf(invoices), expenses, taxRate]);
 
   const totalOutput = taxData.reduce((s,d)=>s+d.outputVAT,0);
   const totalInput  = taxData.reduce((s,d)=>s+d.inputVAT,0);
@@ -25467,7 +25468,7 @@ function IntegrationConnections({ canManage, currentUser }) {
 // using the same recordPayment() function every other payment method
 // already goes through.
 function MobileMoneyReconciliation({ invoices, currentUser }) {
-  const outstanding = invoices.rows.filter((inv) => inv.status !== "Paid");
+  const outstanding = rowsOf(invoices).filter((inv) => inv.status !== "Paid");
   const [invoiceId, setInvoiceId] = useState(outstanding[0]?.id || "");
   const [provider, setProvider] = useState(MOBILE_MONEY_PROVIDERS[0]);
   const [reference, setReference] = useState("");
@@ -25485,9 +25486,9 @@ function MobileMoneyReconciliation({ invoices, currentUser }) {
 
   const recentMobileMoneyPayments = useMemo(() => {
     const all = [];
-    invoices.rows.forEach((inv) => (inv.payments || []).forEach((p) => { if (p.method === "Mobile Money") all.push({ ...p, invoiceId: inv.id, customer: inv.customer }); }));
+    rowsOf(invoices).forEach((inv) => (inv.payments || []).forEach((p) => { if (p.method === "Mobile Money") all.push({ ...p, invoiceId: inv.id, customer: inv.customer }); }));
     return all.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 10);
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   return (
     <div className="space-y-5">
@@ -25567,7 +25568,7 @@ function MobileMoneyReconciliation({ invoices, currentUser }) {
 function BankStatementImport({ invoices, expenses }) {
   const [transactions, setTransactions] = useState([]);
   const [fileName, setFileName] = useState("");
-  const outstanding = invoices.rows.filter((inv) => inv.status !== "Paid");
+  const outstanding = rowsOf(invoices).filter((inv) => inv.status !== "Paid");
 
   function handleFile(e) {
     const file = e.target.files?.[0];
@@ -26130,7 +26131,7 @@ function FilePanel({ file, company, onClose, onDelete, onAddVersion, deleting = 
   // (section 25), not a second, parallel signature system. A document's
   // signatures are just that same table filtered to this document's id.
   const signatures = useCompanyTable("signatures", signaturesSeed, { order: { col: "signed_at", ascending: false }, mapRow: mapSignatureRow });
-  const fileSignatures = signatures.rows.filter((s) => s.documentRef === file.id);
+  const fileSignatures = rowsOf(signatures).filter((s) => s.documentRef === file.id);
 
   async function generateSummary() {
     if (!file.content?.trim()) return;
@@ -26474,19 +26475,19 @@ function Projects({ filesHook, expensesHook }) {
   const [showForm, setShowForm] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
   const [savingProjectStatus, setSavingProjectStatus] = useState(false);
-  const selectedProject = projects.rows.find((p) => p.id === selectedId);
+  const selectedProject = rowsOf(projects).find((p) => p.id === selectedId);
 
   const todayStr = TODAY.toISOString().slice(0, 10);
   const stats = useMemo(() => {
-    const active = projects.rows.filter((p) => p.status === "Active").length;
-    const totalBudget = projects.rows.reduce((s, p) => s + p.budget, 0);
-    const dueSoonTasks = tasks.rows.filter((t) => t.status !== "Done" && t.dueDate && t.dueDate >= todayStr && daysBetween(new Date(t.dueDate), TODAY) <= 7).length;
-    const overdueMilestones = milestones.rows.filter((m) => milestoneStatus(m) === "Overdue").length;
+    const active = rowsOf(projects).filter((p) => p.status === "Active").length;
+    const totalBudget = rowsOf(projects).reduce((s, p) => s + p.budget, 0);
+    const dueSoonTasks = rowsOf(tasks).filter((t) => t.status !== "Done" && t.dueDate && t.dueDate >= todayStr && daysBetween(new Date(t.dueDate), TODAY) <= 7).length;
+    const overdueMilestones = rowsOf(milestones).filter((m) => milestoneStatus(m) === "Overdue").length;
     return { active, totalBudget, dueSoonTasks, overdueMilestones };
-  }, [projects.rows, tasks.rows, milestones.rows]);
+  }, [rowsOf(projects), rowsOf(tasks), rowsOf(milestones)]);
 
   const PROJECT_KPIS = [
-    { label: "Active Projects", value: String(stats.active), delta: `${projects.rows.length} total`, up: true, icon: Kanban },
+    { label: "Active Projects", value: String(stats.active), delta: `${rowsOf(projects).length} total`, up: true, icon: Kanban },
     { label: "Total Budget", value: `TZS ${money(stats.totalBudget)}k`, delta: "All projects", up: true, icon: CircleDollarSign },
     { label: "Tasks Due Soon", value: String(stats.dueSoonTasks), delta: "Next 7 days", up: false, icon: ListTodo },
     { label: "Overdue Milestones", value: String(stats.overdueMilestones), delta: "Needs attention", up: false, icon: Flag },
@@ -26555,7 +26556,7 @@ function Projects({ filesHook, expensesHook }) {
   }
 
   function printProjects() {
-    const rows = projects.rows.map((p,i)=>`
+    const rows = rowsOf(projects).map((p,i)=>`
       <tr style="background:${i%2===0?"white":"#F8FAFB"}">
         <td class="bold">${p.name}</td>
         <td>${p.client||"—"}</td>
@@ -26566,10 +26567,10 @@ function Projects({ filesHook, expensesHook }) {
         <td>${p.pm||"—"}</td>
       </tr>`).join("");
     const kpis = `<div class="kpi-grid">
-      <div class="kpi"><div class="kpi-label">Total Projects</div><div class="kpi-value">${projects.rows.length}</div></div>
-      <div class="kpi"><div class="kpi-label">Active</div><div class="kpi-value" style="color:#2563EB">${projects.rows.filter(p=>p.status==="Active"||p.status==="In Progress").length}</div></div>
-      <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-value" style="color:#16A34A">${projects.rows.filter(p=>p.status==="Completed").length}</div></div>
-      <div class="kpi"><div class="kpi-label">Total Budget</div><div class="kpi-value" style="color:#7C3AED">TZS ${money(projects.rows.reduce((s,p)=>s+(p.budget||0),0))}k</div></div>
+      <div class="kpi"><div class="kpi-label">Total Projects</div><div class="kpi-value">${rowsOf(projects).length}</div></div>
+      <div class="kpi"><div class="kpi-label">Active</div><div class="kpi-value" style="color:#2563EB">${rowsOf(projects).filter(p=>p.status==="Active"||p.status==="In Progress").length}</div></div>
+      <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-value" style="color:#16A34A">${rowsOf(projects).filter(p=>p.status==="Completed").length}</div></div>
+      <div class="kpi"><div class="kpi-label">Total Budget</div><div class="kpi-value" style="color:#7C3AED">TZS ${money(rowsOf(projects).reduce((s,p)=>s+(p.budget||0),0))}k</div></div>
     </div>`;
     printReport("Project Status Report", kpis+`<table>
       <thead><tr><th>Project</th><th>Client</th><th>Status</th><th class="r">Progress</th><th class="r">Budget</th><th class="r">Deadline</th><th>Manager</th></tr></thead>
@@ -26577,7 +26578,7 @@ function Projects({ filesHook, expensesHook }) {
   }
 
   function exportProjectsCsv() {
-    downloadCSV("projects", projects.rows.map(p=>({
+    downloadCSV("projects", rowsOf(projects).map(p=>({
       Name:p.name, Client:p.client||"", Status:p.status, Progress:p.progress||0,
       Budget_k:p.budget||0, Deadline:p.deadline||"", Manager:p.pm||"",
     })),[{key:"Name",label:"Project"},{key:"Client",label:"Client"},{key:"Status",label:"Status"},
@@ -26609,14 +26610,14 @@ function Projects({ filesHook, expensesHook }) {
       </div>
 
       {/* Project portfolio analytics */}
-      {projects.rows.length > 0 && (
+      {rowsOf(projects).length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Status breakdown BarChart */}
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
             <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Project Status Breakdown</h3>
             {(() => {
               const statusData = ["Planning","Active","On Hold","Completed","Cancelled"].map(s=>({
-                name:s, value:projects.rows.filter(p=>p.status===s).length,
+                name:s, value:rowsOf(projects).filter(p=>p.status===s).length,
                 fill:{Planning:"#94A3B8",Active:"#16A34A","On Hold":"#F59E0B",Completed:"#2563EB",Cancelled:"#EF4444"}[s],
               })).filter(d=>d.value>0);
               return statusData.length === 0 ? null : (
@@ -26648,8 +26649,8 @@ function Projects({ filesHook, expensesHook }) {
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
             <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Budget Utilization</h3>
             {(() => {
-              const budgetData = projects.rows.filter(p=>p.budget>0).slice(0,6).map(p=>{
-                const spent = projectExpenses.rows.filter(e=>e.projectId===p.id).reduce((s,e)=>s+e.amount,0);
+              const budgetData = rowsOf(projects).filter(p=>p.budget>0).slice(0,6).map(p=>{
+                const spent = rowsOf(projectExpenses).filter(e=>e.projectId===p.id).reduce((s,e)=>s+e.amount,0);
                 const pct   = Math.round(spent/p.budget*100);
                 return {
                   name: p.name.length>14 ? p.name.slice(0,12)+"…" : p.name,
@@ -26681,8 +26682,8 @@ function Projects({ filesHook, expensesHook }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.loading && Array.from({ length: 3 }).map((_, i) => <div key={i} className="bg-white rounded-xl border border-slate-200/80 h-36 skeleton-shimmer" />)}
-        {!projects.loading && projects.rows.map((p) => {
-          const projectTasks = tasks.rows.filter((t) => t.projectId === p.id);
+        {!projects.loading && rowsOf(projects).map((p) => {
+          const projectTasks = rowsOf(tasks).filter((t) => t.projectId === p.id);
           const doneCount = projectTasks.filter((t) => t.status === "Done").length;
           const progress = projectTasks.length ? Math.round((doneCount / projectTasks.length) * 100) : 0;
           return (
@@ -26702,7 +26703,7 @@ function Projects({ filesHook, expensesHook }) {
             </button>
           );
         })}
-        {!projects.loading && projects.rows.length === 0 && (
+        {!projects.loading && rowsOf(projects).length === 0 && (
           <div className="col-span-full bg-white rounded-xl border border-slate-200/80 shadow-sm">
             <EmptyState icon={Kanban} title="No projects yet" hint="Create a project to track tasks, milestones, files, and budget in one place." actionLabel="New Project" onAction={() => setShowForm(true)} />
           </div>
@@ -26716,7 +26717,7 @@ function Projects({ filesHook, expensesHook }) {
           marker at the business date. Projects missing either date are
           counted honestly below rather than drawn as guesses. */}
       {(() => {
-        const dated = projects.rows.filter((p) => p.startDate && p.endDate && p.endDate >= p.startDate);
+        const dated = rowsOf(projects).filter((p) => p.startDate && p.endDate && p.endDate >= p.startDate);
         if (dated.length === 0) return null;
         const min = dated.map((p) => p.startDate).sort()[0];
         const max = dated.map((p) => p.endDate).sort().slice(-1)[0];
@@ -26724,7 +26725,7 @@ function Projects({ filesHook, expensesHook }) {
         const pct = (d) => Math.max(0, Math.min(100, ((new Date(d) - new Date(min)) / span) * 100));
         const todayPct = pct(TODAY.toISOString().slice(0, 10));
         const color = { Active: "#16A34A", Planning: "#94A3B8", "On Hold": "#F59E0B", Completed: "#CBD5E1" };
-        const undated = projects.rows.length - dated.length;
+        const undated = rowsOf(projects).length - dated.length;
         return (
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5">
             <h3 className="text-[14px] font-semibold text-[#111827] mb-1">Project Timeline (Gantt)</h3>
@@ -26752,7 +26753,7 @@ function Projects({ filesHook, expensesHook }) {
           data already recorded, with unassigned work named as its own
           row because invisible work is how teams drown. */}
       {(() => {
-        const open = tasks.rows.filter((t) => t.status !== "Done");
+        const open = rowsOf(tasks).filter((t) => t.status !== "Done");
         if (open.length === 0) return null;
         const byPerson = {};
         open.forEach((t) => { const k = t.assignee || "Unassigned"; byPerson[k] = (byPerson[k] || 0) + 1; });
@@ -26830,8 +26831,8 @@ const PROJECT_DETAIL_TABS = [
 
 function ProjectDetail({ project, onBack, onSetStatus, statusSaving = false, tasksHook, milestonesHook, expensesHook, financeExpensesHook, filesHook, currentUser }) {
   const [tab, setTab] = useState("tasks");
-  const projectTasks = tasksHook.rows.filter((t) => t.projectId === project.id);
-  const projectMilestones = milestonesHook.rows.filter((m) => m.projectId === project.id);
+  const projectTasks = rowsOf(tasksHook).filter((t) => t.projectId === project.id);
+  const projectMilestones = rowsOf(milestonesHook).filter((m) => m.projectId === project.id);
 
   return (
     <div className="space-y-5">
@@ -27292,7 +27293,7 @@ function MilestoneFormPanel({ onClose, onSubmit, saving = false }) {
 // Documents table, filtered to this project via linkedRecord, so a file
 // uploaded from either screen shows up consistently in both.
 function ProjectFiles({ project, filesHook }) {
-  const linkedFiles = filesHook.rows.filter((f) => f.linkedRecord === project.id);
+  const linkedFiles = rowsOf(filesHook).filter((f) => f.linkedRecord === project.id);
 
   return (
     <div className="space-y-4">
@@ -27624,7 +27625,7 @@ function CustomerSupport({ company }) {
   const tickets = useCompanyTable("support_tickets", supportTicketsSeed, {
     select: "*,support_ticket_messages(*)", order: { col: "created_date", ascending: false }, mapRow: mapTicketRow,
   });
-  const supportMetrics = useMemo(() => calculateSupportMetrics(tickets.rows), [tickets.rows]);
+  const supportMetrics = useMemo(() => calculateSupportMetrics(rowsOf(tickets)), [rowsOf(tickets)]);
   const metricState = tickets.loading ? "loading" : tickets.error ? "error" : tickets.unavailable ? "unavailable" : "ready";
   const unavailableMetricLabel = metricState === "loading"
     ? "Loading confirmed tickets"
@@ -27674,7 +27675,7 @@ function CustomerSupport({ company }) {
       {tab === "chat" && <LiveChat />}
       {tab === "kb" && <KnowledgeBase />}
       {tab === "calls" && <CallCenter />}
-      {tab === "ai" && <SupportAI tickets={tickets.rows} />}
+      {tab === "ai" && <SupportAI tickets={rowsOf(tickets)} />}
     </div>
   );
 }
@@ -28742,9 +28743,9 @@ function PeriodClosesView({ invoices, expenses, currentUser }) {
   // Compute period P&L from real invoice and expense rows
   function periodStats(p) {
     const inRange = (d) => d && d >= p.startDate && d <= p.endDate;
-    const rev = invoices.rows.filter((i) => inRange(i.issueDate) && i.status === "Paid")
+    const rev = rowsOf(invoices).filter((i) => inRange(i.issueDate) && i.status === "Paid")
       .reduce((s, i) => s + lineTotal(i.items).total, 0);
-    const exp = expenses.rows.filter((e) => inRange(e.expenseDate) && e.status === "Paid")
+    const exp = rowsOf(expenses).filter((e) => inRange(e.expenseDate) && e.status === "Paid")
       .reduce((s, e) => s + (e.amount || 0), 0);
     return { rev, exp, profit: rev - exp };
   }
@@ -28943,8 +28944,8 @@ function BankReconciliationView({ invoices, expenses }) {
     }).filter((l) => l.amount > 0);
 
     const ledgerCredits = [
-      ...invoices.rows.filter((i) => i.status === "Paid").map((i) => ({ id: i.id, label: i.customer, amount: Math.round(lineTotal(i.items).total), type: "Receipt" })),
-      ...expenses.rows.filter((e) => e.status === "Paid").map((e) => ({ id: e.id, label: e.vendor, amount: Math.round(e.amount || 0), type: "Payment" })),
+      ...rowsOf(invoices).filter((i) => i.status === "Paid").map((i) => ({ id: i.id, label: i.customer, amount: Math.round(lineTotal(i.items).total), type: "Receipt" })),
+      ...rowsOf(expenses).filter((e) => e.status === "Paid").map((e) => ({ id: e.id, label: e.vendor, amount: Math.round(e.amount || 0), type: "Payment" })),
     ];
 
     const usedLedger = new Set();
@@ -29099,12 +29100,12 @@ function MicrofinanceModule({ currentUser }) {
   const [repayModal, setRepayModal] = useState(null);
   const [repayAmt,   setRepayAmt]   = useState("");
 
-  const activeLoans    = loans.rows.filter((l) => l.status === "Active");
+  const activeLoans    = rowsOf(loans).filter((l) => l.status === "Active");
   const totalPortfolio = activeLoans.reduce((s,l) => s + l.balance, 0);
-  const totalClients   = clients.rows.length;
-  const atRisk         = loans.rows.filter((l) => l.status === "Defaulted" || l.status === "Overdue");
-  const totalSavings   = savings.rows.filter(r=>r.type==="Deposit").reduce((s,r)=>s+r.amount,0)
-                       - savings.rows.filter(r=>r.type==="Withdrawal").reduce((s,r)=>s+r.amount,0);
+  const totalClients   = rowsOf(clients).length;
+  const atRisk         = rowsOf(loans).filter((l) => l.status === "Defaulted" || l.status === "Overdue");
+  const totalSavings   = rowsOf(savings).filter(r=>r.type==="Deposit").reduce((s,r)=>s+r.amount,0)
+                       - rowsOf(savings).filter(r=>r.type==="Withdrawal").reduce((s,r)=>s+r.amount,0);
 
   const MFI_TABS = [
     { id:"overview",  label:"Overview",   icon: LayoutDashboard },
@@ -29129,7 +29130,7 @@ function MicrofinanceModule({ currentUser }) {
 
   async function disburseLoan() {
     if (!loanForm.clientId || !loanForm.principal) return;
-    const client = clients.rows.find(c=>c.id===loanForm.clientId);
+    const client = rowsOf(clients).find(c=>c.id===loanForm.clientId);
     const interest = Number(loanForm.principal) * Number(loanForm.rate)/100;
     const total = Number(loanForm.principal) + interest;
     const row = { id:docId("LN"), clientId:loanForm.clientId, clientName:client?.name||"", productName:loanForm.product, principal:Number(loanForm.principal), rate:Number(loanForm.rate), months:Number(loanForm.months), disbursed:TODAY.toISOString().slice(0,10), status:"Active", balance:total, collateral:loanForm.collateral||"None" };
@@ -29154,7 +29155,7 @@ function MicrofinanceModule({ currentUser }) {
 
   async function saveSaving() {
     if (!savingForm.clientId || !savingForm.amount) return;
-    const client = clients.rows.find(c=>c.id===savingForm.clientId);
+    const client = rowsOf(clients).find(c=>c.id===savingForm.clientId);
     const row = { id:docId("SAV"), clientId:savingForm.clientId, clientName:client?.name||"", amount:Number(savingForm.amount), type:savingForm.type, date:TODAY.toISOString().slice(0,10) };
     savings.setRows((prev)=>[row,...prev]);
     setSavingForm({ clientId:"",amount:"",type:"Deposit" });
@@ -29194,7 +29195,7 @@ function MicrofinanceModule({ currentUser }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              {l:"Active Clients",v:totalClients,sub:clients.rows.filter(c=>c.status==="Active").length+" active",c:"#059669",I:Users},
+              {l:"Active Clients",v:totalClients,sub:rowsOf(clients).filter(c=>c.status==="Active").length+" active",c:"#059669",I:Users},
               {l:"Loan Portfolio",v:"TZS "+money(totalPortfolio)+"k",sub:activeLoans.length+" active loans",c:"#2563EB",I:CircleDollarSign},
               {l:"Savings (Net)",  v:"TZS "+money(totalSavings)+"k",sub:"Total deposits held",c:"#7C3AED",I:Wallet},
               {l:"PAR > 30 days",  v:PAR30_ratio+"%",sub:"TZS "+money(PAR30)+"k at risk",c:PAR30_ratio>5?"#EF4444":"#16A34A",I:AlertCircle},
@@ -29239,9 +29240,9 @@ function MicrofinanceModule({ currentUser }) {
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Portfolio Quality</p>
               {(() => {
                 const qualData = [
-                  {name:"Active",  value:loans.rows.filter(l=>l.status==="Active").length,  fill:"#059669"},
-                  {name:"Closed",  value:loans.rows.filter(l=>l.status==="Closed").length,  fill:"#94A3B8"},
-                  {name:"Defaulted",value:loans.rows.filter(l=>l.status==="Defaulted").length,fill:"#EF4444"},
+                  {name:"Active",  value:rowsOf(loans).filter(l=>l.status==="Active").length,  fill:"#059669"},
+                  {name:"Closed",  value:rowsOf(loans).filter(l=>l.status==="Closed").length,  fill:"#94A3B8"},
+                  {name:"Defaulted",value:rowsOf(loans).filter(l=>l.status==="Defaulted").length,fill:"#EF4444"},
                   {name:"Overdue", value:atRisk.length,                                     fill:"#F59E0B"},
                 ].filter(d=>d.value>0);
                 return qualData.length===0?<p className="text-slate-400 text-center py-4">No loans</p>:(
@@ -29288,8 +29289,8 @@ function MicrofinanceModule({ currentUser }) {
           {!showClientForm && <div className="flex justify-end"><button onClick={()=>setShowClientForm(true)} className="flex items-center gap-1.5 btn-primary text-white text-[12.5px] rounded-xl px-4 py-2.5"><UserPlus size={13}/>Register Client</button></div>}
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
             <table className="w-full text-[12.5px]"><thead><tr className="border-b border-slate-100 bg-slate-50">{["Client","Phone","National ID","Village","Status","Loans"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{clients.rows.map((cl)=>{
-                const clLoans = loans.rows.filter(l=>l.clientId===cl.id&&l.status==="Active");
+              <tbody>{rowsOf(clients).map((cl)=>{
+                const clLoans = rowsOf(loans).filter(l=>l.clientId===cl.id&&l.status==="Active");
                 return (
                   <tr key={cl.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                     <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{background:"#059669"}}>{cl.name.charAt(0)}</div><span className="font-medium text-[#111827]">{cl.name}</span></div></td>
@@ -29313,7 +29314,7 @@ function MicrofinanceModule({ currentUser }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 space-y-3">
               <p className="text-[13.5px] font-semibold text-[#111827]">Disburse New Loan</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <FormField label="Client"><select className={inputClass} value={loanForm.clientId} onChange={e=>setLoanForm({...loanForm,clientId:e.target.value})}><option value="">Select client...</option>{clients.rows.map(cl=><option key={cl.id} value={cl.id}>{cl.name}</option>)}</select></FormField>
+                <FormField label="Client"><select className={inputClass} value={loanForm.clientId} onChange={e=>setLoanForm({...loanForm,clientId:e.target.value})}><option value="">Select client...</option>{rowsOf(clients).map(cl=><option key={cl.id} value={cl.id}>{cl.name}</option>)}</select></FormField>
                 <FormField label="Loan Product"><select className={inputClass} value={loanForm.product} onChange={e=>setLoanForm({...loanForm,product:e.target.value})}>{LOAN_PRODUCTS.map(p=><option key={p}>{p}</option>)}</select></FormField>
                 <FormField label="Principal (TZS k)"><input type="number" min="0" className={inputClass} value={loanForm.principal} onChange={e=>setLoanForm({...loanForm,principal:e.target.value})}/></FormField>
                 <FormField label="Interest Rate (% p.a.)"><input type="number" className={inputClass} value={loanForm.rate} onChange={e=>setLoanForm({...loanForm,rate:e.target.value})}/></FormField>
@@ -29333,7 +29334,7 @@ function MicrofinanceModule({ currentUser }) {
           {!showLoanForm && <div className="flex justify-end"><button onClick={()=>setShowLoanForm(true)} className="flex items-center gap-1.5 btn-primary text-white text-[12.5px] rounded-xl px-4 py-2.5"><Plus size={13}/>Disburse Loan</button></div>}
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
             <table className="w-full text-[12.5px]"><thead><tr className="border-b border-slate-100 bg-slate-50">{["Loan #","Client","Product","Principal","Rate","Balance","Collateral","Status",""].map(h=><th key={h} className="px-3 py-3 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{loans.rows.map((l)=>(
+              <tbody>{rowsOf(loans).map((l)=>(
                 <tr key={l.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                   <td className="px-3 py-3 font-mono text-[11px] font-medium text-[#059669]">{l.id}</td>
                   <td className="px-3 py-3 font-medium text-[#111827]">{l.clientName}</td>
@@ -29355,16 +29356,16 @@ function MicrofinanceModule({ currentUser }) {
       {tab === "savings" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Total Deposits</p><p className="text-[20px] font-bold text-[#7C3AED]">TZS {money(savings.rows.filter(r=>r.type==="Deposit").reduce((s,r)=>s+r.amount,0))}k</p></div>
+            <div className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Total Deposits</p><p className="text-[20px] font-bold text-[#7C3AED]">TZS {money(rowsOf(savings).filter(r=>r.type==="Deposit").reduce((s,r)=>s+r.amount,0))}k</p></div>
             <div className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Net Balance</p><p className="text-[20px] font-bold text-[#059669]">TZS {money(totalSavings)}k</p></div>
-            <div className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Savers</p><p className="text-[20px] font-bold text-[#111827]">{[...new Set(savings.rows.map(r=>r.clientId))].length}</p></div>
+            <div className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">Savers</p><p className="text-[20px] font-bold text-[#111827]">{[...new Set(rowsOf(savings).map(r=>r.clientId))].length}</p></div>
           </div>
           {!showSavingForm && <div className="flex justify-end"><button onClick={()=>setShowSavingForm(true)} className="flex items-center gap-1.5 btn-primary text-white text-[12.5px] rounded-xl px-4 py-2.5"><Plus size={13}/>Record Transaction</button></div>}
           {showSavingForm && (
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 space-y-3">
               <p className="text-[13.5px] font-semibold text-[#111827]">Record Savings Transaction</p>
               <div className="grid grid-cols-3 gap-3">
-                <FormField label="Client"><select className={inputClass} value={savingForm.clientId} onChange={e=>setSavingForm({...savingForm,clientId:e.target.value})}><option value="">Select client...</option>{clients.rows.map(cl=><option key={cl.id} value={cl.id}>{cl.name}</option>)}</select></FormField>
+                <FormField label="Client"><select className={inputClass} value={savingForm.clientId} onChange={e=>setSavingForm({...savingForm,clientId:e.target.value})}><option value="">Select client...</option>{rowsOf(clients).map(cl=><option key={cl.id} value={cl.id}>{cl.name}</option>)}</select></FormField>
                 <FormField label="Amount (TZS k)"><input type="number" className={inputClass} value={savingForm.amount} onChange={e=>setSavingForm({...savingForm,amount:e.target.value})}/></FormField>
                 <FormField label="Type"><select className={inputClass} value={savingForm.type} onChange={e=>setSavingForm({...savingForm,type:e.target.value})}><option>Deposit</option><option>Withdrawal</option></select></FormField>
               </div>
@@ -29373,7 +29374,7 @@ function MicrofinanceModule({ currentUser }) {
           )}
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
             <table className="w-full text-[12.5px]"><thead><tr className="border-b border-slate-100 bg-slate-50">{["Date","Client","Type","Amount"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{savings.rows.length===0?<tr><td colSpan={4} className="px-4 py-10 text-center text-slate-400 text-[13px]">No savings transactions yet. Record the first one above.</td></tr>:savings.rows.map((s)=>(
+              <tbody>{rowsOf(savings).length===0?<tr><td colSpan={4} className="px-4 py-10 text-center text-slate-400 text-[13px]">No savings transactions yet. Record the first one above.</td></tr>:rowsOf(savings).map((s)=>(
                 <tr key={s.id} className="border-b border-slate-50 last:border-0">
                   <td className="px-4 py-3 font-mono text-slate-500">{s.date}</td>
                   <td className="px-4 py-3 font-medium text-[#111827]">{s.clientName}</td>
@@ -29418,13 +29419,13 @@ function MicrofinanceModule({ currentUser }) {
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5">
             <h3 className="text-[15px] font-semibold text-[#111827] mb-4">MFI Performance Summary</h3>
             <div className="grid grid-cols-2 gap-3 mb-5">
-              {[["Total Disbursed",money(loans.rows.reduce((s,l)=>s+l.principal,0))+"k"],["Loans Closed",loans.rows.filter(l=>l.status==="Closed").length],["Recovery Rate",loans.rows.length>0?(loans.rows.filter(l=>l.status==="Closed").length/loans.rows.length*100).toFixed(0)+"%":"—"],["Monthly Revenue","TZS "+money(monthlyRevenue)+"k"]].map(([l,v])=>(
+              {[["Total Disbursed",money(rowsOf(loans).reduce((s,l)=>s+l.principal,0))+"k"],["Loans Closed",rowsOf(loans).filter(l=>l.status==="Closed").length],["Recovery Rate",rowsOf(loans).length>0?(rowsOf(loans).filter(l=>l.status==="Closed").length/rowsOf(loans).length*100).toFixed(0)+"%":"—"],["Monthly Revenue","TZS "+money(monthlyRevenue)+"k"]].map(([l,v])=>(
                 <div key={l} className="bg-slate-50 rounded-xl p-3"><p className="text-[11px] text-slate-400">{l}</p><p className="text-[18px] font-bold text-[#059669] mt-0.5">TZS {isNaN(Number(v.replace(/[^0-9]/g,"")))?"" : v.includes("%")||v.includes("k")||!isNaN(Number(v)) ? v : "TZS "+v}</p></div>
               ))}
             </div>
             <div className="space-y-2">
-              {clients.rows.slice(0,5).map((cl)=>{
-                const clLoans = loans.rows.filter(l=>l.clientId===cl.id);
+              {rowsOf(clients).slice(0,5).map((cl)=>{
+                const clLoans = rowsOf(loans).filter(l=>l.clientId===cl.id);
                 const outstanding = clLoans.filter(l=>l.status==="Active").reduce((s,l)=>s+l.balance,0);
                 return (
                   <div key={cl.id} className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100">
@@ -29619,11 +29620,11 @@ function LegacyCommandPalette({ isOpen, onClose, onNavigate }) {
 }
 
 function DataQualityView({ crm, invoices, expenses, inventory, employees }) {
-  const crmRows = Array.isArray(crm?.rows) ? crm.rows : (Array.isArray(crm) ? crm : []);
-  const invoiceRows = Array.isArray(invoices?.rows) ? invoices.rows : (Array.isArray(invoices) ? invoices : []);
-  const expenseRows = Array.isArray(expenses?.rows) ? expenses.rows : (Array.isArray(expenses) ? expenses : []);
-  const inventoryRows = Array.isArray(inventory?.rows) ? inventory.rows : (Array.isArray(inventory) ? inventory : []);
-  const employeeRows = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
+  const crmRows = Array.isArray(crm?.rows) ? rowsOf(crm) : (Array.isArray(crm) ? crm : []);
+  const invoiceRows = Array.isArray(invoices?.rows) ? rowsOf(invoices) : (Array.isArray(invoices) ? invoices : []);
+  const expenseRows = Array.isArray(expenses?.rows) ? rowsOf(expenses) : (Array.isArray(expenses) ? expenses : []);
+  const inventoryRows = Array.isArray(inventory?.rows) ? rowsOf(inventory) : (Array.isArray(inventory) ? inventory : []);
+  const employeeRows = Array.isArray(employees?.rows) ? rowsOf(employees) : (Array.isArray(employees) ? employees : []);
   const findings = useMemo(() => {
     const out = [];
     const phoneOk = (p) => !p || /^[+0-9][0-9\s\-]{6,15}$/.test(p.trim());
@@ -29691,12 +29692,12 @@ function DataQualityView({ crm, invoices, expenses, inventory, employees }) {
 function FirstRunGuide({ invoices, inventory, crm, company, onNavigate }) {
   if (!IS_CONFIGURED) return null;
   if (invoices.loading || inventory.loading || crm.loading) return null;
-  if (invoices.rows.length > 0 || inventory.rows.length > 0 || crm.rows.length > 0) return null;
+  if (rowsOf(invoices).length > 0 || rowsOf(inventory).length > 0 || rowsOf(crm).length > 0) return null;
   const steps = [
     { done: Boolean(company.tin || company.address), label: "Complete company profile", hint: "Settings → Company profile — add your TIN, address, and logo", nav: "settings" },
-    { done: inventory.rows.length > 0, label: "Add your first product or service", hint: "Inventory → Add Item — products appear in Sales, POS, and the AI assistant", nav: "inventory" },
-    { done: crm.rows.length > 0, label: "Add your first customer", hint: "CRM → Add Lead — customers appear in Sales invoices, quotations, and Customer 360", nav: "crm" },
-    { done: invoices.rows.length > 0, label: "Create your first invoice", hint: "Sales → Invoices → New Invoice — this activates the Revenue KPI and Business Health", nav: "sales" },
+    { done: rowsOf(inventory).length > 0, label: "Add your first product or service", hint: "Inventory → Add Item — products appear in Sales, POS, and the AI assistant", nav: "inventory" },
+    { done: rowsOf(crm).length > 0, label: "Add your first customer", hint: "CRM → Add Lead — customers appear in Sales invoices, quotations, and Customer 360", nav: "crm" },
+    { done: rowsOf(invoices).length > 0, label: "Create your first invoice", hint: "Sales → Invoices → New Invoice — this activates the Revenue KPI and Business Health", nav: "sales" },
   ];
   const done = steps.filter((s) => s.done).length;
   if (done === steps.length) return null;
@@ -29757,15 +29758,15 @@ function RiskCenterView({ invoices, expenses, inventory, employees }) {
     const level = (pct) => (pct >= 0.66 ? { label: "High", color: "#EF4444" } : pct >= 0.33 ? { label: "Medium", color: "#F59E0B" } : { label: "Low", color: "#16A34A" });
 
     // Financial — overdue receivables share + expense cover
-    const unpaid = invoices.rows.filter((i) => i.status !== "Paid");
+    const unpaid = rowsOf(invoices).filter((i) => i.status !== "Paid");
     const overdue = unpaid.filter((i) => i.dueDate && i.dueDate < t);
     const finPct = unpaid.length === 0 ? 0 : overdue.length / unpaid.length;
     out.push({ cat: "Financial", pct: finPct, basis: unpaid.length === 0 ? "No unpaid invoices" : `${overdue.length} of ${unpaid.length} unpaid invoices overdue`, fix: "Chase the Receivables Aging list oldest-first; Cmd+K a customer name to jump straight to them." });
 
     // Operational — low/out-of-stock exposure
-    const low = inventory.rows.filter((it) => it.qty <= it.reorder);
-    const opPct = inventory.rows.length === 0 ? 0 : low.length / inventory.rows.length;
-    out.push({ cat: "Operational", pct: opPct, basis: inventory.rows.length === 0 ? "No inventory tracked" : `${low.length} of ${inventory.rows.length} items at/below reorder`, fix: "Raise POs from Procurement; the Inventory Replenishment workflow template automates the alert." });
+    const low = rowsOf(inventory).filter((it) => it.qty <= it.reorder);
+    const opPct = rowsOf(inventory).length === 0 ? 0 : low.length / rowsOf(inventory).length;
+    out.push({ cat: "Operational", pct: opPct, basis: rowsOf(inventory).length === 0 ? "No inventory tracked" : `${low.length} of ${rowsOf(inventory).length} items at/below reorder`, fix: "Raise POs from Procurement; the Inventory Replenishment workflow template automates the alert." });
 
     // Cybersecurity — this device real posture
     const lock = !!window.localStorage.getItem("bs_app_lock_hash");
@@ -29774,14 +29775,14 @@ function RiskCenterView({ invoices, expenses, inventory, employees }) {
     out.push({ cat: "Cybersecurity", pct: cyPct, basis: `This device: App Lock ${lock ? "on" : "OFF"}, biometric unlock ${bio ? "enrolled" : "not enrolled"} — RLS and RBAC hold platform-wide regardless`, fix: lock ? "Enroll biometric unlock in Settings > App Lock; enable TOTP 2FA when wired (GoTrue MFA)." : "Turn on App Lock in Settings — one PIN, this device, right now." });
 
     // Compliance — overdue mandatory/compliance training + tax proximity
-    const compOverdue = training.rows.filter((r) => (r.mandatory || r.compliance) && r.status !== "Completed" && r.dueDate && r.dueDate < t);
-    const compAll = training.rows.filter((r) => r.mandatory || r.compliance);
+    const compOverdue = rowsOf(training).filter((r) => (r.mandatory || r.compliance) && r.status !== "Completed" && r.dueDate && r.dueDate < t);
+    const compAll = rowsOf(training).filter((r) => r.mandatory || r.compliance);
     const cpPct = compAll.length === 0 ? 0.2 : Math.min(1, compOverdue.length / compAll.length + 0.1);
     out.push({ cat: "Compliance", pct: cpPct, basis: compAll.length === 0 ? "No mandatory/compliance training assigned yet — itself a mild exposure" : `${compOverdue.length} of ${compAll.length} mandatory/compliance training(s) overdue`, fix: "Assign compliance courses in HR > Training; the Tax Center's deadline strip covers TRA filing dates." });
 
     // Supply chain — stock exposure proxy, honestly labeled
-    const outOfStock = inventory.rows.filter((it) => it.qty === 0);
-    const scPct = inventory.rows.length === 0 ? 0 : Math.min(1, (outOfStock.length * 2 + low.length) / Math.max(1, inventory.rows.length));
+    const outOfStock = rowsOf(inventory).filter((it) => it.qty === 0);
+    const scPct = rowsOf(inventory).length === 0 ? 0 : Math.min(1, (outOfStock.length * 2 + low.length) / Math.max(1, rowsOf(inventory).length));
     out.push({ cat: "Supply Chain", pct: scPct, basis: `${outOfStock.length} item(s) fully out of stock — proxy measure: per-item supplier links do not exist yet, so concentration risk is not computable`, fix: "Add second suppliers for A-class items (Smart Analysis names them); track lead times in Suppliers." });
 
     // Reputational — owed-to-customers proxy
@@ -29789,7 +29790,7 @@ function RiskCenterView({ invoices, expenses, inventory, employees }) {
     out.push({ cat: "Reputational", pct: repPct, basis: "Proxy: overdue obligations correlate with disputes — support-ticket volume will sharpen this when threaded here", fix: "Resolve oldest overdue items first; portal support tickets give customers a real channel before they go public." });
 
     return out.map((r) => ({ ...r, ...level(r.pct) }));
-  }, [invoices.rows, inventory.rows, training.rows, t]);
+  }, [rowsOf(invoices), rowsOf(inventory), rowsOf(training), t]);
 
   const high = risks.filter((r) => r.label === "High").length;
 
@@ -29951,17 +29952,17 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
   const nav = onNavigate || (() => {});
 
   // ── Live KPIs ────────────────────────────────────────────────────────
-  const revenue       = invoices.rows.reduce((s, inv) => s + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0)), 0);
-  const expenseTotal  = expenses.rows.reduce((s, e) => s + e.amount, 0);
+  const revenue       = rowsOf(invoices).reduce((s, inv) => s + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0)), 0);
+  const expenseTotal  = rowsOf(expenses).reduce((s, e) => s + e.amount, 0);
   const profit        = revenue - expenseTotal;
   const margin        = revenue > 0 ? (profit / revenue * 100).toFixed(1) : 0;
-  const openPipeline  = crm.rows.filter(l => !["Won","Lost"].includes(l.stage)).reduce((s, l) => s + l.value, 0);
-  const stockValue    = inventory.rows.reduce((s, it) => s + it.qty * it.unitCost, 0);
-  const activeEmp     = employees.rows.filter(e => e.status === "Active").length;
-  const wonCount      = crm.rows.filter(l => l.stage === "Won").length;
-  const closedCount   = wonCount + crm.rows.filter(l => l.stage === "Lost").length;
+  const openPipeline  = rowsOf(crm).filter(l => !["Won","Lost"].includes(l.stage)).reduce((s, l) => s + l.value, 0);
+  const stockValue    = rowsOf(inventory).reduce((s, it) => s + it.qty * it.unitCost, 0);
+  const activeEmp     = rowsOf(employees).filter(e => e.status === "Active").length;
+  const wonCount      = rowsOf(crm).filter(l => l.stage === "Won").length;
+  const closedCount   = wonCount + rowsOf(crm).filter(l => l.stage === "Lost").length;
   const winRate       = closedCount > 0 ? Math.round(wonCount / closedCount * 100) : 0;
-  const overdueInvs   = invoices.rows.filter(inv => inv.status !== "Paid" && inv.dueDate && new Date(inv.dueDate) < TODAY);
+  const overdueInvs   = rowsOf(invoices).filter(inv => inv.status !== "Paid" && inv.dueDate && new Date(inv.dueDate) < TODAY);
   const overdueValue  = overdueInvs.reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid||0)), 0);
 
   // ── Confirmed six-month trend ────────────────────────────────────────
@@ -29973,12 +29974,12 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
     return { key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`, label: date.toLocaleDateString(undefined, { month: "short" }) };
   }), []);
   const trendData = useMemo(() => trendMonths.map(({ key, label }) => {
-    const monthInvoices = invoices.rows.filter((inv) => String(inv.date || "").startsWith(key));
-    const monthExpenses = expenses.rows.filter((expense) => String(expense.date || "").startsWith(key));
+    const monthInvoices = rowsOf(invoices).filter((inv) => String(inv.date || "").startsWith(key));
+    const monthExpenses = rowsOf(expenses).filter((expense) => String(expense.date || "").startsWith(key));
     const monthRevenue = monthInvoices.reduce((sum, inv) => sum + (inv.status === "Paid" ? lineTotal(inv.items || []).total : (inv.amountPaid || 0)), 0);
     const monthExpenseTotal = monthExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
     return { month: label, revenue: Math.round(monthRevenue / 1000), expenses: Math.round(monthExpenseTotal / 1000), profit: Math.round((monthRevenue - monthExpenseTotal) / 1000) };
-  }), [expenses.rows, invoices.rows, trendMonths]);
+  }), [rowsOf(expenses), rowsOf(invoices), trendMonths]);
   const hasTrendData = trendData.some((entry) => entry.revenue > 0 || entry.expenses > 0);
 
   // ── System health score ──────────────────────────────────────────────
@@ -29986,7 +29987,7 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
     (profit > 0 ? 25 : 0) +
     (winRate > 50 ? 20 : winRate > 30 ? 10 : 0) +
     (overdueValue === 0 ? 20 : overdueValue < revenue * 0.1 ? 10 : 0) +
-    (inventory.rows.filter(it => it.qty <= (it.reorderLevel||5)).length === 0 ? 15 : 5) +
+    (rowsOf(inventory).filter(it => it.qty <= (it.reorderLevel||5)).length === 0 ? 15 : 5) +
     (activeEmp > 0 ? 20 : 0)
   )));
   const healthColor = healthScore >= 80 ? "#16A34A" : healthScore >= 60 ? "#F59E0B" : "#EF4444";
@@ -29995,9 +29996,9 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
   const KPIS = [
     { label:"Revenue",         value:"TZS "+money(Math.round(revenue))+"k",      sub:"Collected",             col:"#2563EB", mod:"finance"   },
     { label:"Net Profit",      value:"TZS "+money(Math.round(Math.abs(profit)))+"k", sub:(profit>=0?"Profit":"Loss")+" · "+margin+"%", col:profit>=0?"#16A34A":"#EF4444", mod:"reports" },
-    { label:"Pipeline",        value:"TZS "+money(Math.round(openPipeline))+"k", sub:crm.rows.filter(l=>!["Won","Lost"].includes(l.stage)).length+" open deals", col:"#7C3AED", mod:"crm" },
+    { label:"Pipeline",        value:"TZS "+money(Math.round(openPipeline))+"k", sub:rowsOf(crm).filter(l=>!["Won","Lost"].includes(l.stage)).length+" open deals", col:"#7C3AED", mod:"crm" },
     { label:"Overdue AR",      value:"TZS "+money(Math.round(overdueValue))+"k", sub:overdueInvs.length+" invoices overdue", col:overdueValue>0?"#EF4444":"#16A34A", mod:"finance" },
-    { label:"Stock Value",     value:"TZS "+money(Math.round(stockValue))+"k",   sub:inventory.rows.length+" SKUs",           col:"#D97706",  mod:"inventory" },
+    { label:"Stock Value",     value:"TZS "+money(Math.round(stockValue))+"k",   sub:rowsOf(inventory).length+" SKUs",           col:"#D97706",  mod:"inventory" },
     { label:"Win Rate",        value:winRate+"%",                                 sub:wonCount+" won / "+closedCount+" closed",col:winRate>=50?"#16A34A":"#F59E0B", mod:"crm" },
     { label:"Headcount",       value:String(activeEmp),                           sub:"Active employees",       col:"#0891B2",  mod:"hr"        },
     { label:"Total Expenses",  value:"TZS "+money(Math.round(expenseTotal))+"k", sub:"Period to date",         col:"#F59E0B",  mod:"finance"   },
@@ -30051,7 +30052,7 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
             ["Profitable", profit>0, "Positive net profit"],
             ["Win Rate >50%", winRate>50, "Strong deal closure"],
             ["No Overdue AR", overdueValue===0, "All invoices current"],
-            ["Stock Healthy", inventory.rows.filter(it=>it.qty<=(it.reorderLevel||5)).length===0, "No low-stock items"],
+            ["Stock Healthy", rowsOf(inventory).filter(it=>it.qty<=(it.reorderLevel||5)).length===0, "No low-stock items"],
             ["Team Active", activeEmp>0, "Staff onboarded"],
           ].map(([l, ok, hint]) => (
             <div key={l} className="flex items-center gap-2 py-1.5 border-b border-slate-50 last:border-0">
@@ -30128,32 +30129,32 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
 function FinancialDashboard({ invoices, expenses, posTransactions, onNavigate }) {
   const nav = onNavigate || (() => {});
 
-  const revenue        = invoices.rows.reduce((s,inv) => s + (inv.status==="Paid" ? lineTotal(inv.items).total : (inv.amountPaid||0)), 0);
-  const posRevenue     = posTransactions.rows.reduce((s,t) => s + Math.round(t.items.reduce((si,it)=>si+it.qty*it.price,0)*(1+TAX_RATE)), 0);
-  const expenseTotal   = expenses.rows.reduce((s,e) => s+e.amount, 0);
+  const revenue        = rowsOf(invoices).reduce((s,inv) => s + (inv.status==="Paid" ? lineTotal(inv.items).total : (inv.amountPaid||0)), 0);
+  const posRevenue     = rowsOf(posTransactions).reduce((s,t) => s + Math.round(t.items.reduce((si,it)=>si+it.qty*it.price,0)*(1+TAX_RATE)), 0);
+  const expenseTotal   = rowsOf(expenses).reduce((s,e) => s+e.amount, 0);
   const gross          = revenue + posRevenue;
   const profit         = gross - expenseTotal;
-  const outstanding    = invoices.rows.filter(inv => inv.status !== "Paid" && inv.status !== "Cancelled");
+  const outstanding    = rowsOf(invoices).filter(inv => inv.status !== "Paid" && inv.status !== "Cancelled");
   const receivables    = outstanding.reduce((s,inv) => s + (lineTotal(inv.items).total-(inv.amountPaid||0)), 0);
 
   // Expense breakdown by category
   const byCategory = useMemo(() => {
     const map = {};
-    expenses.rows.forEach(e => { map[e.category] = (map[e.category]||0)+e.amount; });
+    rowsOf(expenses).forEach(e => { map[e.category] = (map[e.category]||0)+e.amount; });
     return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([name,value])=>({name,value}));
-  }, [expenses.rows]);
+  }, [rowsOf(expenses)]);
 
   // Revenue by invoice status
   const statusData = useMemo(() => {
-    const paid    = invoices.rows.filter(i=>i.status==="Paid").reduce((s,i)=>s+lineTotal(i.items).total,0);
-    const partial = invoices.rows.filter(i=>i.status==="Partial").reduce((s,i)=>s+(i.amountPaid||0),0);
-    const unpaid  = invoices.rows.filter(i=>i.status==="Unpaid"||i.status==="Overdue").reduce((s,i)=>s+lineTotal(i.items).total,0);
+    const paid    = rowsOf(invoices).filter(i=>i.status==="Paid").reduce((s,i)=>s+lineTotal(i.items).total,0);
+    const partial = rowsOf(invoices).filter(i=>i.status==="Partial").reduce((s,i)=>s+(i.amountPaid||0),0);
+    const unpaid  = rowsOf(invoices).filter(i=>i.status==="Unpaid"||i.status==="Overdue").reduce((s,i)=>s+lineTotal(i.items).total,0);
     return [
       {name:"Paid",    value:Math.round(paid/1000),    fill:"#16A34A"},
       {name:"Partial", value:Math.round(partial/1000), fill:"#F59E0B"},
       {name:"Unpaid",  value:Math.round(unpaid/1000),  fill:"#EF4444"},
     ].filter(d=>d.value>0);
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   return (
     <div className="space-y-4">
@@ -30243,16 +30244,16 @@ function FinancialDashboard({ invoices, expenses, posTransactions, onNavigate })
 
 function HRDashboard({ employees, leaveRequests, onNavigate }) {
   const nav = onNavigate || (() => {});
-  const active   = employees.rows.filter(e=>e.status==="Active").length;
-  const onLeave  = employees.rows.filter(e=>e.status==="On Leave").length;
-  const inactive = employees.rows.filter(e=>e.status==="Inactive").length;
-  const payroll  = employees.rows.filter(e=>e.status!=="Inactive").reduce((s,e)=>s+e.salary,0);
-  const pendingLeave = leaveRequests.rows.filter(l=>l.status==="Pending").length;
+  const active   = rowsOf(employees).filter(e=>e.status==="Active").length;
+  const onLeave  = rowsOf(employees).filter(e=>e.status==="On Leave").length;
+  const inactive = rowsOf(employees).filter(e=>e.status==="Inactive").length;
+  const payroll  = rowsOf(employees).filter(e=>e.status!=="Inactive").reduce((s,e)=>s+e.salary,0);
+  const pendingLeave = rowsOf(leaveRequests).filter(l=>l.status==="Pending").length;
 
   // Department breakdown
   const byDept = useMemo(() => {
     const map = {};
-    employees.rows.forEach((employee) => {
+    rowsOf(employees).forEach((employee) => {
       const name = employee.department || "General";
       const row = map[name] || { name, active: 0, onLeave: 0, inactive: 0, total: 0 };
       row.total += 1;
@@ -30262,22 +30263,22 @@ function HRDashboard({ employees, leaveRequests, onNavigate }) {
       map[name] = row;
     });
     return Object.values(map).sort((a, b) => b.total - a.total);
-  }, [employees.rows]);
+  }, [rowsOf(employees)]);
 
   // Leave type breakdown
   const leaveTypes = useMemo(() => {
     const map = {};
-    leaveRequests.rows.forEach(l => { map[l.leaveType||"Annual"]=(map[l.leaveType||"Annual"]||0)+1; });
+    rowsOf(leaveRequests).forEach(l => { map[l.leaveType||"Annual"]=(map[l.leaveType||"Annual"]||0)+1; });
     return Object.entries(map).map(([name,value])=>({name,value}));
-  }, [leaveRequests.rows]);
+  }, [rowsOf(leaveRequests)]);
 
   // Radar data for workforce profile
   const radarData = [
-    { subject:"Active",     value:active > 0 ? Math.round(active/(employees.rows.length||1)*100) : 0    },
-    { subject:"Retention",  value:employees.rows.length>0 ? Math.round((1-inactive/(employees.rows.length||1))*100) : 90 },
+    { subject:"Active",     value:active > 0 ? Math.round(active/(rowsOf(employees).length||1)*100) : 0    },
+    { subject:"Retention",  value:rowsOf(employees).length>0 ? Math.round((1-inactive/(rowsOf(employees).length||1))*100) : 90 },
     { subject:"Leave Mgmt", value:pendingLeave===0 ? 100 : Math.round((1-pendingLeave/10)*80)           },
-    { subject:"Payroll",    value:payroll>0 ? Math.min(100, Math.round(payroll/employees.rows.length/20)) : 0 },
-    { subject:"Diversity",  value:(() => { const f=employees.rows.filter(e=>e.gender==="F").length; return employees.rows.length>0?Math.round(f/employees.rows.length*200):50; })() },
+    { subject:"Payroll",    value:payroll>0 ? Math.min(100, Math.round(payroll/rowsOf(employees).length/20)) : 0 },
+    { subject:"Diversity",  value:(() => { const f=rowsOf(employees).filter(e=>e.gender==="F").length; return rowsOf(employees).length>0?Math.round(f/rowsOf(employees).length*200):50; })() },
     { subject:"Engagement", value:75 },
   ];
 
@@ -30305,7 +30306,7 @@ function HRDashboard({ employees, leaveRequests, onNavigate }) {
               <h3 className="text-[14px] font-semibold text-[#111827]">Department Headcount Summary</h3>
               <p className="mt-0.5 text-[11px] text-slate-400">Team size with active, leave, and inactive status context</p>
             </div>
-            <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">{employees.rows.length} total</span>
+            <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">{rowsOf(employees).length} total</span>
           </div>
           {byDept.length === 0 ? (
             <p className="text-slate-400 text-center py-8">No department data</p>
@@ -30347,7 +30348,7 @@ function HRDashboard({ employees, leaveRequests, onNavigate }) {
       </div>
 
       {/* Leave requests table */}
-      {leaveRequests.rows.length > 0 && (
+      {rowsOf(leaveRequests).length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
             <p className="text-[13.5px] font-semibold text-[#111827]">Recent Leave Requests</p>
@@ -30358,7 +30359,7 @@ function HRDashboard({ employees, leaveRequests, onNavigate }) {
               <th key={h} className="px-4 py-2.5 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>
             ))}</tr></thead>
             <tbody>
-              {leaveRequests.rows.slice(0,4).map(l=>{
+              {rowsOf(leaveRequests).slice(0,4).map(l=>{
                 const sc={Approved:["#DCFCE7","#15803D"],Pending:["#FEF3C7","#B45309"],Rejected:["#FEE2E2","#991B1B"]}[l.status]||["#F3F4F6","#6B7280"];
                 return (
                   <tr key={l.id} className="border-b border-slate-50 last:border-0">
@@ -30390,28 +30391,28 @@ function SalesDashboard({ invoices, crm, onNavigate }) {
 
   const stageData = useMemo(() => STAGES.map(stage => ({
     stage,
-    count: crm.rows.filter(l => l.stage === stage).length,
-    value: crm.rows.filter(l => l.stage === stage).reduce((s,l)=>s+l.value,0),
+    count: rowsOf(crm).filter(l => l.stage === stage).length,
+    value: rowsOf(crm).filter(l => l.stage === stage).reduce((s,l)=>s+l.value,0),
     fill:  STAGE_COLORS[stage],
-  })), [crm.rows]);
+  })), [rowsOf(crm)]);
 
-  const openLeads       = crm.rows.filter(l => !["Won","Lost"].includes(l.stage));
+  const openLeads       = rowsOf(crm).filter(l => !["Won","Lost"].includes(l.stage));
   const pipelineValue   = openLeads.reduce((s,l)=>s+l.value,0);
   const weightedForecast= openLeads.reduce((s,l)=>s+l.value*((STAGE_PROBABILITY[l.stage]||0)/100),0);
-  const wonCount        = crm.rows.filter(l=>l.stage==="Won").length;
-  const lostCount       = crm.rows.filter(l=>l.stage==="Lost").length;
+  const wonCount        = rowsOf(crm).filter(l=>l.stage==="Won").length;
+  const lostCount       = rowsOf(crm).filter(l=>l.stage==="Lost").length;
   const closedCount     = wonCount + lostCount;
   const winRate         = closedCount>0 ? Math.round(wonCount/closedCount*100) : 0;
 
   // Monthly invoice revenue
   const months          = ["Feb","Mar","Apr","May","Jun","Jul"];
   const monthlyRevenue  = months.map((m, i) => {
-    const base = invoices.rows.reduce((s,inv)=>s+(inv.status==="Paid"?lineTotal(inv.items).total:(inv.amountPaid||0)),0);
+    const base = rowsOf(invoices).reduce((s,inv)=>s+(inv.status==="Paid"?lineTotal(inv.items).total:(inv.amountPaid||0)),0);
     const factor = 0.65 + i*0.07;
-    return { month:m, revenue:Math.round(base*factor/1000), invoices:Math.max(1,Math.round(invoices.rows.length*factor)) };
+    return { month:m, revenue:Math.round(base*factor/1000), invoices:Math.max(1,Math.round(rowsOf(invoices).length*factor)) };
   });
-  monthlyRevenue[5].revenue = Math.round(invoices.rows.reduce((s,inv)=>s+(inv.status==="Paid"?lineTotal(inv.items).total:(inv.amountPaid||0)),0)/1000);
-  monthlyRevenue[5].invoices = invoices.rows.filter(i=>i.status==="Paid").length;
+  monthlyRevenue[5].revenue = Math.round(rowsOf(invoices).reduce((s,inv)=>s+(inv.status==="Paid"?lineTotal(inv.items).total:(inv.amountPaid||0)),0)/1000);
+  monthlyRevenue[5].invoices = rowsOf(invoices).filter(i=>i.status==="Paid").length;
 
   return (
     <div className="space-y-4">
@@ -30475,33 +30476,33 @@ function SalesDashboard({ invoices, crm, onNavigate }) {
 /* ------------------------- */
 
 function OperationsDashboard({ inventory, workOrders, onNavigate }) {
-  const stockValue   = inventory.rows.reduce((s,it)=>s+it.qty*it.unitCost,0);
-  const lowStock     = inventory.rows.filter(it=>stockStatus(it.qty,it.reorder)==="Low Stock").length;
-  const outOfStock   = inventory.rows.filter(it=>stockStatus(it.qty,it.reorder)==="Out of Stock").length;
-  const activeOrders = workOrders.rows.filter(w=>["In Progress","Planned"].includes(w.status)).length;
+  const stockValue   = rowsOf(inventory).reduce((s,it)=>s+it.qty*it.unitCost,0);
+  const lowStock     = rowsOf(inventory).filter(it=>stockStatus(it.qty,it.reorder)==="Low Stock").length;
+  const outOfStock   = rowsOf(inventory).filter(it=>stockStatus(it.qty,it.reorder)==="Out of Stock").length;
+  const activeOrders = rowsOf(workOrders).filter(w=>["In Progress","Planned"].includes(w.status)).length;
   const nav          = onNavigate || (()=>{});
 
   // Inventory by category
   const byCat = useMemo(()=>{
     const map={};
-    inventory.rows.forEach(it=>{
+    rowsOf(inventory).forEach(it=>{
       const cat=it.category||"Other";
       map[cat]=(map[cat]||0)+it.qty*it.unitCost;
     });
     return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,7)
       .map(([name,value])=>({name,value:Math.round(value/1000)}));
-  },[inventory.rows]);
+  },[rowsOf(inventory)]);
 
   // Work order status
   const woStatus = ["Planned","In Progress","Completed","Cancelled"].map(status=>({
     name:status,
-    value:workOrders.rows.filter(w=>w.status===status).length,
+    value:rowsOf(workOrders).filter(w=>w.status===status).length,
     fill:{Planned:"#3B82F6","In Progress":"#F59E0B",Completed:"#16A34A",Cancelled:"#EF4444"}[status],
   })).filter(d=>d.value>0);
 
   // Stock health breakdown
   const stockHealth = [
-    {name:"In Stock",  value:inventory.rows.filter(it=>stockStatus(it.qty,it.reorder)==="In Stock").length,  fill:"#16A34A"},
+    {name:"In Stock",  value:rowsOf(inventory).filter(it=>stockStatus(it.qty,it.reorder)==="In Stock").length,  fill:"#16A34A"},
     {name:"Low Stock", value:lowStock,  fill:"#F59E0B"},
     {name:"Out of Stock",value:outOfStock,fill:"#EF4444"},
   ].filter(d=>d.value>0);
@@ -30737,28 +30738,28 @@ function HeatMaps({ invoices, inventory }) {
 
   const salesByDay = useMemo(() => {
     const totals = new Array(7).fill(0);
-    invoices.rows.forEach((inv) => {
+    rowsOf(invoices).forEach((inv) => {
       const day = new Date(inv.date).getDay();
       const { total } = lineTotal(inv.items);
       totals[day] += total;
     });
     return totals;
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
   const maxDay = Math.max(...salesByDay, 1);
 
   const stockGrid = useMemo(() => {
-    const categories = Array.from(new Set(inventory.rows.map((it) => it.category)));
+    const categories = Array.from(new Set(rowsOf(inventory).map((it) => it.category)));
     const warehouseList = WAREHOUSES.map((w) => w.id);
     const grid = {};
     categories.forEach((cat) => {
       grid[cat] = {};
       warehouseList.forEach((wh) => {
-        const items = inventory.rows.filter((it) => it.category === cat && it.warehouse === wh);
+        const items = rowsOf(inventory).filter((it) => it.category === cat && it.warehouse === wh);
         grid[cat][wh] = items.reduce((s, it) => s + it.qty * it.unitCost, 0);
       });
     });
     return { categories, grid };
-  }, [inventory.rows]);
+  }, [rowsOf(inventory)]);
   const maxStock = Math.max(...stockGrid.categories.flatMap((cat) => WAREHOUSES.map((w) => stockGrid.grid[cat][w.id])), 1);
 
   function heatColor(value, max) {
@@ -30943,16 +30944,16 @@ function Benchmarking({ data }) {
   const [showCompetitorForm, setShowCompetitorForm] = useState(false);
   const [selectedCompetitor, setSelectedCompetitor] = useState(null);
 
-  const revenue = data.invoices.rows.reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0);
-  const totalExpenses = data.expenses.rows.reduce((s, e) => s + e.amount, 0);
+  const revenue = rowsOf(data.invoices).reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0);
+  const totalExpenses = rowsOf(data.expenses).reduce((s, e) => s + e.amount, 0);
   const computedValues = {
     gross_margin: revenue > 0 ? Math.round(((revenue - totalExpenses) / revenue) * 100) : 0,
     receivables_days: (() => {
-      const outstanding = data.invoices.rows.filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
+      const outstanding = rowsOf(data.invoices).filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
       return revenue > 0 ? Math.round((outstanding / revenue) * 30) : 0; // a rough, real approximation: receivables as a share of revenue, scaled to a 30-day period
     })(),
     stock_turnover: (() => {
-      const stockValue = data.inventory.rows.reduce((s, it) => s + it.qty * it.unitCost, 0);
+      const stockValue = rowsOf(data.inventory).reduce((s, it) => s + it.qty * it.unitCost, 0);
       return stockValue > 0 ? Math.round((totalExpenses / stockValue) * 10) / 10 : 0;
     })(),
   };
@@ -30984,7 +30985,7 @@ function Benchmarking({ data }) {
   }
 
   async function deleteCompetitor(id) {
-    const c = competitors.rows.find((x) => x.id === id);
+    const c = rowsOf(competitors).find((x) => x.id === id);
     competitors.setRows((prev) => prev.filter((x) => x.id !== id));
     setSelectedCompetitor(null);
     if (IS_CONFIGURED && c?.dbId) {
@@ -31008,7 +31009,7 @@ function Benchmarking({ data }) {
           <button onClick={() => setShowBenchmarkForm(true)} className="btn-secondary text-[12px] font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5"><Plus size={13} /> Add Benchmark</button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {benchmarks.rows.map((bm) => {
+          {rowsOf(benchmarks).map((bm) => {
             const metric = BENCHMARK_METRICS.find((m) => m.id === bm.metricId);
             const current = computedValues[bm.metricId] ?? 0;
             const ahead = current >= bm.benchmarkValue;
@@ -31024,7 +31025,7 @@ function Benchmarking({ data }) {
               </div>
             );
           })}
-          {!benchmarks.loading && benchmarks.rows.length === 0 && <div className="col-span-full bg-white rounded-xl border border-slate-200/80 shadow-sm"><EmptyState icon={Crosshair} title="No benchmarks yet" hint="Add a figure you've researched to compare against." actionLabel="Add Benchmark" onAction={() => setShowBenchmarkForm(true)} /></div>}
+          {!benchmarks.loading && rowsOf(benchmarks).length === 0 && <div className="col-span-full bg-white rounded-xl border border-slate-200/80 shadow-sm"><EmptyState icon={Crosshair} title="No benchmarks yet" hint="Add a figure you've researched to compare against." actionLabel="Add Benchmark" onAction={() => setShowBenchmarkForm(true)} /></div>}
           {benchmarks.loading && <div className="col-span-full text-center text-[12px] text-slate-400 py-6">Loading...</div>}
         </div>
       </div>
@@ -31041,7 +31042,7 @@ function Benchmarking({ data }) {
                 <th className="px-4 py-3 font-medium">Competitor</th><th className="px-4 py-3 font-medium">Category</th><th className="px-4 py-3 font-medium">Threat</th><th className="px-4 py-3 font-medium">Last Updated</th>
               </tr></thead>
               <tbody>
-                {competitors.rows.map((c) => (
+                {rowsOf(competitors).map((c) => (
                   <tr key={c.id} onClick={() => setSelectedCompetitor(c)} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors">
                     <td className="px-4 py-3 font-medium text-[#111827]">{c.name}</td>
                     <td className="px-4 py-3 text-slate-500">{c.category}</td>
@@ -31049,7 +31050,7 @@ function Benchmarking({ data }) {
                     <td className="px-4 py-3 text-slate-500 font-mono">{c.lastUpdated}</td>
                   </tr>
                 ))}
-                {!competitors.loading && competitors.rows.length === 0 && <tr><td colSpan={4}><EmptyState icon={Crosshair} title="No competitors tracked yet" hint="Log what you know about competitors here — manually, since no automated feed exists for this." actionLabel="Add Competitor" onAction={() => setShowCompetitorForm(true)} /></td></tr>}
+                {!competitors.loading && rowsOf(competitors).length === 0 && <tr><td colSpan={4}><EmptyState icon={Crosshair} title="No competitors tracked yet" hint="Log what you know about competitors here — manually, since no automated feed exists for this." actionLabel="Add Competitor" onAction={() => setShowCompetitorForm(true)} /></td></tr>}
                 {competitors.loading && <tr><td colSpan={4}><p className="text-[12px] text-slate-400 text-center py-6">Loading...</p></td></tr>}
               </tbody>
             </table>
@@ -31168,17 +31169,17 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
   // (this company own trailing 8-week average expense spend, not a
   // guess). Flags the first week the running balance would go negative.
   const cashProjection = useMemo(() => {
-    const weeklyExpenseRate = expenses.rows
+    const weeklyExpenseRate = rowsOf(expenses)
       .filter((e) => (TODAY - new Date(e.date)) / 86400000 <= 56)
       .reduce((s, e) => s + e.amount, 0) / 8;
-    const currentCash = invoices.rows.reduce((s, inv) => s + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0)), 0)
-      - expenses.rows.reduce((s, e) => s + e.amount, 0);
+    const currentCash = rowsOf(invoices).reduce((s, inv) => s + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0)), 0)
+      - rowsOf(expenses).reduce((s, e) => s + e.amount, 0);
     let running = currentCash;
     const weeks = [];
     for (let w = 1; w <= 8; w++) {
       const weekStart = new Date(TODAY.getTime() + (w - 1) * 7 * 86400000);
       const weekEnd = new Date(TODAY.getTime() + w * 7 * 86400000);
-      const incoming = invoices.rows
+      const incoming = rowsOf(invoices)
         .filter((inv) => inv.status !== "Paid" && new Date(inv.dueDate) >= weekStart && new Date(inv.dueDate) < weekEnd)
         .reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
       running = running + incoming - weeklyExpenseRate;
@@ -31186,16 +31187,16 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
     }
     const shortageWeek = weeks.find((w) => w.balance < 0);
     return { currentCash, weeklyExpenseRate, weeks, shortageWeek };
-  }, [invoices.rows, expenses.rows]);
+  }, [rowsOf(invoices), rowsOf(expenses)]);
 
   // 2. Stock Depletion — real sales velocity per SKU (units invoiced in
   // the trailing 60 days ÷ 60), projected against real current quantity.
   const stockDepletion = useMemo(() => {
     const salesBySku = {};
-    invoices.rows.filter((inv) => (TODAY - new Date(inv.date)) / 86400000 <= 60).forEach((inv) => {
+    rowsOf(invoices).filter((inv) => (TODAY - new Date(inv.date)) / 86400000 <= 60).forEach((inv) => {
       inv.items.forEach((it) => { if (it.sku) salesBySku[it.sku] = (salesBySku[it.sku] || 0) + it.qty; });
     });
-    return inventory.rows
+    return rowsOf(inventory)
       .map((it) => {
         const dailyRate = (salesBySku[it.sku] || 0) / 60;
         const daysLeft = dailyRate > 0 ? Math.round(it.qty / dailyRate) : null;
@@ -31203,7 +31204,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
       })
       .filter((it) => it.daysLeft !== null && it.daysLeft <= 21)
       .sort((a, b) => a.daysLeft - b.daysLeft);
-  }, [invoices.rows, inventory.rows]);
+  }, [rowsOf(invoices), rowsOf(inventory)]);
 
   // 3. Customer Churn — real RFM-style recency scoring: for every
   // customer with 2+ invoices, their own historical average interval
@@ -31212,7 +31213,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
   // their own normal rhythm.
   const churnRisk = useMemo(() => {
     const byCustomer = {};
-    invoices.rows.forEach((inv) => { (byCustomer[inv.customer] = byCustomer[inv.customer] || []).push(new Date(inv.date)); });
+    rowsOf(invoices).forEach((inv) => { (byCustomer[inv.customer] = byCustomer[inv.customer] || []).push(new Date(inv.date)); });
     return Object.entries(byCustomer)
       .filter(([, dates]) => dates.length >= 2)
       .map(([customer, dates]) => {
@@ -31224,7 +31225,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
       })
       .filter((c) => c.ratio >= 2)
       .sort((a, b) => b.ratio - a.ratio);
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   // 4. Employee Turnover — stated honestly as the weakest signal here.
   // Real, but thin: new-hire tenure under 90 days (the highest-risk
@@ -31233,21 +31234,21 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
   // supports — no engagement surveys, performance trends, or compensation
   // data exist to build anything stronger.
   const turnoverRisk = useMemo(() => {
-    return employees.rows.filter((e) => e.status === "Active").map((e) => {
+    return rowsOf(employees).filter((e) => e.status === "Active").map((e) => {
       const tenureDays = e.hireDate ? (TODAY - new Date(e.hireDate)) / 86400000 : null;
-      const recentLeave = leaveRequests.rows.filter((l) => l.employee === e.name && (TODAY - new Date(l.startDate)) / 86400000 <= 90).length;
+      const recentLeave = rowsOf(leaveRequests).filter((l) => l.employee === e.name && (TODAY - new Date(l.startDate)) / 86400000 <= 90).length;
       const flags = [];
       if (tenureDays !== null && tenureDays < 90) flags.push("New hire (under 90 days) — the highest-risk tenure window in most attrition research");
       if (recentLeave >= 3) flags.push(`${recentLeave} leave requests in the last 90 days — notably more frequent than typical`);
       return { name: e.name, department: e.department, flags };
     }).filter((e) => e.flags.length > 0);
-  }, [employees.rows, leaveRequests.rows]);
+  }, [rowsOf(employees), rowsOf(leaveRequests)]);
 
   // 5. Sales Growth — a real linear trend line over actual monthly
   // revenue, not a single period-over-period guess.
   const salesGrowth = useMemo(() => {
     const byMonth = {};
-    invoices.rows.forEach((inv) => {
+    rowsOf(invoices).forEach((inv) => {
       const key = inv.date.slice(0, 7);
       byMonth[key] = (byMonth[key] || 0) + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0));
     });
@@ -31262,13 +31263,13 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
     const nextMonthProjection = yMean + slope * (n - xMean);
     const growthRate = yMean > 0 ? Math.round((slope / yMean) * 1000) / 10 : 0;
     return { months, growthRate, nextMonthProjection, slope };
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   // 6. Budget Overruns — real burn-rate projection: current spend ÷ time
   // elapsed, extended across the project full real timeline.
   const budgetOverruns = useMemo(() => {
-    return projects.rows.filter((p) => p.status !== "Completed" && p.status !== "Cancelled" && p.budget > 0).map((p) => {
-      const spent = projectExpenses.rows.filter((pe) => pe.projectId === p.id).reduce((s, pe) => s + pe.amount, 0);
+    return rowsOf(projects).filter((p) => p.status !== "Completed" && p.status !== "Cancelled" && p.budget > 0).map((p) => {
+      const spent = rowsOf(projectExpenses).filter((pe) => pe.projectId === p.id).reduce((s, pe) => s + pe.amount, 0);
       const start = new Date(p.startDate), end = p.endDate ? new Date(p.endDate) : null;
       const elapsedDays = Math.max(1, (TODAY - start) / 86400000);
       const totalDays = end ? Math.max(elapsedDays, (end - start) / 86400000) : elapsedDays * 2;
@@ -31276,30 +31277,30 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
       const overrunPct = p.budget > 0 ? Math.round(((projectedTotal - p.budget) / p.budget) * 100) : 0;
       return { name: p.name, budget: p.budget, spent, projectedTotal: Math.round(projectedTotal), overrunPct };
     }).filter((p) => p.overrunPct > 5).sort((a, b) => b.overrunPct - a.overrunPct);
-  }, [projects.rows, projectExpenses.rows]);
+  }, [rowsOf(projects), rowsOf(projectExpenses)]);
 
   // 7. Fraud Risk — reuses the real Unusual Expense detector (section 33)
   // and adds one more genuine, well-known technique: "structuring," where
   // amounts cluster just under an approval threshold to avoid review —
   // checked against this company own real PO approval threshold.
   const fraudRisk = useMemo(() => {
-    const unusual = detectUnusualExpenses(expenses.rows);
-    const structuring = expenses.rows.filter((e) => e.amount >= PO_APPROVAL_THRESHOLD * 0.9 && e.amount < PO_APPROVAL_THRESHOLD);
+    const unusual = detectUnusualExpenses(rowsOf(expenses));
+    const structuring = rowsOf(expenses).filter((e) => e.amount >= PO_APPROVAL_THRESHOLD * 0.9 && e.amount < PO_APPROVAL_THRESHOLD);
     return { unusual, structuring };
-  }, [expenses.rows]);
+  }, [rowsOf(expenses)]);
 
   // 8. Maintenance Needs — directly real: every machine own most recent
   // maintenance record already carries a real next-due date; this just
   // surfaces the ones approaching or past it.
   const maintenanceNeeds = useMemo(() => {
-    return machines.rows.map((m) => {
-      const records = maintenance.rows.filter((r) => r.machine === m.name).sort((a, b) => (a.date < b.date ? 1 : -1));
+    return rowsOf(machines).map((m) => {
+      const records = rowsOf(maintenance).filter((r) => r.machine === m.name).sort((a, b) => (a.date < b.date ? 1 : -1));
       const last = records[0];
       if (!last?.nextDueDate) return null;
       const daysUntil = Math.round((new Date(last.nextDueDate) - TODAY) / 86400000);
       return { machine: m.name, nextDueDate: last.nextDueDate, daysUntil };
     }).filter((m) => m && m.daysUntil <= 21);
-  }, [machines.rows, maintenance.rows]);
+  }, [rowsOf(machines), rowsOf(maintenance)]);
 
   return (
     <div className="space-y-5">
@@ -31438,12 +31439,12 @@ function ScenarioPlanner({ invoices, expenses, employees }) {
 
   const baseline = useMemo(() => {
     const pnl = computePnLFigures(invoices, expenses);
-    const activeEmployees = employees.rows.filter((e) => e.status === "Active");
+    const activeEmployees = rowsOf(employees).filter((e) => e.status === "Active");
     const avgSalary = activeEmployees.length > 0 ? activeEmployees.reduce((s, e) => s + e.salary, 0) / activeEmployees.length : 0;
     const monthlyPayroll = activeEmployees.reduce((s, e) => s + e.salary, 0);
     const categories = [...new Set(expenses.map((e) => e.category))];
     return { pnl, avgSalary, monthlyPayroll, employeeCount: activeEmployees.length, categories };
-  }, [invoices.rows, expenses, employees.rows]);
+  }, [rowsOf(invoices), expenses, rowsOf(employees)]);
 
   const result = useMemo(() => {
     if (scenario === "price") {
@@ -31593,7 +31594,7 @@ async function executeWorkflowStep(step, context) {
       title = "Inventory Valuation Report"; headers = ["Category", "SKU", "Item", "Qty", "Unit", "Unit Cost (TZS 000)", "Value (TZS 000)"];
       rows2 = [...byCategory.flatMap((c) => c.items.map((it) => [c.category, it.sku, it.name, it.qty, it.unit, it.unitCost, Math.round(it.value)])), ["GRAND TOTAL", "", "", "", "", "", Math.round(grandTotal)]];
     } else {
-      const figures = computePnLFigures(context.invoices, context.expenses.rows);
+      const figures = computePnLFigures(context.invoices, rowsOf(context.expenses));
       title = "Profit & Loss Statement"; headers = ["Line", "Amount (TZS 000)"];
       rows2 = [["Revenue collected", Math.round(figures.collected)], ...figures.expRows.map(([cat, amt]) => [`Expense: ${cat}`, Math.round(amt)]), ["Net position", Math.round(figures.net)]];
     }
@@ -31620,7 +31621,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
   const [publishingWorkflow, setPublishingWorkflow] = useState(null);
 
   async function saveWorkflow(workflow) {
-    const isNew = !workflow.dbId && !workflows.rows.some((w) => w.id === workflow.id);
+    const isNew = !workflow.dbId && !rowsOf(workflows).some((w) => w.id === workflow.id);
     if (isNew) {
       workflows.setRows((prev) => [workflow, ...prev]);
       notify(`Workflow saved: ${workflow.name}`);
@@ -31642,7 +31643,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
   }
 
   async function deleteWorkflow(id) {
-    const w = workflows.rows.find((x) => x.id === id);
+    const w = rowsOf(workflows).find((x) => x.id === id);
     workflows.setRows((prev) => prev.filter((x) => x.id !== id));
     if (IS_CONFIGURED && w?.dbId) {
       try { await sb("workflows").eq("id", w.dbId).delete().run(); } catch (_e) { notify("Couldn't delete the workflow on the server.", "error"); }
@@ -31697,7 +31698,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
   async function runWorkflow(workflow) {
     setRunningId(workflow.id);
     setRunTrace({ workflowId: workflow.id, results: [] });
-    const context = { workflowName: workflow.name, company, invoices, expenses, inventory, channels: channels.rows };
+    const context = { workflowName: workflow.name, company, invoices, expenses, inventory, channels: rowsOf(channels) };
     // The Condition gate — evaluated against live rows right now, never a
     // stored snapshot. A skipped run says exactly why in real figures.
     if (workflow.condition && workflow.condition.type && workflow.condition.type !== "none") {
@@ -31726,7 +31727,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
     }
   }
 
-  const readyToRun = workflows.rows.filter((w) => w.enabled && w.trigger !== "manual" && alerts.some((a) => a.id === w.trigger));
+  const readyToRun = rowsOf(workflows).filter((w) => w.enabled && w.trigger !== "manual" && alerts.some((a) => a.id === w.trigger));
 
   return (
     <div className="space-y-5">
@@ -31776,7 +31777,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {workflows.loading && Array.from({ length: 2 }).map((_, i) => <div key={i} className="bg-white rounded-xl border border-slate-200/80 h-40 skeleton-shimmer" />)}
-        {!workflows.loading && workflows.rows.map((w) => (
+        {!workflows.loading && rowsOf(workflows).map((w) => (
           <div key={w.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -31808,7 +31809,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
             </button>
           </div>
         ))}
-        {!workflows.loading && workflows.rows.length === 0 && (
+        {!workflows.loading && rowsOf(workflows).length === 0 && (
           <div className="col-span-full bg-white rounded-xl border border-slate-200/80 shadow-sm">
             <EmptyState icon={GitBranch} title="No workflows yet" hint="Build one by dragging steps into a sequence, or install one from the Automation Marketplace." actionLabel="New Workflow" onAction={() => setBuilderOpen("new")} />
           </div>
@@ -31817,7 +31818,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
         </>
       )}
 
-      {view === "marketplace" && <AutomationMarketplace templates={marketplace.rows} loading={marketplace.loading} onInstall={installTemplate} />}
+      {view === "marketplace" && <AutomationMarketplace templates={rowsOf(marketplace)} loading={marketplace.loading} onInstall={installTemplate} />}
 
       {builderOpen && <WorkflowBuilder workflow={builderOpen === "new" ? null : builderOpen} onClose={() => setBuilderOpen(null)} onSave={saveWorkflow} />}
       {publishingWorkflow && <PublishTemplatePanel workflow={publishingWorkflow} onClose={() => setPublishingWorkflow(null)} onPublish={publishTemplate} />}
@@ -32156,7 +32157,7 @@ function ResourceSchedulerPanel({ currentUser }) {
 
   async function book() {
     if (!draft.resource.trim() || !draft.date || draft.end <= draft.start) { notify("Check the resource name and that the end time is after the start.", "error"); return; }
-    const clash = bookings.rows.find((b) => b.resource.toLowerCase() === draft.resource.trim().toLowerCase() && b.date === draft.date && draft.start < b.end && b.start < draft.end);
+    const clash = rowsOf(bookings).find((b) => b.resource.toLowerCase() === draft.resource.trim().toLowerCase() && b.date === draft.date && draft.start < b.end && b.start < draft.end);
     if (clash) { notify(`Conflict: ${clash.resource} is already booked ${clash.start}–${clash.end} by ${clash.by}. Pick another slot.`, "error"); return; }
     const row = { id: `BK-${Date.now()}`, type: draft.type, resource: draft.resource.trim(), date: draft.date, start: draft.start, end: draft.end, by: currentUser.name, purpose: draft.purpose.trim() };
     bookings.setRows((prev) => [...prev, row].sort((a, b) => (a.date + a.start < b.date + b.start ? -1 : 1)));
@@ -32170,7 +32171,7 @@ function ResourceSchedulerPanel({ currentUser }) {
     }
   }
 
-  const upcoming = bookings.rows.filter((b) => b.date >= t).slice(0, 6);
+  const upcoming = rowsOf(bookings).filter((b) => b.date >= t).slice(0, 6);
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 mb-4">
@@ -33405,8 +33406,8 @@ function ChannelsView({ currentUser, employees }) {
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    if (!activeChannelId && channels.rows.length > 0) setActiveChannelId(channels.rows[0].id);
-  }, [channels.rows, activeChannelId]);
+    if (!activeChannelId && rowsOf(channels).length > 0) setActiveChannelId(rowsOf(channels)[0].id);
+  }, [rowsOf(channels), activeChannelId]);
 
   useEffect(() => {
     if (IS_CONFIGURED) {
@@ -33434,7 +33435,7 @@ function ChannelsView({ currentUser, employees }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, activeChannelId]);
 
-  const activeChannel = channels.rows.find((c) => c.id === activeChannelId);
+  const activeChannel = rowsOf(channels).find((c) => c.id === activeChannelId);
   const channelMessages = messages.filter((m) => m.channelId === activeChannelId);
   const [pinnedMessageIds, setPinnedMessageIds] = useState(() => new Set());
   const [messageReactions, setMessageReactions] = useState({});
@@ -33575,7 +33576,7 @@ function ChannelsView({ currentUser, employees }) {
           <button onClick={() => setShowChannelForm(true)} className="text-[#16A34A] hover:text-[#15803D]" aria-label="New channel"><Plus size={14} /></button>
         </div>
         <div className="flex-1 overflow-y-auto py-1.5">
-          {channels.rows.map((c) => {
+          {rowsOf(channels).map((c) => {
             const isMuted = mutedChannels.includes(c.id);
             const unreadCount = messages.filter((m) => m.channelId === c.id && m.sender !== currentUser.name).length;
             return (
@@ -33854,9 +33855,9 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
     const map = {};
     function add(dateStr, entry) { (map[dateStr] = map[dateStr] || []).push(entry); }
 
-    events.rows.forEach((e) => add(e.date, { id: e.id, title: e.title, category: "meetings", color: "#16A34A" }));
+    rowsOf(events).forEach((e) => add(e.date, { id: e.id, title: e.title, category: "meetings", color: "#16A34A" }));
 
-    leaveRequests.rows.filter((l) => l.status === "Approved").forEach((l) => {
+    rowsOf(leaveRequests).filter((l) => l.status === "Approved").forEach((l) => {
       let d = new Date(l.startDate);
       const end = new Date(l.endDate);
       while (d <= end) {
@@ -33865,22 +33866,22 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
       }
     });
 
-    workOrders.rows.filter((w) => w.status !== "Completed" && w.dueDate).forEach((w) => {
+    rowsOf(workOrders).filter((w) => w.status !== "Completed" && w.dueDate).forEach((w) => {
       add(w.dueDate, { id: w.id, title: `${w.product} — production due`, category: "production", color: "#5B6472" });
     });
 
-    crm.rows.filter((l) => l.expectedCloseDate && l.stage !== "Won" && l.stage !== "Lost").forEach((l) => {
+    rowsOf(crm).filter((l) => l.expectedCloseDate && l.stage !== "Won" && l.stage !== "Lost").forEach((l) => {
       add(l.expectedCloseDate, { id: l.id, title: `${l.company} — expected close`, category: "sales", color: "#22C55E" });
     });
 
-    invoices.rows.filter((inv) => inv.status !== "Paid" && inv.dueDate).forEach((inv) => {
+    rowsOf(invoices).filter((inv) => inv.status !== "Paid" && inv.dueDate).forEach((inv) => {
       add(inv.dueDate, { id: inv.id, title: `${inv.customer} — payment due (${inv.id})`, category: "payments", color: "#EF4444" });
     });
 
     taxDeadlines.forEach((t) => add(t.date, { id: `tax-${t.date}`, title: t.label, category: "tax", color: "#0EA5E9" }));
 
     return map;
-  }, [events.rows, leaveRequests.rows, workOrders.rows, crm.rows, invoices.rows, taxDeadlines]);
+  }, [rowsOf(events), rowsOf(leaveRequests), rowsOf(workOrders), rowsOf(crm), rowsOf(invoices), taxDeadlines]);
 
   function visibleEntriesFor(dateStr) {
     return (entriesByDate[dateStr] || []).filter((e) => visibleCategories.has(e.category));
@@ -34052,7 +34053,7 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
             .flatMap(([date, entries]) => entries.filter((e) => visibleCategories.has(e.category)).map((e) => ({ ...e, date })))
             .slice(0, 8)
             .map((e) => {
-              const linkedEvent = e.category === "meetings" ? events.rows.find((ev) => ev.id === e.id) : null;
+              const linkedEvent = e.category === "meetings" ? rowsOf(events).find((ev) => ev.id === e.id) : null;
               return (
                 <div key={`${e.category}-${e.id}`} className="flex items-center justify-between border border-slate-100 rounded-lg px-3.5 py-2.5">
                   <div className="min-w-0 flex items-center gap-2.5">
@@ -34153,7 +34154,7 @@ function TeamWorkspaces({ employees, currentUser }) {
   const [matrixSearch, setMatrixSearch] = useState("");
   const [matrixRoleFilter, setMatrixRoleFilter] = useState("All");
   const [exportColumns, setExportColumns] = useState({ id: true, name: true, department: true, role: true, workspaces: true });
-  const departments = Array.from(new Set(employees.rows.map((e) => e.department).filter(Boolean)));
+  const departments = Array.from(new Set(rowsOf(employees).map((e) => e.department).filter(Boolean)));
 
   const isManagerOrAdmin = ["Super Administrator", "Organization Owner", "CEO", "COO", "HR Manager", "Department Head"].includes(canonicalRoleId(currentUser?.role)) || allowedDepartments.length === 0;
 
@@ -34187,7 +34188,7 @@ function TeamWorkspaces({ employees, currentUser }) {
 
   async function deleteWorkspace(id) {
     if (deletingWorkspaceId) return;
-    const w = workspaces.rows.find((x) => x.id === id);
+    const w = rowsOf(workspaces).find((x) => x.id === id);
     if (!w) return;
     if (!IS_CONFIGURED || !w.dbId) {
       workspaces.setRows((prev) => prev.filter((x) => x.id !== id));
@@ -34210,7 +34211,7 @@ function TeamWorkspaces({ employees, currentUser }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-[12.5px] text-slate-500">{workspaces.rows.length} active team workspace(s)</p>
+        <p className="text-[12.5px] text-slate-500">{rowsOf(workspaces).length} active team workspace(s)</p>
         <div className="flex items-center gap-2">
           <button onClick={() => {
             const inviteCode = Math.random().toString(36).slice(2, 10);
@@ -34222,7 +34223,7 @@ function TeamWorkspaces({ employees, currentUser }) {
           <button onClick={() => {
             const csvRows = [
               ["Workspace ID", "Workspace Name", "Department", "Members", "Description"].join(","),
-              ...workspaces.rows.map(w => [w.id, `"${w.name.replace(/"/g, '""')}"`, `"${(w.department || "Cross-functional").replace(/"/g, '""')}"`, `"${(w.members || "").replace(/"/g, '""')}"`, `"${(w.description || "").replace(/"/g, '""')}"`].join(","))
+              ...rowsOf(workspaces).map(w => [w.id, `"${w.name.replace(/"/g, '""')}"`, `"${(w.department || "Cross-functional").replace(/"/g, '""')}"`, `"${(w.members || "").replace(/"/g, '""')}"`, `"${(w.description || "").replace(/"/g, '""')}"`].join(","))
             ].join("\n");
             const blob = new Blob([csvRows], { type: "text/csv;charset=utf-8" });
             const url = URL.createObjectURL(blob);
@@ -34250,7 +34251,7 @@ function TeamWorkspaces({ employees, currentUser }) {
               <label className="text-[11px] text-slate-600 flex items-center gap-1"><input type="checkbox" checked={exportColumns.department} onChange={(e) => setExportColumns(c => ({...c, department: e.target.checked}))} /> Dept</label>
               <label className="text-[11px] text-slate-600 flex items-center gap-1"><input type="checkbox" checked={exportColumns.role} onChange={(e) => setExportColumns(c => ({...c, role: e.target.checked}))} /> Role</label>
               <button onClick={() => {
-                const filteredEmployees = employees.rows.filter(e => selectedExportDept === "All" || e.department === selectedExportDept);
+                const filteredEmployees = rowsOf(employees).filter(e => selectedExportDept === "All" || e.department === selectedExportDept);
                 const headers = [];
                 if (exportColumns.id) headers.push("Roster ID");
                 if (exportColumns.name) headers.push("Employee Name");
@@ -34266,7 +34267,7 @@ function TeamWorkspaces({ employees, currentUser }) {
                     if (exportColumns.name) row.push(`"${e.name.replace(/"/g, '""')}"`);
                     if (exportColumns.department) row.push(`"${(e.department || "General").replace(/"/g, '""')}"`);
                     if (exportColumns.role) row.push(`"${(e.role || "Staff").replace(/"/g, '""')}"`);
-                    if (exportColumns.workspaces) row.push(`"${workspaces.rows.filter(w => (w.members || "").includes(e.name)).map(w => w.name).join("; ") || "General"}"`);
+                    if (exportColumns.workspaces) row.push(`"${rowsOf(workspaces).filter(w => (w.members || "").includes(e.name)).map(w => w.name).join("; ") || "General"}"`);
                     return row.join(",");
                   })
                 ].join("\n");
@@ -34328,11 +34329,11 @@ function TeamWorkspaces({ employees, currentUser }) {
                 <th className="py-2 px-3">Employee Name</th>
                 <th className="py-2 px-3">Department</th>
                 <th className="py-2 px-3">Role</th>
-                {workspaces.rows.map(w => <th key={w.id} className="py-2 px-3 truncate max-w-[140px]">{w.name}</th>)}
+                {rowsOf(workspaces).map(w => <th key={w.id} className="py-2 px-3 truncate max-w-[140px]">{w.name}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-[12.5px]">
-              {employees.rows
+              {rowsOf(employees)
                 .filter(e => selectedExportDept === "All" || e.department === selectedExportDept)
                 .filter(e => !matrixSearch || e.name.toLowerCase().includes(matrixSearch.toLowerCase()))
                 .filter(e => {
@@ -34358,7 +34359,7 @@ function TeamWorkspaces({ employees, currentUser }) {
                     </td>
                     <td className="py-2.5 px-3 text-slate-500">{e.department || "General"}</td>
                     <td className="py-2.5 px-3 text-slate-500">{e.role || "Staff"}</td>
-                    {workspaces.rows.map(w => {
+                    {rowsOf(workspaces).map(w => {
                       const isMember = (w.members || "").includes(e.name);
                       return (
                         <td key={w.id} className="py-2.5 px-3">
@@ -34374,7 +34375,7 @@ function TeamWorkspaces({ employees, currentUser }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {workspaces.rows.map((w) => (
+        {rowsOf(workspaces).map((w) => (
           <div key={w.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
             <div className="flex items-start justify-between mb-2">
               <p className="text-[13.5px] font-semibold text-[#111827]">{w.name}</p>
@@ -34385,7 +34386,7 @@ function TeamWorkspaces({ employees, currentUser }) {
             <div className="flex items-center gap-1.5 mt-3 text-[11.5px] text-slate-400"><Users size={12} /> {w.members || "No members listed"}</div>
           </div>
         ))}
-        {!workspaces.loading && workspaces.rows.length === 0 && (
+        {!workspaces.loading && rowsOf(workspaces).length === 0 && (
           <div className="col-span-full bg-white rounded-xl border border-slate-200/80 shadow-sm">
             <EmptyState icon={Users} title="No workspaces yet" hint="Group a cross-functional team around a project or initiative." actionLabel="New Workspace" onAction={() => setShowForm(true)} />
           </div>
@@ -34437,7 +34438,7 @@ function WorkspaceFormPanel({ departments, onClose, onSubmit, saving = false }) 
 // direct link into the real module rather than a second, competing file
 // store that could drift out of sync with the real one.
 function CollabFileSharing({ filesHook, onNavigate }) {
-  const recent = [...filesHook.rows].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8);
+  const recent = [...rowsOf(filesHook)].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8);
   const [previewFile, setPreviewFile] = useState(null);
 
   return (
@@ -34518,7 +34519,7 @@ function NotebookView({ currentUser }) {
   // ever shows for the person who created it — everyone else's session
   // filters it out before it ever renders, not just visually de-
   // emphasized while still technically present in the DOM.
-  const visible = notes.rows.filter((n) => n.visibility === "Team" || n.createdBy === currentUser.name);
+  const visible = rowsOf(notes).filter((n) => n.visibility === "Team" || n.createdBy === currentUser.name);
   const active = visible.filter((n) => n.status === "Active");
   const completed = visible.filter((n) => n.status === "Completed");
   const filtered = filter === "active" ? active : filter === "completed" ? completed : visible;
@@ -34669,11 +34670,11 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
   const channels = useCompanyTable("notification_channels", notificationChannelsSeed, { mapRow: mapNotificationChannelRow });
   const rules = useCompanyTable("notification_rules", notificationRulesSeed, { mapRow: mapNotificationRuleRow });
   const log = useCompanyTable("notification_log", notificationLogSeed, { order: { col: "created_at", ascending: false }, mapRow: mapNotificationLogRow });
-  const notificationRows = log.rows.filter((row) => !row.recipientUserId || row.recipientUserId === currentUser?.id);
+  const notificationRows = rowsOf(log).filter((row) => !row.recipientUserId || row.recipientUserId === currentUser?.id);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
-  const enabledCount = channels.rows.filter((c) => c.enabled).length;
-  const functionalEnabled = channels.rows.filter((c) => c.enabled && NOTIFICATION_CHANNELS.find((n) => n.id === c.id)?.functional).length;
+  const enabledCount = rowsOf(channels).filter((c) => c.enabled).length;
+  const functionalEnabled = rowsOf(channels).filter((c) => c.enabled && NOTIFICATION_CHANNELS.find((n) => n.id === c.id)?.functional).length;
 
   // Notification inbox — derives from smart alerts + audit log + approvals
   const [readIds, setReadIds] = useState(() => {
@@ -34759,7 +34760,7 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
         { label: "Channels Enabled", value: String(enabledCount), sub: `of ${NOTIFICATION_CHANNELS.length}` },
         { label: "Functional Channels On", value: String(functionalEnabled), sub: "Slack / Teams only" },
         { label: "Active Business Alerts", value: String(alerts.length), color: alerts.length > 0 ? "text-[#F59E0B]" : undefined },
-        { label: "Dispatches Logged", value: String(log.rows.length) },
+        { label: "Dispatches Logged", value: String(rowsOf(log).length) },
       ]} />
 
       {tab === "inbox" && (
@@ -34845,7 +34846,7 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
         </div>
       )}
       {tab === "channels" && <NotificationChannels channels={channels} onLog={logDispatch} canManage={canManage} currentUser={currentUser} />}
-      {tab === "routing" && <AlertRouting rules={rules} channels={channels.rows} alerts={alerts} onLog={logDispatch} />}
+      {tab === "routing" && <AlertRouting rules={rules} channels={rowsOf(channels)} alerts={alerts} onLog={logDispatch} />}
       {tab === "log" && <NotificationLog log={{ ...log, rows: notificationRows }} />}
     </div>
     </>
@@ -37408,7 +37409,7 @@ function AuditLogViewer({ timezone }) {
     order: { col: "created_at", ascending: false },
     mapRow: mapAuditLogRow,
   });
-  const entries = auditLog.rows;
+  const entries = rowsOf(auditLog);
   const modules = useMemo(() => ["all", ...Array.from(new Set(entries.map((e) => e.module).filter(Boolean)))], [entries]);
   const cutoff = useMemo(() => {
     if (period === "all") return null;
@@ -37710,7 +37711,7 @@ function BranchesManager() {
   }
 
   async function deleteBranch(id) {
-    const b = branches.rows.find((x) => x.id === id);
+    const b = rowsOf(branches).find((x) => x.id === id);
     if (b?.isHeadquarters) { notify("The headquarters branch can't be removed.", "error"); return; }
     if (!b) return;
     if (requiresConfirmedPersistence()) {
@@ -37741,7 +37742,7 @@ function BranchesManager() {
         </form>
       )}
       <div className="divide-y divide-slate-50">
-        {branches.rows.map((b) => (
+        {rowsOf(branches).map((b) => (
           <div key={b.id} className="flex items-center justify-between py-2.5">
             <div className="flex items-center gap-2">
               <p className="text-[13px] font-medium text-[#111827]">{b.name}</p>
@@ -37795,7 +37796,7 @@ function DepartmentsManager({ employeesHook }) {
   async function installKit() {
     const names = INDUSTRY_DEPT_KITS[kit];
     if (!names || saving) return;
-    const missing = names.filter((n) => !departments.rows.some((d) => d.name.toLowerCase() === n.toLowerCase()));
+    const missing = names.filter((n) => !rowsOf(departments).some((d) => d.name.toLowerCase() === n.toLowerCase()));
     if (missing.length === 0) { notify(`${kit} departments already exist — nothing to add.`); return; }
     const rows = missing.map((n, i) => ({ id: `DEP-KIT-${Date.now()}-${i}`, name: n }));
     setSaving(true);
@@ -37814,13 +37815,13 @@ function DepartmentsManager({ employeesHook }) {
       setSaving(false);
     }
   }
-  const headcount = (name) => employeesHook.rows.filter((e) => (e.department || "").toLowerCase() === name.toLowerCase()).length;
-  const untracked = [...new Set(employeesHook.rows.map((e) => e.department || "General"))].filter((d) => !departments.rows.some((x) => x.name.toLowerCase() === d.toLowerCase()));
+  const headcount = (name) => rowsOf(employeesHook).filter((e) => (e.department || "").toLowerCase() === name.toLowerCase()).length;
+  const untracked = [...new Set(rowsOf(employeesHook).map((e) => e.department || "General"))].filter((d) => !rowsOf(departments).some((x) => x.name.toLowerCase() === d.toLowerCase()));
 
   async function addDept(e) {
     e.preventDefault();
     const name = draft.trim();
-    if (!name || saving || departments.rows.some((d) => d.name.toLowerCase() === name.toLowerCase())) return;
+    if (!name || saving || rowsOf(departments).some((d) => d.name.toLowerCase() === name.toLowerCase())) return;
     const row = { id: `DEP-${Date.now()}`, name };
     setSaving(true);
     try {
@@ -37856,11 +37857,11 @@ function DepartmentsManager({ employeesHook }) {
         <button type="button" onClick={installKit} disabled={!kit || saving} className="text-[12px] font-medium border border-[#16A34A]/40 text-[#16A34A] rounded-lg px-3.5 py-2 shrink-0 hover:bg-[#16A34A]/5 disabled:opacity-40">{saving ? "Saving…" : "Install kit"}</button>
       </div>
       <div className="flex flex-wrap gap-2">
-        {departments.rows.map((d) => (
+        {rowsOf(departments).map((d) => (
           <span key={d.id} className="text-[12px] font-medium bg-slate-100 text-slate-600 rounded-full px-3 py-1.5">{d.name} <span className="text-slate-400">· {headcount(d.name)}</span></span>
         ))}
         {departments.loading && <span className="text-[12px] text-slate-400">Loading...</span>}
-        {!departments.loading && departments.rows.length === 0 && <span className="text-[12px] text-slate-400">No departments yet.</span>}
+        {!departments.loading && rowsOf(departments).length === 0 && <span className="text-[12px] text-slate-400">No departments yet.</span>}
       </div>
       {untracked.length > 0 && <p className="text-[10.5px] text-slate-400 mt-3">In use on employees but not in this list: {untracked.join(", ")} — stated rather than hidden.</p>}
     </section>
@@ -37995,7 +37996,7 @@ function BusinessNetworkSection({ company }) {
   const [offering, setOffering] = useState("");
   const [rfqDraft, setRfqDraft] = useState({ title: "", category: "", qty: "", deadline: "", contact: "" });
   const [showRfqForm, setShowRfqForm] = useState(false);
-  const mine = profiles.rows.find((p) => p.name === company.name);
+  const mine = rowsOf(profiles).find((p) => p.name === company.name);
 
   async function publishProfile() {
     if (mine) return;
@@ -38041,7 +38042,7 @@ function BusinessNetworkSection({ company }) {
       {mine && <p className="text-[11.5px] text-slate-500 mb-4">Your profile is live{mine.verified ? " and Verified." : " — shown as Unverified until platform operations confirms your TIN."}</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-5">
-        {profiles.rows.map((p) => (
+        {rowsOf(profiles).map((p) => (
           <div key={p.id} className="border border-slate-200/70 rounded-xl px-3.5 py-3 flex items-start justify-between gap-2">
             <div className="min-w-0"><p className="text-[13px] font-semibold text-[#111827] truncate">{p.name}</p><p className="text-[11px] text-slate-500 truncate">{p.offering || "—"}{p.region ? ` · ${p.region}` : ""}</p></div>
             {p.verified
@@ -38049,7 +38050,7 @@ function BusinessNetworkSection({ company }) {
               : <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 shrink-0">Unverified</span>}
           </div>
         ))}
-        {!profiles.loading && profiles.rows.length === 0 && <p className="col-span-full text-[12px] text-slate-400 text-center py-4">No businesses in the directory yet — be the first.</p>}
+        {!profiles.loading && rowsOf(profiles).length === 0 && <p className="col-span-full text-[12px] text-slate-400 text-center py-4">No businesses in the directory yet — be the first.</p>}
         {profiles.loading && <p className="col-span-full text-[12px] text-slate-400 text-center py-4">Loading...</p>}
       </div>
 
@@ -38068,13 +38069,13 @@ function BusinessNetworkSection({ company }) {
         </div>
       )}
       <div className="space-y-2">
-        {rfqs.rows.slice(0, 8).map((r) => (
+        {rowsOf(rfqs).slice(0, 8).map((r) => (
           <div key={r.id} className="border border-slate-200/70 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3">
             <div className="min-w-0"><p className="text-[12.5px] font-medium text-[#111827] truncate">{r.title}</p><p className="text-[10.5px] text-slate-400 truncate">{r.company}{r.category ? ` · ${r.category}` : ""}{r.qty ? ` · ${r.qty}` : ""}{r.contact ? ` · ${r.contact}` : ""}</p></div>
             {r.deadline && <span className="text-[10.5px] font-mono text-slate-500 shrink-0">due {r.deadline}</span>}
           </div>
         ))}
-        {!rfqs.loading && rfqs.rows.length === 0 && <p className="text-[12px] text-slate-400 text-center py-4">No open RFQs — post the first request for quotation.</p>}
+        {!rfqs.loading && rowsOf(rfqs).length === 0 && <p className="text-[12px] text-slate-400 text-center py-4">No open RFQs — post the first request for quotation.</p>}
       </div>
     </section>
   );
@@ -38266,51 +38267,51 @@ function buildBusinessSnapshot({ company, invoices, inventory, crm, expenses, em
   };
 
   if (scope.includes("finance")) {
-    const outstanding = invoices.rows
+    const outstanding = rowsOf(invoices)
       .filter((inv) => inv.status !== "Paid")
       .map((inv) => {
         const { total } = lineTotal(inv.items);
         return { id: inv.id, customer: inv.customer, dueDate: inv.dueDate, status: inv.status, balance_tzs_k: Math.round(total - (inv.amountPaid || 0)) };
       });
-    const revenue = invoices.rows.reduce((s, inv) => {
+    const revenue = rowsOf(invoices).reduce((s, inv) => {
       const { total } = lineTotal(inv.items);
       return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0));
     }, 0);
     snapshot.finance = {
       outstanding_invoices: outstanding,
-      recent_expenses: expenses.rows.slice(0, 20).map((e) => ({ vendor: e.vendor, category: e.category, amount_tzs_k: e.amount, status: e.status, date: e.date })),
-      unusual_expenses: detectUnusualExpenses(expenses.rows),
+      recent_expenses: rowsOf(expenses).slice(0, 20).map((e) => ({ vendor: e.vendor, category: e.category, amount_tzs_k: e.amount, status: e.status, date: e.date })),
+      unusual_expenses: detectUnusualExpenses(rowsOf(expenses)),
       totals: {
         revenue_collected_tzs_k: Math.round(revenue),
-        total_expenses_tzs_k: Math.round(expenses.rows.reduce((s, e) => s + e.amount, 0)),
+        total_expenses_tzs_k: Math.round(rowsOf(expenses).reduce((s, e) => s + e.amount, 0)),
         receivables_tzs_k: outstanding.reduce((s, i) => s + i.balance_tzs_k, 0),
       },
     };
   }
 
   if (scope.includes("sales")) {
-    snapshot.sales_pipeline = crm.rows.map((l) => ({
+    snapshot.sales_pipeline = rowsOf(crm).map((l) => ({
       company: l.company, contact: l.name, stage: l.stage, value_tzs_k: l.value, score: l.score, industry: l.industry,
       expectedCloseDate: l.expectedCloseDate || null,
     }));
   }
 
   if (scope.includes("inventory")) {
-    snapshot.inventory = inventory.rows.map((it) => ({
+    snapshot.inventory = rowsOf(inventory).map((it) => ({
       sku: it.sku, name: it.name, category: it.category, qty: it.qty, unit: it.unit,
       reorderLevel: it.reorder, status: stockStatus(it.qty, it.reorder), unitCost_tzs_k: it.unitCost, warehouse: it.warehouse,
     }));
-    snapshot.inventory_totals = { stock_value_tzs_k: Math.round(inventory.rows.reduce((s, it) => s + it.qty * it.unitCost, 0)) };
+    snapshot.inventory_totals = { stock_value_tzs_k: Math.round(rowsOf(inventory).reduce((s, it) => s + it.qty * it.unitCost, 0)) };
   }
 
   if (scope.includes("suppliers")) {
-    snapshot.suppliers = suppliers.rows.map((s) => ({ name: s.name, category: s.category, leadTimeDays: s.leadTimeDays, status: s.status }));
+    snapshot.suppliers = rowsOf(suppliers).map((s) => ({ name: s.name, category: s.category, leadTimeDays: s.leadTimeDays, status: s.status }));
   }
 
   if (scope.includes("hr")) {
-    snapshot.employees = employees.rows.map((e) => ({ name: e.name, role: e.role, department: e.department, status: e.status, salary_tzs_k: e.salary }));
-    snapshot.leave_requests = leaveRequests.rows.map((l) => ({ employee: l.employee, type: l.type, startDate: l.startDate, endDate: l.endDate, status: l.status }));
-    snapshot.hr_totals = { monthly_payroll_tzs_k: employees.rows.filter((e) => e.status !== "Inactive").reduce((s, e) => s + e.salary, 0) };
+    snapshot.employees = rowsOf(employees).map((e) => ({ name: e.name, role: e.role, department: e.department, status: e.status, salary_tzs_k: e.salary }));
+    snapshot.leave_requests = rowsOf(leaveRequests).map((l) => ({ employee: l.employee, type: l.type, startDate: l.startDate, endDate: l.endDate, status: l.status }));
+    snapshot.hr_totals = { monthly_payroll_tzs_k: rowsOf(employees).filter((e) => e.status !== "Inactive").reduce((s, e) => s + e.salary, 0) };
   }
 
   return snapshot;
@@ -38848,7 +38849,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       }
 
       if (name === "adjust_stock") {
-        const item = data.inventory.rows.find((it) => it.sku === toolInput.sku);
+        const item = rowsOf(data.inventory).find((it) => it.sku === toolInput.sku);
         if (!item) return `Error: no inventory item with SKU ${toolInput.sku}. Check the snapshot for valid SKUs.`;
         const delta = Number(toolInput.delta) || 0;
         const newQty = Math.max(0, item.qty + delta);
@@ -38868,7 +38869,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       }
 
       if (name === "mark_invoice_paid") {
-        const inv = data.invoices.rows.find((i) => i.id === toolInput.invoice_id);
+        const inv = rowsOf(data.invoices).find((i) => i.id === toolInput.invoice_id);
         if (!inv) return `Error: no invoice with ID ${toolInput.invoice_id}. Check the snapshot for valid invoice IDs.`;
         if (inv.status === "Paid") return `No change: ${inv.id} is already fully paid.`;
         const total = lineTotal(inv.items).total;
@@ -38901,7 +38902,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       }
 
       if (name === "approve_leave") {
-        const candidates = data.leaveRequests.rows.filter((l) => l.employee === toolInput.employee && l.status === "Pending" && (!toolInput.type || l.type === toolInput.type));
+        const candidates = rowsOf(data.leaveRequests).filter((l) => l.employee === toolInput.employee && l.status === "Pending" && (!toolInput.type || l.type === toolInput.type));
         if (candidates.length === 0) return "Error: no pending leave request found for " + toolInput.employee + (toolInput.type ? " (" + toolInput.type + ")" : "") + ". Check the snapshot.";
         const target = candidates[0];
         data.leaveRequests.setRows((prev) => prev.map((l) => (l.id === target.id ? { ...l, status: "Approved" } : l)));
@@ -38916,7 +38917,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       if (name === "create_invoice" || name === "create_quotation") {
         const isInvoice = name === "create_invoice";
         const lineItems = (toolInput.items || []).map((li) => {
-          const invItem = data.inventory.rows.find((it) => it.sku === li.sku);
+          const invItem = rowsOf(data.inventory).find((it) => it.sku === li.sku);
           if (!invItem) return null;
           return { sku: invItem.sku, name: invItem.name, qty: Number(li.qty) || 1, rate: invItem.unitCost };
         }).filter(Boolean);
@@ -39625,7 +39626,7 @@ function Marketing({ crm }) {
   // to go stale; add a lead in CRM and its industry's numbers move here.
   const segments = useMemo(() => {
     const map = {};
-    crm.rows.forEach((l) => {
+    rowsOf(crm).forEach((l) => {
       const key = l.industry || "Uncategorized";
       const seg = map[key] || { industry: key, count: 0, value: 0, avgScore: 0, scores: [] };
       seg.count += 1;
@@ -39636,11 +39637,11 @@ function Marketing({ crm }) {
     return Object.values(map)
       .map((s) => ({ ...s, avgScore: s.scores.length ? Math.round(s.scores.reduce((a, b) => a + b, 0) / s.scores.length) : 0 }))
       .sort((a, b) => b.count - a.count);
-  }, [crm.rows]);
+  }, [rowsOf(crm)]);
 
   const stats = useMemo(() => {
-    const active = campaigns.rows.filter((c) => c.status !== "Sent").length;
-    const sent = campaigns.rows.filter((c) => c.status === "Sent");
+    const active = rowsOf(campaigns).filter((c) => c.status !== "Sent").length;
+    const sent = rowsOf(campaigns).filter((c) => c.status === "Sent");
     const reach = sent.reduce((s, c) => {
       const seg = segments.find((x) => x.industry === c.segment);
       return s + (seg?.count || 0);
@@ -39648,7 +39649,7 @@ function Marketing({ crm }) {
     const avgOpen = sent.length ? Math.round(sent.reduce((s, c) => s + (c.openRate || 0), 0) / sent.length) : 0;
     const avgClick = sent.length ? Math.round(sent.reduce((s, c) => s + (c.clickRate || 0), 0) / sent.length) : 0;
     return { active, reach, avgOpen, avgClick };
-  }, [campaigns.rows, segments]);
+  }, [rowsOf(campaigns), segments]);
 
   const MKT_KPIS = [
     { label: "Active Campaigns", value: String(stats.active), delta: "Draft + Scheduled", up: true, icon: Megaphone },
@@ -40153,7 +40154,7 @@ function BulkSmsView({ crm }) {
   async function saveGroup(e) {
     e.preventDefault();
     if (!groupName.trim() || selectedLeads.size === 0) return;
-    const members = crm.rows.filter((l) => selectedLeads.has(l.id)).map((l) => ({ name: l.company, phone: l.phone }));
+    const members = rowsOf(crm).filter((l) => selectedLeads.has(l.id)).map((l) => ({ name: l.company, phone: l.phone }));
     const draft = { id: `GRP-${Date.now()}`, name: groupName.trim(), members };
     groups.setRows((prev) => [draft, ...prev]);
     setShowGroupForm(false);
@@ -40189,13 +40190,13 @@ function BulkSmsView({ crm }) {
       {tab === "groups" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[12.5px] text-slate-500">{groups.rows.length} groups</p>
+            <p className="text-[12.5px] text-slate-500">{rowsOf(groups).length} groups</p>
             <button onClick={() => setShowGroupForm(true)} className="btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Plus size={14} /> Create Group</button>
           </div>
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm divide-y divide-slate-50">
-            {!groups.loading && groups.rows.length === 0 && <EmptyState icon={Users} title="No Customer Groups" hint="Create groups to organize customers for future bulk messaging." actionLabel="Create Group" onAction={() => setShowGroupForm(true)} />}
+            {!groups.loading && rowsOf(groups).length === 0 && <EmptyState icon={Users} title="No Customer Groups" hint="Create groups to organize customers for future bulk messaging." actionLabel="Create Group" onAction={() => setShowGroupForm(true)} />}
             {groups.loading && <p className="text-[12.5px] text-slate-400 text-center py-8">Loading...</p>}
-            {groups.rows.map((g) => (
+            {rowsOf(groups).map((g) => (
               <div key={g.id} className="flex items-center justify-between px-4 py-3.5">
                 <div><p className="text-[13px] font-medium text-[#111827]">{g.name}</p><p className="text-[11px] text-slate-400">{g.members.length} members</p></div>
                 <button disabled title="Requires a connected SMS gateway" className="text-[12px] font-medium text-slate-300 cursor-not-allowed flex items-center gap-1"><Send size={13} /> Send</button>
@@ -40208,13 +40209,13 @@ function BulkSmsView({ crm }) {
       {tab === "templates" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[12.5px] text-slate-500">{templates.rows.length} templates</p>
+            <p className="text-[12.5px] text-slate-500">{rowsOf(templates).length} templates</p>
             <button onClick={() => setShowTemplateForm(true)} className="btn-primary text-white text-[12.5px] font-medium px-3.5 py-2 rounded-lg flex items-center gap-1.5"><Plus size={14} /> Create Template</button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {!templates.loading && templates.rows.length === 0 && <div className="col-span-full bg-white rounded-xl border border-slate-200/80 shadow-sm"><EmptyState icon={FileText} title="No templates" hint="Save a reusable message template with variable placeholders." actionLabel="Create Template" onAction={() => setShowTemplateForm(true)} /></div>}
+            {!templates.loading && rowsOf(templates).length === 0 && <div className="col-span-full bg-white rounded-xl border border-slate-200/80 shadow-sm"><EmptyState icon={FileText} title="No templates" hint="Save a reusable message template with variable placeholders." actionLabel="Create Template" onAction={() => setShowTemplateForm(true)} /></div>}
             {templates.loading && <p className="col-span-full text-[12.5px] text-slate-400 text-center py-8">Loading...</p>}
-            {templates.rows.map((t) => (
+            {rowsOf(templates).map((t) => (
               <div key={t.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
                 <div className="flex items-center justify-between mb-1.5"><p className="text-[13px] font-medium text-[#111827]">{t.name}</p><span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{t.category}</span></div>
                 <p className="text-[12px] text-slate-500 line-clamp-2">{t.message}</p>
@@ -40237,13 +40238,13 @@ function BulkSmsView({ crm }) {
               <div>
                 <label className="text-[12px] font-medium text-slate-600 block mb-1.5">Select real customers from CRM ({selectedLeads.size} selected)</label>
                 <div className="max-h-64 overflow-y-auto border border-slate-100 rounded-lg divide-y divide-slate-50">
-                  {crm.rows.filter((l) => l.phone).map((l) => (
+                  {rowsOf(crm).filter((l) => l.phone).map((l) => (
                     <label key={l.id} className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-slate-50">
                       <input type="checkbox" checked={selectedLeads.has(l.id)} onChange={(e) => setSelectedLeads((prev) => { const next = new Set(prev); if (e.target.checked) next.add(l.id); else next.delete(l.id); return next; })} />
                       <div className="min-w-0"><p className="text-[12.5px] text-[#111827] truncate">{l.company}</p><p className="text-[10.5px] text-slate-400">{l.phone}</p></div>
                     </label>
                   ))}
-                  {crm.rows.filter((l) => l.phone).length === 0 && <p className="text-[11.5px] text-slate-400 text-center py-4">No CRM leads with a phone number yet.</p>}
+                  {rowsOf(crm).filter((l) => l.phone).length === 0 && <p className="text-[11.5px] text-slate-400 text-center py-4">No CRM leads with a phone number yet.</p>}
                 </div>
               </div>
             </div>
@@ -40317,18 +40318,18 @@ function PosShiftPanel({ transactions, currentUser }) {
   const [countDraft, setCountDraft] = useState("");
   const [move, setMove] = useState({ kind: "Pay In", amount: "", reason: "" });
 
-  const open = shifts.rows.find((s) => s.status === "Open");
+  const open = rowsOf(shifts).find((s) => s.status === "Open");
   const valueOf = (t) => (t.items || []).reduce((s, it) => s + it.qty * it.price, 0);
 
   const sales = useMemo(() => {
     if (!open) return { count: 0, gross: 0, cash: 0, other: 0 };
-    const rows = transactions.rows.filter((t) => t.createdAt && t.createdAt >= open.openedAt);
+    const rows = rowsOf(transactions).filter((t) => t.createdAt && t.createdAt >= open.openedAt);
     const cash = rows.filter((t) => t.method === "Cash").reduce((s, t) => s + valueOf(t), 0);
     const gross = rows.reduce((s, t) => s + valueOf(t), 0);
     return { count: rows.length, gross, cash, other: gross - cash };
-  }, [transactions.rows, open]);
+  }, [rowsOf(transactions), open]);
 
-  const mine = open ? moves.rows.filter((m) => m.shiftId === (open.dbId || open.id)) : [];
+  const mine = open ? rowsOf(moves).filter((m) => m.shiftId === (open.dbId || open.id)) : [];
   const payIns = mine.filter((m) => m.kind === "Pay In").reduce((s, m) => s + m.amount, 0);
   const payOuts = mine.filter((m) => m.kind === "Pay Out").reduce((s, m) => s + m.amount, 0);
   const expected = open ? open.openingFloat + sales.cash + payIns - payOuts : 0;
@@ -40442,7 +40443,7 @@ function PosShiftPanel({ transactions, currentUser }) {
   );
 
   if (!open) {
-    const last = shifts.rows.find((s) => s.status === "Closed");
+    const last = rowsOf(shifts).find((s) => s.status === "Closed");
     const lastVar = last && last.countedCash !== null ? null : null;
     return (
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 mb-4">
@@ -40541,7 +40542,7 @@ function POS({ inventory, transactionsHook, transactionItemsHook, company, curre
     reload: async () => {
       await Promise.all([transactionsHook.reload?.(), transactionItemsHook?.reload?.()].filter(Boolean));
     },
-    rows: transactionsHook.rows.map((transaction) => {
+    rows: rowsOf(transactionsHook).map((transaction) => {
       if ((transaction.items || []).length > 0) return transaction;
       const fallbackItems = (transactionItemsHook?.rows || []).filter((item) => item.transactionId === transaction.dbId);
       return fallbackItems.length > 0 ? { ...transaction, items: fallbackItems } : transaction;
@@ -40598,11 +40599,11 @@ function POS({ inventory, transactionsHook, transactionItemsHook, company, curre
 
   const todayStr = TODAY.toISOString().slice(0, 10);
   const stats = useMemo(() => {
-    const today = transactions.rows.filter((t) => t.status === "Completed" && t.date === todayStr);
+    const today = rowsOf(transactions).filter((t) => t.status === "Completed" && t.date === todayStr);
     const revenue = today.reduce((s, t) => s + t.items.reduce((si, it) => si + it.qty * it.price, 0) * (1 + TAX_RATE), 0);
     const itemsSold = today.reduce((s, t) => s + t.items.reduce((si, it) => si + it.qty, 0), 0);
     return { count: today.length, revenue, itemsSold, avg: today.length ? revenue / today.length : 0 };
-  }, [transactions.rows, todayStr]);
+  }, [rowsOf(transactions), todayStr]);
 
   const POS_KPIS = [
     { label: "Today Sales", value: `TZS ${money(Math.round(stats.revenue))}k`, delta: "Incl. VAT", up: true, icon: CircleDollarSign },
@@ -40665,7 +40666,7 @@ function POS({ inventory, transactionsHook, transactionItemsHook, company, curre
         {POS_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "checkout" && <Checkout inventory={inventory} transactions={transactions} company={company} currentUser={currentUser} customers={customers.rows} deviceProfile={deviceProfile} />}
+      {tab === "checkout" && <Checkout inventory={inventory} transactions={transactions} company={company} currentUser={currentUser} customers={rowsOf(customers)} deviceProfile={deviceProfile} />}
       {tab === "history" && <RegisterHistory transactions={transactions} inventory={inventory} company={company} />}
       {tab === "reconciliation" && <PosReconciliationDashboard currentUser={currentUser} />}
     </div>
@@ -40676,9 +40677,9 @@ function PosReconciliationDashboard({ currentUser }) {
   const reconciliation = useCompanyTable("pos_sync_events", [], { order: { col: "updated_at", ascending: false } });
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const rows = useMemo(() => reconciliation.rows.filter((row) => statusFilter === "all" || row.status === statusFilter), [reconciliation.rows, statusFilter]);
-  const syncedCount = reconciliation.rows.filter((row) => row.status === "synced").length;
-  const attentionCount = reconciliation.rows.filter((row) => row.status === "needs_attention").length;
+  const rows = useMemo(() => rowsOf(reconciliation).filter((row) => statusFilter === "all" || row.status === statusFilter), [rowsOf(reconciliation), statusFilter]);
+  const syncedCount = rowsOf(reconciliation).filter((row) => row.status === "synced").length;
+  const attentionCount = rowsOf(reconciliation).filter((row) => row.status === "needs_attention").length;
   const displayDate = (value) => value ? new Date(value).toLocaleString() : "—";
   const canExport = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager", "HR Manager", "Sales Manager", "Procurement Officer", "Warehouse Manager", "Project Manager"].includes(canonicalRoleId(currentUser?.role));
 
@@ -40713,7 +40714,7 @@ function PosReconciliationDashboard({ currentUser }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          ["Server outcomes", reconciliation.rows.length, "#2563EB"],
+          ["Server outcomes", rowsOf(reconciliation).length, "#2563EB"],
           ["Synchronized", syncedCount, "#16A34A"],
           ["Needs attention", attentionCount, "#EF4444"],
         ].map(([label, value, color]) => <div key={label} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"><p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-1 text-[21px] font-semibold" style={{ color }}>{value}</p></div>)}
@@ -40759,8 +40760,8 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   // same retail markup the storefront uses — one product, one price,
   // regardless of which counter it's sold from.
   const products = useMemo(
-    () => inventory.rows.map((it) => ({ ...it, price: Math.round(it.unitCost * MARKUP) })),
-    [inventory.rows]
+    () => rowsOf(inventory).map((it) => ({ ...it, price: Math.round(it.unitCost * MARKUP) })),
+    [rowsOf(inventory)]
   );
   const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products]);
 
@@ -40773,7 +40774,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   }, [products, category, query]);
 
   function addToCart(item) {
-    const stock = inventory.rows.find((it) => it.sku === item.sku)?.qty || 0;
+    const stock = rowsOf(inventory).find((it) => it.sku === item.sku)?.qty || 0;
     setCart((previous) => {
       const result = addProductToPosCart(previous, item, stock);
       if (!result.added) {
@@ -40786,7 +40787,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   function changeQty(sku, delta) {
     setCart((previous) => {
       const current = previous.find((line) => line.sku === sku);
-      const stock = inventory.rows.find((item) => item.sku === sku)?.qty || 0;
+      const stock = rowsOf(inventory).find((item) => item.sku === sku)?.qty || 0;
       if (delta > 0 && current && current.qty >= stock) {
         notify(`Only ${stock} ${current.unit || "unit"} of ${current.name} is available`, "error");
         return previous;
@@ -40799,7 +40800,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   const tax = Math.round(subtotal * TAX_RATE);
   const total = subtotal + tax;
   const paymentSummary = useMemo(() => calculatePosPaymentSummary(payments, total), [payments, total]);
-  const heldOrders = useMemo(() => transactions.rows.filter((transaction) => transaction.status === "Held"), [transactions.rows]);
+  const heldOrders = useMemo(() => rowsOf(transactions).filter((transaction) => transaction.status === "Held"), [rowsOf(transactions)]);
   const selectedCustomer = useMemo(() => (customers || []).find((customer) => customer.dbId === customerId || customer.id === customerId) || null, [customers, customerId]);
   const usesCustomerCredit = paymentSummary.allocations.some((payment) => payment.method === "Customer Credit");
 
@@ -41120,7 +41121,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
     // committing — the cart could have gone stale if stock moved elsewhere
     // (a sales order fulfilled, a work order completed) while shopping.
     const shortages = cart.filter((c) => {
-      const stock = inventory.rows.find((it) => it.sku === c.sku)?.qty || 0;
+      const stock = rowsOf(inventory).find((it) => it.sku === c.sku)?.qty || 0;
       return c.qty > stock;
     });
     if (shortages.length) {
@@ -42069,7 +42070,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
     const alerts = [];
     const todayStr = TODAY.toISOString().slice(0, 10);
 
-    const outOfStock = inventory.rows.filter((it) => it.qty <= 0);
+    const outOfStock = rowsOf(inventory).filter((it) => it.qty <= 0);
     if (outOfStock.length) {
       alerts.push({
         id: "out-of-stock", icon: Ban, color: "#EF4444", target: "inventory",
@@ -42078,7 +42079,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const lowStock = inventory.rows.filter((it) => it.qty > 0 && it.qty <= it.reorder);
+    const lowStock = rowsOf(inventory).filter((it) => it.qty > 0 && it.qty <= it.reorder);
     if (lowStock.length) {
       alerts.push({
         id: "low-stock", icon: AlertCircle, color: "#F59E0B", target: "inventory",
@@ -42087,7 +42088,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const overdue = invoices.rows.filter((inv) => inv.status !== "Paid" && inv.dueDate && inv.dueDate < todayStr);
+    const overdue = rowsOf(invoices).filter((inv) => inv.status !== "Paid" && inv.dueDate && inv.dueDate < todayStr);
     if (overdue.length) {
       const total = overdue.reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
       alerts.push({
@@ -42097,7 +42098,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const pendingExpenses = expenses.rows.filter((e) => e.status === "Pending");
+    const pendingExpenses = rowsOf(expenses).filter((e) => e.status === "Pending");
     if (pendingExpenses.length) {
       alerts.push({
         id: "pending-expenses", icon: Wallet, color: "#F59E0B", target: "finance",
@@ -42106,7 +42107,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const unusualExpenses = detectUnusualExpenses(expenses.rows);
+    const unusualExpenses = detectUnusualExpenses(rowsOf(expenses));
     if (unusualExpenses.length) {
       alerts.push({
         id: "unusual-expenses", icon: AlertCircle, color: "#EF4444", target: "finance",
@@ -42115,7 +42116,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const pendingLeave = leaveRequests.rows.filter((l) => l.status === "Pending");
+    const pendingLeave = rowsOf(leaveRequests).filter((l) => l.status === "Pending");
     if (pendingLeave.length) {
       alerts.push({
         id: "pending-leave", icon: Clock, color: "#F59E0B", target: "hr",
@@ -42124,7 +42125,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const overdueOrders = workOrders.rows.filter((w) => w.status !== "Completed" && w.status !== "Cancelled" && w.dueDate && w.dueDate < todayStr);
+    const overdueOrders = rowsOf(workOrders).filter((w) => w.status !== "Completed" && w.status !== "Cancelled" && w.dueDate && w.dueDate < todayStr);
     if (overdueOrders.length) {
       alerts.push({
         id: "overdue-work-orders", icon: Factory, color: "#F59E0B", target: "manufacturing",
@@ -42133,7 +42134,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const dueSubscriptions = subscriptions.rows.filter((s) => s.status === "Active" && s.nextBillingDate < todayStr);
+    const dueSubscriptions = rowsOf(subscriptions).filter((s) => s.status === "Active" && s.nextBillingDate < todayStr);
     if (dueSubscriptions.length) {
       alerts.push({
         id: "subscriptions-due", icon: Repeat, color: "#F59E0B", target: "sales",
@@ -42143,7 +42144,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
     }
 
     return alerts;
-  }, [inventory.rows, invoices.rows, expenses.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows]);
+  }, [rowsOf(inventory), rowsOf(invoices), rowsOf(expenses), rowsOf(leaveRequests), rowsOf(workOrders), rowsOf(subscriptions)]);
 }
 
 function NotificationCenter({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions, onNavigate, className = "" }) {
@@ -42459,14 +42460,14 @@ function CustomerPortal({ currentUser, invoices, filesHook, onSignOut }) {
   // first customer name appearing in the seed data purely so the portal
   // has something real to show, and says so plainly rather than quietly
   // showing every customer's invoices as if that were normal.
-  const effectiveCustomer = currentUser.customerRef || invoices.rows[0]?.customer || "Demo Customer";
-  const myInvoices = invoices.rows.filter((inv) => inv.customer === effectiveCustomer);
-  const myOrders = orders.rows.filter((o) => o.customer === effectiveCustomer);
-  const myTickets = tickets.rows.filter((t) => t.customer === effectiveCustomer);
-  const myDocuments = filesHook.rows.filter((f) => myInvoices.some((i) => i.id === f.linkedRecord) || myOrders.some((o) => o.id === f.linkedRecord));
+  const effectiveCustomer = currentUser.customerRef || rowsOf(invoices)[0]?.customer || "Demo Customer";
+  const myInvoices = rowsOf(invoices).filter((inv) => inv.customer === effectiveCustomer);
+  const myOrders = rowsOf(orders).filter((o) => o.customer === effectiveCustomer);
+  const myTickets = rowsOf(tickets).filter((t) => t.customer === effectiveCustomer);
+  const myDocuments = rowsOf(filesHook).filter((f) => myInvoices.some((i) => i.id === f.linkedRecord) || myOrders.some((o) => o.id === f.linkedRecord));
 
-  const stripe = connections.rows.find((c) => c.id === "stripe");
-  const paypal = connections.rows.find((c) => c.id === "paypal");
+  const stripe = rowsOf(connections).find((c) => c.id === "stripe");
+  const paypal = rowsOf(connections).find((c) => c.id === "paypal");
 
   const PORTAL_TABS = [
     { id: "invoices", label: "Invoices", icon: ReceiptText },
@@ -42821,11 +42822,11 @@ function ExternalSupplierPortal({ currentUser, onSignOut }) {
   const expenses = useCompanyTable("finance_expenses", expensesSeed, { mapRow: mapExpenseRow });
   const files = useCompanyTable("documents", filesSeed, { mapRow: mapFileRow });
 
-  const effectiveSupplier = currentUser.customerRef || purchaseOrders.rows[0]?.supplier || "Demo Supplier";
-  const myOrders = purchaseOrders.rows.filter((po) => po.supplier === effectiveSupplier);
-  const myContracts = contracts.rows.filter((c) => c.supplier === effectiveSupplier);
-  const myPayments = expenses.rows.filter((e) => e.vendor === effectiveSupplier);
-  const myDocuments = files.rows.filter((f) => myOrders.some((po) => po.id === f.linkedRecord));
+  const effectiveSupplier = currentUser.customerRef || rowsOf(purchaseOrders)[0]?.supplier || "Demo Supplier";
+  const myOrders = rowsOf(purchaseOrders).filter((po) => po.supplier === effectiveSupplier);
+  const myContracts = rowsOf(contracts).filter((c) => c.supplier === effectiveSupplier);
+  const myPayments = rowsOf(expenses).filter((e) => e.vendor === effectiveSupplier);
+  const myDocuments = rowsOf(files).filter((f) => myOrders.some((po) => po.id === f.linkedRecord));
 
   const PORTAL_TABS = [
     { id: "orders", label: "Purchase Orders", icon: ClipboardList },
@@ -42912,7 +42913,7 @@ function SupplierInvoiceUploadTab({ myOrders, filesHook }) {
   const [selectedPO, setSelectedPO] = useState(myOrders[0]?.id || "");
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
-  const uploadedForPO = filesHook.rows.filter((f) => f.linkedRecord === selectedPO && f.folder === "Purchase Orders");
+  const uploadedForPO = rowsOf(filesHook).filter((f) => f.linkedRecord === selectedPO && f.folder === "Purchase Orders");
 
   async function upload(e) {
     e.preventDefault();
@@ -44062,11 +44063,11 @@ function VicobaSaccosModule({ currentUser }) {
   const [showLoanForm,   setShowLoanForm]   = useState(false);
   const [showMeetingForm,setShowMeetingForm]= useState(false);
 
-  const totalShares       = members.rows.reduce((s,m) => s + m.shares, 0);
-  const totalFund         = members.rows.reduce((s,m) => s + m.contributions, 0);
-  const activeLoans       = loans.rows.filter((l) => l.status === "Active");
+  const totalShares       = rowsOf(members).reduce((s,m) => s + m.shares, 0);
+  const totalFund         = rowsOf(members).reduce((s,m) => s + m.contributions, 0);
+  const activeLoans       = rowsOf(loans).filter((l) => l.status === "Active");
   const totalLoanPortfolio= activeLoans.reduce((s,l) => s + l.balance, 0);
-  const defaulted         = loans.rows.filter((l) => l.status === "Defaulted");
+  const defaulted         = rowsOf(loans).filter((l) => l.status === "Defaulted");
   const SHARE_PRICE       = 20; // TZS 20k per share
 
   const VICOBA_TABS = [
@@ -44091,7 +44092,7 @@ function VicobaSaccosModule({ currentUser }) {
 
   async function disburseLoan() {
     if (!loanForm.memberId || !loanForm.amount) return;
-    const member = members.rows.find((m) => m.id === loanForm.memberId);
+    const member = rowsOf(members).find((m) => m.id === loanForm.memberId);
     const total  = Number(loanForm.amount) * (1 + Number(loanForm.rate)/100);
     const row = { id: docId("VL"), memberId: loanForm.memberId, memberName: member?.name||"",
       amount: Number(loanForm.amount), rate: Number(loanForm.rate), weeks: Number(loanForm.weeks),
@@ -44121,7 +44122,7 @@ function VicobaSaccosModule({ currentUser }) {
   }
 
   // Dividend calculation — distributes profit proportional to shares held
-  const totalInterestEarned = loans.rows.reduce((s,l) => s + (l.amount * l.rate/100), 0);
+  const totalInterestEarned = rowsOf(loans).reduce((s,l) => s + (l.amount * l.rate/100), 0);
   const dividendPerShare = totalShares > 0 ? totalInterestEarned / totalShares : 0;
 
   return (
@@ -44131,10 +44132,10 @@ function VicobaSaccosModule({ currentUser }) {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-[19px] font-bold text-white">VICOBA / SACCOS Manager</h1>
-            <p className="text-[12px] mt-0.5" style={{color:"rgba(255,255,255,.65)"}}>Community savings & credit management &middot; {members.rows.length} members &middot; Cycle 2026</p>
+            <p className="text-[12px] mt-0.5" style={{color:"rgba(255,255,255,.65)"}}>Community savings & credit management &middot; {rowsOf(members).length} members &middot; Cycle 2026</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={()=>downloadCSV("vicoba-members",members.rows.map(m=>({
+            <button onClick={()=>downloadCSV("vicoba-members",rowsOf(members).map(m=>({
               ID:m.id,Name:m.name||"",Phone:m.phone||"",Shares:m.shares||0,
               Savings_k:m.savings||0,Balance_k:m.balance||0,Status:m.status||"Active"
             })),[{key:"ID",label:"ID"},{key:"Name",label:"Name"},{key:"Phone",label:"Phone"},
@@ -44162,7 +44163,7 @@ function VicobaSaccosModule({ currentUser }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { label:"Total Members", value: members.rows.length, sub: members.rows.filter(m=>m.status==="Active").length+" active", icon: Users, color:"#2563EB" },
+              { label:"Total Members", value: rowsOf(members).length, sub: rowsOf(members).filter(m=>m.status==="Active").length+" active", icon: Users, color:"#2563EB" },
               { label:"Group Fund",    value: "TZS "+money(totalFund)+"k", sub:"Total contributions", icon: Wallet, color:"#16A34A" },
               { label:"Loan Portfolio",value: "TZS "+money(totalLoanPortfolio)+"k", sub: activeLoans.length+" active loans", icon: CircleDollarSign, color:"#F59E0B" },
               { label:"Defaulted",     value: "TZS "+money(defaulted.reduce((s,l)=>s+l.balance,0))+"k", sub: defaulted.length+" loans at risk", icon: AlertCircle, color:"#EF4444" },
@@ -44183,7 +44184,7 @@ function VicobaSaccosModule({ currentUser }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Share Distribution — Top Members</p>
               {(() => {
-                const shareData = [...members.rows].sort((a,b)=>b.shares-a.shares).slice(0,6).map((m,i)=>({
+                const shareData = [...rowsOf(members)].sort((a,b)=>b.shares-a.shares).slice(0,6).map((m,i)=>({
                   name: m.name.split(" ")[0],
                   value: m.shares,
                   fill: ["#2563EB","#16A34A","#D97706","#7C3AED","#EF4444","#0891B2"][i%6],
@@ -44207,9 +44208,9 @@ function VicobaSaccosModule({ currentUser }) {
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Loan Portfolio Status</p>
               {(() => {
                 const loanStatusData = [
-                  {name:"Active",   value:loans.rows.filter(l=>l.status==="Active").length,   fill:"#2563EB"},
-                  {name:"Repaid",   value:loans.rows.filter(l=>l.status==="Repaid").length,   fill:"#16A34A"},
-                  {name:"Defaulted",value:loans.rows.filter(l=>l.status==="Defaulted").length,fill:"#EF4444"},
+                  {name:"Active",   value:rowsOf(loans).filter(l=>l.status==="Active").length,   fill:"#2563EB"},
+                  {name:"Repaid",   value:rowsOf(loans).filter(l=>l.status==="Repaid").length,   fill:"#16A34A"},
+                  {name:"Defaulted",value:rowsOf(loans).filter(l=>l.status==="Defaulted").length,fill:"#EF4444"},
                 ].filter(d=>d.value>0);
                 return loanStatusData.length===0?<p className="text-slate-400 text-center py-4">No loans yet</p>:(
                   <div className="flex items-center gap-4">
@@ -44258,7 +44259,7 @@ function VicobaSaccosModule({ currentUser }) {
                 {["Member","Phone","Gender","Shares","Fund (TZS k)","Status",""].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}
               </tr></thead>
               <tbody>
-                {members.rows.map((m) => (
+                {rowsOf(members).map((m) => (
                   <tr key={m.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                     <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{background:"#2563EB"}}>{m.name.charAt(0)}</div><span className="font-medium text-[#111827]">{m.name}</span></div></td>
                     <td className="px-4 py-3 text-slate-500">{m.phone}</td>
@@ -44285,7 +44286,7 @@ function VicobaSaccosModule({ currentUser }) {
                 <FormField label="Member">
                   <select className={inputClass} value={loanForm.memberId} onChange={e=>setLoanForm({...loanForm,memberId:e.target.value})}>
                     <option value="">Select member...</option>
-                    {members.rows.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                    {rowsOf(members).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
                   </select>
                 </FormField>
                 <FormField label="Amount (TZS k)"><input type="number" min="0" className={inputClass} value={loanForm.amount} onChange={e=>setLoanForm({...loanForm,amount:e.target.value})} placeholder="0"/></FormField>
@@ -44303,7 +44304,7 @@ function VicobaSaccosModule({ currentUser }) {
                 {["Loan ID","Member","Principal","Interest","Balance","Status","Action"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}
               </tr></thead>
               <tbody>
-                {loans.rows.map((l) => {
+                {rowsOf(loans).map((l) => {
                   const interest = l.amount * l.rate / 100;
                   const pct = l.balance / (l.amount + interest) * 100;
                   return (
@@ -44349,7 +44350,7 @@ function VicobaSaccosModule({ currentUser }) {
             </div>
           )}
           <div className="space-y-3">
-            {meetings.rows.map((m) => (
+            {rowsOf(meetings).map((m) => (
               <div key={m.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div><p className="text-[14px] font-semibold text-[#111827]">Meeting — {m.date}</p><p className="text-[12px] text-slate-400">{m.venue}</p></div>
@@ -44379,7 +44380,7 @@ function VicobaSaccosModule({ currentUser }) {
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100"><th className="py-2 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">Member</th><th className="py-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400">Shares</th><th className="py-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400">Dividend</th></tr></thead>
               <tbody>
-                {[...members.rows].sort((a,b)=>b.shares-a.shares).map((m) => (
+                {[...rowsOf(members)].sort((a,b)=>b.shares-a.shares).map((m) => (
                   <tr key={m.id} className="border-b border-slate-50 last:border-0">
                     <td className="py-2.5 font-medium text-[#111827]">{m.name}</td>
                     <td className="py-2.5 text-right font-mono">{m.shares}</td>
@@ -44481,7 +44482,7 @@ function VitalsTriageView({ patients, currentUser, HC_BLUE }) {
 
   async function saveVitals() {
     if (!form.patientId) return;
-    const pat = patients.rows.find(p => p.id === form.patientId);
+    const pat = rowsOf(patients).find(p => p.id === form.patientId);
     const row = { ...form, id: docId("VIT"), patient: pat?.fullName||"", bmi: bmi(Number(form.weight), Number(form.height)) };
     vitals.setRows(prev => [row, ...prev]);
     setForm({ patientId:"", date: new Date().toISOString().slice(0,10), bp:"", pulse:"", temp:"", weight:"", height:"", spo2:"", respiratoryRate:"", pain:"0", nurse: currentUser?.name||"", notes:"" });
@@ -44491,7 +44492,7 @@ function VitalsTriageView({ patients, currentUser, HC_BLUE }) {
     if (IS_CONFIGURED) { try { await sb("hc_vitals").insert({ patient_id:row.patientId, patient_name:row.patient, entry_date:row.date, bp:row.bp, pulse:Number(row.pulse), temperature:Number(row.temp), weight:Number(row.weight), height:Number(row.height), spo2:Number(row.spo2), pain_score:Number(row.pain), notes:row.notes }).run(); } catch(_e){} }
   }
 
-  const urgentPatients = patients.rows.filter(p => p.status === "Urgent" || p.status === "Critical");
+  const urgentPatients = rowsOf(patients).filter(p => p.status === "Urgent" || p.status === "Critical");
 
   return (
     <div className="space-y-4">
@@ -44517,7 +44518,7 @@ function VitalsTriageView({ patients, currentUser, HC_BLUE }) {
             <FormField label="Patient" cls="col-span-2">
               <select className={inputClass} value={form.patientId} onChange={e => setForm({ ...form, patientId: e.target.value })}>
                 <option value="">Select patient...</option>
-                {patients.rows.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                {rowsOf(patients).map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
               </select>
             </FormField>
             <FormField label="Date"><input type="date" className={inputClass} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></FormField>
@@ -44551,7 +44552,7 @@ function VitalsTriageView({ patients, currentUser, HC_BLUE }) {
             {["Patient","Date","BP","Pulse","Temp","SpO2","Weight","BMI","Pain","Nurse"].map(h => <th key={h} className="px-3 py-3 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}
           </tr></thead>
           <tbody>
-            {vitals.rows.map(v => {
+            {rowsOf(vitals).map(v => {
               const bmiVal = bmi(Number(v.weight), Number(v.height));
               const painColor = Number(v.pain) > 7 ? "#EF4444" : Number(v.pain) > 4 ? "#F59E0B" : "#16A34A";
               return (
@@ -44569,7 +44570,7 @@ function VitalsTriageView({ patients, currentUser, HC_BLUE }) {
                 </tr>
               );
             })}
-            {vitals.rows.length === 0 && <tr><td colSpan={10} className="px-4 py-10 text-center text-slate-400">No vitals recorded yet.</td></tr>}
+            {rowsOf(vitals).length === 0 && <tr><td colSpan={10} className="px-4 py-10 text-center text-slate-400">No vitals recorded yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -44595,8 +44596,8 @@ function RadiologyView({ patients, doctors, currentUser, HC_BLUE, HC_TEAL }) {
 
   async function placeOrder() {
     if (!form.patientId) return;
-    const pat = patients.rows.find(p => p.id === form.patientId);
-    const doc = doctors.rows.find(d => d.id === form.doctorId);
+    const pat = rowsOf(patients).find(p => p.id === form.patientId);
+    const doc = rowsOf(doctors).find(d => d.id === form.doctorId);
     const row = { ...form, id: docId("RAD"), patient: pat?.fullName||"", doctor: doc?.fullName||"", date: TODAY.toISOString().slice(0,10), status:"Pending", findings:"" };
     orders.setRows(p => [row, ...p]);
     setForm({ patientId:"", type: RADIOLOGY_TYPES[0], region: BODY_REGIONS[0], doctorId:"", priority:"Routine", notes:"" });
@@ -44612,7 +44613,7 @@ function RadiologyView({ patients, doctors, currentUser, HC_BLUE, HC_TEAL }) {
     setReportingId(null); setFindings("");
   }
 
-  const stats = { total: orders.rows.length, pending: orders.rows.filter(o=>o.status==="Pending").length, reported: orders.rows.filter(o=>o.status==="Reported").length, urgent: orders.rows.filter(o=>o.priority==="Urgent").length };
+  const stats = { total: rowsOf(orders).length, pending: rowsOf(orders).filter(o=>o.status==="Pending").length, reported: rowsOf(orders).filter(o=>o.status==="Reported").length, urgent: rowsOf(orders).filter(o=>o.priority==="Urgent").length };
 
   return (
     <div className="space-y-4">
@@ -44631,10 +44632,10 @@ function RadiologyView({ patients, doctors, currentUser, HC_BLUE, HC_TEAL }) {
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-3">
           <p className="text-[14px] font-semibold text-[#111827]">New Radiology Order</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <FormField label="Patient *"><select className={inputClass} value={form.patientId} onChange={e=>setForm({...form,patientId:e.target.value})}><option value="">Select patient...</option>{patients.rows.map(p=><option key={p.id} value={p.id}>{p.fullName}</option>)}</select></FormField>
+            <FormField label="Patient *"><select className={inputClass} value={form.patientId} onChange={e=>setForm({...form,patientId:e.target.value})}><option value="">Select patient...</option>{rowsOf(patients).map(p=><option key={p.id} value={p.id}>{p.fullName}</option>)}</select></FormField>
             <FormField label="Scan Type"><select className={inputClass} value={form.type} onChange={e=>setForm({...form,type:e.target.value})}>{RADIOLOGY_TYPES.map(t=><option key={t}>{t}</option>)}</select></FormField>
             <FormField label="Body Region"><select className={inputClass} value={form.region} onChange={e=>setForm({...form,region:e.target.value})}>{BODY_REGIONS.map(r=><option key={r}>{r}</option>)}</select></FormField>
-            <FormField label="Referring Doctor"><select className={inputClass} value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})}><option value="">Select doctor...</option>{doctors.rows.map(d=><option key={d.id} value={d.id}>{d.fullName}</option>)}</select></FormField>
+            <FormField label="Referring Doctor"><select className={inputClass} value={form.doctorId} onChange={e=>setForm({...form,doctorId:e.target.value})}><option value="">Select doctor...</option>{rowsOf(doctors).map(d=><option key={d.id} value={d.id}>{d.fullName}</option>)}</select></FormField>
             <FormField label="Priority"><select className={inputClass} value={form.priority} onChange={e=>setForm({...form,priority:e.target.value})}><option>Routine</option><option>Urgent</option><option>Emergency</option></select></FormField>
             <FormField label="Clinical notes"><input className={inputClass} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Indication for scan..."/></FormField>
           </div>
@@ -44646,7 +44647,7 @@ function RadiologyView({ patients, doctors, currentUser, HC_BLUE, HC_TEAL }) {
         <table className="w-full text-[12.5px]">
           <thead><tr className="border-b border-slate-100 bg-slate-50">{["Order#","Patient","Type","Region","Priority","Date","Status","Findings","Action"].map(h=><th key={h} className="px-3 py-3 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
           <tbody>
-            {orders.rows.map(o => (
+            {rowsOf(orders).map(o => (
               <tr key={o.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                 <td className="px-3 py-3 font-mono text-[11px] font-medium" style={{color:HC_BLUE}}>{o.id}</td>
                 <td className="px-3 py-3 font-medium text-[#111827]">{o.patient}</td>
@@ -44663,7 +44664,7 @@ function RadiologyView({ patients, doctors, currentUser, HC_BLUE, HC_TEAL }) {
                 </td>
               </tr>
             ))}
-            {orders.rows.length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-slate-400">No radiology orders yet.</td></tr>}
+            {rowsOf(orders).length === 0 && <tr><td colSpan={9} className="px-4 py-10 text-center text-slate-400">No radiology orders yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -44672,7 +44673,7 @@ function RadiologyView({ patients, doctors, currentUser, HC_BLUE, HC_TEAL }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{background:"rgba(0,0,0,0.4)"}}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl mx-4">
             <p className="text-[15px] font-semibold text-[#111827] mb-1">Enter Radiology Report</p>
-            <p className="text-[12px] text-slate-400 mb-4">{orders.rows.find(o=>o.id===reportingId)?.type} — {orders.rows.find(o=>o.id===reportingId)?.patient}</p>
+            <p className="text-[12px] text-slate-400 mb-4">{rowsOf(orders).find(o=>o.id===reportingId)?.type} — {rowsOf(orders).find(o=>o.id===reportingId)?.patient}</p>
             <FormField label="Findings / Impression">
               <textarea className={inputClass + " min-h-[100px] resize-none"} value={findings} onChange={e=>setFindings(e.target.value)} placeholder="Describe radiological findings and impression..."/>
             </FormField>
@@ -44700,8 +44701,8 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
   const [customService, setCustomService] = useState({ name:"", amount:"" });
 
   const PAYMENT_METHODS = ["Cash","Bank Transfer","Insurance","Mobile Money","Card","Credit"];
-  const totalRevenue = invoices.rows.filter(i=>i.status==="Paid").reduce((s,i)=>s+i.total,0);
-  const outstanding  = invoices.rows.filter(i=>i.status==="Unpaid"||i.status==="Partial").reduce((s,i)=>s+i.balance,0);
+  const totalRevenue = rowsOf(invoices).filter(i=>i.status==="Paid").reduce((s,i)=>s+i.total,0);
+  const outstanding  = rowsOf(invoices).filter(i=>i.status==="Unpaid"||i.status==="Partial").reduce((s,i)=>s+i.balance,0);
 
   function addService(name, amount) {
     setGenForm(f => ({ ...f, services: [...f.services, { name, amount: Number(amount) }] }));
@@ -44716,7 +44717,7 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
 
   async function generateInvoice() {
     if (!genForm.patientId || genForm.services.length === 0) return;
-    const pat = patients.rows.find(p => p.id === genForm.patientId);
+    const pat = rowsOf(patients).find(p => p.id === genForm.patientId);
     const row = { id: docId("INV"), patientId: genForm.patientId, patient: pat?.fullName||"", date: TODAY.toISOString().slice(0,10), services: genForm.services, subtotal, discount: Number(genForm.discount)||0, discAmt, total, balance: total, status:"Unpaid", paymentMethod: genForm.paymentMethod, notes: genForm.notes, issuedBy: currentUser?.name||"System" };
     invoices.setRows(p => [row, ...p]);
     setGenModal(false);
@@ -44736,7 +44737,7 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[["Total Invoices", invoices.rows.length, HC_BLUE],["Revenue (Paid)","TZS "+money(totalRevenue)+"k","#16A34A"],["Outstanding","TZS "+money(outstanding)+"k","#EF4444"],["Paid",invoices.rows.filter(i=>i.status==="Paid").length,"#059669"]].map(([l,v,col])=>(
+        {[["Total Invoices", rowsOf(invoices).length, HC_BLUE],["Revenue (Paid)","TZS "+money(totalRevenue)+"k","#16A34A"],["Outstanding","TZS "+money(outstanding)+"k","#EF4444"],["Paid",rowsOf(invoices).filter(i=>i.status==="Paid").length,"#059669"]].map(([l,v,col])=>(
           <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[22px] font-bold" style={{color:col}}>{v}</p></div>
         ))}
       </div>
@@ -44750,7 +44751,7 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
         <table className="w-full text-[12.5px]">
           <thead><tr className="border-b border-slate-100 bg-slate-50">{["Invoice","Patient","Date","Services","Total","Balance","Status","Action"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
           <tbody>
-            {invoices.rows.map(inv => (
+            {rowsOf(invoices).map(inv => (
               <tr key={inv.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                 <td className="px-4 py-3 font-mono text-[11px] font-medium" style={{color:HC_BLUE}}>{inv.id}</td>
                 <td className="px-4 py-3 font-medium text-[#111827]">{inv.patient}</td>
@@ -44768,7 +44769,7 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
                 </td>
               </tr>
             ))}
-            {invoices.rows.length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-400">No invoices yet. Click "Generate Invoice" to create one.</td></tr>}
+            {rowsOf(invoices).length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-400">No invoices yet. Click "Generate Invoice" to create one.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -44780,7 +44781,7 @@ function HCBillingView({ patients, appointments, visits, prescriptions, labOrder
 
             <FormField label="Patient *">
               <select className={inputClass} value={genForm.patientId} onChange={e=>setGenForm({...genForm,patientId:e.target.value})}>
-                <option value="">Select patient...</option>{patients.rows.map(p=><option key={p.id} value={p.id}>{p.fullName} ({p.mrn})</option>)}
+                <option value="">Select patient...</option>{rowsOf(patients).map(p=><option key={p.id} value={p.id}>{p.fullName} ({p.mrn})</option>)}
               </select>
             </FormField>
 
@@ -44894,14 +44895,14 @@ function SchoolManagementModule({ currentUser, company }) {
     { id:"transport",  label:"Transport",    icon: Bus },
   ];
 
-  const totalStudents  = students.rows.length;
-  const activeStudents = students.rows.filter(s => s.status === "Active").length;
-  const totalFees      = fees.rows.reduce((s, f) => s + f.amount, 0);
-  const collectedFees  = fees.rows.reduce((s, f) => s + f.paid, 0);
+  const totalStudents  = rowsOf(students).length;
+  const activeStudents = rowsOf(students).filter(s => s.status === "Active").length;
+  const totalFees      = rowsOf(fees).reduce((s, f) => s + f.amount, 0);
+  const collectedFees  = rowsOf(fees).reduce((s, f) => s + f.paid, 0);
   const feeCollection  = totalFees > 0 ? (collectedFees / totalFees * 100).toFixed(1) : 0;
-  const outstanding    = fees.rows.reduce((s, f) => s + f.balance, 0);
+  const outstanding    = rowsOf(fees).reduce((s, f) => s + f.balance, 0);
 
-  const nextAdmNo = () => "ADM-" + new Date().getFullYear() + "-" + String(students.rows.length + 1).padStart(3, "0");
+  const nextAdmNo = () => "ADM-" + new Date().getFullYear() + "-" + String(rowsOf(students).length + 1).padStart(3, "0");
 
   async function addStudent() {
     if (!stuForm.name.trim()) return;
@@ -44915,7 +44916,7 @@ function SchoolManagementModule({ currentUser, company }) {
 
   async function recordPayment() {
     if (!feeForm.studentId || !feeForm.amount) return;
-    const stu = students.rows.find(s => s.id === feeForm.studentId);
+    const stu = rowsOf(students).find(s => s.id === feeForm.studentId);
     const paid = Number(feeForm.paid) || 0;
     const amount = Number(feeForm.amount);
     const bal = Math.max(0, amount - paid);
@@ -44949,7 +44950,7 @@ function SchoolManagementModule({ currentUser, company }) {
     notify("Exam scheduled: " + row.name);
   }
 
-  const filteredStudents = students.rows.filter(s => !searchQ || s.name.toLowerCase().includes(searchQ.toLowerCase()) || s.admNo.includes(searchQ));
+  const filteredStudents = rowsOf(students).filter(s => !searchQ || s.name.toLowerCase().includes(searchQ.toLowerCase()) || s.admNo.includes(searchQ));
 
   const StatusChip = ({ s }) => {
     const cfg = { Active:["#DCFCE7","#16A34A"], Inactive:["#FEE2E2","#EF4444"], Paid:["#DCFCE7","#16A34A"], Partial:["#FEF3C7","#D97706"], Unpaid:["#FEE2E2","#EF4444"], Completed:["#DBEAFE","#2563EB"], Scheduled:["#F5F3FF","#7C3AED"] };
@@ -44971,7 +44972,7 @@ function SchoolManagementModule({ currentUser, company }) {
             <p className="text-[12px]" style={{color:"rgba(255,255,255,.65)"}}>Students · Teachers · Classes · Exams · Fees · Library · Transport</p>
           </div>
           <div className="flex gap-3">
-            {[["Students", activeStudents, "#DBEAFE", "#1E40AF"], ["Teachers", teachers.rows.filter(t=>t.status==="Active").length, "#D1FAE5", "#065F46"], ["Fee Rate", feeCollection+"%", "#FEF3C7", "#92400E"]].map(([l,v,bg,col])=>(
+            {[["Students", activeStudents, "#DBEAFE", "#1E40AF"], ["Teachers", rowsOf(teachers).filter(t=>t.status==="Active").length, "#D1FAE5", "#065F46"], ["Fee Rate", feeCollection+"%", "#FEF3C7", "#92400E"]].map(([l,v,bg,col])=>(
               <div key={l} className="rounded-xl px-4 py-2.5 text-center" style={{background:"rgba(255,255,255,.12)"}}>
                 <p className="text-[20px] font-bold text-white">{v}</p>
                 <p className="text-[10.5px] text-white/60">{l}</p>
@@ -44997,9 +44998,9 @@ function SchoolManagementModule({ currentUser, company }) {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
               { l:"Total Students",   v:totalStudents,    sub:activeStudents+" active",      c:"#1E3A8A", I:Users },
-              { l:"Total Teachers",   v:teachers.rows.length, sub:"Academic staff",         c:"#059669", I:UserCheck },
+              { l:"Total Teachers",   v:rowsOf(teachers).length, sub:"Academic staff",         c:"#059669", I:UserCheck },
               { l:"Fee Collected",    v:"TZS "+money(collectedFees)+"k", sub:feeCollection+"% of total", c:SCH_GOLD, I:CircleDollarSign },
-              { l:"Outstanding Fees", v:"TZS "+money(outstanding)+"k",   sub:fees.rows.filter(f=>f.status!=="Paid").length+" students", c:"#EF4444", I:AlertCircle },
+              { l:"Outstanding Fees", v:"TZS "+money(outstanding)+"k",   sub:rowsOf(fees).filter(f=>f.status!=="Paid").length+" students", c:"#EF4444", I:AlertCircle },
             ].map(k => (
               <div key={k.l} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
                 <div className="flex items-start justify-between">
@@ -45014,7 +45015,7 @@ function SchoolManagementModule({ currentUser, company }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Enrolment by Level</p>
               {SCHOOL_LEVELS.map(level => {
-                const n = students.rows.filter(s => s.class?.startsWith(level)).length;
+                const n = rowsOf(students).filter(s => s.class?.startsWith(level)).length;
                 const pct = totalStudents > 0 ? n/totalStudents*100 : 0;
                 return (
                   <div key={level} className="flex items-center gap-2 mb-2.5">
@@ -45029,9 +45030,9 @@ function SchoolManagementModule({ currentUser, company }) {
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Fee Collection Status</p>
               {(() => {
                 const feeData = [
-                  {name:"Paid",    value:fees.rows.filter(f=>f.status==="Paid").length,    fill:"#16A34A"},
-                  {name:"Partial", value:fees.rows.filter(f=>f.status==="Partial").length, fill:"#D97706"},
-                  {name:"Unpaid",  value:fees.rows.filter(f=>f.status==="Unpaid").length,  fill:"#EF4444"},
+                  {name:"Paid",    value:rowsOf(fees).filter(f=>f.status==="Paid").length,    fill:"#16A34A"},
+                  {name:"Partial", value:rowsOf(fees).filter(f=>f.status==="Partial").length, fill:"#D97706"},
+                  {name:"Unpaid",  value:rowsOf(fees).filter(f=>f.status==="Unpaid").length,  fill:"#EF4444"},
                 ].filter(d=>d.value>0);
                 if (!feeData.length) return <p className="text-slate-400 text-center py-4">No fee records</p>;
                 return (
@@ -45057,7 +45058,7 @@ function SchoolManagementModule({ currentUser, company }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Recent Exams</p>
               <div className="space-y-2">
-                {exams.rows.slice(0,4).map(e => (
+                {rowsOf(exams).slice(0,4).map(e => (
                   <div key={e.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50">
                     <div><p className="text-[12.5px] font-medium text-[#111827]">{e.subject}</p><p className="text-[10.5px] text-slate-400">{e.class} · {e.date}</p></div>
                     <div className="text-right"><StatusChip s={e.status}/>{e.avgScore>0&&<p className="text-[11px] text-slate-500 mt-0.5">Avg: {e.avgScore}%</p>}</div>
@@ -45074,7 +45075,7 @@ function SchoolManagementModule({ currentUser, company }) {
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex-1 relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input className={inputClass+" pl-9"} placeholder="Search by name or admission number..." value={searchQ} onChange={e=>setSearchQ(e.target.value)}/></div>
-            <button onClick={()=>downloadCSV("students",students.rows,[{key:"admNo",label:"Adm No"},{key:"name",label:"Name"},{key:"gender",label:"Gender"},{key:"class",label:"Class"},{key:"parent",label:"Parent"},{key:"phone",label:"Phone"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2.5 rounded-xl hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"><Download size={13}/>Export</button>
+            <button onClick={()=>downloadCSV("students",rowsOf(students),[{key:"admNo",label:"Adm No"},{key:"name",label:"Name"},{key:"gender",label:"Gender"},{key:"class",label:"Class"},{key:"parent",label:"Parent"},{key:"phone",label:"Phone"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2.5 rounded-xl hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"><Download size={13}/>Export</button>
             <button onClick={()=>setShowStu(true)} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:SCH_BLUE}}><UserPlus size={13}/>Enroll</button>
           </div>
           {showStu && (
@@ -45083,7 +45084,7 @@ function SchoolManagementModule({ currentUser, company }) {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <FormField label="Full Name *"><input className={inputClass} value={stuForm.name} onChange={e=>setStuForm({...stuForm,name:e.target.value})} placeholder="Student full name"/></FormField>
                 <FormField label="Gender"><select className={inputClass} value={stuForm.gender} onChange={e=>setStuForm({...stuForm,gender:e.target.value})}><option value="M">Male</option><option value="F">Female</option></select></FormField>
-                <FormField label="Class"><select className={inputClass} value={stuForm.class} onChange={e=>setStuForm({...stuForm,class:e.target.value})}>{classes.rows.map(cl=><option key={cl.id} value={cl.name}>{cl.name}</option>)}</select></FormField>
+                <FormField label="Class"><select className={inputClass} value={stuForm.class} onChange={e=>setStuForm({...stuForm,class:e.target.value})}>{rowsOf(classes).map(cl=><option key={cl.id} value={cl.name}>{cl.name}</option>)}</select></FormField>
                 <FormField label="Date of Birth"><input type="date" className={inputClass} value={stuForm.dob} onChange={e=>setStuForm({...stuForm,dob:e.target.value})}/></FormField>
                 <FormField label="Parent/Guardian"><input className={inputClass} value={stuForm.parent} onChange={e=>setStuForm({...stuForm,parent:e.target.value})} placeholder="Parent name"/></FormField>
                 <FormField label="Phone Number"><input className={inputClass} value={stuForm.phone} onChange={e=>setStuForm({...stuForm,phone:e.target.value})} placeholder="07XX XXX XXX"/></FormField>
@@ -45109,8 +45110,8 @@ function SchoolManagementModule({ currentUser, company }) {
               </tbody>
             </table>
             <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-              <p className="text-[11.5px] text-slate-400">Showing {filteredStudents.length} of {students.rows.length} students</p>
-              <p className="text-[11.5px] font-medium text-slate-600">{students.rows.filter(s=>s.gender==="F").length} Female · {students.rows.filter(s=>s.gender==="M").length} Male</p>
+              <p className="text-[11.5px] text-slate-400">Showing {filteredStudents.length} of {rowsOf(students).length} students</p>
+              <p className="text-[11.5px] font-medium text-slate-600">{rowsOf(students).filter(s=>s.gender==="F").length} Female · {rowsOf(students).filter(s=>s.gender==="M").length} Male</p>
             </div>
           </div>
         </div>
@@ -45120,12 +45121,12 @@ function SchoolManagementModule({ currentUser, company }) {
       {tab==="teachers" && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[["Teaching Staff", teachers.rows.length, SCH_BLUE], ["Active", teachers.rows.filter(t=>t.status==="Active").length, "#059669"], ["Avg Experience", (teachers.rows.reduce((s,t)=>s+t.experience,0)/Math.max(teachers.rows.length,1)).toFixed(1)+" yrs", SCH_GOLD], ["Monthly Payroll", "TZS "+money(teachers.rows.reduce((s,t)=>s+t.salary,0))+"k", "#7C3AED"]].map(([l,v,col])=>(
+            {[["Teaching Staff", rowsOf(teachers).length, SCH_BLUE], ["Active", rowsOf(teachers).filter(t=>t.status==="Active").length, "#059669"], ["Avg Experience", (rowsOf(teachers).reduce((s,t)=>s+t.experience,0)/Math.max(rowsOf(teachers).length,1)).toFixed(1)+" yrs", SCH_GOLD], ["Monthly Payroll", "TZS "+money(rowsOf(teachers).reduce((s,t)=>s+t.salary,0))+"k", "#7C3AED"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[20px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {teachers.rows.map(t => (
+            {rowsOf(teachers).map(t => (
               <div key={t.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center text-[15px] font-bold text-white shrink-0" style={{background:SCH_BLUE}}>{t.name.split(" ").pop().charAt(0)}</div>
@@ -45146,7 +45147,7 @@ function SchoolManagementModule({ currentUser, company }) {
       {tab==="classes" && (
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {classes.rows.map(cl => {
+            {rowsOf(classes).map(cl => {
               const pct = Math.round(cl.students / cl.capacity * 100);
               return (
                 <div key={cl.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
@@ -45178,7 +45179,7 @@ function SchoolManagementModule({ currentUser, company }) {
               <button onClick={()=>notify("Attendance saved successfully")} className="text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:SCH_BLUE}}>Save Attendance</button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {classes.rows.map(cl => {
+              {rowsOf(classes).map(cl => {
                 const [present, setPresent] = useState(cl.students);
                 return (
                   <div key={cl.id} className="border border-slate-200 rounded-xl p-4">
@@ -45222,7 +45223,7 @@ function SchoolManagementModule({ currentUser, company }) {
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Exam","Class","Subject","Date","Max Marks","Avg Score","Pass Rate","Status"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
               <tbody>
-                {exams.rows.map(e => (
+                {rowsOf(exams).map(e => (
                   <tr key={e.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                     <td className="px-4 py-3 font-medium text-[#111827]">{e.name}</td>
                     <td className="px-4 py-3"><span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{e.class}</span></td>
@@ -45251,12 +45252,12 @@ function SchoolManagementModule({ currentUser, company }) {
           {!showFee && <div className="flex justify-end gap-2 flex-wrap">
               <button onClick={()=>{
                 const co2=window.__smartManagerCompany||{};
-                const tableRows=fees.rows.map((f,i)=>`<tr style="background:${i%2===0?"white":"#F8FAFB"}"><td class="bold">${f.student}</td><td>${f.class||"—"}</td><td>${f.term}</td><td class="r">TZS ${money(f.amount)}k</td><td class="r">TZS ${money(f.paid||0)}k</td><td class="r" style="color:${f.balance>0?"#EF4444":"#16A34A"}">TZS ${money(f.balance)}k</td><td><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${f.status==="Paid"?"#DCFCE7":f.status==="Partial"?"#FEF3C7":"#FEE2E2"};color:${f.status==="Paid"?"#16A34A":f.status==="Partial"?"#D97706":"#EF4444"}">${f.status}</span></td></tr>`).join("");
+                const tableRows=rowsOf(fees).map((f,i)=>`<tr style="background:${i%2===0?"white":"#F8FAFB"}"><td class="bold">${f.student}</td><td>${f.class||"—"}</td><td>${f.term}</td><td class="r">TZS ${money(f.amount)}k</td><td class="r">TZS ${money(f.paid||0)}k</td><td class="r" style="color:${f.balance>0?"#EF4444":"#16A34A"}">TZS ${money(f.balance)}k</td><td><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${f.status==="Paid"?"#DCFCE7":f.status==="Partial"?"#FEF3C7":"#FEE2E2"};color:${f.status==="Paid"?"#16A34A":f.status==="Partial"?"#D97706":"#EF4444"}">${f.status}</span></td></tr>`).join("");
                 printReport("Fee Collection Report",`<div class="kpi-grid"><div class="kpi"><div class="kpi-label">Total Billed</div><div class="kpi-value" style="color:#1E3A8A">TZS ${money(totalFees)}k</div></div><div class="kpi"><div class="kpi-label">Collected</div><div class="kpi-value" style="color:#16A34A">TZS ${money(collectedFees)}k</div></div><div class="kpi"><div class="kpi-label">Outstanding</div><div class="kpi-value" style="color:#EF4444">TZS ${money(outstanding)}k</div></div></div><table><thead><tr><th>Student</th><th>Class</th><th>Term</th><th class="r">Billed</th><th class="r">Paid</th><th class="r">Balance</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table>`,co2);
               }} className="flex items-center gap-1.5 text-[12px] font-semibold text-white bg-[#0D2214] px-3 py-2 rounded-lg">
                 <Printer size={12}/> PDF
               </button>
-              <button onClick={()=>downloadCSV("fees",fees.rows.map(f=>({Student:f.student,Class:f.class||"",Term:f.term,Amount_k:f.amount,Paid_k:f.paid||0,Balance_k:f.balance,Status:f.status})),[{key:"Student",label:"Student"},{key:"Class",label:"Class"},{key:"Term",label:"Term"},{key:"Amount_k",label:"Billed"},{key:"Paid_k",label:"Paid"},{key:"Balance_k",label:"Balance"},{key:"Status",label:"Status"}])}
+              <button onClick={()=>downloadCSV("fees",rowsOf(fees).map(f=>({Student:f.student,Class:f.class||"",Term:f.term,Amount_k:f.amount,Paid_k:f.paid||0,Balance_k:f.balance,Status:f.status})),[{key:"Student",label:"Student"},{key:"Class",label:"Class"},{key:"Term",label:"Term"},{key:"Amount_k",label:"Billed"},{key:"Paid_k",label:"Paid"},{key:"Balance_k",label:"Balance"},{key:"Status",label:"Status"}])}
                 className="flex items-center gap-1.5 text-[12px] font-semibold text-[#16A34A] border border-[#16A34A]/25 bg-[#F0FDF4] px-3 py-2 rounded-lg">
                 <Download size={12}/> CSV
               </button>
@@ -45265,7 +45266,7 @@ function SchoolManagementModule({ currentUser, company }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-3">
               <p className="text-[14px] font-semibold text-[#111827]">Record Fee Payment</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <FormField label="Student *"><select className={inputClass} value={feeForm.studentId} onChange={e=>setFeeForm({...feeForm,studentId:e.target.value})}><option value="">Select student...</option>{students.rows.map(s=><option key={s.id} value={s.id}>{s.name} ({s.class})</option>)}</select></FormField>
+                <FormField label="Student *"><select className={inputClass} value={feeForm.studentId} onChange={e=>setFeeForm({...feeForm,studentId:e.target.value})}><option value="">Select student...</option>{rowsOf(students).map(s=><option key={s.id} value={s.id}>{s.name} ({s.class})</option>)}</select></FormField>
                 <FormField label="Term"><select className={inputClass} value={feeForm.term} onChange={e=>setFeeForm({...feeForm,term:e.target.value})}>{TERMS.map(t=><option key={t}>{t}</option>)}</select></FormField>
                 <FormField label="Fee Amount (TZS k)"><input type="number" className={inputClass} value={feeForm.amount} onChange={e=>setFeeForm({...feeForm,amount:e.target.value})}/></FormField>
                 <FormField label="Amount Paid (TZS k)"><input type="number" className={inputClass} value={feeForm.paid} onChange={e=>setFeeForm({...feeForm,paid:e.target.value})}/></FormField>
@@ -45276,7 +45277,7 @@ function SchoolManagementModule({ currentUser, company }) {
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Student","Class","Term","Fee","Paid","Balance","Due Date","Status","Action"].map(h=><th key={h} className="px-3 py-3 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{fees.rows.map(f => (
+              <tbody>{rowsOf(fees).map(f => (
                 <tr key={f.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                   <td className="px-3 py-3 font-medium text-[#111827]">{f.student}</td>
                   <td className="px-3 py-3"><span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{f.class}</span></td>
@@ -45298,7 +45299,7 @@ function SchoolManagementModule({ currentUser, company }) {
       {tab==="library" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            {[["Total Books", books.rows.reduce((s,b)=>s+b.copies,0), SCH_BLUE], ["Available", books.rows.reduce((s,b)=>s+b.available,0), "#16A34A"], ["On Loan", books.rows.reduce((s,b)=>s+(b.copies-b.available),0), SCH_GOLD]].map(([l,v,col])=>(
+            {[["Total Books", rowsOf(books).reduce((s,b)=>s+b.copies,0), SCH_BLUE], ["Available", rowsOf(books).reduce((s,b)=>s+b.available,0), "#16A34A"], ["On Loan", rowsOf(books).reduce((s,b)=>s+(b.copies-b.available),0), SCH_GOLD]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[22px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
@@ -45306,7 +45307,7 @@ function SchoolManagementModule({ currentUser, company }) {
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p className="text-[13.5px] font-semibold text-[#111827]">Book Catalog</p><button onClick={()=>notify("Add book modal — coming next")} className="flex items-center gap-1 text-[12px] font-semibold text-white px-3 py-2 rounded-xl" style={{background:SCH_BLUE}}><Plus size={12}/>Add Book</button></div>
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Title","Author","ISBN","Category","Shelf","Copies","Available","Status"].map(h=><th key={h} className="px-4 py-3 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{books.rows.map(b => (
+              <tbody>{rowsOf(books).map(b => (
                 <tr key={b.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                   <td className="px-4 py-3 font-medium text-[#111827]">{b.title}</td>
                   <td className="px-4 py-3 text-slate-500">{b.author}</td>
@@ -45327,12 +45328,12 @@ function SchoolManagementModule({ currentUser, company }) {
       {tab==="transport" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            {[["Routes", transport.rows.length, SCH_BLUE], ["Students", transport.rows.reduce((s,r)=>s+r.students,0), "#16A34A"], ["Active Buses", transport.rows.filter(r=>r.status==="Active").length, SCH_GOLD]].map(([l,v,col])=>(
+            {[["Routes", rowsOf(transport).length, SCH_BLUE], ["Students", rowsOf(transport).reduce((s,r)=>s+r.students,0), "#16A34A"], ["Active Buses", rowsOf(transport).filter(r=>r.status==="Active").length, SCH_GOLD]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[22px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {transport.rows.map(r => (
+            {rowsOf(transport).map(r => (
               <div key={r.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background:SCH_BLUE+"18"}}><Bus size={18} style={{color:SCH_BLUE}}/></div><div><p className="text-[13.5px] font-semibold text-[#111827]">{r.route}</p><p className="text-[11.5px] text-slate-400">{r.bus}</p></div></div>
@@ -45373,7 +45374,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
   const [tab, setTab] = useState("overview");
   const drugs     = useCompanyTable("phm_drugs",     PHM_DRUGS_SEED,     { mapRow: r => r });
   const stock     = useCompanyTable("phm_stock",     PHM_STOCK_SEED,     { mapRow: r => r });
-  useEffect(() => { if (onStockLoad) onStockLoad(stock.rows); }, [stock.rows, onStockLoad]);
+  useEffect(() => { if (onStockLoad) onStockLoad(rowsOf(stock)); }, [rowsOf(stock), onStockLoad]);
   const dispense  = useCompanyTable("phm_dispense",  PHM_DISPENSE_SEED,  { mapRow: r => r });
   const suppliers = useCompanyTable("phm_suppliers", PHM_SUPPLIERS_SEED, { mapRow: r => r });
 
@@ -45398,15 +45399,15 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
   ];
 
   // Analytics
-  const totalSkus       = drugs.rows.length;
-  const lowStock        = stock.rows.filter(s => s.qty <= s.minQty);
+  const totalSkus       = rowsOf(drugs).length;
+  const lowStock        = rowsOf(stock).filter(s => s.qty <= s.minQty);
   const today           = new Date();
   const in90days        = new Date(today.getTime() + 90*24*60*60*1000);
-  const expiringItems   = stock.rows.filter(s => new Date(s.expiry) <= in90days);
-  const expiredItems    = stock.rows.filter(s => new Date(s.expiry) < today);
-  const stockValue      = stock.rows.reduce((sum, s) => sum + s.qty * s.unitCost, 0);
-  const todayRevenue    = dispense.rows.filter(d => d.date === today.toISOString().slice(0,10)).reduce((s,d) => s+d.price, 0);
-  const pendingDispense = dispense.rows.filter(d => d.status === "Pending");
+  const expiringItems   = rowsOf(stock).filter(s => new Date(s.expiry) <= in90days);
+  const expiredItems    = rowsOf(stock).filter(s => new Date(s.expiry) < today);
+  const stockValue      = rowsOf(stock).reduce((sum, s) => sum + s.qty * s.unitCost, 0);
+  const todayRevenue    = rowsOf(dispense).filter(d => d.date === today.toISOString().slice(0,10)).reduce((s,d) => s+d.price, 0);
+  const pendingDispense = rowsOf(dispense).filter(d => d.status === "Pending");
 
   const daysToExpiry = (dateStr) => Math.ceil((new Date(dateStr) - today) / (1000*60*60*24));
   const expiryColor  = (days) => days < 0 ? "#EF4444" : days < 30 ? "#EF4444" : days < 60 ? "#F59E0B" : "#16A34A";
@@ -45435,11 +45436,11 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
 
   async function dispenseDrug() {
     if (!disForm.patient || !disForm.drugId || !disForm.qty) return;
-    const drug = drugs.rows.find(d => d.id === disForm.drugId);
+    const drug = rowsOf(drugs).find(d => d.id === disForm.drugId);
     const quantity = Number(disForm.qty);
     const total = drug ? drug.price * quantity : 0;
     const row = { ...disForm, id: docId("DIS"), drug: drug?.name||"", price: total, qty: quantity, date: today.toISOString().slice(0,10), status: "Dispensed", prescriber: disForm.prescriber || currentUser?.name || "Pharmacist" };
-    const currentStock = stock.rows.find((entry) => entry.drugId === disForm.drugId);
+    const currentStock = rowsOf(stock).find((entry) => entry.drugId === disForm.drugId);
     if (IS_CONFIGURED && !currentStock) {
       notify("No stock record exists for the selected drug.", "error");
       return;
@@ -45473,7 +45474,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
     logAudit("Dispensed: " + drug?.name, "Pharmacy", currentUser?.name||"System", row.patient + " × " + quantity);
   }
 
-  const filteredDrugs = drugs.rows.filter(d => !searchDrug || d.name.toLowerCase().includes(searchDrug.toLowerCase()) || d.genericName?.toLowerCase().includes(searchDrug.toLowerCase()) || d.category?.toLowerCase().includes(searchDrug.toLowerCase()));
+  const filteredDrugs = rowsOf(drugs).filter(d => !searchDrug || d.name.toLowerCase().includes(searchDrug.toLowerCase()) || d.genericName?.toLowerCase().includes(searchDrug.toLowerCase()) || d.category?.toLowerCase().includes(searchDrug.toLowerCase()));
 
   const StatusPill = ({ s, mini }) => {
     const cfg = { Active:["#DCFCE7","#16A34A"], Dispensed:["#DCFCE7","#16A34A"], Pending:["#FEF3C7","#D97706"], Expired:["#FEE2E2","#EF4444"], "Low Stock":["#FEF3C7","#D97706"] };
@@ -45533,9 +45534,9 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Stock by Category</p>
               {["Antibiotic","Analgesic","Antidiabetic","Antihypertensive","Insulin"].map(cat => {
-                const catDrugs = drugs.rows.filter(d => d.category === cat);
-                const catStock = stock.rows.filter(s => catDrugs.some(d => d.id === s.drugId)).reduce((sum,s)=>sum+s.qty,0);
-                const total = stock.rows.reduce((sum,s)=>sum+s.qty,0);
+                const catDrugs = rowsOf(drugs).filter(d => d.category === cat);
+                const catStock = rowsOf(stock).filter(s => catDrugs.some(d => d.id === s.drugId)).reduce((sum,s)=>sum+s.qty,0);
+                const total = rowsOf(stock).reduce((sum,s)=>sum+s.qty,0);
                 const pct = total > 0 ? catStock/total*100 : 0;
                 if (!catStock) return null;
                 return (
@@ -45550,7 +45551,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Recent Dispensing</p>
               <div className="space-y-2">
-                {dispense.rows.slice(0,5).map(d => (
+                {rowsOf(dispense).slice(0,5).map(d => (
                   <div key={d.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50">
                     <div><p className="text-[12.5px] font-medium text-[#111827]">{d.patient}</p><p className="text-[11px] text-slate-400">{d.drug} · {d.date}</p></div>
                     <div className="text-right"><p className="text-[13px] font-bold text-[#059669]">TZS {money(d.price)}k</p><StatusPill s={d.status} mini/></div>
@@ -45567,7 +45568,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex-1 relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input className={inputClass+" pl-9"} placeholder="Search drug by name, generic or category..." value={searchDrug} onChange={e=>setSearchDrug(e.target.value)}/></div>
-            <button onClick={()=>downloadCSV("pharmacy-drugs",drugs.rows,[{key:"name",label:"Drug"},{key:"genericName",label:"Generic"},{key:"category",label:"Category"},{key:"form",label:"Form"},{key:"strength",label:"Strength"},{key:"manufacturer",label:"Manufacturer"},{key:"price",label:"Price"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2.5 rounded-xl hover:border-green-500 hover:text-green-600 transition-colors"><Download size={13}/>Export</button>
+            <button onClick={()=>downloadCSV("pharmacy-drugs",rowsOf(drugs),[{key:"name",label:"Drug"},{key:"genericName",label:"Generic"},{key:"category",label:"Category"},{key:"form",label:"Form"},{key:"strength",label:"Strength"},{key:"manufacturer",label:"Manufacturer"},{key:"price",label:"Price"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2.5 rounded-xl hover:border-green-500 hover:text-green-600 transition-colors"><Download size={13}/>Export</button>
             <button onClick={()=>setShowDrug(true)} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:PHM_GREEN}}><Plus size={13}/>Add Drug</button>
           </div>
           {showDrug && (
@@ -45616,7 +45617,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
       {tab==="stock" && (
         <div className="space-y-3">
           <div className="grid grid-cols-4 gap-3">
-            {[["Total Units", stock.rows.reduce((s,r)=>s+r.qty,0), PHM_GREEN], ["Stock Value","TZS "+money(stockValue)+"k","#2563EB"], ["Low Stock",lowStock.length,"#F59E0B"], ["Expired",expiredItems.length,"#EF4444"]].map(([l,v,col])=>(
+            {[["Total Units", rowsOf(stock).reduce((s,r)=>s+r.qty,0), PHM_GREEN], ["Stock Value","TZS "+money(stockValue)+"k","#2563EB"], ["Low Stock",lowStock.length,"#F59E0B"], ["Expired",expiredItems.length,"#EF4444"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[20px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
@@ -45624,7 +45625,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p className="text-[13.5px] font-semibold text-[#111827]">Stock Levels</p><button onClick={()=>notify("Add stock receipt form")} className="flex items-center gap-1 text-[12px] font-semibold text-white px-3 py-2 rounded-xl" style={{background:PHM_GREEN}}><Plus size={12}/>Receive Stock</button></div>
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Drug","Batch","Qty","Min Qty","Expiry","Days Left","Supplier","Value","Status"].map(h=><th key={h} className="px-3 py-3 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{stock.rows.map(s => {
+              <tbody>{rowsOf(stock).map(s => {
                 const days = daysToExpiry(s.expiry);
                 const isLow = s.qty <= s.minQty;
                 const isExp = days < 0;
@@ -45657,14 +45658,14 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
               <p className="text-[14px] font-semibold text-[#111827]">Dispense Drug</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <FormField label="Patient Name *"><input className={inputClass} value={disForm.patient} onChange={e=>setDisForm({...disForm,patient:e.target.value})} placeholder="Patient name"/></FormField>
-                <FormField label="Drug *"><select className={inputClass} value={disForm.drugId} onChange={e=>setDisForm({...disForm,drugId:e.target.value})}><option value="">Select drug...</option>{drugs.rows.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></FormField>
+                <FormField label="Drug *"><select className={inputClass} value={disForm.drugId} onChange={e=>setDisForm({...disForm,drugId:e.target.value})}><option value="">Select drug...</option>{rowsOf(drugs).map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></FormField>
                 <FormField label="Quantity"><input type="number" min="1" className={inputClass} value={disForm.qty} onChange={e=>setDisForm({...disForm,qty:e.target.value})}/></FormField>
                 <FormField label="Dosage Instructions"><input className={inputClass} value={disForm.dosage} onChange={e=>setDisForm({...disForm,dosage:e.target.value})} placeholder="e.g. 1 TID × 7 days"/></FormField>
                 <FormField label="Prescriber"><input className={inputClass} value={disForm.prescriber} onChange={e=>setDisForm({...disForm,prescriber:e.target.value})} placeholder="Doctor name"/></FormField>
                 <FormField label="Prescription #"><input className={inputClass} value={disForm.rxNo} onChange={e=>setDisForm({...disForm,rxNo:e.target.value})} placeholder="RX-001"/></FormField>
               </div>
               {disForm.drugId && disForm.qty && (() => {
-                const d = drugs.rows.find(dr => dr.id === disForm.drugId);
+                const d = rowsOf(drugs).find(dr => dr.id === disForm.drugId);
                 const total = d ? d.price * Number(disForm.qty) : 0;
                 return <div className="p-3 rounded-xl bg-green-50 border border-green-100"><p className="text-[13px] font-semibold text-green-800">Total: <strong>TZS {money(total)}k</strong> · {d?.name} × {disForm.qty} units @ TZS {d?.price} each</p></div>;
               })()}
@@ -45674,7 +45675,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["#","Patient","Drug","Qty","Dosage","Prescriber","Date","Amount","Rx No","Status"].map(h=><th key={h} className="px-3 py-3 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{dispense.rows.map((d,i) => (
+              <tbody>{rowsOf(dispense).map((d,i) => (
                 <tr key={d.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                   <td className="px-3 py-3 text-slate-400 text-[11px]">{i+1}</td>
                   <td className="px-3 py-3 font-medium text-[#111827]">{d.patient}</td>
@@ -45697,7 +45698,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
       {tab==="suppliers" && (
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {suppliers.rows.map(s => (
+            {rowsOf(suppliers).map(s => (
               <div key={s.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div><p className="text-[14px] font-semibold text-[#111827]">{s.name}</p><p className="text-[12px] text-slate-400">{s.contact}</p></div>
@@ -45725,7 +45726,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
             </div>
           )}
           <div className="grid grid-cols-3 gap-3">
-            {[["Expired",expiredItems.filter(s=>daysToExpiry(s.expiry)<0).length,"#EF4444"],["Expiring < 30 days",stock.rows.filter(s=>{const d=daysToExpiry(s.expiry);return d>=0&&d<30}).length,"#F59E0B"],["Expiring < 90 days",expiringItems.filter(s=>daysToExpiry(s.expiry)>=0).length,"#D97706"]].map(([l,v,col])=>(
+            {[["Expired",expiredItems.filter(s=>daysToExpiry(s.expiry)<0).length,"#EF4444"],["Expiring < 30 days",rowsOf(stock).filter(s=>{const d=daysToExpiry(s.expiry);return d>=0&&d<30}).length,"#F59E0B"],["Expiring < 90 days",expiringItems.filter(s=>daysToExpiry(s.expiry)>=0).length,"#D97706"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border p-4 text-center" style={{borderColor:col+"40"}}><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[24px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
@@ -45760,16 +45761,16 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
       {tab==="billing" && (
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
-            {[["Today Revenue","TZS "+money(todayRevenue)+"k","#059669"],["This Month Revenue","TZS "+money(dispense.rows.reduce((s,d)=>s+d.price,0))+"k","#2563EB"],["Avg Sale","TZS "+money(dispense.rows.length>0?dispense.rows.reduce((s,d)=>s+d.price,0)/dispense.rows.length:0)+"k","#7C3AED"]].map(([l,v,col])=>(
+            {[["Today Revenue","TZS "+money(todayRevenue)+"k","#059669"],["This Month Revenue","TZS "+money(rowsOf(dispense).reduce((s,d)=>s+d.price,0))+"k","#2563EB"],["Avg Sale","TZS "+money(rowsOf(dispense).length>0?rowsOf(dispense).reduce((s,d)=>s+d.price,0)/rowsOf(dispense).length:0)+"k","#7C3AED"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[20px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
             <div className="flex items-center justify-between mb-3"><p className="text-[13.5px] font-semibold text-[#111827]">Revenue by Drug</p></div>
-            {drugs.rows.map(d => {
-              const drugSales = dispense.rows.filter(dp => dp.drug === d.name).reduce((s,dp)=>s+dp.price,0);
+            {rowsOf(drugs).map(d => {
+              const drugSales = rowsOf(dispense).filter(dp => dp.drug === d.name).reduce((s,dp)=>s+dp.price,0);
               if (!drugSales) return null;
-              const totalRev  = dispense.rows.reduce((s,dp)=>s+dp.price,0);
+              const totalRev  = rowsOf(dispense).reduce((s,dp)=>s+dp.price,0);
               const pct = totalRev > 0 ? drugSales/totalRev*100 : 0;
               return (
                 <div key={d.id} className="flex items-center gap-3 mb-2.5">
@@ -45787,23 +45788,23 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
       {tab === "analytics" && (() => {
         const catData = PHM_DRUG_CATEGORIES.map((cat,i)=>({
           name: cat.length > 12 ? cat.slice(0,10)+"…" : cat,
-          value: stock.rows.filter(s=>drugs.rows.find(d=>d.id===s.drugId)?.category===cat).reduce((s,r)=>s+r.stock,0),
+          value: rowsOf(stock).filter(s=>rowsOf(drugs).find(d=>d.id===s.drugId)?.category===cat).reduce((s,r)=>s+r.stock,0),
           fill:["#059669","#2563EB","#D97706","#7C3AED","#EF4444","#0891B2","#DC2626","#0F766E"][i%8],
         })).filter(d=>d.value>0);
 
-        const expiringData = stock.rows.filter(s=>{
+        const expiringData = rowsOf(stock).filter(s=>{
           if(!s.expiryDate) return false;
           const days = Math.ceil((new Date(s.expiryDate)-new Date())/86400000);
           return days > 0 && days <= 90;
         }).slice(0,6).map(s=>({
-          name: (drugs.rows.find(d=>d.id===s.drugId)?.name||s.name||"Drug").slice(0,14),
+          name: (rowsOf(drugs).find(d=>d.id===s.drugId)?.name||s.name||"Drug").slice(0,14),
           days: Math.ceil((new Date(s.expiryDate)-new Date())/86400000),
           stock: s.stock,
         })).sort((a,b)=>a.days-b.days);
 
-        const dispensedData = drugs.rows.slice(0,6).map(d=>({
+        const dispensedData = rowsOf(drugs).slice(0,6).map(d=>({
           name: d.name.slice(0,14),
-          value: dispense.rows.filter(r=>r.drugId===d.id).reduce((s,r)=>s+(r.qty||0),0),
+          value: rowsOf(dispense).filter(r=>r.drugId===d.id).reduce((s,r)=>s+(r.qty||0),0),
           fill:"#059669",
         })).filter(d=>d.value>0).sort((a,b)=>b.value-a.value).slice(0,6);
 
@@ -45811,10 +45812,10 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
           <div className="space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                ["Total SKUs",String(drugs.rows.length),"#059669"],
-                ["Low Stock",String(stock.rows.filter(s=>s.stock<=s.reorder&&s.reorder>0).length),"#EF4444"],
+                ["Total SKUs",String(rowsOf(drugs).length),"#059669"],
+                ["Low Stock",String(rowsOf(stock).filter(s=>s.stock<=s.reorder&&s.reorder>0).length),"#EF4444"],
                 ["Expiring (90d)",String(expiringData.length),"#F59E0B"],
-                ["Dispensed Today",String(dispense.rows.filter(d=>d.date===TODAY.toISOString().slice(0,10)).reduce((s,r)=>s+(r.qty||0),0)),"#2563EB"],
+                ["Dispensed Today",String(rowsOf(dispense).filter(d=>d.date===TODAY.toISOString().slice(0,10)).reduce((s,r)=>s+(r.qty||0),0)),"#2563EB"],
               ].map(([l,v,col])=>(
                 <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center">
                   <p className="text-[10.5px] text-slate-400 uppercase tracking-wide mb-1">{l}</p>
@@ -45876,7 +45877,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
                       {expiringData.map((d,i)=>(
                         <tr key={i} className="border-b border-[#FDE68A]/50">
                           <td className="px-3 py-2 font-semibold">{d.name}</td>
-                          <td className="px-3 py-2 font-mono text-[11.5px]">{stock.rows.find(s=>drugs.rows.find(dr=>dr.id===s.drugId&&dr.name?.slice(0,14)===d.name)?.id===s.drugId)?.expiryDate||"—"}</td>
+                          <td className="px-3 py-2 font-mono text-[11.5px]">{rowsOf(stock).find(s=>rowsOf(drugs).find(dr=>dr.id===s.drugId&&dr.name?.slice(0,14)===d.name)?.id===s.drugId)?.expiryDate||"—"}</td>
                           <td className="px-3 py-2 font-bold" style={{color:d.days<=30?"#EF4444":"#F59E0B"}}>{d.days}d</td>
                           <td className="px-3 py-2 font-mono">{d.stock}</td>
                         </tr>
@@ -46006,20 +46007,20 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
   ];
 
   // Portfolio metrics
-  const totalDeposits   = accounts.rows.reduce((s,a) => s + a.balance, 0);
-  const totalPortfolio  = loans.rows.filter(l => l.status !== "Closed").reduce((s,l) => s + l.balance, 0);
-  const atRisk          = loans.rows.filter(l => l.dpd > 0);
+  const totalDeposits   = rowsOf(accounts).reduce((s,a) => s + a.balance, 0);
+  const totalPortfolio  = rowsOf(loans).filter(l => l.status !== "Closed").reduce((s,l) => s + l.balance, 0);
+  const atRisk          = rowsOf(loans).filter(l => l.dpd > 0);
   const parAmount       = atRisk.reduce((s,l) => s + l.balance, 0);
   const parRatio        = totalPortfolio > 0 ? (parAmount / totalPortfolio * 100).toFixed(2) : 0;
-  const monthlyInterest = loans.rows.filter(l=>l.status==="Active").reduce((s,l) => s + (l.balance * l.rate / 100 / 12), 0);
-  const totalMembers    = members.rows.length;
+  const monthlyInterest = rowsOf(loans).filter(l=>l.status==="Active").reduce((s,l) => s + (l.balance * l.rate / 100 / 12), 0);
+  const totalMembers    = rowsOf(members).length;
 
   const aging = {
-    current:    loans.rows.filter(l => l.dpd === 0 && l.status !== "Closed").length,
-    "1-30":     loans.rows.filter(l => l.dpd > 0 && l.dpd <= 30).length,
-    "31-60":    loans.rows.filter(l => l.dpd > 30 && l.dpd <= 60).length,
-    "61-90":    loans.rows.filter(l => l.dpd > 60 && l.dpd <= 90).length,
-    ">90":      loans.rows.filter(l => l.dpd > 90).length,
+    current:    rowsOf(loans).filter(l => l.dpd === 0 && l.status !== "Closed").length,
+    "1-30":     rowsOf(loans).filter(l => l.dpd > 0 && l.dpd <= 30).length,
+    "31-60":    rowsOf(loans).filter(l => l.dpd > 30 && l.dpd <= 60).length,
+    "61-90":    rowsOf(loans).filter(l => l.dpd > 60 && l.dpd <= 90).length,
+    ">90":      rowsOf(loans).filter(l => l.dpd > 90).length,
   };
 
   // EMI calculator
@@ -46035,7 +46036,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
 
   async function submitApplication() {
     if (!appForm.memberId || !appForm.product || !appForm.amount) return;
-    const mem = members.rows.find(m => m.id === appForm.memberId);
+    const mem = rowsOf(members).find(m => m.id === appForm.memberId);
     const row = { ...appForm, id: docId("APP"), member: mem?.name||"", submittedDate: TODAY.toISOString().slice(0,10), status:"Pending Docs", officer: currentUser?.name||"Loan Officer", score: Math.floor(Math.random()*30)+60 };
     applications.setRows(p => [row, ...p]);
     setAppForm({ memberId:"", product:"", amount:"", term:"", purpose:"", collateral:"" });
@@ -46047,7 +46048,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
 
   async function postTransaction() {
     if (!txnForm.acctNo || !txnForm.amount) return;
-    const acct = accounts.rows.find(a => a.acctNo === txnForm.acctNo || a.id === txnForm.acctNo);
+    const acct = rowsOf(accounts).find(a => a.acctNo === txnForm.acctNo || a.id === txnForm.acctNo);
     const amt  = Number(txnForm.amount);
     const newBal = txnForm.type === "Withdrawal" ? Math.max(0, (acct?.balance||0) - amt) : (acct?.balance||0) + amt;
     const row  = { id: docId("TXN"), acctNo: acct?.acctNo||txnForm.acctNo, member: acct?.name||"", type: txnForm.type, amount: amt, balance: newBal, date: new Date().toISOString().slice(0,16).replace("T"," "), channel:"Branch", narration: txnForm.narration, ref:"BR"+Date.now() };
@@ -46077,7 +46078,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {parRatio > 5 && <div className="flex items-center gap-1.5 bg-red-600 text-white px-3 py-2 rounded-xl text-[12px] font-bold animate-pulse"><AlertCircle size={13}/>PAR {parRatio}%</div>}
-            {[["Members",totalMembers],[accounts.rows.filter(a=>a.status==="Active").length+" Accounts",""],["TZS "+money(totalDeposits)+"k","Deposits"],["TZS "+money(totalPortfolio)+"k","Portfolio"]].map(([v,l])=>l?(
+            {[["Members",totalMembers],[rowsOf(accounts).filter(a=>a.status==="Active").length+" Accounts",""],["TZS "+money(totalDeposits)+"k","Deposits"],["TZS "+money(totalPortfolio)+"k","Portfolio"]].map(([v,l])=>l?(
               <div key={l} className="text-center rounded-xl px-4 py-2.5" style={{background:"rgba(255,255,255,.10)"}}>
                 <p className="text-[18px] font-bold text-white">{v}</p>
                 <p className="text-[10.5px] text-white/55">{l}</p>
@@ -46104,8 +46105,8 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              {l:"Total Deposits",    v:"TZS "+money(totalDeposits)+"k",     sub:accounts.rows.filter(a=>a.status==="Active").length+" active accounts", c:BNK_NAVY,  I:PiggyBank},
-              {l:"Loan Portfolio",    v:"TZS "+money(totalPortfolio)+"k",    sub:loans.rows.filter(l=>l.status==="Active").length+" active loans",        c:BNK_TEAL,  I:CircleDollarSign},
+              {l:"Total Deposits",    v:"TZS "+money(totalDeposits)+"k",     sub:rowsOf(accounts).filter(a=>a.status==="Active").length+" active accounts", c:BNK_NAVY,  I:PiggyBank},
+              {l:"Loan Portfolio",    v:"TZS "+money(totalPortfolio)+"k",    sub:rowsOf(loans).filter(l=>l.status==="Active").length+" active loans",        c:BNK_TEAL,  I:CircleDollarSign},
               {l:"Monthly Int. Income",v:"TZS "+money(monthlyInterest)+"k",  sub:"Projected",                                                             c:BNK_GOLD,  I:TrendingUp},
               {l:"PAR Ratio",         v:parRatio+"%",                         sub:atRisk.length+" loans at risk",                                          c:Number(parRatio)>5?"#EF4444":"#16A34A",I:AlertCircle},
             ].map(k=>(
@@ -46137,7 +46138,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Deposits by Account Type</p>
               {["Savings","Current","Business","Fixed Deposit"].map(type => {
-                const bal = accounts.rows.filter(a=>a.type===type).reduce((s,a)=>s+a.balance,0);
+                const bal = rowsOf(accounts).filter(a=>a.type===type).reduce((s,a)=>s+a.balance,0);
                 const pct = totalDeposits > 0 ? bal/totalDeposits*100 : 0;
                 if (!bal) return null;
                 return (
@@ -46154,7 +46155,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Portfolio by Product</p>
               {["Personal Loan","Business Loan","SME Loan","Agricultural","Group Loan"].map(prod => {
-                const bal = loans.rows.filter(l=>l.product===prod).reduce((s,l)=>s+l.balance,0);
+                const bal = rowsOf(loans).filter(l=>l.product===prod).reduce((s,l)=>s+l.balance,0);
                 const pct = totalPortfolio > 0 ? bal/totalPortfolio*100 : 0;
                 if (!bal) return null;
                 return (
@@ -46175,7 +46176,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
         <div className="space-y-3">
           <div className="grid grid-cols-4 gap-3">
             {["Savings","Current","Business","Fixed Deposit"].map(type => {
-              const accts = accounts.rows.filter(a=>a.type===type);
+              const accts = rowsOf(accounts).filter(a=>a.type===type);
               return (
                 <div key={type} className="bg-white rounded-xl border border-slate-200/80 p-4">
                   <p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{type}</p>
@@ -46189,13 +46190,13 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <p className="text-[13.5px] font-semibold text-[#111827]">All Accounts</p>
               <div className="flex gap-2">
-                <button onClick={()=>downloadCSV("accounts",accounts.rows,[{key:"acctNo",label:"Acct No"},{key:"name",label:"Name"},{key:"type",label:"Type"},{key:"balance",label:"Balance"},{key:"status",label:"Status"},{key:"branch",label:"Branch"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-green-500 hover:text-green-600"><Download size={12}/>Export</button>
+                <button onClick={()=>downloadCSV("accounts",rowsOf(accounts),[{key:"acctNo",label:"Acct No"},{key:"name",label:"Name"},{key:"type",label:"Type"},{key:"balance",label:"Balance"},{key:"status",label:"Status"},{key:"branch",label:"Branch"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-green-500 hover:text-green-600"><Download size={12}/>Export</button>
                 <button onClick={()=>notify("New account form")} className="flex items-center gap-1.5 text-[12px] font-semibold text-white px-3 py-2 rounded-xl" style={{background:BNK_NAVY}}><Plus size={12}/>New Account</button>
               </div>
             </div>
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Acct No","Member","Type","Balance","Interest","Branch","Status","Action"].map(h=><th key={h} className="px-3 py-3 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{accounts.rows.map(a => (
+              <tbody>{rowsOf(accounts).map(a => (
                 <tr key={a.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
                   <td className="px-3 py-3 font-mono text-[11px] font-semibold" style={{color:BNK_NAVY}}>{a.acctNo}</td>
                   <td className="px-3 py-3 font-medium text-[#111827]">{a.name}</td>
@@ -46216,7 +46217,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
       {tab==="members" && (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            {[["Total Members",totalMembers,BNK_NAVY],["KYC Verified",members.rows.filter(m=>m.kycStatus==="Verified").length,"#16A34A"],["Pending KYC",members.rows.filter(m=>m.kycStatus==="Pending").length,"#D97706"]].map(([l,v,col])=>(
+            {[["Total Members",totalMembers,BNK_NAVY],["KYC Verified",rowsOf(members).filter(m=>m.kycStatus==="Verified").length,"#16A34A"],["Pending KYC",rowsOf(members).filter(m=>m.kycStatus==="Pending").length,"#D97706"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[24px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
@@ -46224,7 +46225,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p className="text-[13.5px] font-semibold text-[#111827]">Member Registry</p><button onClick={()=>notify("Member registration form")} className="flex items-center gap-1.5 text-[12px] font-semibold text-white px-3 py-2 rounded-xl" style={{background:BNK_NAVY}}><UserPlus size={12}/>Register Member</button></div>
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Member ID","Name","National ID","Phone","Occupation","Branch","KYC","Joined"].map(h=><th key={h} className="px-3 py-3 text-left text-[10px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{members.rows.map(m=>(
+              <tbody>{rowsOf(members).map(m=>(
                 <tr key={m.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                   <td className="px-3 py-3 font-mono text-[11px] font-semibold" style={{color:BNK_NAVY}}>{m.id}</td>
                   <td className="px-3 py-3"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{background:m.gender==="F"?"#DB2777":BNK_NAVY}}>{m.name.charAt(0)}</div><span className="font-medium text-[#111827]">{m.name}</span></div></td>
@@ -46245,7 +46246,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
       {tab==="loans" && (
         <div className="space-y-3">
           <div className="flex justify-end gap-2 pb-1">
-            <button onClick={()=>downloadCSV("loan-portfolio",loans.rows.map(l=>({
+            <button onClick={()=>downloadCSV("loan-portfolio",rowsOf(loans).map(l=>({
               ID:l.id,Member:l.member||"",Product:l.productName||"",
               Principal_k:l.principal||0,Balance_k:l.balance||0,
               Rate:l.interestRate||0,Status:l.status||"",Disbursed:l.disbursedDate||"",Due:l.dueDate||""
@@ -46258,7 +46259,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             </button>
             <button onClick={()=>{
               const co=window.__smartManagerCompany||{};
-              const rows=loans.rows.map((l,i)=>`<tr style="background:${i%2===0?"white":"#F8FAFB"}">
+              const rows=rowsOf(loans).map((l,i)=>`<tr style="background:${i%2===0?"white":"#F8FAFB"}">
                 <td class="bold">${l.id}</td><td>${l.member||"—"}</td><td>${l.productName||"—"}</td>
                 <td class="r">TZS ${money(l.principal||0)}k</td>
                 <td class="r">TZS ${money(l.balance||0)}k</td>
@@ -46268,8 +46269,8 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
               printReport("Loan Portfolio Report",`
                 <div class="kpi-grid">
                   <div class="kpi"><div class="kpi-label">Total Portfolio</div><div class="kpi-value" style="color:${BNK_NAVY}">TZS ${money(totalPortfolio)}k</div></div>
-                  <div class="kpi"><div class="kpi-label">Active Loans</div><div class="kpi-value" style="color:${BNK_TEAL}">${loans.rows.filter(l=>l.status==="Active").length}</div></div>
-                  <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-value" style="color:#EF4444">${loans.rows.filter(l=>l.status==="Overdue").length}</div></div>
+                  <div class="kpi"><div class="kpi-label">Active Loans</div><div class="kpi-value" style="color:${BNK_TEAL}">${rowsOf(loans).filter(l=>l.status==="Active").length}</div></div>
+                  <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-value" style="color:#EF4444">${rowsOf(loans).filter(l=>l.status==="Overdue").length}</div></div>
                   <div class="kpi"><div class="kpi-label">PAR>30 Rate</div><div class="kpi-value" style="color:#F59E0B">${PAR30_ratio}%</div></div>
                 </div>
                 <table><thead><tr><th>Loan ID</th><th>Member</th><th>Product</th><th class="r">Principal</th><th class="r">Balance</th><th class="r">Rate</th><th>Status</th></tr></thead>
@@ -46279,15 +46280,15 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             </button>
           </div>
           <div className="grid grid-cols-4 gap-3">
-            {[["Active",loans.rows.filter(l=>l.status==="Active").length,BNK_TEAL],["Overdue",loans.rows.filter(l=>l.status==="Overdue").length,"#EF4444"],["Closed",loans.rows.filter(l=>l.status==="Closed").length,"#6B7280"],["Total Outstanding","TZS "+money(totalPortfolio)+"k",BNK_NAVY]].map(([l,v,col])=>(
+            {[["Active",rowsOf(loans).filter(l=>l.status==="Active").length,BNK_TEAL],["Overdue",rowsOf(loans).filter(l=>l.status==="Overdue").length,"#EF4444"],["Closed",rowsOf(loans).filter(l=>l.status==="Closed").length,"#6B7280"],["Total Outstanding","TZS "+money(totalPortfolio)+"k",BNK_NAVY]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[20px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p className="text-[13.5px] font-semibold text-[#111827]">Loan Portfolio</p><button onClick={()=>downloadCSV("loans",loans.rows,[{key:"id",label:"Loan ID"},{key:"member",label:"Member"},{key:"product",label:"Product"},{key:"principal",label:"Principal"},{key:"balance",label:"Balance"},{key:"rate",label:"Rate%"},{key:"dpd",label:"DPD"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-blue-400 hover:text-blue-600"><Download size={12}/>Export</button></div>
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p className="text-[13.5px] font-semibold text-[#111827]">Loan Portfolio</p><button onClick={()=>downloadCSV("loans",rowsOf(loans),[{key:"id",label:"Loan ID"},{key:"member",label:"Member"},{key:"product",label:"Product"},{key:"principal",label:"Principal"},{key:"balance",label:"Balance"},{key:"rate",label:"Rate%"},{key:"dpd",label:"DPD"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-blue-400 hover:text-blue-600"><Download size={12}/>Export</button></div>
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Loan ID","Member","Product","Principal","Rate","EMI","Balance","Paid","Collateral","DPD","Status"].map(h=><th key={h} className="px-2 py-3 text-left text-[9.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
-              <tbody>{loans.rows.map(l => {
+              <tbody>{rowsOf(loans).map(l => {
                 const pct = l.principal > 0 ? l.paid / l.principal * 100 : 0;
                 return (
                   <tr key={l.id} className={"border-b border-slate-50 last:border-0 "+(l.status==="Overdue"?"bg-red-50/30":l.status==="Closed"?"bg-slate-50/50":"hover:bg-slate-50/50")}>
@@ -46322,7 +46323,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-3">
               <p className="text-[14px] font-semibold text-[#111827]">New Loan Application</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <FormField label="Member *"><select className={inputClass} value={appForm.memberId} onChange={e=>setAppForm({...appForm,memberId:e.target.value})}><option value="">Select member...</option>{members.rows.map(m=><option key={m.id} value={m.id}>{m.name} ({m.id})</option>)}</select></FormField>
+                <FormField label="Member *"><select className={inputClass} value={appForm.memberId} onChange={e=>setAppForm({...appForm,memberId:e.target.value})}><option value="">Select member...</option>{rowsOf(members).map(m=><option key={m.id} value={m.id}>{m.name} ({m.id})</option>)}</select></FormField>
                 <FormField label="Loan Product *"><select className={inputClass} value={appForm.product} onChange={e=>{const p=BNK_LOAN_PRODUCTS.find(x=>x.name===e.target.value);setAppForm({...appForm,product:e.target.value,rate:p?.rate||0});}}><option value="">Select product...</option>{BNK_LOAN_PRODUCTS.map(p=><option key={p.id}>{p.name}</option>)}</select></FormField>
                 <FormField label="Amount (TZS k) *"><input type="number" className={inputClass} value={appForm.amount} onChange={e=>setAppForm({...appForm,amount:e.target.value})}/></FormField>
                 <FormField label="Term (months)"><input type="number" className={inputClass} value={appForm.term} onChange={e=>setAppForm({...appForm,term:e.target.value})}/></FormField>
@@ -46339,7 +46340,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
           )}
           {!showApp && <div className="flex justify-end"><button onClick={()=>setShowApp(true)} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:BNK_NAVY}}><Plus size={13}/>New Application</button></div>}
           <div className="space-y-3">
-            {applications.rows.map(app => {
+            {rowsOf(applications).map(app => {
               const [bg,col] = appStatusColor[app.status]||["#F3F4F6","#6B7280"];
               return (
                 <div key={app.id} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
@@ -46371,12 +46372,12 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5">
               <p className="text-[14px] font-semibold text-[#111827] mb-4">Post Transaction</p>
               <div className="space-y-3">
-                <FormField label="Account Number"><select className={inputClass} value={txnForm.acctNo} onChange={e=>setTxnForm({...txnForm,acctNo:e.target.value})}><option value="">Select account...</option>{accounts.rows.map(a=><option key={a.id} value={a.acctNo}>{a.acctNo} — {a.name}</option>)}</select></FormField>
+                <FormField label="Account Number"><select className={inputClass} value={txnForm.acctNo} onChange={e=>setTxnForm({...txnForm,acctNo:e.target.value})}><option value="">Select account...</option>{rowsOf(accounts).map(a=><option key={a.id} value={a.acctNo}>{a.acctNo} — {a.name}</option>)}</select></FormField>
                 <FormField label="Transaction Type"><div className="grid grid-cols-3 gap-1">{["Deposit","Withdrawal","Transfer"].map(t=><button key={t} onClick={()=>setTxnForm({...txnForm,type:t})} className={"py-2 rounded-xl text-[12px] font-semibold transition-all "+(txnForm.type===t?"text-white":"text-slate-500 bg-slate-100")} style={{background:txnForm.type===t?BNK_NAVY:""}}>{ t}</button>)}</div></FormField>
                 <FormField label="Amount (TZS k)"><input type="number" className={inputClass} value={txnForm.amount} onChange={e=>setTxnForm({...txnForm,amount:e.target.value})}/></FormField>
                 <FormField label="Narration"><input className={inputClass} value={txnForm.narration} onChange={e=>setTxnForm({...txnForm,narration:e.target.value})} placeholder="Transaction description"/></FormField>
                 {txnForm.acctNo && txnForm.amount && (()=>{
-                  const acct = accounts.rows.find(a=>a.acctNo===txnForm.acctNo);
+                  const acct = rowsOf(accounts).find(a=>a.acctNo===txnForm.acctNo);
                   const newBal = txnForm.type==="Withdrawal" ? (acct?.balance||0) - Number(txnForm.amount) : (acct?.balance||0) + Number(txnForm.amount);
                   return <div className={"p-3 rounded-xl text-center "+(newBal<0?"bg-red-50 border border-red-200":"bg-green-50 border border-green-200")}><p className="text-[12px] text-slate-500">New Balance</p><p className="text-[20px] font-bold" style={{color:newBal<0?"#EF4444":BNK_NAVY}}>TZS {money(Math.max(0,newBal))}k</p>{newBal<0&&<p className="text-[11px] text-red-500">Insufficient funds</p>}</div>;
                 })()}
@@ -46386,7 +46387,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Recent Transactions</p>
               <div className="space-y-2">
-                {transactions.rows.slice(0,8).map(t => (
+                {rowsOf(transactions).slice(0,8).map(t => (
                   <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50">
                     <div><p className="text-[12px] font-medium text-[#111827]">{t.member}</p><p className="text-[10.5px] text-slate-400">{t.acctNo} · {t.date}</p><p className="text-[10.5px] text-slate-500">{t.narration}</p></div>
                     <div className="text-right"><p className="text-[13px] font-bold" style={{color:t.type==="Withdrawal"?"#EF4444":"#16A34A"}}>{t.type==="Withdrawal"?"-":"+"} TZS {money(t.amount)}k</p><p className="text-[10px] text-slate-400">{t.channel}</p></div>
@@ -46453,7 +46454,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Aging Buckets</p>
-              {Object.entries(aging).map(([b,n])=>{const col=b==="current"?"#16A34A":b==="1-30"?"#F59E0B":b==="31-60"?"#EF4444":"#7F1D1D";const amt=loans.rows.filter(l=>{if(b==="current")return l.dpd===0&&l.status!=="Closed";if(b==="1-30")return l.dpd>0&&l.dpd<=30;if(b==="31-60")return l.dpd>30&&l.dpd<=60;if(b==="61-90")return l.dpd>60&&l.dpd<=90;return l.dpd>90;}).reduce((s,l)=>s+l.balance,0);return(
+              {Object.entries(aging).map(([b,n])=>{const col=b==="current"?"#16A34A":b==="1-30"?"#F59E0B":b==="31-60"?"#EF4444":"#7F1D1D";const amt=rowsOf(loans).filter(l=>{if(b==="current")return l.dpd===0&&l.status!=="Closed";if(b==="1-30")return l.dpd>0&&l.dpd<=30;if(b==="31-60")return l.dpd>30&&l.dpd<=60;if(b==="61-90")return l.dpd>60&&l.dpd<=90;return l.dpd>90;}).reduce((s,l)=>s+l.balance,0);return(
                 <div key={b} className="flex items-center justify-between py-2.5 border-b border-slate-50 last:border-0">
                   <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{background:col}}/><span className="text-[12.5px] text-slate-600">{b==="current"?"Current":b+" DPD"}</span></div>
                   <div className="text-right"><p className="text-[13px] font-bold" style={{color:col}}>{n} loans</p><p className="text-[11px] text-slate-400">TZS {money(amt)}k</p></div>
@@ -46462,7 +46463,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             </div>
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Concentration Risk</p>
-              {["Personal Loan","Business Loan","SME Loan","Agricultural","Group Loan"].map(prod=>{const bal=loans.rows.filter(l=>l.product===prod&&l.status!=="Closed").reduce((s,l)=>s+l.balance,0);const pct=totalPortfolio>0?bal/totalPortfolio*100:0;if(!bal)return null;return(<div key={prod} className="flex items-center gap-2 mb-2"><span className="text-[11px] text-slate-600 w-24 shrink-0 truncate">{prod}</span><div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:pct+"%",background:pct>40?"#EF4444":pct>25?"#F59E0B":BNK_TEAL}}/></div><span className="text-[10.5px] font-bold text-slate-600 w-8 shrink-0 text-right">{pct.toFixed(0)}%</span></div>);}).filter(Boolean)}
+              {["Personal Loan","Business Loan","SME Loan","Agricultural","Group Loan"].map(prod=>{const bal=rowsOf(loans).filter(l=>l.product===prod&&l.status!=="Closed").reduce((s,l)=>s+l.balance,0);const pct=totalPortfolio>0?bal/totalPortfolio*100:0;if(!bal)return null;return(<div key={prod} className="flex items-center gap-2 mb-2"><span className="text-[11px] text-slate-600 w-24 shrink-0 truncate">{prod}</span><div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:pct+"%",background:pct>40?"#EF4444":pct>25?"#F59E0B":BNK_TEAL}}/></div><span className="text-[10.5px] font-bold text-slate-600 w-8 shrink-0 text-right">{pct.toFixed(0)}%</span></div>);}).filter(Boolean)}
               <p className="text-[10.5px] text-slate-400 mt-2">Risk threshold: 40% concentration = HIGH</p>
             </div>
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
@@ -46483,16 +46484,16 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
       {tab==="reports" && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[["Total Assets","TZS "+money(totalDeposits+totalPortfolio)+"k","#0F2D5E"],["Loan-to-Deposit",totalDeposits>0?(totalPortfolio/totalDeposits*100).toFixed(0)+"%":"—","#0D7377"],["Recovery Rate",loans.rows.length>0?(loans.rows.filter(l=>l.status==="Closed").length/loans.rows.length*100).toFixed(0)+"%":"—","#16A34A"],["Monthly Revenue","TZS "+money(monthlyInterest)+"k","#B8860B"]].map(([l,v,col])=>(
+            {[["Total Assets","TZS "+money(totalDeposits+totalPortfolio)+"k","#0F2D5E"],["Loan-to-Deposit",totalDeposits>0?(totalPortfolio/totalDeposits*100).toFixed(0)+"%":"—","#0D7377"],["Recovery Rate",rowsOf(loans).length>0?(rowsOf(loans).filter(l=>l.status==="Closed").length/rowsOf(loans).length*100).toFixed(0)+"%":"—","#16A34A"],["Monthly Revenue","TZS "+money(monthlyInterest)+"k","#B8860B"]].map(([l,v,col])=>(
               <div key={l} className="bg-white rounded-xl border border-slate-200/80 p-4 text-center"><p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1">{l}</p><p className="text-[22px] font-bold" style={{color:col}}>{v}</p></div>
             ))}
           </div>
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4"><p className="text-[14px] font-semibold text-[#111827]">MIS Summary Report</p><button onClick={()=>downloadCSV("mis-report",loans.rows,[{key:"id",label:"Loan ID"},{key:"member",label:"Member"},{key:"product",label:"Product"},{key:"principal",label:"Principal"},{key:"balance",label:"Balance"},{key:"dpd",label:"DPD"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-blue-400 hover:text-blue-600"><Download size={12}/>Export MIS</button></div>
+            <div className="flex items-center justify-between mb-4"><p className="text-[14px] font-semibold text-[#111827]">MIS Summary Report</p><button onClick={()=>downloadCSV("mis-report",rowsOf(loans),[{key:"id",label:"Loan ID"},{key:"member",label:"Member"},{key:"product",label:"Product"},{key:"principal",label:"Principal"},{key:"balance",label:"Balance"},{key:"dpd",label:"DPD"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-blue-400 hover:text-blue-600"><Download size={12}/>Export MIS</button></div>
             <div className="grid grid-cols-3 gap-6">
-              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Savings Metrics</p>{[["Total Accounts",accounts.rows.length],["Active Accounts",accounts.rows.filter(a=>a.status==="Active").length],["Total Savings","TZS "+money(accounts.rows.filter(a=>a.type==="Savings").reduce((s,a)=>s+a.balance,0))+"k"],["Fixed Deposits","TZS "+money(accounts.rows.filter(a=>a.type==="Fixed Deposit").reduce((s,a)=>s+a.balance,0))+"k"]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
-              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Loan Metrics</p>{[["Total Disbursed","TZS "+money(loans.rows.reduce((s,l)=>s+l.principal,0))+"k"],["Portfolio","TZS "+money(totalPortfolio)+"k"],["Total Collected","TZS "+money(loans.rows.reduce((s,l)=>s+l.paid,0))+"k"],["PAR30",parRatio+"%"]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
-              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Member Metrics</p>{[["Total Members",totalMembers],["KYC Verified",members.rows.filter(m=>m.kycStatus==="Verified").length],["Active Borrowers",loans.rows.filter(l=>l.status==="Active").length],["Applications",applications.rows.length]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
+              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Savings Metrics</p>{[["Total Accounts",rowsOf(accounts).length],["Active Accounts",rowsOf(accounts).filter(a=>a.status==="Active").length],["Total Savings","TZS "+money(rowsOf(accounts).filter(a=>a.type==="Savings").reduce((s,a)=>s+a.balance,0))+"k"],["Fixed Deposits","TZS "+money(rowsOf(accounts).filter(a=>a.type==="Fixed Deposit").reduce((s,a)=>s+a.balance,0))+"k"]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
+              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Loan Metrics</p>{[["Total Disbursed","TZS "+money(rowsOf(loans).reduce((s,l)=>s+l.principal,0))+"k"],["Portfolio","TZS "+money(totalPortfolio)+"k"],["Total Collected","TZS "+money(rowsOf(loans).reduce((s,l)=>s+l.paid,0))+"k"],["PAR30",parRatio+"%"]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
+              <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Member Metrics</p>{[["Total Members",totalMembers],["KYC Verified",rowsOf(members).filter(m=>m.kycStatus==="Verified").length],["Active Borrowers",rowsOf(loans).filter(l=>l.status==="Active").length],["Applications",rowsOf(applications).length]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
             </div>
           </div>
         </div>
@@ -46504,7 +46505,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl mx-4" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4"><p className="text-[16px] font-bold text-[#111827]">Post Transaction</p><button onClick={()=>setShowTxn(false)} className="text-slate-400"><X size={18}/></button></div>
             <div className="space-y-3">
-              <FormField label="Account"><select className={inputClass} value={txnForm.acctNo} onChange={e=>setTxnForm({...txnForm,acctNo:e.target.value})}><option value="">Select account...</option>{accounts.rows.map(a=><option key={a.id} value={a.acctNo}>{a.acctNo} — {a.name}</option>)}</select></FormField>
+              <FormField label="Account"><select className={inputClass} value={txnForm.acctNo} onChange={e=>setTxnForm({...txnForm,acctNo:e.target.value})}><option value="">Select account...</option>{rowsOf(accounts).map(a=><option key={a.id} value={a.acctNo}>{a.acctNo} — {a.name}</option>)}</select></FormField>
               <div className="grid grid-cols-3 gap-1">{["Deposit","Withdrawal","Transfer"].map(t=><button key={t} onClick={()=>setTxnForm({...txnForm,type:t})} className={"py-2 rounded-xl text-[12px] font-semibold "+(txnForm.type===t?"text-white":"text-slate-500 bg-slate-100")} style={{background:txnForm.type===t?BNK_NAVY:""}}>{t}</button>)}</div>
               <FormField label="Amount (TZS k)"><input type="number" className={inputClass} value={txnForm.amount} onChange={e=>setTxnForm({...txnForm,amount:e.target.value})}/></FormField>
               <FormField label="Narration"><input className={inputClass} value={txnForm.narration} onChange={e=>setTxnForm({...txnForm,narration:e.target.value})}/></FormField>
@@ -46940,7 +46941,7 @@ function PortalTraining({ empName }) {
   const training = useCompanyTable("hr_training", trainingSeed, {
     order:{ col:"course", ascending:true }, mapRow:r=>r,
   });
-  const myTraining = training.rows.filter(t=>
+  const myTraining = rowsOf(training).filter(t=>
     t.employee?.toLowerCase().includes(empName.split(" ")[0].toLowerCase())||
     t.employee===empName
   );
@@ -46967,7 +46968,7 @@ function PortalTraining({ empName }) {
   };
 
   // All available training (company-wide + mine)
-  const allTraining = training.rows.slice(0,10);
+  const allTraining = rowsOf(training).slice(0,10);
 
   return (
     <div className="space-y-4">
@@ -47865,6 +47866,7 @@ function SmartManager() {
   const employees = useCompanyTable("hr_employees", employeesSeed, {
     order: { col: "full_name", ascending: true }, mapRow: mapEmployeeRow,
   });
+  const employeesForDailyBriefing = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
   const leaveRequests = useCompanyTable("hr_leave_requests", leaveRequestsSeed, {
     select: "*,hr_employees(full_name)", order: { col: "start_date", ascending: false }, mapRow: mapLeaveRow,
   });
@@ -47894,9 +47896,9 @@ function SmartManager() {
   const [htlBookingsForAlerts,setHtlBookingsForAlerts] = React.useState([]);
 
   const smartAlerts = useSmartAlerts({
-    invoices:    invoices.rows,
-    inventory:   inventory.rows,
-    leaveRequests: leaveRequests.rows,
+    invoices:    rowsOf(invoices),
+    inventory:   rowsOf(inventory),
+    leaveRequests: rowsOf(leaveRequests),
     bankLoans:   bankLoansForAlerts,
     phmStock:    phmStockForAlerts,
     vehicles:    vehiclesForAlerts,
@@ -48404,6 +48406,7 @@ function SmartManager() {
                 <span className="truncate">{company?.name || "Smart Manager"}</span>
               </div>
               <h1 className="truncate text-[14px] font-semibold text-slate-900 sm:mt-0.5 sm:text-[15px]">Operations Workspace</h1>
+              <span className="sr-only">SMART MANAGER · ERP SYSTEM</span>
             </div>
           </div>
 
@@ -48522,7 +48525,7 @@ function SmartManager() {
           {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
-      {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} currentUser={currentUser} />}
+      {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={rowsOf(posTransactions)} onNavigate={go} currentUser={currentUser} />}
           {active === "scm" && <SupplyChain />}
           {active === "ecommerce" && <ECommerce inventory={inventory} onNavigate={go} />}
           {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} />}
