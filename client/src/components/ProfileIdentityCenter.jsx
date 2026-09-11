@@ -186,7 +186,7 @@ function LegacyProfileMenu({ currentUser, session, company, onSignOut, onNavigat
   );
 }
 
-function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onOpenPasswordRecovery, roleChangeApprovalsQuery, onProfileUpdated, canManageBilling = false }) {
+function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onOpenPasswordRecovery, roleChangeApprovalsQuery, onProfileUpdated, canManageBilling = false, topbar = false }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
@@ -235,14 +235,13 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
   ];
 
   return (
-    <div className="relative w-full">
-      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className="group flex w-full min-h-11 items-center gap-2.5 rounded-xl border-0 bg-transparent px-1.5 py-1.5 text-left shadow-none transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50" aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center">
+      <div className={topbar ? "relative shrink-0" : "relative w-full"}>
+      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className={topbar ? "group grid h-9 w-9 place-items-center rounded-full border-0 bg-transparent p-0 text-left shadow-none transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" : "group flex w-full min-h-11 items-center gap-2.5 rounded-xl border-0 bg-transparent px-1.5 py-1.5 text-left shadow-none transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"} aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center">
         <Avatar profile={profile} name={displayName} size="md" />
-        <span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-white">{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span>
-        <ChevronRight size={14} className={`shrink-0 text-slate-400 transition ${open ? "-rotate-90 text-cyan-300" : ""}`} aria-hidden="true" />
+        {!topbar && <><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-white">{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span><ChevronRight size={14} className={`shrink-0 text-slate-400 transition ${open ? "-rotate-90 text-cyan-300" : ""}`} aria-hidden="true" /></>}
       </button>
       {open && (
-        <section ref={menuRef} id="workspace-profile-menu" role="dialog" aria-label="Account identity center" className="absolute bottom-full left-0 z-50 mb-2 w-[min(92vw,320px)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5">
+        <section ref={menuRef} id="workspace-profile-menu" role="dialog" aria-label="Account identity center" className={`absolute ${topbar ? "right-0 top-full mt-3" : "bottom-full left-0 mb-2"} z-50 w-[min(92vw,320px)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_24px_60px_rgba(15,23,42,.18)]`}>
           <div className="flex items-center gap-2.5 border-b border-slate-100 px-2.5 pb-3 pt-2"><Avatar profile={profile} name={displayName} size="md" /><div className="min-w-0 flex-1"><p className="truncate text-[12.5px] font-bold text-slate-900">{displayName}</p><p className="mt-0.5 truncate text-[10px] text-slate-500">{role} · {company?.name || "Current workspace"}</p></div><StatusPill active={profile?.isActive !== false} /></div>
           <div className="mt-1 max-h-[min(58vh,360px)] overflow-y-auto p-1">
             {actions.map((action) => {
