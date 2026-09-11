@@ -21,7 +21,6 @@ import {
 import { createDashboardAdditionalModules } from "./dashboardAdditionalModules.jsx";
 import { createDashboardExtractedModules } from "./dashboardExtractedModules.jsx";
 import { createDashboardStaticData } from "./dashboardStaticData.js";
-import { rowsOf } from "./lib/rowsOf";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, CartesianGrid, Cell,
@@ -30,6 +29,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
 import { trpc } from "./lib/trpc";
+import { rowsOf } from "./lib/rowsOf";
 import { createAuthRequestError, toAuthUserMessage, validatePasswordLogin } from "./lib/authErrors";
 import { PASSWORD_REQUIREMENT_LABELS, authScreenFromSearch, companyDefaultsForCountry, getPasswordChecks, isEnterprisePassword, passwordStrength } from "./lib/authOnboarding";
 import { addProductToPosCart, calculatePosPaymentSummary, createPosSaleAttempt, productMatchesPosLookup } from "./lib/posTransactionEngine";
@@ -1159,7 +1159,7 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
     try {
       const result = await runCompanyTableQuery(table, { select: selectRef.current, order: orderRef.current });
       const mapper = mapRowRef.current;
-      const sourceRows = Array.isArray(result?.rows) ? result.rows : [];
+      const sourceRows = Array.isArray(result?.rows) ? rowsOf(result) : [];
       const confirmedRows = mapper ? sourceRows.map(mapper).filter(Boolean) : sourceRows;
       confirmedRowsRef.current = confirmedRows;
       setRows(confirmedRows);
@@ -1487,7 +1487,7 @@ function mapTrainingRow(r) {
 function LmsInsightsPanel({ employees }) {
   const training = useCompanyTable("hr_training", [], { order: { col: "created_at", ascending: false }, mapRow: mapTrainingRow, select: "*,hr_employees(full_name)" });
   const t = TODAY.toISOString().slice(0, 10);
-  const employeeRows = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
+  const employeeRows = Array.isArray(employees?.rows) ? rowsOf(employees) : (Array.isArray(employees) ? employees : []);
 
   const deptOf = (name) => (employeeRows.find((e) => e.name === name)?.department) || "General";
   const byDept = {};
@@ -2172,7 +2172,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
     // `employees` is the shared useCompanyTable result in the authenticated
     // dashboard, while standalone callers may still supply an array. Normalize
     // both shapes before the briefing applies filter/reduce operations.
-    const emps      = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
+    const emps      = Array.isArray(employees?.rows) ? rowsOf(employees) : (Array.isArray(employees) ? employees : []);
     const activeEmps= emps.filter(e => e.status === "Active");
     const onLeave   = (leaveRequests?.rows || []).filter(l =>
       l.status === "Approved" && l.startDate <= today && l.endDate >= today
@@ -5108,13 +5108,13 @@ const signaturesSeed = [];
 // against it, rather than being stuck with whatever KPIs a developer
 // hardcoded onto a dashboard.
 const KPI_METRICS = [
-  { id: "revenue", label: "Revenue Collected", unit: "TZS 000", compute: (d) => d.rowsOf(invoices).reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0) },
-  { id: "profit", label: "Net Profit", unit: "TZS 000", compute: (d) => { const rev = d.rowsOf(invoices).reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0); return rev - d.rowsOf(expenses).reduce((s, e) => s + e.amount, 0); } },
-  { id: "receivables", label: "Outstanding Receivables", unit: "TZS 000", compute: (d) => d.rowsOf(invoices).filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0) },
-  { id: "stock_value", label: "Stock Value", unit: "TZS 000", compute: (d) => d.rowsOf(inventory).reduce((s, it) => s + it.qty * it.unitCost, 0) },
-  { id: "pipeline_value", label: "Open Pipeline Value", unit: "TZS 000", compute: (d) => d.rowsOf(crm).filter((l) => l.stage !== "Won" && l.stage !== "Lost").reduce((s, l) => s + l.value, 0) },
-  { id: "headcount", label: "Active Employees", unit: "people", compute: (d) => d.rowsOf(employees).filter((e) => e.status === "Active").length },
-  { id: "win_rate", label: "Sales Win Rate", unit: "%", compute: (d) => { const won = d.rowsOf(crm).filter((l) => l.stage === "Won").length; const closed = won + d.rowsOf(crm).filter((l) => l.stage === "Lost").length; return closed > 0 ? Math.round((won / closed) * 100) : 0; } },
+  { id: "revenue", label: "Revenue Collected", unit: "TZS 000", compute: (d) => rowsOf(d.invoices).reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0) },
+  { id: "profit", label: "Net Profit", unit: "TZS 000", compute: (d) => { const rev = rowsOf(d.invoices).reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0); return rev - rowsOf(d.expenses).reduce((s, e) => s + e.amount, 0); } },
+  { id: "receivables", label: "Outstanding Receivables", unit: "TZS 000", compute: (d) => rowsOf(d.invoices).filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0) },
+  { id: "stock_value", label: "Stock Value", unit: "TZS 000", compute: (d) => rowsOf(d.inventory).reduce((s, it) => s + it.qty * it.unitCost, 0) },
+  { id: "pipeline_value", label: "Open Pipeline Value", unit: "TZS 000", compute: (d) => rowsOf(d.crm).filter((l) => l.stage !== "Won" && l.stage !== "Lost").reduce((s, l) => s + l.value, 0) },
+  { id: "headcount", label: "Active Employees", unit: "people", compute: (d) => rowsOf(d.employees).filter((e) => e.status === "Active").length },
+  { id: "win_rate", label: "Sales Win Rate", unit: "%", compute: (d) => { const won = rowsOf(d.crm).filter((l) => l.stage === "Won").length; const closed = won + rowsOf(d.crm).filter((l) => l.stage === "Lost").length; return closed > 0 ? Math.round((won / closed) * 100) : 0; } },
 ];
 
 const customKpisSeed = [
@@ -5172,9 +5172,9 @@ const WORKFLOW_TRIGGERS = [
 // behind it, so a skipped run states exactly why in real figures.
 const WORKFLOW_CONDITIONS = [
   { id: "none", label: "No condition — always run", evaluate: () => ({ met: true, detail: "No condition set" }) },
-  { id: "overdue-count-gt", label: "Only if overdue invoices exceed…", unit: "invoices", evaluate: (data, v) => { const todayStr = TODAY.toISOString().slice(0, 10); const n = data.rowsOf(invoices).filter((i) => i.status !== "Paid" && i.dueDate && i.dueDate < todayStr).length; return { met: n > Number(v), detail: `${n} overdue invoice(s) vs threshold ${v}` }; } },
-  { id: "low-stock-count-gt", label: "Only if low-stock items exceed…", unit: "items", evaluate: (data, v) => { const n = data.rowsOf(inventory).filter((it) => it.qty <= it.reorder).length; return { met: n > Number(v), detail: `${n} item(s) at/below reorder vs threshold ${v}` }; } },
-  { id: "unpaid-expenses-gt", label: "Only if unpaid expenses exceed… (TZS 000)", unit: "TZS k", evaluate: (data, v) => { const total = data.rowsOf(expenses).filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0); return { met: total > Number(v), detail: `TZS ${money(Math.round(total))}k unpaid vs threshold ${money(Number(v))}k` }; } },
+  { id: "overdue-count-gt", label: "Only if overdue invoices exceed…", unit: "invoices", evaluate: (data, v) => { const todayStr = TODAY.toISOString().slice(0, 10); const n = rowsOf(data.invoices).filter((i) => i.status !== "Paid" && i.dueDate && i.dueDate < todayStr).length; return { met: n > Number(v), detail: `${n} overdue invoice(s) vs threshold ${v}` }; } },
+  { id: "low-stock-count-gt", label: "Only if low-stock items exceed…", unit: "items", evaluate: (data, v) => { const n = rowsOf(data.inventory).filter((it) => it.qty <= it.reorder).length; return { met: n > Number(v), detail: `${n} item(s) at/below reorder vs threshold ${v}` }; } },
+  { id: "unpaid-expenses-gt", label: "Only if unpaid expenses exceed… (TZS 000)", unit: "TZS k", evaluate: (data, v) => { const total = rowsOf(data.expenses).filter((e) => e.status !== "Paid").reduce((s, e) => s + e.amount, 0); return { met: total > Number(v), detail: `TZS ${money(Math.round(total))}k unpaid vs threshold ${money(Number(v))}k` }; } },
 ];
 
 // Five step types, deliberately not more — each one wraps a function this
@@ -5560,7 +5560,7 @@ export function serializeDashboardSectionsToCsv(sections = []) {
   sections.forEach((section) => {
     lines.push("");
     lines.push(escapeCsv(section.title || "Chart data"));
-    const rows = Array.isArray(section.rows) ? section.rows : [];
+    const rows = Array.isArray(rowsOf(section)) ? rowsOf(section) : [];
     if (rows.length === 0) return;
     const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
     lines.push(headers.map(escapeCsv).join(","));
@@ -5580,7 +5580,7 @@ export function buildDashboardChartSections({
     { title: "Inventory Value by Category", module: "inventory", rows: stockByCategory },
     { title: "Work Orders by Status", module: "operations", rows: workOrdersByStatus },
     { title: "Top Customers by Billed Value", module: "sales", rows: topCustomers },
-  ].filter((section) => Array.isArray(section.rows) && rowsOf(section).length > 0);
+  ].filter((section) => Array.isArray(rowsOf(section)) && rowsOf(section).length > 0);
 }
 
 export function filterDashboardChartSections(sections = [], enabledModules = {}) {
@@ -5629,7 +5629,7 @@ export async function createDashboardPdfDocument({ companyName = "BusinessSphere
   y = 96;
 
   sections.forEach((section) => {
-    const rows = Array.isArray(section.rows) ? section.rows : [];
+    const rows = Array.isArray(rowsOf(section)) ? rowsOf(section) : [];
     if (rows.length === 0) return;
     const headers = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
     if (headers.length === 0) return;
@@ -6051,7 +6051,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     const outstanding = rowsOf(invoices).filter((inv) => inv.status !== "Paid");
     const pendingCash = outstanding.reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
     return { revenue, expenseTotal, profit, pendingCash, outstandingCount: outstanding.length };
-  }, [invoices.rows, expenses.rows, periodStart]);
+  }, [rowsOf(invoices), rowsOf(expenses), periodStart]);
 
   const financeKpis = [
     { label: "Revenue Collected", value: `TZS ${money(Math.round(financials.revenue))}k`, delta: PERIOD_LABELS[period], up: true, icon: CircleDollarSign },
@@ -6063,7 +6063,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // "Sales" — pipeline by stage, live from CRM.
   const pipelineByStage = useMemo(() => {
     return STAGES.map((stage) => ({ stage, value: rowsOf(crm).filter((l) => l.stage === stage).length }));
-  }, [crm.rows]);
+  }, [rowsOf(crm)]);
 
   // "Revenue" — top customers by billed value, live from invoices. Mirrors
   // Reports' Sales & Revenue report at a glance rather than duplicating a
@@ -6075,14 +6075,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       map[inv.customer] = (map[inv.customer] || 0) + total;
     });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([customer, value]) => ({ customer, value }));
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   // "Inventory" — stock value by category, live.
   const stockByCategory = useMemo(() => {
     const map = {};
     rowsOf(inventory).forEach((it) => { map[it.category] = (map[it.category] || 0) + it.qty * it.unitCost; });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([category, value]) => ({ category, value: Math.round(value) }));
-  }, [inventory.rows]);
+  }, [rowsOf(inventory)]);
 
   // Work orders by status — genuinely Manufacturing's own metric now that
   // Projects is a real module in its own right; this chart never needed
@@ -6091,7 +6091,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const workOrdersByStatus = useMemo(() => {
     const statuses = ["Planned", "In Progress", "Completed", "Cancelled"];
     return statuses.map((status) => ({ status, value: rowsOf(workOrders).filter((w) => w.status === status).length }));
-  }, [workOrders.rows]);
+  }, [rowsOf(workOrders)]);
 
   const revenueExpenseTrend = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => {
@@ -6104,7 +6104,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       const expensesValue = rowsOf(expenses).filter((expense) => expense.date?.startsWith(month)).reduce((sum, expense) => sum + (expense.amount || 0), 0);
       return { month: new Date(`${month}-01`).toLocaleDateString("en", { month: "short" }), revenue_tzs_k: Math.round(revenue / 1000), expenses_tzs_k: Math.round(expensesValue / 1000), profit_tzs_k: Math.round((revenue - expensesValue) / 1000) };
     });
-  }, [invoices.rows, expenses.rows]);
+  }, [rowsOf(invoices), rowsOf(expenses)]);
 
   const arAging = useMemo(() => {
     const unpaid = rowsOf(invoices).filter((invoice) => invoice.status !== "Paid");
@@ -6116,7 +6116,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       { bucket: "60+ days", items: unpaid.filter((invoice) => invoice.dueDate && (todayMs - new Date(invoice.dueDate).getTime()) > 60 * 86400000) },
     ];
     return buckets.map(({ bucket, items }) => ({ bucket, invoice_count: items.length, amount_tzs_k: Math.round(items.reduce((sum, invoice) => sum + lineTotal(invoice.items || []).total - (invoice.amountPaid || 0), 0) / 1000) }));
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   const exportDateMatches = useCallback((row) => {
     if (!exportStartDate && !exportEndDate) return true;
@@ -6131,8 +6131,8 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     expenses: rowsOf(expenses).filter(exportDateMatches),
     crm: rowsOf(crm).filter(exportDateMatches),
     workOrders: rowsOf(workOrders).filter(exportDateMatches),
-    inventory: inventory.rows,
-  }), [invoices.rows, expenses.rows, crm.rows, workOrders.rows, inventory.rows, exportDateMatches]);
+    inventory: rowsOf(inventory),
+  }), [rowsOf(invoices), rowsOf(expenses), rowsOf(crm), rowsOf(workOrders), rowsOf(inventory), exportDateMatches]);
 
   const filteredExportSections = useMemo(() => {
     const exportInvoices = filteredExportRows.invoices;
@@ -6198,7 +6198,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     }
   }
 
-  const pendingLeave = useMemo(() => rowsOf(leaveRequests).filter((l) => l.status === "Pending"), [leaveRequests.rows]);
+  const pendingLeave = useMemo(() => rowsOf(leaveRequests).filter((l) => l.status === "Pending"), [rowsOf(leaveRequests)]);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
   // The guidance panel intentionally derives only from confirmed rows already
@@ -6294,7 +6294,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
       items.push({ date: l.startDate, icon: Clock, color: l.status === "Approved" ? "#16A34A" : "#F59E0B", text: `Leave ${l.status.toLowerCase()} — ${l.type}`, sub: l.employee });
     });
     return items.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 6);
-  }, [invoices.rows, expenses.rows, leaveRequests.rows]);
+  }, [rowsOf(invoices), rowsOf(expenses), rowsOf(leaveRequests)]);
 
   const quickActions = [
     { label: "Create Invoice", icon: ReceiptText, action: () => onQuickAction("sales", { tab: "invoices", openForm: true }) },
@@ -7872,7 +7872,7 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
     const collectPct = unpaid.length === 0 ? 1 : 1 - overdue.length / unpaid.length;
     factors.push({ label: "Collections", pts: Math.round(collectPct * 30), max: 30, detail: unpaid.length === 0 ? "No unpaid invoices" : `${overdue.length} of ${unpaid.length} unpaid invoices overdue` });
 
-    const items = inventory.rows;
+    const items = rowsOf(inventory);
     const low = items.filter((it) => it.qty <= it.reorder);
     const stockPct = items.length === 0 ? 1 : 1 - low.length / items.length;
     factors.push({ label: "Stock levels", pts: Math.round(stockPct * 25), max: 25, detail: items.length === 0 ? "No inventory tracked" : `${low.length} of ${items.length} items at or below reorder level` });
@@ -7894,7 +7894,7 @@ function BusinessHealthCard({ invoices, inventory, expenses, posTransactions }) 
 
     const score = factors.reduce((s, f) => s + f.pts, 0);
     return { score, factors };
-  }, [invoices.rows, inventory.rows, expenses.rows, posTransactions?.rows, todayStr]);
+  }, [rowsOf(invoices), rowsOf(inventory), rowsOf(expenses), posTransactions?.rows, todayStr]);
 
   const band = health.score >= 80 ? { label: "Excellent", color: "#16A34A" } : health.score >= 60 ? { label: "Good", color: "#22C55E" } : health.score >= 40 ? { label: "Needs attention", color: "#F59E0B" } : { label: "At risk", color: "#EF4444" };
   const r = 34, circ = 2 * Math.PI * r, dash = (health.score / 100) * circ;
@@ -8017,7 +8017,7 @@ function CxPulseCard({ customer }) {
 }
 
 function Customer360View({ crm, invoices }) {
-  const customers = useMemo(() => [...new Set(rowsOf(invoices).map((i) => i.customer))].sort(), [invoices.rows]);
+  const customers = useMemo(() => [...new Set(rowsOf(invoices).map((i) => i.customer))].sort(), [rowsOf(invoices)]);
   const [selected, setSelected] = useState("");
   const customer = selected || customers[0] || "";
 
@@ -8035,7 +8035,7 @@ function Customer360View({ crm, invoices }) {
   };
 
   function printStatement() {
-    if (customer) printCustomerStatement(customer, invoices.rows);
+    if (customer) printCustomerStatement(customer, rowsOf(invoices));
   }
 
   // Omnichannel spine — closing the gap section 108 named. Channel-tagged
@@ -8099,7 +8099,7 @@ function Customer360View({ crm, invoices }) {
         { label: "Recency", pts: recPts, max: 30, note: lastDate ? `last activity ${daysSince} day(s) ago` : "no activity recorded" },
         { label: "Payment reliability", pts: relPts, max: 30, note: unpaid.length === 0 ? "nothing outstanding" : `${overdue.length} of ${unpaid.length} unpaid invoice(s) overdue` },
       ] };
-  }, [customer, invoices.rows, interactions.rows]);
+  }, [customer, rowsOf(invoices), rowsOf(interactions)]);
 
   return (
     <div className="space-y-4">
@@ -9371,7 +9371,7 @@ function TopBuyers({ leads, invoices, company }) {
     })
     .filter(c => c.yearInvs.length > 0 || c.lifetimeSpend > 0)
     .sort((a,b) => b.annualSpend - a.annualSpend);
-  }, [leads, invoices.rows, yearFilter]);
+  }, [leads, rowsOf(invoices), yearFilter]);
 
   const selected = ranked.find(c => c.id === selectedId);
 
@@ -9940,7 +9940,7 @@ function Customers({ leads, invoices }) {
       const lastActivity  = custInvs.length ? custInvs.sort((a,b)=>b.date?.localeCompare(a.date||""))[0]?.date : l.lastActivity;
       return { ...l, invoiceCount: custInvs.length, lifetimeValue, outstanding, lastActivity };
     }).sort((a,b) => b.lifetimeValue - a.lifetimeValue);
-  }, [leads, invoices.rows]);
+  }, [leads, rowsOf(invoices)]);
 
   const totalLifetime   = customers.reduce((s,c) => s + c.lifetimeValue, 0);
   const totalOutstanding= customers.reduce((s,c) => s + c.outstanding, 0);
@@ -10061,7 +10061,7 @@ function PartiesLedger({ leads, invoices, expenses, suppliers }) {
     const customerParties = leads
       .filter((l) => l.stage === "Won")
       .map((l) => {
-        const balance = invoices.rows
+        const balance = rowsOf(invoices)
           .filter((inv) => inv.customer === l.company && inv.status !== "Paid")
           .reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
         return { id:`cust-${l.id}`, name:l.company, sub:l.phone||l.email||"", type:"customer", balance, direction:"receive" };
@@ -10076,7 +10076,7 @@ function PartiesLedger({ leads, invoices, expenses, suppliers }) {
       }).filter((p) => p.balance > 0);
 
     return [...customerParties, ...supplierParties].sort((a, b) => b.balance - a.balance);
-  }, [leads, invoices.rows, expenses?.rows, suppliers?.rows]);
+  }, [leads, rowsOf(invoices), expenses?.rows, suppliers?.rows]);
 
   const filtered     = filter === "all" ? parties : parties.filter((p) => p.type === filter.slice(0,-1));
   const totalReceive = parties.filter((p) => p.direction === "receive").reduce((s, p) => s + p.balance, 0);
@@ -10417,7 +10417,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
 
   const subscriptions = subscriptionsHook;
   const hooksByTab = { quotations, orders, invoices };
-  const dataByTab = { quotations: quotations.rows, orders: orders.rows, invoices: invoices.rows };
+  const dataByTab = { quotations: rowsOf(quotations), orders: rowsOf(orders), invoices: rowsOf(invoices) };
   const errorByTab = { quotations: quotations.error, orders: orders.error, invoices: invoices.error };
   const loadingByTab = { quotations: quotations.loading, orders: orders.loading, invoices: invoices.loading };
   // Subscriptions is not a document tab — it's handled by its own
@@ -10763,7 +10763,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
     if (tab === "invoices" && crm?.rows) {
       const lead = rowsOf(crm).find((l) => l.company?.toLowerCase() === form.customer.trim().toLowerCase());
       if (lead?.creditLimit > 0) {
-        const outstanding = hooksByTab.invoices.rows
+        const outstanding = rowsOf(hooksByTab.invoices)
           .filter((i) => i.customer?.toLowerCase() === form.customer.trim().toLowerCase() && i.status !== "Paid")
           .reduce((s, i) => s + (lineTotal(i.items).total - (i.amountPaid || 0)), 0);
         const newTotal = lineTotal(form.items.filter((it) => it.name.trim())).total;
@@ -10875,7 +10875,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
   const DOC_TABLE = { quotations: "sales_quotations", orders: "sales_orders", invoices: "sales_invoices" };
 
   async function advanceDocument(kind, id, nextStatus) {
-    const doc = rowsOf(hooksByTab[kind]).find((d) => d.id === id);
+    const doc = hooksByTab[kind].rows.find((d) => d.id === id);
     if (!doc) return false;
     const patch = { status: nextStatus };
     if (kind === "invoices" && nextStatus === "Paid") patch.amountPaid = lineTotal(doc.items).total;
@@ -10921,7 +10921,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
   }
 
   async function deleteDocument(kind, id) {
-    const doc = rowsOf(hooksByTab[kind]).find((d) => d.id === id);
+    const doc = hooksByTab[kind].rows.find((d) => d.id === id);
     if (!doc) return false;
     if (requiresConfirmedPersistence()) {
       if (!doc.dbId) {
@@ -10999,7 +10999,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
         <>
           {/* ── Quick analytics strip — visible on every Sales sub-tab ─── */}
           {tab === "invoices" && (() => {
-            const invRows = invoices.rows;
+            const invRows = rowsOf(invoices);
             const statusData = [
               {name:"Paid",    value:invRows.filter(i=>i.status==="Paid").length,    fill:"#16A34A"},
               {name:"Partial", value:invRows.filter(i=>i.status==="Partial").length, fill:"#3B82F6"},
@@ -12209,7 +12209,7 @@ const INV_TABS = [
 ];
 
 function InventoryDashboard({ inventory, suppliersHook }) {
-  const rows       = inventory.rows || [];
+  const rows       = rowsOf(inventory) || [];
   const suppliers  = suppliersHook?.rows || [];
   const today      = new Date();
 
@@ -12377,7 +12377,7 @@ function Inventory({ inventory, suppliersHook }) {
   const stockColumns = [{ id: "item", label: "Item", required: true }, { id: "category", label: "Category" }, { id: "warehouse", label: "Warehouse" }, { id: "onHand", label: "On hand" }, { id: "status", label: "Status" }, { id: "expiry", label: "Expiry" }, { id: "value", label: "Value" }, { id: "detail", label: "Detail", required: true }];
   const { rows: items, setRows: setItems, loading, error } = inventory;
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
-  const warehouses = warehousesHook.rows;
+  const warehouses = rowsOf(warehousesHook);
 
   // Real bulk import — genuinely creates inventory_items rows, the exact
   // same table and shape the manual "Add Item" form writes to. A missing
@@ -13109,7 +13109,7 @@ function Warehouses({ inventory }) {
       const value = stock.reduce((s, it) => s + it.qty * it.unitCost, 0);
       return { ...w, skuCount: stock.length, value: Math.round(value) };
     });
-  }, [warehouses, inventory.rows]);
+  }, [warehouses, rowsOf(inventory)]);
 
   async function addWarehouse(form) {
     const draft = { id: `WH-${form.name.slice(0, 3).toUpperCase()}${Math.floor(Math.random() * 90)}`, name: form.name, city: form.city };
@@ -13222,7 +13222,7 @@ function Transfers({ inventory }) {
   const transfers = useCompanyTable("inventory_transfers", transfersSeed, { order: { col: "created_at", ascending: false }, mapRow: mapTransferRow });
   const { rows, setRows, loading } = transfers;
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
-  const warehouses = warehousesHook.rows;
+  const warehouses = rowsOf(warehousesHook);
   const [showForm, setShowForm] = useState(false);
 
   async function addTransfer(form) {
@@ -13321,7 +13321,7 @@ function Transfers({ inventory }) {
 }
 
 function TransferFormPanel({ inventory, warehouses, onClose, onSubmit }) {
-  const [sku, setSku] = useState(inventory.rows[0]?.sku || "");
+  const [sku, setSku] = useState(rowsOf(inventory)[0]?.sku || "");
   const [toWarehouse, setToWarehouse] = useState("");
   const [notes, setNotes] = useState("");
   const item = rowsOf(inventory).find((it) => it.sku === sku);
@@ -13454,7 +13454,7 @@ function Batches({ inventory }) {
 }
 
 function BatchFormPanel({ inventory, onClose, onSubmit }) {
-  const [form, setForm] = useState({ sku: inventory.rows[0]?.sku || "", batchNumber: "", qty: "", expiryDate: "", supplier: "" });
+  const [form, setForm] = useState({ sku: rowsOf(inventory)[0]?.sku || "", batchNumber: "", qty: "", expiryDate: "", supplier: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.batchNumber.trim() || !(Number(form.qty) > 0)) return; onSubmit(form); }
 
@@ -13624,7 +13624,7 @@ function InventoryAnalysisView({ inventory }) {
       const cum = (running / total) * 100;
       return { ...it, share: (it.value / total) * 100, cum, cls: cum <= 80 ? "A" : cum <= 95 ? "B" : "C" };
     });
-  }, [inventory.rows]);
+  }, [rowsOf(inventory)]);
 
   const heat = useMemo(() => {
     const totalValue = rowsOf(inventory).reduce((s, it) => s + it.qty * it.unitCost, 0) || 1;
@@ -13634,7 +13634,7 @@ function InventoryAnalysisView({ inventory }) {
       const low = items.filter((it) => it.qty <= it.reorder).length;
       return { ...w, items: items.length, value, share: value / totalValue, low };
     });
-  }, [inventory.rows, warehousesHook.rows]);
+  }, [rowsOf(inventory), rowsOf(warehousesHook)]);
 
   const unassigned = rowsOf(inventory).filter((it) => !rowsOf(warehousesHook).some((w) => w.id === it.warehouse)).length;
   const CLS_META = { A: { color: "#16A34A", note: "Count often, protect hard — ~80% of your stock value lives here." }, B: { color: "#F59E0B", note: "Review monthly — meaningful value, moderate attention." }, C: { color: "#94A3B8", note: "Order simply, count rarely — the long tail." } };
@@ -13650,12 +13650,12 @@ function InventoryAnalysisView({ inventory }) {
       cats[cat].low    += (it.qty||0)<=(it.reorder||0)?1:0;
     });
     return Object.values(cats).sort((a,b)=>b.value-a.value);
-  },[inventory.rows]);
+  },[rowsOf(inventory)]);
 
   const stockLevels = useMemo(()=>
-    [...inventory.rows].sort((a,b)=>(b.qty*b.unitCost)-(a.qty*a.unitCost)).slice(0,8)
+    [...rowsOf(inventory)].sort((a,b)=>(b.qty*b.unitCost)-(a.qty*a.unitCost)).slice(0,8)
       .map(it=>({ name:it.name?.length>16?it.name.slice(0,14)+"…":it.name, qty:it.qty, value:Math.round((it.qty||0)*(it.unitCost||0)/1000) }))
-  ,[inventory.rows]);
+  ,[rowsOf(inventory)]);
 
   return (
     <div className="space-y-5">
@@ -13821,7 +13821,7 @@ function ReorderAlertsView({ inventory, suppliersHook }) {
   const [dismissed, setDismissed] = useState(new Set());
   const [ordered, setOrdered] = useState(new Set());
 
-  const alerts = inventory.rows
+  const alerts = rowsOf(inventory)
     .filter((item) => {
       const reorderPt = item.reorderPoint || item.minQty || 10;
       return (item.qtyOnHand ?? item.qty ?? 0) <= reorderPt && !dismissed.has(item.sku || item.id);
@@ -14513,7 +14513,7 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
   const [supplier, setSupplier] = useState(suppliers[0]?.name || "");
   const [expectedDate, setExpectedDate] = useState("");
   const [requestedBy, setRequestedBy] = useState("");
-  const [items, setItems] = useState([{ sku: inventory.rows[0]?.sku || "", qty: "", cost: "" }]);
+  const [items, setItems] = useState([{ sku: rowsOf(inventory)[0]?.sku || "", qty: "", cost: "" }]);
   const [submitting, setSubmitting] = useState(false);
 
   function updateItem(i, key, val) {
@@ -14527,7 +14527,7 @@ function PurchaseOrderFormPanel({ inventory, suppliersHook, onClose, onSubmit })
       return next;
     }));
   }
-  function addRow() { setItems((prev) => [...prev, { sku: inventory.rows[0]?.sku || "", qty: "", cost: "" }]); }
+  function addRow() { setItems((prev) => [...prev, { sku: rowsOf(inventory)[0]?.sku || "", qty: "", cost: "" }]); }
   function removeRow(i) { setItems((prev) => prev.filter((_, idx) => idx !== i)); }
 
   const validItems = items.filter((it) => it.sku && Number(it.qty) > 0);
@@ -14742,7 +14742,7 @@ function ProcurementContracts({ contracts, suppliersHook }) {
 }
 
 function ContractFormPanel({ suppliersHook, onClose, onSubmit }) {
-  const suppliers = suppliersHook.rows;
+  const suppliers = rowsOf(suppliersHook);
   const [form, setForm] = useState({ supplier: suppliers[0]?.name || "", type: CONTRACT_TYPES[0], startDate: TODAY.toISOString().slice(0, 10), endDate: "", value: "", notes: "" });
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
   function handleSubmit(e) { e.preventDefault(); if (!form.supplier) return; onSubmit(form); }
@@ -14948,7 +14948,7 @@ function VendorPayments({ orders, expensesHook }) {
 
 // ather than a separate record.
 function SupplierPortal({ suppliersHook, orders }) {
-  const suppliers = suppliersHook.rows;
+  const suppliers = rowsOf(suppliersHook);
   const stats = useMemo(() => {
     return suppliers.map((s) => {
       const supplierOrders = rowsOf(orders).filter((o) => o.supplier === s.name);
@@ -14956,7 +14956,7 @@ function SupplierPortal({ suppliersHook, orders }) {
       const openOrders = supplierOrders.filter((o) => !["Paid", "Cancelled"].includes(o.status)).length;
       return { ...s, orderCount: supplierOrders.length, totalSpend, openOrders };
     });
-  }, [suppliers, orders.rows]);
+  }, [suppliers, rowsOf(orders)]);
 
   return (
     <div className="space-y-5">
@@ -15206,7 +15206,7 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
         {FIN_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "overview" && <FinanceOverview invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} />}
+      {tab === "overview" && <FinanceOverview invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} />}
       {tab === "receivables" && (
         <Receivables
           outstanding={outstanding}
@@ -15220,15 +15220,15 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
       {tab === "expenses" && (
         <Expenses expenses={expenses} onAdd={addExpense} onSetStatus={setExpenseStatus} onDelete={deleteExpense} loading={expLoading} />
       )}
-      {tab === "ledger" && <GeneralLedger invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} />}
-      {tab === "chart-of-accounts" && <ChartOfAccountsView invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} company={company} />}
+      {tab === "ledger" && <GeneralLedger invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} />}
+      {tab === "chart-of-accounts" && <ChartOfAccountsView invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} company={company} />}
       {tab === "budgets" && <BudgetsView expenses={expenses} />}
       {tab === "scan" && <DocumentScannerView expensesHook={expensesHook} />}
-      {tab === "ratios" && <FinancialRatiosView invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} inventory={inventoryHook} />}
+      {tab === "ratios" && <FinancialRatiosView invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} inventory={inventoryHook} />}
       {tab === "loans" && <LoansView />}
       {tab === "other-debtors" && <OtherDebtorsView />}
       {tab === "other-income" && <OtherIncomeView />}
-      {tab === "banking" && <Banking invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} />}
+      {tab === "banking" && <Banking invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} />}
       {tab === "tax" && <TaxCenterView invoices={allInvoices} expenses={expenses} employeesHook={employeesHook} company={company} />}
       {tab === "assets" && <Assets />}
     </div>
@@ -16101,7 +16101,7 @@ const STANDARD_CHART_OF_ACCOUNTS = [
 // touching the write path of every module that moves money — Sales,
 // POS, Procurement, Payroll — a real, separately-scoped project.
 function ChartOfAccountsView({ invoices, expenses, posTransactions, company }) {
-  const invoiceRows = Array.isArray(invoices?.rows) ? invoices.rows : [];
+  const invoiceRows = Array.isArray(invoices?.rows) ? rowsOf(invoices) : [];
   const expenseRows = Array.isArray(expenses) ? expenses : [];
   const posRows = Array.isArray(posTransactions) ? posTransactions : [];
   const [detailed, setDetailed] = useState(company?.businessScale !== "small");
@@ -16122,7 +16122,7 @@ function ChartOfAccountsView({ invoices, expenses, posTransactions, company }) {
     // without threading a new prop, so it's read here as its own real,
     // independent instance rather than duplicated arithmetic.
     return { cash, ar, ap, fixedAssetsNet, revenue, expenseByCategory };
-  }, [invoiceRows, expenseRows, posRows, assetsHook.rows]);
+  }, [invoiceRows, expenseRows, posRows, rowsOf(assetsHook)]);
 
   const rows = STANDARD_CHART_OF_ACCOUNTS.map((acc) => {
     let debit = 0, credit = 0;
@@ -16608,9 +16608,9 @@ function BudgetsView({ expenses }) {
 // categorized, not matched to units sold) — named on-screen, not proxied
 // with a formula that would look precise and be wrong.
 function FinancialRatiosView({ invoices, expenses, posTransactions, inventory }) {
-  const invoiceRows = Array.isArray(invoices?.rows) ? invoices.rows : [];
+  const invoiceRows = Array.isArray(invoices?.rows) ? rowsOf(invoices) : [];
   const expenseRows = Array.isArray(expenses) ? expenses : [];
-  const inventoryRows = Array.isArray(inventory?.rows) ? inventory.rows : [];
+  const inventoryRows = Array.isArray(inventory?.rows) ? rowsOf(inventory) : [];
   const posRows = Array.isArray(posTransactions) ? posTransactions : [];
   const loansHook = useCompanyTable("business_loans", [], { mapRow: (r) => ({ id: r.id, principal: Number(r.principal) || 0, repayments: (r.loan_repayments || []).map((rp) => ({ amount: Number(rp.amount) || 0 })) }), select: "*,loan_repayments(*)" });
 
@@ -16631,7 +16631,7 @@ function FinancialRatiosView({ invoices, expenses, posTransactions, inventory })
     const equity  = cash + ar + inv - liab;
     const avgMonthlyExp = expYtd / Math.max(1, TODAY.getMonth() + 1);
     return { cash, ar, inv, liab, revenue, profit, dayOfYear, equity, avgMonthlyExp };
-  }, [invoiceRows, expenseRows, posRows, inventoryRows, loansHook.rows]);
+  }, [invoiceRows, expenseRows, posRows, inventoryRows, rowsOf(loansHook)]);
 
   const ratios = [
     { label:"Current Ratio",    short:"Liquidity",  value:f.liab>0?((f.cash+f.ar+f.inv)/f.liab).toFixed(2):"∞",   formula:"(Cash + AR + Inv) ÷ Liabilities",        target:1.5, scale:3, good:"↑" },
@@ -16827,7 +16827,7 @@ function LoansView() {
     borrowed: rowsOf(loans).reduce((s, l) => s + l.principal, 0),
     repaid: rowsOf(loans).reduce((s, l) => s + totalRepaid(l), 0),
   };
-  const filtered = filter === "All" ? loans.rows : rowsOf(loans).filter((l) => l.status === filter);
+  const filtered = filter === "All" ? rowsOf(loans) : rowsOf(loans).filter((l) => l.status === filter);
 
   async function addLoan(e) {
     e.preventDefault();
@@ -17094,7 +17094,7 @@ function OtherDebtorsView() {
     owed: rowsOf(debtors).reduce((s, d) => s + d.amountOwed, 0),
     collected: rowsOf(debtors).reduce((s, d) => s + d.amountCollected, 0),
   };
-  const filtered = filter === "All" ? debtors.rows : rowsOf(debtors).filter((d) => d.status === filter);
+  const filtered = filter === "All" ? rowsOf(debtors) : rowsOf(debtors).filter((d) => d.status === filter);
 
   async function addDebtor(e) {
     e.preventDefault();
@@ -17326,7 +17326,7 @@ function TaxCenterView({ invoices, expenses, employeesHook, company }) {
     const profit = revenue - expTotal;
     const corp = Math.max(0, profit) * cfg.corporateRate;
     return { outputVat, staff: staff.length, payroll, payeRows, payeTotal, sdl, wcf, profit, corp };
-  }, [invoices.rows, expenses, employeesHook.rows, cfg, yearStart]);
+  }, [rowsOf(invoices), expenses, rowsOf(employeesHook), cfg, yearStart]);
 
   const Card = ({ title, value, note }) => (
     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
@@ -17463,7 +17463,7 @@ function TaxCenterView({ invoices, expenses, employeesHook, company }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <TRAReturnCard title="PAYE Monthly Return" formCode="PAYE.1" deadline="7th of next month"
               fields={[ { l:"Employer TIN", v: company.tin||"—" }, { l:"No. of Employees", v: String(figures.staff) }, { l:"Gross Payroll (TZS)", v: money(Math.round(figures.payroll*1000)) }, { l:"Total PAYE Due", v: `TZS ${money(Math.round(figures.payeTotal*1000))}` } ]}
-              onPrint={() => printTRAReturn("PAYE Return", figures, company, employeesHook.rows)} />
+              onPrint={() => printTRAReturn("PAYE Return", figures, company, rowsOf(employeesHook))} />
             <TRAReturnCard title="VAT Monthly Return" formCode="VAT.1" deadline="20th of next month"
               fields={[ { l:"Taxpayer TIN", v: company.tin||"—" }, { l:"Output VAT (Sales)", v: `TZS ${money(Math.round(figures.outputVat*1000))}` }, { l:"Input VAT", v:"Enter from purchase invoices" }, { l:"Net VAT Payable", v:`TZS ${money(Math.round(figures.outputVat*1000))} (before input credit)` } ]}
               onPrint={() => printTRAReturn("VAT Return", figures, company, [])} />
@@ -21093,10 +21093,10 @@ function Manufacturing({ inventory, workOrdersHook, expensesHook }) {
       .filter((w) => w.status !== "Cancelled")
       .reduce((s, w) => {
         const bom = rowsOf(boms).find((b) => b.id === w.bomId);
-        return s + (bom ? bomUnitCost(bom, inventory.rows) * w.qty : 0);
+        return s + (bom ? bomUnitCost(bom, rowsOf(inventory)) * w.qty : 0);
       }, 0);
     return { inProgress, planned, completedThisMonth, wipValue };
-  }, [workOrders, boms.rows, inventory.rows]);
+  }, [workOrders, rowsOf(boms), rowsOf(inventory)]);
 
   const MFG_KPIS = [
     { label: "In Progress", value: String(stats.inProgress), delta: "Work orders", up: true, icon: Factory },
@@ -21259,7 +21259,7 @@ function BOMs({ boms, inventory }) {
             <p className="text-[14px] font-semibold text-[#111827] mt-0.5 mb-3">{bom.product}</p>
             <div className="flex items-center justify-between text-[12px] text-slate-500">
               <span>{bom.components.length} components</span>
-              <span className="font-mono font-medium text-[#111827]">TZS {money(bomUnitCost(bom, inventory.rows))}k / {bom.outputUnit}</span>
+              <span className="font-mono font-medium text-[#111827]">TZS {money(bomUnitCost(bom, rowsOf(inventory)))}k / {bom.outputUnit}</span>
             </div>
           </button>
         ))}
@@ -21277,7 +21277,7 @@ function BOMs({ boms, inventory }) {
 }
 
 function BOMPanel({ bom, inventory, onClose, onDelete }) {
-  const materialsCost = bom.components.reduce((s, c) => s + bomComponentCost(c.sku, inventory.rows) * c.qty, 0);
+  const materialsCost = bom.components.reduce((s, c) => s + bomComponentCost(c.sku, rowsOf(inventory)) * c.qty, 0);
   const totalCost = materialsCost + bom.laborCost;
 
   return (
@@ -21303,9 +21303,9 @@ function BOMPanel({ bom, inventory, onClose, onDelete }) {
                 <div key={i} className={`flex items-center justify-between px-3 py-2.5 text-[13px] ${i !== bom.components.length - 1 ? "border-b border-slate-50" : ""}`}>
                   <div className="min-w-0 pr-2">
                     <p className="text-slate-700 truncate">{item?.name || c.sku}</p>
-                    <p className="text-[11px] text-slate-400 font-mono">{c.qty} × TZS {money(bomComponentCost(c.sku, inventory.rows))}k</p>
+                    <p className="text-[11px] text-slate-400 font-mono">{c.qty} × TZS {money(bomComponentCost(c.sku, rowsOf(inventory)))}k</p>
                   </div>
-                  <span className="font-mono text-[#111827] shrink-0">{money(c.qty * bomComponentCost(c.sku, inventory.rows))}k</span>
+                  <span className="font-mono text-[#111827] shrink-0">{money(c.qty * bomComponentCost(c.sku, rowsOf(inventory)))}k</span>
                 </div>
               );
             })}
@@ -21333,16 +21333,16 @@ function BOMFormPanel({ inventory, onClose, onSubmit }) {
   const [product, setProduct] = useState("");
   const [outputUnit, setOutputUnit] = useState("unit");
   const [laborCost, setLaborCost] = useState("");
-  const [components, setComponents] = useState([{ sku: inventory.rows[0]?.sku || "", qty: "" }]);
+  const [components, setComponents] = useState([{ sku: rowsOf(inventory)[0]?.sku || "", qty: "" }]);
 
   function updateComponent(i, key, val) {
     setComponents((prev) => prev.map((c, idx) => (idx === i ? { ...c, [key]: val } : c)));
   }
-  function addComponent() { setComponents((prev) => [...prev, { sku: inventory.rows[0]?.sku || "", qty: "" }]); }
+  function addComponent() { setComponents((prev) => [...prev, { sku: rowsOf(inventory)[0]?.sku || "", qty: "" }]); }
   function removeComponent(i) { setComponents((prev) => prev.filter((_, idx) => idx !== i)); }
 
   const validComponents = components.filter((c) => c.sku && Number(c.qty) > 0).map((c) => ({ sku: c.sku, qty: Number(c.qty) }));
-  const materialsCost = validComponents.reduce((s, c) => s + bomComponentCost(c.sku, inventory.rows) * c.qty, 0);
+  const materialsCost = validComponents.reduce((s, c) => s + bomComponentCost(c.sku, rowsOf(inventory)) * c.qty, 0);
   const totalCost = materialsCost + (Number(laborCost) || 0);
   const valid = product.trim() && validComponents.length > 0;
 
@@ -21529,7 +21529,7 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
   const completionRate = total > 0 ? Math.round(completed / total * 100) : 0;
   const wipValue  = workOrders
     .filter(w => w.status !== "Cancelled")
-    .reduce((s,w) => { const b = rowsOf(boms).find(b => b.id === w.bomId); return s + (b ? bomUnitCost(b, inventory.rows) * w.qty : 0); }, 0);
+    .reduce((s,w) => { const b = rowsOf(boms).find(b => b.id === w.bomId); return s + (b ? bomUnitCost(b, rowsOf(inventory)) * w.qty : 0); }, 0);
 
   // Status breakdown for donut chart
   const statusChart = [
@@ -21706,7 +21706,7 @@ function WorkOrders({ workOrders, setWorkOrders, inventory, boms, loading }) {
 function WorkOrderPanel({ order, onClose, onAdvance, onDelete, inventory, boms }) {
   const bom = rowsOf(boms).find((b) => b.id === order.bomId);
   const nextStatus = WO_STATUS_NEXT[order.status];
-  const unitCost = bom ? bomUnitCost(bom, inventory.rows) : 0;
+  const unitCost = bom ? bomUnitCost(bom, rowsOf(inventory)) : 0;
   const [saving, setSaving] = useState(false);
 
   // Live sufficiency check against the shared Inventory table — a component
@@ -21828,7 +21828,7 @@ function WorkOrderPanel({ order, onClose, onAdvance, onDelete, inventory, boms }
 }
 
 function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
-  const [form, setForm] = useState({ bomId: boms.rows[0]?.id || "", qty: "", startDate: TODAY.toISOString().slice(0, 10), dueDate: "", assignedTo: "" });
+  const [form, setForm] = useState({ bomId: rowsOf(boms)[0]?.id || "", qty: "", startDate: TODAY.toISOString().slice(0, 10), dueDate: "", assignedTo: "" });
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const valid = Number(form.qty) > 0 && form.dueDate;
@@ -21887,7 +21887,7 @@ function WorkOrderFormPanel({ boms, inventory, onClose, onSubmit }) {
 
           {bom && (
             <div className="bg-slate-50 rounded-lg p-3 text-[12.5px] text-slate-500">
-              Est. cost: <span className="font-mono text-[#111827] font-medium">TZS {money(Math.round(bomUnitCost(bom, inventory.rows) * (Number(form.qty) || 0)))}k</span> for {form.qty || 0} {bom.outputUnit}(s)
+              Est. cost: <span className="font-mono text-[#111827] font-medium">TZS {money(Math.round(bomUnitCost(bom, rowsOf(inventory)) * (Number(form.qty) || 0)))}k</span> for {form.qty || 0} {bom.outputUnit}(s)
             </div>
           )}
         </div>
@@ -22465,7 +22465,7 @@ function SupplyChain() {
     const delivered = rowsOf(shipments).filter((s) => s.status === "Delivered").length;
     const availableVehicles = rowsOf(vehicles).filter((v) => v.status === "Available").length;
     return { active, inTransit, delivered, availableVehicles, fleetSize: rowsOf(vehicles).length };
-  }, [shipments.rows, vehicles.rows]);
+  }, [rowsOf(shipments), rowsOf(vehicles)]);
 
   const SCM_KPIS = [
     { label: "Active Shipments", value: String(stats.active), delta: "Not yet delivered", up: true, icon: Truck },
@@ -22800,7 +22800,7 @@ function Shipments({ shipments, vehicles, onVehicleStatus, vehicleSaving = null 
       {selected && (
         <ShipmentPanel shipment={selected} onClose={() => setSelected(null)} onAdvance={advanceShipment} onDelete={deleteShipment} advancing={advancingShipmentId === selected.id} deleting={deletingShipmentId === selected.id} vehicleSaving={Boolean(vehicleSaving && selected.vehicle === vehicleSaving)} />
       )}
-      {showForm && <ShipmentFormPanel vehicles={vehicles.rows} onClose={() => setShowForm(false)} onSubmit={addShipment} saving={savingShipment} />}
+      {showForm && <ShipmentFormPanel vehicles={rowsOf(vehicles)} onClose={() => setShowForm(false)} onSubmit={addShipment} saving={savingShipment} />}
     </div>
   );
 }
@@ -23045,7 +23045,7 @@ function ECommerce({ inventory, onNavigate }) {
   });
 
   const stats = useMemo(() => {
-    const allOrders = orders.rows;
+    const allOrders = rowsOf(orders);
     const live = allOrders.filter((o) => o.status !== "Cancelled");
     const revenue = live.reduce((s, o) => s + o.total, 0);
     const published = rowsOf(products).filter((p) => p.published).length;
@@ -23062,7 +23062,7 @@ function ECommerce({ inventory, onNavigate }) {
       cancelled: statusCount("Cancelled"), lowStock,
       inventoryValue: valuedRows.length ? inventoryValue : null,
     };
-  }, [orders.rows, products.rows, inventory.rows]);
+  }, [rowsOf(orders), rowsOf(products), rowsOf(inventory)]);
 
   const ECOM_KPIS = [
     { label: "Online Revenue", value: `TZS ${money(stats.revenue)}k`, delta: "Confirmed non-cancelled orders", up: true, icon: CircleDollarSign },
@@ -23132,7 +23132,7 @@ function Storefront({ products, inventory }) {
       return matchesCat && matchesQ && matchesStock;
     });
     return [...matching].sort((a, b) => sortBy === "price-low" ? a.price - b.price : sortBy === "price-high" ? b.price - a.price : sortBy === "newest" ? String(b.sku).localeCompare(String(a.sku)) : String(a.name).localeCompare(String(b.name)));
-  }, [rows, inventory.rows, category, stockFilter, sortBy, query]);
+  }, [rows, rowsOf(inventory), category, stockFilter, sortBy, query]);
 
   async function togglePublished(sku) {
     setRows((prev) => prev.map((p) => (p.sku === sku ? { ...p, published: !p.published } : p)));
@@ -23752,7 +23752,7 @@ function AIInsights({ company, reportName, summary }) {
 
 function Reports({ invoices, inventory, expensesHook, company, schedulesHook, posTransactions, onNavigate, currentUser }) {
   const [tab, setTab] = useState("sales");
-  const expenses = expensesHook.rows;
+  const expenses = rowsOf(expensesHook);
 
   return (
     <div className="space-y-5">
@@ -23918,7 +23918,7 @@ function printReport(title, rows, company={}) {
 function SalesReport({ invoices, company }) {
   // Revenue by customer — the Odoo "Sales Analysis" grouping every ERP owner
   // reaches for first: who was billed what, what is collected, what is owed.
-  const { byCustomer, totals } = useMemo(() => computeSalesByCustomer(invoices), [invoices.rows]);
+  const { byCustomer, totals } = useMemo(() => computeSalesByCustomer(invoices), [rowsOf(invoices)]);
 
   const chartData = byCustomer.slice(0, 8).map((r) => ({ name: r.customer.length > 14 ? r.customer.slice(0, 14) + "…" : r.customer, billed: r.billed, collected: r.collected }));
 
@@ -23936,7 +23936,7 @@ function SalesReport({ invoices, company }) {
     });
     return Object.values(map).sort((a,b)=>b.revenue-a.revenue).slice(0,8)
       .map(d=>({...d,revenue:Math.round(d.revenue/1000)}));
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   function printSales() {
     const { byCustomer, totals } = computeSalesByCustomer(invoices);
@@ -24091,7 +24091,7 @@ function computeValuationByCategory(inventory) {
 function ValuationReport({ inventory, company }) {
   // Zoho-style stock valuation: on-hand quantity × unit cost per item,
   // subtotaled by category, with the grand total the balance sheet wants.
-  const { byCategory, grandTotal } = useMemo(() => computeValuationByCategory(inventory), [inventory.rows]);
+  const { byCategory, grandTotal } = useMemo(() => computeValuationByCategory(inventory), [rowsOf(inventory)]);
   const chartData = byCategory.map((c) => ({ name: c.category, value: Math.round(c.value) }));
 
   function exportValuation() {
@@ -24191,7 +24191,7 @@ function computePnLFigures(invoices, expenses) {
 }
 
 function PnLReport({ invoices, expenses, company }) {
-  const figures = useMemo(() => computePnLFigures(invoices, expenses), [invoices.rows, expenses]);
+  const figures = useMemo(() => computePnLFigures(invoices, expenses), [rowsOf(invoices), expenses]);
 
   // 6-month trend — derive from invoice/expense dates
   const months = useMemo(() => {
@@ -24199,7 +24199,7 @@ function PnLReport({ invoices, expenses, company }) {
       const d = new Date(TODAY.getFullYear(), TODAY.getMonth()-5+i, 1);
       const key = d.toISOString().slice(0,7);
       const label = d.toLocaleString("default",{month:"short"});
-      const revenue = invoices.rows
+      const revenue = rowsOf(invoices)
         .filter(inv => (inv.date||"").startsWith(key) && inv.status==="Paid")
         .reduce((s,inv) => s + lineTotal(inv.items).total, 0);
       const costs = expenses
@@ -24207,7 +24207,7 @@ function PnLReport({ invoices, expenses, company }) {
         .reduce((s,e) => s + e.amount, 0);
       return { month:label, revenue:Math.round(revenue/1000), costs:Math.round(costs/1000), profit:Math.round((revenue-costs)/1000) };
     });
-  }, [invoices.rows, expenses]);
+  }, [rowsOf(invoices), expenses]);
 
   const Row = ({label, value, indent, bold, color}) => (
     <div className={`flex justify-between py-2 text-[13px] ${indent?"pl-5":""} ${bold?"font-semibold text-[#111827]":"text-slate-600"}`}>
@@ -24339,14 +24339,14 @@ function BalanceSheetReport({ invoices, expenses, inventory, posTransactions, co
   const loansHook = useCompanyTable("business_loans", [], { mapRow: (r) => ({ id: r.id, dbId: r.id, principal: Number(r.principal) || 0, repayments: (r.loan_repayments || []).map((rp) => ({ amount: Number(rp.amount) || 0 })) }), select: "*,loan_repayments(*)" });
 
   const figures = useMemo(() => {
-    const ledger = buildLedger(invoices.rows, expenses, posTransactions || []);
+    const ledger = buildLedger(rowsOf(invoices), expenses, posTransactions || []);
     const cash = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
 
-    const accountsReceivable = invoices.rows
+    const accountsReceivable = rowsOf(invoices)
       .filter((inv) => inv.status !== "Paid")
       .reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
 
-    const inventoryValue = computeValuationByCategory(inventory.rows).grandTotal;
+    const inventoryValue = computeValuationByCategory(rowsOf(inventory)).grandTotal;
 
     const fixedAssetsNet = rowsOf(assetsHook).reduce((s, a) => s + depreciate(a).bookValue, 0);
 
@@ -24358,7 +24358,7 @@ function BalanceSheetReport({ invoices, expenses, inventory, posTransactions, co
     const equity = totalAssets - totalLiabilities;
 
     return { cash, accountsReceivable, inventoryValue, fixedAssetsNet, totalAssets, accountsPayable, loansOutstanding, totalLiabilities, equity };
-  }, [invoices.rows, expenses, inventory.rows, posTransactions, assetsHook.rows, loansHook.rows]);
+  }, [rowsOf(invoices), expenses, rowsOf(inventory), posTransactions, rowsOf(assetsHook), rowsOf(loansHook)]);
 
   const Row = ({ label, value, indent, bold, color }) => (
     <div className={`flex justify-between py-2 text-[13px] ${indent ? "pl-5" : ""} ${bold ? "font-semibold text-[#111827]" : "text-slate-600"}`}>
@@ -24495,7 +24495,7 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
 
 
   const figures = useMemo(() => {
-    const ledger = buildLedger(invoices.rows, expenses, posTransactions || []);
+    const ledger = buildLedger(rowsOf(invoices), expenses, posTransactions || []);
     const periodEntries = ledger.filter((e) => e.date >= periodStart);
 
     const cashFromReceivables = periodEntries.filter((e) => e.description.startsWith("Payment received") || e.description.includes("paid in full")).reduce((s, e) => s + e.credit, 0);
@@ -24517,7 +24517,7 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
     const netChange = netOperating + netInvesting + netFinancing;
 
     return { cashFromReceivables, cashFromPOS, cashPaidExpenses, netOperating, assetPurchases, netInvesting, loanProceeds, loanRepayments, netFinancing, netChange };
-  }, [invoices.rows, expenses, posTransactions, assetsHook.rows, loansHook.rows, periodStart]);
+  }, [rowsOf(invoices), expenses, posTransactions, rowsOf(assetsHook), rowsOf(loansHook), periodStart]);
   // 3-activity summary for chart
   const chartData = [
     {name:"Operating",  value:figures.netOperating,  fill:figures.netOperating>=0?"#16A34A":"#EF4444"},
@@ -24530,10 +24530,10 @@ function CashFlowReport({ invoices, expenses, posTransactions, company }) {
   const cashTrend = useMemo(()=>Array.from({length:6},(_,i)=>{
     const d = new Date(TODAY.getFullYear(), TODAY.getMonth()-5+i, 1);
     const ds = d.toISOString().slice(0,7);
-    const ledger = buildLedger(invoices.rows, expenses, posTransactions||[]);
+    const ledger = buildLedger(rowsOf(invoices), expenses, posTransactions||[]);
     const balance = ledger.filter(e=>e.date.startsWith(ds)).reduce((s,e)=>s+e.credit-e.debit,0);
     return {month:d.toLocaleString("default",{month:"short"}), cash:Math.round(balance/1000)};
-  }),[invoices.rows,expenses,posTransactions]);
+  }),[rowsOf(invoices),expenses,posTransactions]);
 
   const Row = ({ label, value, indent, bold, color }) => (
     <div className={`flex justify-between py-2 text-[13px] ${indent ? "pl-5" : ""} ${bold ? "font-semibold text-[#111827]" : "text-slate-600"}`}>
@@ -24722,7 +24722,7 @@ function BusinessCreditProfile({ invoices, expenses, company }) {
     factors.push({ label: "Business tenure", detail: company.createdAt ? `${tenureYears.toFixed(1)} years on this platform since ${company.createdAt}` : "No registration date on record", points: tenurePoints, max: 25 });
 
     return { score: Math.min(100, Math.max(0, score)), factors, reliabilityPct, generatedOn: TODAY.toISOString().slice(0, 10) };
-  }, [invoices.rows, expenses, company.createdAt]);
+  }, [rowsOf(invoices), expenses, company.createdAt]);
 
   const band = profile.score >= 80 ? { label: "Strong", color: "#16A34A" } : profile.score >= 60 ? { label: "Fair", color: "#F59E0B" } : { label: "Developing", color: "#EF4444" };
 
@@ -24913,7 +24913,7 @@ function LegacyLocalScheduledReports({ invoices, inventory, expensesHook, compan
       headers = ["Category", "SKU", "Item", "Qty", "Unit", "Unit Cost (TZS 000)", "Value (TZS 000)"];
       rows2 = [...byCategory.flatMap((c) => c.items.map((it) => [c.category, it.sku, it.name, it.qty, it.unit, it.unitCost, Math.round(it.value)])), ["GRAND TOTAL", "", "", "", "", "", Math.round(grandTotal)]];
     } else {
-      const figures = computePnLFigures(invoices, expensesHook.rows);
+      const figures = computePnLFigures(invoices, rowsOf(expensesHook));
       title = "Profit & Loss Statement"; filename = `profit-and-loss-${today}`; sheetName = "Profit and Loss";
       headers = ["Line", "Amount (TZS 000)"];
       rows2 = [["Revenue collected", Math.round(figures.collected)], ["Total billed (incl. uncollected)", Math.round(figures.billed)],
@@ -24994,7 +24994,7 @@ function ARAgingReport({ invoices, company }) {
   const today = new Date();
   const buckets = useMemo(() => {
     const result = { current:[], days30:[], days60:[], days90:[], over90:[] };
-    (invoices.rows || []).filter(inv => inv.status !== "Paid" && inv.status !== "Cancelled").forEach(inv => {
+    (rowsOf(invoices) || []).filter(inv => inv.status !== "Paid" && inv.status !== "Cancelled").forEach(inv => {
       const due   = new Date(inv.dueDate || inv.due_date);
       const days  = Math.floor((today - due) / 86400000);
       const bal   = inv.totalAmount - (inv.amountPaid||inv.amount_paid||0) || inv.total || 0;
@@ -25006,7 +25006,7 @@ function ARAgingReport({ invoices, company }) {
       else               result.over90.push(item);
     });
     return result;
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   const bucketDefs = [
     { key:"current", label:"Current (Not Yet Due)",  col:"#16A34A", bg:"#F0FDF4" },
@@ -25019,7 +25019,7 @@ function ARAgingReport({ invoices, company }) {
   const totalReceivables = Object.values(buckets).flat().reduce((s,i)=>s+i.balance,0);
 
   function exportARAging() {
-    const rows3 = [...invoices.rows].map(inv=>{
+    const rows3 = [...rowsOf(invoices)].map(inv=>{
       const bal=lineTotal(inv.items||[]).total-(inv.amountPaid||0);
       const days=inv.dueDate?Math.max(0,Math.ceil((Date.now()-new Date(inv.dueDate))/86400000)):0;
       return {Customer:inv.customer,Invoice:inv.id,DueDate:inv.dueDate||"",Days:days,Balance_k:Math.round(bal/1000),Status:inv.status};
@@ -25097,7 +25097,7 @@ function TaxVATReport({ invoices, expenses, company }) {
   });
 
   const taxData = useMemo(() => months.map(m => {
-    const monthInvs = (invoices.rows||[]).filter(inv=>(inv.dueDate||inv.due_date||"").startsWith(m.key));
+    const monthInvs = (rowsOf(invoices)||[]).filter(inv=>(inv.dueDate||inv.due_date||"").startsWith(m.key));
     const monthExps = (expenses||[]).filter(exp=>(exp.expense_date||exp.date||"").startsWith(m.key));
     const outputVAT = monthInvs.reduce((s,inv)=>{
       const amt = inv.totalAmount||inv.total||0;
@@ -25108,7 +25108,7 @@ function TaxVATReport({ invoices, expenses, company }) {
       return s + (amt * taxRate / (100 + taxRate));
     }, 0);
     return { ...m, outputVAT:Math.round(outputVAT), inputVAT:Math.round(inputVAT), netVAT:Math.round(outputVAT-inputVAT) };
-  }), [invoices.rows, expenses, taxRate]);
+  }), [rowsOf(invoices), expenses, taxRate]);
 
   const totalOutput = taxData.reduce((s,d)=>s+d.outputVAT,0);
   const totalInput  = taxData.reduce((s,d)=>s+d.inputVAT,0);
@@ -25488,7 +25488,7 @@ function MobileMoneyReconciliation({ invoices, currentUser }) {
     const all = [];
     rowsOf(invoices).forEach((inv) => (inv.payments || []).forEach((p) => { if (p.method === "Mobile Money") all.push({ ...p, invoiceId: inv.id, customer: inv.customer }); }));
     return all.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 10);
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   return (
     <div className="space-y-5">
@@ -26484,7 +26484,7 @@ function Projects({ filesHook, expensesHook }) {
     const dueSoonTasks = rowsOf(tasks).filter((t) => t.status !== "Done" && t.dueDate && t.dueDate >= todayStr && daysBetween(new Date(t.dueDate), TODAY) <= 7).length;
     const overdueMilestones = rowsOf(milestones).filter((m) => milestoneStatus(m) === "Overdue").length;
     return { active, totalBudget, dueSoonTasks, overdueMilestones };
-  }, [projects.rows, tasks.rows, milestones.rows]);
+  }, [rowsOf(projects), rowsOf(tasks), rowsOf(milestones)]);
 
   const PROJECT_KPIS = [
     { label: "Active Projects", value: String(stats.active), delta: `${rowsOf(projects).length} total`, up: true, icon: Kanban },
@@ -27625,7 +27625,7 @@ function CustomerSupport({ company }) {
   const tickets = useCompanyTable("support_tickets", supportTicketsSeed, {
     select: "*,support_ticket_messages(*)", order: { col: "created_date", ascending: false }, mapRow: mapTicketRow,
   });
-  const supportMetrics = useMemo(() => calculateSupportMetrics(tickets.rows), [tickets.rows]);
+  const supportMetrics = useMemo(() => calculateSupportMetrics(rowsOf(tickets)), [rowsOf(tickets)]);
   const metricState = tickets.loading ? "loading" : tickets.error ? "error" : tickets.unavailable ? "unavailable" : "ready";
   const unavailableMetricLabel = metricState === "loading"
     ? "Loading confirmed tickets"
@@ -27675,7 +27675,7 @@ function CustomerSupport({ company }) {
       {tab === "chat" && <LiveChat />}
       {tab === "kb" && <KnowledgeBase />}
       {tab === "calls" && <CallCenter />}
-      {tab === "ai" && <SupportAI tickets={tickets.rows} />}
+      {tab === "ai" && <SupportAI tickets={rowsOf(tickets)} />}
     </div>
   );
 }
@@ -29620,11 +29620,11 @@ function LegacyCommandPalette({ isOpen, onClose, onNavigate }) {
 }
 
 function DataQualityView({ crm, invoices, expenses, inventory, employees }) {
-  const crmRows = Array.isArray(crm?.rows) ? crm.rows : (Array.isArray(crm) ? crm : []);
-  const invoiceRows = Array.isArray(invoices?.rows) ? invoices.rows : (Array.isArray(invoices) ? invoices : []);
-  const expenseRows = Array.isArray(expenses?.rows) ? expenses.rows : (Array.isArray(expenses) ? expenses : []);
-  const inventoryRows = Array.isArray(inventory?.rows) ? inventory.rows : (Array.isArray(inventory) ? inventory : []);
-  const employeeRows = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
+  const crmRows = Array.isArray(crm?.rows) ? rowsOf(crm) : (Array.isArray(crm) ? crm : []);
+  const invoiceRows = Array.isArray(invoices?.rows) ? rowsOf(invoices) : (Array.isArray(invoices) ? invoices : []);
+  const expenseRows = Array.isArray(expenses?.rows) ? rowsOf(expenses) : (Array.isArray(expenses) ? expenses : []);
+  const inventoryRows = Array.isArray(inventory?.rows) ? rowsOf(inventory) : (Array.isArray(inventory) ? inventory : []);
+  const employeeRows = Array.isArray(employees?.rows) ? rowsOf(employees) : (Array.isArray(employees) ? employees : []);
   const findings = useMemo(() => {
     const out = [];
     const phoneOk = (p) => !p || /^[+0-9][0-9\s\-]{6,15}$/.test(p.trim());
@@ -29790,7 +29790,7 @@ function RiskCenterView({ invoices, expenses, inventory, employees }) {
     out.push({ cat: "Reputational", pct: repPct, basis: "Proxy: overdue obligations correlate with disputes — support-ticket volume will sharpen this when threaded here", fix: "Resolve oldest overdue items first; portal support tickets give customers a real channel before they go public." });
 
     return out.map((r) => ({ ...r, ...level(r.pct) }));
-  }, [invoices.rows, inventory.rows, training.rows, t]);
+  }, [rowsOf(invoices), rowsOf(inventory), rowsOf(training), t]);
 
   const high = risks.filter((r) => r.label === "High").length;
 
@@ -29979,7 +29979,7 @@ function ExecutiveDashboard({ company, invoices, expenses, crm, inventory, emplo
     const monthRevenue = monthInvoices.reduce((sum, inv) => sum + (inv.status === "Paid" ? lineTotal(inv.items || []).total : (inv.amountPaid || 0)), 0);
     const monthExpenseTotal = monthExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
     return { month: label, revenue: Math.round(monthRevenue / 1000), expenses: Math.round(monthExpenseTotal / 1000), profit: Math.round((monthRevenue - monthExpenseTotal) / 1000) };
-  }), [expenses.rows, invoices.rows, trendMonths]);
+  }), [rowsOf(expenses), rowsOf(invoices), trendMonths]);
   const hasTrendData = trendData.some((entry) => entry.revenue > 0 || entry.expenses > 0);
 
   // ── System health score ──────────────────────────────────────────────
@@ -30142,7 +30142,7 @@ function FinancialDashboard({ invoices, expenses, posTransactions, onNavigate })
     const map = {};
     rowsOf(expenses).forEach(e => { map[e.category] = (map[e.category]||0)+e.amount; });
     return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([name,value])=>({name,value}));
-  }, [expenses.rows]);
+  }, [rowsOf(expenses)]);
 
   // Revenue by invoice status
   const statusData = useMemo(() => {
@@ -30154,7 +30154,7 @@ function FinancialDashboard({ invoices, expenses, posTransactions, onNavigate })
       {name:"Partial", value:Math.round(partial/1000), fill:"#F59E0B"},
       {name:"Unpaid",  value:Math.round(unpaid/1000),  fill:"#EF4444"},
     ].filter(d=>d.value>0);
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   return (
     <div className="space-y-4">
@@ -30263,14 +30263,14 @@ function HRDashboard({ employees, leaveRequests, onNavigate }) {
       map[name] = row;
     });
     return Object.values(map).sort((a, b) => b.total - a.total);
-  }, [employees.rows]);
+  }, [rowsOf(employees)]);
 
   // Leave type breakdown
   const leaveTypes = useMemo(() => {
     const map = {};
     rowsOf(leaveRequests).forEach(l => { map[l.leaveType||"Annual"]=(map[l.leaveType||"Annual"]||0)+1; });
     return Object.entries(map).map(([name,value])=>({name,value}));
-  }, [leaveRequests.rows]);
+  }, [rowsOf(leaveRequests)]);
 
   // Radar data for workforce profile
   const radarData = [
@@ -30394,7 +30394,7 @@ function SalesDashboard({ invoices, crm, onNavigate }) {
     count: rowsOf(crm).filter(l => l.stage === stage).length,
     value: rowsOf(crm).filter(l => l.stage === stage).reduce((s,l)=>s+l.value,0),
     fill:  STAGE_COLORS[stage],
-  })), [crm.rows]);
+  })), [rowsOf(crm)]);
 
   const openLeads       = rowsOf(crm).filter(l => !["Won","Lost"].includes(l.stage));
   const pipelineValue   = openLeads.reduce((s,l)=>s+l.value,0);
@@ -30491,7 +30491,7 @@ function OperationsDashboard({ inventory, workOrders, onNavigate }) {
     });
     return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,7)
       .map(([name,value])=>({name,value:Math.round(value/1000)}));
-  },[inventory.rows]);
+  },[rowsOf(inventory)]);
 
   // Work order status
   const woStatus = ["Planned","In Progress","Completed","Cancelled"].map(status=>({
@@ -30744,7 +30744,7 @@ function HeatMaps({ invoices, inventory }) {
       totals[day] += total;
     });
     return totals;
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
   const maxDay = Math.max(...salesByDay, 1);
 
   const stockGrid = useMemo(() => {
@@ -30759,7 +30759,7 @@ function HeatMaps({ invoices, inventory }) {
       });
     });
     return { categories, grid };
-  }, [inventory.rows]);
+  }, [rowsOf(inventory)]);
   const maxStock = Math.max(...stockGrid.categories.flatMap((cat) => WAREHOUSES.map((w) => stockGrid.grid[cat][w.id])), 1);
 
   function heatColor(value, max) {
@@ -30944,16 +30944,16 @@ function Benchmarking({ data }) {
   const [showCompetitorForm, setShowCompetitorForm] = useState(false);
   const [selectedCompetitor, setSelectedCompetitor] = useState(null);
 
-  const revenue = data.rowsOf(invoices).reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0);
-  const totalExpenses = data.rowsOf(expenses).reduce((s, e) => s + e.amount, 0);
+  const revenue = rowsOf(data.invoices).reduce((s, inv) => { const { total } = lineTotal(inv.items); return s + (inv.status === "Paid" ? total : (inv.amountPaid || 0)); }, 0);
+  const totalExpenses = rowsOf(data.expenses).reduce((s, e) => s + e.amount, 0);
   const computedValues = {
     gross_margin: revenue > 0 ? Math.round(((revenue - totalExpenses) / revenue) * 100) : 0,
     receivables_days: (() => {
-      const outstanding = data.rowsOf(invoices).filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
+      const outstanding = rowsOf(data.invoices).filter((inv) => inv.status !== "Paid").reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
       return revenue > 0 ? Math.round((outstanding / revenue) * 30) : 0; // a rough, real approximation: receivables as a share of revenue, scaled to a 30-day period
     })(),
     stock_turnover: (() => {
-      const stockValue = data.rowsOf(inventory).reduce((s, it) => s + it.qty * it.unitCost, 0);
+      const stockValue = rowsOf(data.inventory).reduce((s, it) => s + it.qty * it.unitCost, 0);
       return stockValue > 0 ? Math.round((totalExpenses / stockValue) * 10) / 10 : 0;
     })(),
   };
@@ -31169,7 +31169,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
   // (this company own trailing 8-week average expense spend, not a
   // guess). Flags the first week the running balance would go negative.
   const cashProjection = useMemo(() => {
-    const weeklyExpenseRate = expenses.rows
+    const weeklyExpenseRate = rowsOf(expenses)
       .filter((e) => (TODAY - new Date(e.date)) / 86400000 <= 56)
       .reduce((s, e) => s + e.amount, 0) / 8;
     const currentCash = rowsOf(invoices).reduce((s, inv) => s + (inv.status === "Paid" ? lineTotal(inv.items).total : (inv.amountPaid || 0)), 0)
@@ -31179,7 +31179,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
     for (let w = 1; w <= 8; w++) {
       const weekStart = new Date(TODAY.getTime() + (w - 1) * 7 * 86400000);
       const weekEnd = new Date(TODAY.getTime() + w * 7 * 86400000);
-      const incoming = invoices.rows
+      const incoming = rowsOf(invoices)
         .filter((inv) => inv.status !== "Paid" && new Date(inv.dueDate) >= weekStart && new Date(inv.dueDate) < weekEnd)
         .reduce((s, inv) => s + (lineTotal(inv.items).total - (inv.amountPaid || 0)), 0);
       running = running + incoming - weeklyExpenseRate;
@@ -31187,7 +31187,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
     }
     const shortageWeek = weeks.find((w) => w.balance < 0);
     return { currentCash, weeklyExpenseRate, weeks, shortageWeek };
-  }, [invoices.rows, expenses.rows]);
+  }, [rowsOf(invoices), rowsOf(expenses)]);
 
   // 2. Stock Depletion — real sales velocity per SKU (units invoiced in
   // the trailing 60 days ÷ 60), projected against real current quantity.
@@ -31196,7 +31196,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
     rowsOf(invoices).filter((inv) => (TODAY - new Date(inv.date)) / 86400000 <= 60).forEach((inv) => {
       inv.items.forEach((it) => { if (it.sku) salesBySku[it.sku] = (salesBySku[it.sku] || 0) + it.qty; });
     });
-    return inventory.rows
+    return rowsOf(inventory)
       .map((it) => {
         const dailyRate = (salesBySku[it.sku] || 0) / 60;
         const daysLeft = dailyRate > 0 ? Math.round(it.qty / dailyRate) : null;
@@ -31204,7 +31204,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
       })
       .filter((it) => it.daysLeft !== null && it.daysLeft <= 21)
       .sort((a, b) => a.daysLeft - b.daysLeft);
-  }, [invoices.rows, inventory.rows]);
+  }, [rowsOf(invoices), rowsOf(inventory)]);
 
   // 3. Customer Churn — real RFM-style recency scoring: for every
   // customer with 2+ invoices, their own historical average interval
@@ -31225,7 +31225,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
       })
       .filter((c) => c.ratio >= 2)
       .sort((a, b) => b.ratio - a.ratio);
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   // 4. Employee Turnover — stated honestly as the weakest signal here.
   // Real, but thin: new-hire tenure under 90 days (the highest-risk
@@ -31242,7 +31242,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
       if (recentLeave >= 3) flags.push(`${recentLeave} leave requests in the last 90 days — notably more frequent than typical`);
       return { name: e.name, department: e.department, flags };
     }).filter((e) => e.flags.length > 0);
-  }, [employees.rows, leaveRequests.rows]);
+  }, [rowsOf(employees), rowsOf(leaveRequests)]);
 
   // 5. Sales Growth — a real linear trend line over actual monthly
   // revenue, not a single period-over-period guess.
@@ -31263,7 +31263,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
     const nextMonthProjection = yMean + slope * (n - xMean);
     const growthRate = yMean > 0 ? Math.round((slope / yMean) * 1000) / 10 : 0;
     return { months, growthRate, nextMonthProjection, slope };
-  }, [invoices.rows]);
+  }, [rowsOf(invoices)]);
 
   // 6. Budget Overruns — real burn-rate projection: current spend ÷ time
   // elapsed, extended across the project full real timeline.
@@ -31277,17 +31277,17 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
       const overrunPct = p.budget > 0 ? Math.round(((projectedTotal - p.budget) / p.budget) * 100) : 0;
       return { name: p.name, budget: p.budget, spent, projectedTotal: Math.round(projectedTotal), overrunPct };
     }).filter((p) => p.overrunPct > 5).sort((a, b) => b.overrunPct - a.overrunPct);
-  }, [projects.rows, projectExpenses.rows]);
+  }, [rowsOf(projects), rowsOf(projectExpenses)]);
 
   // 7. Fraud Risk — reuses the real Unusual Expense detector (section 33)
   // and adds one more genuine, well-known technique: "structuring," where
   // amounts cluster just under an approval threshold to avoid review —
   // checked against this company own real PO approval threshold.
   const fraudRisk = useMemo(() => {
-    const unusual = detectUnusualExpenses(expenses.rows);
+    const unusual = detectUnusualExpenses(rowsOf(expenses));
     const structuring = rowsOf(expenses).filter((e) => e.amount >= PO_APPROVAL_THRESHOLD * 0.9 && e.amount < PO_APPROVAL_THRESHOLD);
     return { unusual, structuring };
-  }, [expenses.rows]);
+  }, [rowsOf(expenses)]);
 
   // 8. Maintenance Needs — directly real: every machine own most recent
   // maintenance record already carries a real next-due date; this just
@@ -31300,7 +31300,7 @@ function PredictiveIntelligence({ invoices, expenses, inventory, employees, leav
       const daysUntil = Math.round((new Date(last.nextDueDate) - TODAY) / 86400000);
       return { machine: m.name, nextDueDate: last.nextDueDate, daysUntil };
     }).filter((m) => m && m.daysUntil <= 21);
-  }, [machines.rows, maintenance.rows]);
+  }, [rowsOf(machines), rowsOf(maintenance)]);
 
   return (
     <div className="space-y-5">
@@ -31444,7 +31444,7 @@ function ScenarioPlanner({ invoices, expenses, employees }) {
     const monthlyPayroll = activeEmployees.reduce((s, e) => s + e.salary, 0);
     const categories = [...new Set(expenses.map((e) => e.category))];
     return { pnl, avgSalary, monthlyPayroll, employeeCount: activeEmployees.length, categories };
-  }, [invoices.rows, expenses, employees.rows]);
+  }, [rowsOf(invoices), expenses, rowsOf(employees)]);
 
   const result = useMemo(() => {
     if (scenario === "price") {
@@ -31594,7 +31594,7 @@ async function executeWorkflowStep(step, context) {
       title = "Inventory Valuation Report"; headers = ["Category", "SKU", "Item", "Qty", "Unit", "Unit Cost (TZS 000)", "Value (TZS 000)"];
       rows2 = [...byCategory.flatMap((c) => c.items.map((it) => [c.category, it.sku, it.name, it.qty, it.unit, it.unitCost, Math.round(it.value)])), ["GRAND TOTAL", "", "", "", "", "", Math.round(grandTotal)]];
     } else {
-      const figures = computePnLFigures(context.invoices, context.expenses.rows);
+      const figures = computePnLFigures(context.invoices, rowsOf(context.expenses));
       title = "Profit & Loss Statement"; headers = ["Line", "Amount (TZS 000)"];
       rows2 = [["Revenue collected", Math.round(figures.collected)], ...figures.expRows.map(([cat, amt]) => [`Expense: ${cat}`, Math.round(amt)]), ["Net position", Math.round(figures.net)]];
     }
@@ -31698,7 +31698,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
   async function runWorkflow(workflow) {
     setRunningId(workflow.id);
     setRunTrace({ workflowId: workflow.id, results: [] });
-    const context = { workflowName: workflow.name, company, invoices, expenses, inventory, channels: channels.rows };
+    const context = { workflowName: workflow.name, company, invoices, expenses, inventory, channels: rowsOf(channels) };
     // The Condition gate — evaluated against live rows right now, never a
     // stored snapshot. A skipped run says exactly why in real figures.
     if (workflow.condition && workflow.condition.type && workflow.condition.type !== "none") {
@@ -31818,7 +31818,7 @@ function WorkflowStudio({ company, invoices, expenses, inventory }) {
         </>
       )}
 
-      {view === "marketplace" && <AutomationMarketplace templates={marketplace.rows} loading={marketplace.loading} onInstall={installTemplate} />}
+      {view === "marketplace" && <AutomationMarketplace templates={rowsOf(marketplace)} loading={marketplace.loading} onInstall={installTemplate} />}
 
       {builderOpen && <WorkflowBuilder workflow={builderOpen === "new" ? null : builderOpen} onClose={() => setBuilderOpen(null)} onSave={saveWorkflow} />}
       {publishingWorkflow && <PublishTemplatePanel workflow={publishingWorkflow} onClose={() => setPublishingWorkflow(null)} onPublish={publishTemplate} />}
@@ -33406,8 +33406,8 @@ function ChannelsView({ currentUser, employees }) {
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    if (!activeChannelId && rowsOf(channels).length > 0) setActiveChannelId(channels.rows[0].id);
-  }, [channels.rows, activeChannelId]);
+    if (!activeChannelId && rowsOf(channels).length > 0) setActiveChannelId(rowsOf(channels)[0].id);
+  }, [rowsOf(channels), activeChannelId]);
 
   useEffect(() => {
     if (IS_CONFIGURED) {
@@ -33881,7 +33881,7 @@ function SharedCalendar({ invoices, crm, workOrders, leaveRequests }) {
     taxDeadlines.forEach((t) => add(t.date, { id: `tax-${t.date}`, title: t.label, category: "tax", color: "#0EA5E9" }));
 
     return map;
-  }, [events.rows, leaveRequests.rows, workOrders.rows, crm.rows, invoices.rows, taxDeadlines]);
+  }, [rowsOf(events), rowsOf(leaveRequests), rowsOf(workOrders), rowsOf(crm), rowsOf(invoices), taxDeadlines]);
 
   function visibleEntriesFor(dateStr) {
     return (entriesByDate[dateStr] || []).filter((e) => visibleCategories.has(e.category));
@@ -34333,7 +34333,7 @@ function TeamWorkspaces({ employees, currentUser }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-[12.5px]">
-              {employees.rows
+              {rowsOf(employees)
                 .filter(e => selectedExportDept === "All" || e.department === selectedExportDept)
                 .filter(e => !matrixSearch || e.name.toLowerCase().includes(matrixSearch.toLowerCase()))
                 .filter(e => {
@@ -34438,7 +34438,7 @@ function WorkspaceFormPanel({ departments, onClose, onSubmit, saving = false }) 
 // direct link into the real module rather than a second, competing file
 // store that could drift out of sync with the real one.
 function CollabFileSharing({ filesHook, onNavigate }) {
-  const recent = [...filesHook.rows].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8);
+  const recent = [...rowsOf(filesHook)].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8);
   const [previewFile, setPreviewFile] = useState(null);
 
   return (
@@ -34846,7 +34846,7 @@ function Notifications({ inventory, invoices, expenses, leaveRequests, workOrder
         </div>
       )}
       {tab === "channels" && <NotificationChannels channels={channels} onLog={logDispatch} canManage={canManage} currentUser={currentUser} />}
-      {tab === "routing" && <AlertRouting rules={rules} channels={channels.rows} alerts={alerts} onLog={logDispatch} />}
+      {tab === "routing" && <AlertRouting rules={rules} channels={rowsOf(channels)} alerts={alerts} onLog={logDispatch} />}
       {tab === "log" && <NotificationLog log={{ ...log, rows: notificationRows }} />}
     </div>
     </>
@@ -37409,7 +37409,7 @@ function AuditLogViewer({ timezone }) {
     order: { col: "created_at", ascending: false },
     mapRow: mapAuditLogRow,
   });
-  const entries = auditLog.rows;
+  const entries = rowsOf(auditLog);
   const modules = useMemo(() => ["all", ...Array.from(new Set(entries.map((e) => e.module).filter(Boolean)))], [entries]);
   const cutoff = useMemo(() => {
     if (period === "all") return null;
@@ -38267,7 +38267,7 @@ function buildBusinessSnapshot({ company, invoices, inventory, crm, expenses, em
   };
 
   if (scope.includes("finance")) {
-    const outstanding = invoices.rows
+    const outstanding = rowsOf(invoices)
       .filter((inv) => inv.status !== "Paid")
       .map((inv) => {
         const { total } = lineTotal(inv.items);
@@ -38280,7 +38280,7 @@ function buildBusinessSnapshot({ company, invoices, inventory, crm, expenses, em
     snapshot.finance = {
       outstanding_invoices: outstanding,
       recent_expenses: rowsOf(expenses).slice(0, 20).map((e) => ({ vendor: e.vendor, category: e.category, amount_tzs_k: e.amount, status: e.status, date: e.date })),
-      unusual_expenses: detectUnusualExpenses(expenses.rows),
+      unusual_expenses: detectUnusualExpenses(rowsOf(expenses)),
       totals: {
         revenue_collected_tzs_k: Math.round(revenue),
         total_expenses_tzs_k: Math.round(rowsOf(expenses).reduce((s, e) => s + e.amount, 0)),
@@ -38849,7 +38849,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       }
 
       if (name === "adjust_stock") {
-        const item = data.rowsOf(inventory).find((it) => it.sku === toolInput.sku);
+        const item = rowsOf(data.inventory).find((it) => it.sku === toolInput.sku);
         if (!item) return `Error: no inventory item with SKU ${toolInput.sku}. Check the snapshot for valid SKUs.`;
         const delta = Number(toolInput.delta) || 0;
         const newQty = Math.max(0, item.qty + delta);
@@ -38869,7 +38869,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       }
 
       if (name === "mark_invoice_paid") {
-        const inv = data.rowsOf(invoices).find((i) => i.id === toolInput.invoice_id);
+        const inv = rowsOf(data.invoices).find((i) => i.id === toolInput.invoice_id);
         if (!inv) return `Error: no invoice with ID ${toolInput.invoice_id}. Check the snapshot for valid invoice IDs.`;
         if (inv.status === "Paid") return `No change: ${inv.id} is already fully paid.`;
         const total = lineTotal(inv.items).total;
@@ -38902,7 +38902,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       }
 
       if (name === "approve_leave") {
-        const candidates = data.rowsOf(leaveRequests).filter((l) => l.employee === toolInput.employee && l.status === "Pending" && (!toolInput.type || l.type === toolInput.type));
+        const candidates = rowsOf(data.leaveRequests).filter((l) => l.employee === toolInput.employee && l.status === "Pending" && (!toolInput.type || l.type === toolInput.type));
         if (candidates.length === 0) return "Error: no pending leave request found for " + toolInput.employee + (toolInput.type ? " (" + toolInput.type + ")" : "") + ". Check the snapshot.";
         const target = candidates[0];
         data.leaveRequests.setRows((prev) => prev.map((l) => (l.id === target.id ? { ...l, status: "Approved" } : l)));
@@ -38917,7 +38917,7 @@ function ChatInterface({ persona, data, onNavigate, currentUser }) {
       if (name === "create_invoice" || name === "create_quotation") {
         const isInvoice = name === "create_invoice";
         const lineItems = (toolInput.items || []).map((li) => {
-          const invItem = data.rowsOf(inventory).find((it) => it.sku === li.sku);
+          const invItem = rowsOf(data.inventory).find((it) => it.sku === li.sku);
           if (!invItem) return null;
           return { sku: invItem.sku, name: invItem.name, qty: Number(li.qty) || 1, rate: invItem.unitCost };
         }).filter(Boolean);
@@ -39637,7 +39637,7 @@ function Marketing({ crm }) {
     return Object.values(map)
       .map((s) => ({ ...s, avgScore: s.scores.length ? Math.round(s.scores.reduce((a, b) => a + b, 0) / s.scores.length) : 0 }))
       .sort((a, b) => b.count - a.count);
-  }, [crm.rows]);
+  }, [rowsOf(crm)]);
 
   const stats = useMemo(() => {
     const active = rowsOf(campaigns).filter((c) => c.status !== "Sent").length;
@@ -39649,7 +39649,7 @@ function Marketing({ crm }) {
     const avgOpen = sent.length ? Math.round(sent.reduce((s, c) => s + (c.openRate || 0), 0) / sent.length) : 0;
     const avgClick = sent.length ? Math.round(sent.reduce((s, c) => s + (c.clickRate || 0), 0) / sent.length) : 0;
     return { active, reach, avgOpen, avgClick };
-  }, [campaigns.rows, segments]);
+  }, [rowsOf(campaigns), segments]);
 
   const MKT_KPIS = [
     { label: "Active Campaigns", value: String(stats.active), delta: "Draft + Scheduled", up: true, icon: Megaphone },
@@ -40327,7 +40327,7 @@ function PosShiftPanel({ transactions, currentUser }) {
     const cash = rows.filter((t) => t.method === "Cash").reduce((s, t) => s + valueOf(t), 0);
     const gross = rows.reduce((s, t) => s + valueOf(t), 0);
     return { count: rows.length, gross, cash, other: gross - cash };
-  }, [transactions.rows, open]);
+  }, [rowsOf(transactions), open]);
 
   const mine = open ? rowsOf(moves).filter((m) => m.shiftId === (open.dbId || open.id)) : [];
   const payIns = mine.filter((m) => m.kind === "Pay In").reduce((s, m) => s + m.amount, 0);
@@ -40603,7 +40603,7 @@ function POS({ inventory, transactionsHook, transactionItemsHook, company, curre
     const revenue = today.reduce((s, t) => s + t.items.reduce((si, it) => si + it.qty * it.price, 0) * (1 + TAX_RATE), 0);
     const itemsSold = today.reduce((s, t) => s + t.items.reduce((si, it) => si + it.qty, 0), 0);
     return { count: today.length, revenue, itemsSold, avg: today.length ? revenue / today.length : 0 };
-  }, [transactions.rows, todayStr]);
+  }, [rowsOf(transactions), todayStr]);
 
   const POS_KPIS = [
     { label: "Today Sales", value: `TZS ${money(Math.round(stats.revenue))}k`, delta: "Incl. VAT", up: true, icon: CircleDollarSign },
@@ -40666,7 +40666,7 @@ function POS({ inventory, transactionsHook, transactionItemsHook, company, curre
         {POS_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "checkout" && <Checkout inventory={inventory} transactions={transactions} company={company} currentUser={currentUser} customers={customers.rows} deviceProfile={deviceProfile} />}
+      {tab === "checkout" && <Checkout inventory={inventory} transactions={transactions} company={company} currentUser={currentUser} customers={rowsOf(customers)} deviceProfile={deviceProfile} />}
       {tab === "history" && <RegisterHistory transactions={transactions} inventory={inventory} company={company} />}
       {tab === "reconciliation" && <PosReconciliationDashboard currentUser={currentUser} />}
     </div>
@@ -40677,7 +40677,7 @@ function PosReconciliationDashboard({ currentUser }) {
   const reconciliation = useCompanyTable("pos_sync_events", [], { order: { col: "updated_at", ascending: false } });
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const rows = useMemo(() => rowsOf(reconciliation).filter((row) => statusFilter === "all" || row.status === statusFilter), [reconciliation.rows, statusFilter]);
+  const rows = useMemo(() => rowsOf(reconciliation).filter((row) => statusFilter === "all" || row.status === statusFilter), [rowsOf(reconciliation), statusFilter]);
   const syncedCount = rowsOf(reconciliation).filter((row) => row.status === "synced").length;
   const attentionCount = rowsOf(reconciliation).filter((row) => row.status === "needs_attention").length;
   const displayDate = (value) => value ? new Date(value).toLocaleString() : "—";
@@ -40761,7 +40761,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   // regardless of which counter it's sold from.
   const products = useMemo(
     () => rowsOf(inventory).map((it) => ({ ...it, price: Math.round(it.unitCost * MARKUP) })),
-    [inventory.rows]
+    [rowsOf(inventory)]
   );
   const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products]);
 
@@ -40800,7 +40800,7 @@ function Checkout({ inventory, transactions, company, currentUser, customers, de
   const tax = Math.round(subtotal * TAX_RATE);
   const total = subtotal + tax;
   const paymentSummary = useMemo(() => calculatePosPaymentSummary(payments, total), [payments, total]);
-  const heldOrders = useMemo(() => rowsOf(transactions).filter((transaction) => transaction.status === "Held"), [transactions.rows]);
+  const heldOrders = useMemo(() => rowsOf(transactions).filter((transaction) => transaction.status === "Held"), [rowsOf(transactions)]);
   const selectedCustomer = useMemo(() => (customers || []).find((customer) => customer.dbId === customerId || customer.id === customerId) || null, [customers, customerId]);
   const usesCustomerCredit = paymentSummary.allocations.some((payment) => payment.method === "Customer Credit");
 
@@ -42107,7 +42107,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
       });
     }
 
-    const unusualExpenses = detectUnusualExpenses(expenses.rows);
+    const unusualExpenses = detectUnusualExpenses(rowsOf(expenses));
     if (unusualExpenses.length) {
       alerts.push({
         id: "unusual-expenses", icon: AlertCircle, color: "#EF4444", target: "finance",
@@ -42144,7 +42144,7 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
     }
 
     return alerts;
-  }, [inventory.rows, invoices.rows, expenses.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows]);
+  }, [rowsOf(inventory), rowsOf(invoices), rowsOf(expenses), rowsOf(leaveRequests), rowsOf(workOrders), rowsOf(subscriptions)]);
 }
 
 function NotificationCenter({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions, onNavigate, className = "" }) {
@@ -42460,7 +42460,7 @@ function CustomerPortal({ currentUser, invoices, filesHook, onSignOut }) {
   // first customer name appearing in the seed data purely so the portal
   // has something real to show, and says so plainly rather than quietly
   // showing every customer's invoices as if that were normal.
-  const effectiveCustomer = currentUser.customerRef || invoices.rows[0]?.customer || "Demo Customer";
+  const effectiveCustomer = currentUser.customerRef || rowsOf(invoices)[0]?.customer || "Demo Customer";
   const myInvoices = rowsOf(invoices).filter((inv) => inv.customer === effectiveCustomer);
   const myOrders = rowsOf(orders).filter((o) => o.customer === effectiveCustomer);
   const myTickets = rowsOf(tickets).filter((t) => t.customer === effectiveCustomer);
@@ -42822,7 +42822,7 @@ function ExternalSupplierPortal({ currentUser, onSignOut }) {
   const expenses = useCompanyTable("finance_expenses", expensesSeed, { mapRow: mapExpenseRow });
   const files = useCompanyTable("documents", filesSeed, { mapRow: mapFileRow });
 
-  const effectiveSupplier = currentUser.customerRef || purchaseOrders.rows[0]?.supplier || "Demo Supplier";
+  const effectiveSupplier = currentUser.customerRef || rowsOf(purchaseOrders)[0]?.supplier || "Demo Supplier";
   const myOrders = rowsOf(purchaseOrders).filter((po) => po.supplier === effectiveSupplier);
   const myContracts = rowsOf(contracts).filter((c) => c.supplier === effectiveSupplier);
   const myPayments = rowsOf(expenses).filter((e) => e.vendor === effectiveSupplier);
@@ -44184,7 +44184,7 @@ function VicobaSaccosModule({ currentUser }) {
             <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
               <p className="text-[13.5px] font-semibold text-[#111827] mb-3">Share Distribution — Top Members</p>
               {(() => {
-                const shareData = [...members.rows].sort((a,b)=>b.shares-a.shares).slice(0,6).map((m,i)=>({
+                const shareData = [...rowsOf(members)].sort((a,b)=>b.shares-a.shares).slice(0,6).map((m,i)=>({
                   name: m.name.split(" ")[0],
                   value: m.shares,
                   fill: ["#2563EB","#16A34A","#D97706","#7C3AED","#EF4444","#0891B2"][i%6],
@@ -44380,7 +44380,7 @@ function VicobaSaccosModule({ currentUser }) {
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100"><th className="py-2 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">Member</th><th className="py-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400">Shares</th><th className="py-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400">Dividend</th></tr></thead>
               <tbody>
-                {[...members.rows].sort((a,b)=>b.shares-a.shares).map((m) => (
+                {[...rowsOf(members)].sort((a,b)=>b.shares-a.shares).map((m) => (
                   <tr key={m.id} className="border-b border-slate-50 last:border-0">
                     <td className="py-2.5 font-medium text-[#111827]">{m.name}</td>
                     <td className="py-2.5 text-right font-mono">{m.shares}</td>
@@ -45075,7 +45075,7 @@ function SchoolManagementModule({ currentUser, company }) {
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex-1 relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input className={inputClass+" pl-9"} placeholder="Search by name or admission number..." value={searchQ} onChange={e=>setSearchQ(e.target.value)}/></div>
-            <button onClick={()=>downloadCSV("students",students.rows,[{key:"admNo",label:"Adm No"},{key:"name",label:"Name"},{key:"gender",label:"Gender"},{key:"class",label:"Class"},{key:"parent",label:"Parent"},{key:"phone",label:"Phone"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2.5 rounded-xl hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"><Download size={13}/>Export</button>
+            <button onClick={()=>downloadCSV("students",rowsOf(students),[{key:"admNo",label:"Adm No"},{key:"name",label:"Name"},{key:"gender",label:"Gender"},{key:"class",label:"Class"},{key:"parent",label:"Parent"},{key:"phone",label:"Phone"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2.5 rounded-xl hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"><Download size={13}/>Export</button>
             <button onClick={()=>setShowStu(true)} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:SCH_BLUE}}><UserPlus size={13}/>Enroll</button>
           </div>
           {showStu && (
@@ -45374,7 +45374,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
   const [tab, setTab] = useState("overview");
   const drugs     = useCompanyTable("phm_drugs",     PHM_DRUGS_SEED,     { mapRow: r => r });
   const stock     = useCompanyTable("phm_stock",     PHM_STOCK_SEED,     { mapRow: r => r });
-  useEffect(() => { if (onStockLoad) onStockLoad(stock.rows); }, [stock.rows, onStockLoad]);
+  useEffect(() => { if (onStockLoad) onStockLoad(rowsOf(stock)); }, [rowsOf(stock), onStockLoad]);
   const dispense  = useCompanyTable("phm_dispense",  PHM_DISPENSE_SEED,  { mapRow: r => r });
   const suppliers = useCompanyTable("phm_suppliers", PHM_SUPPLIERS_SEED, { mapRow: r => r });
 
@@ -45568,7 +45568,7 @@ function PharmacyManagementModule({ currentUser, company, onStockLoad }) {
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex-1 relative"><Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/><input className={inputClass+" pl-9"} placeholder="Search drug by name, generic or category..." value={searchDrug} onChange={e=>setSearchDrug(e.target.value)}/></div>
-            <button onClick={()=>downloadCSV("pharmacy-drugs",drugs.rows,[{key:"name",label:"Drug"},{key:"genericName",label:"Generic"},{key:"category",label:"Category"},{key:"form",label:"Form"},{key:"strength",label:"Strength"},{key:"manufacturer",label:"Manufacturer"},{key:"price",label:"Price"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2.5 rounded-xl hover:border-green-500 hover:text-green-600 transition-colors"><Download size={13}/>Export</button>
+            <button onClick={()=>downloadCSV("pharmacy-drugs",rowsOf(drugs),[{key:"name",label:"Drug"},{key:"genericName",label:"Generic"},{key:"category",label:"Category"},{key:"form",label:"Form"},{key:"strength",label:"Strength"},{key:"manufacturer",label:"Manufacturer"},{key:"price",label:"Price"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2.5 rounded-xl hover:border-green-500 hover:text-green-600 transition-colors"><Download size={13}/>Export</button>
             <button onClick={()=>setShowDrug(true)} className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white px-4 py-2.5 rounded-xl" style={{background:PHM_GREEN}}><Plus size={13}/>Add Drug</button>
           </div>
           {showDrug && (
@@ -46190,7 +46190,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <p className="text-[13.5px] font-semibold text-[#111827]">All Accounts</p>
               <div className="flex gap-2">
-                <button onClick={()=>downloadCSV("accounts",accounts.rows,[{key:"acctNo",label:"Acct No"},{key:"name",label:"Name"},{key:"type",label:"Type"},{key:"balance",label:"Balance"},{key:"status",label:"Status"},{key:"branch",label:"Branch"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-green-500 hover:text-green-600"><Download size={12}/>Export</button>
+                <button onClick={()=>downloadCSV("accounts",rowsOf(accounts),[{key:"acctNo",label:"Acct No"},{key:"name",label:"Name"},{key:"type",label:"Type"},{key:"balance",label:"Balance"},{key:"status",label:"Status"},{key:"branch",label:"Branch"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-green-500 hover:text-green-600"><Download size={12}/>Export</button>
                 <button onClick={()=>notify("New account form")} className="flex items-center gap-1.5 text-[12px] font-semibold text-white px-3 py-2 rounded-xl" style={{background:BNK_NAVY}}><Plus size={12}/>New Account</button>
               </div>
             </div>
@@ -46285,7 +46285,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             ))}
           </div>
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p className="text-[13.5px] font-semibold text-[#111827]">Loan Portfolio</p><button onClick={()=>downloadCSV("loans",loans.rows,[{key:"id",label:"Loan ID"},{key:"member",label:"Member"},{key:"product",label:"Product"},{key:"principal",label:"Principal"},{key:"balance",label:"Balance"},{key:"rate",label:"Rate%"},{key:"dpd",label:"DPD"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-blue-400 hover:text-blue-600"><Download size={12}/>Export</button></div>
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between"><p className="text-[13.5px] font-semibold text-[#111827]">Loan Portfolio</p><button onClick={()=>downloadCSV("loans",rowsOf(loans),[{key:"id",label:"Loan ID"},{key:"member",label:"Member"},{key:"product",label:"Product"},{key:"principal",label:"Principal"},{key:"balance",label:"Balance"},{key:"rate",label:"Rate%"},{key:"dpd",label:"DPD"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-blue-400 hover:text-blue-600"><Download size={12}/>Export</button></div>
             <table className="w-full text-[12.5px]">
               <thead><tr className="border-b border-slate-100 bg-slate-50">{["Loan ID","Member","Product","Principal","Rate","EMI","Balance","Paid","Collateral","DPD","Status"].map(h=><th key={h} className="px-2 py-3 text-left text-[9.5px] font-medium uppercase tracking-wide text-slate-400">{h}</th>)}</tr></thead>
               <tbody>{rowsOf(loans).map(l => {
@@ -46489,7 +46489,7 @@ function LegacyBankingMfiSeededModule({ currentUser, company, onLoansLoad, onNav
             ))}
           </div>
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4"><p className="text-[14px] font-semibold text-[#111827]">MIS Summary Report</p><button onClick={()=>downloadCSV("mis-report",loans.rows,[{key:"id",label:"Loan ID"},{key:"member",label:"Member"},{key:"product",label:"Product"},{key:"principal",label:"Principal"},{key:"balance",label:"Balance"},{key:"dpd",label:"DPD"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-blue-400 hover:text-blue-600"><Download size={12}/>Export MIS</button></div>
+            <div className="flex items-center justify-between mb-4"><p className="text-[14px] font-semibold text-[#111827]">MIS Summary Report</p><button onClick={()=>downloadCSV("mis-report",rowsOf(loans),[{key:"id",label:"Loan ID"},{key:"member",label:"Member"},{key:"product",label:"Product"},{key:"principal",label:"Principal"},{key:"balance",label:"Balance"},{key:"dpd",label:"DPD"},{key:"status",label:"Status"}])} className="flex items-center gap-1 text-[12px] text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-blue-400 hover:text-blue-600"><Download size={12}/>Export MIS</button></div>
             <div className="grid grid-cols-3 gap-6">
               <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Savings Metrics</p>{[["Total Accounts",rowsOf(accounts).length],["Active Accounts",rowsOf(accounts).filter(a=>a.status==="Active").length],["Total Savings","TZS "+money(rowsOf(accounts).filter(a=>a.type==="Savings").reduce((s,a)=>s+a.balance,0))+"k"],["Fixed Deposits","TZS "+money(rowsOf(accounts).filter(a=>a.type==="Fixed Deposit").reduce((s,a)=>s+a.balance,0))+"k"]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
               <div><p className="text-[12px] font-semibold text-slate-500 uppercase mb-2">Loan Metrics</p>{[["Total Disbursed","TZS "+money(rowsOf(loans).reduce((s,l)=>s+l.principal,0))+"k"],["Portfolio","TZS "+money(totalPortfolio)+"k"],["Total Collected","TZS "+money(rowsOf(loans).reduce((s,l)=>s+l.paid,0))+"k"],["PAR30",parRatio+"%"]].map(([l,v])=>(<div key={l} className="flex justify-between py-1.5 border-b border-slate-50"><span className="text-[12.5px] text-slate-500">{l}</span><span className="text-[12.5px] font-bold text-[#111827]">{v}</span></div>))}</div>
@@ -47866,6 +47866,7 @@ function SmartManager() {
   const employees = useCompanyTable("hr_employees", employeesSeed, {
     order: { col: "full_name", ascending: true }, mapRow: mapEmployeeRow,
   });
+  const employeesForDailyBriefing = Array.isArray(employees?.rows) ? employees.rows : (Array.isArray(employees) ? employees : []);
   const leaveRequests = useCompanyTable("hr_leave_requests", leaveRequestsSeed, {
     select: "*,hr_employees(full_name)", order: { col: "start_date", ascending: false }, mapRow: mapLeaveRow,
   });
@@ -47895,9 +47896,9 @@ function SmartManager() {
   const [htlBookingsForAlerts,setHtlBookingsForAlerts] = React.useState([]);
 
   const smartAlerts = useSmartAlerts({
-    invoices:    invoices.rows,
-    inventory:   inventory.rows,
-    leaveRequests: leaveRequests.rows,
+    invoices:    rowsOf(invoices),
+    inventory:   rowsOf(inventory),
+    leaveRequests: rowsOf(leaveRequests),
     bankLoans:   bankLoansForAlerts,
     phmStock:    phmStockForAlerts,
     vehicles:    vehiclesForAlerts,
@@ -48290,80 +48291,90 @@ function SmartManager() {
           removed entirely rather than layered under the new palette. */}
       <aside
         aria-hidden={sidebarHiddenFromAssistiveTech}
-          className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[84px]" : "w-[304px]"} shrink-0 flex flex-col border-r border-[#274a68] bg-[#102c48] text-slate-100 transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+        className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[80px]" : "w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] text-slate-100 transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ boxShadow: "8px 0 30px rgba(8, 27, 45, .18)" }}
+        style={{ boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
       >
-          <div className={`dashboard-sidebar-brand relative px-4 py-4 border-b border-[#315574] bg-[#0c243d] flex items-center justify-between ${sidebarCollapsed ? "justify-center" : ""}`}>
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white p-1.5 shadow-[0_5px_14px_rgba(0,0,0,.2)] ring-1 ring-white/20"><BrandLogo variant="compact" priority className="h-7 w-7" /></span>
-            {!sidebarCollapsed && <div className="flex flex-col leading-tight">
-              <span className="text-[15px] font-semibold tracking-tight brand-wordmark text-white" style={{ fontFamily: "'Poppins'" }}>
-                Smart Manager
-              </span>
-              <span className="mt-1 text-[9px] font-bold uppercase tracking-[.18em] text-cyan-300">Enterprise workspace</span>
-            </div>}
+        {/* Brand row */}
+        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 ${sidebarCollapsed ? "justify-center px-2" : ""}`}>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white p-1.5 shadow-[0_6px_16px_rgba(0,0,0,.25)] ring-1 ring-white/15">
+              <BrandLogo variant="compact" priority className="h-7 w-7" />
+            </span>
+            {!sidebarCollapsed && (
+              <div className="min-w-0 leading-tight">
+                <span className="block truncate text-[15px] font-semibold tracking-tight text-white" style={{ fontFamily: "'Poppins'" }}>
+                  Smart Manager
+                </span>
+                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-cyan-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.16em] text-cyan-300 ring-1 ring-cyan-400/20">
+                  Enterprise Suite
+                </span>
+              </div>
+            )}
           </div>
-          <button className="text-slate-400 hover:text-white transition-colors lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
-            <X size={18} />
+          <button className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+            <X size={17} />
           </button>
-          <button type="button" className="hidden rounded-md p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
+          <button type="button" className="hidden shrink-0 rounded-md p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
             {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
           </button>
         </div>
 
-        <div className="dashboard-sidebar-tools border-b border-[#315574] px-3 py-3">
-          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-md border border-[#3a6283] bg-[#173b5c] px-3 py-2.5 text-left shadow-sm transition hover:border-cyan-400/60 hover:bg-[#1b466a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#102c48] ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
-            <span className="grid h-8 w-8 place-items-center rounded-md bg-[#0e243b] text-cyan-200 shadow-sm transition group-hover:bg-[#0f8aa8] group-hover:text-white"><Search size={15} /></span>
-            {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-100">Global search</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Modules, records &amp; actions</span></span><kbd className="rounded border border-[#476b89] bg-[#102c48] px-1.5 py-0.5 text-[9px] font-mono text-slate-300">⌘K</kbd></>}
+        {/* Search + view controls */}
+        <div className="dashboard-sidebar-tools border-b border-[#1f3d5a] px-3 py-3">
+          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-lg border border-[#2c4d6d] bg-[#123457] px-3 py-2.5 text-left shadow-sm transition hover:border-cyan-400/60 hover:bg-[#153c62] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0e2440] ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#0a1d34] text-cyan-200 shadow-sm transition group-hover:bg-cyan-600 group-hover:text-white"><Search size={15} /></span>
+            {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-100">Global search</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Modules, records &amp; actions</span></span><kbd className="rounded border border-[#3c5f80] bg-[#0a1d34] px-1.5 py-0.5 text-[9px] font-mono text-slate-300">⌘K</kbd></>}
           </button>
-          {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-md border border-[#315574] bg-[#112f4d] px-2 py-1.5" role="group" aria-label="Sidebar module order">
+          {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-lg border border-[#2c4d6d] bg-[#0f2c48] px-2 py-1.5" role="group" aria-label="Sidebar module order">
             <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">View</span>
-            <div className="inline-flex rounded bg-[#0c243d] p-0.5">
-              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => updatePreference("navigationSort", "priority")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "priority" ? "bg-[#1d6582] text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
-              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => updatePreference("navigationSort", "alphabetical")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "alphabetical" ? "bg-[#1d6582] text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
+            <div className="inline-flex rounded-md bg-[#0a1d34] p-0.5">
+              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => updatePreference("navigationSort", "priority")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "priority" ? "bg-cyan-600 text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
+              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => updatePreference("navigationSort", "alphabetical")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "alphabetical" ? "bg-cyan-600 text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
             </div>
           </div>}
         </div>
 
+        {/* Navigation groups */}
         <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Operational workspaces">
-          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#315a79] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
+          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
           {displayedNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
             const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
             return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
-              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-[#173b5c] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40">
-                <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-cyan-300" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-[#294f70] px-1.5 py-0.5 text-[9px] tracking-normal text-slate-200">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
+              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-[#123457] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40">
+                <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-cyan-300" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] tracking-normal text-slate-200">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
               </button>}
               {expanded && <div className="space-y-1">{group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = active === item.id;
                 const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-md border border-l-[3px] px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-[#2b7191] border-l-cyan-300 bg-[#1d5879] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,.14)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#183e60] hover:text-white"}`}>
-                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md transition ${isActive ? "bg-cyan-300 text-[#10304b] shadow-sm" : "bg-[#193b59] text-slate-300 group-hover:bg-[#265473] group-hover:text-cyan-100"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
-                  <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-500" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-300 px-1 text-[9px] font-bold text-rose-950" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
+                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-lg border border-l-[3px] px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}>
+                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md transition ${isActive ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+                  <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-500" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-400 px-1 text-[9px] font-bold text-rose-950" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
                 </button>;
               })}</div>}
             </section>;
           })}
           {!displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) && <section className="space-y-1" aria-label="Workspace settings">
             {!sidebarCollapsed && <div className="flex items-center gap-1.5 px-2.5 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-slate-400"><Settings size={12} className="text-cyan-300" aria-hidden="true" /><span>Workspace</span></div>}
-            <button type="button" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-2xl border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${active === "settings" ? "border-[#2b7191] border-l-cyan-300 bg-[#1d5879] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,.14)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#183e60] hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition ${active === "settings" ? "bg-cyan-300 text-[#10304b] shadow-sm" : "bg-[#193b59] text-slate-300 group-hover:bg-[#265473] group-hover:text-cyan-100"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{!sidebarCollapsed && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-cyan-100" : "text-slate-300"} />}</button>
+            <button type="button" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${active === "settings" ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{!sidebarCollapsed && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-cyan-100" : "text-slate-300"} />}</button>
           </section>}
         </nav>
 
-        <div className="dashboard-sidebar-footer relative border-t border-[#315574] bg-[#0c243d] px-3 py-3">
+        {/* Footer */}
+        <div className="dashboard-sidebar-footer relative border-t border-[#1f3d5a] bg-[#0a1d34] px-3 py-3">
           <button
             type="button"
             onClick={() => go("settings")}
             aria-label="Open workspace settings"
-            className={`w-full flex items-center justify-between gap-2.5 rounded-md border px-2.5 py-2 text-[12px] transition-colors group ${
-              active === "settings" ? "border-[#2b7191] bg-[#1d5879] font-semibold text-white" : "border-transparent text-slate-300 hover:bg-[#173b5c] hover:text-white"
+            className={`w-full flex items-center justify-between gap-2.5 rounded-lg border px-2.5 py-2 text-[12px] transition-colors group ${
+              active === "settings" ? "border-cyan-400/30 bg-[#173a5c] font-semibold text-white" : "border-transparent text-slate-300 hover:bg-[#123457] hover:text-white"
             }`}
           >
             <span className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
-              <span className={`grid h-7 w-7 place-items-center rounded-md ${active === "settings" ? "bg-cyan-300 text-[#10304b] shadow-sm" : "bg-[#193b59] text-slate-300 group-hover:bg-[#265473] group-hover:text-cyan-100"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarCollapsed && " Settings"}
+              <span className={`grid h-7 w-7 place-items-center rounded-md ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarCollapsed && " Settings"}
             </span>
             {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
@@ -48378,51 +48389,71 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 py-2 shadow-[0_2px_10px_rgba(15,23,42,.04)] backdrop-blur-xl sm:px-6 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
-          <div className="dashboard-topbar-context flex min-w-0 items-center gap-3">
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-16 shrink-0 items-center gap-2 border-b border-slate-200 bg-white/95 px-3 py-2.5 shadow-[0_1px_0_rgba(15,23,42,.05),0_10px_24px_-18px_rgba(15,23,42,.25)] backdrop-blur-xl sm:gap-3 sm:px-5 lg:gap-4 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
+          {/* Left — menu trigger + workspace identity */}
+          <div className="dashboard-topbar-context flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <button
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-slate-200 bg-white text-slate-600 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 lg:hidden"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-            <div className="min-w-0 border-l border-slate-200 pl-3 leading-tight">
-              <span className="sr-only">SMART MANAGER ERP SYSTEM</span>
-              <span className="block truncate text-[13px] font-semibold text-slate-900">Operations workspace</span>
-              <span className="hidden truncate text-[10px] text-slate-500 sm:block">{company?.name || "Smart Manager"}</span>
+            <div className="hidden h-8 w-px shrink-0 bg-slate-200 lg:block" aria-hidden="true" />
+            <div className="min-w-0 leading-tight">
+              <div className="hidden items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-slate-400 sm:flex">
+                <Building2 size={11} className="shrink-0 text-cyan-600" aria-hidden="true" />
+                <span className="truncate">{company?.name || "Smart Manager"}</span>
+              </div>
+              <h1 className="truncate text-[14px] font-semibold text-slate-900 sm:mt-0.5 sm:text-[15px]">Operations Workspace</h1>
+              <span className="sr-only">SMART MANAGER · ERP SYSTEM</span>
             </div>
           </div>
-          <div className="dashboard-topbar-actions flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-2">
+
+          {/* Center — global search, the primary command surface on desktop */}
+          <div className="hidden min-w-0 flex-1 justify-center md:flex">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:h-auto lg:min-h-9 lg:w-auto lg:min-w-[220px] lg:justify-start lg:bg-slate-50 lg:px-3 lg:py-2 xl:min-w-[230px]"
+              className="dashboard-topbar-search group flex w-full max-w-md items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-left text-[12.5px] text-slate-500 transition-colors hover:border-cyan-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
               aria-label="Search everything"
             >
-              <Search size={14} />
-              <span className="hidden lg:inline">Search modules, records, and actions</span>
-              <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 sm:inline-block">⌘K</kbd>
+              <Search size={15} className="shrink-0 text-slate-400 transition-colors group-hover:text-cyan-700" aria-hidden="true" />
+              <span className="flex-1 truncate">Search modules, records, and actions</span>
+              <kbd className="hidden shrink-0 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
             </button>
-            <button type="button" onClick={() => go("notifications")} className="relative inline-flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
+          </div>
+
+          {/* Right — quick actions, status, and identity */}
+          <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 md:hidden"
+              aria-label="Search everything"
+            >
+              <Search size={16} aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => go("notifications")} className="relative grid h-9 min-w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white px-2 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
               <AlertCircle size={16} aria-hidden="true" />
-              {criticalAlerts.length > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white">{criticalAlerts.length}</span>}
+              {criticalAlerts.length > 0 && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white ring-2 ring-white">{criticalAlerts.length}</span>}
             </button>
-            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40" aria-label="Customize dashboard" title="Customize dashboard">
+            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:inline-flex" aria-label="Customize dashboard" title="Customize dashboard">
               <Sliders size={15} aria-hidden="true" />
             </button>
-            {/* ── Dark mode toggle ── */}
+            {/* Dark mode toggle */}
             <button
               type="button"
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
             <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+            <div className="ml-0.5 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
             <div className="dashboard-topbar-profile shrink-0">
               <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
             </div>
@@ -48494,7 +48525,7 @@ function SmartManager() {
           {active === "inventory" && <Inventory inventory={inventory} suppliersHook={suppliers} />}
           {active === "procurement" && <Procurement inventory={inventory} suppliersHook={suppliers} expensesHook={expenses} currentUser={currentUser} canManage={canManage} />}
           {active === "finance" && <Finance invoices={invoices} expensesHook={expenses} posTransactionsHook={posTransactions} employeesHook={employees} inventoryHook={inventory} currentUser={currentUser} intent={intent} clearIntent={clearIntent} company={company} />}
-      {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={posTransactions.rows} onNavigate={go} currentUser={currentUser} />}
+      {active === "reports" && <Reports invoices={invoices} inventory={inventory} expensesHook={expenses} company={company} schedulesHook={scheduledWorkflows} posTransactions={rowsOf(posTransactions)} onNavigate={go} currentUser={currentUser} />}
           {active === "scm" && <SupplyChain />}
           {active === "ecommerce" && <ECommerce inventory={inventory} onNavigate={go} />}
           {active === "pos" && <POS inventory={inventory} transactionsHook={posTransactions} transactionItemsHook={posTransactionItems} company={company} currentUser={currentUser} />}
