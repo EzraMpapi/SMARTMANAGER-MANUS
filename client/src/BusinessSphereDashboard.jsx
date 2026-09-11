@@ -15206,7 +15206,7 @@ function Finance({ invoices, expensesHook, posTransactionsHook, currentUser, int
         {FIN_KPIS.map((k) => <KpiCard key={k.label} item={k} />)}
       </div>
 
-      {tab === "overview" && <FinanceOverview invoices={allInvoices} expenses={expenses} posTransactions={rowsOf(posTransactionsHook)} />}
+      {tab === "overview" && <FinanceOverview invoices={allInvoices} expenses={expenses} posTransactions={posTransactionsHook.rows} />}
       {tab === "receivables" && (
         <Receivables
           outstanding={outstanding}
@@ -27625,7 +27625,7 @@ function CustomerSupport({ company }) {
   const tickets = useCompanyTable("support_tickets", supportTicketsSeed, {
     select: "*,support_ticket_messages(*)", order: { col: "created_date", ascending: false }, mapRow: mapTicketRow,
   });
-  const supportMetrics = useMemo(() => calculateSupportMetrics(rowsOf(tickets)), [rowsOf(tickets)]);
+  const supportMetrics = useMemo(() => calculateSupportMetrics(tickets.rows), [tickets.rows]);
   const metricState = tickets.loading ? "loading" : tickets.error ? "error" : tickets.unavailable ? "unavailable" : "ready";
   const unavailableMetricLabel = metricState === "loading"
     ? "Loading confirmed tickets"
@@ -48415,7 +48415,7 @@ function SmartManager() {
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search group flex w-full max-w-md items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-left text-[12.5px] text-slate-500 transition-colors hover:border-cyan-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:h-auto lg:min-h-9 lg:w-auto lg:min-w-[220px] lg:justify-start lg:bg-slate-50 lg:px-3 lg:py-2 xl:min-w-[230px]"
               aria-label="Search everything"
             >
               <Search size={15} className="shrink-0 text-slate-400 transition-colors group-hover:text-cyan-700" aria-hidden="true" />
@@ -48438,7 +48438,7 @@ function SmartManager() {
               <AlertCircle size={16} aria-hidden="true" />
               {criticalAlerts.length > 0 && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white ring-2 ring-white">{criticalAlerts.length}</span>}
             </button>
-            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:inline-flex" aria-label="Customize dashboard" title="Customize dashboard">
+            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40" aria-label="Customize dashboard" title="Customize dashboard">
               <Sliders size={15} aria-hidden="true" />
             </button>
             {/* Dark mode toggle */}
