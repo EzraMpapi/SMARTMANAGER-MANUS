@@ -13,7 +13,7 @@ describe("dashboard operational command strip", () => {
   });
 
   it("keeps command search and operational workspace navigation bound to existing callbacks", () => {
-    expect(dashboard).toContain("aria-label=\"Open command palette\"");
+    expect(dashboard).toContain("aria-label=\"Search everything\"");
     expect(dashboard).toContain("onClick={() => setPaletteOpen(true)}");
     expect(dashboard).toContain("aria-label=\"Operational workspaces\"");
     expect(dashboard).toContain("visibleModules.filter((m) =>");
@@ -30,7 +30,8 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("ERP SYSTEM");
     expect(dashboard).toContain("aria-label={`Open alerts");
     expect(dashboard).toContain("onClick={toggleDarkMode}");
-    expect(dashboard).toContain("dashboard-topbar-profile");
+    expect(dashboard).not.toContain("dashboard-topbar-profile");
+    expect(dashboard).toContain("dashboard-sidebar-profile");
     expect(dashboard).toContain("<NotificationCenter");
     expect(dashboard).toContain("<PremiumProfileMenu");
   });
