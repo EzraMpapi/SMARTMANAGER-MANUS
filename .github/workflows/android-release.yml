@@ -168,7 +168,7 @@ jobs:
 
       - name: Publish GitHub release when requested
         if: github.event_name == 'push' || github.event.inputs.publish_release == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event_name == 'push' && github.ref_name || format('v{0}', env.VERSION_NAME) }}
           name: SMART MANAGER Android ${{ env.VERSION_NAME }}
