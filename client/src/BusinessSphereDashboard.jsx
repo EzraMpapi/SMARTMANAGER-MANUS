@@ -48410,8 +48410,8 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-16 shrink-0 items-center gap-2 border-b border-slate-200 bg-white/95 px-3 py-2.5 shadow-[0_1px_0_rgba(15,23,42,.05),0_10px_24px_-18px_rgba(15,23,42,.25)] backdrop-blur-xl sm:gap-3 sm:px-5 lg:gap-4 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
-          {/* Left — menu trigger; workspace identity lives in the sidebar */}
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.05),0_10px_24px_-18px_rgba(15,23,42,.25)] backdrop-blur-xl sm:min-h-16 sm:gap-3 sm:px-5 lg:gap-4 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
+          {/* Left — menu trigger and workspace identity */}
           <div className="dashboard-topbar-context flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <button
               className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-600 shadow-none transition-colors hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:hidden"
@@ -48420,24 +48420,38 @@ function SmartManager() {
             >
               <MenuIcon />
             </button>
-            <span className="sr-only">SMART MANAGER · ERP SYSTEM</span>
+            <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-slate-500 sm:gap-2 sm:text-[13px]">
+              <Building2 size={14} className="hidden shrink-0 sm:block" aria-hidden="true" />
+              <span className="truncate font-semibold text-slate-800 sm:max-w-[260px]">{company?.name || "BusinessSphere"}</span>
+              <ChevronDown size={13} className="shrink-0 text-slate-400" aria-hidden="true" />
+              <span className="hidden whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-flex">{currentUser?.role || "Administrator"}</span>
+            </div>
           </div>
 
-          {/* Center — icon-only command palette trigger */}
-          <div className="flex min-w-0 items-center justify-center">
+          {/* Center — global search, matching the reference command bar */}
+          <div className="hidden min-w-0 flex-1 items-center justify-center sm:flex">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-slate-500 shadow-none transition-colors hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
+              className="dashboard-topbar-search inline-flex h-9 min-w-0 w-full max-w-[280px] items-center justify-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-none transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
               aria-label="Search everything"
               title="Search everything"
             >
-              <Search size={18} aria-hidden="true" />
+              <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
+              <span className="truncate">Search modules, records, and actions</span>
+              <kbd className="ml-auto hidden shrink-0 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
             </button>
           </div>
 
-          {/* Right — quick actions, status, and identity */}
+          {/* Right — live status, quick actions, and identity */}
           <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+            <span className="hidden items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 sm:inline-flex" title="Workspace is connected">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+              Live
+            </span>
+            <button type="button" onClick={() => setPaletteOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:hidden" aria-label="Search everything">
+              <Search size={17} aria-hidden="true" />
+            </button>
             <button type="button" onClick={() => go("notifications")} className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent p-0 text-slate-500 shadow-none transition hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
               <AlertCircle size={16} aria-hidden="true" />
               {criticalAlerts.length > 0 && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white ring-2 ring-white">{criticalAlerts.length}</span>}
@@ -48455,6 +48469,9 @@ function SmartManager() {
             </button>
             <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
             <div className="ml-0.5 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
+            <button type="button" onClick={() => go("profile")} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-500 text-[12px] font-bold text-white shadow-sm transition hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" aria-label="Open account profile" title={currentUser?.name || "Account profile"}>
+              {(currentUser?.name || currentUser?.email || "E").trim().charAt(0).toUpperCase()}
+            </button>
           </div>
         </header>
 
