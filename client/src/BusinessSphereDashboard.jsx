@@ -42151,6 +42151,15 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
   const [open, setOpen] = useState(false);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
 
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
+
   return (
     <div className={`relative shrink-0 ${className}`}>
       <button
@@ -42158,6 +42167,7 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         onClick={() => setOpen((o) => !o)}
         className="dashboard-topbar-notifications relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "")}
+        aria-expanded={open}
       >
         <Bell size={17} strokeWidth={1.75} />
         {alerts.length > 0 && (
@@ -48321,12 +48331,14 @@ function SmartManager() {
           </button>
         </div>
 
-        {/* Search + view controls */}
+        {/* Company identity + view controls */}
         <div className="dashboard-sidebar-tools border-b border-[#1f3d5a] px-3 py-3">
-          <button type="button" onClick={() => setPaletteOpen(true)} className={`group flex w-full items-center gap-2.5 rounded-lg border border-[#2c4d6d] bg-[#123457] px-3 py-2.5 text-left shadow-sm transition hover:border-cyan-400/60 hover:bg-[#153c62] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0e2440] ${sidebarCollapsed ? "justify-center px-2" : ""}`} aria-label="Open command palette" title="Search modules and records">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[#0a1d34] text-cyan-200 shadow-sm transition group-hover:bg-cyan-600 group-hover:text-white"><Search size={15} /></span>
-            {!sidebarCollapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-100">Global search</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Modules, records &amp; actions</span></span><kbd className="rounded border border-[#3c5f80] bg-[#0a1d34] px-1.5 py-0.5 text-[9px] font-mono text-slate-300">⌘K</kbd></>}
-          </button>
+          <div className={`rounded-xl border border-[#2c4d6d] bg-gradient-to-br from-[#123457] to-[#0f2c48] px-3 py-3 shadow-sm ${sidebarCollapsed ? "px-2" : ""}`} aria-label="Company workspace profile">
+            <div className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-cyan-300 text-[#0a1d34] shadow-[0_4px_12px_rgba(34,211,238,.2)]"><Building2 size={16} aria-hidden="true" /></span>
+              {!sidebarCollapsed && <div className="min-w-0"><span className="block truncate text-[9px] font-bold uppercase tracking-[.16em] text-cyan-200">Company workspace</span><span className="mt-1 block truncate text-[12px] font-bold text-white">{company?.name || "Smart Manager"}</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Enterprise operations profile</span></div>}
+            </div>
+          </div>
           {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-lg border border-[#2c4d6d] bg-[#0f2c48] px-2 py-1.5" role="group" aria-label="Sidebar module order">
             <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">View</span>
             <div className="inline-flex rounded-md bg-[#0a1d34] p-0.5">
@@ -48378,6 +48390,15 @@ function SmartManager() {
             </span>
             {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
+          <div className={`dashboard-sidebar-profile mt-2 border-t border-[#1f3d5a] pt-2 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
+            {sidebarCollapsed ? (
+              <button type="button" onClick={() => go("profile")} aria-label="Open account identity center" title={currentUser?.name || "Open profile"} className="grid h-10 w-10 place-items-center rounded-lg border border-[#2c4d6d] bg-[#123457] text-cyan-200 transition hover:border-cyan-300 hover:bg-[#1d4d75] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50">
+                <UserCircle size={17} aria-hidden="true" />
+              </button>
+            ) : (
+              <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+            )}
+          </div>
           {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-cyan-300" />
             <span>Enterprise operations platform · Tanzania &amp; global teams.</span>
@@ -48438,9 +48459,6 @@ function SmartManager() {
               <AlertCircle size={16} aria-hidden="true" />
               {criticalAlerts.length > 0 && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white ring-2 ring-white">{criticalAlerts.length}</span>}
             </button>
-            <button type="button" onClick={() => setPreferencesDrawerOpen(true)} className="dashboard-topbar-customize inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40" aria-label="Customize dashboard" title="Customize dashboard">
-              <Sliders size={15} aria-hidden="true" />
-            </button>
             {/* Dark mode toggle */}
             <button
               type="button"
@@ -48454,9 +48472,6 @@ function SmartManager() {
             </button>
             <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
             <div className="ml-0.5 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
-            <div className="dashboard-topbar-profile shrink-0">
-              <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
-            </div>
           </div>
         </header>
 

@@ -10,9 +10,9 @@ const vercelConfig = readFileSync(resolve(root, "vercel.json"), "utf8");
 const activeProfileMenu = profileCenter.slice(profileCenter.lastIndexOf("function ProfileMenu("));
 
 describe("dashboard shell interaction refinement", () => {
-  it("keeps the workspace navigation as an accessible left operating rail and exposes the command entry point", () => {
+  it("keeps the workspace navigation as an accessible left operating rail and exposes company identity", () => {
     expect(dashboard).toContain('aria-label="Operational workspaces"');
-    expect(dashboard).toContain('aria-label="Open command palette"');
+    expect(dashboard).toContain('aria-label="Company workspace profile"');
     expect(dashboard).toContain('const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;');
     expect(dashboard).toContain('aria-hidden={sidebarHiddenFromAssistiveTech}');
     expect(dashboard).toContain('window.matchMedia("(min-width: 1024px)")');
@@ -22,6 +22,7 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('dashboard-flat-navigation');
     expect(dashboard).toContain('dashboard-sidebar-brand');
     expect(dashboard).toContain('dashboard-sidebar-tools');
+    expect(dashboard).toContain('dashboard-sidebar-profile');
     expect(dashboard).toContain('dashboard-sidebar-footer');
     expect(dashboard).toContain('dashboard-shell-header');
     expect(dashboard).toContain('aria-label="Workspace command bar"');
@@ -37,7 +38,9 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-pressed={darkMode}');
     expect(dashboard).toContain('dashboard-topbar-search inline-flex h-10 w-10');
     expect(dashboard).toContain('xl:min-w-[230px]');
-    expect(dashboard).toContain('dashboard-topbar-profile');
+    expect(dashboard).not.toContain('dashboard-topbar-profile');
+    expect(dashboard).not.toContain('dashboard-topbar-customize');
+    expect(dashboard).toContain('onOpenDashboardCustomization={() => setPreferencesDrawerOpen(true)}');
     const topbar = dashboard.slice(dashboard.indexOf('aria-label="Workspace command bar"'), dashboard.indexOf('{IS_CONFIGURED && active !== "billing"'));
     expect(topbar).not.toContain('Live workspace');
     expect(topbar).not.toContain('>Create<');

@@ -15,12 +15,17 @@ async function openIsolatedDashboard(page: Page) {
   const session = await installIsolatedDashboardSession(page);
   await page.goto("/app?auth=signup", { waitUntil: "domcontentloaded" });
   await dismissBlockingUi(page);
-  await expect(page.locator("button.dashboard-topbar-customize")).toBeVisible();
+  await expect(page.locator("button.dashboard-topbar-customize")).toHaveCount(0);
+  if ((await page.evaluate(() => window.innerWidth)) < 1024) {
+    await page.getByRole("button", { name: "Open menu", exact: true }).click();
+  }
+  await page.getByRole("button", { name: "Open workspace settings", exact: true }).last().click();
+  await expect(page.getByRole("button", { name: /Customize dashboard/ })).toBeVisible();
   return session;
 }
 
 async function openPreferences(page: Page) {
-  await page.locator("button.dashboard-topbar-customize").click();
+  await page.getByRole("button", { name: /Customize dashboard/ }).click();
   await expect(page.getByRole("heading", { name: "Dashboard Preferences" })).toBeVisible();
 }
 
