@@ -43750,7 +43750,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-[#F8FAFC]" style={onboardingSceneStyle}>
+    <main id="main-content" className="min-h-screen w-full flex bg-[#F8FAFC]" style={onboardingSceneStyle}>
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden flex-col justify-between p-12" style={onboardingPanelStyle}>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -right-20 -top-24 h-96 w-96 rounded-full opacity-20 blur-[70px]" style={{ background: "radial-gradient(circle,#4ADE80 0%,transparent 70%)" }} />
@@ -43826,7 +43826,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
           <div className="mt-5 text-center"><p className="text-[12.5px] text-slate-500">Already have an account? <button type="button" onClick={onSwitchToLogin} className="font-semibold text-[#16A34A] hover:underline">Sign in</button></p><p className="mt-2 text-[11.5px] text-slate-400">{mode === "join" ? "Need to create a new company? Switch to Create a company above." : "Joining an existing company? Switch to Join existing company above."}</p></div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
