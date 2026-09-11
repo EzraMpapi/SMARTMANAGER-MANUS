@@ -235,28 +235,27 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
   ];
 
   return (
-    <div className="relative shrink-0">
-      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className="group flex min-h-11 items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-1.5 py-1.5 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 sm:min-h-10" aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center">
+    <div className="relative w-full">
+      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className="group flex w-full min-h-11 items-center gap-2.5 rounded-xl border-0 bg-transparent px-1.5 py-1.5 text-left shadow-none transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50" aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center">
         <Avatar profile={profile} name={displayName} size="md" />
-        <span className="hidden max-w-28 text-left sm:block"><span className="block truncate text-[11.5px] font-bold text-slate-800">{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span>
-        <ChevronRight size={14} className={`mr-1 hidden text-slate-300 transition sm:block ${open ? "rotate-90 text-emerald-600" : ""}`} aria-hidden="true" />
+        <span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-white">{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span>
+        <ChevronRight size={14} className={`shrink-0 text-slate-400 transition ${open ? "-rotate-90 text-cyan-300" : ""}`} aria-hidden="true" />
       </button>
       {open && (
-        <section ref={menuRef} id="workspace-profile-menu" role="dialog" aria-label="Account identity center" className="absolute right-0 top-full z-50 mt-2 w-[min(92vw,320px)] overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-[0_20px_55px_rgba(15,23,42,.18)]">
-          <div className="rounded-xl bg-gradient-to-r from-[#083D2A] via-[#0B5D3B] to-[#11774A] px-3 py-3 text-white"><div className="flex items-center gap-2.5"><Avatar profile={profile} name={displayName} size="md" /><div className="min-w-0 flex-1"><p className="truncate text-[12.5px] font-bold">{displayName}</p><p className="mt-0.5 truncate text-[10px] text-emerald-100">{role} · {company?.name || "Current workspace"}</p></div><StatusPill active={profile?.isActive !== false} /></div></div>
+        <section ref={menuRef} id="workspace-profile-menu" role="dialog" aria-label="Account identity center" className="absolute bottom-full left-0 z-50 mb-2 w-[min(92vw,320px)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5">
+          <div className="flex items-center gap-2.5 border-b border-slate-100 px-2.5 pb-3 pt-2"><Avatar profile={profile} name={displayName} size="md" /><div className="min-w-0 flex-1"><p className="truncate text-[12.5px] font-bold text-slate-900">{displayName}</p><p className="mt-0.5 truncate text-[10px] text-slate-500">{role} · {company?.name || "Current workspace"}</p></div><StatusPill active={profile?.isActive !== false} /></div>
           <div className="mt-1 max-h-[min(58vh,360px)] overflow-y-auto p-1">
             {actions.map((action) => {
               const Icon = action.icon;
-              return <button key={action.label} type="button" role="button" onClick={action.onClick} className="group flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-emerald-100 group-hover:text-emerald-700"><Icon size={14} aria-hidden="true" /></span><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-slate-800">{action.label}</span><span className="block truncate text-[9.5px] text-slate-400">{action.detail}</span></span><ChevronRight size={13} className="text-slate-300 group-hover:text-emerald-600" aria-hidden="true" /></button>;
+              return <button key={action.label} type="button" onClick={action.onClick} className="group flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-emerald-100 group-hover:text-emerald-700"><Icon size={14} aria-hidden="true" /></span><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-slate-800">{action.label}</span><span className="block truncate text-[9.5px] text-slate-400">{action.detail}</span></span><ChevronRight size={13} className="text-slate-300 group-hover:text-emerald-600" aria-hidden="true" /></button>;
             })}
           </div>
-          <div className="mt-1 grid grid-cols-2 gap-1 border-t border-slate-100 p-1 pt-2"><button type="button" role="button" onClick={() => { setOpen(false); onOpenPasswordRecovery?.(); }} disabled={!onOpenPasswordRecovery} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 text-[10.5px] font-bold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 disabled:opacity-50"><KeyRound size={13} />Recovery</button><button type="button" role="button" onClick={onSignOut} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-red-100 px-2 text-[10.5px] font-bold text-red-700 transition hover:bg-red-50"><ArrowRight size={13} />{session && !session.demo ? "Sign out" : "Exit demo"}</button></div>
+          <div className="mt-1 border-t border-slate-100 px-1 pt-2"><button type="button" onClick={() => { setOpen(false); onOpenPasswordRecovery?.(); }} disabled={!onOpenPasswordRecovery} className="mb-1 inline-flex min-h-10 w-full items-center gap-2 rounded-xl px-2.5 text-left text-[10.5px] font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"><KeyRound size={13} />Password recovery</button><button type="button" onClick={onSignOut} className="inline-flex min-h-10 w-full items-center gap-2 rounded-xl px-2.5 text-left text-[10.5px] font-bold text-red-700 transition hover:bg-red-50"><ArrowRight size={13} />{session && !session.demo ? "Sign out" : "Exit demo"}</button></div>
         </section>
       )}
     </div>
   );
 }
-
 function IdentityHero({ profile, company, work, completion, security, onTab, onSignOut }) {
   const name = profile?.preferredName || profile?.fullName || "Workspace user";
   return (
