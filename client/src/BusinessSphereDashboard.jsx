@@ -48452,10 +48452,6 @@ function SmartManager() {
             <button type="button" onClick={() => setPaletteOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:hidden" aria-label="Search everything">
               <Search size={17} aria-hidden="true" />
             </button>
-            <button type="button" onClick={() => go("notifications")} className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent p-0 text-slate-500 shadow-none transition hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40" aria-label={`Open alerts${criticalAlerts.length ? ` (${criticalAlerts.length})` : ""}`} title="Alerts">
-              <AlertCircle size={16} aria-hidden="true" />
-              {criticalAlerts.length > 0 && <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white ring-2 ring-white">{criticalAlerts.length}</span>}
-            </button>
             {/* Dark mode toggle */}
             <button
               type="button"
@@ -48469,9 +48465,7 @@ function SmartManager() {
             </button>
             <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
             <div className="ml-0.5 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
-            <button type="button" onClick={() => go("profile")} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-500 text-[12px] font-bold text-white shadow-sm transition hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" aria-label="Open account profile" title={currentUser?.name || "Account profile"}>
-              {(currentUser?.name || currentUser?.email || "E").trim().charAt(0).toUpperCase()}
-            </button>
+            <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
           </div>
         </header>
 
