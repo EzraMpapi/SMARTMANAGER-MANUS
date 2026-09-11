@@ -42179,14 +42179,14 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full mt-2 w-[320px] bg-white rounded-xl border border-slate-200/80 shadow-lg z-40 overflow-hidden"
+            className="absolute right-0 top-full z-40 mt-2 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg"
             style={{ animation: "toastIn .15s ease-out" }}
           >
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-[13px] font-semibold text-[#111827]">Notifications</h3>
               {alerts.length > 0 && <span className="text-[11px] text-slate-400 font-mono">{alerts.length}</span>}
             </div>
-            <div className="max-h-[360px] overflow-y-auto">
+            <div className="max-h-[min(52dvh,360px)] overscroll-contain overflow-y-auto">
               {alerts.length === 0 ? (
                 <div className="px-4 py-8 text-center">
                   <CheckCircle2 size={20} className="text-[#16A34A] mx-auto mb-2" />
@@ -42199,7 +42199,7 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
                     <button
                       key={a.id}
                       onClick={() => { onNavigate(a.target); setOpen(false); }}
-                      className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-50/70 transition-colors border-b border-slate-50 last:border-0"
+                      className="flex min-h-12 w-full items-start gap-3 border-b border-slate-50 px-3 py-3 text-left transition-colors hover:bg-slate-50/70 sm:px-4 last:border-0"
                     >
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${a.color}14` }}>
                         <Icon size={15} style={{ color: a.color }} />
