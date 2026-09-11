@@ -1137,14 +1137,14 @@ export const appRouter = router({
         const profile = await requireVerifiedAuditCompany(ctx.req, input.companyId);
         const canReadSecurity = canReadTenantPushDeliveryHistory(profile.role);
         if (!canReadSecurity) throw new TRPCError({ code: "FORBIDDEN", message: "Only tenant security administrators can view push delivery history." });
-        return listTenantPushDeliveryHistory(input.companyId, input.limit);
+        return listTenantPushDeliveryHistory(input.companyId, input.limit, getSessionToken(ctx.req));
       }),
   }),
 
   auditLogs: router({
     list: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ ctx, input }) => {
       await requireVerifiedAuditCompany(ctx.req, input.companyId);
-      const logs = await listAuditLogs(input.companyId, input.limit || 100);
+      const logs = await listAuditLogs(input.companyId, input.limit || 100, getSessionToken(ctx.req));
       return logs.filter(l => {
         if (input.module && l.module !== input.module) return false;
         if (input.startDate && new Date(l.createdAt) < new Date(input.startDate)) return false;
@@ -1157,7 +1157,7 @@ export const appRouter = router({
       if (approvalResult.profile.company_id !== input.companyId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You cannot export compliance evidence for another workspace." });
       }
-      const logs = await listAuditLogs(input.companyId, input.limit || 100);
+      const logs = await listAuditLogs(input.companyId, input.limit || 100, getSessionToken(ctx.req));
       const filteredLogs = logs.filter((log) => {
         if (input.module && log.module !== input.module) return false;
         if (input.startDate && new Date(log.createdAt) < new Date(input.startDate)) return false;
@@ -1168,7 +1168,7 @@ export const appRouter = router({
     }),
     record: protectedProcedure.input(z.object({ companyId: z.string().min(1), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(async ({ ctx, input }) => {
       const profile = await requireVerifiedAuditCompany(ctx.req, input.companyId);
-      return recordAuditLog({ ...ctx.user, openId: profile.id, name: profile.full_name || ctx.user.name }, input);
+      return recordAuditLog({ ...ctx.user, openId: profile.id, name: profile.full_name || ctx.user.name }, input, getSessionToken(ctx.req));
     }),
   }),
 
@@ -1280,9 +1280,10 @@ export const appRouter = router({
 });
 
 function getSessionToken(req: { headers: { cookie?: string; authorization?: string | string[]; "x-supabase-authorization"?: string | string[] } }): string {
-  const cookieToken = parseCookie(req.headers.cookie ?? "")[COOKIE_NAME];
+  const headers = req?.headers || {};
+  const cookieToken = parseCookie(headers.cookie ?? "")[COOKIE_NAME];
   if (cookieToken) return cookieToken;
-  return getBearerToken(req) || "";
+  return getBearerToken({ headers }) || "";
 }
 
 export type AppRouter = typeof appRouter;
