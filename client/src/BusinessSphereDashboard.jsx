@@ -48426,7 +48426,6 @@ function SmartManager() {
                 <Building2 size={11} className="shrink-0 text-cyan-600" aria-hidden="true" />
                 <span className="truncate">{company?.name || "Smart Manager"}</span>
               </div>
-              <h1 className="truncate text-[14px] font-semibold text-slate-900 sm:mt-0.5 sm:text-[15px]">Operations Workspace</h1>
               <span className="sr-only">SMART MANAGER · ERP SYSTEM</span>
             </div>
           </div>
