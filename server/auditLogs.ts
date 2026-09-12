@@ -44,7 +44,6 @@ async function requireDb() {
 export async function recordAuditLog(user: Pick<User, "openId" | "name">, input: AuditLogInput, sessionToken?: string): Promise<AuditLog> {
   const db = await getDb();
   if (!db) {
-    if (!sessionToken) throw new TRPCError({ code: "UNAUTHORIZED", message: "A valid account session is required to record an audit event." });
     const rows = await insertSupabaseRow<SupabaseAuditLog>("audit_logs", {
       actor_open_id: user.openId,
       actor_name: user.name || "System User",
