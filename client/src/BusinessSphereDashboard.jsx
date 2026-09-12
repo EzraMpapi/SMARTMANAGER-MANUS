@@ -2461,19 +2461,19 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{background:"rgba(13,34,20,0.7)",backdropFilter:"blur(4px)"}}>
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] mx-4 flex flex-col overflow-hidden"
+      <div className="relative bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-4xl max-h-[96dvh] sm:max-h-[92vh] mx-2 sm:mx-4 flex flex-col overflow-hidden"
         style={{animation:"briefingIn .35s cubic-bezier(.22,1,.36,1)"}}>
 
         {/* ── Header bar ── */}
-        <div className="shrink-0 px-6 pt-5 pb-4 border-b border-slate-100" style={{background:"#0D2214"}}>
-          <div className="flex items-start justify-between gap-4">
+        <div className="shrink-0 px-3 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-slate-100" style={{background:"#0D2214"}}>
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[10px] font-bold text-[#16A34A] uppercase tracking-widest">BusinessSphere ERP</span>
                 <span className="text-[rgba(255,255,255,.3)]">·</span>
                 <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</span>
               </div>
-              <h1 className="text-white text-[24px] font-black tracking-tight leading-none">Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {(currentUser?.name||"").split(" ")[0]} 👋</h1>
+              <h1 className="text-white text-[19px] sm:text-[24px] font-black tracking-tight leading-tight">Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {(currentUser?.name||"").split(" ")[0]} 👋</h1>
               <p className="text-[rgba(255,255,255,.5)] text-[12.5px] mt-1.5">Here is your daily business briefing for {co.name||"your company"}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -2524,7 +2524,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
 
           {/* 🚨 ALERTS SECTION */}
           {alerts.length > 0 && (
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-3 sm:px-6 py-4 border-b border-slate-100">
               <h2 className="text-[14px] font-black text-[#111827] mb-3 flex items-center gap-2">
                 🚨 Active Alerts <span className="text-[11px] font-bold text-white bg-[#EF4444] px-2 py-0.5 rounded-full">{alerts.length}</span>
               </h2>
@@ -2552,12 +2552,12 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
 
           {/* 📦 INVENTORY ALERTS */}
           {(lowStock.length > 0 || outOfStock.length > 0) && (
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-3 sm:px-6 py-4 border-b border-slate-100">
               <h2 className="text-[14px] font-black text-[#111827] mb-3 flex items-center gap-2">
                 📦 Low Stock Items <span className="text-[11px] font-bold text-white bg-[#EF4444] px-2 py-0.5 rounded-full">{lowStock.length}</span>
               </h2>
               <div className="overflow-x-auto">
-                <table className="w-full text-[12px]">
+                <table className="min-w-[560px] w-full text-[12px]">
                   <thead><tr className="bg-[#0D2214]">
                     {["Item","Category","Stock","Reorder Point","Supplier","Status"].map(h=>(
                       <th key={h} className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[rgba(255,255,255,.7)]">{h}</th>
@@ -2586,13 +2586,13 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
 
           {/* 📄 OVERDUE INVOICES */}
           {overdueInvs.length > 0 && (
-            <div className="px-6 py-4 border-b border-slate-100">
+            <div className="px-3 sm:px-6 py-4 border-b border-slate-100">
               <h2 className="text-[14px] font-black text-[#111827] mb-3 flex items-center gap-2">
                 📄 Overdue Invoices <span className="text-[11px] font-bold text-white bg-[#F59E0B] px-2 py-0.5 rounded-full">{overdueInvs.length}</span>
                 <span className="text-[13px] font-black text-[#EF4444] ml-auto">{fmtCur(data.overdueAmt)} outstanding</span>
               </h2>
               <div className="overflow-x-auto">
-                <table className="w-full text-[12px]">
+                <table className="min-w-[560px] w-full text-[12px]">
                   <thead><tr className="bg-[#0D2214]">
                     {["Invoice","Customer","Due Date","Days Late","Balance"].map(h=>(
                       <th key={h} className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wide text-[rgba(255,255,255,.7)]">{h}</th>
@@ -2621,8 +2621,8 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
           )}
 
           {/* 👥 HR + 📊 CRM snapshot */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 divide-x divide-slate-100 border-b border-slate-100">
-            <div className="px-6 py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 border-b border-slate-100">
+            <div className="px-3 sm:px-6 py-4">
               <h2 className="text-[14px] font-black text-[#111827] mb-3">👥 HR Snapshot</h2>
               <div className="space-y-2">
                 {[
@@ -2638,7 +2638,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
                 ))}
               </div>
             </div>
-            <div className="px-6 py-4">
+            <div className="px-3 sm:px-6 py-4">
               <h2 className="text-[14px] font-black text-[#111827] mb-3">📊 CRM & Revenue</h2>
               <div className="space-y-2">
                 {[
@@ -2667,7 +2667,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
         </div>
 
         {/* ── Footer actions ── */}
-        <div className="shrink-0 px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
+        <div className="shrink-0 px-3 sm:px-6 py-3.5 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <p className="text-[11px] text-slate-400">Auto-shows once per day · Re-open anytime from the top bar</p>
           <div className="flex gap-2">
             <button onClick={printBriefing}
@@ -12583,7 +12583,7 @@ function Inventory({ inventory, suppliersHook }) {
           <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Inventory</h1>
           <p className="text-[13px] text-slate-500 mt-1">Stock, warehouses, transfers, batches, and suppliers in one place</p>
         </div>
-        <div className="sm-mobile-action-group flex gap-2 shrink-0">
+        <div className="sm-mobile-action-group flex w-full flex-wrap justify-end gap-2 shrink-0 sm:w-auto">
           <button onClick={()=>downloadCSV("inventory",rowsOf(inventory).map(it=>({SKU:it.sku||"",Name:it.name,Category:it.category||"",Qty:it.qty||0,UnitCost:it.unitCost||0,Value_k:Math.round((it.qty||0)*(it.unitCost||0)/1000),ReorderPoint:it.reorder||0,Status:it.qty<=0?"Out of Stock":it.qty<=(it.reorder||0)?"Low Stock":"OK"})),[{key:"SKU",label:"SKU"},{key:"Name",label:"Name"},{key:"Category",label:"Category"},{key:"Qty",label:"Qty"},{key:"UnitCost",label:"Unit Cost"},{key:"Value_k",label:"Value (TZS k)"},{key:"ReorderPoint",label:"Reorder At"},{key:"Status",label:"Status"}])}
             className="flex items-center gap-1.5 text-[12px] font-semibold text-[#16A34A] border border-[#16A34A]/25 bg-[#F0FDF4] px-3 py-2 rounded-lg">
             <Download size={12}/> CSV
@@ -12600,7 +12600,7 @@ function Inventory({ inventory, suppliersHook }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className={`${operationalFilterBarClass} w-fit max-w-full`}>
+        <div className={`${operationalFilterBarClass} w-full max-w-full overflow-x-auto sm:w-fit`}>
           {INV_TABS.map((t) => {
             const Icon = t.icon;
             const isActive = tab === t.id;
@@ -12617,8 +12617,8 @@ function Inventory({ inventory, suppliersHook }) {
             );
           })}
         </div>
-        <div className="flex items-center justify-between gap-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl px-3.5 py-2.5 text-[12px] text-emerald-900">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col items-start justify-between gap-2 bg-emerald-50/80 border border-emerald-200/80 rounded-xl px-3.5 py-2.5 text-[12px] text-emerald-900 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 items-start gap-2">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-[10px]">💡</span>
             <span className="min-w-0 leading-relaxed"><strong>Guided Inventory Tip:</strong> Use Warehouses to track multi-location stock, Batches for expiration control, and Reorder Alerts to safely restock without stockouts.</span>
           </div>
@@ -12657,7 +12657,7 @@ function Inventory({ inventory, suppliersHook }) {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className={operationalFilterBarClass}>
+        <div className={`${operationalFilterBarClass} w-full overflow-x-auto sm:w-fit`}>
           <button
             onClick={() => setWarehouse("all")}
             className={`shrink-0 text-[12px] font-medium px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${warehouse === "all" ? "bg-white text-[#111827] shadow-sm" : "text-slate-500"}`}
@@ -12674,8 +12674,8 @@ function Inventory({ inventory, suppliersHook }) {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-72">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="relative min-w-[min(100%,220px)] flex-1 sm:w-72 sm:flex-none">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={query}
