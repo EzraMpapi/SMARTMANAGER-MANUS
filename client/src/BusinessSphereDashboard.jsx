@@ -37196,7 +37196,9 @@ function RoleChangeApprovalPanel({ currentUser }) {
 function AccountPasskeyManager({ session, isAdministrator = false }) {
   const passkeyNotificationMutation = trpc.passkeySecurity.notifyRegistered.useMutation();
   const [passkeys, setPasskeys] = useState([]);
-  const [loading, setLoading] = useState(Boolean(IS_CONFIGURED && session?.accessToken));
+  const refreshToken = session?.refreshToken || getStoredRefreshToken() || "";
+  const hasAccountSession = Boolean(IS_CONFIGURED && session?.accessToken && refreshToken);
+  const [loading, setLoading] = useState(hasAccountSession);
   const [busy, setBusy] = useState("");
   const [editingId, setEditingId] = useState("");
   const [friendlyName, setFriendlyName] = useState("");
@@ -37208,11 +37210,11 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
   const getClient = async () => createAccountPasskeyClient({
     supabaseUrl: SUPABASE_URL,
     supabaseAnonKey: SUPABASE_ANON_KEY,
-    session: { accessToken: session?.accessToken || "", refreshToken: getStoredRefreshToken() || "" },
+    session: { accessToken: session?.accessToken || "", refreshToken },
   });
 
   const loadPasskeys = async () => {
-    if (!IS_CONFIGURED || !session?.accessToken) { setLoading(false); return; }
+    if (!hasAccountSession) { setLoading(false); return; }
     setLoading(true);
     setError("");
     try {
@@ -37225,7 +37227,7 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
     }
   };
 
-  useEffect(() => { void loadPasskeys(); }, [session?.accessToken]);
+  useEffect(() => { void loadPasskeys(); }, [hasAccountSession, session?.accessToken, refreshToken]);
 
   async function registerPasskey() {
     if (!supported) { notify("This browser cannot create passkeys. Use a recent HTTPS browser with an available authenticator.", "error"); return; }
@@ -37311,10 +37313,11 @@ function AccountPasskeyManager({ session, isAdministrator = false }) {
           <h2 className="flex items-center gap-2 text-[14.5px] font-semibold text-[#111827]"><Fingerprint size={16} className="text-[#16A34A]" /> Account passkeys</h2>
           <p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-slate-500">Register a device, security key, or password-manager passkey for this account. Credentials are created and verified by Supabase Auth; biometric data and private keys never enter this application.</p>
         </div>
-        <button type="button" onClick={registerPasskey} disabled={!IS_CONFIGURED || !session?.accessToken || !supported || busy === "register"} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#16A34A] px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-[#15803D] disabled:cursor-not-allowed disabled:opacity-50">
+        <button type="button" onClick={registerPasskey} disabled={!hasAccountSession || !supported || busy === "register"} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#16A34A] px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-[#15803D] disabled:cursor-not-allowed disabled:opacity-50">
           <Fingerprint size={14} /> {busy === "register" ? "Waiting for device…" : "Add passkey"}
         </button>
       </div>
+      {IS_CONFIGURED && !hasAccountSession && <p role="status" className="mt-3 rounded-lg bg-slate-100 px-3 py-2 text-[11.5px] text-slate-600">Sign in to your verified Smart Manager account to manage passkeys. Demo sessions cannot create or change account credentials.</p>}
       {!supported && <p role="status" className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[11.5px] text-amber-800">Passkeys need a recent HTTPS browser with WebAuthn support. No fallback credential is stored locally.</p>}
       {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[11.5px] text-red-700">{error}</p>}
       {!loading && !error && passkeys.length === 0 && <section className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5"><p className="text-[12px] font-bold text-emerald-950">Set up your first passkey</p><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">Your verified Smart Manager account can now use a device, password manager, or security key for phishing-resistant sign-in. Keep a second approved recovery method available.</p><button type="button" onClick={registerPasskey} disabled={!supported || busy === "register"} className="mt-3 rounded-lg bg-emerald-700 px-3 py-2 text-[11px] font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">{busy === "register" ? "Waiting for device…" : "Set up passkey"}</button></section>}
