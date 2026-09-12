@@ -48131,6 +48131,7 @@ function SmartManager() {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
               Live
             </span>
+            <LiveDateTime />
             <button type="button" onClick={() => setPaletteOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:hidden" aria-label="Search everything">
               <Search size={17} aria-hidden="true" />
             </button>
@@ -48663,6 +48664,26 @@ const { CommunityGroupsModule, LegacyHealthcareClinicModule, LegacyHotelManageme
   useMemo,
   useState,
 });
+
+function LiveDateTime() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const date = new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "2-digit", year: "numeric" }).format(now);
+  const time = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(now);
+  return (
+    <div className="flex min-w-0 max-w-[92px] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 sm:max-w-none sm:gap-2 sm:rounded-xl sm:px-2.5 sm:py-1.5" aria-label={`Current date ${date}, time ${time}, timezone ${timeZone}`} title={`Timezone: ${timeZone}`}>
+      <CalendarDays size={13} className="hidden shrink-0 text-cyan-700 sm:block" aria-hidden="true" />
+      <span className="leading-tight">
+        <span className="block truncate font-mono text-[10px] font-bold tabular-nums text-slate-800 sm:text-[11px]">{time}</span>
+        <span className="block truncate text-[8px] font-medium text-slate-500 sm:text-[9px]">{date}<span className="hidden sm:inline"> · {timeZone}</span></span>
+      </span>
+    </div>
+  );
+}
 
 export default function App() {
   return (
