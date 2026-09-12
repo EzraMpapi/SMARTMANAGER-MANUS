@@ -48666,15 +48666,16 @@ function LiveDateTime() {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const date = new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "2-digit", year: "numeric" }).format(now);
+  const day = new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(now);
+  const date = new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", year: "numeric" }).format(now);
   const time = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(now);
   return (
-    <div className="hidden min-w-0 max-w-none items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 sm:flex" aria-label={`Current date ${date}, time ${time}, timezone ${timeZone}`} title={`Timezone: ${timeZone}`}>
+    <div className="flex min-w-0 max-w-[148px] items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 sm:max-w-[190px] sm:gap-2 sm:px-2.5" aria-label={`Current day ${day}, date ${date}, time ${time}`}>
       <CalendarDays size={13} className="hidden shrink-0 text-cyan-700 sm:block" aria-hidden="true" />
       <span className="leading-tight">
+        <span className="block truncate text-[8px] font-semibold uppercase tracking-wide text-cyan-700 sm:text-[9px]">{day}</span>
         <span className="block truncate font-mono text-[10px] font-bold tabular-nums text-slate-800 sm:text-[11px]">{time}</span>
-        <span className="block truncate text-[8px] font-medium text-slate-500 sm:text-[9px]">{date}<span className="hidden sm:inline"> · {timeZone}</span></span>
+        <span className="block truncate text-[8px] font-medium text-slate-500 sm:text-[9px]">{date}</span>
       </span>
     </div>
   );
