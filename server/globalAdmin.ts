@@ -15,7 +15,16 @@ const globalAdminActionInput = z.object({
   details: z.record(z.string(), z.unknown()).default({}),
 });
 
+const globalAdminLifecycleInput = z.object({
+  action: z.enum(["EXTEND_SUBSCRIPTION", "CANCEL_SUBSCRIPTION", "RESUME_SUBSCRIPTION", "CHANGE_PLAN", "ACTIVATE_USER", "DEACTIVATE_USER"]),
+  targetId: z.string().uuid(),
+  reason: z.string().trim().min(1).max(1000),
+  extensionDays: z.union([z.literal(7), z.literal(15), z.literal(30), z.literal(60), z.literal(90)]).optional(),
+  plan: z.string().trim().min(1).max(120).optional(),
+});
+
 export type GlobalAdminActionInput = z.infer<typeof globalAdminActionInput>;
+export type GlobalAdminLifecycleInput = z.infer<typeof globalAdminLifecycleInput>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -75,4 +84,21 @@ export async function recordGlobalAdminAction(req: CreateExpressContextOptions["
   });
 }
 
-export { globalAdminActionInput };
+export async function applyGlobalAdminLifecycleAction(req: CreateExpressContextOptions["req"], input: GlobalAdminLifecycleInput) {
+  const { token } = await requirePlatformAdmin(req);
+  if (input.action === "EXTEND_SUBSCRIPTION" && input.extensionDays === undefined) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "An extension period is required." });
+  }
+  if (input.action === "CHANGE_PLAN" && !input.plan) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "A plan is required for plan changes." });
+  }
+  return callUserRpc<Record<string, unknown>>("platform_admin_apply_lifecycle_action", token, {
+    p_action: input.action,
+    p_target_id: input.targetId,
+    p_reason: input.reason,
+    p_extension_days: input.extensionDays ?? null,
+    p_plan: input.plan ?? null,
+  });
+}
+
+export { globalAdminActionInput, globalAdminLifecycleInput };
