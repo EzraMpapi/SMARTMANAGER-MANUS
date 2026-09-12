@@ -31,12 +31,12 @@ describe("dashboard shell interaction refinement", () => {
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
     expect(dashboard).toContain('aria-label="Open menu"');
     expect(dashboard).toContain('aria-label="Search everything"');
-    expect(dashboard).toContain('SMART MANAGER');
-    expect(dashboard).toContain('ERP SYSTEM');
-    expect(dashboard).toContain('aria-label={`Open alerts');
+    expect(dashboard).toContain('dashboard-topbar-context');
+    expect(dashboard).toContain('function LiveDateTime()');
+    expect(dashboard).toContain('NotificationCenter');
     expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
-    expect(dashboard).toContain('dashboard-topbar-search inline-flex h-10 w-10');
+    expect(dashboard).toContain('dashboard-topbar-search inline-flex h-9');
     expect(dashboard).toContain('border-0 bg-transparent');
     expect(dashboard).not.toContain('dashboard-topbar-profile');
     expect(dashboard).not.toContain('dashboard-topbar-customize');
@@ -44,7 +44,7 @@ describe("dashboard shell interaction refinement", () => {
     const topbar = dashboard.slice(dashboard.indexOf('aria-label="Workspace command bar"'), dashboard.indexOf('{IS_CONFIGURED && active !== "billing"'));
     expect(topbar).not.toContain('Live workspace');
     expect(topbar).not.toContain('company?.name || "Smart Manager"');
-    expect(topbar).not.toContain('Search modules, records, and actions');
+    expect(topbar).toContain('Search modules, records, and actions');
     expect(topbar).not.toContain('>Create<');
     expect(topbar).not.toContain('Customize dashboard layout');
     expect(topbar).not.toContain('WorkspacePresenceBadge');

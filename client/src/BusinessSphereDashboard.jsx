@@ -2080,20 +2080,15 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
   expenses, crm, employees, leaveRequests, workOrders, subscriptions, smartAlerts, enabledModules }) {
 
   const co = company || {};
-  const TODAY_STR = TODAY.toISOString().slice(0, 10);
-  const briKey    = `bs_brief_${TODAY_STR}`;
+  const currentDate = new Date();
+  const TODAY_STR = [currentDate.getFullYear(), String(currentDate.getMonth() + 1).padStart(2, "0"), String(currentDate.getDate()).padStart(2, "0")].join("-");
 
-  // Auto-show once per day for exec roles
-  const [open, setOpen] = useState(() => {
-    if (!BRIEFING_EXEC_ROLES.has(canonicalRoleId(currentUser?.role))) return false;
-    try { return !localStorage.getItem(briKey); } catch { return false; }
-  });
+  // The briefing is a startup summary, so every account sees the real
+  // workspace snapshot whenever the dashboard is opened. It can still be
+  // dismissed and reopened from the existing Daily Brief controls.
+  const [open, setOpen] = useState(true);
   const [printing, setPrinting] = useState(false);
   const [retryingData, setRetryingData] = useState(false);
-
-  useEffect(() => {
-    if (open) { try { localStorage.setItem(briKey, "1"); } catch {} }
-  }, [open]);
 
   // Expose open trigger to topbar
   useEffect(() => {
@@ -48102,7 +48097,7 @@ function SmartManager() {
             >
               <MenuIcon />
             </button>
-            <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-slate-500 sm:gap-2 sm:text-[13px]">
+            <div className="hidden min-w-0 items-center gap-1.5 text-[12px] text-slate-500 sm:flex sm:gap-2 sm:text-[13px]">
               <Building2 size={14} className="hidden shrink-0 sm:block" aria-hidden="true" />
               <span className="truncate font-semibold text-slate-800 sm:max-w-[260px]">{company?.name || "BusinessSphere"}</span>
               <ChevronDown size={13} className="shrink-0 text-slate-400" aria-hidden="true" />
@@ -48675,7 +48670,7 @@ function LiveDateTime() {
   const date = new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "2-digit", year: "numeric" }).format(now);
   const time = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(now);
   return (
-    <div className="flex min-w-0 max-w-[92px] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 sm:max-w-none sm:gap-2 sm:rounded-xl sm:px-2.5 sm:py-1.5" aria-label={`Current date ${date}, time ${time}, timezone ${timeZone}`} title={`Timezone: ${timeZone}`}>
+    <div className="hidden min-w-0 max-w-none items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 sm:flex" aria-label={`Current date ${date}, time ${time}, timezone ${timeZone}`} title={`Timezone: ${timeZone}`}>
       <CalendarDays size={13} className="hidden shrink-0 text-cyan-700 sm:block" aria-hidden="true" />
       <span className="leading-tight">
         <span className="block truncate font-mono text-[10px] font-bold tabular-nums text-slate-800 sm:text-[11px]">{time}</span>
