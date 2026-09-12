@@ -15,7 +15,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
-import { getGlobalAdminExecutiveSnapshot, getGlobalAdminSnapshot, globalAdminActionInput, recordGlobalAdminAction } from "./globalAdmin";
+import { applyGlobalAdminLifecycleAction, getGlobalAdminExecutiveSnapshot, getGlobalAdminSnapshot, globalAdminActionInput, globalAdminLifecycleInput, recordGlobalAdminAction } from "./globalAdmin";
 import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
@@ -106,6 +106,9 @@ export const appRouter = router({
     recordAction: protectedProcedure
       .input(globalAdminActionInput)
       .mutation(({ ctx, input }) => recordGlobalAdminAction(ctx.req, input)),
+    applyLifecycleAction: protectedProcedure
+      .input(globalAdminLifecycleInput)
+      .mutation(({ ctx, input }) => applyGlobalAdminLifecycleAction(ctx.req, input)),
   }),
   schemaContractAssertion: protectedProcedure
     .input(z.object({ tableName: z.string(), payload: z.record(z.string(), z.unknown()) }))
