@@ -47598,7 +47598,10 @@ function SmartManager() {
   const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
 
   const subscriptionFilteringReady = !IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || !session?.accessToken || session?.demo || !currentUser?.id || subscriptionAccess.ready;
-  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (!IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || isPlatformAdministrator || subscriptionAllowsModule(subscriptionAccess.access, m.id)));
+  // Keep the complete role-allowed module catalog visible. Subscription
+  // entitlements remain enforced by go() below, so an unavailable module is
+  // discoverable and explains the required plan instead of disappearing.
+  const visibleModules = MODULES.filter((m) => currentRole.allowedModules.includes(m.id));
   const activeModule = visibleModules.find((module) => module.id === active);
   const ActiveModuleIcon = activeModule?.icon || Building2;
   const activeModuleLabel = activeModule?.label || (active === "settings" ? "Workspace settings" : active === "profile" ? "Profile" : active === "billing" ? "Subscription & Billing" : "Workspace");
