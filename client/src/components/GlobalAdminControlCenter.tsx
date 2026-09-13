@@ -144,7 +144,7 @@ export function GlobalAdminControlCenter() {
   const snapshotQuery = trpc.globalAdmin.snapshot.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
   const executiveQuery = trpc.globalAdmin.executiveSnapshot.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
   const controlQuery = trpc.globalAdmin.controlSnapshot.useQuery(undefined, { enabled: section === "operations", retry: false, refetchOnWindowFocus: false });
-  const controlAction = trpc.globalAdmin.applyControlAction.useMutation({ onSuccess: (result) => { const action = String(result?.action || operationDraft?.action || "Admin operation"); toast.success(`${action} applied and recorded.`); setOperationMessage(`${action} completed successfully. Live data is refreshing.`); setOperationDraft(null); controlQuery.refetch(); snapshotQuery.refetch(); }, onError: (error) => { setOperationMessage(error.message || "The admin operation was not applied."); toast.error(error.message || "The admin operation was not applied."); } });
+  const controlAction = trpc.globalAdmin.applyControlAction.useMutation({ onSuccess: (result) => { const action = String(result?.action || operationDraft?.action || "Admin operation"); toast.success(`${action} applied and recorded.`); setOperationMessage(`${action} completed successfully. Live data is refreshing.`); setOperationDraft(null); controlQuery.refetch(); snapshotQuery.refetch(); if (typeof window !== "undefined" && ["EXTEND_SUBSCRIPTION", "CHANGE_PLAN", "RESUME_SUBSCRIPTION", "CANCEL_SUBSCRIPTION", "CREATE_SUBSCRIPTION", "UPDATE_SUBSCRIPTION"].includes(action)) window.dispatchEvent(new CustomEvent("smart-manager:subscription-updated")); }, onError: (error) => { setOperationMessage(error.message || "The admin operation was not applied."); toast.error(error.message || "The admin operation was not applied."); } });
   const feedbackQuery = trpc.globalAdmin.feedback.useQuery(undefined, { enabled: section === "feedback", retry: false, refetchOnWindowFocus: false });
   const [feedbackReplyDrafts, setFeedbackReplyDrafts] = useState<Record<string, string>>({});
   const [feedbackStatusDrafts, setFeedbackStatusDrafts] = useState<Record<string, string>>({});
@@ -173,6 +173,7 @@ export function GlobalAdminControlCenter() {
       setActionTarget(null);
       setReason("");
       snapshotQuery.refetch();
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("smart-manager:subscription-updated"));
     },
     onError: (error) => toast.error(error.message || "The lifecycle change was not applied."),
   });
