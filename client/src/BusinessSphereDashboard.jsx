@@ -48136,7 +48136,7 @@ function SmartManager() {
                 <span className="hidden whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-flex">{currentUser?.role || "Administrator"}</span>
               </button>
               {workspaceMenuOpen && (
-                <section role="menu" aria-label="Workspace details" className="absolute left-0 top-full z-50 mt-2 w-[min(92vw,340px)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,.18)]">
+                <section role="menu" aria-label="Workspace details" className="absolute left-0 top-full z-50 mt-2 max-h-[min(70dvh,520px)] w-[min(92vw,340px)] max-w-[calc(100vw-1rem)] touch-pan-y overscroll-contain overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,.18)]">
                   <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-700"><Building2 size={17} aria-hidden="true" /></span>
                     <div className="min-w-0">
@@ -48149,6 +48149,9 @@ function SmartManager() {
                     <div><dt className="text-slate-400">Currency</dt><dd className="mt-0.5 font-semibold text-slate-700">{company?.currency || company?.currencyCode || "TZS"}</dd></div>
                     <div><dt className="text-slate-400">Timezone</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company?.timezone || "Africa/Dar_es_Salaam"}</dd></div>
                     <div><dt className="text-slate-400">Role</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{currentUser?.role || "Administrator"}</dd></div>
+                    <div><dt className="text-slate-400">Subscription</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{subscriptionStateLabel(subscriptionAccess.access)}</dd></div>
+                    <div><dt className="text-slate-400">Plan</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{subscriptionAccess.access.plan?.name || subscriptionAccess.access.plan?.display_name || subscriptionAccess.access.plan?.code || "Not confirmed"}</dd></div>
+                    {(company?.activeBranchName || company?.branchName || company?.activeBranch?.name) && <div><dt className="text-slate-400">Active branch</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company.activeBranchName || company.branchName || company.activeBranch.name}</dd></div>}
                   </dl>
                   {(company?.phone || company?.email) && <div className="border-t border-slate-100 pt-2 text-[10.5px] text-slate-500">{company?.phone && <p className="truncate">{company.phone}</p>}{company?.email && <p className="truncate">{company.email}</p>}</div>}
                 </section>
