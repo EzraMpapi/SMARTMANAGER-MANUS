@@ -36,6 +36,10 @@ describe("dashboard shell interaction refinement", () => {
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
     expect(dashboard).toContain('aria-label="Open menu"');
     expect(dashboard).toContain('aria-label="Search everything"');
+    expect(dashboard).toContain('aria-label={`Open workspace details for');
+    expect(dashboard).toContain('aria-label="Workspace details"');
+    expect(dashboard).toContain('workspaceMenuOpen');
+    expect(dashboard).toContain('closeWorkspaceMenu');
     expect(dashboard).toContain('dashboard-topbar-context');
     expect(dashboard).toContain('function LiveDateTime()');
     expect(dashboard).toContain('NotificationCenter');

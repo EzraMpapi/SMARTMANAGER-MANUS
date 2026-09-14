@@ -47327,6 +47327,8 @@ function SmartManager() {
   const [isDesktopNavigation, setIsDesktopNavigation] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
   const sidebarRef = useRef(null);
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const workspaceMenuRef = useRef(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true"; } catch { return false; }
   });
@@ -47364,6 +47366,21 @@ function SmartManager() {
       window.clearTimeout(focusTimer);
     };
   }, [isDesktopNavigation, sidebarOpen]);
+  useEffect(() => {
+    if (!workspaceMenuOpen) return undefined;
+    const closeWorkspaceMenu = (event) => {
+      if (!workspaceMenuRef.current?.contains(event.target)) setWorkspaceMenuOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setWorkspaceMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeWorkspaceMenu);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeWorkspaceMenu);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [workspaceMenuOpen]);
   useEffect(() => {
     try { window.localStorage.setItem("smart-manager:sidebar-collapsed", String(sidebarCollapsed)); } catch {}
   }, [sidebarCollapsed]);
@@ -48104,11 +48121,38 @@ function SmartManager() {
             >
               <MenuIcon />
             </button>
-            <div className="hidden min-w-0 items-center gap-1.5 text-[12px] text-slate-500 sm:flex sm:gap-2 sm:text-[13px]">
-              <Building2 size={14} className="hidden shrink-0 sm:block" aria-hidden="true" />
-              <span className="truncate font-semibold text-slate-800 sm:max-w-[260px]">{company?.name || "BusinessSphere"}</span>
-              <ChevronDown size={13} className="shrink-0 text-slate-400" aria-hidden="true" />
-              <span className="hidden whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-flex">{currentUser?.role || "Administrator"}</span>
+            <div ref={workspaceMenuRef} className="relative min-w-0">
+              <button
+                type="button"
+                onClick={() => setWorkspaceMenuOpen((open) => !open)}
+                aria-expanded={workspaceMenuOpen}
+                aria-haspopup="menu"
+                aria-label={`Open workspace details for ${company?.name || "BusinessSphere"}`}
+                className="group flex min-w-0 items-center gap-1.5 rounded-lg border-0 bg-transparent px-1.5 py-1.5 text-left text-[12px] text-slate-500 shadow-none transition hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:gap-2 sm:text-[13px]"
+              >
+                <Building2 size={14} className="shrink-0 text-slate-500 group-hover:text-cyan-700" aria-hidden="true" />
+                <span className="hidden max-w-[260px] truncate font-semibold text-slate-800 sm:inline">{company?.name || "BusinessSphere"}</span>
+                <ChevronDown size={13} className={`shrink-0 text-slate-400 transition-transform ${workspaceMenuOpen ? "rotate-180 text-cyan-700" : ""}`} aria-hidden="true" />
+                <span className="hidden whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-flex">{currentUser?.role || "Administrator"}</span>
+              </button>
+              {workspaceMenuOpen && (
+                <section role="menu" aria-label="Workspace details" className="absolute left-0 top-full z-50 mt-2 w-[min(92vw,340px)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,.18)]">
+                  <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-700"><Building2 size={17} aria-hidden="true" /></span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-bold text-slate-900">{company?.name || "BusinessSphere"}</p>
+                      <p className="mt-0.5 truncate text-[10.5px] text-slate-500">{company?.industry || company?.businessType || "Business workspace"}</p>
+                    </div>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 text-[11px]">
+                    <div><dt className="text-slate-400">Location</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{[company?.city, company?.country].filter(Boolean).join(", ") || "Not set"}</dd></div>
+                    <div><dt className="text-slate-400">Currency</dt><dd className="mt-0.5 font-semibold text-slate-700">{company?.currency || company?.currencyCode || "TZS"}</dd></div>
+                    <div><dt className="text-slate-400">Timezone</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company?.timezone || "Africa/Dar_es_Salaam"}</dd></div>
+                    <div><dt className="text-slate-400">Role</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{currentUser?.role || "Administrator"}</dd></div>
+                  </dl>
+                  {(company?.phone || company?.email) && <div className="border-t border-slate-100 pt-2 text-[10.5px] text-slate-500">{company?.phone && <p className="truncate">{company.phone}</p>}{company?.email && <p className="truncate">{company.email}</p>}</div>}
+                </section>
+              )}
             </div>
           </div>
 
