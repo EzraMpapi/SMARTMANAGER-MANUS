@@ -23,6 +23,11 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('dashboard-sidebar-brand');
     expect(dashboard).not.toContain('dashboard-sidebar-tools');
     expect(dashboard).not.toContain('dashboard-sidebar-profile');
+    expect(dashboard).toContain('items.filter((item) => !["notifications", "profile"].includes(item.id))');
+    expect(dashboard).toContain('sidebarRef = useRef(null)');
+    expect(dashboard).toContain('closeOnOutsidePointer');
+    expect(dashboard).toContain('document.body.style.overflow = "hidden"');
+    expect(dashboard).toContain('event.key === "Escape"');
     expect(dashboard).toContain('dashboard-sidebar-footer');
     expect(dashboard).toContain('dashboard-shell-header');
     expect(dashboard).toContain('aria-label="Workspace command bar"');
