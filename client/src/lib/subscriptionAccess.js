@@ -57,6 +57,7 @@ export function subscriptionAllowsModule(access, moduleId) {
 export function subscriptionStateLabel(access) {
   const state = normalizeState(access?.state);
   return {
+    trial: "Trial",
     active: "Active",
     grace: "Grace period",
     pending: "Payment pending",

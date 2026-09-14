@@ -40,6 +40,10 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-label="Workspace details"');
     expect(dashboard).toContain('workspaceMenuOpen');
     expect(dashboard).toContain('closeWorkspaceMenu');
+    expect(dashboard).toContain('max-h-[min(70dvh,520px)]');
+    expect(dashboard).toContain('overscroll-contain overflow-y-auto');
+    expect(dashboard).toContain('subscriptionStateLabel(subscriptionAccess.access)');
+    expect(dashboard).toContain('Active branch');
     expect(dashboard).toContain('dashboard-topbar-context');
     expect(dashboard).toContain('function LiveDateTime()');
     expect(dashboard).toContain('NotificationCenter');
