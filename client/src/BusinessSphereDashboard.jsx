@@ -41854,7 +41854,7 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
 
       {open && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <div
             className="absolute right-0 top-full z-40 mt-2 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg"
             style={{ animation: "toastIn .15s ease-out" }}
@@ -48011,23 +48011,6 @@ function SmartManager() {
           </button>
         </div>
 
-        {/* Company identity + view controls */}
-        <div className="dashboard-sidebar-tools border-b border-[#1f3d5a] px-3 py-3">
-          <div className={`rounded-xl border border-[#2c4d6d] bg-gradient-to-br from-[#123457] to-[#0f2c48] px-3 py-3 shadow-sm ${sidebarCollapsed ? "px-2" : ""}`} aria-label="Company workspace profile">
-            <div className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-cyan-300 text-[#0a1d34] shadow-[0_4px_12px_rgba(34,211,238,.2)]"><Building2 size={16} aria-hidden="true" /></span>
-              {!sidebarCollapsed && <div className="min-w-0"><span className="block truncate text-[9px] font-bold uppercase tracking-[.16em] text-cyan-200">Company workspace</span><span className="mt-1 block truncate text-[12px] font-bold text-white">{company?.name || "Smart Manager"}</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Enterprise operations profile</span></div>}
-            </div>
-          </div>
-          {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-lg border border-[#2c4d6d] bg-[#0f2c48] px-2 py-1.5" role="group" aria-label="Sidebar module order">
-            <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">View</span>
-            <div className="inline-flex rounded-md bg-[#0a1d34] p-0.5">
-              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => updatePreference("navigationSort", "priority")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "priority" ? "bg-cyan-600 text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
-              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => updatePreference("navigationSort", "alphabetical")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "alphabetical" ? "bg-cyan-600 text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
-            </div>
-          </div>}
-        </div>
-
         {/* Navigation groups */}
         <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Operational workspaces">
           <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
@@ -48070,15 +48053,6 @@ function SmartManager() {
             </span>
             {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
-          <div className={`dashboard-sidebar-profile mt-2 border-t border-[#1f3d5a] pt-2 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
-            {sidebarCollapsed ? (
-              <button type="button" onClick={() => go("profile")} aria-label="Open account identity center" title={currentUser?.name || "Open profile"} className="grid h-10 w-10 place-items-center rounded-lg border border-[#2c4d6d] bg-[#123457] text-cyan-200 transition hover:border-cyan-300 hover:bg-[#1d4d75] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50">
-                <UserCircle size={17} aria-hidden="true" />
-              </button>
-            ) : (
-              <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
-            )}
-          </div>
           {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-cyan-300" />
             <span>Enterprise operations platform · Tanzania &amp; global teams.</span>
@@ -48094,6 +48068,7 @@ function SmartManager() {
           {/* Left — menu trigger and workspace identity */}
           <div className="dashboard-topbar-context flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <button
+              type="button"
               className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-600 shadow-none transition-colors hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
