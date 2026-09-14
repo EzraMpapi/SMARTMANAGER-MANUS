@@ -10,9 +10,9 @@ const vercelConfig = readFileSync(resolve(root, "vercel.json"), "utf8");
 const activeProfileMenu = profileCenter.slice(profileCenter.lastIndexOf("function ProfileMenu("));
 
 describe("dashboard shell interaction refinement", () => {
-  it("keeps the workspace navigation as an accessible left operating rail and exposes company identity", () => {
+  it("keeps the workspace navigation as an accessible left operating rail without duplicate identity controls", () => {
     expect(dashboard).toContain('aria-label="Operational workspaces"');
-    expect(dashboard).toContain('aria-label="Company workspace profile"');
+    expect(dashboard).not.toContain('aria-label="Company workspace profile"');
     expect(dashboard).toContain('const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;');
     expect(dashboard).toContain('aria-hidden={sidebarHiddenFromAssistiveTech}');
     expect(dashboard).toContain('window.matchMedia("(min-width: 1024px)")');
@@ -21,8 +21,8 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-current={isActive ? "page" : undefined}');
     expect(dashboard).toContain('dashboard-flat-navigation');
     expect(dashboard).toContain('dashboard-sidebar-brand');
-    expect(dashboard).toContain('dashboard-sidebar-tools');
-    expect(dashboard).toContain('dashboard-sidebar-profile');
+    expect(dashboard).not.toContain('dashboard-sidebar-tools');
+    expect(dashboard).not.toContain('dashboard-sidebar-profile');
     expect(dashboard).toContain('dashboard-sidebar-footer');
     expect(dashboard).toContain('dashboard-shell-header');
     expect(dashboard).toContain('aria-label="Workspace command bar"');
