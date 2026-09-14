@@ -47326,17 +47326,44 @@ function SmartManager() {
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [isDesktopNavigation, setIsDesktopNavigation] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
+  const sidebarRef = useRef(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true"; } catch { return false; }
   });
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
-    const syncNavigationViewport = () => setIsDesktopNavigation(media.matches);
+    const syncNavigationViewport = () => {
+      setIsDesktopNavigation(media.matches);
+      if (media.matches) setSidebarOpen(true);
+      else setSidebarOpen(false);
+    };
     syncNavigationViewport();
     media.addEventListener("change", syncNavigationViewport);
     return () => media.removeEventListener("change", syncNavigationViewport);
   }, []);
+  useEffect(() => {
+    if (!sidebarOpen || isDesktopNavigation) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setSidebarOpen(false);
+    };
+    const closeOnOutsidePointer = (event) => {
+      if (!sidebarRef.current?.contains(event.target)) setSidebarOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    const focusTimer = window.setTimeout(() => {
+      sidebarRef.current?.querySelector('button[aria-label="Close menu"]')?.focus();
+    }, 0);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      window.clearTimeout(focusTimer);
+    };
+  }, [isDesktopNavigation, sidebarOpen]);
   useEffect(() => {
     try { window.localStorage.setItem("smart-manager:sidebar-collapsed", String(sidebarCollapsed)); } catch {}
   }, [sidebarCollapsed]);
@@ -47614,10 +47641,10 @@ function SmartManager() {
   const displayedNavigationGroups = useMemo(() => getPresentationNavigationGroups(navigationGroups, preferences.visibleNavigationGroupIds, active)
     .map((group) => ({
       ...group,
-      items: [...group.items].sort((left, right) => sidebarModuleOrder === "alphabetical"
+      items: group.items.filter((item) => !["notifications", "profile"].includes(item.id)).sort((left, right) => sidebarModuleOrder === "alphabetical"
         ? left.label.localeCompare(right.label, "en")
         : Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.order - right.order),
-    })), [active, navigationGroups, preferences.visibleNavigationGroupIds, sidebarModuleOrder]);
+    })).filter((group) => group.items.length > 0), [active, navigationGroups, preferences.visibleNavigationGroupIds, sidebarModuleOrder]);
   const flatNavigationItems = useMemo(() => [
     ...displayedNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
     ...(displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
@@ -47968,6 +47995,7 @@ function SmartManager() {
           className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
           style={{ animation: "fadeIn .15s ease-out" }}
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -47980,6 +48008,7 @@ function SmartManager() {
           green gradient, white-variant text, white/10 borders) was
           removed entirely rather than layered under the new palette. */}
       <aside
+        ref={sidebarRef}
         aria-hidden={sidebarHiddenFromAssistiveTech}
         className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[80px]" : "w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] text-slate-100 transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
