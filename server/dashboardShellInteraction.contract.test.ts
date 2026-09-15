@@ -21,6 +21,11 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-current={isActive ? "page" : undefined}');
     expect(dashboard).toContain('dashboard-flat-navigation');
     expect(dashboard).toContain('dashboard-sidebar-brand');
+    expect(dashboard).toContain('w-[min(86vw,320px)]');
+    expect(dashboard).toContain('aria-label="Close navigation drawer"');
+    expect(dashboard).toContain('pb-[env(safe-area-inset-bottom)]');
+    expect(dashboard).toContain('overscroll-contain');
+    expect(dashboard).toContain('sidebarLabelsVisible');
     expect(dashboard).not.toContain('dashboard-sidebar-tools');
     expect(dashboard).not.toContain('dashboard-sidebar-profile');
     expect(dashboard).toContain('items.filter((item) => !["notifications", "profile"].includes(item.id))');

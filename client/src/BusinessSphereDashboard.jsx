@@ -47340,6 +47340,7 @@ function SmartManager() {
       return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true";
     } catch { return false; }
   });
+  const sidebarLabelsVisible = !sidebarCollapsed || !isDesktopNavigation;
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
   useEffect(() => {
     const toggleSidebarWithShortcut = (event) => {
@@ -48075,11 +48076,12 @@ function SmartManager() {
 
       {/* Overlay — dims the page behind the menu whenever it's open, at any screen size */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
-          style={{ animation: "fadeIn .15s ease-out" }}
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] transition-opacity duration-200 motion-reduce:transition-none lg:hidden"
+          style={{ animation: "fadeIn .18s ease-out" }}
           onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
+          aria-label="Close navigation drawer"
         />
       )}
 
@@ -48094,18 +48096,18 @@ function SmartManager() {
       <aside
         ref={sidebarRef}
         aria-hidden={sidebarHiddenFromAssistiveTech}
-        className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[80px]" : "w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] text-slate-100 will-change-[width,transform] transition-[width,transform,box-shadow] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+        className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen w-[min(86vw,320px)] ${sidebarCollapsed ? "lg:w-[80px]" : "lg:w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] pb-[env(safe-area-inset-bottom)] text-slate-100 will-change-[width,transform] transition-[width,transform,box-shadow] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
       >
         {/* Brand row */}
-        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarCollapsed ? "min-h-[84px] justify-center px-2 pb-5" : ""}`}>
+        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarLabelsVisible ? "" : "min-h-[84px] justify-center px-2 pb-5"}`}>
           <div className={`flex min-w-0 items-center gap-2.5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${sidebarCollapsed ? "translate-x-0" : "translate-x-0"}`}>
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white p-1.5 shadow-[0_6px_16px_rgba(0,0,0,.25)] ring-1 ring-white/15">
               <BrandLogo variant="compact" priority className="h-7 w-7" />
             </span>
-            {!sidebarCollapsed && (
+            {sidebarLabelsVisible && (
               <div className="min-w-0 animate-in fade-in slide-in-from-left-1 duration-200 leading-tight motion-reduce:animate-none">
                 <span className="block truncate text-[15px] font-semibold tracking-tight text-white" style={{ fontFamily: "'Poppins'" }}>
                   Smart Manager
@@ -48128,29 +48130,29 @@ function SmartManager() {
         </div>
 
         {/* Navigation groups */}
-        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4 transition-[padding] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none" aria-label="Operational workspaces">
-          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-4 transition-[padding] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none" aria-label="Operational workspaces">
+          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarLabelsVisible ? "" : "hidden"}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
           {displayedNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
-            const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
+            const expanded = !isDesktopNavigation || sidebarCollapsed || expandedNavigationGroups.has(group.id);
             return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
-              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-[#123457] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40">
+              {sidebarLabelsVisible && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-[#123457] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40">
                 <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-cyan-300" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] tracking-normal text-slate-200">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
               </button>}
               {expanded && <div className="space-y-1">{group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = active === item.id;
                 const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-lg border border-l-[3px] px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}>
-                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md transition ${isActive ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`group relative flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-l-[3px] px-3 py-2.5 text-[12px] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 lg:min-h-0 lg:rounded-lg lg:px-2.5 lg:py-2 ${sidebarCollapsed && isDesktopNavigation ? "justify-center px-0" : ""} ${isActive ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}>
+                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition lg:h-7 lg:w-7 lg:rounded-md ${isActive ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Icon size={15} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{sidebarLabelsVisible && <span className="truncate">{item.label}</span>}</span>
                   <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-500" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-400 px-1 text-[9px] font-bold text-rose-950" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
                 </button>;
               })}</div>}
             </section>;
           })}
           {!displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) && <section className="space-y-1" aria-label="Workspace settings">
-            {!sidebarCollapsed && <div className="flex items-center gap-1.5 px-2.5 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-slate-400"><Settings size={12} className="text-cyan-300" aria-hidden="true" /><span>Workspace</span></div>}
-            <button type="button" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${active === "settings" ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{!sidebarCollapsed && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-cyan-100" : "text-slate-300"} />}</button>
+            {sidebarLabelsVisible && <div className="flex items-center gap-1.5 px-2.5 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-slate-400"><Settings size={12} className="text-cyan-300" aria-hidden="true" /><span>Workspace</span></div>}
+            <button type="button" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed && isDesktopNavigation ? "justify-center px-0" : ""} ${active === "settings" ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{sidebarLabelsVisible && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-cyan-100" : "text-slate-300"} />}</button>
           </section>}
         </nav>
 
@@ -48164,12 +48166,12 @@ function SmartManager() {
               active === "settings" ? "border-cyan-400/30 bg-[#173a5c] font-semibold text-white" : "border-transparent text-slate-300 hover:bg-[#123457] hover:text-white"
             }`}
           >
-            <span className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
-              <span className={`grid h-7 w-7 place-items-center rounded-md ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarCollapsed && " Settings"}
+            <span className={`flex items-center gap-2.5 ${sidebarCollapsed && isDesktopNavigation ? "justify-center" : ""}`}>
+              <span className={`grid h-8 w-8 place-items-center rounded-lg lg:h-7 lg:w-7 lg:rounded-md ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={15} strokeWidth={2} /></span>{sidebarLabelsVisible && " Settings"}
             </span>
             {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
-          {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
+          {sidebarLabelsVisible && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-cyan-300" />
             <span>Enterprise operations platform · Tanzania &amp; global teams.</span>
           </div>}
