@@ -49,6 +49,9 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('smart-manager:active-branch-changed');
     expect(dashboard).toContain('role="menuitemradio"');
     expect(dashboard).toContain('switchWorkspaceBranch');
+    expect(dashboard).toContain('event.key.toLowerCase() !== "b"');
+    expect(dashboard).toContain('Ctrl+B');
+    expect(dashboard).toContain('target?.isContentEditable');
     expect(dashboard).toContain('dashboard-topbar-context');
     expect(dashboard).toContain('function LiveDateTime()');
     expect(dashboard).toContain('NotificationCenter');
