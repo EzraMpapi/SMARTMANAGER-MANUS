@@ -47330,7 +47330,15 @@ function SmartManager() {
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const workspaceMenuRef = useRef(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try { return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true"; } catch { return false; }
+    try {
+      const savedPreferences = window.localStorage.getItem("smart_manager_dashboard_prefs");
+      if (savedPreferences) {
+        const parsedPreferences = JSON.parse(savedPreferences);
+        if (parsedPreferences?.sidebarPresentation === "compact") return true;
+        if (parsedPreferences?.sidebarPresentation === "expanded") return false;
+      }
+      return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true";
+    } catch { return false; }
   });
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
   useEffect(() => {
@@ -48086,19 +48094,19 @@ function SmartManager() {
       <aside
         ref={sidebarRef}
         aria-hidden={sidebarHiddenFromAssistiveTech}
-        className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[80px]" : "w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] text-slate-100 transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+        className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[80px]" : "w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] text-slate-100 will-change-[width,transform] transition-[width,transform,box-shadow] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
       >
         {/* Brand row */}
-        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 ${sidebarCollapsed ? "min-h-[84px] justify-center px-2 pb-5" : ""}`}>
-          <div className="flex min-w-0 items-center gap-2.5">
+        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarCollapsed ? "min-h-[84px] justify-center px-2 pb-5" : ""}`}>
+          <div className={`flex min-w-0 items-center gap-2.5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${sidebarCollapsed ? "translate-x-0" : "translate-x-0"}`}>
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white p-1.5 shadow-[0_6px_16px_rgba(0,0,0,.25)] ring-1 ring-white/15">
               <BrandLogo variant="compact" priority className="h-7 w-7" />
             </span>
             {!sidebarCollapsed && (
-              <div className="min-w-0 leading-tight">
+              <div className="min-w-0 animate-in fade-in slide-in-from-left-1 duration-200 leading-tight motion-reduce:animate-none">
                 <span className="block truncate text-[15px] font-semibold tracking-tight text-white" style={{ fontFamily: "'Poppins'" }}>
                   Smart Manager
                 </span>
@@ -48120,7 +48128,7 @@ function SmartManager() {
         </div>
 
         {/* Navigation groups */}
-        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Operational workspaces">
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4 transition-[padding] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none" aria-label="Operational workspaces">
           <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
           {displayedNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
@@ -48147,7 +48155,7 @@ function SmartManager() {
         </nav>
 
         {/* Footer */}
-        <div className="dashboard-sidebar-footer relative border-t border-[#1f3d5a] bg-[#0a1d34] px-3 py-3">
+        <div className="dashboard-sidebar-footer relative border-t border-[#1f3d5a] bg-[#0a1d34] px-3 py-3 transition-[padding] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none">
           <button
             type="button"
             onClick={() => go("settings")}
