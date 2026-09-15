@@ -47457,6 +47457,53 @@ function SmartManager() {
       Sun:{open:"",close:"",closed:true},
     },
   };});
+  const [workspaceBranches, setWorkspaceBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [activeBranchId, setActiveBranchId] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    const companyId = session?.company?.id;
+    if (!IS_CONFIGURED || !session?.accessToken || session?.demo || !companyId) {
+      setWorkspaceBranches([]);
+      setActiveBranchId("");
+      return undefined;
+    }
+    setBranchesLoading(true);
+    (async () => {
+      try {
+        const rows = await sb("branches").select("*").eq("company_id", companyId).order("name", { ascending: true }).run();
+        if (cancelled) return;
+        const usable = (Array.isArray(rows) ? rows : []).filter((branch) => String(branch?.status || "Active").toLowerCase() !== "inactive");
+        setWorkspaceBranches(usable);
+        let remembered = "";
+        try { remembered = window.localStorage.getItem(`smart-manager:active-branch:${companyId}`) || ""; } catch {}
+        const preferredId = remembered || company?.activeBranchId || company?.active_branch_id || "";
+        const preferred = usable.find((branch) => String(branch.id) === String(preferredId)) || usable.find((branch) => branch.isHeadquarters || branch.is_headquarters) || usable[0];
+        if (preferred) {
+          setActiveBranchId(String(preferred.id));
+          setCompany((current) => ({ ...current, activeBranchId: preferred.id, activeBranchName: preferred.name, activeBranch: preferred }));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setWorkspaceBranches([]);
+          authDebug("Workspace branch list unavailable", { message: error?.message || "unknown" });
+        }
+      } finally {
+        if (!cancelled) setBranchesLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [session?.accessToken, session?.demo, session?.company?.id]);
+  const switchWorkspaceBranch = useCallback((branch) => {
+    if (!branch?.id) return;
+    const nextId = String(branch.id);
+    setActiveBranchId(nextId);
+    setCompany((current) => ({ ...current, activeBranchId: branch.id, activeBranchName: branch.name, activeBranch: branch }));
+    try { window.localStorage.setItem(`smart-manager:active-branch:${company?.id || session?.company?.id}`, nextId); } catch {}
+    window.dispatchEvent(new CustomEvent("smart-manager:active-branch-changed", { detail: { branchId: branch.id, branchName: branch.name, companyId: company?.id || session?.company?.id } }));
+    setWorkspaceMenuOpen(false);
+    notify(`Active branch changed to ${branch.name}.`);
+  }, [company?.id, session?.company?.id]);
 
   // Role-based access state initialized at the top of SmartManager to prevent temporal dead zones.
   const roleChangeApprovalsQuery = trpc.listRoleChangeApprovals.useQuery(undefined, {
@@ -48153,6 +48200,22 @@ function SmartManager() {
                     <div><dt className="text-slate-400">Plan</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{subscriptionAccess.access.plan?.name || subscriptionAccess.access.plan?.display_name || subscriptionAccess.access.plan?.code || "Not confirmed"}</dd></div>
                     {(company?.activeBranchName || company?.branchName || company?.activeBranch?.name) && <div><dt className="text-slate-400">Active branch</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company.activeBranchName || company.branchName || company.activeBranch.name}</dd></div>}
                   </dl>
+                  <div className="border-t border-slate-100 pt-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Switch branch</p>
+                      {branchesLoading && <LoaderCircle size={13} className="animate-spin text-cyan-600" aria-label="Loading branches" />}
+                    </div>
+                    {!branchesLoading && workspaceBranches.length === 0 && <p className="mt-2 text-[11px] leading-4 text-slate-500">No active branches are available for this workspace.</p>}
+                    {workspaceBranches.length > 0 && <div className="mt-2 space-y-1" role="group" aria-label="Available branches">
+                      {workspaceBranches.map((branch) => {
+                        const selected = String(branch.id) === String(activeBranchId);
+                        return <button key={branch.id} type="button" role="menuitemradio" aria-checked={selected} onClick={() => switchWorkspaceBranch(branch)} className={`flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left text-[11px] transition ${selected ? "bg-cyan-50 text-cyan-800" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
+                          <span className="min-w-0 truncate font-semibold">{branch.name || "Unnamed branch"}</span>
+                          {selected && <Check size={14} className="shrink-0 text-cyan-700" aria-label="Active branch" />}
+                        </button>;
+                      })}
+                    </div>}
+                  </div>
                   {(company?.phone || company?.email) && <div className="border-t border-slate-100 pt-2 text-[10.5px] text-slate-500">{company?.phone && <p className="truncate">{company.phone}</p>}{company?.email && <p className="truncate">{company.email}</p>}</div>}
                 </section>
               )}
