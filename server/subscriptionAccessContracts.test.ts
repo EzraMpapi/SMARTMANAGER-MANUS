@@ -64,14 +64,18 @@ describe("platform subscription access contracts", () => {
     expect(adapter).not.toContain("sessionStorage");
     expect(dashboard).toContain("!subscriptionAccess.access.allowed");
     expect(dashboard).toContain("This module is not included in the company’s server-confirmed subscription plan.");
+    expect(dashboard).toContain("Your account is active, but the company subscription is blocked.");
+    expect(dashboard).toContain("User account");
+    expect(dashboard).toContain("Company subscription");
+    expect(dashboard).toContain("Subscription decision");
   });
 
   it("lets only the recognized Platform Administrator reach the protected control center without a company-plan gate", () => {
     expect(dashboard).toContain('id: "Platform Administrator", category: "System"');
     expect(dashboard).toContain('allowedModules: ["dashboard", "global-admin", "profile", "support", "notifications", "settings"]');
     expect(dashboard).toContain('const isPlatformAdministrator = currentRole.id === "Platform Administrator"');
-    expect(dashboard).toContain('isPlatformAdministrator || subscriptionAllowsModule(subscriptionAccess.access, m.id)');
-    expect(dashboard).toContain('!isPlatformAdministrator && isOperationalModule');
+    expect(dashboard).toContain('!isPlatformAdministrator && isOperationalModule && id !== "dashboard"');
+    expect(dashboard).toContain('!subscriptionAllowsModule(subscriptionAccess.access, id)');
     expect(dashboard).toContain('!canUseSubscriptionEscape && !isPlatformAdministrator');
   });
 });
