@@ -44,6 +44,11 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('overscroll-contain overflow-y-auto');
     expect(dashboard).toContain('subscriptionStateLabel(subscriptionAccess.access)');
     expect(dashboard).toContain('Active branch');
+    expect(dashboard).toContain('Switch branch');
+    expect(dashboard).toContain('smart-manager:active-branch:');
+    expect(dashboard).toContain('smart-manager:active-branch-changed');
+    expect(dashboard).toContain('role="menuitemradio"');
+    expect(dashboard).toContain('switchWorkspaceBranch');
     expect(dashboard).toContain('dashboard-topbar-context');
     expect(dashboard).toContain('function LiveDateTime()');
     expect(dashboard).toContain('NotificationCenter');
