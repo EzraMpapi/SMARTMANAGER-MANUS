@@ -68,6 +68,8 @@ describe("platform subscription access contracts", () => {
     expect(dashboard).toContain("User account");
     expect(dashboard).toContain("Company subscription");
     expect(dashboard).toContain("Subscription decision");
+    expect(dashboard).toContain("Renew or update subscription");
+    expect(dashboard).toContain("Only a billing administrator can renew or update the company subscription.");
   });
 
   it("lets only the recognized Platform Administrator reach the protected control center without a company-plan gate", () => {
