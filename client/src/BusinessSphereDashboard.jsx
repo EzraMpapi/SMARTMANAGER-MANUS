@@ -47334,6 +47334,18 @@ function SmartManager() {
   });
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
   useEffect(() => {
+    const toggleSidebarWithShortcut = (event) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "b" || event.altKey) return;
+      const target = event.target;
+      const tagName = target?.tagName?.toLowerCase();
+      if (target?.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select") return;
+      event.preventDefault();
+      updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact");
+    };
+    window.addEventListener("keydown", toggleSidebarWithShortcut);
+    return () => window.removeEventListener("keydown", toggleSidebarWithShortcut);
+  }, [sidebarCollapsed, updatePreference]);
+  useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
     const syncNavigationViewport = () => {
       setIsDesktopNavigation(media.matches);
@@ -48102,7 +48114,7 @@ function SmartManager() {
           <button type="button" className={`group relative z-10 hidden shrink-0 place-items-center border border-white/10 bg-white/[.06] text-slate-400 shadow-[0_4px_12px_rgba(0,0,0,.12)] transition-all duration-150 hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-200 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 lg:inline-grid ${sidebarCollapsed ? "absolute bottom-2 right-2 h-7 w-7 rounded-lg bg-[#123457]" : "h-9 w-9 rounded-xl"}`} onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} aria-describedby="sidebar-collapse-tooltip">
             {sidebarCollapsed ? <PanelLeftOpen size={17} strokeWidth={2.1} aria-hidden="true" /> : <PanelLeftClose size={17} strokeWidth={2.1} aria-hidden="true" />}
             <span id="sidebar-collapse-tooltip" role="tooltip" className={`pointer-events-none absolute z-50 whitespace-nowrap rounded-lg border border-slate-700/80 bg-slate-950 px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-xl transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 ${sidebarCollapsed ? "right-full bottom-0 mr-2 translate-y-1" : "top-full right-0 mt-2 translate-y-1"}`}>
-              {sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+              {sidebarCollapsed ? "Expand navigation" : "Collapse navigation"} · Ctrl+B
             </span>
           </button>
         </div>
