@@ -47711,9 +47711,16 @@ function SmartManager() {
       return;
     }
     const isOperationalModule = MODULES.some((module) => module.id === id);
-    const subscriptionSafeDestination = new Set(["profile", "support", "notifications", "settings"]);
+    const subscriptionSafeDestination = new Set(["profile", "support", "notifications", "settings", "billing"]);
     if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && subscriptionFilteringReady && !isPlatformAdministrator && isOperationalModule && id !== "dashboard" && !subscriptionSafeDestination.has(id) && !subscriptionAllowsModule(subscriptionAccess.access, id)) {
-      notify("This module is not included in the company’s server-confirmed subscription plan.", "error");
+      if (canManageBilling) {
+        notify("Activate or renew a company plan in Subscription & Billing to unlock this module.", "error");
+        setActive("billing");
+        persistResumeLocation("billing");
+        setSidebarOpen(false);
+        return;
+      }
+      notify("This module is not included in the company’s server-confirmed subscription plan. Contact your billing administrator.", "error");
       return;
     }
     setActive(id);

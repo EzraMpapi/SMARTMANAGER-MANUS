@@ -63,7 +63,9 @@ describe("platform subscription access contracts", () => {
     expect(adapter).not.toContain("localStorage");
     expect(adapter).not.toContain("sessionStorage");
     expect(dashboard).toContain("!subscriptionAccess.access.allowed");
-    expect(dashboard).toContain("This module is not included in the company’s server-confirmed subscription plan.");
+    expect(dashboard).toContain("Activate or renew a company plan in Subscription & Billing to unlock this module.");
+    expect(dashboard).toContain("This module is not included in the company’s server-confirmed subscription plan. Contact your billing administrator.");
+    expect(dashboard).toContain('setActive("billing")');
   });
 
   it("lets only the recognized Platform Administrator reach the protected control center without a company-plan gate", () => {
