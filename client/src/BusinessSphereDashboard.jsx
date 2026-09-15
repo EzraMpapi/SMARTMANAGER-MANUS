@@ -48099,8 +48099,8 @@ function SmartManager() {
           <button className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={17} />
           </button>
-          <button type="button" className="relative z-10 hidden shrink-0 rounded-md p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
-            {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
+          <button type="button" className="relative z-10 hidden h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[.06] text-slate-400 shadow-[0_4px_12px_rgba(0,0,0,.12)] transition-all duration-150 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-200 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 lg:inline-grid" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
+            {sidebarCollapsed ? <PanelLeftOpen size={17} strokeWidth={2.1} aria-hidden="true" /> : <PanelLeftClose size={17} strokeWidth={2.1} aria-hidden="true" />}
           </button>
         </div>
 
@@ -48175,12 +48175,15 @@ function SmartManager() {
                 aria-expanded={workspaceMenuOpen}
                 aria-haspopup="menu"
                 aria-label={`Open workspace details for ${company?.name || "BusinessSphere"}`}
-                className="group flex min-w-0 items-center gap-1.5 rounded-lg border-0 bg-transparent px-1.5 py-1.5 text-left text-[12px] text-slate-500 shadow-none transition hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:gap-2 sm:text-[13px]"
+                title={`${workspaceMenuOpen ? "Close" : "Open"} workspace switcher`}
+                className={`group flex min-w-0 items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-[12px] shadow-[0_4px_14px_rgba(15,23,42,.06)] transition-all duration-150 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:gap-2.5 sm:px-2.5 sm:text-[13px] ${workspaceMenuOpen ? "border-cyan-200 bg-cyan-50/80 text-cyan-900" : "border-slate-200/80 bg-white text-slate-600 hover:border-cyan-200 hover:bg-cyan-50/60 hover:text-cyan-900"}`}
               >
-                <Building2 size={14} className="shrink-0 text-slate-500 group-hover:text-cyan-700" aria-hidden="true" />
-                <span className="hidden max-w-[260px] truncate font-semibold text-slate-800 sm:inline">{company?.name || "BusinessSphere"}</span>
-                <ChevronDown size={13} className={`shrink-0 text-slate-400 transition-transform ${workspaceMenuOpen ? "rotate-180 text-cyan-700" : ""}`} aria-hidden="true" />
-                <span className="hidden whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-flex">{currentUser?.role || "Administrator"}</span>
+                <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-colors sm:h-8 sm:w-8 ${workspaceMenuOpen ? "bg-cyan-600 text-white shadow-sm" : "bg-slate-100 text-slate-500 group-hover:bg-cyan-100 group-hover:text-cyan-700"}`}>
+                  <Building2 size={15} strokeWidth={2.1} aria-hidden="true" />
+                </span>
+                <span className="hidden max-w-[260px] truncate font-semibold tracking-[-.01em] text-slate-800 sm:inline">{company?.name || "BusinessSphere"}</span>
+                <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform duration-200 ${workspaceMenuOpen ? "rotate-180 text-cyan-700" : "group-hover:text-cyan-700"}`} aria-hidden="true" />
+                <span className="hidden max-w-[150px] truncate whitespace-nowrap rounded-full bg-slate-100 px-2 py-1 text-[9px] font-bold uppercase tracking-[.08em] text-slate-500 sm:inline-flex">{currentUser?.role || "Administrator"}</span>
               </button>
               {workspaceMenuOpen && (
                 <section role="menu" aria-label="Workspace details" className="absolute left-0 top-full z-50 mt-2 max-h-[min(70dvh,520px)] w-[min(92vw,340px)] max-w-[calc(100vw-1rem)] touch-pan-y overscroll-contain overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,.18)]">
