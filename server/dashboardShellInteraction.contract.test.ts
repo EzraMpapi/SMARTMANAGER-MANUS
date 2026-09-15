@@ -31,6 +31,11 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('dashboard-sidebar-footer');
     expect(dashboard).toContain('dashboard-shell-header');
     expect(dashboard).toContain('aria-label="Workspace command bar"');
+    expect(dashboard).toContain('will-change-[width,transform]');
+    expect(dashboard).toContain('duration-[220ms]');
+    expect(dashboard).toContain('motion-reduce:transition-none');
+    expect(dashboard).toContain('smart_manager_dashboard_prefs');
+    expect(dashboard).toContain('localStorage.setItem("smart-manager:sidebar-collapsed"');
   });
 
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
