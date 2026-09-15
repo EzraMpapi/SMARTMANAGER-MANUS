@@ -68,12 +68,11 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("type=\"button\"");
   });
 
-  it("keeps the Inventory value metric bound to its icon import", () => {
+  it("keeps the legacy inventory value export grounded in confirmed inventory rows", () => {
     expect(dashboard).toContain("Inventory Value");
-    expect(dashboard).toContain("icon: WalletCards");
-    expect(dashboard).toMatch(/import\s*\{[\s\S]*\bWalletCards\b[\s\S]*\}\s*from\s*"lucide-react";/);
-    expect(dashboard).toContain("SMART MANAGER");
-    expect(dashboard).toContain("ERP SYSTEM");
+    expect(dashboard).toContain("stockValue");
+    expect(dashboard).toContain("inventory?.rows");
+    expect(dashboard).toContain("company?.name");
   });
 
   it("keeps mobile navigation and floating actions touch-safe", () => {
