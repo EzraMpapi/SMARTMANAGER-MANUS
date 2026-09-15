@@ -48080,7 +48080,7 @@ function SmartManager() {
         style={{ boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
       >
         {/* Brand row */}
-        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 ${sidebarCollapsed ? "justify-center px-2" : ""}`}>
+        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 ${sidebarCollapsed ? "min-h-[84px] justify-center px-2 pb-5" : ""}`}>
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white p-1.5 shadow-[0_6px_16px_rgba(0,0,0,.25)] ring-1 ring-white/15">
               <BrandLogo variant="compact" priority className="h-7 w-7" />
@@ -48099,7 +48099,7 @@ function SmartManager() {
           <button className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={17} />
           </button>
-          <button type="button" className="relative z-10 hidden h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[.06] text-slate-400 shadow-[0_4px_12px_rgba(0,0,0,.12)] transition-all duration-150 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-200 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 lg:inline-grid" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
+          <button type="button" className={`relative z-10 hidden shrink-0 place-items-center border border-white/10 bg-white/[.06] text-slate-400 shadow-[0_4px_12px_rgba(0,0,0,.12)] transition-all duration-150 hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-200 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 lg:inline-grid ${sidebarCollapsed ? "absolute bottom-2 right-2 h-7 w-7 rounded-lg bg-[#123457]" : "h-9 w-9 rounded-xl"}`} onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
             {sidebarCollapsed ? <PanelLeftOpen size={17} strokeWidth={2.1} aria-hidden="true" /> : <PanelLeftClose size={17} strokeWidth={2.1} aria-hidden="true" />}
           </button>
         </div>
