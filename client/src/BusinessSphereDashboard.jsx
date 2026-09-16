@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, useContext, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase,
@@ -48,7 +48,7 @@ import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneVali
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
-import { useAuthContext } from "./contexts/AuthContext";
+import { AuthContext, useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
 import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
@@ -43173,13 +43173,16 @@ function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentCo
 // comment on companies.join_code for why that is a deliberate privacy
 // boundary, not an oversight.
 export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
+  const centralizedAuth = useContext(AuthContext) || { session: null, user: null };
+  const hasConfirmedSession = Boolean(centralizedAuth.session?.access_token && centralizedAuth.user?.id);
   const onboardingModuleIds = useMemo(() => ONBOARDING_MODULES.map((module) => module.id), []);
   const onboardingProgress = useMemo(() => readOnboardingProgress(onboardingModuleIds), [onboardingModuleIds]);
   const [restoredOnboardingProgress, setRestoredOnboardingProgress] = useState(() => Boolean(onboardingProgress && hasOnboardingProgress(onboardingProgress, onboardingModuleIds)));
   const persistedCountry = SIGNUP_COUNTRIES.includes(onboardingProgress?.company?.country) ? onboardingProgress.company.country : SIGNUP_COUNTRIES[0];
   const [mode, setMode] = useState(() => onboardingProgress?.mode || "create"); // "create" | "join"
-  // A password is deliberately never stored; all recovered sessions restart at step 1.
-  const [step, setStep] = useState(1);
+  // A password is deliberately never stored. A confirmed session can resume
+  // directly at workspace setup without asking the user to re-enter it.
+  const [step, setStep] = useState(() => hasConfirmedSession && (onboardingProgress?.mode || "create") === "create" ? 2 : 1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [completedWorkspace, setCompletedWorkspace] = useState(null);
@@ -43189,7 +43192,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [isolatedPreferencesOpen, setIsolatedPreferencesOpen] = useState(false);
   const [isolatedComplianceAuditOpen, setIsolatedComplianceAuditOpen] = useState(false);
 
-  const [account, setAccount] = useState(() => ({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", ...(onboardingProgress?.account || {}) }));
+  const [account, setAccount] = useState(() => ({ fullName: centralizedAuth.user?.user_metadata?.full_name || "", email: centralizedAuth.user?.email || "", phone: "", password: "", confirmPassword: "", ...(onboardingProgress?.account || {}) }));
   const [company, setCompany] = useState({
     name: "", category: "general", country: persistedCountry, currency: SIGNUP_CURRENCIES[0],
     timezone: companyDefaultsForCountry(persistedCountry).timezone, website: "", taxId: "", brandColor: "#0B5D3B", brandAccentColor: "#16A34A",
@@ -43265,7 +43268,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const step1Valid = !step1ValidationError;
   const isPortalRole = joinRole === "External Client" || joinRole === "Supplier";
   const joinAccountValid = account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword;
-  const step2Valid = mode === "create" ? company.name.trim().length > 1 : joinAccountValid && joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
+  const step2Valid = mode === "create" ? company.name.trim().length > 1 : (hasConfirmedSession || joinAccountValid) && joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
 
   function continueToCompanySetup(event) {
     event.preventDefault();
@@ -43335,8 +43338,16 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     let accountCreated = false;
     try {
       authDebug("Workspace signup started", { mode });
-      const signUpResult = await directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password });
+      const signUpResult = hasConfirmedSession
+        ? { access_token: centralizedAuth.session.access_token, refresh_token: centralizedAuth.session.refresh_token, user: centralizedAuth.user, requires_email_confirmation: false }
+        : await directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password });
       accountCreated = true;
+      if (signUpResult.requires_email_confirmation || !signUpResult.access_token) {
+        // Keep the non-secret onboarding draft so the confirmed user can resume
+        // workspace creation after returning from the email link.
+        setCompletedWorkspace({ pendingEmailVerification: true, email: signUpResult.user?.email || account.email.trim() });
+        return;
+      }
       const accessToken = signUpResult.access_token;
       persistAuthSession(signUpResult);
 
@@ -43420,6 +43431,10 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
   if (completedWorkspace?.isolatedSession?.authenticated) {
     return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><section className="w-full max-w-2xl rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]" aria-labelledby="isolated-workspace-title"><CheckCircle2 size={30} className="mx-auto text-emerald-700" aria-hidden="true" /><p className="mt-5 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 id="isolated-workspace-title" className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950">Congratulations — you’re ready.</h1><p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">Isolated authenticated workspace session is active. No authentication request or tenant record was sent to the configured Supabase project.</p><div className="mt-4 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setIsolatedPreferencesOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview dashboard preferences</button><button type="button" onClick={() => setIsolatedComplianceAuditOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview compliance audit workspace</button></div>{isolatedPreferencesOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard preferences" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading dashboard preferences…</div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setIsolatedPreferencesOpen(false)} /></Suspense>}{isolatedComplianceAuditOpen && <Suspense fallback={<div role="status" aria-label="Loading compliance audit workspace" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading compliance audit workspace…</div>}><LazyComplianceAuditLogView companyId="e2e-isolated-tenant" /></Suspense>}</section></div>;
+  }
+
+  if (completedWorkspace?.pendingEmailVerification) {
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Mail size={28}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Confirm your email</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Check your inbox to continue.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">We created the account for <strong>{completedWorkspace.email}</strong>. Confirm the email, then return here and sign in to finish setting up your workspace. Your setup details remain saved on this device; your password is never stored.</p><button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
   }
 
   if (completedWorkspace) {
