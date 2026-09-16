@@ -119,7 +119,7 @@ function ProtectedSurface({ children }: { children: ReactNode }) {
 
   if (auth.loading) return <DashboardRouteFallback />;
   if (requestedSignup) {
-    return <Suspense fallback={<DashboardRouteFallback />}><SignupPage onAuthenticated={() => { window.location.assign("/app"); }} onSwitchToLogin={() => { const url = new URL(window.location.href); url.searchParams.delete("auth"); window.history.replaceState(null, "", `${url.pathname}${url.search}`); }} /></Suspense>;
+    return <Suspense fallback={<DashboardRouteFallback />}><SignupPage onAuthenticated={() => { window.location.assign("/app"); }} onSwitchToLogin={() => { window.location.assign("/app?auth=login"); }} /></Suspense>;
   }
   if (auth.status === "AUTH_ERROR") return <AuthenticationUnavailable onRetry={auth.session ? auth.refresh : undefined} />;
   if (auth.reason === "EMAIL_UNCONFIRMED") return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
