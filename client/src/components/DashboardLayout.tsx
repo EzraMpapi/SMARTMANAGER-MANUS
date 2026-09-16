@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -173,6 +174,7 @@ function DashboardLayoutContent({
                   </span>
                 </div>
               ) : null}
+              <div className="ml-auto"><NotificationCenter /></div>
             </div>
           </SidebarHeader>
 
