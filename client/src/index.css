@@ -874,6 +874,16 @@
   min-width: 0;
 }
 
+.dashboard-topbar-clock {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-topbar-clock {
+    display: flex !important;
+  }
+}
+
 .dashboard-topbar > :first-child,
 .dashboard-topbar > :last-child {
   min-width: 0;

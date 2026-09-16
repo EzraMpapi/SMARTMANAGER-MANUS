@@ -48831,7 +48831,7 @@ function LiveDateTime() {
   const date = new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", year: "numeric" }).format(now);
   const time = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(now);
   return (
-    <div className="hidden min-w-0 max-w-[190px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 lg:flex" aria-label={`Current day ${day}, date ${date}, time ${time}`}>
+    <div className="dashboard-topbar-clock hidden min-w-0 max-w-[190px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 lg:flex" aria-label={`Current day ${day}, date ${date}, time ${time}`}>
       <CalendarDays size={13} className="hidden shrink-0 text-cyan-700 sm:block" aria-hidden="true" />
       <span className="leading-tight">
         <span className="block truncate text-[8px] font-semibold uppercase tracking-wide text-cyan-700 sm:text-[9px]">{day}</span>
