@@ -11,7 +11,7 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-function hasEnterprisePassword(value: string) {
+export function hasEnterprisePassword(value: string) {
   return value.length >= 8 && /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
 }
 
@@ -36,42 +36,17 @@ function responseText(payload: Record<string, unknown>) {
     .join(" ");
 }
 
-function indicatesExistingAccount(payload: Record<string, unknown>) {
-  return /already\s+(?:exists|registered)|user.*(?:exists|registered)|email.*(?:exists|registered)/i.test(responseText(payload));
-}
-
-async function createPasswordSession(email: string, password: string) {
-  let sessionResponse: Response;
-  try {
-    sessionResponse = await fetch(`${ENV.supabaseUrl}/auth/v1/token?grant_type=password`, {
-      method: "POST",
-      headers: { apikey: ENV.supabaseAnonKey, "content-type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-  } catch {
-    throw new TRPCError({ code: "BAD_GATEWAY", message: "Sign-in could not start. Please try again." });
-  }
-  const session = await readJson(sessionResponse);
-  if (!sessionResponse.ok || typeof session.access_token !== "string" || typeof session.refresh_token !== "string") {
-    throw new TRPCError({ code: "CONFLICT", message: "This email already has an account. Sign in with its existing password or use password recovery." });
-  }
-  const user = session.user as { id?: unknown; email?: unknown } | undefined;
-  if (typeof user?.id !== "string" || typeof user?.email !== "string") {
-    throw new TRPCError({ code: "BAD_GATEWAY", message: "Sign-in returned an incomplete account response. Please sign in manually." });
-  }
-  return { access_token: session.access_token, refresh_token: session.refresh_token, user };
-}
-
 export function resetPasswordAccountProvisioningRateLimit() {
   registrationWindows.clear();
 }
 
 /**
- * Creates a confirmed password account through the server-only Supabase admin
- * boundary, then obtains a normal user session for tenant-scoped onboarding.
- * No transactional-email provider is involved in this flow.
+ * Starts Supabase's normal email-confirmed signup flow. This endpoint uses only
+ * the publishable key and deliberately never calls a privileged admin endpoint
+ * or marks the address as verified. Workspace creation happens later, after the user
+ * confirms the email and returns with a valid authenticated session.
  */
-export async function provisionConfirmedPasswordAccount(input: PasswordAccountInput, requesterId: string) {
+export async function provisionPasswordAccount(input: PasswordAccountInput, requesterId: string) {
   const email = normalizeEmail(input.email);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Enter a valid work email address." });
@@ -79,52 +54,48 @@ export async function provisionConfirmedPasswordAccount(input: PasswordAccountIn
   if (!hasEnterprisePassword(input.password)) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Use a password with at least 8 characters, uppercase, lowercase, number, and special character." });
   }
-  if (!ENV.supabaseUrl || !ENV.supabaseAnonKey || !ENV.supabaseSecretKey) {
+  if (!ENV.supabaseUrl || !ENV.supabaseAnonKey) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Account creation is not configured. Please contact an administrator." });
   }
 
   enforceRegistrationRateLimit(requesterId || "unknown");
 
-  let createResponse: Response;
+  let response: Response;
   try {
-    createResponse = await fetch(`${ENV.supabaseUrl}/auth/v1/admin/users`, {
+    response = await fetch(`${ENV.supabaseUrl}/auth/v1/signup`, {
       method: "POST",
-      headers: {
-        apikey: ENV.supabaseSecretKey,
-        authorization: `Bearer ${ENV.supabaseSecretKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ email, password: input.password, email_confirm: true }),
+      headers: { apikey: ENV.supabaseAnonKey, "content-type": "application/json" },
+      body: JSON.stringify({ email, password: input.password }),
     });
   } catch {
     throw new TRPCError({ code: "BAD_GATEWAY", message: "The account service could not be reached. Please try again." });
   }
-  const created = await readJson(createResponse);
-  if (!createResponse.ok) {
-    if ((createResponse.status === 400 || createResponse.status === 422) && indicatesExistingAccount(created)) {
-      const session = await createPasswordSession(email, input.password);
-      return {
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        user: { id: session.user.id, email: session.user.email },
-      };
+
+  const payload = await readJson(response);
+  if (!response.ok) {
+    const detail = responseText(payload);
+    if (response.status === 400 || response.status === 422) {
+      throw new TRPCError({ code: "CONFLICT", message: detail || "This account could not be created. Sign in instead or use password recovery if you already have an account." });
     }
-    if (createResponse.status === 400 || createResponse.status === 422) {
-      throw new TRPCError({ code: "CONFLICT", message: "This account could not be created. Sign in instead or use password recovery if you already have an account." });
-    }
-    if (createResponse.status === 401 || createResponse.status === 403) {
+    if (response.status === 401 || response.status === 403) {
       throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Account creation is temporarily unavailable. Please contact an administrator." });
     }
     throw new TRPCError({ code: "BAD_GATEWAY", message: "The account service could not create this account. Please try again." });
   }
 
-  const session = await createPasswordSession(email, input.password);
-  const user = session.user;
-  const createdUser = created as { id?: unknown; email?: unknown };
+  const user = payload.user as { id?: unknown; email?: unknown } | undefined;
+  if (typeof user?.id !== "string") {
+    throw new TRPCError({ code: "BAD_GATEWAY", message: "Account creation returned an incomplete response. Please try again." });
+  }
 
+  const hasSession = typeof payload.access_token === "string" && typeof payload.refresh_token === "string";
   return {
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
-    user: { id: user.id || createdUser.id, email: user.email || createdUser.email || email },
+    access_token: hasSession ? payload.access_token : null,
+    refresh_token: hasSession ? payload.refresh_token : null,
+    user: { id: user.id, email: typeof user.email === "string" ? user.email : email },
+    requires_email_confirmation: !hasSession,
   };
 }
+
+// Compatibility export for callers that have not yet renamed their import.
+export const provisionConfirmedPasswordAccount = provisionPasswordAccount;

@@ -44,7 +44,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(appSource).toContain("function isPublicAuthScreen()");
     expect(appSource).toContain('["login", "forgot", "reset", "verify"].includes(requestedAuthScreen())');
     expect(appSource).toContain("isPublicAuthScreen() && !auth.isAuthenticated");
-    expect(appSource).toContain("if (requestedSignup && !auth.isAuthenticated)");
+    expect(appSource).toContain("if (requestedSignup)");
     expect(appSource).toContain("<PublicAuthGateway />");
   });
 
@@ -148,18 +148,19 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).not.toContain('setError("Something went wrong — check your connection.")');
   });
 
-  it("keeps recovery and reset inside the configured Supabase auth boundary while password signup uses the server-side confirmed-account procedure", () => {
+  it("keeps recovery, reset, and signup inside the configured Supabase auth boundary", () => {
     expect(dashboardSource).toContain("trpc.accountRegistration.createConfirmedPasswordAccount.useMutation()");
     expect(dashboardSource).toContain("directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password })");
-    expect(dashboardSource).not.toContain('`${SUPABASE_URL}/auth/v1/signup`');
-    expect(dashboardSource).not.toContain("onVerificationRequired?.(account.email.trim())");
+    expect(dashboardSource).toContain("pendingEmailVerification: true");
+    expect(dashboardSource).toContain("hasConfirmedSession");
     expect(dashboardSource).toContain('async function authRequestPasswordRecovery(email)');
     expect(dashboardSource).toContain('`${SUPABASE_URL}/auth/v1/recover`');
     expect(dashboardSource).toContain('async function authUpdatePassword(accessToken, password)');
     expect(dashboardSource).toContain('authScreenFromSearch(window.location.search) === "reset"');
     expect(dashboardSource).toContain("clearStoredAuthSession();");
-    expect(passwordAccountProvisioningSource).toContain("/auth/v1/admin/users");
-    expect(passwordAccountProvisioningSource).toContain("email_confirm: true");
+    expect(passwordAccountProvisioningSource).toContain("/auth/v1/signup");
+    expect(passwordAccountProvisioningSource).not.toContain("/auth/v1/admin/users");
+    expect(passwordAccountProvisioningSource).not.toContain("email_confirm: true");
     expect(passwordAccountProvisioningSource).toContain("REGISTRATION_MAX_ATTEMPTS = 5");
     expect(passwordAccountProvisioningSource).not.toContain("resend");
   });

@@ -26,7 +26,7 @@ import { activateDashboardTeamPreset, createDashboardTeamPreset, dashboardTeamPr
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
-import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
+import { provisionPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
 import { listWebsiteFeedback, publicFeedbackInput, replyToWebsiteFeedback, websiteFeedbackReplyInput, submitPublicFeedback } from "./feedbackOperations";
 import { traFiscalRouter } from "./traFiscalRouter";
@@ -519,7 +519,7 @@ export const appRouter = router({
   accountRegistration: router({
     createConfirmedPasswordAccount: publicProcedure
       .input(z.object({ email: z.string().email().max(320), password: z.string().min(1).max(256) }))
-      .mutation(async ({ ctx, input }) => provisionConfirmedPasswordAccount(input, ctx.req.ip || ctx.req.socket.remoteAddress || "unknown")),
+      .mutation(async ({ ctx, input }) => provisionPasswordAccount(input, ctx.req.ip || ctx.req.socket.remoteAddress || "unknown")),
   }),
   passkeySecurity: router({
     notifyRegistered: protectedProcedure
