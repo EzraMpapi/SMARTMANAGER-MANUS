@@ -48,7 +48,7 @@ export function normalizeSubscriptionAccess(payload) {
 export function subscriptionAllowsModule(access, moduleId) {
   if (!access?.allowed) return false;
   if (moduleId === "dashboard") return true;
-  if (access.unlimitedAccess === true && access.trialActive === true) return true;
+  if (access.unlimitedAccess === true) return true;
   const requested = String(moduleId || "").trim().toLowerCase();
   const entitlement = MODULE_ALIASES[requested] || requested;
   return access.moduleEntitlements.includes(entitlement);
