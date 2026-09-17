@@ -6,6 +6,7 @@ const MAX_CACHE_ROWS = 1000;
 const KEY_DB_NAME = "smart-manager-offline-keys";
 const KEY_STORE_NAME = "keys";
 const KEY_ID = "device-aes-gcm-v1";
+export const OFFLINE_CONFLICT_STRATEGIES = Object.freeze(["server-wins", "client-wins", "manual"]);
 
 const memory = new Map();
 let keyPromise = null;
@@ -146,7 +147,11 @@ export function enqueueOfflineMutation({ scope, table, operation, payload, match
   const normalizedScope = offlineScope(scope);
   const entries = readOfflineQueue(normalizedScope);
   const now = new Date().toISOString();
-  const entry = { id: globalThis.crypto?.randomUUID?.() || `offline-${Date.now()}-${Math.random().toString(36).slice(2)}`, scope: normalizedScope, table, operation, payload: payload ?? null, matchCol, matchVal: matchVal ?? null, status: "pending", attempts: 0, createdAt: now, updatedAt: now, lastError: null };
+  const baseRows = readOfflineTableCache(normalizedScope, table);
+  const baseSnapshot = operation === "update" || operation === "delete"
+    ? baseRows.find((row) => String(row?.[matchCol]) === String(matchVal)) || null
+    : null;
+  const entry = { id: globalThis.crypto?.randomUUID?.() || `offline-${Date.now()}-${Math.random().toString(36).slice(2)}`, scope: normalizedScope, table, operation, payload: payload ?? null, matchCol, matchVal: matchVal ?? null, baseSnapshot, baseVersion: baseSnapshot?.updated_at || baseSnapshot?.updatedAt || null, conflictStrategy: "manual", status: "pending", attempts: 0, createdAt: now, updatedAt: now, lastError: null };
   writeOfflineQueue(normalizedScope, [...entries, entry]);
   return entry;
 }
@@ -204,7 +209,22 @@ export function clearOfflineScope(scope) {
 
 export function offlineQueueSummary(scope) {
   const entries = readOfflineQueue(scope);
-  return { entries, pending: entries.filter((entry) => entry.status === "pending").length, syncing: entries.filter((entry) => entry.status === "syncing").length, failed: entries.filter((entry) => entry.status === "failed").length };
+  return { entries, pending: entries.filter((entry) => entry.status === "pending").length, syncing: entries.filter((entry) => entry.status === "syncing").length, failed: entries.filter((entry) => entry.status === "failed").length, conflicts: entries.filter((entry) => entry.status === "conflict").length };
+}
+
+export function resolveOfflineConflict(scope, id, strategy, serverRow = null) {
+  if (!OFFLINE_CONFLICT_STRATEGIES.includes(strategy)) throw new Error(`Unsupported offline conflict strategy: ${strategy}`);
+  const entry = readOfflineQueue(scope).find((candidate) => candidate.id === id);
+  if (!entry) return null;
+  if (strategy === "server-wins") {
+    removeOfflineMutation(scope, id);
+    if (serverRow && entry.operation !== "insert") {
+      const rows = readOfflineTableCache(scope, entry.table);
+      writeOfflineTableCache(scope, entry.table, rows.map((row) => String(row?.[entry.matchCol]) === String(entry.matchVal) ? serverRow : row));
+    }
+    return { ...entry, status: "resolved", conflictStrategy: strategy, serverRow };
+  }
+  return updateOfflineMutation(scope, id, { status: "pending", conflictStrategy: strategy, conflict: null, serverRow: null });
 }
 
 export function offlineSyncEventName() { return EVENT_NAME; }
@@ -223,8 +243,9 @@ export async function replayOfflineMutations(scope, executor) {
       results.push({ entry, status: "synced", result });
     } catch (error) {
       const message = String(error?.message || "Offline mutation could not be synchronized.");
-      updateOfflineMutation(normalizedScope, entry.id, { status: "failed", lastError: message });
-      results.push({ entry, status: "failed", error: message });
+      const conflict = error?.code === "OFFLINE_CONFLICT";
+      updateOfflineMutation(normalizedScope, entry.id, { status: conflict ? "conflict" : "failed", lastError: message, conflict: conflict ? { serverRow: error.serverRow || null, detectedAt: new Date().toISOString() } : null });
+      results.push({ entry, status: conflict ? "conflict" : "failed", error: message, serverRow: error.serverRow || null });
       if (error?.status === 401 || error?.status === 403) break;
     }
   }

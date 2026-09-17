@@ -11,7 +11,7 @@ describe("offline-first synchronization contracts", () => {
     expect(source).toContain("OUTBOX_PREFIX");
     expect(source).toContain('status: "pending"');
     expect(source).toContain('status: "syncing"');
-    expect(source).toContain('status: "failed"');
+    expect(source).toContain('"failed"');
     expect(source).toContain("localStorage");
   });
 
@@ -19,7 +19,7 @@ describe("offline-first synchronization contracts", () => {
     expect(source).toContain("for (const entry of entries)");
     expect(source).toContain("await executor(entry)");
     expect(source).toContain("removeOfflineMutation(normalizedScope, entry.id)");
-    expect(source).toContain("updateOfflineMutation(normalizedScope, entry.id, { status: \"failed\"");
+    expect(source).toContain("status: conflict ? \"conflict\" : \"failed\"");
   });
 
   it("hydrates table snapshots offline and queues central table mutations", () => {

@@ -78,7 +78,7 @@ import { AndroidAppStatus } from "./components/AndroidAppStatus";
 import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
-import { applyOfflineMutationToCache, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
+import { applyOfflineMutationToCache, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, resolveOfflineConflict, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -1125,7 +1125,16 @@ export async function runCompanyTableQuery(table, { select = "*", order } = {}) 
   throw lastError || new Error(`Supabase could not load ${table}`);
 }
 
-async function executeCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
+function offlineRowsConflict(baseSnapshot, serverRow) {
+  if (!baseSnapshot || !serverRow) return false;
+  const baseVersion = baseSnapshot.updated_at || baseSnapshot.updatedAt || baseSnapshot.version;
+  const serverVersion = serverRow.updated_at || serverRow.updatedAt || serverRow.version;
+  if (baseVersion && serverVersion) return String(baseVersion) !== String(serverVersion);
+  const ignored = new Set(["__offlinePending", "__offlineId", "dbId"]);
+  return Object.keys(baseSnapshot).some((key) => !ignored.has(key) && key in serverRow && JSON.stringify(baseSnapshot[key]) !== JSON.stringify(serverRow[key]));
+}
+
+async function executeCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal, baseSnapshot = null, conflictStrategy = "manual" } = {}) {
   if (!["insert", "update", "delete"].includes(operation)) {
     return { data: null, error: new Error(`Unsupported company-table mutation: ${operation}`) };
   }
@@ -1148,8 +1157,26 @@ async function executeCompanyTableMutation(table, operation, payload, { matchCol
           res = Array.isArray(payload) ? await insertQuery.run() : await insertQuery.single().run();
         }
       } else if (operation === "update") {
+        if (baseSnapshot && conflictStrategy !== "client-wins") {
+          const current = await query.select("*").eq(matchCol, matchVal).single().run();
+          if (offlineRowsConflict(baseSnapshot, current)) {
+            const error = new Error("This record changed on the server while you were offline.");
+            error.code = "OFFLINE_CONFLICT";
+            error.serverRow = current;
+            throw error;
+          }
+        }
         res = await query.eq(matchCol, matchVal).update(payload).single().run();
       } else if (operation === "delete") {
+        if (baseSnapshot && conflictStrategy !== "client-wins") {
+          const current = await query.select("*").eq(matchCol, matchVal).single().run();
+          if (offlineRowsConflict(baseSnapshot, current)) {
+            const error = new Error("This record changed on the server while you were offline.");
+            error.code = "OFFLINE_CONFLICT";
+            error.serverRow = current;
+            throw error;
+          }
+        }
         res = await query.eq(matchCol, matchVal).delete().single().run();
       }
       return { data: res, error: null };
@@ -1171,7 +1198,7 @@ async function executeCompanyTableMutation(table, operation, payload, { matchCol
 export async function replayCompanyTableOutbox() {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return [];
   const scope = offlineMutationScope();
-  const results = await replayOfflineMutations(scope, (entry) => executeCompanyTableMutation(entry.table, entry.operation, entry.payload, { matchCol: entry.matchCol, matchVal: entry.matchVal }));
+  const results = await replayOfflineMutations(scope, (entry) => executeCompanyTableMutation(entry.table, entry.operation, entry.payload, { matchCol: entry.matchCol, matchVal: entry.matchVal, baseSnapshot: entry.baseSnapshot, conflictStrategy: entry.conflictStrategy }));
   if (results.length) emitCompanyMutation({ type: "offline-replay", scope, results });
   return results;
 }
@@ -47174,6 +47201,11 @@ function OfflineSyncBanner() {
     setSyncing(true);
     try { await replayCompanyTableOutbox(); } finally { refreshSummary(); setSyncing(false); }
   }, [online, syncing, refreshSummary]);
+  const resolveConflict = useCallback(async (entry, strategy) => {
+    resolveOfflineConflict(offlineMutationScope(), entry.id, strategy, entry.conflict?.serverRow || null);
+    if (strategy === "client-wins" && online) await replayCompanyTableOutbox();
+    refreshSummary();
+  }, [online, refreshSummary]);
 
   useEffect(() => {
     void hydrateOfflineStorage(offlineMutationScope());
@@ -47195,11 +47227,12 @@ function OfflineSyncBanner() {
   }, [refreshSummary, syncNow]);
 
   if (online && summary.pending === 0 && summary.failed === 0 && !syncing) return null;
-  const queued = summary.pending + summary.syncing + summary.failed;
+  const queued = summary.pending + summary.syncing + summary.failed + summary.conflicts;
   return <div className={`fixed inset-x-0 top-0 z-[130] flex min-h-10 items-center justify-center gap-3 px-4 py-2 text-[11px] font-semibold shadow-md ${online ? "bg-amber-50 text-amber-900" : "bg-slate-900 text-white"}`} role="status" aria-live="polite">
     {online ? <Wifi size={15} aria-hidden="true" /> : <WifiOff size={15} aria-hidden="true" />}
-    <span>{online ? `${queued} change${queued === 1 ? "" : "s"} pending synchronization.` : "Offline mode: changes are saved on this device and will sync when connection returns."}</span>
+    <span>{summary.conflicts > 0 ? `${summary.conflicts} conflict${summary.conflicts === 1 ? "" : "s"} need resolution.` : online ? `${queued} change${queued === 1 ? "" : "s"} pending synchronization.` : "Offline mode: changes are saved on this device and will sync when connection returns."}</span>
     {online && queued > 0 && <button type="button" onClick={() => void syncNow()} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-[10px] font-bold hover:bg-amber-100" disabled={syncing}><RefreshCw size={12} className={syncing ? "animate-spin" : ""} />{syncing ? "Syncing…" : "Sync now"}</button>}
+    {summary.conflicts > 0 && <div className="flex flex-wrap items-center gap-1"><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "server-wins")} className="rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-bold hover:bg-white">Use server</button><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "client-wins")} className="rounded-lg bg-amber-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-amber-700">Use my change</button></div>}
   </div>;
 }
 
