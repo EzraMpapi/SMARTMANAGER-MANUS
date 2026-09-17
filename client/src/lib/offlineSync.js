@@ -7,6 +7,7 @@ const KEY_DB_NAME = "smart-manager-offline-keys";
 const KEY_STORE_NAME = "keys";
 const KEY_ID = "device-aes-gcm-v1";
 export const OFFLINE_CONFLICT_STRATEGIES = Object.freeze(["server-wins", "client-wins", "manual"]);
+export const OFFLINE_RETRY_POLICY = Object.freeze({ baseMs: 1000, maxMs: 5 * 60 * 1000, maxAttempts: 8 });
 
 const memory = new Map();
 let keyPromise = null;
@@ -229,9 +230,27 @@ export function resolveOfflineConflict(scope, id, strategy, serverRow = null) {
 
 export function offlineSyncEventName() { return EVENT_NAME; }
 
-export async function replayOfflineMutations(scope, executor) {
+function isRetryableNetworkError(error) {
+  const message = String(error?.message || error || "").toLowerCase();
+  return error?.code === "PERSISTENCE_OFFLINE" || error?.name === "TypeError" || [408, 425, 429, 500, 502, 503, 504].includes(Number(error?.status)) || /failed to fetch|network|timeout|timed out|load failed|connection reset|temporarily unavailable/.test(message);
+}
+
+export function offlineRetryDelay(attempts = 1) {
+  const exponent = Math.max(0, Math.min(Number(attempts || 1) - 1, 10));
+  const exponential = Math.min(OFFLINE_RETRY_POLICY.maxMs, OFFLINE_RETRY_POLICY.baseMs * (2 ** exponent));
+  const jitter = Math.floor(Math.random() * Math.min(500, Math.max(50, exponential * 0.2)));
+  return Math.min(OFFLINE_RETRY_POLICY.maxMs, exponential + jitter);
+}
+
+export async function replayOfflineMutations(scope, executor, { force = false } = {}) {
   const normalizedScope = offlineScope(scope);
-  const entries = readOfflineQueue(normalizedScope).filter((entry) => entry.status === "pending" || entry.status === "failed");
+  const now = Date.now();
+  const entries = readOfflineQueue(normalizedScope).filter((entry) => {
+    if (!(entry.status === "pending" || entry.status === "failed")) return false;
+    if (entry.retryExhausted) return false;
+    if (force || !entry.nextRetryAt) return true;
+    return Date.parse(entry.nextRetryAt) <= now;
+  });
   const results = [];
   for (const entry of entries) {
     if (typeof navigator !== "undefined" && navigator.onLine === false) break;
@@ -244,8 +263,12 @@ export async function replayOfflineMutations(scope, executor) {
     } catch (error) {
       const message = String(error?.message || "Offline mutation could not be synchronized.");
       const conflict = error?.code === "OFFLINE_CONFLICT";
-      updateOfflineMutation(normalizedScope, entry.id, { status: conflict ? "conflict" : "failed", lastError: message, conflict: conflict ? { serverRow: error.serverRow || null, detectedAt: new Date().toISOString() } : null });
-      results.push({ entry, status: conflict ? "conflict" : "failed", error: message, serverRow: error.serverRow || null });
+      const retryable = isRetryableNetworkError(error);
+      const attempts = Number(entry.attempts || 0);
+      const exhausted = retryable && attempts >= OFFLINE_RETRY_POLICY.maxAttempts;
+      const nextRetryAt = retryable && !exhausted ? new Date(Date.now() + offlineRetryDelay(attempts)).toISOString() : null;
+      updateOfflineMutation(normalizedScope, entry.id, { status: conflict ? "conflict" : "failed", lastError: message, nextRetryAt, retryExhausted: exhausted, conflict: conflict ? { serverRow: error.serverRow || null, detectedAt: new Date().toISOString() } : null });
+      results.push({ entry, status: conflict ? "conflict" : "failed", error: message, serverRow: error.serverRow || null, retryable, nextRetryAt, retryExhausted: exhausted });
       if (error?.status === 401 || error?.status === 403) break;
     }
   }
