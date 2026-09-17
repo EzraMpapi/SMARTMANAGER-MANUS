@@ -48123,9 +48123,10 @@ function SmartManager() {
 
   const subscriptionEscapeDestination = new Set(["profile", "support", "notifications", "settings", "global-admin"]);
   const canUseSubscriptionEscape = subscriptionEscapeDestination.has(active) || (active === "billing" && canManageBilling);
-  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && !subscriptionAccess.ready && !canUseSubscriptionEscape && !isPlatformAdministrator) {
-    return <SubscriptionAccessBoundary access={subscriptionAccess.access} loading={subscriptionAccess.loading || subscriptionAccess.status === "idle"} error={subscriptionAccess.error} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
-  }
+  // Do not put a confirmation wall in front of every app load. The access
+  // hook uses the last confirmed decision while offline; the boundary is only
+  // meaningful once the server (or that cached decision) says access is not
+  // allowed, such as an expired or required subscription.
   if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && subscriptionAccess.ready && !subscriptionAccess.access.allowed && !canUseSubscriptionEscape && !isPlatformAdministrator) {
     return <SubscriptionAccessBoundary access={subscriptionAccess.access} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
   }

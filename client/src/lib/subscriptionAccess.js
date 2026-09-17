@@ -9,6 +9,22 @@ const supabaseConfig = {
 export const SUBSCRIPTION_ACCESS_STATES = Object.freeze(["trial", "active", "grace", "pending", "expired", "required", "unknown"]);
 const ACCESSIBLE_STATES = new Set(["trial", "active", "grace"]);
 const MODULE_ALIASES = Object.freeze({ hotel: "hospitality", restaurant: "hospitality" });
+const ACCESS_CACHE_KEY = "smart-manager:subscription-access";
+
+function readCachedAccess() {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = JSON.parse(window.localStorage.getItem(ACCESS_CACHE_KEY) || "null");
+    return cached?.payload || null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAccess(payload) {
+  if (typeof window === "undefined" || !payload) return;
+  try { window.localStorage.setItem(ACCESS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), payload })); } catch { /* cache is best-effort */ }
+}
 
 function normalizeState(value) {
   const state = String(value || "").trim().toLowerCase();
@@ -26,7 +42,10 @@ export function normalizeSubscriptionAccess(payload) {
   const subscription = source.subscription && typeof source.subscription === "object" ? source.subscription : null;
   const plan = source.plan && typeof source.plan === "object" ? source.plan : null;
   const moduleEntitlements = normalizeEntitlements(source.moduleEntitlements ?? plan?.moduleEntitlements ?? plan?.module_entitlements);
-  const state = normalizeState(source.state || source.status);
+  const serverState = normalizeState(source.state || source.status);
+  const accessUntil = source.accessUntil || null;
+  const expiredByDate = ACCESSIBLE_STATES.has(serverState) && accessUntil && !Number.isNaN(Date.parse(accessUntil)) && Date.parse(accessUntil) <= Date.now();
+  const state = expiredByDate ? "expired" : serverState;
   return {
     companyId: typeof source.companyId === "string" ? source.companyId : "",
     viewer: source.viewer && typeof source.viewer === "object" ? source.viewer : {},
@@ -34,7 +53,7 @@ export function normalizeSubscriptionAccess(payload) {
     state,
     allowed: source.allowed === true && ACCESSIBLE_STATES.has(state),
     reason: typeof source.reason === "string" ? source.reason : "Subscription access could not be confirmed.",
-    accessUntil: source.accessUntil || null,
+    accessUntil,
     subscription,
     plan,
     moduleEntitlements,
@@ -68,7 +87,10 @@ export function subscriptionStateLabel(access) {
 }
 
 export function useSubscriptionAccess({ accessToken, enabled = true } = {}) {
-  const [request, setRequest] = useState({ status: "idle", payload: null, error: "" });
+  const [request, setRequest] = useState(() => {
+    const payload = readCachedAccess();
+    return payload ? { status: "ready", payload, error: "" } : { status: "idle", payload: null, error: "" };
+  });
 
   const refresh = useCallback(async () => {
     if (!enabled || !accessToken) {
@@ -83,10 +105,15 @@ export function useSubscriptionAccess({ accessToken, enabled = true } = {}) {
       }, supabaseConfig);
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(typeof body?.error === "string" ? body.error : "Subscription access could not be confirmed.");
+      writeCachedAccess(body);
       setRequest({ status: "ready", payload: body, error: "" });
       return body;
     } catch (error) {
-      setRequest({ status: "error", payload: null, error: error?.message || "Subscription access could not be confirmed." });
+      // Keep the last server-confirmed decision available while offline. The
+      // dashboard must not flash a confirmation wall on every refresh.
+      const cached = readCachedAccess();
+      if (cached) setRequest({ status: "ready", payload: cached, error: "" });
+      else setRequest({ status: "error", payload: null, error: error?.message || "Subscription access could not be confirmed." });
       return null;
     }
   }, [accessToken, enabled]);
