@@ -78,7 +78,7 @@ import { AndroidAppStatus } from "./components/AndroidAppStatus";
 import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
-import { applyOfflineMutationToCache, enqueueOfflineMutation, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
+import { applyOfflineMutationToCache, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -1269,11 +1269,16 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   useEffect(() => {
     if (!isLive || typeof window === "undefined") return undefined;
     const reloadAfterSessionUpdate = () => { reload(); };
+    const reloadAfterOfflineHydration = (event) => {
+      if (event?.detail?.hydrated) reload();
+    };
     window.addEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+    window.addEventListener("smart-manager:offline-sync-updated", reloadAfterOfflineHydration);
     const replayAfterOnline = async () => { await replayCompanyTableOutbox(); await reload(); };
     window.addEventListener("online", replayAfterOnline);
     return () => {
       window.removeEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+      window.removeEventListener("smart-manager:offline-sync-updated", reloadAfterOfflineHydration);
       window.removeEventListener("online", replayAfterOnline);
     };
   }, [isLive, reload]);
@@ -47171,6 +47176,7 @@ function OfflineSyncBanner() {
   }, [online, syncing, refreshSummary]);
 
   useEffect(() => {
+    void hydrateOfflineStorage(offlineMutationScope());
     const handleOnline = () => {
       setOnline(true);
       setSyncing(true);
