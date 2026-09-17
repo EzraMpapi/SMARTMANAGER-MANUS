@@ -78,6 +78,7 @@ import { AndroidAppStatus } from "./components/AndroidAppStatus";
 import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
+import { applyOfflineMutationToCache, enqueueOfflineMutation, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -281,10 +282,8 @@ function buildOfflineMutationError({ table, method }) {
 }
 
 // Module handlers may stage a UI row while their request is in flight. This
-// bus immediately reconciles each useCompanyTable cache from its last confirmed
-// Supabase result, both on success and on failure. It is deliberately not an
-// offline outbox: this product has no durable queue or conflict resolver, so
-// business writes are paused while offline instead of being represented as saved.
+// bus reconciles each useCompanyTable cache after server confirmation and
+// broadcasts queued/replayed mutations to every mounted module.
 export const companyMutationBus = {
   listeners: new Set(),
   emit(event) { this.listeners.forEach((listener) => listener(event)); },
@@ -293,6 +292,25 @@ export const companyMutationBus = {
 function emitCompanyMutation(event) {
   if (typeof window === "undefined") return;
   companyMutationBus.emit(event);
+}
+
+function offlineMutationScope() {
+  return offlineScope(getGuardedPersistenceCompanyId() || "current-company");
+}
+
+function isOfflineTransportError(error) {
+  return error?.code === "PERSISTENCE_OFFLINE" || error?.name === "TypeError" || /failed to fetch|network|offline|load failed|networkerror/i.test(String(error?.message || ""));
+}
+
+function optimisticOfflineRow(table, operation, payload, matchCol, matchVal) {
+  if (operation === "delete") return null;
+  const row = { ...(payload && typeof payload === "object" ? payload : {}) };
+  if (operation === "insert" && !row.id) row.id = globalThis.crypto?.randomUUID?.() || `offline-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  if (operation === "insert") row.__offlinePending = true;
+  if (operation === "update" && matchVal !== undefined && matchVal !== null) row[matchCol] = matchVal;
+  row.__offlineMutation = true;
+  row.__offlineTable = table;
+  return row;
 }
 
 function persistenceFailureMessage(action, error) {
@@ -705,6 +723,7 @@ function inflateGenericCompanyRow(table, row) {
 export function sb(table) {
   let path = `${SUPABASE_URL}/rest/v1/${table}`;
   const params = new URLSearchParams();
+  const matchFilters = [];
   let method = "GET";
   let payload = null;
   let single = false;
@@ -716,7 +735,9 @@ export function sb(table) {
       return builder;
     },
     eq(col, val) {
-      params.append(genericFilterColumn(table, col), `eq.${val}`);
+      const normalizedColumn = genericFilterColumn(table, col);
+      params.append(normalizedColumn, `eq.${val}`);
+      matchFilters.push({ col: normalizedColumn, val });
       return builder;
     },
     order(col, { ascending = true } = {}) {
@@ -804,6 +825,16 @@ export function sb(table) {
       let requestPayload = payload;
       if (method !== "GET" && typeof navigator !== "undefined" && navigator.onLine === false) {
         const error = buildOfflineMutationError({ table, method });
+        const operation = method === "POST" ? "insert" : method === "PATCH" ? "update" : "delete";
+        enqueueOfflineMutation({
+          scope: offlineMutationScope(),
+          table,
+          operation,
+          payload,
+          matchCol: matchFilters[0]?.col || "id",
+          matchVal: matchFilters[0]?.val,
+        });
+        applyOfflineMutationToCache(offlineMutationScope(), table, operation, payload, matchFilters[0]?.col || "id", matchFilters[0]?.val);
         emitCompanyMutation({ table, confirmed: false, error });
         throw error;
       }
@@ -1077,7 +1108,7 @@ export async function runCompanyTableQuery(table, { select = "*", order } = {}) 
   throw lastError || new Error(`Supabase could not load ${table}`);
 }
 
-export async function runCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
+async function executeCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
   if (!["insert", "update", "delete"].includes(operation)) {
     return { data: null, error: new Error(`Unsupported company-table mutation: ${operation}`) };
   }
@@ -1120,16 +1151,45 @@ export async function runCompanyTableMutation(table, operation, payload, { match
   return { data: null, error: lastError || new Error(`Supabase ${operation} on ${table} failed`) };
 }
 
+export async function replayCompanyTableOutbox() {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return [];
+  const scope = offlineMutationScope();
+  const results = await replayOfflineMutations(scope, (entry) => executeCompanyTableMutation(entry.table, entry.operation, entry.payload, { matchCol: entry.matchCol, matchVal: entry.matchVal }));
+  if (results.length) emitCompanyMutation({ type: "offline-replay", scope, results });
+  return results;
+}
+
+export async function runCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
+  const scope = offlineMutationScope();
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    enqueueOfflineMutation({ scope, table, operation, payload, matchCol, matchVal });
+    applyOfflineMutationToCache(scope, table, operation, payload, matchCol, matchVal);
+    emitCompanyMutation({ type: "offline-queued", table, operation, scope });
+    return { data: optimisticOfflineRow(table, operation, payload, matchCol, matchVal), error: null, queued: true };
+  }
+  const result = await executeCompanyTableMutation(table, operation, payload, { matchCol, matchVal });
+  if (!result.error) return result;
+  if (isOfflineTransportError(result.error)) {
+    enqueueOfflineMutation({ scope, table, operation, payload, matchCol, matchVal });
+    applyOfflineMutationToCache(scope, table, operation, payload, matchCol, matchVal);
+    emitCompanyMutation({ type: "offline-queued", table, operation, scope });
+    return { data: optimisticOfflineRow(table, operation, payload, matchCol, matchVal), error: null, queued: true };
+  }
+  return result;
+}
+
 function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   // Demo mode serves seed rows instantly. Live mode starts empty and, once a
   // module has rows, keeps them visible during refreshes so navigation does
   // not blank or flicker the page.
   const isLive = IS_CONFIGURED && !DEMO_OVERRIDE;
   const initialRows = Array.isArray(seed) ? seed : [];
-  const [rowsState, setRowsState] = useState(isLive ? [] : initialRows);
-  const rowsRef = useRef(isLive ? [] : initialRows);
-  const confirmedRowsRef = useRef(isLive ? [] : initialRows);
-  const [loading, setLoading] = useState(isLive);
+  const cachedRows = isLive ? readOfflineTableCache(offlineMutationScope(), table) : [];
+  const hydratedRows = cachedRows.length ? cachedRows : (isLive ? [] : initialRows);
+  const [rowsState, setRowsState] = useState(hydratedRows);
+  const rowsRef = useRef(hydratedRows);
+  const confirmedRowsRef = useRef(hydratedRows);
+  const [loading, setLoading] = useState(isLive && cachedRows.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -1162,6 +1222,7 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
       const sourceRows = Array.isArray(result?.rows) ? rowsOf(result) : [];
       const confirmedRows = mapper ? sourceRows.map(mapper).filter(Boolean) : sourceRows;
       confirmedRowsRef.current = confirmedRows;
+      writeOfflineTableCache(offlineMutationScope(), table, confirmedRows);
       setRows(confirmedRows);
       setUnavailable(result.unavailable);
     } catch (e) {
@@ -1192,7 +1253,12 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
     if (!isLive || typeof window === "undefined") return undefined;
     const reloadAfterSessionUpdate = () => { reload(); };
     window.addEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
-    return () => window.removeEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+    const replayAfterOnline = async () => { await replayCompanyTableOutbox(); await reload(); };
+    window.addEventListener("online", replayAfterOnline);
+    return () => {
+      window.removeEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+      window.removeEventListener("online", replayAfterOnline);
+    };
   }, [isLive, reload]);
 
   return { rows: rowsState, setRows, loading, refreshing, error, unavailable, reload };
@@ -47075,6 +47141,45 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
   );
 }
 
+function OfflineSyncBanner() {
+  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
+  const [summary, setSummary] = useState(() => offlineQueueSummary(offlineMutationScope()));
+  const [syncing, setSyncing] = useState(false);
+
+  const refreshSummary = useCallback(() => setSummary(offlineQueueSummary(offlineMutationScope())), []);
+  const syncNow = useCallback(async () => {
+    if (!online || syncing) return;
+    setSyncing(true);
+    try { await replayCompanyTableOutbox(); } finally { refreshSummary(); setSyncing(false); }
+  }, [online, syncing, refreshSummary]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setOnline(true);
+      setSyncing(true);
+      void replayCompanyTableOutbox().finally(() => { refreshSummary(); setSyncing(false); });
+    };
+    const handleOffline = () => setOnline(false);
+    const handleUpdate = () => refreshSummary();
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("smart-manager:offline-sync-updated", handleUpdate);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("smart-manager:offline-sync-updated", handleUpdate);
+    };
+  }, [refreshSummary, syncNow]);
+
+  if (online && summary.pending === 0 && summary.failed === 0 && !syncing) return null;
+  const queued = summary.pending + summary.syncing + summary.failed;
+  return <div className={`fixed inset-x-0 top-0 z-[130] flex min-h-10 items-center justify-center gap-3 px-4 py-2 text-[11px] font-semibold shadow-md ${online ? "bg-amber-50 text-amber-900" : "bg-slate-900 text-white"}`} role="status" aria-live="polite">
+    {online ? <Wifi size={15} aria-hidden="true" /> : <WifiOff size={15} aria-hidden="true" />}
+    <span>{online ? `${queued} change${queued === 1 ? "" : "s"} pending synchronization.` : "Offline mode: changes are saved on this device and will sync when connection returns."}</span>
+    {online && queued > 0 && <button type="button" onClick={() => void syncNow()} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-[10px] font-bold hover:bg-amber-100" disabled={syncing}><RefreshCw size={12} className={syncing ? "animate-spin" : ""} />{syncing ? "Syncing…" : "Sync now"}</button>}
+  </div>;
+}
+
 function SmartManager() {
   const centralizedAuth = useAuthContext();
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
@@ -48027,6 +48132,7 @@ function SmartManager() {
 
   return (
     <>
+      <OfflineSyncBanner />
       {sharedTrialNoticeGate}
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
