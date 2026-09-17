@@ -78,7 +78,7 @@ import { AndroidAppStatus } from "./components/AndroidAppStatus";
 import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
-import { applyOfflineMutationToCache, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, resolveOfflineConflict, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
+import { applyOfflineMutationToCache, discardOfflineMutation, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, resolveOfflineConflict, retryOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -47194,6 +47194,7 @@ function OfflineSyncBanner() {
   const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [summary, setSummary] = useState(() => offlineQueueSummary(offlineMutationScope()));
   const [syncing, setSyncing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const refreshSummary = useCallback(() => setSummary(offlineQueueSummary(offlineMutationScope())), []);
   const syncNow = useCallback(async () => {
@@ -47206,6 +47207,17 @@ function OfflineSyncBanner() {
     if (strategy === "client-wins" && online) await replayCompanyTableOutbox();
     refreshSummary();
   }, [online, refreshSummary]);
+  const retryEntry = useCallback(async (entry) => {
+    retryOfflineMutation(offlineMutationScope(), entry.id);
+    if (online) {
+      setSyncing(true);
+      try { await replayCompanyTableOutbox({ force: true }); } finally { refreshSummary(); setSyncing(false); }
+    } else refreshSummary();
+  }, [online, refreshSummary]);
+  const discardEntry = useCallback((entry) => {
+    discardOfflineMutation(offlineMutationScope(), entry.id);
+    refreshSummary();
+  }, [refreshSummary]);
 
   useEffect(() => {
     void hydrateOfflineStorage(offlineMutationScope());
@@ -47235,13 +47247,21 @@ function OfflineSyncBanner() {
     return () => window.clearInterval(timer);
   }, [refreshSummary, syncing]);
 
-  if (online && summary.pending === 0 && summary.failed === 0 && !syncing) return null;
+  if (online && summary.pending === 0 && summary.failed === 0 && summary.conflicts === 0 && !syncing) return null;
   const queued = summary.pending + summary.syncing + summary.failed + summary.conflicts;
-  return <div className={`fixed inset-x-0 top-0 z-[130] flex min-h-10 items-center justify-center gap-3 px-4 py-2 text-[11px] font-semibold shadow-md ${online ? "bg-amber-50 text-amber-900" : "bg-slate-900 text-white"}`} role="status" aria-live="polite">
-    {online ? <Wifi size={15} aria-hidden="true" /> : <WifiOff size={15} aria-hidden="true" />}
-    <span>{summary.conflicts > 0 ? `${summary.conflicts} conflict${summary.conflicts === 1 ? "" : "s"} need resolution.` : online ? `${queued} change${queued === 1 ? "" : "s"} pending synchronization.` : "Offline mode: changes are saved on this device and will sync when connection returns."}</span>
-    {online && queued > 0 && <button type="button" onClick={() => void syncNow()} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-[10px] font-bold hover:bg-amber-100" disabled={syncing}><RefreshCw size={12} className={syncing ? "animate-spin" : ""} />{syncing ? "Syncing…" : "Sync now"}</button>}
-    {summary.conflicts > 0 && <div className="flex flex-wrap items-center gap-1"><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "server-wins")} className="rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-bold hover:bg-white">Use server</button><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "client-wins")} className="rounded-lg bg-amber-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-amber-700">Use my change</button></div>}
+  const visibleEntries = summary.entries.filter((entry) => ["pending", "syncing", "failed", "conflict"].includes(entry.status));
+  return <div className={`fixed inset-x-0 top-0 z-[130] px-4 py-2 text-[11px] font-semibold shadow-md ${online ? "bg-amber-50 text-amber-900" : "bg-slate-900 text-white"}`} role="status" aria-live="polite">
+    <div className="flex min-h-10 items-center justify-center gap-3">
+      {online ? <Wifi size={15} aria-hidden="true" /> : <WifiOff size={15} aria-hidden="true" />}
+      <span>{summary.conflicts > 0 ? `${summary.conflicts} conflict${summary.conflicts === 1 ? "" : "s"} need resolution.` : online ? `${queued} change${queued === 1 ? "" : "s"} pending synchronization.` : "Offline mode: changes are saved on this device and will sync when connection returns."}</span>
+      {online && queued > 0 && <button type="button" onClick={() => void syncNow()} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-[10px] font-bold hover:bg-amber-100" disabled={syncing}><RefreshCw size={12} className={syncing ? "animate-spin" : ""} />{syncing ? "Syncing…" : "Sync now"}</button>}
+      <button type="button" onClick={() => setExpanded((value) => !value)} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-[10px] font-bold hover:bg-amber-100" aria-expanded={expanded}><List size={12} />Outbox <ChevronDown size={12} className={expanded ? "rotate-180" : ""} /></button>
+      {summary.conflicts > 0 && <div className="flex flex-wrap items-center gap-1"><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "server-wins")} className="rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-bold hover:bg-white">Use server</button><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "client-wins")} className="rounded-lg bg-amber-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-amber-700">Use my change</button></div>}
+    </div>
+    {expanded && <div className="mx-auto max-h-72 w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-200 bg-white p-2 text-slate-800 shadow-lg">
+      <div className="flex items-center justify-between px-2 py-1"><span className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">Offline outbox ({visibleEntries.length})</span><span className="text-[10px] text-slate-400">Encrypted on this device</span></div>
+      {visibleEntries.length === 0 ? <p className="px-2 py-3 text-[11px] text-slate-500">No queued mutations.</p> : visibleEntries.map((entry) => <div key={entry.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-2 py-2"><div className="min-w-0"><p className="truncate text-[11px] font-bold">{entry.operation} · {entry.table}</p><p className="truncate text-[10px] text-slate-500">{entry.status}{entry.lastError ? ` · ${entry.lastError}` : ""}{entry.attempts ? ` · attempts ${entry.attempts}` : ""}</p></div><div className="flex items-center gap-1">{entry.status === "failed" && <><button type="button" onClick={() => void retryEntry(entry)} className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-2 py-1 text-[10px] font-bold text-amber-800 hover:bg-amber-50"><RotateCcw size={11} />Retry</button><button type="button" onClick={() => discardEntry(entry)} className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50"><Trash2 size={11} />Discard</button></>}{entry.status === "conflict" && <><button type="button" onClick={() => void resolveConflict(entry, "server-wins")} className="rounded-md border border-slate-300 px-2 py-1 text-[10px] font-bold hover:bg-slate-50">Server</button><button type="button" onClick={() => void resolveConflict(entry, "client-wins")} className="rounded-md bg-amber-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-amber-700">Local</button></>}</div></div>)}
+    </div>}
   </div>;
 }
 

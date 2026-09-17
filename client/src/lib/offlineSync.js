@@ -167,6 +167,27 @@ export function removeOfflineMutation(scope, id) {
   writeOfflineQueue(scope, readOfflineQueue(scope).filter((entry) => entry.id !== id));
 }
 
+export function retryOfflineMutation(scope, id) {
+  return updateOfflineMutation(scope, id, { status: "pending", attempts: 0, nextRetryAt: null, retryExhausted: false, lastError: null });
+}
+
+export function discardOfflineMutation(scope, id) {
+  const entry = readOfflineQueue(scope).find((candidate) => candidate.id === id) || null;
+  if (entry) {
+    const rows = readOfflineTableCache(scope, entry.table);
+    if (entry.operation === "insert") {
+      const localId = entry.payload?.id || entry.payload?.__offlineId;
+      writeOfflineTableCache(scope, entry.table, rows.filter((row) => String(row?.id || row?.__offlineId) !== String(localId)));
+    } else if (entry.operation === "update" && entry.baseSnapshot) {
+      writeOfflineTableCache(scope, entry.table, rows.map((row) => String(row?.[entry.matchCol]) === String(entry.matchVal) ? entry.baseSnapshot : row));
+    } else if (entry.operation === "delete" && entry.baseSnapshot && !rows.some((row) => String(row?.[entry.matchCol]) === String(entry.matchVal))) {
+      writeOfflineTableCache(scope, entry.table, [entry.baseSnapshot, ...rows]);
+    }
+  }
+  removeOfflineMutation(scope, id);
+  return entry;
+}
+
 export function readOfflineTableCache(scope, table) {
   const key = `${CACHE_PREFIX}${offlineScope(scope)}:${table}`;
   const value = readMemory(key, []);
