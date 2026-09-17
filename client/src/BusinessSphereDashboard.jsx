@@ -1195,10 +1195,10 @@ async function executeCompanyTableMutation(table, operation, payload, { matchCol
   return { data: null, error: lastError || new Error(`Supabase ${operation} on ${table} failed`) };
 }
 
-export async function replayCompanyTableOutbox() {
+export async function replayCompanyTableOutbox(options = {}) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return [];
   const scope = offlineMutationScope();
-  const results = await replayOfflineMutations(scope, (entry) => executeCompanyTableMutation(entry.table, entry.operation, entry.payload, { matchCol: entry.matchCol, matchVal: entry.matchVal, baseSnapshot: entry.baseSnapshot, conflictStrategy: entry.conflictStrategy }));
+  const results = await replayOfflineMutations(scope, (entry) => executeCompanyTableMutation(entry.table, entry.operation, entry.payload, { matchCol: entry.matchCol, matchVal: entry.matchVal, baseSnapshot: entry.baseSnapshot, conflictStrategy: entry.conflictStrategy }), options);
   if (results.length) emitCompanyMutation({ type: "offline-replay", scope, results });
   return results;
 }
@@ -47199,7 +47199,7 @@ function OfflineSyncBanner() {
   const syncNow = useCallback(async () => {
     if (!online || syncing) return;
     setSyncing(true);
-    try { await replayCompanyTableOutbox(); } finally { refreshSummary(); setSyncing(false); }
+    try { await replayCompanyTableOutbox({ force: true }); } finally { refreshSummary(); setSyncing(false); }
   }, [online, syncing, refreshSummary]);
   const resolveConflict = useCallback(async (entry, strategy) => {
     resolveOfflineConflict(offlineMutationScope(), entry.id, strategy, entry.conflict?.serverRow || null);
@@ -47212,7 +47212,7 @@ function OfflineSyncBanner() {
     const handleOnline = () => {
       setOnline(true);
       setSyncing(true);
-      void replayCompanyTableOutbox().finally(() => { refreshSummary(); setSyncing(false); });
+      void replayCompanyTableOutbox({ force: true }).finally(() => { refreshSummary(); setSyncing(false); });
     };
     const handleOffline = () => setOnline(false);
     const handleUpdate = () => refreshSummary();
@@ -47225,6 +47225,15 @@ function OfflineSyncBanner() {
       window.removeEventListener("smart-manager:offline-sync-updated", handleUpdate);
     };
   }, [refreshSummary, syncNow]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (!navigator.onLine || syncing) return;
+      setSyncing(true);
+      void replayCompanyTableOutbox().finally(() => { refreshSummary(); setSyncing(false); });
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [refreshSummary, syncing]);
 
   if (online && summary.pending === 0 && summary.failed === 0 && !syncing) return null;
   const queued = summary.pending + summary.syncing + summary.failed + summary.conflicts;
