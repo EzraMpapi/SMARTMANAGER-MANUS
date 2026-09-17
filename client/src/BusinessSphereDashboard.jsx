@@ -747,6 +747,7 @@ export function sb(table) {
     insert(row) {
       method = "POST";
       payload = row;
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return builder;
       const guardedCompanyId = getGuardedPersistenceCompanyId();
       if (GUARDED_WRITE_TABLES.has(table) && guardedCompanyId) {
         const sourceRows = Array.isArray(row) ? row : [row];
@@ -824,19 +825,32 @@ export function sb(table) {
       const url = `${path}?${params.toString()}`;
       let requestPayload = payload;
       if (method !== "GET" && typeof navigator !== "undefined" && navigator.onLine === false) {
-        const error = buildOfflineMutationError({ table, method });
         const operation = method === "POST" ? "insert" : method === "PATCH" ? "update" : "delete";
+        const matchCol = matchFilters[0]?.col || "id";
+        const matchVal = matchFilters[0]?.val;
+        const optimisticPayload = operation === "insert" && payload && typeof payload === "object" && !Array.isArray(payload)
+          ? { ...(payload.id ? { id: payload.id } : {}), ...payload, __offlineId: payload.id || `offline-${Date.now()}-${Math.random().toString(36).slice(2)}` }
+          : payload;
+        const replayPayload = operation === "insert" && optimisticPayload && typeof optimisticPayload === "object" && !Array.isArray(optimisticPayload)
+          ? Object.fromEntries(Object.entries(optimisticPayload).filter(([key]) => key !== "__offlineId"))
+          : optimisticPayload;
         enqueueOfflineMutation({
           scope: offlineMutationScope(),
           table,
           operation,
-          payload,
-          matchCol: matchFilters[0]?.col || "id",
-          matchVal: matchFilters[0]?.val,
+          payload: replayPayload,
+          matchCol,
+          matchVal,
         });
-        applyOfflineMutationToCache(offlineMutationScope(), table, operation, payload, matchFilters[0]?.col || "id", matchFilters[0]?.val);
-        emitCompanyMutation({ table, confirmed: false, error });
-        throw error;
+        applyOfflineMutationToCache(offlineMutationScope(), table, operation, optimisticPayload, matchCol, matchVal);
+        emitCompanyMutation({ type: "offline-queued", table, operation, scope: offlineMutationScope() });
+        const optimistic = operation === "delete" ? [] : optimisticPayload;
+        return single ? (Array.isArray(optimistic) ? optimistic[0] : optimistic) : optimistic;
+      }
+      if (method === "GET" && typeof navigator !== "undefined" && navigator.onLine === false) {
+        const cached = readOfflineTableCache(offlineMutationScope(), table);
+        const data = single ? (cached[0] || null) : cached;
+        if (data !== null || cached.length === 0) return data;
       }
       if (GENERIC_COMPANY_TABLES.has(table) && method === "POST") {
         requestPayload = Array.isArray(payload)
@@ -1069,6 +1083,9 @@ function emitSupabaseReconnectToast() {
 }
 
 export async function runCompanyTableQuery(table, { select = "*", order } = {}) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { rows: readOfflineTableCache(offlineMutationScope(), table), usedFallback: true, unavailable: false, offline: true };
+  }
   const queryVariants = [];
   const addVariant = (variantSelect, variantOrder) => {
     const signature = `${variantSelect}|${variantOrder?.col || ""}|${variantOrder?.ascending !== false}`;
