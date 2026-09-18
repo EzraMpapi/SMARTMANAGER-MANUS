@@ -70,7 +70,7 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-pressed={darkMode}');
     expect(dashboard).toContain('dashboard-topbar-search inline-flex h-9');
     expect(dashboard).toContain('border-0 bg-transparent');
-    expect(profileCenter).toContain('dashboard-topbar-profile relative shrink-0');
+    expect(profileCenter).toContain('dashboard-topbar-profile relative z-40 shrink-0');
     expect(dashboardStyles).toContain('.dashboard-topbar-actions');
     expect(dashboardStyles).toContain('overflow: visible;');
     expect(dashboardStyles).toContain('.dashboard-topbar-profile > button');
