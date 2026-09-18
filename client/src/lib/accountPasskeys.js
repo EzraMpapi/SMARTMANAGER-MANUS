@@ -1,15 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
+import { readStoredAuthSession } from "./authSessionStorage";
 
-function requirePasskeySession(session) {
-  if (!session?.accessToken || !session?.refreshToken) {
+function normalizePasskeySession(session) {
+  const stored = readStoredAuthSession();
+  const accessToken = session?.accessToken || session?.access_token || stored?.access_token;
+  const refreshToken = session?.refreshToken || session?.refresh_token || stored?.refresh_token;
+  if (!accessToken || !refreshToken) {
     const error = new Error("An active account session is required to manage passkeys.");
     error.code = "PASSKEY_SESSION_MISSING";
     throw error;
   }
+  return { accessToken, refreshToken };
 }
 
 export async function createAccountPasskeyClient({ supabaseUrl, supabaseAnonKey, session }) {
-  requirePasskeySession(session);
+  const activeSession = normalizePasskeySession(session);
   const client = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: false,
@@ -20,8 +25,8 @@ export async function createAccountPasskeyClient({ supabaseUrl, supabaseAnonKey,
     },
   });
   const { error } = await client.auth.setSession({
-    access_token: session.accessToken,
-    refresh_token: session.refreshToken,
+    access_token: activeSession.accessToken,
+    refresh_token: activeSession.refreshToken,
   });
   if (error) throw error;
   return client;
