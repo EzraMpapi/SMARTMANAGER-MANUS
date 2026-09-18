@@ -6,6 +6,7 @@ const root = resolve(process.cwd());
 const dashboard = readFileSync(resolve(root, "client/src/BusinessSphereDashboard.jsx"), "utf8");
 const app = readFileSync(resolve(root, "client/src/App.tsx"), "utf8");
 const profileCenter = readFileSync(resolve(root, "client/src/components/ProfileIdentityCenter.jsx"), "utf8");
+const dashboardStyles = readFileSync(resolve(root, "client/src/index.css"), "utf8");
 const vercelConfig = readFileSync(resolve(root, "vercel.json"), "utf8");
 const activeProfileMenu = profileCenter.slice(profileCenter.lastIndexOf("function ProfileMenu("));
 
@@ -69,7 +70,10 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-pressed={darkMode}');
     expect(dashboard).toContain('dashboard-topbar-search inline-flex h-9');
     expect(dashboard).toContain('border-0 bg-transparent');
-    expect(dashboard).not.toContain('dashboard-topbar-profile');
+    expect(profileCenter).toContain('dashboard-topbar-profile relative shrink-0');
+    expect(dashboardStyles).toContain('.dashboard-topbar-actions');
+    expect(dashboardStyles).toContain('overflow: visible;');
+    expect(dashboardStyles).toContain('.dashboard-topbar-profile > button');
     expect(dashboard).not.toContain('dashboard-topbar-customize');
     expect(dashboard).toContain('onOpenDashboardCustomization={() => setPreferencesDrawerOpen(true)}');
     const topbar = dashboard.slice(dashboard.indexOf('aria-label="Workspace command bar"'), dashboard.indexOf('{IS_CONFIGURED && active !== "billing"'));
@@ -106,5 +110,6 @@ describe("dashboard shell interaction refinement", () => {
     expect(activeProfileMenu).toContain('window.addEventListener("keydown", closeOnEscape)');
     expect(activeProfileMenu).not.toContain('fixed inset-0');
     expect(activeProfileMenu).toContain('max-h-[min(58vh,360px)]');
+    expect(dashboardStyles).toContain('touch-action: manipulation');
   });
 });
