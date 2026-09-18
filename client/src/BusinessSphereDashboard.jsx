@@ -506,7 +506,7 @@ function useProactiveSessionRefresh(enabled, onRenewed) {
           return;
         }
         reportSessionRefreshOutcome("success", "proactive");
-        onRenewedRef.current?.(refreshed.data.session.access_token);
+        onRenewedRef.current?.(refreshed.data.session);
       } catch (error) {
         authDebug("Proactive session renewal deferred", { status: error?.status || null, terminal: isDefinitiveSupabaseAuthFailure(error) });
         reportSessionRefreshOutcome(isDefinitiveSupabaseAuthFailure(error) ? "terminal_failure" : "retryable_failure", "proactive");
@@ -47330,8 +47330,12 @@ function SmartManager() {
   const [authRetryKey, setAuthRetryKey] = useState(0);
   const [terminalSessionDiagnostic, setTerminalSessionDiagnostic] = useState(null);
 
-  useProactiveSessionRefresh(Boolean(session?.accessToken && !session?.demo), (accessToken) => {
-    setSession((current) => current?.demo ? current : current ? { ...current, accessToken } : current);
+  useProactiveSessionRefresh(Boolean(session?.accessToken && !session?.demo), (refreshedSession) => {
+    setSession((current) => current?.demo ? current : current ? {
+      ...current,
+      accessToken: refreshedSession?.access_token || current.accessToken,
+      refreshToken: refreshedSession?.refresh_token || current.refreshToken,
+    } : current);
   });
 
   useEffect(() => {
@@ -47437,7 +47441,7 @@ function SmartManager() {
         setWorkspaceResolutionError(null);
         const confirmedIndustryFocus = normalizeOrganizationIndustryFocus(profile.companies?.category);
         rememberConfirmedOrganizationIndustryFocus(confirmedIndustryFocus);
-        setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, industry: confirmedIndustryFocus, industryFocus: confirmedIndustryFocus, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
+        setSession({ userId: user.id, email: user.email, accessToken: token, refreshToken: storedRefreshToken, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, industry: confirmedIndustryFocus, industryFocus: confirmedIndustryFocus, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
       } catch (bootstrapError) {
         if (isTerminalWorkspaceSessionError(bootstrapError)) {
           reportSessionRefreshOutcome("terminal_failure", "launch_bootstrap");
