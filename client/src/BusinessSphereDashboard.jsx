@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, useContext, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase,
@@ -48,7 +48,7 @@ import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneVali
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
-import { useAuthContext } from "./contexts/AuthContext";
+import { AuthContext, useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
 import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
@@ -78,6 +78,7 @@ import { AndroidAppStatus } from "./components/AndroidAppStatus";
 import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
+import { applyOfflineMutationToCache, discardOfflineMutation, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, resolveOfflineConflict, retryOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -281,10 +282,8 @@ function buildOfflineMutationError({ table, method }) {
 }
 
 // Module handlers may stage a UI row while their request is in flight. This
-// bus immediately reconciles each useCompanyTable cache from its last confirmed
-// Supabase result, both on success and on failure. It is deliberately not an
-// offline outbox: this product has no durable queue or conflict resolver, so
-// business writes are paused while offline instead of being represented as saved.
+// bus reconciles each useCompanyTable cache after server confirmation and
+// broadcasts queued/replayed mutations to every mounted module.
 export const companyMutationBus = {
   listeners: new Set(),
   emit(event) { this.listeners.forEach((listener) => listener(event)); },
@@ -293,6 +292,25 @@ export const companyMutationBus = {
 function emitCompanyMutation(event) {
   if (typeof window === "undefined") return;
   companyMutationBus.emit(event);
+}
+
+function offlineMutationScope() {
+  return offlineScope(getGuardedPersistenceCompanyId() || "current-company");
+}
+
+function isOfflineTransportError(error) {
+  return error?.code === "PERSISTENCE_OFFLINE" || error?.name === "TypeError" || /failed to fetch|network|offline|load failed|networkerror/i.test(String(error?.message || ""));
+}
+
+function optimisticOfflineRow(table, operation, payload, matchCol, matchVal) {
+  if (operation === "delete") return null;
+  const row = { ...(payload && typeof payload === "object" ? payload : {}) };
+  if (operation === "insert" && !row.id) row.id = globalThis.crypto?.randomUUID?.() || `offline-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  if (operation === "insert") row.__offlinePending = true;
+  if (operation === "update" && matchVal !== undefined && matchVal !== null) row[matchCol] = matchVal;
+  row.__offlineMutation = true;
+  row.__offlineTable = table;
+  return row;
 }
 
 function persistenceFailureMessage(action, error) {
@@ -705,6 +723,7 @@ function inflateGenericCompanyRow(table, row) {
 export function sb(table) {
   let path = `${SUPABASE_URL}/rest/v1/${table}`;
   const params = new URLSearchParams();
+  const matchFilters = [];
   let method = "GET";
   let payload = null;
   let single = false;
@@ -716,7 +735,9 @@ export function sb(table) {
       return builder;
     },
     eq(col, val) {
-      params.append(genericFilterColumn(table, col), `eq.${val}`);
+      const normalizedColumn = genericFilterColumn(table, col);
+      params.append(normalizedColumn, `eq.${val}`);
+      matchFilters.push({ col: normalizedColumn, val });
       return builder;
     },
     order(col, { ascending = true } = {}) {
@@ -726,6 +747,7 @@ export function sb(table) {
     insert(row) {
       method = "POST";
       payload = row;
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return builder;
       const guardedCompanyId = getGuardedPersistenceCompanyId();
       if (GUARDED_WRITE_TABLES.has(table) && guardedCompanyId) {
         const sourceRows = Array.isArray(row) ? row : [row];
@@ -803,9 +825,32 @@ export function sb(table) {
       const url = `${path}?${params.toString()}`;
       let requestPayload = payload;
       if (method !== "GET" && typeof navigator !== "undefined" && navigator.onLine === false) {
-        const error = buildOfflineMutationError({ table, method });
-        emitCompanyMutation({ table, confirmed: false, error });
-        throw error;
+        const operation = method === "POST" ? "insert" : method === "PATCH" ? "update" : "delete";
+        const matchCol = matchFilters[0]?.col || "id";
+        const matchVal = matchFilters[0]?.val;
+        const optimisticPayload = operation === "insert" && payload && typeof payload === "object" && !Array.isArray(payload)
+          ? { ...(payload.id ? { id: payload.id } : {}), ...payload, __offlineId: payload.id || `offline-${Date.now()}-${Math.random().toString(36).slice(2)}` }
+          : payload;
+        const replayPayload = operation === "insert" && optimisticPayload && typeof optimisticPayload === "object" && !Array.isArray(optimisticPayload)
+          ? Object.fromEntries(Object.entries(optimisticPayload).filter(([key]) => key !== "__offlineId"))
+          : optimisticPayload;
+        enqueueOfflineMutation({
+          scope: offlineMutationScope(),
+          table,
+          operation,
+          payload: replayPayload,
+          matchCol,
+          matchVal,
+        });
+        applyOfflineMutationToCache(offlineMutationScope(), table, operation, optimisticPayload, matchCol, matchVal);
+        emitCompanyMutation({ type: "offline-queued", table, operation, scope: offlineMutationScope() });
+        const optimistic = operation === "delete" ? [] : optimisticPayload;
+        return single ? (Array.isArray(optimistic) ? optimistic[0] : optimistic) : optimistic;
+      }
+      if (method === "GET" && typeof navigator !== "undefined" && navigator.onLine === false) {
+        const cached = readOfflineTableCache(offlineMutationScope(), table);
+        const data = single ? (cached[0] || null) : cached;
+        if (data !== null || cached.length === 0) return data;
       }
       if (GENERIC_COMPANY_TABLES.has(table) && method === "POST") {
         requestPayload = Array.isArray(payload)
@@ -1038,6 +1083,9 @@ function emitSupabaseReconnectToast() {
 }
 
 export async function runCompanyTableQuery(table, { select = "*", order } = {}) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { rows: readOfflineTableCache(offlineMutationScope(), table), usedFallback: true, unavailable: false, offline: true };
+  }
   const queryVariants = [];
   const addVariant = (variantSelect, variantOrder) => {
     const signature = `${variantSelect}|${variantOrder?.col || ""}|${variantOrder?.ascending !== false}`;
@@ -1077,7 +1125,16 @@ export async function runCompanyTableQuery(table, { select = "*", order } = {}) 
   throw lastError || new Error(`Supabase could not load ${table}`);
 }
 
-export async function runCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
+function offlineRowsConflict(baseSnapshot, serverRow) {
+  if (!baseSnapshot || !serverRow) return false;
+  const baseVersion = baseSnapshot.updated_at || baseSnapshot.updatedAt || baseSnapshot.version;
+  const serverVersion = serverRow.updated_at || serverRow.updatedAt || serverRow.version;
+  if (baseVersion && serverVersion) return String(baseVersion) !== String(serverVersion);
+  const ignored = new Set(["__offlinePending", "__offlineId", "dbId"]);
+  return Object.keys(baseSnapshot).some((key) => !ignored.has(key) && key in serverRow && JSON.stringify(baseSnapshot[key]) !== JSON.stringify(serverRow[key]));
+}
+
+async function executeCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal, baseSnapshot = null, conflictStrategy = "manual" } = {}) {
   if (!["insert", "update", "delete"].includes(operation)) {
     return { data: null, error: new Error(`Unsupported company-table mutation: ${operation}`) };
   }
@@ -1100,8 +1157,26 @@ export async function runCompanyTableMutation(table, operation, payload, { match
           res = Array.isArray(payload) ? await insertQuery.run() : await insertQuery.single().run();
         }
       } else if (operation === "update") {
+        if (baseSnapshot && conflictStrategy !== "client-wins") {
+          const current = await query.select("*").eq(matchCol, matchVal).single().run();
+          if (offlineRowsConflict(baseSnapshot, current)) {
+            const error = new Error("This record changed on the server while you were offline.");
+            error.code = "OFFLINE_CONFLICT";
+            error.serverRow = current;
+            throw error;
+          }
+        }
         res = await query.eq(matchCol, matchVal).update(payload).single().run();
       } else if (operation === "delete") {
+        if (baseSnapshot && conflictStrategy !== "client-wins") {
+          const current = await query.select("*").eq(matchCol, matchVal).single().run();
+          if (offlineRowsConflict(baseSnapshot, current)) {
+            const error = new Error("This record changed on the server while you were offline.");
+            error.code = "OFFLINE_CONFLICT";
+            error.serverRow = current;
+            throw error;
+          }
+        }
         res = await query.eq(matchCol, matchVal).delete().single().run();
       }
       return { data: res, error: null };
@@ -1120,16 +1195,45 @@ export async function runCompanyTableMutation(table, operation, payload, { match
   return { data: null, error: lastError || new Error(`Supabase ${operation} on ${table} failed`) };
 }
 
+export async function replayCompanyTableOutbox(options = {}) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return [];
+  const scope = offlineMutationScope();
+  const results = await replayOfflineMutations(scope, (entry) => executeCompanyTableMutation(entry.table, entry.operation, entry.payload, { matchCol: entry.matchCol, matchVal: entry.matchVal, baseSnapshot: entry.baseSnapshot, conflictStrategy: entry.conflictStrategy }), options);
+  if (results.length) emitCompanyMutation({ type: "offline-replay", scope, results });
+  return results;
+}
+
+export async function runCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
+  const scope = offlineMutationScope();
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    enqueueOfflineMutation({ scope, table, operation, payload, matchCol, matchVal });
+    applyOfflineMutationToCache(scope, table, operation, payload, matchCol, matchVal);
+    emitCompanyMutation({ type: "offline-queued", table, operation, scope });
+    return { data: optimisticOfflineRow(table, operation, payload, matchCol, matchVal), error: null, queued: true };
+  }
+  const result = await executeCompanyTableMutation(table, operation, payload, { matchCol, matchVal });
+  if (!result.error) return result;
+  if (isOfflineTransportError(result.error)) {
+    enqueueOfflineMutation({ scope, table, operation, payload, matchCol, matchVal });
+    applyOfflineMutationToCache(scope, table, operation, payload, matchCol, matchVal);
+    emitCompanyMutation({ type: "offline-queued", table, operation, scope });
+    return { data: optimisticOfflineRow(table, operation, payload, matchCol, matchVal), error: null, queued: true };
+  }
+  return result;
+}
+
 function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   // Demo mode serves seed rows instantly. Live mode starts empty and, once a
   // module has rows, keeps them visible during refreshes so navigation does
   // not blank or flicker the page.
   const isLive = IS_CONFIGURED && !DEMO_OVERRIDE;
   const initialRows = Array.isArray(seed) ? seed : [];
-  const [rowsState, setRowsState] = useState(isLive ? [] : initialRows);
-  const rowsRef = useRef(isLive ? [] : initialRows);
-  const confirmedRowsRef = useRef(isLive ? [] : initialRows);
-  const [loading, setLoading] = useState(isLive);
+  const cachedRows = isLive ? readOfflineTableCache(offlineMutationScope(), table) : [];
+  const hydratedRows = cachedRows.length ? cachedRows : (isLive ? [] : initialRows);
+  const [rowsState, setRowsState] = useState(hydratedRows);
+  const rowsRef = useRef(hydratedRows);
+  const confirmedRowsRef = useRef(hydratedRows);
+  const [loading, setLoading] = useState(isLive && cachedRows.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -1162,6 +1266,7 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
       const sourceRows = Array.isArray(result?.rows) ? rowsOf(result) : [];
       const confirmedRows = mapper ? sourceRows.map(mapper).filter(Boolean) : sourceRows;
       confirmedRowsRef.current = confirmedRows;
+      writeOfflineTableCache(offlineMutationScope(), table, confirmedRows);
       setRows(confirmedRows);
       setUnavailable(result.unavailable);
     } catch (e) {
@@ -1191,8 +1296,18 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   useEffect(() => {
     if (!isLive || typeof window === "undefined") return undefined;
     const reloadAfterSessionUpdate = () => { reload(); };
+    const reloadAfterOfflineHydration = (event) => {
+      if (event?.detail?.hydrated) reload();
+    };
     window.addEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
-    return () => window.removeEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+    window.addEventListener("smart-manager:offline-sync-updated", reloadAfterOfflineHydration);
+    const replayAfterOnline = async () => { await replayCompanyTableOutbox(); await reload(); };
+    window.addEventListener("online", replayAfterOnline);
+    return () => {
+      window.removeEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+      window.removeEventListener("smart-manager:offline-sync-updated", reloadAfterOfflineHydration);
+      window.removeEventListener("online", replayAfterOnline);
+    };
   }, [isLive, reload]);
 
   return { rows: rowsState, setRows, loading, refreshing, error, unavailable, reload };
@@ -43173,13 +43288,16 @@ function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentCo
 // comment on companies.join_code for why that is a deliberate privacy
 // boundary, not an oversight.
 export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
+  const centralizedAuth = useContext(AuthContext) || { session: null, user: null };
+  const hasConfirmedSession = Boolean(centralizedAuth.session?.access_token && centralizedAuth.user?.id);
   const onboardingModuleIds = useMemo(() => ONBOARDING_MODULES.map((module) => module.id), []);
   const onboardingProgress = useMemo(() => readOnboardingProgress(onboardingModuleIds), [onboardingModuleIds]);
   const [restoredOnboardingProgress, setRestoredOnboardingProgress] = useState(() => Boolean(onboardingProgress && hasOnboardingProgress(onboardingProgress, onboardingModuleIds)));
   const persistedCountry = SIGNUP_COUNTRIES.includes(onboardingProgress?.company?.country) ? onboardingProgress.company.country : SIGNUP_COUNTRIES[0];
   const [mode, setMode] = useState(() => onboardingProgress?.mode || "create"); // "create" | "join"
-  // A password is deliberately never stored; all recovered sessions restart at step 1.
-  const [step, setStep] = useState(1);
+  // A password is deliberately never stored. A confirmed session can resume
+  // directly at workspace setup without asking the user to re-enter it.
+  const [step, setStep] = useState(() => hasConfirmedSession && (onboardingProgress?.mode || "create") === "create" ? 2 : 1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [completedWorkspace, setCompletedWorkspace] = useState(null);
@@ -43189,7 +43307,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [isolatedPreferencesOpen, setIsolatedPreferencesOpen] = useState(false);
   const [isolatedComplianceAuditOpen, setIsolatedComplianceAuditOpen] = useState(false);
 
-  const [account, setAccount] = useState(() => ({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", ...(onboardingProgress?.account || {}) }));
+  const [account, setAccount] = useState(() => ({ fullName: centralizedAuth.user?.user_metadata?.full_name || "", email: centralizedAuth.user?.email || "", phone: "", password: "", confirmPassword: "", ...(onboardingProgress?.account || {}) }));
   const [company, setCompany] = useState({
     name: "", category: "general", country: persistedCountry, currency: SIGNUP_CURRENCIES[0],
     timezone: companyDefaultsForCountry(persistedCountry).timezone, website: "", taxId: "", brandColor: "#0B5D3B", brandAccentColor: "#16A34A",
@@ -43265,7 +43383,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const step1Valid = !step1ValidationError;
   const isPortalRole = joinRole === "External Client" || joinRole === "Supplier";
   const joinAccountValid = account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword;
-  const step2Valid = mode === "create" ? company.name.trim().length > 1 : joinAccountValid && joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
+  const step2Valid = mode === "create" ? company.name.trim().length > 1 : (hasConfirmedSession || joinAccountValid) && joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
 
   function continueToCompanySetup(event) {
     event.preventDefault();
@@ -43335,8 +43453,16 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     let accountCreated = false;
     try {
       authDebug("Workspace signup started", { mode });
-      const signUpResult = await directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password });
+      const signUpResult = hasConfirmedSession
+        ? { access_token: centralizedAuth.session.access_token, refresh_token: centralizedAuth.session.refresh_token, user: centralizedAuth.user, requires_email_confirmation: false }
+        : await directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password });
       accountCreated = true;
+      if (signUpResult.requires_email_confirmation || !signUpResult.access_token) {
+        // Keep the non-secret onboarding draft so the confirmed user can resume
+        // workspace creation after returning from the email link.
+        setCompletedWorkspace({ pendingEmailVerification: true, email: signUpResult.user?.email || account.email.trim() });
+        return;
+      }
       const accessToken = signUpResult.access_token;
       persistAuthSession(signUpResult);
 
@@ -43420,6 +43546,10 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
 
   if (completedWorkspace?.isolatedSession?.authenticated) {
     return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><section className="w-full max-w-2xl rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]" aria-labelledby="isolated-workspace-title"><CheckCircle2 size={30} className="mx-auto text-emerald-700" aria-hidden="true" /><p className="mt-5 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 id="isolated-workspace-title" className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950">Congratulations — you’re ready.</h1><p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">Isolated authenticated workspace session is active. No authentication request or tenant record was sent to the configured Supabase project.</p><div className="mt-4 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setIsolatedPreferencesOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview dashboard preferences</button><button type="button" onClick={() => setIsolatedComplianceAuditOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview compliance audit workspace</button></div>{isolatedPreferencesOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard preferences" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading dashboard preferences…</div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setIsolatedPreferencesOpen(false)} /></Suspense>}{isolatedComplianceAuditOpen && <Suspense fallback={<div role="status" aria-label="Loading compliance audit workspace" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading compliance audit workspace…</div>}><LazyComplianceAuditLogView companyId="e2e-isolated-tenant" /></Suspense>}</section></div>;
+  }
+
+  if (completedWorkspace?.pendingEmailVerification) {
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Mail size={28}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Confirm your email</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Check your inbox to continue.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">We created the account for <strong>{completedWorkspace.email}</strong>. Confirm the email, then return here and sign in to finish setting up your workspace. Your setup details remain saved on this device; your password is never stored.</p><button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
   }
 
   if (completedWorkspace) {
@@ -47060,6 +47190,81 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
   );
 }
 
+function OfflineSyncBanner() {
+  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
+  const [summary, setSummary] = useState(() => offlineQueueSummary(offlineMutationScope()));
+  const [syncing, setSyncing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const refreshSummary = useCallback(() => setSummary(offlineQueueSummary(offlineMutationScope())), []);
+  const syncNow = useCallback(async () => {
+    if (!online || syncing) return;
+    setSyncing(true);
+    try { await replayCompanyTableOutbox({ force: true }); } finally { refreshSummary(); setSyncing(false); }
+  }, [online, syncing, refreshSummary]);
+  const resolveConflict = useCallback(async (entry, strategy) => {
+    resolveOfflineConflict(offlineMutationScope(), entry.id, strategy, entry.conflict?.serverRow || null);
+    if (strategy === "client-wins" && online) await replayCompanyTableOutbox();
+    refreshSummary();
+  }, [online, refreshSummary]);
+  const retryEntry = useCallback(async (entry) => {
+    retryOfflineMutation(offlineMutationScope(), entry.id);
+    if (online) {
+      setSyncing(true);
+      try { await replayCompanyTableOutbox({ force: true }); } finally { refreshSummary(); setSyncing(false); }
+    } else refreshSummary();
+  }, [online, refreshSummary]);
+  const discardEntry = useCallback((entry) => {
+    discardOfflineMutation(offlineMutationScope(), entry.id);
+    refreshSummary();
+  }, [refreshSummary]);
+
+  useEffect(() => {
+    void hydrateOfflineStorage(offlineMutationScope());
+    const handleOnline = () => {
+      setOnline(true);
+      setSyncing(true);
+      void replayCompanyTableOutbox({ force: true }).finally(() => { refreshSummary(); setSyncing(false); });
+    };
+    const handleOffline = () => setOnline(false);
+    const handleUpdate = () => refreshSummary();
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("smart-manager:offline-sync-updated", handleUpdate);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("smart-manager:offline-sync-updated", handleUpdate);
+    };
+  }, [refreshSummary, syncNow]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (!navigator.onLine || syncing) return;
+      setSyncing(true);
+      void replayCompanyTableOutbox().finally(() => { refreshSummary(); setSyncing(false); });
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [refreshSummary, syncing]);
+
+  if (online && summary.pending === 0 && summary.failed === 0 && summary.conflicts === 0 && !syncing) return null;
+  const queued = summary.pending + summary.syncing + summary.failed + summary.conflicts;
+  const visibleEntries = summary.entries.filter((entry) => ["pending", "syncing", "failed", "conflict"].includes(entry.status));
+  return <div className={`fixed inset-x-0 top-0 z-[130] px-4 py-2 text-[11px] font-semibold shadow-md ${online ? "bg-amber-50 text-amber-900" : "bg-slate-900 text-white"}`} role="status" aria-live="polite">
+    <div className="flex min-h-10 items-center justify-center gap-3">
+      {online ? <Wifi size={15} aria-hidden="true" /> : <WifiOff size={15} aria-hidden="true" />}
+      <span>{summary.conflicts > 0 ? `${summary.conflicts} conflict${summary.conflicts === 1 ? "" : "s"} need resolution.` : online ? `${queued} change${queued === 1 ? "" : "s"} pending synchronization.` : "Offline mode: changes are saved on this device and will sync when connection returns."}</span>
+      {online && queued > 0 && <button type="button" onClick={() => void syncNow()} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-[10px] font-bold hover:bg-amber-100" disabled={syncing}><RefreshCw size={12} className={syncing ? "animate-spin" : ""} />{syncing ? "Syncing…" : "Sync now"}</button>}
+      <button type="button" onClick={() => setExpanded((value) => !value)} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-[10px] font-bold hover:bg-amber-100" aria-expanded={expanded}><List size={12} />Outbox <ChevronDown size={12} className={expanded ? "rotate-180" : ""} /></button>
+      {summary.conflicts > 0 && <div className="flex flex-wrap items-center gap-1"><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "server-wins")} className="rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-bold hover:bg-white">Use server</button><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "client-wins")} className="rounded-lg bg-amber-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-amber-700">Use my change</button></div>}
+    </div>
+    {expanded && <div className="mx-auto max-h-72 w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-200 bg-white p-2 text-slate-800 shadow-lg">
+      <div className="flex items-center justify-between px-2 py-1"><span className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">Offline outbox ({visibleEntries.length})</span><span className="text-[10px] text-slate-400">Encrypted on this device</span></div>
+      {visibleEntries.length === 0 ? <p className="px-2 py-3 text-[11px] text-slate-500">No queued mutations.</p> : visibleEntries.map((entry) => <div key={entry.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-2 py-2"><div className="min-w-0"><p className="truncate text-[11px] font-bold">{entry.operation} · {entry.table}</p><p className="truncate text-[10px] text-slate-500">{entry.status}{entry.lastError ? ` · ${entry.lastError}` : ""}{entry.attempts ? ` · attempts ${entry.attempts}` : ""}</p></div><div className="flex items-center gap-1">{entry.status === "failed" && <><button type="button" onClick={() => void retryEntry(entry)} className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-2 py-1 text-[10px] font-bold text-amber-800 hover:bg-amber-50"><RotateCcw size={11} />Retry</button><button type="button" onClick={() => discardEntry(entry)} className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50"><Trash2 size={11} />Discard</button></>}{entry.status === "conflict" && <><button type="button" onClick={() => void resolveConflict(entry, "server-wins")} className="rounded-md border border-slate-300 px-2 py-1 text-[10px] font-bold hover:bg-slate-50">Server</button><button type="button" onClick={() => void resolveConflict(entry, "client-wins")} className="rounded-md bg-amber-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-amber-700">Local</button></>}</div></div>)}
+    </div>}
+  </div>;
+}
+
 function SmartManager() {
   const centralizedAuth = useAuthContext();
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
@@ -48003,15 +48208,17 @@ function SmartManager() {
 
   const subscriptionEscapeDestination = new Set(["profile", "support", "notifications", "settings", "global-admin"]);
   const canUseSubscriptionEscape = subscriptionEscapeDestination.has(active) || (active === "billing" && canManageBilling);
-  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && !subscriptionAccess.ready && !canUseSubscriptionEscape && !isPlatformAdministrator) {
-    return <SubscriptionAccessBoundary access={subscriptionAccess.access} loading={subscriptionAccess.loading || subscriptionAccess.status === "idle"} error={subscriptionAccess.error} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
-  }
+  // Do not put a confirmation wall in front of every app load. The access
+  // hook uses the last confirmed decision while offline; the boundary is only
+  // meaningful once the server (or that cached decision) says access is not
+  // allowed, such as an expired or required subscription.
   if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && subscriptionAccess.ready && !subscriptionAccess.access.allowed && !canUseSubscriptionEscape && !isPlatformAdministrator) {
     return <SubscriptionAccessBoundary access={subscriptionAccess.access} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
   }
 
   return (
     <>
+      <OfflineSyncBanner />
       {sharedTrialNoticeGate}
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
@@ -48816,7 +49023,7 @@ function LiveDateTime() {
   const date = new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", year: "numeric" }).format(now);
   const time = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(now);
   return (
-    <div className="flex min-w-0 max-w-[148px] items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 sm:max-w-[190px] sm:gap-2 sm:px-2.5" aria-label={`Current day ${day}, date ${date}, time ${time}`}>
+    <div className="dashboard-topbar-clock hidden min-w-0 max-w-[190px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 lg:flex" aria-label={`Current day ${day}, date ${date}, time ${time}`}>
       <CalendarDays size={13} className="hidden shrink-0 text-cyan-700 sm:block" aria-hidden="true" />
       <span className="leading-tight">
         <span className="block truncate text-[8px] font-semibold uppercase tracking-wide text-cyan-700 sm:text-[9px]">{day}</span>

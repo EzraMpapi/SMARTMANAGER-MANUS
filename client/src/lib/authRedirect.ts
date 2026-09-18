@@ -1,4 +1,4 @@
-const DEFAULT_CANONICAL_ORIGIN = "https://bserp-dashbo-xgm6fauw.manus.space";
+const DEFAULT_CANONICAL_ORIGIN = "https://menejajanja.vercel.app";
 
 // These aliases were used by older Smart Manager deployments. They must not be
 // used as an OAuth return target because they can point at retired deployments.

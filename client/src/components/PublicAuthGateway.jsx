@@ -22,8 +22,8 @@ function withoutAuthView() {
 
 export default function PublicAuthGateway() {
   const auth = useAuthContext();
-  const [view, setView] = useState(() => authScreenFromSearch(window.location.search));
-  const [email, setEmail] = useState("");
+  const [view, setView] = useState(() => auth.reason === "EMAIL_UNCONFIRMED" ? "verify" : authScreenFromSearch(window.location.search));
+  const [email, setEmail] = useState(() => auth.user?.email || "");
   const [oauthError, setOauthError] = useState(null);
   const [oauthProvider, setOauthProvider] = useState(oauthProviderFromSearch);
 

@@ -56,11 +56,11 @@ describe("platform subscription access contracts", () => {
     expect(dashboard).toContain("Anza na siku 15 BURE");
   });
 
-  it("fails closed when access is unknown, pending, expired, required, or not server-allowed", () => {
+  it("keeps server access decisions authoritative while allowing the last decision offline", () => {
     expect(adapter).toContain("source.allowed === true");
     expect(adapter).toContain("ACCESSIBLE_STATES");
     expect(adapter).toContain('cache: "no-store"');
-    expect(adapter).not.toContain("localStorage");
+    expect(adapter).toContain("localStorage");
     expect(adapter).not.toContain("sessionStorage");
     expect(dashboard).toContain("!subscriptionAccess.access.allowed");
     expect(dashboard).toContain("This module is not included in the company’s server-confirmed subscription plan.");

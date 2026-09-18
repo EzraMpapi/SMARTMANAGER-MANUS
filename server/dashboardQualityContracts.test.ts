@@ -73,7 +73,7 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("icon: WalletCards");
     expect(dashboard).toMatch(/import\s*\{[\s\S]*\bWalletCards\b[\s\S]*\}\s*from\s*"lucide-react";/);
     expect(dashboard).toContain("SMART MANAGER");
-    expect(dashboard).toContain("ERP SYSTEM");
+    expect(dashboard).toContain("Enterprise Suite");
   });
 
   it("keeps mobile navigation and floating actions touch-safe", () => {
