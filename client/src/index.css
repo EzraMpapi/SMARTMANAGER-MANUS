@@ -1082,7 +1082,7 @@
 
   .dashboard-topbar-actions {
     max-width: 100%;
-    overflow-x: auto;
+    overflow: visible;
     scrollbar-width: none;
   }
 
@@ -1096,6 +1096,18 @@
 
   .dashboard-topbar-context-title {
     max-width: min(34vw, 10rem);
+  }
+
+  .dashboard-topbar-profile {
+    position: relative;
+    z-index: 60;
+  }
+
+  .dashboard-topbar-profile > button {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
