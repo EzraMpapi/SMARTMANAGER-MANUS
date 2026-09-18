@@ -83,7 +83,10 @@ export async function provisionPasswordAccount(input: PasswordAccountInput, requ
     throw new TRPCError({ code: "BAD_GATEWAY", message: "The account service could not create this account. Please try again." });
   }
 
-  const user = payload.user as { id?: unknown; email?: unknown } | undefined;
+  // GoTrue returns the user object wrapped in `user` when a session is issued,
+  // but at the top level when email confirmation is required. Accept both shapes.
+  const nested = payload.user as { id?: unknown; email?: unknown } | undefined;
+  const user = typeof nested?.id === "string" ? nested : (payload as { id?: unknown; email?: unknown });
   if (typeof user?.id !== "string") {
     throw new TRPCError({ code: "BAD_GATEWAY", message: "Account creation returned an incomplete response. Please try again." });
   }
