@@ -842,6 +842,26 @@
     box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
   }
 
+  /* Some lazy-loaded modules use a bordered action row instead of the sticky
+     footer utility. Apply the same wrapping and safe-area treatment to that
+     shared visual pattern so Sales, Finance, CRM, HR, Procurement, and sector
+     workspaces behave like Inventory on narrow screens. */
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .border-t {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .625rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) > :where(button, a, [role="button"]) {
+    flex: 1 1 9rem;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+    touch-action: manipulation;
+  }
+
   .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.bottom-0 > button {
     flex: 1 1 9rem;
     min-width: 0;
