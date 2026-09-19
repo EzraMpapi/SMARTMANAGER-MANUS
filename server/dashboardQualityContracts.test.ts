@@ -108,6 +108,8 @@ describe("dashboard quality and boundary contracts", () => {
     expect(css).toContain(":not(.absolute)");
     expect(css).toContain("env(safe-area-inset-bottom)");
     expect(css).toContain(".sticky.bottom-0 > button");
+    expect(css).toContain(".fixed.inset-0");
+    expect(css).toContain(":where(.border-t, .sticky.bottom-0)");
     expect(css).toContain("min-height: 44px");
     expect(css).toContain("white-space: normal");
   });
