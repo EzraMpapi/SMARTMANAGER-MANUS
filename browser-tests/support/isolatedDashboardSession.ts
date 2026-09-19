@@ -39,7 +39,7 @@ export async function installIsolatedDashboardSession(page: Page) {
   await page.route("**/auth/v1/user", async (route) => route.fulfill({
     status: 200,
     contentType: "application/json",
-    body: JSON.stringify({ id: profile.id, email: "layout-admin@e2e.invalid", user_metadata: { full_name: profile.full_name } }),
+    body: JSON.stringify({ id: profile.id, email: "layout-admin@e2e.invalid", email_confirmed_at: "2026-01-01T00:00:00.000Z", confirmed_at: "2026-01-01T00:00:00.000Z", user_metadata: { full_name: profile.full_name } }),
   }));
 
   await page.route("**/rest/v1/**", async (route) => {
