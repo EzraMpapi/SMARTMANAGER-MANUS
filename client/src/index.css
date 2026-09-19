@@ -791,12 +791,47 @@
   }
 
   .dashboard-mobile-content .sm-responsive-dialog,
-  .dashboard-mobile-content .fixed.inset-0 > :where(form, div) {
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, div):not(.absolute) {
     width: 100% !important;
     max-width: 100% !important;
     max-height: min(92svh, 46rem);
     margin-top: auto;
     border-radius: 1.5rem 1.5rem 0 0;
+  }
+
+  /* Shared popup behavior: module drawers and forms are often rendered as
+     direct children of a fixed overlay. On phones they must become a bounded
+     bottom sheet instead of preserving a desktop-height side panel that clips
+     fields, action buttons, or the close control. */
+  .dashboard-mobile-content .fixed.inset-0 {
+    align-items: flex-end;
+    overflow: hidden;
+    padding: max(.75rem, env(safe-area-inset-top)) .75rem max(.75rem, env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(92svh, 46rem) !important;
+    min-height: 0;
+    margin: auto 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1.25rem 1.25rem 0 0;
+    border-left-width: 0;
+    border-right-width: 0;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.sticky.top-0, .sticky.bottom-0) {
+    position: sticky;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 :where(input, select, textarea, button) {
+    touch-action: manipulation;
   }
 
   .dashboard-mobile-content .sm-responsive-table {

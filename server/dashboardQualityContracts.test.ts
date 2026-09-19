@@ -100,6 +100,15 @@ describe("dashboard quality and boundary contracts", () => {
     expect(css).toContain("overflow-x: clip");
   });
 
+  it("keeps dashboard popups usable on narrow screens", () => {
+    const css = fs.readFileSync(path.join(root, "index.css"), "utf8");
+    expect(css).toContain(".dashboard-mobile-content .fixed.inset-0");
+    expect(css).toContain("max-height: min(92svh, 46rem)");
+    expect(css).toContain("overscroll-behavior: contain");
+    expect(css).toContain(":not(.absolute)");
+    expect(css).toContain("env(safe-area-inset-bottom)");
+  });
+
   it("does not introduce client-side persistence into command-center components", () => {
     for (const { text } of files) {
       expect(text).not.toContain("localStorage");
