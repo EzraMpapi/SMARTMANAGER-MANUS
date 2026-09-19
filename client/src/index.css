@@ -834,6 +834,29 @@
     touch-action: manipulation;
   }
 
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.bottom-0 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .625rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.bottom-0 > button {
+    flex: 1 1 9rem;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.top-0 button[aria-label],
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :first-child button[aria-label] {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-grid;
+    place-items: center;
+  }
+
   .dashboard-mobile-content .sm-responsive-table {
     display: block;
     width: 100%;
