@@ -877,6 +877,44 @@
     place-items: center;
   }
 
+  /* The dashboard shell also hosts lazy-loaded and portal-like module
+     dialogs outside the main content node. Keep the same form interaction
+     contract for those surfaces so every module gets identical behavior. */
+  .dashboard-shell .fixed.inset-0 {
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(92svh, 46rem) !important;
+    min-height: 0;
+    margin: auto 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1.25rem 1.25rem 0 0;
+  }
+
+  .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .625rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+  }
+
+  .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) > :where(button, a, [role="button"]) {
+    flex: 1 1 9rem;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+    touch-action: manipulation;
+  }
+
   .dashboard-mobile-content .sm-responsive-table {
     display: block;
     width: 100%;
