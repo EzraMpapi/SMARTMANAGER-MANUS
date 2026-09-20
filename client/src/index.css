@@ -1525,6 +1525,7 @@
 }
 
 .dashboard-topbar-actions {
+  flex: 0 0 auto !important;
   max-width: 100%;
 }
 
@@ -1607,7 +1608,7 @@
   .dashboard-topbar-main {
     min-height: 4rem;
     gap: .5rem;
-    padding: .625rem max(.75rem, env(safe-area-inset-left)) .5rem max(.75rem, env(safe-area-inset-right));
+    padding: .625rem max(.75rem, env(safe-area-inset-right)) .5rem max(.75rem, env(safe-area-inset-left));
   }
 
   .dashboard-topbar-context {
@@ -1714,4 +1715,82 @@
 .dashboard-topbar.dark-shell .dashboard-topbar-search kbd {
   border-color: rgb(71 85 105 / .75);
   background: rgb(15 23 42 / .9);
+}
+
+/* Collision guardrails: the top row must give the workspace identity and
+   actions separate, predictable space at phone widths. The connectivity
+   indicator keeps its accessible title/aria label while becoming icon-only. */
+@media (max-width: 767px) {
+  .dashboard-topbar-main {
+    align-items: center;
+  }
+
+  .dashboard-topbar-context {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .dashboard-topbar-actions {
+    flex: 0 0 auto !important;
+    min-width: max-content;
+  }
+
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"] {
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    flex: 0 0 2.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    border-radius: .75rem;
+  }
+
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"] > span {
+    display: none;
+  }
+}
+
+@media (max-width: 479px) {
+  .dashboard-topbar-brand-mark,
+  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+    display: none !important;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: calc(100vw - 8rem);
+  }
+
+  .dashboard-topbar-workspace-copy {
+    max-width: min(34vw, 9rem);
+  }
+}
+
+@media (max-width: 359px) {
+  .dashboard-topbar-main {
+    gap: .375rem;
+    padding-inline: .625rem;
+  }
+
+  .dashboard-topbar-context {
+    gap: .375rem;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: calc(100vw - 7rem);
+  }
+
+  .dashboard-topbar-workspace {
+    gap: .375rem;
+    padding-inline: .375rem;
+  }
+
+  .dashboard-topbar-workspace-copy {
+    max-width: 27vw;
+  }
+
+  .dashboard-topbar-actions {
+    gap: .125rem;
+  }
 }
