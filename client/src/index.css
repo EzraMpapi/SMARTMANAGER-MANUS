@@ -1794,3 +1794,41 @@
     gap: .125rem;
   }
 }
+
+/* Wide-screen guardrails: the centered search is a third visual column, so
+   the two side clusters must reserve its space instead of growing beneath it. */
+@media (min-width: 1280px) {
+  .dashboard-topbar-main {
+    gap: clamp(1rem, 1.8vw, 2rem);
+  }
+
+  .dashboard-topbar-context,
+  .dashboard-topbar-actions {
+    max-width: calc(50% - 13rem) !important;
+  }
+
+  .dashboard-topbar-context {
+    overflow: hidden;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: min(20rem, 100%);
+  }
+
+  .dashboard-topbar-search-slot {
+    width: min(25rem, 30vw);
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1535px) {
+  .dashboard-topbar-page-context,
+  .dashboard-topbar-clock {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1536px) {
+  .dashboard-topbar-context > .relative {
+    max-width: 19rem;
+  }
+}
