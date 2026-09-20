@@ -75,6 +75,7 @@ import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
 import { GlobalAdminControlCenter } from "./components/GlobalAdminControlCenter";
 import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
 import { AndroidAppStatus } from "./components/AndroidAppStatus";
+import { RealtimeConnectivityBadge } from "./components/RealtimeConnectivityBadge";
 import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
@@ -47278,6 +47279,15 @@ function OfflineSyncBanner() {
 function SmartManager() {
   const centralizedAuth = useAuthContext();
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
+  useEffect(() => {
+    if (!IS_ISOLATED_SIGNUP_E2E || typeof window === "undefined") return undefined;
+    window.__SMART_MANAGER_OFFLINE_TEST__ = {
+      queue: (table, payload) => runCompanyTableMutation(table, "insert", payload),
+      sync: () => replayCompanyTableOutbox({ force: true }),
+      summary: () => offlineQueueSummary(offlineMutationScope()),
+    };
+    return () => { delete window.__SMART_MANAGER_OFFLINE_TEST__; };
+  }, []);
   // Role-based access and session state initialized first to prevent temporal dead zones
   const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
   const currentRole = roleDefinitionFor(currentUser.role);
@@ -48488,10 +48498,7 @@ function SmartManager() {
 
           {/* Right — live status, quick actions, and identity */}
           <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
-            <span className="hidden items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 sm:inline-flex" title="Workspace is connected">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-              Live
-            </span>
+            <RealtimeConnectivityBadge />
             <LiveDateTime />
             <button type="button" onClick={() => setPaletteOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:hidden" aria-label="Search everything">
               <Search size={17} aria-hidden="true" />
