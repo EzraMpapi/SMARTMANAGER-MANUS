@@ -1083,6 +1083,33 @@ function emitSupabaseReconnectToast() {
   notify("Connection restored — live data is up to date.", "success");
 }
 
+async function offlineSyncRequestHash(table, operation, payload) {
+  const serialized = JSON.stringify({ table, operation, payload: payload ?? null });
+  const digest = await globalThis.crypto?.subtle?.digest("SHA-256", new TextEncoder().encode(serialized));
+  if (!digest) return serialized.slice(0, 128);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function recordOfflineSyncReceipt({ operationId, table, operation, payload, result }) {
+  if (!operationId || !IS_CONFIGURED) return null;
+  try {
+    return await callRpc("record_offline_sync_operation", {
+      p_operation_id: operationId,
+      p_table_name: table,
+      p_operation: operation,
+      p_request_hash: await offlineSyncRequestHash(table, operation, payload),
+      p_payload: payload ?? {},
+      p_result: { status: result?.error ? "failed" : "synced" },
+      p_client_created_at: new Date().toISOString(),
+    }, getStoredAccessToken());
+  } catch (error) {
+    // The data mutation already succeeded. Receipt recording is retried by the
+    // next replay attempt and must not turn a confirmed write into a failure.
+    console.warn("Offline sync receipt could not be recorded.", error);
+    return null;
+  }
+}
+
 export async function runCompanyTableQuery(table, { select = "*", order } = {}) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return { rows: readOfflineTableCache(offlineMutationScope(), table), usedFallback: true, unavailable: false, offline: true };
@@ -1135,7 +1162,7 @@ function offlineRowsConflict(baseSnapshot, serverRow) {
   return Object.keys(baseSnapshot).some((key) => !ignored.has(key) && key in serverRow && JSON.stringify(baseSnapshot[key]) !== JSON.stringify(serverRow[key]));
 }
 
-async function executeCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal, baseSnapshot = null, conflictStrategy = "manual" } = {}) {
+async function executeCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal, baseSnapshot = null, conflictStrategy = "manual", operationId = null } = {}) {
   if (!["insert", "update", "delete"].includes(operation)) {
     return { data: null, error: new Error(`Unsupported company-table mutation: ${operation}`) };
   }
@@ -1180,6 +1207,7 @@ async function executeCompanyTableMutation(table, operation, payload, { matchCol
         }
         res = await query.eq(matchCol, matchVal).delete().single().run();
       }
+      await recordOfflineSyncReceipt({ operationId, table, operation, payload, result: res });
       return { data: res, error: null };
     } catch (error) {
       lastError = error;
@@ -1199,7 +1227,7 @@ async function executeCompanyTableMutation(table, operation, payload, { matchCol
 export async function replayCompanyTableOutbox(options = {}) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return [];
   const scope = offlineMutationScope();
-  const results = await replayOfflineMutations(scope, (entry) => executeCompanyTableMutation(entry.table, entry.operation, entry.payload, { matchCol: entry.matchCol, matchVal: entry.matchVal, baseSnapshot: entry.baseSnapshot, conflictStrategy: entry.conflictStrategy }), options);
+  const results = await replayOfflineMutations(scope, (entry) => executeCompanyTableMutation(entry.table, entry.operation, entry.payload, { matchCol: entry.matchCol, matchVal: entry.matchVal, baseSnapshot: entry.baseSnapshot, conflictStrategy: entry.conflictStrategy, operationId: entry.id }), options);
   if (results.length) emitCompanyMutation({ type: "offline-replay", scope, results });
   return results;
 }
