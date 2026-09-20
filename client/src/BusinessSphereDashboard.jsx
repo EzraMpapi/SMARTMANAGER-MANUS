@@ -48441,17 +48441,21 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.05),0_10px_24px_-18px_rgba(15,23,42,.25)] backdrop-blur-xl sm:min-h-16 sm:gap-3 sm:px-5 lg:gap-4 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
-          {/* Left — menu trigger and workspace identity */}
-          <div className="dashboard-topbar-context flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`}>
+          <div className="dashboard-topbar-main">
+           {/* Left — menu trigger, workspace identity, and current location */}
+           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-600 shadow-none transition-colors hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:hidden"
+               className="dashboard-topbar-menu-control grid shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
+             <div className="dashboard-topbar-brand-mark grid shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-2 shadow-[0_5px_14px_rgba(11,93,59,.2)] lg:hidden" aria-hidden="true">
+               <BrandLogo variant="compact" priority className="h-5 w-5" />
+             </div>
             <div ref={workspaceMenuRef} className="relative min-w-0">
               <button
                 type="button"
@@ -48460,14 +48464,16 @@ function SmartManager() {
                 aria-haspopup="menu"
                 aria-label={`Open workspace details for ${company?.name || "BusinessSphere"}`}
                 title={`${workspaceMenuOpen ? "Close" : "Open"} workspace switcher`}
-                className={`group flex min-w-0 items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-[12px] shadow-[0_4px_14px_rgba(15,23,42,.06)] transition-all duration-150 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:gap-2.5 sm:px-2.5 sm:text-[13px] ${workspaceMenuOpen ? "border-cyan-200 bg-cyan-50/80 text-cyan-900" : "border-slate-200/80 bg-white text-slate-600 hover:border-cyan-200 hover:bg-cyan-50/60 hover:text-cyan-900"}`}
+                 className={`dashboard-topbar-workspace group flex min-w-0 items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-[12px] shadow-[0_4px_14px_rgba(15,23,42,.06)] transition-all duration-150 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 sm:gap-2.5 sm:px-2.5 sm:text-[13px] ${workspaceMenuOpen ? "border-emerald-200 bg-emerald-50/80 text-emerald-900" : "border-slate-200/80 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-emerald-900"}`}
               >
-                <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-colors sm:h-8 sm:w-8 ${workspaceMenuOpen ? "bg-cyan-600 text-white shadow-sm" : "bg-slate-100 text-slate-500 group-hover:bg-cyan-100 group-hover:text-cyan-700"}`}>
+                 <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors ${workspaceMenuOpen ? "bg-emerald-700 text-white shadow-sm" : "bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100"}`}>
                   <Building2 size={15} strokeWidth={2.1} aria-hidden="true" />
                 </span>
-                <span className="hidden max-w-[260px] truncate font-semibold tracking-[-.01em] text-slate-800 sm:inline">{company?.name || "BusinessSphere"}</span>
-                <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform duration-200 ${workspaceMenuOpen ? "rotate-180 text-cyan-700" : "group-hover:text-cyan-700"}`} aria-hidden="true" />
-                <span className="hidden max-w-[150px] truncate whitespace-nowrap rounded-full bg-slate-100 px-2 py-1 text-[9px] font-bold uppercase tracking-[.08em] text-slate-500 sm:inline-flex">{currentUser?.role || "Administrator"}</span>
+                 <span className="dashboard-topbar-workspace-copy min-w-0">
+                   <span className="block max-w-[220px] truncate font-semibold tracking-[-.01em] text-slate-800">{company?.name || "BusinessSphere"}</span>
+                   <span className="mt-0.5 block truncate text-[9px] font-semibold uppercase tracking-[.12em] text-slate-400">{currentUser?.role || "Administrator"}</span>
+                 </span>
+                 <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform duration-200 ${workspaceMenuOpen ? "rotate-180 text-emerald-700" : "group-hover:text-emerald-700"}`} aria-hidden="true" />
               </button>
               {workspaceMenuOpen && (
                 <section role="menu" aria-label="Workspace details" className="absolute left-0 top-full z-50 mt-2 max-h-[min(70dvh,520px)] w-[min(92vw,340px)] max-w-[calc(100vw-1rem)] touch-pan-y overscroll-contain overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,.18)]">
@@ -48507,44 +48513,53 @@ function SmartManager() {
                 </section>
               )}
             </div>
+             <div className="dashboard-topbar-page-context hidden min-w-0 items-center gap-2 xl:flex" aria-label={`Current workspace area: ${activeModuleLabel}`}>
+               <span className="h-5 w-px bg-slate-200" aria-hidden="true" />
+               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500"><ActiveModuleIcon size={15} strokeWidth={2} aria-hidden="true" /></span>
+               <span className="min-w-0">
+                 <span className="block text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace area</span>
+                 <span className="block max-w-[150px] truncate text-[12px] font-semibold text-slate-700">{activeModuleLabel}</span>
+               </span>
+             </div>
           </div>
 
-          {/* Center — global search, matching the reference command bar */}
-          <div className="hidden min-w-0 flex-1 items-center justify-center sm:flex">
-            <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex h-9 min-w-0 w-full max-w-[280px] items-center justify-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-none transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
-              aria-label="Search everything"
-              title="Search everything"
-            >
-              <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
-              <span className="truncate">Search modules, records, and actions</span>
-              <kbd className="ml-auto hidden shrink-0 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
-            </button>
-          </div>
-
-          {/* Right — live status, quick actions, and identity */}
-          <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
-            <RealtimeConnectivityBadge />
+           {/* Right — live status, quick actions, and identity */}
+           <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+             <RealtimeConnectivityBadge />
             <LiveDateTime />
-            <button type="button" onClick={() => setPaletteOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:hidden" aria-label="Search everything">
-              <Search size={17} aria-hidden="true" />
-            </button>
             {/* Dark mode toggle */}
             <button
               type="button"
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition-all hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
+               className="dashboard-topbar-icon-button grid shrink-0 place-items-center rounded-xl border bg-white text-slate-500 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
-            <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
-            <div className="ml-0.5 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
-            <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+             <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+             <div className="dashboard-topbar-divider hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
+             <div className="dashboard-topbar-profile-slot">
+               <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+             </div>
+          </div>
+          </div>
+          {/* The search control gets its own row on smaller screens so it never
+              competes with the workspace and account controls for width. */}
+          <div className="dashboard-topbar-search-slot">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              className="dashboard-topbar-search inline-flex min-w-0 w-full items-center justify-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,.8)] transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+              aria-label="Search modules, records, and actions"
+              title="Search everything"
+            >
+              <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
+              <span className="dashboard-topbar-search-label truncate">Search modules, records, and actions</span>
+              <kbd className="ml-auto hidden shrink-0 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
+              <ArrowRight size={14} className="ml-auto shrink-0 text-slate-300 sm:hidden" aria-hidden="true" />
+            </button>
           </div>
         </header>
 
