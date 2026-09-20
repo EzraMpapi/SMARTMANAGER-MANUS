@@ -16,7 +16,8 @@ describe("encrypted offline persistence contracts", () => {
   it("never writes new cache or outbox values as plaintext JSON", () => {
     expect(source).toContain("persistEncrypted(key, limited)");
     expect(source).toContain("persistEncrypted(key, value)");
-    expect(source).toContain("parsed?.version === 1 && parsed?.ciphertext");
+    expect(source).toContain("parsed?.ciphertext && (parsed.version === 1 || parsed.version === 2)");
+    expect(source).toContain("compression: compressed.compression");
   });
 
   it("hydrates encrypted storage before refreshing offline table views", () => {
