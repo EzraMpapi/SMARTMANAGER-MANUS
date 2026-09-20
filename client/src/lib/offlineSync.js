@@ -5,7 +5,9 @@ const MAX_QUEUE_ITEMS = 500;
 const MAX_CACHE_ROWS = 1000;
 const KEY_DB_NAME = "smart-manager-offline-keys";
 const KEY_STORE_NAME = "keys";
+const PAYLOAD_STORE_NAME = "payloads";
 const KEY_ID = "device-aes-gcm-v1";
+const LARGE_PAYLOAD_BYTES = 512 * 1024;
 export const OFFLINE_CONFLICT_STRATEGIES = Object.freeze(["server-wins", "client-wins", "manual"]);
 export const OFFLINE_RETRY_POLICY = Object.freeze({ baseMs: 1000, maxMs: 5 * 60 * 1000, maxAttempts: 8 });
 
@@ -38,8 +40,11 @@ function decode(value) {
 function openKeyDb() {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === "undefined") return reject(new Error("IndexedDB is unavailable."));
-    const request = indexedDB.open(KEY_DB_NAME, 1);
-    request.onupgradeneeded = () => request.result.createObjectStore(KEY_STORE_NAME);
+    const request = indexedDB.open(KEY_DB_NAME, 2);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(KEY_STORE_NAME)) request.result.createObjectStore(KEY_STORE_NAME);
+      if (!request.result.objectStoreNames.contains(PAYLOAD_STORE_NAME)) request.result.createObjectStore(PAYLOAD_STORE_NAME);
+    };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error || new Error("Could not open offline key storage."));
   });
@@ -69,14 +74,27 @@ function deviceKey() {
   return keyPromise;
 }
 
+async function compressBytes(bytes) {
+  if (typeof CompressionStream === "undefined") return { bytes, compression: "none" };
+  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+  return { bytes: new Uint8Array(await new Response(stream).arrayBuffer()), compression: "gzip" };
+}
+
+async function decompressBytes(bytes, compression) {
+  if (compression !== "gzip" || typeof DecompressionStream === "undefined") return bytes;
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
 async function encrypt(value) {
   const api = cryptoApi();
   const key = await deviceKey();
   if (!api || !key) return null;
   const iv = api.getRandomValues(new Uint8Array(12));
-  const plaintext = new TextEncoder().encode(JSON.stringify(value));
-  const ciphertext = await api.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
-  return { version: 1, algorithm: "AES-GCM-256", iv: encode(iv), ciphertext: encode(new Uint8Array(ciphertext)) };
+  const jsonBytes = new TextEncoder().encode(JSON.stringify(value));
+  const compressed = await compressBytes(jsonBytes);
+  const ciphertext = await api.subtle.encrypt({ name: "AES-GCM", iv }, key, compressed.bytes);
+  return { version: 2, algorithm: "AES-GCM-256", compression: compressed.compression, originalBytes: jsonBytes.byteLength, iv: encode(iv), ciphertext: encode(new Uint8Array(ciphertext)) };
 }
 
 async function decrypt(envelope) {
@@ -85,7 +103,8 @@ async function decrypt(envelope) {
   if (!api || !key || !envelope?.ciphertext || !envelope?.iv) return null;
   try {
     const plaintext = await api.subtle.decrypt({ name: "AES-GCM", iv: decode(envelope.iv) }, key, decode(envelope.ciphertext));
-    return JSON.parse(new TextDecoder().decode(plaintext));
+    const decompressed = await decompressBytes(new Uint8Array(plaintext), envelope.compression);
+    return JSON.parse(new TextDecoder().decode(decompressed));
   } catch {
     return null;
   }
@@ -95,11 +114,50 @@ function readMemory(key, fallback) {
   return memory.has(key) ? memory.get(key) : fallback;
 }
 
+async function writeIndexedPayload(key, envelope) {
+  const db = await openKeyDb();
+  await new Promise((resolve, reject) => {
+    const request = db.transaction(PAYLOAD_STORE_NAME, "readwrite").objectStore(PAYLOAD_STORE_NAME).put(envelope, key);
+    request.onsuccess = resolve;
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function readIndexedPayload(key) {
+  try {
+    const db = await openKeyDb();
+    return await new Promise((resolve, reject) => {
+      const request = db.transaction(PAYLOAD_STORE_NAME, "readonly").objectStore(PAYLOAD_STORE_NAME).get(key);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function deleteIndexedPayload(key) {
+  try {
+    const db = await openKeyDb();
+    await new Promise((resolve, reject) => {
+      const request = db.transaction(PAYLOAD_STORE_NAME, "readwrite").objectStore(PAYLOAD_STORE_NAME).delete(key);
+      request.onsuccess = resolve;
+      request.onerror = () => reject(request.error);
+    });
+  } catch { /* best-effort cleanup */ }
+}
+
 function persistEncrypted(key, value) {
   if (!storage()) return;
   void encrypt(value).then((envelope) => {
     if (!envelope) return;
+    const serialized = JSON.stringify(envelope);
     try { storage().setItem(key, JSON.stringify(envelope)); } catch { /* quota is best-effort */ }
+    if (serialized.length > LARGE_PAYLOAD_BYTES) {
+      void writeIndexedPayload(key, envelope).then(() => {
+        try { storage().setItem(key, JSON.stringify({ version: 3, storage: "indexeddb", key })); } catch { /* best-effort pointer */ }
+      }).catch(() => undefined);
+    }
   });
 }
 
@@ -109,12 +167,13 @@ async function hydrateKey(key, fallback) {
   if (!raw) { memory.set(key, fallback); return fallback; }
   let parsed = null;
   try { parsed = JSON.parse(raw); } catch { parsed = null; }
-  const value = parsed?.version === 1 && parsed?.ciphertext ? await decrypt(parsed) : parsed;
+  if (parsed?.version === 3 && parsed.storage === "indexeddb") parsed = await readIndexedPayload(parsed.key || key);
+  const value = parsed?.ciphertext && (parsed.version === 1 || parsed.version === 2) ? await decrypt(parsed) : parsed;
   if (value == null) return fallback;
   memory.set(key, value);
   // Migrate any legacy plaintext entry immediately; plaintext is never written
   // by this module after hydration.
-  if (!(parsed?.version === 1 && parsed?.ciphertext)) persistEncrypted(key, value);
+  if (!(parsed?.version === 1 && parsed.ciphertext) && !(parsed?.version === 2 && parsed.ciphertext)) persistEncrypted(key, value);
   return value;
 }
 
@@ -223,7 +282,7 @@ export function clearOfflineScope(scope) {
   try {
     for (let index = storage()?.length - 1; index >= 0; index -= 1) {
       const key = storage()?.key(index);
-      if (key?.startsWith(prefix) || key === `${OUTBOX_PREFIX}${normalizedScope}`) { storage()?.removeItem(key); memory.delete(key); }
+      if (key?.startsWith(prefix) || key === `${OUTBOX_PREFIX}${normalizedScope}`) { storage()?.removeItem(key); memory.delete(key); void deleteIndexedPayload(key); }
     }
   } catch { /* best-effort cleanup */ }
   emit({ scope: normalizedScope });
