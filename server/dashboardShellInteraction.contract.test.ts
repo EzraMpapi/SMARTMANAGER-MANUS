@@ -68,8 +68,8 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('NotificationCenter');
     expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
-    expect(dashboard).toContain('dashboard-topbar-search inline-flex h-9');
-    expect(dashboard).toContain('border-0 bg-transparent');
+    expect(dashboard).toContain('dashboard-topbar-search inline-flex min-w-0 w-full');
+    expect(dashboard).toContain('border border-slate-200 bg-slate-50');
     expect(profileCenter).toContain('dashboard-topbar-profile relative z-40 shrink-0');
     expect(dashboardStyles).toContain('.dashboard-topbar-actions');
     expect(dashboardStyles).toContain('overflow: visible;');

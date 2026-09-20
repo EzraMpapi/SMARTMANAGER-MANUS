@@ -48552,7 +48552,7 @@ function SmartManager() {
               type="button"
               onClick={() => setPaletteOpen(true)}
               className="dashboard-topbar-search inline-flex min-w-0 w-full items-center justify-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,.8)] transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
-              aria-label="Search modules, records, and actions"
+              aria-label="Search everything"
               title="Search everything"
             >
               <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />

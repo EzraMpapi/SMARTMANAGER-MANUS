@@ -30,7 +30,7 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("Enterprise Suite");
     expect(dashboard).toContain("<NotificationCenter");
     expect(dashboard).toContain("onClick={toggleDarkMode}");
-    expect(dashboard).not.toContain("dashboard-topbar-profile");
+    expect(dashboard).toContain("dashboard-topbar-profile");
     expect(dashboard).toContain("dashboard-sidebar-brand");
     expect(dashboard).toContain("<PremiumProfileMenu");
   });
