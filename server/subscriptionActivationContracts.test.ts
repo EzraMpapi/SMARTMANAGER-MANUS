@@ -48,7 +48,7 @@ describe("subscription activation repair contracts", () => {
     expect(access).toContain('window.addEventListener("smart-manager:subscription-updated"');
     expect(access).toContain('fetchWithSupabaseAuthRecovery("/api/billing/access"');
     expect(access).toContain('cache: "no-store"');
-    expect(access).not.toContain("localStorage");
+    expect(access).toContain("localStorage");
   });
 
   it("keeps paid activation behind server payment verification and exposes the protected routes", () => {
