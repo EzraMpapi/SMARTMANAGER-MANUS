@@ -1580,15 +1580,19 @@
 
 @media (min-width: 1280px) {
   .dashboard-topbar-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 32vw) minmax(0, 1fr);
     min-height: 4.75rem;
   }
 
   .dashboard-topbar-search-slot {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: min(32vw, 25rem);
-    transform: translate(-50%, -50%);
+    position: static;
+    width: 100%;
+    transform: none;
+  }
+
+  .dashboard-topbar-actions {
+    justify-self: end;
   }
 
   .dashboard-topbar-search {
