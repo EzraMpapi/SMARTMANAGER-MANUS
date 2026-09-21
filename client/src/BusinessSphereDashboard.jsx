@@ -48544,7 +48544,6 @@ function SmartManager() {
                <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
              </div>
           </div>
-          </div>
           {/* The search control gets its own row on smaller screens so it never
               competes with the workspace and account controls for width. */}
           <div className="dashboard-topbar-search-slot">
@@ -48560,6 +48559,7 @@ function SmartManager() {
               <kbd className="ml-auto hidden shrink-0 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
               <ArrowRight size={14} className="ml-auto shrink-0 text-slate-300 sm:hidden" aria-hidden="true" />
             </button>
+          </div>
           </div>
         </header>
 
