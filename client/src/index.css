@@ -1581,11 +1581,22 @@
 @media (min-width: 1280px) {
   .dashboard-topbar-main {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 32vw) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 32vw) minmax(0, 1fr);
+    grid-template-areas: "context search actions";
+    align-items: center;
     min-height: 4.75rem;
   }
-
+  .dashboard-topbar-context {
+    grid-area: context;
+    max-width: none !important;
+  }
+  .dashboard-topbar-actions {
+    grid-area: actions;
+    max-width: none !important;
+    min-width: 0;
+  }
   .dashboard-topbar-search-slot {
+    grid-area: search;
     position: static;
     width: 100%;
     transform: none;
@@ -1799,18 +1810,12 @@
   }
 }
 
-/* Wide-screen guardrails: the centered search is a third visual column, so
-   the two side clusters must reserve its space instead of growing beneath it. */
+/* Wide-screen guardrails: explicit visual columns keep workspace context,
+   search, and account actions from competing for the same space. */
 @media (min-width: 1280px) {
   .dashboard-topbar-main {
     gap: clamp(1rem, 1.8vw, 2rem);
   }
-
-  .dashboard-topbar-context,
-  .dashboard-topbar-actions {
-    max-width: calc(50% - 13rem) !important;
-  }
-
   .dashboard-topbar-context {
     overflow: hidden;
   }
