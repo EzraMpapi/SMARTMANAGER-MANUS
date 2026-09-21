@@ -1492,6 +1492,7 @@
   min-height: 4.5rem;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: .75rem clamp(.75rem, 2.5vw, 2rem);
 }
@@ -1569,9 +1570,12 @@
 
 .dashboard-topbar-search-slot {
   display: flex;
+  flex: 1 1 100%;
   min-width: 0;
   align-items: center;
   justify-content: center;
+  order: 3;
+  width: 100%;
 }
 
 .dashboard-topbar-search {
@@ -1597,6 +1601,8 @@
   }
   .dashboard-topbar-search-slot {
     grid-area: search;
+    flex: 0 1 auto;
+    order: initial;
     position: static;
     width: 100%;
     transform: none;
