@@ -63,7 +63,9 @@ describe("platform subscription access contracts", () => {
     expect(adapter).toContain("localStorage");
     expect(adapter).not.toContain("sessionStorage");
     expect(dashboard).toContain("!subscriptionAccess.access.allowed");
-    expect(dashboard).toContain("This module is not included in the company’s server-confirmed subscription plan.");
+    expect(dashboard).toContain("Activate or renew a company plan in Subscription & Billing to unlock this module.");
+    expect(dashboard).toContain("This module is not included in the company’s server-confirmed subscription plan. Contact your billing administrator.");
+    expect(dashboard).toContain('setActive("billing")');
     expect(dashboard).toContain("Your account is active, but the company subscription is blocked.");
     expect(dashboard).toContain("User account");
     expect(dashboard).toContain("Company subscription");
