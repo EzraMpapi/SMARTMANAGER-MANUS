@@ -1639,7 +1639,9 @@
     grid-template-columns: minmax(0, 1fr) minmax(240px, 32vw) minmax(0, 1fr);
     grid-template-areas: "context search actions";
     align-items: center;
-    min-height: 4.75rem;
+    min-height: 3.25rem;
+    gap: clamp(.75rem, 1.8vw, 1.5rem);
+    padding: .35rem clamp(1rem, 2.5vw, 2rem);
   }
   .dashboard-topbar-context {
     grid-area: context;
@@ -1664,20 +1666,18 @@
   }
 
   .dashboard-topbar-search {
-    height: 2.875rem;
+    height: 2.4rem;
+  }
+
+  .dashboard-topbar-clock {
+    display: none !important;
   }
 }
 
 @media (min-width: 768px) and (max-width: 1279px) {
-  .dashboard-topbar {
-    border-color: rgba(255, 255, 255, .12) !important;
-    background: linear-gradient(100deg, #075e54 0%, #064c4d 52%, #063b43 100%) !important;
-    box-shadow: 0 2px 14px rgba(3, 38, 39, .24) !important;
-  }
-
   .dashboard-topbar-main {
     display: grid;
-    grid-template-columns: minmax(13rem, 1fr) minmax(16rem, 34rem) minmax(13rem, 1fr);
+    grid-template-columns: minmax(12rem, 1fr) minmax(16rem, 34rem) minmax(12rem, 1fr);
     grid-template-areas: "context search actions";
     min-height: 3.25rem;
     align-items: center;
@@ -1694,26 +1694,11 @@
     max-width: 100%;
   }
 
-  .dashboard-topbar-workspace {
-    min-height: 2.5rem;
-    border-color: rgba(255, 255, 255, .2);
-    background: rgba(255, 255, 255, .1);
-    color: #f2fffb;
-    box-shadow: none;
-  }
-
-  .dashboard-topbar-workspace-copy > span:first-child {
-    color: #f2fffb !important;
-  }
-
-  .dashboard-topbar-workspace-copy > span:last-child,
-  .dashboard-topbar-workspace > svg {
-    color: rgba(222, 255, 243, .72) !important;
-  }
-
-  .dashboard-topbar-workspace > :first-child {
-    background: rgba(255, 255, 255, .16) !important;
-    color: #baf5dc !important;
+  .dashboard-topbar-actions {
+    grid-area: actions;
+    justify-self: end;
+    max-width: none;
+    gap: .35rem;
   }
 
   .dashboard-topbar-search-slot {
@@ -1725,152 +1710,10 @@
 
   .dashboard-topbar-search {
     height: 2.4rem;
-    border-color: rgba(255, 255, 255, .2) !important;
-    background: rgba(1, 30, 35, .22) !important;
-    color: rgba(239, 255, 249, .82) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08) !important;
-  }
-
-  .dashboard-topbar-search-label,
-  .dashboard-topbar-search > svg {
-    color: rgba(239, 255, 249, .78) !important;
-  }
-
-  .dashboard-topbar-search kbd {
-    border-color: rgba(255, 255, 255, .18) !important;
-    background: rgba(255, 255, 255, .12) !important;
-    color: rgba(239, 255, 249, .8) !important;
-  }
-
-  .dashboard-topbar-actions {
-    grid-area: actions;
-    justify-self: end;
-    max-width: none;
-    gap: .35rem;
-  }
-
-  .dashboard-topbar-actions > * {
-    color: #effff8;
-  }
-
-  .dashboard-topbar-clock,
-  .dashboard-topbar-icon-button,
-  .dashboard-topbar-notification-slot > div > button,
-  .dashboard-topbar-profile-slot > div > button {
-    border-color: rgba(255, 255, 255, .16) !important;
-    background: rgba(255, 255, 255, .08) !important;
-    color: #effff8 !important;
-    box-shadow: none !important;
   }
 
   .dashboard-topbar-clock {
     display: none !important;
-  }
-
-  .dashboard-topbar-divider {
-    background: rgba(255, 255, 255, .24) !important;
-  }
-
-  .dashboard-topbar-profile-slot > div > button:hover,
-  .dashboard-topbar-icon-button:hover,
-  .dashboard-topbar-notification-slot > div > button:hover {
-    border-color: rgba(167, 243, 208, .45) !important;
-    background: rgba(255, 255, 255, .16) !important;
-  }
-
-  .dashboard-topbar-profile-slot > div > button > span {
-    color: #f2fffb !important;
-  }
-
-  .dashboard-topbar-search-slot {
-    width: 100%;
-  }
-}
-
-@media (min-width: 1280px) {
-  .dashboard-topbar {
-    border-color: rgba(255, 255, 255, .12) !important;
-    background: linear-gradient(100deg, #075e54 0%, #064c4d 52%, #063b43 100%) !important;
-    box-shadow: 0 2px 14px rgba(3, 38, 39, .24) !important;
-  }
-
-  .dashboard-topbar-main {
-    min-height: 3.25rem;
-    padding: .35rem 1.5rem;
-  }
-
-  .dashboard-topbar-workspace {
-    min-height: 2.5rem;
-    border-color: rgba(255, 255, 255, .2);
-    background: rgba(255, 255, 255, .1);
-    color: #f2fffb;
-    box-shadow: none;
-  }
-
-  .dashboard-topbar-workspace-copy > span:first-child {
-    color: #f2fffb !important;
-  }
-
-  .dashboard-topbar-workspace-copy > span:last-child,
-  .dashboard-topbar-workspace > svg {
-    color: rgba(222, 255, 243, .72) !important;
-  }
-
-  .dashboard-topbar-workspace > :first-child {
-    background: rgba(255, 255, 255, .16) !important;
-    color: #baf5dc !important;
-  }
-
-  .dashboard-topbar-search {
-    height: 2.4rem;
-    border-color: rgba(255, 255, 255, .2) !important;
-    background: rgba(1, 30, 35, .22) !important;
-    color: rgba(239, 255, 249, .82) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08) !important;
-  }
-
-  .dashboard-topbar-search-label,
-  .dashboard-topbar-search > svg {
-    color: rgba(239, 255, 249, .78) !important;
-  }
-
-  .dashboard-topbar-search kbd {
-    border-color: rgba(255, 255, 255, .18) !important;
-    background: rgba(255, 255, 255, .12) !important;
-    color: rgba(239, 255, 249, .8) !important;
-  }
-
-  .dashboard-topbar-actions {
-    gap: .35rem;
-  }
-
-  .dashboard-topbar-clock,
-  .dashboard-topbar-icon-button,
-  .dashboard-topbar-notification-slot > div > button,
-  .dashboard-topbar-profile-slot > div > button {
-    border-color: rgba(255, 255, 255, .16) !important;
-    background: rgba(255, 255, 255, .08) !important;
-    color: #effff8 !important;
-    box-shadow: none !important;
-  }
-
-  .dashboard-topbar-clock {
-    display: none !important;
-  }
-
-  .dashboard-topbar-divider {
-    background: rgba(255, 255, 255, .24) !important;
-  }
-
-  .dashboard-topbar-profile-slot > div > button > span {
-    color: #f2fffb !important;
-  }
-
-  .dashboard-topbar-profile-slot > div > button:hover,
-  .dashboard-topbar-icon-button:hover,
-  .dashboard-topbar-notification-slot > div > button:hover {
-    border-color: rgba(167, 243, 208, .45) !important;
-    background: rgba(255, 255, 255, .16) !important;
   }
 }
 
