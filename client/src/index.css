@@ -737,6 +737,12 @@
 
 /* Repository-wide responsive hardening. These rules are scoped to the protected
    dashboard so public/auth pages retain their existing composition. */
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
+  position: fixed;
+  z-index: 80;
+}
+
 @media (max-width: 639px) {
   .dashboard-mobile-content {
     min-width: 0;
@@ -806,7 +812,6 @@
   .dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
     align-items: flex-end;
     overflow: hidden;
-    z-index: 80;
     padding: max(.75rem, env(safe-area-inset-top)) .75rem max(.75rem, env(safe-area-inset-bottom));
     overscroll-behavior: contain;
   }
@@ -887,7 +892,6 @@
      contract for those surfaces so every module gets identical behavior. */
   .dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
     overflow: hidden;
-    z-index: 80;
     overscroll-behavior: contain;
   }
 
