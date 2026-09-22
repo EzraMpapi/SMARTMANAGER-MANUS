@@ -847,8 +847,12 @@
      shared visual pattern so Sales, Finance, CRM, HR, Procurement, and sector
      workspaces behave like Inventory on narrow screens. */
   .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .border-t {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
     display: flex;
     flex-wrap: wrap;
+    flex-shrink: 0;
     gap: .625rem;
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
     box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
@@ -900,8 +904,12 @@
   }
 
   .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
     display: flex;
     flex-wrap: wrap;
+    flex-shrink: 0;
     gap: .625rem;
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
     box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
