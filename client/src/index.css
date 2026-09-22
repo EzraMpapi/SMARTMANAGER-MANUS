@@ -2319,3 +2319,177 @@
   background: #f1f5f9 !important;
   color: #0f172a !important;
 }
+
+/* Dark mode surface system for the navigation rail and command bar. The
+   existing toggle state remains the single source of truth; these rules only
+   provide the matching visual treatment and keep mobile layout contracts intact. */
+@media (min-width: 768px) {
+  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+    display: grid !important;
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    border-radius: .65rem;
+  }
+
+  .dashboard-topbar.dark-shell {
+    border-color: #334155 !important;
+    background: #0f172a !important;
+    box-shadow: 0 1px 0 rgba(148, 163, 184, .12), 0 14px 30px -24px rgba(0, 0, 0, .75) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search:hover {
+    border-color: #64748b !important;
+    background: #273449 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search > svg,
+  .dashboard-topbar.dark-shell .dashboard-topbar-search-label,
+  .dashboard-topbar.dark-shell .dashboard-topbar-search:hover > svg,
+  .dashboard-topbar.dark-shell .dashboard-topbar-search:hover .dashboard-topbar-search-label {
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search kbd {
+    border-color: #475569 !important;
+    background: #0f172a !important;
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control,
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button {
+    border-color: #475569 !important;
+    background: transparent !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button:hover,
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control:hover,
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button:hover {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-divider {
+    background: #475569 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > span {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button,
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button span span:first-child,
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button span span:last-child {
+    color: #f8fafc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button:hover {
+    background: #1e293b !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button > svg {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-sidebar.dark-shell {
+    background: #0f172a !important;
+    border-right-color: #334155 !important;
+    box-shadow: 8px 0 28px rgba(0, 0, 0, .24) !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer {
+    background: #0f172a !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand {
+    border-bottom-color: #334155 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .text-white,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .brand-wordmark {
+    color: #f8fafc !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .text-cyan-300 {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .bg-cyan-400\/10 {
+    background: #1e293b !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .text-slate-400,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .text-slate-500,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer .text-slate-400 {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .text-slate-300,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer .text-slate-300 {
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > div > button:not([aria-current="page"]),
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > button:not([aria-current="page"]) {
+    background: transparent !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer button:not([aria-current="page"]):hover {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] {
+    border-color: #475569 !important;
+    border-left-color: #94a3b8 !important;
+    background: #1e293b !important;
+    color: #f8fafc !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .2) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .bg-\[\#123457\] {
+    background: #334155 !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .bg-\[\#1f4265\] {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer {
+    border-top-color: #334155 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+    border-color: #64748b !important;
+    background: #334155 !important;
+    color: #f8fafc !important;
+  }
+}
