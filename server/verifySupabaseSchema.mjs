@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { extractReferencedTables } from "./supabaseSchemaReferences.mjs";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const dashboardSource = readFileSync(
@@ -22,12 +23,12 @@ const contractManifest = JSON.parse(
   readFileSync(resolve(projectRoot, "server/schemaContracts.json"), "utf8"),
 );
 
-const referencedTables = [...new Set([
-  ...[...dashboardSource.matchAll(/(?:sb|useCompanyTable|runCompanyTableQuery|runCompanyTableMutation)\("([^\"]+)"/g)].map((match) => match[1]),
-  ...[...microfinanceSource.matchAll(/"(mfi_[a-z_]+)"/g)].map((match) => match[1]),
-  ...[...pharmacySource.matchAll(/"(phm_[a-z_]+)"/g)].map((match) => match[1]),
-  ...[...schoolSource.matchAll(/"(sch_[a-z_]+)"/g)].map((match) => match[1]),
-])].sort();
+const referencedTables = extractReferencedTables({
+  dashboardSource,
+  microfinanceSource,
+  pharmacySource,
+  schoolSource,
+});
 
 const supabaseUrl = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "").replace(/\/$/, "");
 const serviceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
