@@ -803,7 +803,7 @@
      direct children of a fixed overlay. On phones they must become a bounded
      bottom sheet instead of preserving a desktop-height side panel that clips
      fields, action buttons, or the close control. */
-  .dashboard-mobile-content .fixed.inset-0 {
+  .dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
     align-items: flex-end;
     overflow: hidden;
     z-index: 80;
@@ -885,7 +885,7 @@
   /* The dashboard shell also hosts lazy-loaded and portal-like module
      dialogs outside the main content node. Keep the same form interaction
      contract for those surfaces so every module gets identical behavior. */
-  .dashboard-shell .fixed.inset-0 {
+  .dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
     overflow: hidden;
     z-index: 80;
     overscroll-behavior: contain;
