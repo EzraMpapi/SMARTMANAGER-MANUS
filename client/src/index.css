@@ -1771,6 +1771,10 @@
     display: none;
   }
 
+  .dashboard-topbar-reference-control {
+    display: none !important;
+  }
+
   .dashboard-topbar-search-slot {
     width: 100%;
     padding: 0 max(.75rem, env(safe-area-inset-left)) max(.625rem, env(safe-area-inset-bottom)) max(.75rem, env(safe-area-inset-right));
@@ -2018,6 +2022,144 @@
 @media (min-width: 1536px) {
   .dashboard-topbar-context > .relative {
     max-width: 19rem;
+  }
+}
+
+/* Desktop/tablet command bar follows the supplied reference: the workspace
+   controls intentionally leave the left column quiet, the search is centered,
+   and the account/action controls stay in the right column. Mobile rules above
+   remain the source of truth below 768px. */
+@media (min-width: 768px) {
+  .dashboard-topbar.dashboard-shell-header:not(.dark-shell) {
+    border-color: rgb(6 91 83 / .95) !important;
+    background: linear-gradient(90deg, #075f57 0%, #086b62 52%, #075f57 100%) !important;
+    box-shadow: 0 1px 0 rgb(0 0 0 / .12), 0 10px 24px -20px rgb(0 0 0 / .65) !important;
+  }
+
+  .dashboard-topbar-main {
+    grid-template-columns: minmax(0, 1fr) minmax(24rem, 31vw) minmax(0, 1fr);
+    gap: 1rem;
+    min-height: 3.25rem;
+    padding-block: .25rem;
+  }
+
+  .dashboard-topbar-context {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .dashboard-topbar-search {
+    height: 2.4rem;
+    border-color: rgb(255 255 255 / .17) !important;
+    background: rgb(4 53 55 / .22) !important;
+    color: rgb(241 245 249) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .06) !important;
+  }
+
+  .dashboard-topbar-search:hover {
+    border-color: rgb(255 255 255 / .35) !important;
+    background: rgb(4 53 55 / .34) !important;
+  }
+
+  .dashboard-topbar-search > svg,
+  .dashboard-topbar-search-label {
+    color: rgb(226 232 240) !important;
+  }
+
+  .dashboard-topbar-search kbd {
+    border-color: rgb(255 255 255 / .18) !important;
+    background: rgb(255 255 255 / .12) !important;
+    color: rgb(226 232 240) !important;
+  }
+
+  .dashboard-topbar-actions {
+    gap: .25rem;
+    color: rgb(241 245 249);
+  }
+
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"],
+  .dashboard-topbar-actions .dashboard-topbar-clock,
+  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+    display: none !important;
+  }
+
+  .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar-reference-control {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    border: 0 !important;
+    border-radius: .65rem;
+    background: transparent !important;
+    color: rgb(241 245 249) !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-topbar-notification-slot > button:hover,
+  .dashboard-topbar-reference-control:hover {
+    background: rgb(255 255 255 / .12) !important;
+    color: white !important;
+  }
+
+  .dashboard-topbar-notification-slot > button > span {
+    border-color: #086b62 !important;
+    background: #22b573 !important;
+  }
+
+  .dashboard-topbar-reference-control {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .dashboard-topbar-reference-badge {
+    position: absolute;
+    top: .08rem;
+    right: .04rem;
+    display: grid;
+    min-width: 1rem;
+    height: 1rem;
+    padding-inline: .18rem;
+    place-items: center;
+    border: 1px solid #086b62;
+    border-radius: 999px;
+    background: #22b573;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .dashboard-topbar-divider {
+    background: rgb(255 255 255 / .3) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button {
+    min-height: 2.5rem;
+    border-color: transparent !important;
+    background: transparent !important;
+    color: white !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button:hover {
+    background: rgb(255 255 255 / .12) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > span {
+    border-color: transparent !important;
+    background: transparent !important;
+    color: rgb(241 245 249) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button span span:first-child,
+  .dashboard-topbar-profile-slot > div > button span span:last-child {
+    color: white !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button > svg {
+    color: rgb(226 232 240) !important;
   }
 }
 

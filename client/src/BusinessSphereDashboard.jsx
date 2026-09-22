@@ -48468,6 +48468,13 @@ function SmartManager() {
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
              <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+             <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label="Open messages" title="Messages">
+               <MessageCircle size={17} strokeWidth={1.75} aria-hidden="true" />
+               <span className="dashboard-topbar-reference-badge" aria-label="3 unread messages">3</span>
+             </button>
+             <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label="Open help and support" title="Help and support">
+               <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
+             </button>
              <div className="dashboard-topbar-divider hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
              <div className="dashboard-topbar-profile-slot">
                <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
