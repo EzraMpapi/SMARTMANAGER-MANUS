@@ -2031,9 +2031,9 @@
    remain the source of truth below 768px. */
 @media (min-width: 768px) {
   .dashboard-topbar.dashboard-shell-header:not(.dark-shell) {
-    border-color: rgb(6 91 83 / .95) !important;
-    background: linear-gradient(90deg, #075f57 0%, #086b62 52%, #075f57 100%) !important;
-    box-shadow: 0 1px 0 rgb(0 0 0 / .12), 0 10px 24px -20px rgb(0 0 0 / .65) !important;
+    border-color: rgb(226 232 240 / .88) !important;
+    background: rgb(255 255 255 / .94) !important;
+    box-shadow: 0 1px 0 rgb(15 23 42 / .04), 0 14px 30px -24px rgb(15 23 42 / .42) !important;
   }
 
   .dashboard-topbar-main {
@@ -2050,31 +2050,36 @@
 
   .dashboard-topbar-search {
     height: 2.4rem;
-    border-color: rgb(255 255 255 / .17) !important;
-    background: rgb(4 53 55 / .22) !important;
-    color: rgb(241 245 249) !important;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / .06) !important;
+    border-color: rgb(226 232 240 / .92) !important;
+    background: rgb(248 250 252 / .96) !important;
+    color: rgb(100 116 139) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .8) !important;
   }
 
   .dashboard-topbar-search:hover {
-    border-color: rgb(255 255 255 / .35) !important;
-    background: rgb(4 53 55 / .34) !important;
+    border-color: rgb(203 213 225) !important;
+    background: rgb(241 245 249) !important;
+  }
+
+  .dashboard-topbar-search:hover > svg,
+  .dashboard-topbar-search:hover .dashboard-topbar-search-label {
+    color: rgb(71 85 105) !important;
   }
 
   .dashboard-topbar-search > svg,
   .dashboard-topbar-search-label {
-    color: rgb(226 232 240) !important;
+    color: rgb(100 116 139) !important;
   }
 
   .dashboard-topbar-search kbd {
-    border-color: rgb(255 255 255 / .18) !important;
-    background: rgb(255 255 255 / .12) !important;
-    color: rgb(226 232 240) !important;
+    border-color: rgb(226 232 240) !important;
+    background: rgb(255 255 255) !important;
+    color: rgb(148 163 184) !important;
   }
 
   .dashboard-topbar-actions {
     gap: .25rem;
-    color: rgb(241 245 249);
+    color: rgb(100 116 139);
   }
 
   .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"],
@@ -2090,19 +2095,19 @@
     border: 0 !important;
     border-radius: .65rem;
     background: transparent !important;
-    color: rgb(241 245 249) !important;
+    color: rgb(100 116 139) !important;
     box-shadow: none !important;
   }
 
   .dashboard-topbar-notification-slot > button:hover,
   .dashboard-topbar-reference-control:hover {
-    background: rgb(255 255 255 / .12) !important;
-    color: white !important;
+    background: rgb(248 250 252) !important;
+    color: rgb(15 23 42) !important;
   }
 
   .dashboard-topbar-notification-slot > button > span {
-    border-color: #086b62 !important;
-    background: #22b573 !important;
+    border-color: white !important;
+    background: #ef4444 !important;
   }
 
   .dashboard-topbar-reference-control {
@@ -2122,9 +2127,9 @@
     height: 1rem;
     padding-inline: .18rem;
     place-items: center;
-    border: 1px solid #086b62;
+    border: 1px solid white;
     border-radius: 999px;
-    background: #22b573;
+    background: #ef4444;
     color: white;
     font-size: 9px;
     font-weight: 700;
@@ -2132,34 +2137,34 @@
   }
 
   .dashboard-topbar-divider {
-    background: rgb(255 255 255 / .3) !important;
+    background: rgb(226 232 240) !important;
   }
 
   .dashboard-topbar-profile-slot > div > button {
     min-height: 2.5rem;
     border-color: transparent !important;
     background: transparent !important;
-    color: white !important;
+    color: rgb(100 116 139) !important;
     box-shadow: none !important;
   }
 
   .dashboard-topbar-profile-slot > div > button:hover {
-    background: rgb(255 255 255 / .12) !important;
+    background: rgb(248 250 252) !important;
   }
 
   .dashboard-topbar-profile-slot > div > span {
-    border-color: transparent !important;
-    background: transparent !important;
-    color: rgb(241 245 249) !important;
+    border-color: rgb(226 232 240) !important;
+    background: rgb(248 250 252) !important;
+    color: rgb(71 85 105) !important;
   }
 
   .dashboard-topbar-profile-slot > div > button span span:first-child,
   .dashboard-topbar-profile-slot > div > button span span:last-child {
-    color: white !important;
+    color: rgb(51 65 85) !important;
   }
 
   .dashboard-topbar-profile-slot > div > button > svg {
-    color: rgb(226 232 240) !important;
+    color: rgb(148 163 184) !important;
   }
 }
 
