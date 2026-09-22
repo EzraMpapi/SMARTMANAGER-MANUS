@@ -2242,3 +2242,80 @@
   .sm-onboarding-card select,
   .sm-onboarding-card textarea { transition: none; }
 }
+
+/* Light navigation rail: the sidebar now shares the neutral visual language
+   of the restored topbar while retaining the existing routing and RBAC logic. */
+.dashboard-sidebar:not(.dark-shell) {
+  background: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+  box-shadow: 8px 0 28px rgba(15, 23, 42, .06) !important;
+  color: #475569 !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand {
+  border-bottom-color: #e2e8f0 !important;
+  background: #ffffff !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .text-white,
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .brand-wordmark { color: #0f172a !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .text-cyan-300 { color: #64748b !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .bg-cyan-400\/10 { background: #f1f5f9 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .ring-cyan-400\/20 { --tw-ring-color: #cbd5e1 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation { background: #ffffff; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-400,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-500 { color: #94a3b8 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-300 { color: #64748b !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > div > button:not([aria-current="page"]),
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > button:not([aria-current="page"]) {
+  background: transparent !important;
+  color: #475569 !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] {
+  border-color: #cbd5e1 !important;
+  border-left-color: #0f172a !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, .06) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .bg-\[\#123457\] {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .bg-\[\#1f4265\] {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer {
+  border-top-color: #e2e8f0 !important;
+  background: #ffffff !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer .text-slate-300,
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer .text-slate-400 { color: #94a3b8 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer button:not([aria-current="page"]):hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+  border-color: #e2e8f0 !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .05) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+  border-color: #94a3b8 !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Close menu"] { color: #64748b !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Close menu"]:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
