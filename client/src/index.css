@@ -806,6 +806,7 @@
   .dashboard-mobile-content .fixed.inset-0 {
     align-items: flex-end;
     overflow: hidden;
+    z-index: 80;
     padding: max(.75rem, env(safe-area-inset-top)) .75rem max(.75rem, env(safe-area-inset-bottom));
     overscroll-behavior: contain;
   }
@@ -886,6 +887,7 @@
      contract for those surfaces so every module gets identical behavior. */
   .dashboard-shell .fixed.inset-0 {
     overflow: hidden;
+    z-index: 80;
     overscroll-behavior: contain;
   }
 
