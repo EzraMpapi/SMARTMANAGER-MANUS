@@ -924,8 +924,8 @@ it("exposes dedicated non-login recovery and email-confirmation screens with acc
   expect(enterpriseAuthSource).toContain("auth-card-enter");
   expect(publicAuthSource).toContain("PasswordRecoveryView");
   expect(publicAuthSource).toContain("EmailConfirmationView");
-  expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"');
-  expect(dashboardSource).toContain('className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"');
+  expect(dashboardSource).toContain('className="sm-onboarding-form sm-onboarding-form--join auth-step-panel space-y-4" aria-live="polite"');
+  expect(dashboardSource).toContain('className="sm-onboarding-form sm-onboarding-form--modules auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"');
   expect(dashboardSource).toContain('<LoginPage initialDiagnostic={terminalSessionDiagnostic} onAuthenticated=');
 });
 

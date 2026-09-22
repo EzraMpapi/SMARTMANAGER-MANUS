@@ -1898,3 +1898,78 @@
     max-width: 19rem;
   }
 }
+
+
+/* Onboarding visual system: calm surfaces, clear progress, and mobile-first form rhythm. */
+.sm-onboarding {
+  background:
+    radial-gradient(900px circle at 70% -10%, rgba(34,197,94,.12), transparent 52%),
+    linear-gradient(135deg, #f8fbfa 0%, #f3f7f5 100%);
+}
+.sm-onboarding-content { position: relative; }
+.sm-onboarding-content > div { position: relative; z-index: 1; }
+.sm-onboarding-heading h2 { letter-spacing: -.055em; }
+.sm-onboarding-mode { background: rgba(255,255,255,.78); backdrop-filter: blur(12px); }
+.sm-onboarding-mode-button { min-height: 44px; }
+.sm-onboarding-mode-button.is-active { box-shadow: 0 6px 18px rgba(22,163,74,.12); }
+.sm-onboarding-card { box-shadow: 0 24px 70px rgba(15,23,42,.09), 0 2px 8px rgba(15,23,42,.03); }
+.sm-onboarding-card input,
+.sm-onboarding-card select,
+.sm-onboarding-card textarea { min-height: 46px; border-radius: .85rem; transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease; }
+.sm-onboarding-card input:focus,
+.sm-onboarding-card select:focus,
+.sm-onboarding-card textarea:focus { border-color: #16a34a; box-shadow: 0 0 0 4px rgba(22,163,74,.10); outline: none; }
+.sm-onboarding-form > button[type="submit"],
+.sm-onboarding-form > button:last-child { min-height: 50px; letter-spacing: -.01em; }
+.sm-onboarding-step { color: #94a3b8; }
+.sm-onboarding-step-number { background: #e2e8f0; color: #94a3b8; transition: all .2s ease; }
+.sm-onboarding-step-label { white-space: nowrap; }
+.sm-onboarding-step.is-active .sm-onboarding-step-number,
+.sm-onboarding-step.is-done .sm-onboarding-step-number { background: #16a34a; color: white; box-shadow: 0 0 0 5px rgba(22,163,74,.10); }
+.sm-onboarding-step.is-active .sm-onboarding-step-label { color: #0f172a; }
+.sm-onboarding-step.is-done .sm-onboarding-step-label { color: #15803d; }
+.sm-onboarding-step-line { background: #e2e8f0; }
+.sm-onboarding-step-line.is-done { background: #86efac; }
+.sm-onboarding-module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sm-onboarding-module { min-height: 76px; position: relative; }
+.sm-onboarding-module:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15,23,42,.06); }
+.sm-onboarding-module.is-active { box-shadow: inset 0 0 0 1px rgba(22,163,74,.12), 0 8px 20px rgba(22,163,74,.08); }
+.sm-onboarding-plan { background: linear-gradient(135deg, rgba(236,253,245,.92), rgba(239,246,255,.78)); }
+
+@media (max-width: 639px) {
+  .sm-onboarding { min-height: 100svh; }
+  .sm-onboarding-content { align-items: flex-start; padding: 1rem .875rem 2rem; }
+  .sm-onboarding-content > div { max-width: 100%; }
+  .sm-onboarding-heading { align-items: flex-start; gap: .75rem; }
+  .sm-onboarding-heading h2 { font-size: 1.7rem; line-height: 1.08; }
+  .sm-onboarding-heading p { max-width: 28rem; }
+  .sm-onboarding-back { padding: .6rem .7rem; white-space: nowrap; }
+  .sm-onboarding-mode { margin-inline: -.1rem; }
+  .sm-onboarding-mode-button { font-size: .7rem; padding-inline: .55rem; }
+  .sm-onboarding-steps { gap: .4rem; }
+  .sm-onboarding-step { gap: .35rem; }
+  .sm-onboarding-step-label { font-size: .65rem; }
+  .sm-onboarding-step-number { height: 1.8rem; width: 1.8rem; }
+  .sm-onboarding-card { border-radius: 1.35rem; padding: 1rem !important; }
+  .sm-onboarding-form { gap: 1rem; }
+  .sm-onboarding-module-grid { gap: .55rem; }
+  .sm-onboarding-module { min-height: 70px; padding: .65rem; }
+  .sm-onboarding-module span:nth-child(2) { min-width: 0; }
+  .sm-onboarding-module span:nth-child(2) span:first-child { white-space: normal; line-height: 1.15; }
+  .sm-onboarding-plan { padding: .85rem; }
+  .sm-onboarding-form--join .grid,
+  .sm-onboarding-form--account .grid,
+  .sm-onboarding-form--workspace .grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .sm-onboarding-content { padding-inline: 2rem; }
+  .sm-onboarding-card { max-height: calc(100svh - 3rem); overflow-y: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-onboarding-module,
+  .sm-onboarding-card input,
+  .sm-onboarding-card select,
+  .sm-onboarding-card textarea { transition: none; }
+}
