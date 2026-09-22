@@ -1825,17 +1825,98 @@
 }
 
 @media (max-width: 479px) {
+  .dashboard-topbar {
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-topbar-main {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr) 3.25rem 3.25rem;
+    align-items: center;
+    gap: .5rem;
+    min-height: 5.25rem;
+    padding: .875rem max(.75rem, env(safe-area-inset-right)) .875rem max(.75rem, env(safe-area-inset-left));
+  }
+
+  .dashboard-topbar-context,
+  .dashboard-topbar-actions {
+    display: contents;
+  }
+
+  .dashboard-topbar-menu-control {
+    grid-column: 1;
+    grid-row: 1;
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+  }
+
+  .dashboard-topbar-context > .relative,
   .dashboard-topbar-brand-mark,
-  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+  .dashboard-topbar-actions .dashboard-topbar-icon-button,
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"],
+  .dashboard-topbar-clock,
+  .dashboard-topbar-divider {
     display: none !important;
   }
 
-  .dashboard-topbar-context > .relative {
-    max-width: calc(100vw - 8rem);
+  .dashboard-topbar-search-slot {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
   }
 
-  .dashboard-topbar-workspace-copy {
-    max-width: min(34vw, 9rem);
+  .dashboard-topbar-search {
+    height: 3.25rem;
+    border-radius: 999px;
+    background: rgb(255 255 255 / .96);
+    padding-inline: 1rem;
+    font-size: .875rem;
+  }
+
+  .dashboard-topbar-search .dashboard-topbar-search-label {
+    text-align: left;
+  }
+
+  .dashboard-topbar-search > svg:last-child {
+    display: none;
+  }
+
+  .dashboard-topbar-notification-slot {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .dashboard-topbar-notification-slot > div > button,
+  .dashboard-topbar-notification-slot > button {
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+  }
+
+  .dashboard-topbar-profile-slot {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .dashboard-topbar-profile-slot > div > button {
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+    padding: .25rem;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search {
+    background: rgb(30 41 59 / .96);
   }
 }
 
