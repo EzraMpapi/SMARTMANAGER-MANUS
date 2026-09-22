@@ -741,6 +741,43 @@
 .dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
   position: fixed;
   z-index: 80;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) {
+  box-sizing: border-box;
+  min-height: 0;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.top-0, .sticky.bottom-0, .border-t),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.top-0, .sticky.bottom-0, .border-t) {
+  position: sticky;
+  z-index: 10;
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t) {
+  bottom: 0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: .625rem;
+  padding-bottom: max(.75rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t) > :where(button, a, [role="button"]),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t) > :where(button, a, [role="button"]) {
+  min-width: 0;
+  min-height: 44px;
+  flex: 1 1 9rem;
+  white-space: normal;
+  touch-action: manipulation;
 }
 
 @media (max-width: 639px) {
