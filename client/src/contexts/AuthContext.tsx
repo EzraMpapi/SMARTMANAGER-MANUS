@@ -92,6 +92,10 @@ async function hydrateIdentity(client: SupabaseClient, session: Session, dispatc
   const currentGeneration = ++generation.current;
   let effectiveSession = session;
   dispatch({ type: "SESSION_ESTABLISHED", session: effectiveSession, user: effectiveSession.user });
+  if (!effectiveSession.user.email_confirmed_at) {
+    dispatch({ type: "INCOMPLETE_IDENTITY", session: effectiveSession, user: effectiveSession.user, profile: null, reason: "EMAIL_UNCONFIRMED" });
+    return;
+  }
   dispatch({ type: "PROFILE_LOADING" });
   let snapshot: LoadedIdentitySnapshot;
   try {

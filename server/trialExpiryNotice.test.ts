@@ -92,7 +92,7 @@ describe("Persistent trial-expiry notice contract", () => {
     expect(dashboard).toContain("return <>{sharedTrialNoticeGate}<CustomerPortal");
     expect(dashboard).toContain("return <>{sharedTrialNoticeGate}<ExternalSupplierPortal");
     expect(dashboard).toContain("{sharedTrialNoticeGate}");
-    expect(dashboard).toContain('import { TrialExpiryNoticeGate } from "./components/TrialExpiryNoticeGate";');
+    expect(dashboard).toContain('const TrialExpiryNoticeGate = lazy(() => import("./components/TrialExpiryNoticeGate")');
   });
 
   it("exposes a dedicated Global Admin dashboard panel using the audited support component", () => {

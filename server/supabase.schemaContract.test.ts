@@ -1,17 +1,22 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { extractReferencedTables } from "./supabaseSchemaReferences.mjs";
 
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
 const verifierSource = readFileSync(new URL("./verifySupabaseSchema.mjs", import.meta.url), "utf8");
+const referenceHelperSource = readFileSync(new URL("./supabaseSchemaReferences.mjs", import.meta.url), "utf8");
 const contractManifest = JSON.parse(readFileSync(new URL("./schemaContracts.json", import.meta.url), "utf8"));
 const baselineMigration = readFileSync(new URL("../supabase/migrations/20260812_001_complete_erp_schema_baseline.sql", import.meta.url), "utf8");
 const tenantBootstrapMigration = readFileSync(new URL("../supabase/migrations/20260814_002_guarded_first_tenant_bootstrap.sql", import.meta.url), "utf8");
 
 describe("Supabase production schema contract guard", () => {
   it("derives the required table contract from the single preserved ERP dashboard", () => {
-    const referencedTables = [...new Set(
-      [...dashboardSource.matchAll(/(?:sb|useCompanyTable|runCompanyTableQuery|runCompanyTableMutation)\("([^\"]+)"/g)].map((match) => match[1]),
-    )];
+    const referencedTables = extractReferencedTables({
+      dashboardSource,
+      microfinanceSource: "",
+      pharmacySource: "",
+      schoolSource: "",
+    });
 
     // The dashboard is intentionally preserved as a single evolving module;
     // assert meaningful schema breadth instead of coupling this guard to a
@@ -38,8 +43,8 @@ describe("Supabase production schema contract guard", () => {
     expect(verifierSource).toContain("SUPABASE_SECRET_KEY");
     expect(verifierSource).toContain("/rest/v1/");
     expect(verifierSource).toContain("BusinessSphereDashboard.jsx");
-    expect(verifierSource).toContain("useCompanyTable");
-    expect(verifierSource).toContain("runCompanyTableMutation");
+    expect(referenceHelperSource).toContain("useCompanyTable");
+    expect(referenceHelperSource).toContain("runCompanyTableMutation");
     expect(verifierSource).toContain("missingTables");
     expect(verifierSource).toContain("tenantTableIssues");
     expect(verifierSource).toContain("criticalTableIssues");

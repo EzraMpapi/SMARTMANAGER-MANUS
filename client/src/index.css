@@ -737,6 +737,49 @@
 
 /* Repository-wide responsive hardening. These rules are scoped to the protected
    dashboard so public/auth pages retain their existing composition. */
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
+  position: fixed;
+  z-index: 80;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) {
+  box-sizing: border-box;
+  min-height: 0;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.top-0, .sticky.bottom-0, .border-t),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.top-0, .sticky.bottom-0, .border-t) {
+  position: sticky;
+  z-index: 10;
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t) {
+  bottom: 0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: .625rem;
+  padding-bottom: max(.75rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t) > :where(button, a, [role="button"]),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t) > :where(button, a, [role="button"]) {
+  min-width: 0;
+  min-height: 44px;
+  flex: 1 1 9rem;
+  white-space: normal;
+  touch-action: manipulation;
+}
+
 @media (max-width: 639px) {
   .dashboard-mobile-content {
     min-width: 0;
@@ -791,12 +834,136 @@
   }
 
   .dashboard-mobile-content .sm-responsive-dialog,
-  .dashboard-mobile-content .fixed.inset-0 > :where(form, div) {
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, div):not(.absolute) {
     width: 100% !important;
     max-width: 100% !important;
     max-height: min(92svh, 46rem);
     margin-top: auto;
     border-radius: 1.5rem 1.5rem 0 0;
+  }
+
+  /* Shared popup behavior: module drawers and forms are often rendered as
+     direct children of a fixed overlay. On phones they must become a bounded
+     bottom sheet instead of preserving a desktop-height side panel that clips
+     fields, action buttons, or the close control. */
+  .dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
+    align-items: flex-end;
+    overflow: hidden;
+    padding: max(.75rem, env(safe-area-inset-top)) .75rem max(.75rem, env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(92svh, 46rem) !important;
+    min-height: 0;
+    margin: auto 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1.25rem 1.25rem 0 0;
+    border-left-width: 0;
+    border-right-width: 0;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.sticky.top-0, .sticky.bottom-0) {
+    position: sticky;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 :where(input, select, textarea, button) {
+    touch-action: manipulation;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.bottom-0 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .625rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+  }
+
+  /* Some lazy-loaded modules use a bordered action row instead of the sticky
+     footer utility. Apply the same wrapping and safe-area treatment to that
+     shared visual pattern so Sales, Finance, CRM, HR, Procurement, and sector
+     workspaces behave like Inventory on narrow screens. */
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .border-t {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: .625rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) > :where(button, a, [role="button"]) {
+    flex: 1 1 9rem;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+    touch-action: manipulation;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.bottom-0 > button {
+    flex: 1 1 9rem;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.top-0 button[aria-label],
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :first-child button[aria-label] {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  /* The dashboard shell also hosts lazy-loaded and portal-like module
+     dialogs outside the main content node. Keep the same form interaction
+     contract for those surfaces so every module gets identical behavior. */
+  .dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(92svh, 46rem) !important;
+    min-height: 0;
+    margin: auto 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1.25rem 1.25rem 0 0;
+  }
+
+  .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: .625rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+  }
+
+  .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) > :where(button, a, [role="button"]) {
+    flex: 1 1 9rem;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+    touch-action: manipulation;
   }
 
   .dashboard-mobile-content .sm-responsive-table {
@@ -872,6 +1039,16 @@
 .dashboard-mobile-nav,
 .dashboard-sidebar {
   min-width: 0;
+}
+
+.dashboard-topbar-clock {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-topbar-clock {
+    display: flex !important;
+  }
 }
 
 .dashboard-topbar > :first-child,
@@ -1072,7 +1249,7 @@
 
   .dashboard-topbar-actions {
     max-width: 100%;
-    overflow-x: auto;
+    overflow: visible;
     scrollbar-width: none;
   }
 
@@ -1086,6 +1263,18 @@
 
   .dashboard-topbar-context-title {
     max-width: min(34vw, 10rem);
+  }
+
+  .dashboard-topbar-profile {
+    position: relative;
+    z-index: 60;
+  }
+
+  .dashboard-topbar-profile > button {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -1326,5 +1515,987 @@
 
   .dashboard-reference-erp .recharts-legend-wrapper {
     transform: translateY(1px);
+  }
+}
+
+/* Topbar refresh: keep the command surface calm at desktop widths and give
+   tablet/phone layouts a dedicated search row instead of squeezing controls
+   until labels become unreadable. */
+.dashboard-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 45;
+  display: flex !important;
+  min-height: 0 !important;
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  border-color: rgb(226 232 240 / .88) !important;
+  background: rgb(255 255 255 / .94) !important;
+  box-shadow: 0 1px 0 rgb(15 23 42 / .04), 0 14px 30px -24px rgb(15 23 42 / .42) !important;
+  backdrop-filter: blur(18px);
+}
+
+.dashboard-topbar-main {
+  display: flex;
+  min-width: 0;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: .75rem clamp(.75rem, 2.5vw, 2rem);
+}
+
+.dashboard-topbar-context {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none !important;
+}
+
+.dashboard-topbar-context > .relative {
+  min-width: 0;
+  max-width: min(100%, 22rem);
+}
+
+.dashboard-topbar-menu-control,
+.dashboard-topbar-icon-button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+.dashboard-topbar-workspace {
+  min-height: 2.75rem;
+  max-width: min(100%, 22rem);
+  border-color: rgb(226 232 240 / .92);
+  background: rgb(255 255 255 / .9);
+}
+
+.dashboard-topbar-workspace-copy {
+  line-height: 1.05;
+}
+
+.dashboard-topbar-actions {
+  flex: 0 0 auto !important;
+  max-width: 100%;
+}
+
+.dashboard-topbar-actions > * {
+  flex-shrink: 0;
+}
+
+.dashboard-topbar-icon-button {
+  border-color: rgb(226 232 240 / .92);
+  background: rgb(255 255 255 / .92);
+}
+
+.dashboard-topbar-notification-slot > button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border: 1px solid rgb(226 232 240 / .92);
+  border-radius: .75rem;
+  background: rgb(255 255 255 / .92);
+  box-shadow: 0 2px 8px rgb(15 23 42 / .05);
+}
+
+.dashboard-topbar-notification-slot > button:hover {
+  border-color: rgb(167 243 208);
+  background: rgb(236 253 245);
+  color: rgb(4 120 87);
+}
+
+.dashboard-topbar-profile-slot {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border: 1px solid rgb(226 232 240 / .92);
+  border-radius: .75rem;
+  background: rgb(255 255 255 / .92);
+  box-shadow: 0 2px 8px rgb(15 23 42 / .05);
+}
+.dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger:hover {
+  border-color: rgb(167 243 208);
+  background: rgb(236 253 245);
+  color: rgb(4 120 87);
+}
+
+.dashboard-topbar-search-slot {
+  display: flex;
+  flex: 1 1 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  order: 3;
+  width: 100%;
+}
+
+.dashboard-topbar-search {
+  height: 2.75rem;
+}
+
+@media (min-width: 1280px) {
+  .dashboard-topbar-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 32vw) minmax(0, 1fr);
+    grid-template-areas: "context search actions";
+    align-items: center;
+    min-height: 3.25rem;
+    gap: clamp(.75rem, 1.8vw, 1.5rem);
+    padding: .35rem clamp(1rem, 2.5vw, 2rem);
+  }
+  .dashboard-topbar-context {
+    grid-area: context;
+    max-width: none !important;
+  }
+  .dashboard-topbar-actions {
+    grid-area: actions;
+    max-width: none !important;
+    min-width: 0;
+  }
+  .dashboard-topbar-search-slot {
+    grid-area: search;
+    flex: 0 1 auto;
+    order: initial;
+    position: static;
+    width: 100%;
+    transform: none;
+  }
+
+  .dashboard-topbar-actions {
+    justify-self: end;
+  }
+
+  .dashboard-topbar-search {
+    height: 2.4rem;
+  }
+
+  .dashboard-topbar-clock {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .dashboard-topbar-main {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) minmax(16rem, 34rem) minmax(12rem, 1fr);
+    grid-template-areas: "context search actions";
+    min-height: 3.25rem;
+    align-items: center;
+    gap: 1rem;
+    padding: .35rem 1.25rem;
+  }
+
+  .dashboard-topbar-context {
+    grid-area: context;
+    max-width: none !important;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: 100%;
+  }
+
+  .dashboard-topbar-actions {
+    grid-area: actions;
+    justify-self: end;
+    max-width: none;
+    gap: .35rem;
+  }
+
+  .dashboard-topbar-search-slot {
+    grid-area: search;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .dashboard-topbar-search {
+    height: 2.4rem;
+  }
+
+  .dashboard-topbar-clock {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-topbar-main {
+    min-height: 4rem;
+    gap: .5rem;
+    padding: .625rem max(.75rem, env(safe-area-inset-right)) .5rem max(.75rem, env(safe-area-inset-left));
+  }
+
+  .dashboard-topbar-context {
+    gap: .5rem;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: calc(100vw - 10rem);
+  }
+
+  .dashboard-topbar-workspace {
+    max-width: 100%;
+    padding: .375rem .5rem;
+  }
+
+  .dashboard-topbar-workspace > :first-child {
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .dashboard-topbar-workspace-copy {
+    max-width: min(40vw, 11rem);
+  }
+
+  .dashboard-topbar-workspace-copy > span:first-child {
+    max-width: 100%;
+    font-size: .7rem;
+  }
+
+  .dashboard-topbar-workspace-copy > span:last-child {
+    display: none;
+  }
+
+  .dashboard-topbar-actions {
+    gap: .25rem;
+  }
+
+  .dashboard-topbar-menu-control,
+  .dashboard-topbar-icon-button,
+  .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar-profile-slot > div > button {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+  }
+
+  .dashboard-topbar-divider {
+    display: none;
+  }
+
+  .dashboard-topbar-reference-control {
+    display: none !important;
+  }
+
+  .dashboard-topbar-search-slot {
+    width: 100%;
+    padding: 0 max(.75rem, env(safe-area-inset-left)) max(.625rem, env(safe-area-inset-bottom)) max(.75rem, env(safe-area-inset-right));
+  }
+
+  .dashboard-topbar-search {
+    height: 2.75rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-topbar-brand-mark {
+    display: none;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: calc(100vw - 8rem);
+  }
+
+  .dashboard-topbar-workspace-copy {
+    max-width: 34vw;
+  }
+
+  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+    display: none;
+  }
+}
+
+.dashboard-topbar.dark-shell {
+  border-color: rgb(51 65 85 / .85) !important;
+  background: rgb(15 23 42 / .96) !important;
+  box-shadow: 0 1px 0 rgb(148 163 184 / .08), 0 14px 30px -24px rgb(0 0 0 / .7) !important;
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-workspace,
+.dashboard-topbar.dark-shell .dashboard-topbar-icon-button,
+.dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button,
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button {
+  border-color: rgb(71 85 105 / .75);
+  background: rgb(30 41 59 / .9);
+  color: rgb(226 232 240);
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-workspace-copy > span:first-child,
+.dashboard-topbar.dark-shell .dashboard-topbar-page-context span:last-child {
+  color: rgb(241 245 249);
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-search {
+  border-color: rgb(71 85 105 / .75);
+  background: rgb(30 41 59 / .9);
+  color: rgb(203 213 225);
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-search kbd {
+  border-color: rgb(71 85 105 / .75);
+  background: rgb(15 23 42 / .9);
+}
+
+/* Collision guardrails: the top row must give the workspace identity and
+   actions separate, predictable space at phone widths. The connectivity
+   indicator keeps its accessible title/aria label while becoming icon-only. */
+@media (max-width: 767px) {
+  .dashboard-topbar-main {
+    align-items: center;
+  }
+
+  .dashboard-topbar-context {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .dashboard-topbar-actions {
+    flex: 0 0 auto !important;
+    min-width: max-content;
+  }
+
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"] {
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    flex: 0 0 2.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    border-radius: .75rem;
+  }
+
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"] > span {
+    display: none;
+  }
+}
+
+@media (max-width: 479px) {
+  .dashboard-topbar {
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-topbar-main {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr) 3.25rem 3.25rem;
+    align-items: center;
+    gap: .5rem;
+    min-height: 5.25rem;
+    padding: .875rem max(.75rem, env(safe-area-inset-right)) .875rem max(.75rem, env(safe-area-inset-left));
+  }
+
+  .dashboard-topbar-context,
+  .dashboard-topbar-actions {
+    display: contents;
+  }
+
+  .dashboard-topbar-menu-control {
+    grid-column: 1;
+    grid-row: 1;
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+  }
+
+  .dashboard-topbar-context > .relative,
+  .dashboard-topbar-brand-mark,
+  .dashboard-topbar-actions .dashboard-topbar-icon-button,
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"],
+  .dashboard-topbar-clock,
+  .dashboard-topbar-divider {
+    display: none !important;
+  }
+
+  .dashboard-topbar-search-slot {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .dashboard-topbar-search {
+    height: 3.25rem;
+    border-radius: 999px;
+    background: rgb(255 255 255 / .96);
+    padding-inline: 1rem;
+    font-size: .875rem;
+  }
+
+  .dashboard-topbar-search .dashboard-topbar-search-label {
+    text-align: left;
+  }
+
+  .dashboard-topbar-search > svg:last-child {
+    display: none;
+  }
+
+  .dashboard-topbar-notification-slot {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .dashboard-topbar-notification-slot > div > button,
+  .dashboard-topbar-notification-slot > button {
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+  }
+
+  .dashboard-topbar-profile-slot {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .dashboard-topbar-profile-slot > div > button {
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+    padding: .25rem;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search {
+    background: rgb(30 41 59 / .96);
+  }
+}
+
+@media (max-width: 359px) {
+  .dashboard-topbar-main {
+    gap: .375rem;
+    padding-inline: .625rem;
+  }
+
+  .dashboard-topbar-context {
+    gap: .375rem;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: calc(100vw - 7rem);
+  }
+
+  .dashboard-topbar-workspace {
+    gap: .375rem;
+    padding-inline: .375rem;
+  }
+
+  .dashboard-topbar-workspace-copy {
+    max-width: 27vw;
+  }
+
+  .dashboard-topbar-actions {
+    gap: .125rem;
+  }
+}
+
+/* Wide-screen guardrails: explicit visual columns keep workspace context,
+   search, and account actions from competing for the same space. */
+@media (min-width: 1280px) {
+  .dashboard-topbar-main {
+    gap: clamp(1rem, 1.8vw, 2rem);
+  }
+  .dashboard-topbar-context {
+    overflow: hidden;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: min(20rem, 100%);
+  }
+
+  .dashboard-topbar-search-slot {
+    width: min(25rem, 30vw);
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1535px) {
+  .dashboard-topbar-page-context,
+  .dashboard-topbar-clock {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1536px) {
+  .dashboard-topbar-context > .relative {
+    max-width: 19rem;
+  }
+}
+
+/* Desktop/tablet command bar follows the supplied reference: the workspace
+   controls intentionally leave the left column quiet, the search is centered,
+   and the account/action controls stay in the right column. Mobile rules above
+   remain the source of truth below 768px. */
+@media (min-width: 768px) {
+  .dashboard-topbar.dashboard-shell-header:not(.dark-shell) {
+    border-color: rgb(226 232 240 / .88) !important;
+    background: rgb(255 255 255 / .94) !important;
+    box-shadow: 0 1px 0 rgb(15 23 42 / .04), 0 14px 30px -24px rgb(15 23 42 / .42) !important;
+  }
+
+  .dashboard-topbar-main {
+    grid-template-columns: minmax(0, 1fr) minmax(24rem, 31vw) minmax(0, 1fr);
+    gap: 1rem;
+    min-height: 3.25rem;
+    padding-block: .25rem;
+  }
+
+  .dashboard-topbar-context {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .dashboard-topbar-search {
+    height: 2.4rem;
+    border-color: rgb(226 232 240 / .92) !important;
+    background: rgb(248 250 252 / .96) !important;
+    color: rgb(100 116 139) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .8) !important;
+  }
+
+  .dashboard-topbar-search:hover {
+    border-color: rgb(203 213 225) !important;
+    background: rgb(241 245 249) !important;
+  }
+
+  .dashboard-topbar-search:hover > svg,
+  .dashboard-topbar-search:hover .dashboard-topbar-search-label {
+    color: rgb(71 85 105) !important;
+  }
+
+  .dashboard-topbar-search > svg,
+  .dashboard-topbar-search-label {
+    color: rgb(100 116 139) !important;
+  }
+
+  .dashboard-topbar-search kbd {
+    border-color: rgb(226 232 240) !important;
+    background: rgb(255 255 255) !important;
+    color: rgb(148 163 184) !important;
+  }
+
+  .dashboard-topbar-actions {
+    gap: .25rem;
+    color: rgb(100 116 139);
+  }
+
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"],
+  .dashboard-topbar-actions .dashboard-topbar-clock,
+  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+    display: none !important;
+  }
+
+  .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar-reference-control {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    border: 0 !important;
+    border-radius: .65rem;
+    background: transparent !important;
+    color: rgb(100 116 139) !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-topbar-notification-slot > button:hover,
+  .dashboard-topbar-reference-control:hover {
+    background: rgb(248 250 252) !important;
+    color: rgb(15 23 42) !important;
+  }
+
+  .dashboard-topbar-notification-slot > button > span {
+    border-color: white !important;
+    background: #ef4444 !important;
+  }
+
+  .dashboard-topbar-reference-control {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .dashboard-topbar-reference-badge {
+    position: absolute;
+    top: .08rem;
+    right: .04rem;
+    display: grid;
+    min-width: 1rem;
+    height: 1rem;
+    padding-inline: .18rem;
+    place-items: center;
+    border: 1px solid white;
+    border-radius: 999px;
+    background: #ef4444;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .dashboard-topbar-divider {
+    background: rgb(226 232 240) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button {
+    min-height: 2.5rem;
+    border-color: transparent !important;
+    background: transparent !important;
+    color: rgb(100 116 139) !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button:hover {
+    background: rgb(248 250 252) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > span {
+    border-color: rgb(226 232 240) !important;
+    background: rgb(248 250 252) !important;
+    color: rgb(71 85 105) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button span span:first-child,
+  .dashboard-topbar-profile-slot > div > button span span:last-child {
+    color: rgb(51 65 85) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button > svg {
+    color: rgb(148 163 184) !important;
+  }
+}
+
+
+/* Onboarding visual system: calm surfaces, clear progress, and mobile-first form rhythm. */
+.sm-onboarding {
+  background:
+    radial-gradient(900px circle at 70% -10%, rgba(34,197,94,.12), transparent 52%),
+    linear-gradient(135deg, #f8fbfa 0%, #f3f7f5 100%);
+}
+.sm-onboarding-content { position: relative; }
+.sm-onboarding-content > div { position: relative; z-index: 1; }
+.sm-onboarding-heading h2 { letter-spacing: -.055em; }
+.sm-onboarding-mode { background: rgba(255,255,255,.78); backdrop-filter: blur(12px); }
+.sm-onboarding-mode-button { min-height: 44px; }
+.sm-onboarding-mode-button.is-active { box-shadow: 0 6px 18px rgba(22,163,74,.12); }
+.sm-onboarding-card { box-shadow: 0 24px 70px rgba(15,23,42,.09), 0 2px 8px rgba(15,23,42,.03); }
+.sm-onboarding-card input,
+.sm-onboarding-card select,
+.sm-onboarding-card textarea { min-height: 46px; border-radius: .85rem; transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease; }
+.sm-onboarding-card input:focus,
+.sm-onboarding-card select:focus,
+.sm-onboarding-card textarea:focus { border-color: #16a34a; box-shadow: 0 0 0 4px rgba(22,163,74,.10); outline: none; }
+.sm-onboarding-form > button[type="submit"],
+.sm-onboarding-form > button:last-child { min-height: 50px; letter-spacing: -.01em; }
+.sm-onboarding-step { color: #94a3b8; }
+.sm-onboarding-step-number { background: #e2e8f0; color: #94a3b8; transition: all .2s ease; }
+.sm-onboarding-step-label { white-space: nowrap; }
+.sm-onboarding-step.is-active .sm-onboarding-step-number,
+.sm-onboarding-step.is-done .sm-onboarding-step-number { background: #16a34a; color: white; box-shadow: 0 0 0 5px rgba(22,163,74,.10); }
+.sm-onboarding-step.is-active .sm-onboarding-step-label { color: #0f172a; }
+.sm-onboarding-step.is-done .sm-onboarding-step-label { color: #15803d; }
+.sm-onboarding-step-line { background: #e2e8f0; }
+.sm-onboarding-step-line.is-done { background: #86efac; }
+.sm-onboarding-module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sm-onboarding-module { min-height: 76px; position: relative; }
+.sm-onboarding-module:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15,23,42,.06); }
+.sm-onboarding-module.is-active { box-shadow: inset 0 0 0 1px rgba(22,163,74,.12), 0 8px 20px rgba(22,163,74,.08); }
+.sm-onboarding-plan { background: linear-gradient(135deg, rgba(236,253,245,.92), rgba(239,246,255,.78)); }
+
+@media (max-width: 639px) {
+  .sm-onboarding { min-height: 100svh; }
+  .sm-onboarding-content { align-items: flex-start; padding: 1rem .875rem 2rem; }
+  .sm-onboarding-content > div { max-width: 100%; }
+  .sm-onboarding-heading { align-items: flex-start; gap: .75rem; }
+  .sm-onboarding-heading h2 { font-size: 1.7rem; line-height: 1.08; }
+  .sm-onboarding-heading p { max-width: 28rem; }
+  .sm-onboarding-back { padding: .6rem .7rem; white-space: nowrap; }
+  .sm-onboarding-mode { margin-inline: -.1rem; }
+  .sm-onboarding-mode-button { font-size: .7rem; padding-inline: .55rem; }
+  .sm-onboarding-steps { gap: .4rem; }
+  .sm-onboarding-step { gap: .35rem; }
+  .sm-onboarding-step-label { font-size: .65rem; }
+  .sm-onboarding-step-number { height: 1.8rem; width: 1.8rem; }
+  .sm-onboarding-card { border-radius: 1.35rem; padding: 1rem !important; }
+  .sm-onboarding-form { gap: 1rem; }
+  .sm-onboarding-module-grid { gap: .55rem; }
+  .sm-onboarding-module { min-height: 70px; padding: .65rem; }
+  .sm-onboarding-module span:nth-child(2) { min-width: 0; }
+  .sm-onboarding-module span:nth-child(2) span:first-child { white-space: normal; line-height: 1.15; }
+  .sm-onboarding-plan { padding: .85rem; }
+  .sm-onboarding-form--join .grid,
+  .sm-onboarding-form--account .grid,
+  .sm-onboarding-form--workspace .grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .sm-onboarding-content { padding-inline: 2rem; }
+  .sm-onboarding-card { max-height: calc(100svh - 3rem); overflow-y: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-onboarding-module,
+  .sm-onboarding-card input,
+  .sm-onboarding-card select,
+  .sm-onboarding-card textarea { transition: none; }
+}
+
+/* Light navigation rail: the sidebar now shares the neutral visual language
+   of the restored topbar while retaining the existing routing and RBAC logic. */
+.dashboard-sidebar:not(.dark-shell) {
+  background: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+  box-shadow: 8px 0 28px rgba(15, 23, 42, .06) !important;
+  color: #475569 !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand {
+  border-bottom-color: #e2e8f0 !important;
+  background: #ffffff !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .text-white,
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .brand-wordmark { color: #0f172a !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .text-cyan-300 { color: #64748b !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .bg-cyan-400\/10 { background: #f1f5f9 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .ring-cyan-400\/20 { --tw-ring-color: #cbd5e1 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation { background: #ffffff; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-400,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-500 { color: #94a3b8 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-300 { color: #64748b !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > div > button:not([aria-current="page"]),
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > button:not([aria-current="page"]) {
+  background: transparent !important;
+  color: #475569 !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] {
+  border-color: #cbd5e1 !important;
+  border-left-color: #0f172a !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, .06) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .bg-\[\#123457\] {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .bg-\[\#1f4265\] {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer {
+  border-top-color: #e2e8f0 !important;
+  background: #ffffff !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer .text-slate-300,
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer .text-slate-400 { color: #94a3b8 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer button:not([aria-current="page"]):hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+  border-color: #e2e8f0 !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .05) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+  border-color: #94a3b8 !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Close menu"] { color: #64748b !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Close menu"]:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Dark mode surface system for the navigation rail and command bar. The
+   existing toggle state remains the single source of truth; these rules only
+   provide the matching visual treatment and keep mobile layout contracts intact. */
+@media (min-width: 768px) {
+  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+    display: grid !important;
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    border-radius: .65rem;
+  }
+
+  .dashboard-topbar.dark-shell {
+    border-color: #334155 !important;
+    background: #0f172a !important;
+    box-shadow: 0 1px 0 rgba(148, 163, 184, .12), 0 14px 30px -24px rgba(0, 0, 0, .75) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search:hover {
+    border-color: #64748b !important;
+    background: #273449 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search > svg,
+  .dashboard-topbar.dark-shell .dashboard-topbar-search-label,
+  .dashboard-topbar.dark-shell .dashboard-topbar-search:hover > svg,
+  .dashboard-topbar.dark-shell .dashboard-topbar-search:hover .dashboard-topbar-search-label {
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search kbd {
+    border-color: #475569 !important;
+    background: #0f172a !important;
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control,
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button {
+    border-color: #475569 !important;
+    background: transparent !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button:hover,
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control:hover,
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button:hover {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-divider {
+    background: #475569 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > span {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button,
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button span span:first-child,
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button span span:last-child {
+    color: #f8fafc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button:hover {
+    background: #1e293b !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button > svg {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-sidebar.dark-shell {
+    background: #0f172a !important;
+    border-right-color: #334155 !important;
+    box-shadow: 8px 0 28px rgba(0, 0, 0, .24) !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer {
+    background: #0f172a !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand {
+    border-bottom-color: #334155 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .text-white,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .brand-wordmark {
+    color: #f8fafc !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .text-cyan-300 {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .bg-cyan-400\/10 {
+    background: #1e293b !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .text-slate-400,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .text-slate-500,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer .text-slate-400 {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .text-slate-300,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer .text-slate-300 {
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > div > button:not([aria-current="page"]),
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > button:not([aria-current="page"]) {
+    background: transparent !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer button:not([aria-current="page"]):hover {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] {
+    border-color: #475569 !important;
+    border-left-color: #94a3b8 !important;
+    background: #1e293b !important;
+    color: #f8fafc !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .2) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .bg-\[\#123457\] {
+    background: #334155 !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .bg-\[\#1f4265\] {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer {
+    border-top-color: #334155 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+    border-color: #64748b !important;
+    background: #334155 !important;
+    color: #f8fafc !important;
   }
 }

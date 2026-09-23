@@ -30,6 +30,9 @@ describe("daily schema-drift monitor contract", () => {
     expect(handlerSource).toContain("sdk.authenticateRequest");
     expect(handlerSource).toContain("!user.isCron || !user.taskUid");
     expect(handlerSource).toContain('error: "cron-only"');
+    expect(handlerSource).toContain("httpStatusFromError");
+    expect(handlerSource).toContain("Scheduled schema drift monitor failed.");
+    expect(handlerSource).not.toContain("stack: error instanceof Error ? error.stack");
     expect(routeSource).toContain('app.post("/api/scheduled/schemaDriftMonitor", scheduledSchemaDriftMonitorHandler)');
   });
 });

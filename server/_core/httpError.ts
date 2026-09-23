@@ -22,6 +22,8 @@ const TRPC_HTTP_STATUS: Record<string, number> = {
 export function httpStatusFromError(error: unknown, fallback = 500) {
   const explicitStatus = (error as { status?: unknown } | null)?.status;
   if (typeof explicitStatus === "number" && explicitStatus >= 400 && explicitStatus <= 599) return explicitStatus;
+  const statusCode = (error as { statusCode?: unknown } | null)?.statusCode;
+  if (typeof statusCode === "number" && statusCode >= 400 && statusCode <= 599) return statusCode;
   if (error instanceof TRPCError) return TRPC_HTTP_STATUS[error.code] ?? fallback;
   return fallback;
 }

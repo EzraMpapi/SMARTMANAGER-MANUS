@@ -7,7 +7,7 @@ const overviewSource = fs.readFileSync(path.resolve(process.cwd(), "client/src/c
 
 describe("Enterprise dashboard overview contract", () => {
   it("renders the new overview only through the established executive role view", () => {
-    expect(dashboardSource).toContain('import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview"');
+    expect(dashboardSource).toContain('const EnterpriseDashboardOverview = lazy(() => import("./components/EnterpriseDashboardOverview")');
     expect(dashboardSource).toContain('if (roleView === "executive")');
     expect(dashboardSource).toContain("<EnterpriseDashboardOverview");
     expect(dashboardSource).toContain("financials={financials}");

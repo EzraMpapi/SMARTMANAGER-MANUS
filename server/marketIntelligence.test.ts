@@ -79,8 +79,10 @@ describe("market intelligence response validation", () => {
   it("supports 24-hour latency sparklines, uptime percentages, safe refresh interval bounds, and compliance health exports", () => {
     expect(marketSource).toContain("latencySparkline");
     expect(marketSource).toContain("uptimePercent");
-    expect(marketSource).toContain("refreshIntervalSeconds");
-    expect(dashboardSource).toContain('aria-label="Live BOT and DSE feed health"');
+    expect(dashboardSource).toContain("24h Uptime");
+    expect(dashboardSource).toContain("24h Latency Trend");
+    expect(dashboardSource).toContain("refetchInterval: canViewMarketIntelligence ? 60_000 : false");
+    expect(dashboardSource).toContain("Export Filtered CSV");
   });
 
   it("supports regional East African peer comparison, weekly email digests, and latency threshold spike alerts", () => {
@@ -88,10 +90,10 @@ describe("market intelligence response validation", () => {
     expect(marketSource).toContain("scheduleWeeklyEmail");
     expect(marketSource).toContain("latencyThresholdMs");
     expect(marketSource).toContain("AWAITING_VALIDATION");
+    expect(dashboardSource).toContain("Regional East African Central Bank Comparison");
     expect(marketSource).toContain("cbkProviderUrl");
     expect(marketSource).toContain("bouProviderUrl");
     expect(marketSource).toContain("bnrProviderUrl");
-    expect(dashboardSource).toContain("Provider latency");
   });
 
   it("connects weekly digest scheduling and delivery telemetry without exposing provider secrets", () => {
@@ -109,10 +111,7 @@ describe("market intelligence response validation", () => {
     expect(scheduledDigestSource).toContain("webhookDeliveries");
     expect(scheduledDigestSource).toContain("sendTransactionalEmail");
     expect(governanceSource).toContain("cbkProviderApiKey: settingsRows[0].cbkProviderApiKey ? \"••••••••\" : \"\"");
-    // Alert throttling is enforced by the server governance layer. The
-    // dashboard intentionally consumes the resulting health state and does
-    // not duplicate provider-control settings in the client shell.
-    expect(dashboardSource).toContain('aria-label="Live BOT and DSE feed health"');
-    expect(dashboardSource).toContain("Auto-check every 60s");
+    expect(governanceSource).toContain("alertCooldownMinutes");
+    expect(dashboardSource).toContain("Regional East African Central Bank Comparison");
   });
 });

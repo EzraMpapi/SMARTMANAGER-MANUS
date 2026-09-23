@@ -86,7 +86,7 @@ describe("Restaurant and F&B contracts", () => {
   });
 
   it("replaces the live legacy Restaurant route with the authenticated persistent command center", () => {
-    expect(dashboard).toContain('import { RestaurantWorkspace } from "./components/RestaurantWorkspace";');
+    expect(dashboard).toContain('const RestaurantWorkspace = lazy(() => import("./components/RestaurantWorkspace")');
     expect(dashboard).toContain("function RestaurantManagementModule");
     expect(dashboard).toContain('<RestaurantWorkspace rpc={rpc} configured={IS_CONFIGURED && !DEMO_OVERRIDE} currentUser={currentUser} />');
     expect(dashboard).toMatch(/\{active === "restaurant"\s+&& <RestaurantManagementModule\s+currentUser=\{currentUser\} \/>\}/);

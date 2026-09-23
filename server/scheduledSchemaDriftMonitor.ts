@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { sdk } from "./_core/sdk";
+import { httpStatusFromError } from "./_core/httpError";
 import { runScheduledSchemaDriftCheck } from "./schemaDriftMonitor";
 
 export async function scheduledSchemaDriftMonitorHandler(req: Request, res: Response) {
@@ -9,11 +10,7 @@ export async function scheduledSchemaDriftMonitorHandler(req: Request, res: Resp
     return res.json(await runScheduledSchemaDriftCheck(user.taskUid));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return res.status(500).json({
-      error: message,
-      stack: error instanceof Error ? error.stack : undefined,
-      context: { url: req.originalUrl, taskUid: req.headers["x-task-uid"] ?? null },
-      timestamp: new Date().toISOString(),
-    });
+    const status = httpStatusFromError(error);
+    return res.status(status).json({ error: status < 500 ? message : "Scheduled schema drift monitor failed." });
   }
 }

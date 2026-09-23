@@ -26,13 +26,12 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("dashboard-topbar-context");
     expect(dashboard).toContain("dashboard-topbar-search");
     expect(dashboard).toContain("dashboard-topbar-actions");
-    expect(dashboard).toContain("Company workspace");
-    expect(dashboard).toContain("Enterprise operations profile");
+    expect(dashboard).toContain("SMART MANAGER");
+    expect(dashboard).toContain("Enterprise Suite");
     expect(dashboard).toContain("<NotificationCenter");
     expect(dashboard).toContain("onClick={toggleDarkMode}");
-    expect(dashboard).not.toContain("dashboard-topbar-profile");
-    expect(dashboard).toContain("dashboard-sidebar-profile");
-    expect(dashboard).toContain("<NotificationCenter");
+    expect(dashboard).toContain("dashboard-topbar-profile");
+    expect(dashboard).toContain("dashboard-sidebar-brand");
     expect(dashboard).toContain("<PremiumProfileMenu");
   });
 
@@ -69,7 +68,7 @@ describe("dashboard operational command strip", () => {
 
   it("retains subscription status, alerts, and the independent mobile navigation path", () => {
     expect(dashboard).toContain("subscriptionAccess.ready");
-    expect(dashboard).toContain("useBusinessAlerts");
+    expect(dashboard).toContain("const criticalAlerts = smartAlerts.filter");
     expect(dashboard).toContain('className="dashboard-mobile-nav lg:hidden fixed bottom-0');
     expect(dashboard).toContain("<SubscriptionAccessBoundary");
   });

@@ -85,7 +85,7 @@ function AuthenticationUnavailable({ onRetry }: { onRetry?: () => Promise<void> 
   </main>;
 }
 
-function IdentitySetupRequired({ reason, onRetry }: { reason?: string | null; onRetry?: () => Promise<void> }) {
+function IdentitySetupRequired({ reason, onRetry, onContinueOnboarding }: { reason?: string | null; onRetry?: () => Promise<void>; onContinueOnboarding?: () => void }) {
   const [retrying, setRetrying] = useState(false);
   const retry = async () => {
     if (!onRetry || retrying) return;
@@ -97,6 +97,7 @@ function IdentitySetupRequired({ reason, onRetry }: { reason?: string | null; on
       <h1 className="text-lg font-semibold">Secure workspace setup required</h1>
       <p className="mt-3 text-sm leading-6 text-slate-400">Your Supabase session is valid, but the application could not verify the profile and workspace identity required for tenant-scoped access.</p>
       {reason && <p className="mt-3 text-xs text-slate-500">Reference: {reason}</p>}
+      {onContinueOnboarding && <button type="button" onClick={onContinueOnboarding} className="mt-6 w-full rounded-xl border border-emerald-500/40 px-4 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/10">Continue workspace setup</button>}
       {onRetry && <button type="button" onClick={() => void retry()} disabled={retrying} className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60">{retrying ? "Checking secure workspace…" : "Retry secure workspace access"}</button>}
     </section>
   </main>;
@@ -117,11 +118,15 @@ function ProtectedSurface({ children }: { children: ReactNode }) {
   const requestedSignup = authScreen === "signup";
 
   if (auth.loading) return <DashboardRouteFallback />;
-  if (requestedSignup && !auth.isAuthenticated) {
-    return <Suspense fallback={<DashboardRouteFallback />}><SignupPage onAuthenticated={() => { window.location.assign("/app"); }} onSwitchToLogin={() => { const url = new URL(window.location.href); url.searchParams.delete("auth"); window.history.replaceState(null, "", `${url.pathname}${url.search}`); }} /></Suspense>;
+  if (requestedSignup) {
+    return <Suspense fallback={<DashboardRouteFallback />}><SignupPage onAuthenticated={() => { window.location.assign("/app"); }} onSwitchToLogin={() => { window.location.assign("/app?auth=login"); }} /></Suspense>;
   }
   if (auth.status === "AUTH_ERROR") return <AuthenticationUnavailable onRetry={auth.session ? auth.refresh : undefined} />;
-  if (auth.status === "UNAUTHORIZED") return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} onRetry={auth.session ? auth.refresh : undefined} />;
+  if (auth.reason === "EMAIL_UNCONFIRMED") return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
+  if (auth.status === "UNAUTHORIZED") {
+    const canResumeOnboarding = Boolean(auth.session && ["PROFILE_MISSING", "PROFILE_TENANT_INCOMPLETE", "MEMBERSHIP_MISSING", "WORKSPACE_MISSING"].includes(String(auth.reason || "")));
+    return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} onRetry={auth.session ? auth.refresh : undefined} onContinueOnboarding={canResumeOnboarding ? () => { window.location.assign("/app?auth=signup"); } : undefined} />;
+  }
   if (authScreen === "forgot" || authScreen === "reset" || (isPublicAuthScreen() && !auth.isAuthenticated)) return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
   if (!auth.configured && !auth.isAuthenticated) {
     return <AuthenticationUnavailable />;

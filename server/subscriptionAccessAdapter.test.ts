@@ -33,4 +33,11 @@ describe("subscription access adapter", () => {
     expect(subscriptionAllowsModule(access, "inventory")).toBe(false);
     expect(subscriptionAllowsModule({ ...access, allowed: false }, "finance")).toBe(false);
   });
+
+  it("opens every module only when the server explicitly grants unlimited access", () => {
+    const access = normalizeSubscriptionAccess({ access: { state: "Active", allowed: true, unlimitedAccess: true, moduleEntitlements: ["finance"] } });
+    expect(subscriptionAllowsModule(access, "inventory")).toBe(true);
+    expect(subscriptionAllowsModule(access, "healthcare")).toBe(true);
+    expect(subscriptionAllowsModule({ ...access, allowed: false }, "inventory")).toBe(false);
+  });
 });
