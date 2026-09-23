@@ -63,10 +63,11 @@ function dateOfBirthInputValue(value) {
 }
 
 function Avatar({ profile, name, size = "md", preview = null }) {
-  const dimensions = size === "xl" ? "h-24 w-24 text-[25px]" : size === "lg" ? "h-16 w-16 text-[18px]" : "h-10 w-10 text-[12px]";
+  const dimensions = size === "xl" ? "h-24 w-24 text-[25px]" : size === "lg" ? "h-16 w-16 text-[18px]" : size === "topbar" ? "h-8 w-8 text-[11px]" : "h-10 w-10 text-[12px]";
+  const shape = size === "topbar" ? "rounded-full shadow-[0_3px_10px_rgba(11,93,59,.16)]" : "rounded-2xl shadow-[0_10px_28px_rgba(11,93,59,.2)]";
   const image = preview || profile?.avatarUrl;
   return (
-    <div className={`${dimensions} relative shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0B5D3B] via-[#138A57] to-[#79D39D] font-bold text-white shadow-[0_10px_28px_rgba(11,93,59,.2)]`}>
+    <div className={`${dimensions} relative shrink-0 overflow-hidden ${shape} bg-gradient-to-br from-[#0B5D3B] via-[#138A57] to-[#79D39D] font-bold text-white`}>
       {image ? <img src={image} alt={`${name || "Workspace"} profile`} className="h-full w-full object-cover" /> : <span className="grid h-full w-full place-items-center">{initialsFor(name)}</span>}
     </div>
   );
@@ -236,8 +237,8 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
 
   return (
       <div className={topbar ? "dashboard-topbar-profile relative z-40 shrink-0" : "relative w-full"}>
-      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className={topbar ? "group relative z-40 grid h-10 w-10 min-h-11 min-w-11 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-left shadow-none transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 sm:h-11 sm:w-11" : "group flex w-full min-h-11 items-center gap-2.5 rounded-xl border-0 bg-transparent px-1.5 py-1.5 text-left shadow-none transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"} aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center" title={displayName}>
-        <Avatar profile={profile} name={displayName} size="md" />
+      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className={topbar ? "dashboard-topbar-profile-trigger group relative z-40 grid h-11 w-11 min-h-11 min-w-11 cursor-pointer place-items-center rounded-xl border text-left transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" : "group flex w-full min-h-11 items-center gap-2.5 rounded-xl border-0 bg-transparent px-1.5 py-1.5 text-left shadow-none transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"} aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center" title={displayName}>
+        <Avatar profile={profile} name={displayName} size={topbar ? "topbar" : "md"} />
         {!topbar && <><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-white">{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span><ChevronRight size={14} className={`shrink-0 text-slate-400 transition ${open ? "-rotate-90 text-cyan-300" : ""}`} aria-hidden="true" /></>}
       </button>
       {open && (

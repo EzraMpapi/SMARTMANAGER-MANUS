@@ -1611,12 +1611,18 @@
   align-items: center;
 }
 
-.dashboard-topbar-profile-slot > div > button {
+.dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger {
   min-height: 2.75rem;
+  min-width: 2.75rem;
   border: 1px solid rgb(226 232 240 / .92);
   border-radius: .75rem;
   background: rgb(255 255 255 / .92);
   box-shadow: 0 2px 8px rgb(15 23 42 / .05);
+}
+.dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger:hover {
+  border-color: rgb(167 243 208);
+  background: rgb(236 253 245);
+  color: rgb(4 120 87);
 }
 
 .dashboard-topbar-search-slot {

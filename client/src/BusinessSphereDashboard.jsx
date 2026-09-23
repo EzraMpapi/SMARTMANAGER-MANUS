@@ -57,26 +57,50 @@ import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomi
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { calculateCommunityLoan, splitCommunityRepayment, unwrapCommunityMutationResult } from "./lib/communityGroups";
-import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
-import { SubscriptionBillingWorkspace, TrialNoticeAdmin } from "./components/SubscriptionBillingWorkspace";
-import { TrialExpiryNoticeGate } from "./components/TrialExpiryNoticeGate";
-import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
-import { FleetWorkspace } from "./components/FleetWorkspace";
-import { RestaurantWorkspace } from "./components/RestaurantWorkspace";
-import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
-import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, SalesCommandCenter } from "./components/CommercialCommandCenters";
-import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter, WarehouseCommandCenter } from "./components/OperationsCommandCenters";
-import { FinanceCommandCenter, IntegrationsCommandCenter, ReportsCommandCenter } from "./components/FinanceCommandCenters";
-import { CollaborationCommandCenter, DocumentsCommandCenter, EmployeePortalCommandCenter, HrCommandCenter, WorkflowCommandCenter } from "./components/PeopleCommandCenters";
-import { BankingMfiCommandCenter, CommunityCommandCenter, MicrofinanceCommandCenter, VicobaCommandCenter } from "./components/SectorCommandCenters";
-import { FleetCommandCenter, HealthcareCommandCenter, HotelCommandCenter, PharmacyCommandCenter, RestaurantCommandCenter, SchoolCommandCenter } from "./components/VerticalCommandCenters";
-import { AiBusinessSignals, SupportCommandCenter } from "./components/IntelligenceCommandCenters";
-import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
-import { GlobalAdminControlCenter } from "./components/GlobalAdminControlCenter";
-import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
-import { AndroidAppStatus } from "./components/AndroidAppStatus";
+const HospitalityWorkspace = lazy(() => import("./components/HospitalityWorkspace").then((module) => ({ default: module.HospitalityWorkspace })));
+const SubscriptionBillingWorkspace = lazy(() => import("./components/SubscriptionBillingWorkspace").then((module) => ({ default: module.SubscriptionBillingWorkspace })));
+const TrialNoticeAdmin = lazy(() => import("./components/SubscriptionBillingWorkspace").then((module) => ({ default: module.TrialNoticeAdmin })));
+const TrialExpiryNoticeGate = lazy(() => import("./components/TrialExpiryNoticeGate").then((module) => ({ default: module.TrialExpiryNoticeGate })));
+const EmployeePortalWorkspace = lazy(() => import("./components/EmployeePortalWorkspace").then((module) => ({ default: module.EmployeePortalWorkspace })));
+const FleetWorkspace = lazy(() => import("./components/FleetWorkspace").then((module) => ({ default: module.FleetWorkspace })));
+const RestaurantWorkspace = lazy(() => import("./components/RestaurantWorkspace").then((module) => ({ default: module.RestaurantWorkspace })));
+const ExecutiveCommandCenter = lazy(() => import("./components/ExecutiveCommandCenter").then((module) => ({ default: module.ExecutiveCommandCenter })));
+const CrmCommandCenter = lazy(() => import("./components/CommercialCommandCenters").then((module) => ({ default: module.CrmCommandCenter })));
+const EcommerceCommandCenter = lazy(() => import("./components/CommercialCommandCenters").then((module) => ({ default: module.EcommerceCommandCenter })));
+const MarketingCommandCenter = lazy(() => import("./components/CommercialCommandCenters").then((module) => ({ default: module.MarketingCommandCenter })));
+const SalesCommandCenter = lazy(() => import("./components/CommercialCommandCenters").then((module) => ({ default: module.SalesCommandCenter })));
+const InventoryCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.InventoryCommandCenter })));
+const PosCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.PosCommandCenter })));
+const ProcurementCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.ProcurementCommandCenter })));
+const SupplyChainCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.SupplyChainCommandCenter })));
+const WarehouseCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.WarehouseCommandCenter })));
+const FinanceCommandCenter = lazy(() => import("./components/FinanceCommandCenters").then((module) => ({ default: module.FinanceCommandCenter })));
+const IntegrationsCommandCenter = lazy(() => import("./components/FinanceCommandCenters").then((module) => ({ default: module.IntegrationsCommandCenter })));
+const ReportsCommandCenter = lazy(() => import("./components/FinanceCommandCenters").then((module) => ({ default: module.ReportsCommandCenter })));
+const CollaborationCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.CollaborationCommandCenter })));
+const DocumentsCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.DocumentsCommandCenter })));
+const EmployeePortalCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.EmployeePortalCommandCenter })));
+const HrCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.HrCommandCenter })));
+const WorkflowCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.WorkflowCommandCenter })));
+const BankingMfiCommandCenter = lazy(() => import("./components/SectorCommandCenters").then((module) => ({ default: module.BankingMfiCommandCenter })));
+const CommunityCommandCenter = lazy(() => import("./components/SectorCommandCenters").then((module) => ({ default: module.CommunityCommandCenter })));
+const MicrofinanceCommandCenter = lazy(() => import("./components/SectorCommandCenters").then((module) => ({ default: module.MicrofinanceCommandCenter })));
+const VicobaCommandCenter = lazy(() => import("./components/SectorCommandCenters").then((module) => ({ default: module.VicobaCommandCenter })));
+const FleetCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.FleetCommandCenter })));
+const HealthcareCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.HealthcareCommandCenter })));
+const HotelCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.HotelCommandCenter })));
+const PharmacyCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.PharmacyCommandCenter })));
+const RestaurantCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.RestaurantCommandCenter })));
+const SchoolCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.SchoolCommandCenter })));
+const AiBusinessSignals = lazy(() => import("./components/IntelligenceCommandCenters").then((module) => ({ default: module.AiBusinessSignals })));
+const SupportCommandCenter = lazy(() => import("./components/IntelligenceCommandCenters").then((module) => ({ default: module.SupportCommandCenter })));
+const BankMfiWorkspace = lazy(() => import("./components/BankMfiWorkspace").then((module) => ({ default: module.BankMfiWorkspace })));
+const GlobalAdminControlCenter = lazy(() => import("./components/GlobalAdminControlCenter").then((module) => ({ default: module.GlobalAdminControlCenter })));
+const ProfileIdentityPage = lazy(() => import("./components/ProfileIdentityCenter").then((module) => ({ default: module.ProfileIdentityPage })));
+const PremiumProfileMenu = lazy(() => import("./components/ProfileIdentityCenter").then((module) => ({ default: module.ProfileMenu })));
+const AndroidAppStatus = lazy(() => import("./components/AndroidAppStatus").then((module) => ({ default: module.AndroidAppStatus })));
 import { RealtimeConnectivityBadge } from "./components/RealtimeConnectivityBadge";
-import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
+const EnterpriseDashboardOverview = lazy(() => import("./components/EnterpriseDashboardOverview").then((module) => ({ default: module.EnterpriseDashboardOverview })));
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
 import { applyOfflineMutationToCache, discardOfflineMutation, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, resolveOfflineConflict, retryOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
@@ -48549,6 +48573,7 @@ function SmartManager() {
 
         {/* Content */}
         <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
+          <Suspense fallback={<div role="status" aria-label="Loading workspace module" className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white p-6 text-sm font-medium text-slate-500 shadow-sm">Loading workspace module…</div>}>
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
@@ -48671,6 +48696,7 @@ function SmartManager() {
           {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "global-admin", "activity", "profile"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
           )}
+          </Suspense>
         </main>
       </div>
     </div>

@@ -14,7 +14,7 @@ describe("Employee Portal production contracts", () => {
     expect(workspace).not.toContain("localStorage");
     expect(workspace).not.toContain("sessionStorage");
     expect(dashboard).toContain('fetchWithSupabaseAuthRecovery(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`');
-    expect(dashboard).toContain('import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace"');
+    expect(dashboard).toContain('const EmployeePortalWorkspace = lazy(() => import("./components/EmployeePortalWorkspace")');
     expect(dashboard).toContain("return <EmployeePortalWorkspace");
     expect(dashboard).toContain('rpc={(procedure, payload) => callRpc(procedure, payload, getStoredAccessToken() || "")}');
     expect(dashboard).toContain("<EmployeePortal\n              currentUser={currentUser}");
