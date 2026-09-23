@@ -56,24 +56,30 @@ describe("platform subscription access contracts", () => {
     expect(dashboard).toContain("Anza na siku 15 BURE");
   });
 
-  it("fails closed when access is unknown, pending, expired, required, or not server-allowed", () => {
+  it("keeps server access decisions authoritative while allowing the last decision offline", () => {
     expect(adapter).toContain("source.allowed === true");
     expect(adapter).toContain("ACCESSIBLE_STATES");
     expect(adapter).toContain('cache: "no-store"');
-    expect(adapter).not.toContain("localStorage");
+    expect(adapter).toContain("localStorage");
     expect(adapter).not.toContain("sessionStorage");
     expect(dashboard).toContain("!subscriptionAccess.access.allowed");
     expect(dashboard).toContain("Activate or renew a company plan in Subscription & Billing to unlock this module.");
     expect(dashboard).toContain("This module is not included in the company’s server-confirmed subscription plan. Contact your billing administrator.");
     expect(dashboard).toContain('setActive("billing")');
+    expect(dashboard).toContain("Your account is active, but the company subscription is blocked.");
+    expect(dashboard).toContain("User account");
+    expect(dashboard).toContain("Company subscription");
+    expect(dashboard).toContain("Subscription decision");
+    expect(dashboard).toContain("Renew or update subscription");
+    expect(dashboard).toContain("Only a billing administrator can renew or update the company subscription.");
   });
 
   it("lets only the recognized Platform Administrator reach the protected control center without a company-plan gate", () => {
     expect(dashboard).toContain('id: "Platform Administrator", category: "System"');
     expect(dashboard).toContain('allowedModules: ["dashboard", "global-admin", "profile", "support", "notifications", "settings"]');
     expect(dashboard).toContain('const isPlatformAdministrator = currentRole.id === "Platform Administrator"');
-    expect(dashboard).toContain('isPlatformAdministrator || subscriptionAllowsModule(subscriptionAccess.access, m.id)');
-    expect(dashboard).toContain('!isPlatformAdministrator && isOperationalModule');
+    expect(dashboard).toContain('!isPlatformAdministrator && isOperationalModule && id !== "dashboard"');
+    expect(dashboard).toContain('!subscriptionAllowsModule(subscriptionAccess.access, id)');
     expect(dashboard).toContain('!canUseSubscriptionEscape && !isPlatformAdministrator');
   });
 });

@@ -15,7 +15,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
-import { getGlobalAdminExecutiveSnapshot, getGlobalAdminSnapshot, globalAdminActionInput, recordGlobalAdminAction } from "./globalAdmin";
+import { applyGlobalAdminControlAction, applyGlobalAdminLifecycleAction, getGlobalAdminControlSnapshot, getGlobalAdminExecutiveSnapshot, getGlobalAdminSnapshot, globalAdminActionInput, globalAdminControlInput, globalAdminLifecycleInput, recordGlobalAdminAction } from "./globalAdmin";
 import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
 import { saveWorkspaceBranding } from "./workspaceBranding";
@@ -26,7 +26,7 @@ import { activateDashboardTeamPreset, createDashboardTeamPreset, dashboardTeamPr
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
-import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
+import { provisionPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
 import { listWebsiteFeedback, publicFeedbackInput, replyToWebsiteFeedback, websiteFeedbackReplyInput, submitPublicFeedback } from "./feedbackOperations";
 import { traFiscalRouter } from "./traFiscalRouter";
@@ -103,9 +103,17 @@ export const appRouter = router({
       .query(({ ctx }) => getGlobalAdminSnapshot(ctx.req)),
     executiveSnapshot: protectedProcedure
       .query(({ ctx }) => getGlobalAdminExecutiveSnapshot(ctx.req)),
+    controlSnapshot: protectedProcedure
+      .query(({ ctx }) => getGlobalAdminControlSnapshot(ctx.req)),
     recordAction: protectedProcedure
       .input(globalAdminActionInput)
       .mutation(({ ctx, input }) => recordGlobalAdminAction(ctx.req, input)),
+    applyLifecycleAction: protectedProcedure
+      .input(globalAdminLifecycleInput)
+      .mutation(({ ctx, input }) => applyGlobalAdminLifecycleAction(ctx.req, input)),
+    applyControlAction: protectedProcedure
+      .input(globalAdminControlInput)
+      .mutation(({ ctx, input }) => applyGlobalAdminControlAction(ctx.req, input)),
   }),
   schemaContractAssertion: protectedProcedure
     .input(z.object({ tableName: z.string(), payload: z.record(z.string(), z.unknown()) }))
@@ -511,7 +519,7 @@ export const appRouter = router({
   accountRegistration: router({
     createConfirmedPasswordAccount: publicProcedure
       .input(z.object({ email: z.string().email().max(320), password: z.string().min(1).max(256) }))
-      .mutation(async ({ ctx, input }) => provisionConfirmedPasswordAccount(input, ctx.req.ip || ctx.req.socket.remoteAddress || "unknown")),
+      .mutation(async ({ ctx, input }) => provisionPasswordAccount(input, ctx.req.ip || ctx.req.socket.remoteAddress || "unknown")),
   }),
   passkeySecurity: router({
     notifyRegistered: protectedProcedure

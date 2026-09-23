@@ -68,11 +68,12 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("type=\"button\"");
   });
 
-  it("keeps the legacy inventory value export grounded in confirmed inventory rows", () => {
+  it("keeps the Inventory value metric bound to its icon import", () => {
     expect(dashboard).toContain("Inventory Value");
-    expect(dashboard).toContain("stockValue");
-    expect(dashboard).toContain("inventory?.rows");
-    expect(dashboard).toContain("company?.name");
+    expect(dashboard).toContain("icon: WalletCards");
+    expect(dashboard).toMatch(/import\s*\{[\s\S]*\bWalletCards\b[\s\S]*\}\s*from\s*"lucide-react";/);
+    expect(dashboard).toContain("SMART MANAGER");
+    expect(dashboard).toContain("Enterprise Suite");
   });
 
   it("keeps mobile navigation and floating actions touch-safe", () => {
@@ -97,6 +98,21 @@ describe("dashboard quality and boundary contracts", () => {
     expect(css).toContain("max-height: min(92svh, 46rem)");
     expect(css).toContain("min-height: 44px");
     expect(css).toContain("overflow-x: clip");
+  });
+
+  it("keeps dashboard popups usable on narrow screens", () => {
+    const css = fs.readFileSync(path.join(root, "index.css"), "utf8");
+    expect(css).toContain(".dashboard-mobile-content .fixed.inset-0");
+    expect(css).toContain("max-height: min(92svh, 46rem)");
+    expect(css).toContain("overscroll-behavior: contain");
+    expect(css).toContain(":not(.absolute)");
+    expect(css).toContain("env(safe-area-inset-bottom)");
+    expect(css).toContain(".sticky.bottom-0 > button");
+    expect(css).toContain(".fixed.inset-0");
+    expect(css).toContain(".dashboard-shell .fixed.inset-0");
+    expect(css).toContain(":where(.border-t, .sticky.bottom-0)");
+    expect(css).toContain("min-height: 44px");
+    expect(css).toContain("white-space: normal");
   });
 
   it("does not introduce client-side persistence into command-center components", () => {

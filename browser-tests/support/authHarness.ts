@@ -23,7 +23,7 @@ export async function installManagedAuth(page: Page, identity: ManagedIdentity) 
     expires_in: 3600,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     token_type: "bearer",
-    user: { id: identity.id, email: identity.email, user_metadata: { full_name: identity.fullName } },
+    user: { id: identity.id, email: identity.email, email_confirmed_at: "2026-01-01T00:00:00.000Z", confirmed_at: "2026-01-01T00:00:00.000Z", user_metadata: { full_name: identity.fullName } },
     companyId: identity.company.id,
   });
   // Register after each spec's broad /rest/v1/** route so this narrow route wins.

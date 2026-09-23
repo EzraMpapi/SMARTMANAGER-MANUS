@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, useContext, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase,
@@ -48,7 +48,7 @@ import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneVali
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
-import { useAuthContext } from "./contexts/AuthContext";
+import { AuthContext, useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
 import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
@@ -57,27 +57,53 @@ import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomi
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
 import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { calculateCommunityLoan, splitCommunityRepayment, unwrapCommunityMutationResult } from "./lib/communityGroups";
-import { HospitalityWorkspace } from "./components/HospitalityWorkspace";
-import { SubscriptionBillingWorkspace, TrialNoticeAdmin } from "./components/SubscriptionBillingWorkspace";
-import { TrialExpiryNoticeGate } from "./components/TrialExpiryNoticeGate";
-import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace";
-import { FleetWorkspace } from "./components/FleetWorkspace";
-import { RestaurantWorkspace } from "./components/RestaurantWorkspace";
-import { ExecutiveCommandCenter } from "./components/ExecutiveCommandCenter";
-import { CrmCommandCenter, EcommerceCommandCenter, MarketingCommandCenter, SalesCommandCenter } from "./components/CommercialCommandCenters";
-import { InventoryCommandCenter, PosCommandCenter, ProcurementCommandCenter, SupplyChainCommandCenter, WarehouseCommandCenter } from "./components/OperationsCommandCenters";
-import { FinanceCommandCenter, IntegrationsCommandCenter, ReportsCommandCenter } from "./components/FinanceCommandCenters";
-import { CollaborationCommandCenter, DocumentsCommandCenter, EmployeePortalCommandCenter, HrCommandCenter, WorkflowCommandCenter } from "./components/PeopleCommandCenters";
-import { BankingMfiCommandCenter, CommunityCommandCenter, MicrofinanceCommandCenter, VicobaCommandCenter } from "./components/SectorCommandCenters";
-import { FleetCommandCenter, HealthcareCommandCenter, HotelCommandCenter, PharmacyCommandCenter, RestaurantCommandCenter, SchoolCommandCenter } from "./components/VerticalCommandCenters";
-import { AiBusinessSignals, SupportCommandCenter } from "./components/IntelligenceCommandCenters";
-import { BankMfiWorkspace } from "./components/BankMfiWorkspace";
-import { GlobalAdminControlCenter } from "./components/GlobalAdminControlCenter";
-import { ProfileIdentityPage, ProfileMenu as PremiumProfileMenu } from "./components/ProfileIdentityCenter";
-import { AndroidAppStatus } from "./components/AndroidAppStatus";
-import { EnterpriseDashboardOverview } from "./components/EnterpriseDashboardOverview";
+const HospitalityWorkspace = lazy(() => import("./components/HospitalityWorkspace").then((module) => ({ default: module.HospitalityWorkspace })));
+const SubscriptionBillingWorkspace = lazy(() => import("./components/SubscriptionBillingWorkspace").then((module) => ({ default: module.SubscriptionBillingWorkspace })));
+const TrialNoticeAdmin = lazy(() => import("./components/SubscriptionBillingWorkspace").then((module) => ({ default: module.TrialNoticeAdmin })));
+const TrialExpiryNoticeGate = lazy(() => import("./components/TrialExpiryNoticeGate").then((module) => ({ default: module.TrialExpiryNoticeGate })));
+const EmployeePortalWorkspace = lazy(() => import("./components/EmployeePortalWorkspace").then((module) => ({ default: module.EmployeePortalWorkspace })));
+const FleetWorkspace = lazy(() => import("./components/FleetWorkspace").then((module) => ({ default: module.FleetWorkspace })));
+const RestaurantWorkspace = lazy(() => import("./components/RestaurantWorkspace").then((module) => ({ default: module.RestaurantWorkspace })));
+const ExecutiveCommandCenter = lazy(() => import("./components/ExecutiveCommandCenter").then((module) => ({ default: module.ExecutiveCommandCenter })));
+const CrmCommandCenter = lazy(() => import("./components/CommercialCommandCenters").then((module) => ({ default: module.CrmCommandCenter })));
+const EcommerceCommandCenter = lazy(() => import("./components/CommercialCommandCenters").then((module) => ({ default: module.EcommerceCommandCenter })));
+const MarketingCommandCenter = lazy(() => import("./components/CommercialCommandCenters").then((module) => ({ default: module.MarketingCommandCenter })));
+const SalesCommandCenter = lazy(() => import("./components/CommercialCommandCenters").then((module) => ({ default: module.SalesCommandCenter })));
+const InventoryCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.InventoryCommandCenter })));
+const PosCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.PosCommandCenter })));
+const ProcurementCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.ProcurementCommandCenter })));
+const SupplyChainCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.SupplyChainCommandCenter })));
+const WarehouseCommandCenter = lazy(() => import("./components/OperationsCommandCenters").then((module) => ({ default: module.WarehouseCommandCenter })));
+const FinanceCommandCenter = lazy(() => import("./components/FinanceCommandCenters").then((module) => ({ default: module.FinanceCommandCenter })));
+const IntegrationsCommandCenter = lazy(() => import("./components/FinanceCommandCenters").then((module) => ({ default: module.IntegrationsCommandCenter })));
+const ReportsCommandCenter = lazy(() => import("./components/FinanceCommandCenters").then((module) => ({ default: module.ReportsCommandCenter })));
+const CollaborationCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.CollaborationCommandCenter })));
+const DocumentsCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.DocumentsCommandCenter })));
+const EmployeePortalCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.EmployeePortalCommandCenter })));
+const HrCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.HrCommandCenter })));
+const WorkflowCommandCenter = lazy(() => import("./components/PeopleCommandCenters").then((module) => ({ default: module.WorkflowCommandCenter })));
+const BankingMfiCommandCenter = lazy(() => import("./components/SectorCommandCenters").then((module) => ({ default: module.BankingMfiCommandCenter })));
+const CommunityCommandCenter = lazy(() => import("./components/SectorCommandCenters").then((module) => ({ default: module.CommunityCommandCenter })));
+const MicrofinanceCommandCenter = lazy(() => import("./components/SectorCommandCenters").then((module) => ({ default: module.MicrofinanceCommandCenter })));
+const VicobaCommandCenter = lazy(() => import("./components/SectorCommandCenters").then((module) => ({ default: module.VicobaCommandCenter })));
+const FleetCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.FleetCommandCenter })));
+const HealthcareCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.HealthcareCommandCenter })));
+const HotelCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.HotelCommandCenter })));
+const PharmacyCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.PharmacyCommandCenter })));
+const RestaurantCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.RestaurantCommandCenter })));
+const SchoolCommandCenter = lazy(() => import("./components/VerticalCommandCenters").then((module) => ({ default: module.SchoolCommandCenter })));
+const AiBusinessSignals = lazy(() => import("./components/IntelligenceCommandCenters").then((module) => ({ default: module.AiBusinessSignals })));
+const SupportCommandCenter = lazy(() => import("./components/IntelligenceCommandCenters").then((module) => ({ default: module.SupportCommandCenter })));
+const BankMfiWorkspace = lazy(() => import("./components/BankMfiWorkspace").then((module) => ({ default: module.BankMfiWorkspace })));
+const GlobalAdminControlCenter = lazy(() => import("./components/GlobalAdminControlCenter").then((module) => ({ default: module.GlobalAdminControlCenter })));
+const ProfileIdentityPage = lazy(() => import("./components/ProfileIdentityCenter").then((module) => ({ default: module.ProfileIdentityPage })));
+const PremiumProfileMenu = lazy(() => import("./components/ProfileIdentityCenter").then((module) => ({ default: module.ProfileMenu })));
+const AndroidAppStatus = lazy(() => import("./components/AndroidAppStatus").then((module) => ({ default: module.AndroidAppStatus })));
+import { RealtimeConnectivityBadge } from "./components/RealtimeConnectivityBadge";
+const EnterpriseDashboardOverview = lazy(() => import("./components/EnterpriseDashboardOverview").then((module) => ({ default: module.EnterpriseDashboardOverview })));
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
+import { applyOfflineMutationToCache, discardOfflineMutation, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, resolveOfflineConflict, retryOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -281,10 +307,8 @@ function buildOfflineMutationError({ table, method }) {
 }
 
 // Module handlers may stage a UI row while their request is in flight. This
-// bus immediately reconciles each useCompanyTable cache from its last confirmed
-// Supabase result, both on success and on failure. It is deliberately not an
-// offline outbox: this product has no durable queue or conflict resolver, so
-// business writes are paused while offline instead of being represented as saved.
+// bus reconciles each useCompanyTable cache after server confirmation and
+// broadcasts queued/replayed mutations to every mounted module.
 export const companyMutationBus = {
   listeners: new Set(),
   emit(event) { this.listeners.forEach((listener) => listener(event)); },
@@ -293,6 +317,25 @@ export const companyMutationBus = {
 function emitCompanyMutation(event) {
   if (typeof window === "undefined") return;
   companyMutationBus.emit(event);
+}
+
+function offlineMutationScope() {
+  return offlineScope(getGuardedPersistenceCompanyId() || "current-company");
+}
+
+function isOfflineTransportError(error) {
+  return error?.code === "PERSISTENCE_OFFLINE" || error?.name === "TypeError" || /failed to fetch|network|offline|load failed|networkerror/i.test(String(error?.message || ""));
+}
+
+function optimisticOfflineRow(table, operation, payload, matchCol, matchVal) {
+  if (operation === "delete") return null;
+  const row = { ...(payload && typeof payload === "object" ? payload : {}) };
+  if (operation === "insert" && !row.id) row.id = globalThis.crypto?.randomUUID?.() || `offline-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  if (operation === "insert") row.__offlinePending = true;
+  if (operation === "update" && matchVal !== undefined && matchVal !== null) row[matchCol] = matchVal;
+  row.__offlineMutation = true;
+  row.__offlineTable = table;
+  return row;
 }
 
 function persistenceFailureMessage(action, error) {
@@ -488,7 +531,7 @@ function useProactiveSessionRefresh(enabled, onRenewed) {
           return;
         }
         reportSessionRefreshOutcome("success", "proactive");
-        onRenewedRef.current?.(refreshed.data.session.access_token);
+        onRenewedRef.current?.(refreshed.data.session);
       } catch (error) {
         authDebug("Proactive session renewal deferred", { status: error?.status || null, terminal: isDefinitiveSupabaseAuthFailure(error) });
         reportSessionRefreshOutcome(isDefinitiveSupabaseAuthFailure(error) ? "terminal_failure" : "retryable_failure", "proactive");
@@ -705,6 +748,7 @@ function inflateGenericCompanyRow(table, row) {
 export function sb(table) {
   let path = `${SUPABASE_URL}/rest/v1/${table}`;
   const params = new URLSearchParams();
+  const matchFilters = [];
   let method = "GET";
   let payload = null;
   let single = false;
@@ -716,7 +760,9 @@ export function sb(table) {
       return builder;
     },
     eq(col, val) {
-      params.append(genericFilterColumn(table, col), `eq.${val}`);
+      const normalizedColumn = genericFilterColumn(table, col);
+      params.append(normalizedColumn, `eq.${val}`);
+      matchFilters.push({ col: normalizedColumn, val });
       return builder;
     },
     order(col, { ascending = true } = {}) {
@@ -726,6 +772,7 @@ export function sb(table) {
     insert(row) {
       method = "POST";
       payload = row;
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return builder;
       const guardedCompanyId = getGuardedPersistenceCompanyId();
       if (GUARDED_WRITE_TABLES.has(table) && guardedCompanyId) {
         const sourceRows = Array.isArray(row) ? row : [row];
@@ -803,9 +850,32 @@ export function sb(table) {
       const url = `${path}?${params.toString()}`;
       let requestPayload = payload;
       if (method !== "GET" && typeof navigator !== "undefined" && navigator.onLine === false) {
-        const error = buildOfflineMutationError({ table, method });
-        emitCompanyMutation({ table, confirmed: false, error });
-        throw error;
+        const operation = method === "POST" ? "insert" : method === "PATCH" ? "update" : "delete";
+        const matchCol = matchFilters[0]?.col || "id";
+        const matchVal = matchFilters[0]?.val;
+        const optimisticPayload = operation === "insert" && payload && typeof payload === "object" && !Array.isArray(payload)
+          ? { ...(payload.id ? { id: payload.id } : {}), ...payload, __offlineId: payload.id || `offline-${Date.now()}-${Math.random().toString(36).slice(2)}` }
+          : payload;
+        const replayPayload = operation === "insert" && optimisticPayload && typeof optimisticPayload === "object" && !Array.isArray(optimisticPayload)
+          ? Object.fromEntries(Object.entries(optimisticPayload).filter(([key]) => key !== "__offlineId"))
+          : optimisticPayload;
+        enqueueOfflineMutation({
+          scope: offlineMutationScope(),
+          table,
+          operation,
+          payload: replayPayload,
+          matchCol,
+          matchVal,
+        });
+        applyOfflineMutationToCache(offlineMutationScope(), table, operation, optimisticPayload, matchCol, matchVal);
+        emitCompanyMutation({ type: "offline-queued", table, operation, scope: offlineMutationScope() });
+        const optimistic = operation === "delete" ? [] : optimisticPayload;
+        return single ? (Array.isArray(optimistic) ? optimistic[0] : optimistic) : optimistic;
+      }
+      if (method === "GET" && typeof navigator !== "undefined" && navigator.onLine === false) {
+        const cached = readOfflineTableCache(offlineMutationScope(), table);
+        const data = single ? (cached[0] || null) : cached;
+        if (data !== null || cached.length === 0) return data;
       }
       if (GENERIC_COMPANY_TABLES.has(table) && method === "POST") {
         requestPayload = Array.isArray(payload)
@@ -1037,7 +1107,37 @@ function emitSupabaseReconnectToast() {
   notify("Connection restored — live data is up to date.", "success");
 }
 
+async function offlineSyncRequestHash(table, operation, payload) {
+  const serialized = JSON.stringify({ table, operation, payload: payload ?? null });
+  const digest = await globalThis.crypto?.subtle?.digest("SHA-256", new TextEncoder().encode(serialized));
+  if (!digest) return serialized.slice(0, 128);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function recordOfflineSyncReceipt({ operationId, table, operation, payload, result }) {
+  if (!operationId || !IS_CONFIGURED) return null;
+  try {
+    return await callRpc("record_offline_sync_operation", {
+      p_operation_id: operationId,
+      p_table_name: table,
+      p_operation: operation,
+      p_request_hash: await offlineSyncRequestHash(table, operation, payload),
+      p_payload: payload ?? {},
+      p_result: { status: result?.error ? "failed" : "synced" },
+      p_client_created_at: new Date().toISOString(),
+    }, getStoredAccessToken());
+  } catch (error) {
+    // The data mutation already succeeded. Receipt recording is retried by the
+    // next replay attempt and must not turn a confirmed write into a failure.
+    console.warn("Offline sync receipt could not be recorded.", error);
+    return null;
+  }
+}
+
 export async function runCompanyTableQuery(table, { select = "*", order } = {}) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { rows: readOfflineTableCache(offlineMutationScope(), table), usedFallback: true, unavailable: false, offline: true };
+  }
   const queryVariants = [];
   const addVariant = (variantSelect, variantOrder) => {
     const signature = `${variantSelect}|${variantOrder?.col || ""}|${variantOrder?.ascending !== false}`;
@@ -1077,7 +1177,16 @@ export async function runCompanyTableQuery(table, { select = "*", order } = {}) 
   throw lastError || new Error(`Supabase could not load ${table}`);
 }
 
-export async function runCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
+function offlineRowsConflict(baseSnapshot, serverRow) {
+  if (!baseSnapshot || !serverRow) return false;
+  const baseVersion = baseSnapshot.updated_at || baseSnapshot.updatedAt || baseSnapshot.version;
+  const serverVersion = serverRow.updated_at || serverRow.updatedAt || serverRow.version;
+  if (baseVersion && serverVersion) return String(baseVersion) !== String(serverVersion);
+  const ignored = new Set(["__offlinePending", "__offlineId", "dbId"]);
+  return Object.keys(baseSnapshot).some((key) => !ignored.has(key) && key in serverRow && JSON.stringify(baseSnapshot[key]) !== JSON.stringify(serverRow[key]));
+}
+
+async function executeCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal, baseSnapshot = null, conflictStrategy = "manual", operationId = null } = {}) {
   if (!["insert", "update", "delete"].includes(operation)) {
     return { data: null, error: new Error(`Unsupported company-table mutation: ${operation}`) };
   }
@@ -1100,10 +1209,29 @@ export async function runCompanyTableMutation(table, operation, payload, { match
           res = Array.isArray(payload) ? await insertQuery.run() : await insertQuery.single().run();
         }
       } else if (operation === "update") {
+        if (baseSnapshot && conflictStrategy !== "client-wins") {
+          const current = await query.select("*").eq(matchCol, matchVal).single().run();
+          if (offlineRowsConflict(baseSnapshot, current)) {
+            const error = new Error("This record changed on the server while you were offline.");
+            error.code = "OFFLINE_CONFLICT";
+            error.serverRow = current;
+            throw error;
+          }
+        }
         res = await query.eq(matchCol, matchVal).update(payload).single().run();
       } else if (operation === "delete") {
+        if (baseSnapshot && conflictStrategy !== "client-wins") {
+          const current = await query.select("*").eq(matchCol, matchVal).single().run();
+          if (offlineRowsConflict(baseSnapshot, current)) {
+            const error = new Error("This record changed on the server while you were offline.");
+            error.code = "OFFLINE_CONFLICT";
+            error.serverRow = current;
+            throw error;
+          }
+        }
         res = await query.eq(matchCol, matchVal).delete().single().run();
       }
+      await recordOfflineSyncReceipt({ operationId, table, operation, payload, result: res });
       return { data: res, error: null };
     } catch (error) {
       lastError = error;
@@ -1120,16 +1248,45 @@ export async function runCompanyTableMutation(table, operation, payload, { match
   return { data: null, error: lastError || new Error(`Supabase ${operation} on ${table} failed`) };
 }
 
+export async function replayCompanyTableOutbox(options = {}) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return [];
+  const scope = offlineMutationScope();
+  const results = await replayOfflineMutations(scope, (entry) => executeCompanyTableMutation(entry.table, entry.operation, entry.payload, { matchCol: entry.matchCol, matchVal: entry.matchVal, baseSnapshot: entry.baseSnapshot, conflictStrategy: entry.conflictStrategy, operationId: entry.id }), options);
+  if (results.length) emitCompanyMutation({ type: "offline-replay", scope, results });
+  return results;
+}
+
+export async function runCompanyTableMutation(table, operation, payload, { matchCol = "id", matchVal } = {}) {
+  const scope = offlineMutationScope();
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    enqueueOfflineMutation({ scope, table, operation, payload, matchCol, matchVal });
+    applyOfflineMutationToCache(scope, table, operation, payload, matchCol, matchVal);
+    emitCompanyMutation({ type: "offline-queued", table, operation, scope });
+    return { data: optimisticOfflineRow(table, operation, payload, matchCol, matchVal), error: null, queued: true };
+  }
+  const result = await executeCompanyTableMutation(table, operation, payload, { matchCol, matchVal });
+  if (!result.error) return result;
+  if (isOfflineTransportError(result.error)) {
+    enqueueOfflineMutation({ scope, table, operation, payload, matchCol, matchVal });
+    applyOfflineMutationToCache(scope, table, operation, payload, matchCol, matchVal);
+    emitCompanyMutation({ type: "offline-queued", table, operation, scope });
+    return { data: optimisticOfflineRow(table, operation, payload, matchCol, matchVal), error: null, queued: true };
+  }
+  return result;
+}
+
 function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   // Demo mode serves seed rows instantly. Live mode starts empty and, once a
   // module has rows, keeps them visible during refreshes so navigation does
   // not blank or flicker the page.
   const isLive = IS_CONFIGURED && !DEMO_OVERRIDE;
   const initialRows = Array.isArray(seed) ? seed : [];
-  const [rowsState, setRowsState] = useState(isLive ? [] : initialRows);
-  const rowsRef = useRef(isLive ? [] : initialRows);
-  const confirmedRowsRef = useRef(isLive ? [] : initialRows);
-  const [loading, setLoading] = useState(isLive);
+  const cachedRows = isLive ? readOfflineTableCache(offlineMutationScope(), table) : [];
+  const hydratedRows = cachedRows.length ? cachedRows : (isLive ? [] : initialRows);
+  const [rowsState, setRowsState] = useState(hydratedRows);
+  const rowsRef = useRef(hydratedRows);
+  const confirmedRowsRef = useRef(hydratedRows);
+  const [loading, setLoading] = useState(isLive && cachedRows.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -1162,6 +1319,7 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
       const sourceRows = Array.isArray(result?.rows) ? rowsOf(result) : [];
       const confirmedRows = mapper ? sourceRows.map(mapper).filter(Boolean) : sourceRows;
       confirmedRowsRef.current = confirmedRows;
+      writeOfflineTableCache(offlineMutationScope(), table, confirmedRows);
       setRows(confirmedRows);
       setUnavailable(result.unavailable);
     } catch (e) {
@@ -1191,8 +1349,18 @@ function useCompanyTable(table, seed, { select = "*", order, mapRow } = {}) {
   useEffect(() => {
     if (!isLive || typeof window === "undefined") return undefined;
     const reloadAfterSessionUpdate = () => { reload(); };
+    const reloadAfterOfflineHydration = (event) => {
+      if (event?.detail?.hydrated) reload();
+    };
     window.addEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
-    return () => window.removeEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+    window.addEventListener("smart-manager:offline-sync-updated", reloadAfterOfflineHydration);
+    const replayAfterOnline = async () => { await replayCompanyTableOutbox(); await reload(); };
+    window.addEventListener("online", replayAfterOnline);
+    return () => {
+      window.removeEventListener("smart-manager:auth-session-updated", reloadAfterSessionUpdate);
+      window.removeEventListener("smart-manager:offline-sync-updated", reloadAfterOfflineHydration);
+      window.removeEventListener("online", replayAfterOnline);
+    };
   }, [isLive, reload]);
 
   return { rows: rowsState, setRows, loading, refreshing, error, unavailable, reload };
@@ -10207,84 +10375,6 @@ function Contacts() {
 
   return (
     <div className="space-y-5">
-      {/* MRR / ARR KPI tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          ["Monthly Recurring Revenue", "TZS "+money(Math.round(MRR))+"k", "#2563EB"],
-          ["Annual Run Rate (ARR)",     "TZS "+money(Math.round(ARR))+"k",  "#16A34A"],
-          ["Active Subscriptions",      active.length,                      "#7C3AED"],
-          ["Billing Due (7 days)",      dueSoon.length,                     dueSoon.length>0?"#F59E0B":"#16A34A"],
-        ].map(([l,v,col])=>(
-          <div key={l} className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 text-center">
-            <p className="text-[10.5px] text-slate-400 uppercase tracking-wide mb-1">{l}</p>
-            <p className="text-[18px] font-bold" style={{color:col}}>{v}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts */}
-      {rows.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* MRR by plan BarChart */}
-          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-            <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">MRR by Plan</h3>
-            {byPlan.length === 0 ? <p className="text-slate-400 text-center py-6">No active subscriptions</p> : (
-              <ResponsiveContainer width="100%" height={150}>
-                <BarChart data={byPlan} layout="vertical" margin={{left:5,right:20,top:0,bottom:0}}>
-                  <CartesianGrid vertical={false} stroke="#F3F4F6"/>
-                  <XAxis type="number" tick={{fontSize:10}} axisLine={false} tickLine={false}/>
-                  <YAxis dataKey="name" type="category" tick={{fontSize:11}} axisLine={false} tickLine={false} width={90}/>
-                  <Tooltip formatter={(v)=>["TZS "+money(v)+"k/mo","MRR"]}/>
-                  <Bar dataKey="value" radius={[0,5,5,0]}>
-                    {byPlan.map((d,i)=><Cell key={i} fill={d.fill}/>)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-
-          {/* Status PieChart */}
-          <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4">
-            <h3 className="text-[13.5px] font-semibold text-[#111827] mb-3">Subscription Status</h3>
-            {statusChart.length === 0 ? <p className="text-slate-400 text-center py-6">No subscriptions</p> : (
-              <div className="flex items-center gap-4">
-                <ResponsiveContainer width="55%" height={130}>
-                  <RPieChart>
-                    <Pie data={statusChart} dataKey="value" cx="50%" cy="50%" outerRadius={55} innerRadius={30}>
-                      {statusChart.map((d,i)=><Cell key={i} fill={d.fill}/>)}
-                    </Pie>
-                    <Tooltip formatter={(v,n)=>[v,n]}/>
-                  </RPieChart>
-                </ResponsiveContainer>
-                <div className="flex-1 space-y-2">
-                  {statusChart.map(d=>(
-                    <div key={d.name} className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-[12px] text-slate-600">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{background:d.fill}}/>{d.name}
-                      </span>
-                      <span className="text-[13px] font-bold" style={{color:d.fill}}>{d.value}</span>
-                    </div>
-                  ))}
-                  <div className="pt-2 border-t border-slate-100">
-                    <p className="text-[11.5px] text-slate-500">Avg MRR: <strong className="text-[#2563EB]">TZS {money(avgRev)}k</strong></p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Billing due alert */}
-      {dueSoon.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex items-start gap-2.5">
-          <Bell size={15} className="text-amber-600 shrink-0 mt-0.5"/>
-          <div>
-            <p className="text-[13px] font-semibold text-amber-800">{dueSoon.length} subscription{dueSoon.length>1?"s":""} due for billing in the next 7 days</p>
-            <p className="text-[11.5px] text-amber-600 mt-0.5">{dueSoon.map(s=>s.customer+" ("+s.plan+")").join(" · ")}</p>
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative w-full sm:w-72">
@@ -41854,7 +41944,7 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
 
       {open && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
           <div
             className="absolute right-0 top-full z-40 mt-2 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg"
             style={{ animation: "toastIn .15s ease-out" }}
@@ -43173,13 +43263,16 @@ function WorkspaceBrandingControls({ logo, signatureLogo, primaryColor, accentCo
 // comment on companies.join_code for why that is a deliberate privacy
 // boundary, not an oversight.
 export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
+  const centralizedAuth = useContext(AuthContext) || { session: null, user: null };
+  const hasConfirmedSession = Boolean(centralizedAuth.session?.access_token && centralizedAuth.user?.id);
   const onboardingModuleIds = useMemo(() => ONBOARDING_MODULES.map((module) => module.id), []);
   const onboardingProgress = useMemo(() => readOnboardingProgress(onboardingModuleIds), [onboardingModuleIds]);
   const [restoredOnboardingProgress, setRestoredOnboardingProgress] = useState(() => Boolean(onboardingProgress && hasOnboardingProgress(onboardingProgress, onboardingModuleIds)));
   const persistedCountry = SIGNUP_COUNTRIES.includes(onboardingProgress?.company?.country) ? onboardingProgress.company.country : SIGNUP_COUNTRIES[0];
   const [mode, setMode] = useState(() => onboardingProgress?.mode || "create"); // "create" | "join"
-  // A password is deliberately never stored; all recovered sessions restart at step 1.
-  const [step, setStep] = useState(1);
+  // A password is deliberately never stored. A confirmed session can resume
+  // directly at workspace setup without asking the user to re-enter it.
+  const [step, setStep] = useState(() => hasConfirmedSession && (onboardingProgress?.mode || "create") === "create" ? 2 : 1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [completedWorkspace, setCompletedWorkspace] = useState(null);
@@ -43189,7 +43282,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [isolatedPreferencesOpen, setIsolatedPreferencesOpen] = useState(false);
   const [isolatedComplianceAuditOpen, setIsolatedComplianceAuditOpen] = useState(false);
 
-  const [account, setAccount] = useState(() => ({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", ...(onboardingProgress?.account || {}) }));
+  const [account, setAccount] = useState(() => ({ fullName: centralizedAuth.user?.user_metadata?.full_name || "", email: centralizedAuth.user?.email || "", phone: "", password: "", confirmPassword: "", ...(onboardingProgress?.account || {}) }));
   const [company, setCompany] = useState({
     name: "", category: "general", country: persistedCountry, currency: SIGNUP_CURRENCIES[0],
     timezone: companyDefaultsForCountry(persistedCountry).timezone, website: "", taxId: "", brandColor: "#0B5D3B", brandAccentColor: "#16A34A",
@@ -43209,6 +43302,16 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const [onboardingPlanError, setOnboardingPlanError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  useEffect(() => {
+    if (!IS_ISOLATED_SIGNUP_E2E || typeof window === "undefined") return undefined;
+    window.__SMART_MANAGER_OFFLINE_TEST__ = {
+      queue: (table, payload) => runCompanyTableMutation(table, "insert", payload),
+      sync: () => replayCompanyTableOutbox({ force: true }),
+      summary: () => offlineQueueSummary(offlineMutationScope()),
+    };
+    return () => { delete window.__SMART_MANAGER_OFFLINE_TEST__; };
+  }, []);
 
   useEffect(() => {
     if (!IS_CONFIGURED) return undefined;
@@ -43265,7 +43368,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const step1Valid = !step1ValidationError;
   const isPortalRole = joinRole === "External Client" || joinRole === "Supplier";
   const joinAccountValid = account.fullName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account.email.trim()) && isEnterprisePassword(account.password) && account.password === account.confirmPassword;
-  const step2Valid = mode === "create" ? company.name.trim().length > 1 : joinAccountValid && joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
+  const step2Valid = mode === "create" ? company.name.trim().length > 1 : (hasConfirmedSession || joinAccountValid) && joinCode.trim().length >= 6 && (!isPortalRole || customerRef.trim().length > 0);
 
   function continueToCompanySetup(event) {
     event.preventDefault();
@@ -43335,8 +43438,16 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     let accountCreated = false;
     try {
       authDebug("Workspace signup started", { mode });
-      const signUpResult = await directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password });
+      const signUpResult = hasConfirmedSession
+        ? { access_token: centralizedAuth.session.access_token, refresh_token: centralizedAuth.session.refresh_token, user: centralizedAuth.user, requires_email_confirmation: false }
+        : await directPasswordSignupMutation.mutateAsync({ email: account.email.trim(), password: account.password });
       accountCreated = true;
+      if (signUpResult.requires_email_confirmation || !signUpResult.access_token) {
+        // Keep the non-secret onboarding draft so the confirmed user can resume
+        // workspace creation after returning from the email link.
+        setCompletedWorkspace({ pendingEmailVerification: true, email: signUpResult.user?.email || account.email.trim() });
+        return;
+      }
       const accessToken = signUpResult.access_token;
       persistAuthSession(signUpResult);
 
@@ -43419,7 +43530,11 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   const onboardingPanelStyle = onboardingBackground ? { backgroundImage: `linear-gradient(145deg, rgba(5,38,20,.95), rgba(15,77,38,.78)), url(\"${onboardingBackground}\")`, backgroundPosition: "center", backgroundSize: "cover" } : { background: gradientBg };
 
   if (completedWorkspace?.isolatedSession?.authenticated) {
-    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><section className="w-full max-w-2xl rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]" aria-labelledby="isolated-workspace-title"><CheckCircle2 size={30} className="mx-auto text-emerald-700" aria-hidden="true" /><p className="mt-5 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 id="isolated-workspace-title" className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950">Congratulations — you’re ready.</h1><p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">Isolated authenticated workspace session is active. No authentication request or tenant record was sent to the configured Supabase project.</p><div className="mt-4 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setIsolatedPreferencesOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview dashboard preferences</button><button type="button" onClick={() => setIsolatedComplianceAuditOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview compliance audit workspace</button></div>{isolatedPreferencesOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard preferences" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading dashboard preferences…</div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setIsolatedPreferencesOpen(false)} /></Suspense>}{isolatedComplianceAuditOpen && <Suspense fallback={<div role="status" aria-label="Loading compliance audit workspace" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading compliance audit workspace…</div>}><LazyComplianceAuditLogView companyId="e2e-isolated-tenant" /></Suspense>}</section></div>;
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><OfflineSyncBanner /><section className="w-full max-w-2xl rounded-[24px] border border-emerald-100 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,.1)]" aria-labelledby="isolated-workspace-title"><CheckCircle2 size={30} className="mx-auto text-emerald-700" aria-hidden="true" /><p className="mt-5 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Account created</p><h1 id="isolated-workspace-title" className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950">Congratulations — you’re ready.</h1><p role="status" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] leading-5 text-slate-600">Isolated authenticated workspace session is active. No authentication request or tenant record was sent to the configured Supabase project.</p><div className="mt-4 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => setIsolatedPreferencesOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview dashboard preferences</button><button type="button" onClick={() => setIsolatedComplianceAuditOpen(true)} className="rounded-xl border border-slate-200 px-3 py-2 text-[11.5px] font-semibold text-slate-700">Preview compliance audit workspace</button></div>{isolatedPreferencesOpen && <Suspense fallback={<div role="status" aria-label="Loading dashboard preferences" className="mt-4 rounded-xl bg-slate-100 px-3 py-2 text-left text-[11.5px] text-slate-600">Loading dashboard preferences…</div>}><LazyDashboardPreferencesDrawer isOpen onClose={() => setIsolatedPreferencesOpen(false)} /></Suspense>}{isolatedComplianceAuditOpen && <Suspense fallback={<div role="status" aria-label="Loading compliance audit workspace" className="mt-4 rounded-xl bg-slate-100 p-2 text-left text-[11.5px] text-slate-600">Loading compliance audit workspace…</div>}><LazyComplianceAuditLogView companyId="e2e-isolated-tenant" /></Suspense>}</section></div>;
+  }
+
+  if (completedWorkspace?.pendingEmailVerification) {
+    return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6" style={onboardingSceneStyle}><div className="w-full max-w-md text-center"><div className="mb-6 flex flex-col items-center"><BrandLogo variant="compact" priority className="h-24 w-24 shadow-[0_18px_36px_rgba(0,138,69,.2)]"/><p className="mt-3 text-[21px] font-extrabold tracking-[.01em] text-[#101828]" style={{ fontFamily: "'Poppins',sans-serif" }}>SMART <span className="text-[#008A45]">MANAGER</span></p></div><div className="rounded-[24px] border border-emerald-100 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,.1)]"><div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Mail size={28}/></div><p className="mt-6 text-[10px] font-bold uppercase tracking-[.17em] text-emerald-700">Confirm your email</p><h1 className="mt-2 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Check your inbox to continue.</h1><p className="mx-auto mt-3 max-w-sm text-[13.5px] leading-6 text-slate-500">We created the account for <strong>{completedWorkspace.email}</strong>. Confirm the email, then return here and sign in to finish setting up your workspace. Your setup details remain saved on this device; your password is never stored.</p><button type="button" onClick={onSwitchToLogin} className="mt-7 w-full rounded-xl bg-[#0B5D3B] py-3.5 text-[13.5px] font-semibold text-white shadow-sm transition hover:bg-[#084B30]">Continue to sign in</button></div></div></div>;
   }
 
   if (completedWorkspace) {
@@ -43427,7 +43542,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
   }
 
   return (
-    <main id="main-content" className="min-h-screen w-full flex bg-[#F8FAFC]" style={onboardingSceneStyle}>
+    <main id="main-content" className="sm-onboarding min-h-screen w-full flex bg-[#F8FAFC]" style={onboardingSceneStyle}>
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden flex-col justify-between p-12" style={onboardingPanelStyle}>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -right-20 -top-24 h-96 w-96 rounded-full opacity-20 blur-[70px]" style={{ background: "radial-gradient(circle,#4ADE80 0%,transparent 70%)" }} />
@@ -43446,20 +43561,20 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         <div className="relative z-10 space-y-3 text-[11.5px] text-emerald-50/80"><p className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> Tenant-scoped from the first record</p><p className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> Role-aware access for every teammate</p><p className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-200" /> Designed for accountable execution</p></div>
       </div>
 
-      <div className="flex min-h-screen w-full flex-1 items-center justify-center px-4 py-8 sm:px-8 lg:w-[55%] lg:px-14">
+      <div className="sm-onboarding-content flex min-h-screen w-full flex-1 items-center justify-center px-4 py-8 sm:px-8 lg:w-[55%] lg:px-14">
         <div className="w-full max-w-[560px]">
           <div className="mb-7 flex items-center gap-3 lg:hidden"><BrandLogo variant="compact" priority className="h-12 w-12 shadow-md" /><div><p className="text-[18px] font-bold text-slate-950" style={{ fontFamily: "Poppins,sans-serif" }}>SMART <span className="text-[#16A34A]">MANAGER</span></p><p className="text-[10.5px] text-slate-400">Simamia Biashara Yako.</p></div></div>
-          <div className="mb-5 flex items-center justify-between"><div><p className="text-[10.5px] font-bold uppercase tracking-[.18em] text-[#16A34A]">Smart Manager onboarding</p><h2 className="mt-1 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>{mode === "join" ? "Join your company" : "Create your workspace"}</h2><p className="mt-1 text-[13px] leading-5 text-slate-500">{mode === "join" ? "Enter the details approved by your workspace administrator." : "A guided setup for your account, company, and starting modules."}</p></div><button type="button" onClick={onSwitchToLogin} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-800">Back to sign in</button></div>
+          <div className="sm-onboarding-heading mb-5 flex items-center justify-between"><div><p className="text-[10.5px] font-bold uppercase tracking-[.18em] text-[#16A34A]">Smart Manager onboarding</p><h2 className="mt-1 text-[26px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>{mode === "join" ? "Join your company" : "Create your workspace"}</h2><p className="mt-1 text-[13px] leading-5 text-slate-500">{mode === "join" ? "Enter the details approved by your workspace administrator." : "A guided setup for your account, company, and starting modules."}</p></div><button type="button" onClick={onSwitchToLogin} className="sm-onboarding-back rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-800">Back to sign in</button></div>
 
-          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm"><button type="button" onClick={() => { setMode("create"); setStep(1); setError(null); }} className={`flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${mode === "create" ? "bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>Create a company</button><button type="button" onClick={() => { setMode("join"); setStep(1); setError(null); }} className={`flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${mode === "join" ? "bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>Join existing company</button></div>
+          <div className="sm-onboarding-mode mb-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm"><button type="button" onClick={() => { setMode("create"); setStep(1); setError(null); }} className={`sm-onboarding-mode-button flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${mode === "create" ? "is-active bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>Create a company</button><button type="button" onClick={() => { setMode("join"); setStep(1); setError(null); }} className={`sm-onboarding-mode-button flex-1 rounded-xl px-3 py-2.5 text-[12px] font-semibold transition ${mode === "join" ? "is-active bg-emerald-50 text-[#15803D] shadow-sm" : "text-slate-400 hover:text-slate-700"}`}>Join existing company</button></div>
 
-          <div className="mb-5 flex items-center gap-2">{stepLabels.map((label, index) => { const number = index + 1; const active = mode === "join" ? number === 1 : step === number; const done = mode === "join" ? false : step > number; return <React.Fragment key={label}><div className="flex shrink-0 items-center gap-2"><span className={`grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold ${active || done ? "bg-[#16A34A] text-white" : "bg-slate-200 text-slate-400"}`}>{done ? <Check size={13} /> : number}</span><span className={`text-[11px] font-semibold ${active ? "text-slate-800" : "text-slate-400"}`}>{label}</span></div>{index < stepLabels.length - 1 && <div className={`h-px flex-1 ${done ? "bg-[#16A34A]" : "bg-slate-200"}`} />}</React.Fragment>; })}</div>
+          <div className="sm-onboarding-steps mb-5 flex items-center gap-2">{stepLabels.map((label, index) => { const number = index + 1; const active = mode === "join" ? number === 1 : step === number; const done = mode === "join" ? false : step > number; return <React.Fragment key={label}><div className={`sm-onboarding-step flex shrink-0 items-center gap-2 ${active ? "is-active" : ""} ${done ? "is-done" : ""}`}><span className="sm-onboarding-step-number grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold">{done ? <Check size={13} /> : number}</span><span className="sm-onboarding-step-label text-[11px] font-semibold">{label}</span></div>{index < stepLabels.length - 1 && <div className={`sm-onboarding-step-line h-px flex-1 ${done ? "is-done" : ""}`} />}</React.Fragment>; })}</div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,.08)] sm:p-7">
+          <div className="sm-onboarding-card rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,.08)] sm:p-7">
             {error && <div role="alert" className="mb-4 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-[12px] leading-5 text-red-700">{error}</div>}
             {restoredOnboardingProgress && !completedWorkspace && <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3 text-[12px] leading-5 text-emerald-800"><p>Your in-progress setup was restored for this browser session. Re-enter your password to continue; passwords, confirmations, logo files, and company join codes are never saved.</p><button type="button" onClick={discardSavedSetup} className="shrink-0 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1" aria-label="Discard saved setup and start again">Discard saved setup</button></div>}
             {mode === "join" ? (
-              <form onSubmit={handleFinalSubmit} className="auth-step-panel space-y-4" aria-live="polite">
+              <form onSubmit={handleFinalSubmit} className="sm-onboarding-form sm-onboarding-form--join auth-step-panel space-y-4" aria-live="polite">
                 <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Join an existing workspace</h3><p className="mt-1 text-[12.5px] text-slate-500">Your administrator should provide the company join code.</p></div>
                 <FormField label="Full name" required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" autoComplete="name" /></div></FormField>
                 <FormField label="Email address" required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" autoComplete="email" /></div></FormField>
@@ -43471,7 +43586,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <button type="submit" disabled={!step2Valid || busy} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Request secure access →"}</button>
               </form>
             ) : step === 1 ? (
-              <form onSubmit={continueToCompanySetup} className="auth-step-panel space-y-4" aria-live="polite">
+              <form onSubmit={continueToCompanySetup} className="sm-onboarding-form sm-onboarding-form--account auth-step-panel space-y-4" aria-live="polite">
                 <div className="mb-5"><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Create your account</h3><p className="mt-1 text-[12.5px] text-slate-500">Your account becomes the initial organisation owner.</p></div>
                 <FormField label="Full name" required><div className="relative"><User size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={account.fullName} onChange={(e) => setAccountField("fullName", e.target.value)} placeholder="Your full name" autoComplete="name" /></div></FormField>
                 <FormField label="Email address" required><div className="relative"><Mail size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} type="email" value={account.email} onChange={(e) => setAccountField("email", e.target.value)} placeholder="you@company.tz" autoComplete="email" /></div></FormField>
@@ -43484,7 +43599,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <button type="submit" disabled={busy} aria-disabled={busy} className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>Continue to company setup →</button>
               </form>
             ) : step === 2 ? (
-              <form onSubmit={(e) => { e.preventDefault(); if (step2Valid) setStep(getSignupProgressionStep({ step: 2, account, company })); }} className="auth-step-panel space-y-4" aria-live="polite">
+              <form onSubmit={(e) => { e.preventDefault(); if (step2Valid) setStep(getSignupProgressionStep({ step: 2, account, company })); }} className="sm-onboarding-form sm-onboarding-form--workspace auth-step-panel space-y-4" aria-live="polite">
                 <div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(1)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to account details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Register your company</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Configure the first workspace essentials.</p></div></div>
                 <FormField label="Company name" required><div className="relative"><Building2 size={15} className="pointer-events-none absolute left-3 top-3.5 text-emerald-600" /><input className={`${inputClass} pl-9`} value={company.name} onChange={(e) => setCompanyField("name", e.target.value)} placeholder="e.g. Kilimanjaro Traders Ltd" /></div></FormField>
                 <div className="grid gap-3 sm:grid-cols-2"><FormField label="Country" required><select className={inputClass} value={company.country} onChange={(e) => setCompanyField("country", e.target.value)}>{SIGNUP_COUNTRIES.map((country) => <option key={country}>{country}</option>)}</select></FormField><FormField label="Currency" required><select className={inputClass} value={company.currency} onChange={(e) => setCompanyField("currency", e.target.value)}>{SIGNUP_CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}</select></FormField></div>
@@ -43496,7 +43611,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
                 <button type="submit" disabled={!step2Valid} className="w-full rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>Continue to modules →</button>
               </form>
             ) : (
-              <div className="auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to company details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Choose your starting modules</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Enable the workflows you need first. You can change these later.</p></div></div><div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">{ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" onClick={() => toggleModule(module.id)} className={`flex items-start gap-2 rounded-xl border p-3 text-left transition ${activeModule ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14} /></span><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{module.label}</span><span className="mt-0.5 block text-[10px]">{activeModule ? "Enabled" : "Not enabled"}</span></span>{activeModule && <Check size={12} className="ml-auto shrink-0" />}</button>; })}</div><p className="text-[11.5px] leading-5 text-slate-500">Module choices are saved to your workspace and can be changed by authorised administrators later.</p><section className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-emerald-700">FREE PLAN — 15 DAYS</p><h4 className="mt-1 text-[15px] font-bold text-emerald-950">🎉 Karibu SMART MANAGER</h4><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">Anza na siku 15 BURE. Hakuna malipo yanayohitajika sasa; chagua kifurushi unachopendelea.</p><label className="mt-3 block text-[11px] font-semibold text-emerald-950">Preferred package<select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-1.5 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-[12px] font-semibold text-slate-800">{onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.category === "Football" ? "⚽ " : ""}{plan.name} — TZS {Number(plan.monthlyPrice || 0).toLocaleString()} / mwezi</option>) : <option value="FREE_15">FREE_15 — FREE FOR 15 DAYS</option>}</select></label>{onboardingPlanError && <p className="mt-2 text-[10.5px] text-amber-700">{onboardingPlanError}</p>}<p className="mt-2 text-[10.5px] leading-4 text-emerald-800">Mpango wa FREE_15 unaanza baada ya kampuni kusajiliwa. Data yako itahifadhiwa hata ufikiaji ukiisha.</p></section><button type="button" onClick={handleFinalSubmit} disabled={busy || !step2Valid} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Launch Smart Manager →"}</button></div>
+              <div className="sm-onboarding-form sm-onboarding-form--modules auth-step-panel space-y-4" aria-live="polite"><div className="mb-5 flex items-center gap-2"><button type="button" onClick={() => setStep(2)} className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:text-slate-800" aria-label="Back to company details"><ChevronLeft size={17} /></button><div><h3 className="text-[20px] font-bold text-slate-950" style={{ fontFamily: "Poppins,system-ui,sans-serif" }}>Choose your starting modules</h3><p className="mt-0.5 text-[12.5px] text-slate-500">Enable the workflows you need first. You can change these later.</p></div></div><div className="sm-onboarding-module-grid grid grid-cols-2 gap-2.5 sm:grid-cols-3">{ONBOARDING_MODULES.map((module) => { const Icon = module.icon; const activeModule = selectedModules.has(module.id); return <button key={module.id} type="button" onClick={() => toggleModule(module.id)} className={`sm-onboarding-module flex items-start gap-2 rounded-xl border p-3 text-left transition ${activeModule ? "is-active border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}><span className={`mt-0.5 rounded-lg p-1.5 ${activeModule ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}><Icon size={14} /></span><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{module.label}</span><span className="mt-0.5 block text-[10px]">{activeModule ? "Enabled" : "Not enabled"}</span></span>{activeModule && <Check size={12} className="ml-auto shrink-0" />}</button>; })}</div><p className="text-[11.5px] leading-5 text-slate-500">Module choices are saved to your workspace and can be changed by authorised administrators later.</p><section className="sm-onboarding-plan rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-emerald-700">FREE PLAN — 15 DAYS</p><h4 className="mt-1 text-[15px] font-bold text-emerald-950">🎉 Karibu SMART MANAGER</h4><p className="mt-1 text-[11.5px] leading-5 text-emerald-900/80">Anza na siku 15 BURE. Hakuna malipo yanayohitajika sasa; chagua kifurushi unachopendelea.</p><label className="mt-3 block text-[11px] font-semibold text-emerald-950">Preferred package<select value={preferredPlanCode} onChange={(event) => setPreferredPlanCode(event.target.value)} className="mt-1.5 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-[12px] font-semibold text-slate-800">{onboardingPlans.length ? onboardingPlans.map((plan) => <option key={plan.code} value={plan.code}>{plan.category === "Football" ? "⚽ " : ""}{plan.name} — TZS {Number(plan.monthlyPrice || 0).toLocaleString()} / mwezi</option>) : <option value="FREE_15">FREE_15 — FREE FOR 15 DAYS</option>}</select></label>{onboardingPlanError && <p className="mt-2 text-[10.5px] text-amber-700">{onboardingPlanError}</p>}<p className="mt-2 text-[10.5px] leading-4 text-emerald-800">Mpango wa FREE_15 unaanza baada ya kampuni kusajiliwa. Data yako itahifadhiwa hata ufikiaji ukiisha.</p></section><button type="button" onClick={handleFinalSubmit} disabled={busy || !step2Valid} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(22,163,74,.3)] transition disabled:cursor-not-allowed disabled:opacity-50" style={{ background: "linear-gradient(135deg,#16A34A,#22C55E)" }}>{busy ? <LoaderCircle size={17} className="animate-spin" /> : "Launch Smart Manager →"}</button></div>
             )}
           </div>
 
@@ -47060,9 +47175,93 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
   );
 }
 
+function OfflineSyncBanner() {
+  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
+  const [summary, setSummary] = useState(() => offlineQueueSummary(offlineMutationScope()));
+  const [syncing, setSyncing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const refreshSummary = useCallback(() => setSummary(offlineQueueSummary(offlineMutationScope())), []);
+  const syncNow = useCallback(async () => {
+    if (!online || syncing) return;
+    setSyncing(true);
+    try { await replayCompanyTableOutbox({ force: true }); } finally { refreshSummary(); setSyncing(false); }
+  }, [online, syncing, refreshSummary]);
+  const resolveConflict = useCallback(async (entry, strategy) => {
+    resolveOfflineConflict(offlineMutationScope(), entry.id, strategy, entry.conflict?.serverRow || null);
+    if (strategy === "client-wins" && online) await replayCompanyTableOutbox();
+    refreshSummary();
+  }, [online, refreshSummary]);
+  const retryEntry = useCallback(async (entry) => {
+    retryOfflineMutation(offlineMutationScope(), entry.id);
+    if (online) {
+      setSyncing(true);
+      try { await replayCompanyTableOutbox({ force: true }); } finally { refreshSummary(); setSyncing(false); }
+    } else refreshSummary();
+  }, [online, refreshSummary]);
+  const discardEntry = useCallback((entry) => {
+    discardOfflineMutation(offlineMutationScope(), entry.id);
+    refreshSummary();
+  }, [refreshSummary]);
+
+  useEffect(() => {
+    void hydrateOfflineStorage(offlineMutationScope());
+    const handleOnline = () => {
+      setOnline(true);
+      setSyncing(true);
+      void replayCompanyTableOutbox({ force: true }).finally(() => { refreshSummary(); setSyncing(false); });
+    };
+    const handleOffline = () => setOnline(false);
+    const handleUpdate = () => refreshSummary();
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("smart-manager:offline-sync-updated", handleUpdate);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("smart-manager:offline-sync-updated", handleUpdate);
+    };
+  }, [refreshSummary, syncNow]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (!navigator.onLine || syncing) return;
+      setSyncing(true);
+      void replayCompanyTableOutbox().finally(() => { refreshSummary(); setSyncing(false); });
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [refreshSummary, syncing]);
+
+  if (online && summary.pending === 0 && summary.failed === 0 && summary.conflicts === 0 && !syncing) return null;
+  const queued = summary.pending + summary.syncing + summary.failed + summary.conflicts;
+  const visibleEntries = summary.entries.filter((entry) => ["pending", "syncing", "failed", "conflict"].includes(entry.status));
+  return <div className={`fixed inset-x-0 top-0 z-[130] px-4 py-2 text-[11px] font-semibold shadow-md ${online ? "bg-amber-50 text-amber-900" : "bg-slate-900 text-white"}`} role="status" aria-live="polite">
+    <div className="flex min-h-10 items-center justify-center gap-3">
+      {online ? <Wifi size={15} aria-hidden="true" /> : <WifiOff size={15} aria-hidden="true" />}
+      <span>{summary.conflicts > 0 ? `${summary.conflicts} conflict${summary.conflicts === 1 ? "" : "s"} need resolution.` : online ? `${queued} change${queued === 1 ? "" : "s"} pending synchronization.` : "Offline mode: changes are saved on this device and will sync when connection returns."}</span>
+      {online && queued > 0 && <button type="button" onClick={() => void syncNow()} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-[10px] font-bold hover:bg-amber-100" disabled={syncing}><RefreshCw size={12} className={syncing ? "animate-spin" : ""} />{syncing ? "Syncing…" : "Sync now"}</button>}
+      <button type="button" onClick={() => setExpanded((value) => !value)} className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-[10px] font-bold hover:bg-amber-100" aria-expanded={expanded}><List size={12} />Outbox <ChevronDown size={12} className={expanded ? "rotate-180" : ""} /></button>
+      {summary.conflicts > 0 && <div className="flex flex-wrap items-center gap-1"><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "server-wins")} className="rounded-lg border border-slate-300 px-2 py-1 text-[10px] font-bold hover:bg-white">Use server</button><button type="button" onClick={() => void resolveConflict(summary.entries.find((entry) => entry.status === "conflict"), "client-wins")} className="rounded-lg bg-amber-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-amber-700">Use my change</button></div>}
+    </div>
+    {expanded && <div className="mx-auto max-h-72 w-full max-w-3xl overflow-y-auto rounded-xl border border-amber-200 bg-white p-2 text-slate-800 shadow-lg">
+      <div className="flex items-center justify-between px-2 py-1"><span className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">Offline outbox ({visibleEntries.length})</span><span className="text-[10px] text-slate-400">Encrypted on this device</span></div>
+      {visibleEntries.length === 0 ? <p className="px-2 py-3 text-[11px] text-slate-500">No queued mutations.</p> : visibleEntries.map((entry) => <div key={entry.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-2 py-2"><div className="min-w-0"><p className="truncate text-[11px] font-bold">{entry.operation} · {entry.table}</p><p className="truncate text-[10px] text-slate-500">{entry.status}{entry.lastError ? ` · ${entry.lastError}` : ""}{entry.attempts ? ` · attempts ${entry.attempts}` : ""}</p></div><div className="flex items-center gap-1">{entry.status === "failed" && <><button type="button" onClick={() => void retryEntry(entry)} className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-2 py-1 text-[10px] font-bold text-amber-800 hover:bg-amber-50"><RotateCcw size={11} />Retry</button><button type="button" onClick={() => discardEntry(entry)} className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-[10px] font-bold text-red-700 hover:bg-red-50"><Trash2 size={11} />Discard</button></>}{entry.status === "conflict" && <><button type="button" onClick={() => void resolveConflict(entry, "server-wins")} className="rounded-md border border-slate-300 px-2 py-1 text-[10px] font-bold hover:bg-slate-50">Server</button><button type="button" onClick={() => void resolveConflict(entry, "client-wins")} className="rounded-md bg-amber-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-amber-700">Local</button></>}</div></div>)}
+    </div>}
+  </div>;
+}
+
 function SmartManager() {
   const centralizedAuth = useAuthContext();
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
+  useEffect(() => {
+    if (!IS_ISOLATED_SIGNUP_E2E || typeof window === "undefined") return undefined;
+    window.__SMART_MANAGER_OFFLINE_TEST__ = {
+      queue: (table, payload) => runCompanyTableMutation(table, "insert", payload),
+      sync: () => replayCompanyTableOutbox({ force: true }),
+      summary: () => offlineQueueSummary(offlineMutationScope()),
+    };
+    return () => { delete window.__SMART_MANAGER_OFFLINE_TEST__; };
+  }, []);
   // Role-based access and session state initialized first to prevent temporal dead zones
   const [currentUser, setCurrentUser] = useState({ id: null, name: "EzyMP", role: "Super Administrator", customerRef: null });
   const currentRole = roleDefinitionFor(currentUser.role);
@@ -47125,8 +47324,12 @@ function SmartManager() {
   const [authRetryKey, setAuthRetryKey] = useState(0);
   const [terminalSessionDiagnostic, setTerminalSessionDiagnostic] = useState(null);
 
-  useProactiveSessionRefresh(Boolean(session?.accessToken && !session?.demo), (accessToken) => {
-    setSession((current) => current?.demo ? current : current ? { ...current, accessToken } : current);
+  useProactiveSessionRefresh(Boolean(session?.accessToken && !session?.demo), (refreshedSession) => {
+    setSession((current) => current?.demo ? current : current ? {
+      ...current,
+      accessToken: refreshedSession?.access_token || current.accessToken,
+      refreshToken: refreshedSession?.refresh_token || current.refreshToken,
+    } : current);
   });
 
   useEffect(() => {
@@ -47232,7 +47435,7 @@ function SmartManager() {
         setWorkspaceResolutionError(null);
         const confirmedIndustryFocus = normalizeOrganizationIndustryFocus(profile.companies?.category);
         rememberConfirmedOrganizationIndustryFocus(confirmedIndustryFocus);
-        setSession({ userId: user.id, email: user.email, accessToken: token, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, industry: confirmedIndustryFocus, industryFocus: confirmedIndustryFocus, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
+        setSession({ userId: user.id, email: user.email, accessToken: token, refreshToken: storedRefreshToken, fullName: profile.full_name, role: profile.role, customerRef: profile.customer_ref, company: { ...profile.companies, industry: confirmedIndustryFocus, industryFocus: confirmedIndustryFocus, taxRate: profile.companies?.tax_rate, timezone: profile.companies?.timezone, businessScale: profile.companies?.business_scale, receiptWidth: profile.companies?.receipt_width, receiptFooter: profile.companies?.receipt_footer, receiptShowLogo: profile.companies?.receipt_show_logo, logo: profile.companies?.logo || null, brandColor: profile.companies?.brand_primary_color || "#0B5D3B", brandAccentColor: profile.companies?.brand_accent_color || "#16A34A" } });
       } catch (bootstrapError) {
         if (isTerminalWorkspaceSessionError(bootstrapError)) {
           reportSessionRefreshOutcome("terminal_failure", "launch_bootstrap");
@@ -47326,17 +47529,82 @@ function SmartManager() {
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [isDesktopNavigation, setIsDesktopNavigation] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
+  const sidebarRef = useRef(null);
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const workspaceMenuRef = useRef(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try { return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true"; } catch { return false; }
+    try {
+      const savedPreferences = window.localStorage.getItem("smart_manager_dashboard_prefs");
+      if (savedPreferences) {
+        const parsedPreferences = JSON.parse(savedPreferences);
+        if (parsedPreferences?.sidebarPresentation === "compact") return true;
+        if (parsedPreferences?.sidebarPresentation === "expanded") return false;
+      }
+      return window.localStorage.getItem("smart-manager:sidebar-collapsed") === "true";
+    } catch { return false; }
   });
+  const sidebarLabelsVisible = !sidebarCollapsed || !isDesktopNavigation;
   const [preferencesDrawerOpen, setPreferencesDrawerOpen] = useState(false);
   useEffect(() => {
+    const toggleSidebarWithShortcut = (event) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "b" || event.altKey) return;
+      const target = event.target;
+      const tagName = target?.tagName?.toLowerCase();
+      if (target?.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select") return;
+      event.preventDefault();
+      updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact");
+    };
+    window.addEventListener("keydown", toggleSidebarWithShortcut);
+    return () => window.removeEventListener("keydown", toggleSidebarWithShortcut);
+  }, [sidebarCollapsed, updatePreference]);
+  useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
-    const syncNavigationViewport = () => setIsDesktopNavigation(media.matches);
+    const syncNavigationViewport = () => {
+      setIsDesktopNavigation(media.matches);
+      if (media.matches) setSidebarOpen(true);
+      else setSidebarOpen(false);
+    };
     syncNavigationViewport();
     media.addEventListener("change", syncNavigationViewport);
     return () => media.removeEventListener("change", syncNavigationViewport);
   }, []);
+  useEffect(() => {
+    if (!sidebarOpen || isDesktopNavigation) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setSidebarOpen(false);
+    };
+    const closeOnOutsidePointer = (event) => {
+      if (!sidebarRef.current?.contains(event.target)) setSidebarOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    const focusTimer = window.setTimeout(() => {
+      sidebarRef.current?.querySelector('button[aria-label="Close menu"]')?.focus();
+    }, 0);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      window.clearTimeout(focusTimer);
+    };
+  }, [isDesktopNavigation, sidebarOpen]);
+  useEffect(() => {
+    if (!workspaceMenuOpen) return undefined;
+    const closeWorkspaceMenu = (event) => {
+      if (!workspaceMenuRef.current?.contains(event.target)) setWorkspaceMenuOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setWorkspaceMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeWorkspaceMenu);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeWorkspaceMenu);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [workspaceMenuOpen]);
   useEffect(() => {
     try { window.localStorage.setItem("smart-manager:sidebar-collapsed", String(sidebarCollapsed)); } catch {}
   }, [sidebarCollapsed]);
@@ -47413,6 +47681,53 @@ function SmartManager() {
       Sun:{open:"",close:"",closed:true},
     },
   };});
+  const [workspaceBranches, setWorkspaceBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [activeBranchId, setActiveBranchId] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    const companyId = session?.company?.id;
+    if (!IS_CONFIGURED || !session?.accessToken || session?.demo || !companyId) {
+      setWorkspaceBranches([]);
+      setActiveBranchId("");
+      return undefined;
+    }
+    setBranchesLoading(true);
+    (async () => {
+      try {
+        const rows = await sb("branches").select("*").eq("company_id", companyId).order("name", { ascending: true }).run();
+        if (cancelled) return;
+        const usable = (Array.isArray(rows) ? rows : []).filter((branch) => String(branch?.status || "Active").toLowerCase() !== "inactive");
+        setWorkspaceBranches(usable);
+        let remembered = "";
+        try { remembered = window.localStorage.getItem(`smart-manager:active-branch:${companyId}`) || ""; } catch {}
+        const preferredId = remembered || company?.activeBranchId || company?.active_branch_id || "";
+        const preferred = usable.find((branch) => String(branch.id) === String(preferredId)) || usable.find((branch) => branch.isHeadquarters || branch.is_headquarters) || usable[0];
+        if (preferred) {
+          setActiveBranchId(String(preferred.id));
+          setCompany((current) => ({ ...current, activeBranchId: preferred.id, activeBranchName: preferred.name, activeBranch: preferred }));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setWorkspaceBranches([]);
+          authDebug("Workspace branch list unavailable", { message: error?.message || "unknown" });
+        }
+      } finally {
+        if (!cancelled) setBranchesLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [session?.accessToken, session?.demo, session?.company?.id]);
+  const switchWorkspaceBranch = useCallback((branch) => {
+    if (!branch?.id) return;
+    const nextId = String(branch.id);
+    setActiveBranchId(nextId);
+    setCompany((current) => ({ ...current, activeBranchId: branch.id, activeBranchName: branch.name, activeBranch: branch }));
+    try { window.localStorage.setItem(`smart-manager:active-branch:${company?.id || session?.company?.id}`, nextId); } catch {}
+    window.dispatchEvent(new CustomEvent("smart-manager:active-branch-changed", { detail: { branchId: branch.id, branchName: branch.name, companyId: company?.id || session?.company?.id } }));
+    setWorkspaceMenuOpen(false);
+    notify(`Active branch changed to ${branch.name}.`);
+  }, [company?.id, session?.company?.id]);
 
   // Role-based access state initialized at the top of SmartManager to prevent temporal dead zones.
   const roleChangeApprovalsQuery = trpc.listRoleChangeApprovals.useQuery(undefined, {
@@ -47598,7 +47913,10 @@ function SmartManager() {
   const criticalAlerts = smartAlerts.filter(a => a.priority === "critical" || a.priority === "high");
 
   const subscriptionFilteringReady = !IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || !session?.accessToken || session?.demo || !currentUser?.id || subscriptionAccess.ready;
-  const visibleModules = MODULES.filter((m) => enabledModules.has(m.id) && currentRole.allowedModules.includes(m.id) && (!IS_CONFIGURED || IS_ISOLATED_SIGNUP_E2E || isPlatformAdministrator || subscriptionAllowsModule(subscriptionAccess.access, m.id)));
+  // Keep the complete role-allowed module catalog visible. Subscription
+  // entitlements remain enforced by go() below, so an unavailable module is
+  // discoverable and explains the required plan instead of disappearing.
+  const visibleModules = MODULES.filter((m) => currentRole.allowedModules.includes(m.id));
   const activeModule = visibleModules.find((module) => module.id === active);
   const ActiveModuleIcon = activeModule?.icon || Building2;
   const activeModuleLabel = activeModule?.label || (active === "settings" ? "Workspace settings" : active === "profile" ? "Profile" : active === "billing" ? "Subscription & Billing" : "Workspace");
@@ -47611,10 +47929,10 @@ function SmartManager() {
   const displayedNavigationGroups = useMemo(() => getPresentationNavigationGroups(navigationGroups, preferences.visibleNavigationGroupIds, active)
     .map((group) => ({
       ...group,
-      items: [...group.items].sort((left, right) => sidebarModuleOrder === "alphabetical"
+      items: group.items.filter((item) => !["notifications", "profile"].includes(item.id)).sort((left, right) => sidebarModuleOrder === "alphabetical"
         ? left.label.localeCompare(right.label, "en")
         : Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary)) || left.order - right.order),
-    })), [active, navigationGroups, preferences.visibleNavigationGroupIds, sidebarModuleOrder]);
+    })).filter((group) => group.items.length > 0), [active, navigationGroups, preferences.visibleNavigationGroupIds, sidebarModuleOrder]);
   const flatNavigationItems = useMemo(() => [
     ...displayedNavigationGroups.flatMap((group) => group.items.map((item) => ({ ...item, groupOrder: group.order }))),
     ...(displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) ? [] : [{ id: "settings", label: "Settings", icon: Settings, order: 999, groupOrder: 999, isPrimary: false, locked: true }]),
@@ -47895,15 +48213,17 @@ function SmartManager() {
 
   const subscriptionEscapeDestination = new Set(["profile", "support", "notifications", "settings", "global-admin"]);
   const canUseSubscriptionEscape = subscriptionEscapeDestination.has(active) || (active === "billing" && canManageBilling);
-  if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && !subscriptionAccess.ready && !canUseSubscriptionEscape && !isPlatformAdministrator) {
-    return <SubscriptionAccessBoundary access={subscriptionAccess.access} loading={subscriptionAccess.loading || subscriptionAccess.status === "idle"} error={subscriptionAccess.error} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
-  }
+  // Do not put a confirmation wall in front of every app load. The access
+  // hook uses the last confirmed decision while offline; the boundary is only
+  // meaningful once the server (or that cached decision) says access is not
+  // allowed, such as an expired or required subscription.
   if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && session?.accessToken && !session?.demo && subscriptionAccess.ready && !subscriptionAccess.access.allowed && !canUseSubscriptionEscape && !isPlatformAdministrator) {
     return <SubscriptionAccessBoundary access={subscriptionAccess.access} canManageBilling={canManageBilling} onRetry={subscriptionAccess.refresh} onOpenBilling={() => go("billing")} onNavigate={go} onSignOut={handleSignOut} />;
   }
 
   return (
     <>
+      <OfflineSyncBanner />
       {sharedTrialNoticeGate}
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
@@ -47968,10 +48288,12 @@ function SmartManager() {
 
       {/* Overlay — dims the page behind the menu whenever it's open, at any screen size */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
-          style={{ animation: "fadeIn .15s ease-out" }}
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] transition-opacity duration-200 motion-reduce:transition-none lg:hidden"
+          style={{ animation: "fadeIn .18s ease-out" }}
           onClick={() => setSidebarOpen(false)}
+          aria-label="Close navigation drawer"
         />
       )}
 
@@ -47984,20 +48306,21 @@ function SmartManager() {
           green gradient, white-variant text, white/10 borders) was
           removed entirely rather than layered under the new palette. */}
       <aside
+        ref={sidebarRef}
         aria-hidden={sidebarHiddenFromAssistiveTech}
-        className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen ${sidebarCollapsed ? "w-[80px]" : "w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] text-slate-100 transition-[width,transform] duration-200 ease-out overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
+        className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen w-[min(86vw,320px)] ${sidebarCollapsed ? "lg:w-[80px]" : "lg:w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] pb-[env(safe-area-inset-bottom)] text-slate-100 will-change-[width,transform] transition-[width,transform,box-shadow] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
       >
         {/* Brand row */}
-        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 ${sidebarCollapsed ? "justify-center px-2" : ""}`}>
-          <div className="flex min-w-0 items-center gap-2.5">
+        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarLabelsVisible ? "" : "min-h-[84px] justify-center px-2 pb-5"}`}>
+          <div className={`flex min-w-0 items-center gap-2.5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${sidebarCollapsed ? "translate-x-0" : "translate-x-0"}`}>
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white p-1.5 shadow-[0_6px_16px_rgba(0,0,0,.25)] ring-1 ring-white/15">
               <BrandLogo variant="compact" priority className="h-7 w-7" />
             </span>
-            {!sidebarCollapsed && (
-              <div className="min-w-0 leading-tight">
+            {sidebarLabelsVisible && (
+              <div className="min-w-0 animate-in fade-in slide-in-from-left-1 duration-200 leading-tight motion-reduce:animate-none">
                 <span className="block truncate text-[15px] font-semibold tracking-tight text-white" style={{ fontFamily: "'Poppins'" }}>
                   Smart Manager
                 </span>
@@ -48010,57 +48333,43 @@ function SmartManager() {
           <button className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={17} />
           </button>
-          <button type="button" className="relative z-10 hidden shrink-0 rounded-md p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 lg:inline-flex" onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}>
-            {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
+          <button type="button" className={`group relative z-10 hidden shrink-0 place-items-center border border-white/10 bg-white/[.06] text-slate-400 shadow-[0_4px_12px_rgba(0,0,0,.12)] transition-all duration-150 hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-200 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 lg:inline-grid ${sidebarCollapsed ? "absolute bottom-2 right-2 h-7 w-7 rounded-lg bg-[#123457]" : "h-9 w-9 rounded-xl"}`} onClick={() => updatePreference("sidebarPresentation", sidebarCollapsed ? "expanded" : "compact")} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} aria-describedby="sidebar-collapse-tooltip">
+            {sidebarCollapsed ? <PanelLeftOpen size={17} strokeWidth={2.1} aria-hidden="true" /> : <PanelLeftClose size={17} strokeWidth={2.1} aria-hidden="true" />}
+            <span id="sidebar-collapse-tooltip" role="tooltip" className={`pointer-events-none absolute z-50 whitespace-nowrap rounded-lg border border-slate-700/80 bg-slate-950 px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-xl transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 ${sidebarCollapsed ? "right-full bottom-0 mr-2 translate-y-1" : "top-full right-0 mt-2 translate-y-1"}`}>
+              {sidebarCollapsed ? "Expand navigation" : "Collapse navigation"} · Ctrl+B
+            </span>
           </button>
         </div>
 
-        {/* Company identity + view controls */}
-        <div className="dashboard-sidebar-tools border-b border-[#1f3d5a] px-3 py-3">
-          <div className={`rounded-xl border border-[#2c4d6d] bg-gradient-to-br from-[#123457] to-[#0f2c48] px-3 py-3 shadow-sm ${sidebarCollapsed ? "px-2" : ""}`} aria-label="Company workspace profile">
-            <div className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-cyan-300 text-[#0a1d34] shadow-[0_4px_12px_rgba(34,211,238,.2)]"><Building2 size={16} aria-hidden="true" /></span>
-              {!sidebarCollapsed && <div className="min-w-0"><span className="block truncate text-[9px] font-bold uppercase tracking-[.16em] text-cyan-200">Company workspace</span><span className="mt-1 block truncate text-[12px] font-bold text-white">{company?.name || "Smart Manager"}</span><span className="mt-0.5 block truncate text-[9.5px] text-slate-400">Enterprise operations profile</span></div>}
-            </div>
-          </div>
-          {!sidebarCollapsed && <div className="dashboard-sidebar-order mt-2.5 flex items-center justify-between gap-2 rounded-lg border border-[#2c4d6d] bg-[#0f2c48] px-2 py-1.5" role="group" aria-label="Sidebar module order">
-            <span className="pl-1 text-[9px] font-bold uppercase tracking-[.12em] text-slate-400">View</span>
-            <div className="inline-flex rounded-md bg-[#0a1d34] p-0.5">
-              <button type="button" aria-pressed={sidebarModuleOrder === "priority"} onClick={() => updatePreference("navigationSort", "priority")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "priority" ? "bg-cyan-600 text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Show modules most relevant to your role first"><Star size={11} aria-hidden="true" />Priority</button>
-              <button type="button" aria-pressed={sidebarModuleOrder === "alphabetical"} onClick={() => updatePreference("navigationSort", "alphabetical")} className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[9.5px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50 ${sidebarModuleOrder === "alphabetical" ? "bg-cyan-600 text-white shadow-sm" : "text-slate-400 hover:text-white"}`} title="Sort permitted modules alphabetically"><SortAsc size={11} aria-hidden="true" />A–Z</button>
-            </div>
-          </div>}
-        </div>
-
         {/* Navigation groups */}
-        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Operational workspaces">
-          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarCollapsed ? "hidden" : ""}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
+        <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-4 transition-[padding] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none" aria-label="Operational workspaces">
+          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarLabelsVisible ? "" : "hidden"}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
           {displayedNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
-            const expanded = sidebarCollapsed || expandedNavigationGroups.has(group.id);
+            const expanded = !isDesktopNavigation || sidebarCollapsed || expandedNavigationGroups.has(group.id);
             return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
-              {!sidebarCollapsed && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-[#123457] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40">
+              {sidebarLabelsVisible && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-[#123457] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40">
                 <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-cyan-300" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] tracking-normal text-slate-200">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
               </button>}
               {expanded && <div className="space-y-1">{group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = active === item.id;
                 const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`relative w-full flex items-center justify-between gap-2 rounded-lg border border-l-[3px] px-2.5 py-2 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${isActive ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}>
-                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md transition ${isActive ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Icon size={14} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{!sidebarCollapsed && <span className="truncate">{item.label}</span>}</span>
+                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`group relative flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-l-[3px] px-3 py-2.5 text-[12px] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 lg:min-h-0 lg:rounded-lg lg:px-2.5 lg:py-2 ${sidebarCollapsed && isDesktopNavigation ? "justify-center px-0" : ""} ${isActive ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}>
+                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition lg:h-7 lg:w-7 lg:rounded-md ${isActive ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Icon size={15} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{sidebarLabelsVisible && <span className="truncate">{item.label}</span>}</span>
                   <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-500" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-400 px-1 text-[9px] font-bold text-rose-950" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
                 </button>;
               })}</div>}
             </section>;
           })}
           {!displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) && <section className="space-y-1" aria-label="Workspace settings">
-            {!sidebarCollapsed && <div className="flex items-center gap-1.5 px-2.5 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-slate-400"><Settings size={12} className="text-cyan-300" aria-hidden="true" /><span>Workspace</span></div>}
-            <button type="button" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed ? "justify-center px-0" : ""} ${active === "settings" ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{!sidebarCollapsed && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-cyan-100" : "text-slate-300"} />}</button>
+            {sidebarLabelsVisible && <div className="flex items-center gap-1.5 px-2.5 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-slate-400"><Settings size={12} className="text-cyan-300" aria-hidden="true" /><span>Workspace</span></div>}
+            <button type="button" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed && isDesktopNavigation ? "justify-center px-0" : ""} ${active === "settings" ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{sidebarLabelsVisible && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-cyan-100" : "text-slate-300"} />}</button>
           </section>}
         </nav>
 
         {/* Footer */}
-        <div className="dashboard-sidebar-footer relative border-t border-[#1f3d5a] bg-[#0a1d34] px-3 py-3">
+        <div className="dashboard-sidebar-footer relative border-t border-[#1f3d5a] bg-[#0a1d34] px-3 py-3 transition-[padding] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none">
           <button
             type="button"
             onClick={() => go("settings")}
@@ -48069,21 +48378,12 @@ function SmartManager() {
               active === "settings" ? "border-cyan-400/30 bg-[#173a5c] font-semibold text-white" : "border-transparent text-slate-300 hover:bg-[#123457] hover:text-white"
             }`}
           >
-            <span className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
-              <span className={`grid h-7 w-7 place-items-center rounded-md ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={15} strokeWidth={2} /></span>{!sidebarCollapsed && " Settings"}
+            <span className={`flex items-center gap-2.5 ${sidebarCollapsed && isDesktopNavigation ? "justify-center" : ""}`}>
+              <span className={`grid h-8 w-8 place-items-center rounded-lg lg:h-7 lg:w-7 lg:rounded-md ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={15} strokeWidth={2} /></span>{sidebarLabelsVisible && " Settings"}
             </span>
             {!canManage && <Lock size={11} className="text-slate-300" />}
           </button>
-          <div className={`dashboard-sidebar-profile mt-2 border-t border-[#1f3d5a] pt-2 ${sidebarCollapsed ? "flex justify-center" : ""}`}>
-            {sidebarCollapsed ? (
-              <button type="button" onClick={() => go("profile")} aria-label="Open account identity center" title={currentUser?.name || "Open profile"} className="grid h-10 w-10 place-items-center rounded-lg border border-[#2c4d6d] bg-[#123457] text-cyan-200 transition hover:border-cyan-300 hover:bg-[#1d4d75] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50">
-                <UserCircle size={17} aria-hidden="true" />
-              </button>
-            ) : (
-              <PremiumProfileMenu currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
-            )}
-          </div>
-          {!sidebarCollapsed && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
+          {sidebarLabelsVisible && <div className="mt-3 flex items-center gap-1.5 px-1 text-[9.5px] text-slate-400 leading-snug">
             <MapPin size={11} className="shrink-0 text-cyan-300" />
             <span>Enterprise operations platform · Tanzania &amp; global teams.</span>
           </div>}
@@ -48094,63 +48394,132 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} flex min-h-14 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,.05),0_10px_24px_-18px_rgba(15,23,42,.25)] backdrop-blur-xl sm:min-h-16 sm:gap-3 sm:px-5 lg:gap-4 lg:px-8 ${darkMode ? "dark-shell" : ""}`}>
-          {/* Left — menu trigger and workspace identity */}
-          <div className="dashboard-topbar-context flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`}>
+          <div className="dashboard-topbar-main">
+           {/* Left — menu trigger, workspace identity, and current location */}
+           <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <button
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-600 shadow-none transition-colors hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 lg:hidden"
+              type="button"
+               className="dashboard-topbar-menu-control grid shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-            <div className="hidden min-w-0 items-center gap-1.5 text-[12px] text-slate-500 sm:flex sm:gap-2 sm:text-[13px]">
-              <Building2 size={14} className="hidden shrink-0 sm:block" aria-hidden="true" />
-              <span className="truncate font-semibold text-slate-800 sm:max-w-[260px]">{company?.name || "BusinessSphere"}</span>
-              <ChevronDown size={13} className="shrink-0 text-slate-400" aria-hidden="true" />
-              <span className="hidden whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400 sm:inline-flex">{currentUser?.role || "Administrator"}</span>
+             <div className="dashboard-topbar-brand-mark grid shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-2 shadow-[0_5px_14px_rgba(11,93,59,.2)] lg:hidden" aria-hidden="true">
+               <BrandLogo variant="compact" priority className="h-5 w-5" />
+             </div>
+            <div ref={workspaceMenuRef} className="relative min-w-0">
+              <button
+                type="button"
+                onClick={() => setWorkspaceMenuOpen((open) => !open)}
+                aria-expanded={workspaceMenuOpen}
+                aria-haspopup="menu"
+                aria-label={`Open workspace details for ${company?.name || "BusinessSphere"}`}
+                title={`${workspaceMenuOpen ? "Close" : "Open"} workspace switcher`}
+                 className={`dashboard-topbar-workspace group flex min-w-0 items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-[12px] shadow-[0_4px_14px_rgba(15,23,42,.06)] transition-all duration-150 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 sm:gap-2.5 sm:px-2.5 sm:text-[13px] ${workspaceMenuOpen ? "border-emerald-200 bg-emerald-50/80 text-emerald-900" : "border-slate-200/80 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-emerald-900"}`}
+              >
+                 <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors ${workspaceMenuOpen ? "bg-emerald-700 text-white shadow-sm" : "bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100"}`}>
+                  <Building2 size={15} strokeWidth={2.1} aria-hidden="true" />
+                </span>
+                 <span className="dashboard-topbar-workspace-copy min-w-0">
+                   <span className="block max-w-[220px] truncate font-semibold tracking-[-.01em] text-slate-800">{company?.name || "BusinessSphere"}</span>
+                   <span className="mt-0.5 block truncate text-[9px] font-semibold uppercase tracking-[.12em] text-slate-400">{currentUser?.role || "Administrator"}</span>
+                 </span>
+                 <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform duration-200 ${workspaceMenuOpen ? "rotate-180 text-emerald-700" : "group-hover:text-emerald-700"}`} aria-hidden="true" />
+              </button>
+              {workspaceMenuOpen && (
+                <section role="menu" aria-label="Workspace details" className="absolute left-0 top-full z-50 mt-2 max-h-[min(70dvh,520px)] w-[min(92vw,340px)] max-w-[calc(100vw-1rem)] touch-pan-y overscroll-contain overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,.18)]">
+                  <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-700"><Building2 size={17} aria-hidden="true" /></span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-bold text-slate-900">{company?.name || "BusinessSphere"}</p>
+                      <p className="mt-0.5 truncate text-[10.5px] text-slate-500">{company?.industry || company?.businessType || "Business workspace"}</p>
+                    </div>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 text-[11px]">
+                    <div><dt className="text-slate-400">Location</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{[company?.city, company?.country].filter(Boolean).join(", ") || "Not set"}</dd></div>
+                    <div><dt className="text-slate-400">Currency</dt><dd className="mt-0.5 font-semibold text-slate-700">{company?.currency || company?.currencyCode || "TZS"}</dd></div>
+                    <div><dt className="text-slate-400">Timezone</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company?.timezone || "Africa/Dar_es_Salaam"}</dd></div>
+                    <div><dt className="text-slate-400">Role</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{currentUser?.role || "Administrator"}</dd></div>
+                    <div><dt className="text-slate-400">Subscription</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{subscriptionStateLabel(subscriptionAccess.access)}</dd></div>
+                    <div><dt className="text-slate-400">Plan</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{subscriptionAccess.access.plan?.name || subscriptionAccess.access.plan?.display_name || subscriptionAccess.access.plan?.code || "Not confirmed"}</dd></div>
+                    {(company?.activeBranchName || company?.branchName || company?.activeBranch?.name) && <div><dt className="text-slate-400">Active branch</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company.activeBranchName || company.branchName || company.activeBranch.name}</dd></div>}
+                  </dl>
+                  <div className="border-t border-slate-100 pt-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Switch branch</p>
+                      {branchesLoading && <LoaderCircle size={13} className="animate-spin text-cyan-600" aria-label="Loading branches" />}
+                    </div>
+                    {!branchesLoading && workspaceBranches.length === 0 && <p className="mt-2 text-[11px] leading-4 text-slate-500">No active branches are available for this workspace.</p>}
+                    {workspaceBranches.length > 0 && <div className="mt-2 space-y-1" role="group" aria-label="Available branches">
+                      {workspaceBranches.map((branch) => {
+                        const selected = String(branch.id) === String(activeBranchId);
+                        return <button key={branch.id} type="button" role="menuitemradio" aria-checked={selected} onClick={() => switchWorkspaceBranch(branch)} className={`flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left text-[11px] transition ${selected ? "bg-cyan-50 text-cyan-800" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
+                          <span className="min-w-0 truncate font-semibold">{branch.name || "Unnamed branch"}</span>
+                          {selected && <Check size={14} className="shrink-0 text-cyan-700" aria-label="Active branch" />}
+                        </button>;
+                      })}
+                    </div>}
+                  </div>
+                  {(company?.phone || company?.email) && <div className="border-t border-slate-100 pt-2 text-[10.5px] text-slate-500">{company?.phone && <p className="truncate">{company.phone}</p>}{company?.email && <p className="truncate">{company.email}</p>}</div>}
+                </section>
+              )}
             </div>
+             <div className="dashboard-topbar-page-context hidden min-w-0 items-center gap-2 xl:flex" aria-label={`Current workspace area: ${activeModuleLabel}`}>
+               <span className="h-5 w-px bg-slate-200" aria-hidden="true" />
+               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500"><ActiveModuleIcon size={15} strokeWidth={2} aria-hidden="true" /></span>
+               <span className="min-w-0">
+                 <span className="block text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace area</span>
+                 <span className="block max-w-[150px] truncate text-[12px] font-semibold text-slate-700">{activeModuleLabel}</span>
+               </span>
+             </div>
           </div>
 
-          {/* Center — global search, matching the reference command bar */}
-          <div className="hidden min-w-0 flex-1 items-center justify-center sm:flex">
-            <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex h-9 min-w-0 w-full max-w-[280px] items-center justify-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-none transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40"
-              aria-label="Search everything"
-              title="Search everything"
-            >
-              <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
-              <span className="truncate">Search modules, records, and actions</span>
-              <kbd className="ml-auto hidden shrink-0 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
-            </button>
-          </div>
-
-          {/* Right — live status, quick actions, and identity */}
-          <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
-            <span className="hidden items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 sm:inline-flex" title="Workspace is connected">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-              Live
-            </span>
+           {/* Right — live status, quick actions, and identity */}
+           <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+             <RealtimeConnectivityBadge />
             <LiveDateTime />
-            <button type="button" onClick={() => setPaletteOpen(true)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition hover:bg-cyan-50 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 sm:hidden" aria-label="Search everything">
-              <Search size={17} aria-hidden="true" />
-            </button>
             {/* Dark mode toggle */}
             <button
               type="button"
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition-all hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
+               className="dashboard-topbar-icon-button grid shrink-0 place-items-center rounded-xl border bg-white text-slate-500 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
-            <NotificationCenter className="dashboard-topbar-notification-center" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
-            <div className="ml-0.5 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
-            <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+             <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+             <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label="Open messages" title="Messages">
+               <MessageCircle size={17} strokeWidth={1.75} aria-hidden="true" />
+               <span className="dashboard-topbar-reference-badge" aria-label="3 unread messages">3</span>
+             </button>
+             <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label="Open help and support" title="Help and support">
+               <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
+             </button>
+             <div className="dashboard-topbar-divider hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
+             <div className="dashboard-topbar-profile-slot">
+               <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+             </div>
+          </div>
+          {/* The search control gets its own row on smaller screens so it never
+              competes with the workspace and account controls for width. */}
+          <div className="dashboard-topbar-search-slot">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              className="dashboard-topbar-search inline-flex min-w-0 w-full items-center justify-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,.8)] transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+              aria-label="Search everything"
+              title="Search everything"
+            >
+              <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
+              <span className="dashboard-topbar-search-label truncate">Search modules, records, and actions</span>
+              <kbd className="ml-auto hidden shrink-0 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
+              <ArrowRight size={14} className="ml-auto shrink-0 text-slate-300 sm:hidden" aria-hidden="true" />
+            </button>
+          </div>
           </div>
         </header>
 
@@ -48204,6 +48573,7 @@ function SmartManager() {
 
         {/* Content */}
         <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
+          <Suspense fallback={<div role="status" aria-label="Loading workspace module" className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white p-6 text-sm font-medium text-slate-500 shadow-sm">Loading workspace module…</div>}>
           {active === "dashboard" && (
             <Dashboard
               company={company} invoices={invoices} inventory={inventory} crm={crm}
@@ -48326,6 +48696,7 @@ function SmartManager() {
           {          !["dashboard", "crm", "sales", "billing", "inventory", "finance", "hr", "manufacturing", "settings", "ai", "reports", "scm", "ecommerce", "documents", "marketing", "pos", "procurement", "projects", "support", "analytics", "notifications", "integrations", "workflows", "collaboration", "presentation", "employee-portal", "tra_portal", "ai", "microfinance", "vicoba", "community", "healthcare", "school", "pharmacy", "hotel", "fleet", "banking", "restaurant", "global-admin", "activity", "profile"].includes(active) && (
             <ComingSoon label={MODULES.find((m) => m.id === active)?.label} />
           )}
+          </Suspense>
         </main>
       </div>
     </div>
@@ -48341,9 +48712,10 @@ function SubscriptionAccessBoundary({ access, loading, error, canManageBilling, 
   const label = subscriptionStateLabel(access);
   const state = access?.state;
   const hasError = Boolean(error);
-  const title = hasError ? "Subscription access needs attention." : state === "pending" ? "Payment confirmation is still pending." : "Your workspace data is safe.";
-  const copy = hasError ? "The server-backed subscription status could not be confirmed. Operational access remains paused until the check succeeds; no business data is removed." : state === "pending" ? "The payment provider has not yet confirmed this request. Smart Manager will not activate access from browser state alone." : "Your company records remain retained. A billing administrator can choose or renew a plan to restore operational access.";
-  return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6"><section className="w-full max-w-2xl rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,.1)] sm:p-9" aria-labelledby="subscription-access-title"><div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] ${hasError ? "bg-amber-50 text-amber-800" : state === "pending" ? "bg-amber-50 text-amber-800" : "bg-rose-50 text-rose-700"}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{hasError ? "Verification unavailable" : label}</span><h1 id="subscription-access-title" className="mt-4 text-[27px] font-bold tracking-[-.045em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{title}</h1><p className="mt-3 max-w-xl text-[13.5px] leading-6 text-slate-600">{copy}</p></div><span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600"><ShieldCheck size={27} /></span></div><div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-500">Server decision</p><p className="mt-1 text-[12px] leading-5 text-slate-700">{access?.reason || error || "Subscription access is not confirmed."}</p>{access?.accessUntil && <p className="mt-2 text-[11px] font-semibold text-slate-500">Access decision date: {new Date(access.accessUntil).toLocaleString("en-TZ", { dateStyle: "medium", timeStyle: "short" })}</p>}</div><div className="mt-6 flex flex-wrap gap-2"><button type="button" onClick={onRetry} className="inline-flex items-center gap-2 rounded-xl bg-[#0B5D3B] px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-[#084B30]"><RefreshCw size={14} />Refresh subscription status</button>{canManageBilling && <button type="button" onClick={onOpenBilling} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[12px] font-bold text-emerald-800 transition hover:bg-emerald-100"><CreditCard size={14} />Open Subscription &amp; Billing</button>}<button type="button" onClick={() => onNavigate("profile")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50"><UserCircle size={14} />Open profile</button><button type="button" onClick={() => onNavigate("support")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50"><CircleHelp size={14} />Help &amp; support</button><button type="button" onClick={onSignOut} className="inline-flex items-center gap-2 rounded-xl border border-red-100 px-4 py-2.5 text-[12px] font-bold text-red-700 transition hover:bg-red-50"><LogOut size={14} />Sign out</button></div><p className="mt-6 text-[10.5px] leading-5 text-slate-400">Subscription status, plan entitlements, and payment confirmation are database/provider decisions. This screen does not use browser storage to grant access.</p></section></div>;
+  const companySubscriptionBlocked = !hasError && state !== "pending" && access?.allowed !== true;
+  const title = hasError ? "Subscription access needs attention." : state === "pending" ? "Payment confirmation is still pending." : companySubscriptionBlocked ? "Your account is active, but the company subscription is blocked." : "Your workspace data is safe.";
+  const copy = hasError ? "The server-backed subscription status could not be confirmed. Operational access remains paused until the check succeeds; no business data is removed." : state === "pending" ? "The payment provider has not yet confirmed this request. Smart Manager will not activate access from browser state alone." : companySubscriptionBlocked ? "Your user account is active and your sign-in is valid. The company subscription, however, is not currently active, so operational modules remain blocked until a billing administrator selects and confirms a plan." : "Your company records remain retained. A billing administrator can choose or renew a plan to restore operational access.";
+  return <div className="min-h-screen bg-[#F4F7F6] flex items-center justify-center p-6"><section className="w-full max-w-2xl rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,.1)] sm:p-9" aria-labelledby="subscription-access-title"><div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] ${hasError ? "bg-amber-50 text-amber-800" : state === "pending" ? "bg-amber-50 text-amber-800" : companySubscriptionBlocked ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-800"}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{hasError ? "Verification unavailable" : companySubscriptionBlocked ? "Company subscription blocked" : label}</span><h1 id="subscription-access-title" className="mt-4 text-[27px] font-bold tracking-[-.045em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>{title}</h1><p className="mt-3 max-w-xl text-[13.5px] leading-6 text-slate-600">{copy}</p></div><span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600"><ShieldCheck size={27} /></span></div>{companySubscriptionBlocked && <div className="mt-6 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-emerald-700">User account</p><p className="mt-1 text-[13px] font-bold text-emerald-950">Active</p><p className="mt-1 text-[11px] leading-5 text-emerald-800">Your credentials and account are valid.</p></div><div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-rose-700">Company subscription</p><p className="mt-1 text-[13px] font-bold text-rose-950">{label}</p><p className="mt-1 text-[11px] leading-5 text-rose-800">Operational access is paused until a plan is confirmed.</p></div></div>}<div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-slate-500">Subscription decision</p><p className="mt-1 text-[12px] leading-5 text-slate-700">{access?.reason || error || "Subscription access is not confirmed."}</p>{access?.accessUntil && <p className="mt-2 text-[11px] font-semibold text-slate-500">Decision reference date: {new Date(access.accessUntil).toLocaleString("en-TZ", { dateStyle: "medium", timeStyle: "short" })}</p>}</div><div className="mt-6 flex flex-wrap gap-2"><button type="button" onClick={onRetry} className="inline-flex items-center gap-2 rounded-xl bg-[#0B5D3B] px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-[#084B30]"><RefreshCw size={14} />Refresh subscription status</button>{canManageBilling && <button type="button" onClick={onOpenBilling} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[12px] font-bold text-emerald-800 transition hover:bg-emerald-100"><CreditCard size={14} />Renew or update subscription</button>}{!canManageBilling && companySubscriptionBlocked && <p className="w-full text-[11px] leading-5 text-slate-500">Only a billing administrator can renew or update the company subscription. Contact your organization owner or finance administrator.</p>}<button type="button" onClick={() => onNavigate("profile")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50"><UserCircle size={14} />Open profile</button><button type="button" onClick={() => onNavigate("support")} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50"><CircleHelp size={14} />Help &amp; support</button><button type="button" onClick={onSignOut} className="inline-flex items-center gap-2 rounded-xl border border-red-100 px-4 py-2.5 text-[12px] font-bold text-red-700 transition hover:bg-red-50"><LogOut size={14} />Sign out</button></div><p className="mt-6 text-[10.5px] leading-5 text-slate-400">The user account status and company subscription status are separate controls. Subscription access is decided by the server and cannot be granted from browser storage.</p></section></div>;
 }
 
 
@@ -48677,7 +49049,7 @@ function LiveDateTime() {
   const date = new Intl.DateTimeFormat(undefined, { day: "2-digit", month: "short", year: "numeric" }).format(now);
   const time = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(now);
   return (
-    <div className="flex min-w-0 max-w-[148px] items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2 py-1.5 sm:max-w-[190px] sm:gap-2 sm:px-2.5" aria-label={`Current day ${day}, date ${date}, time ${time}`}>
+    <div className="dashboard-topbar-clock hidden min-w-0 max-w-[190px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 lg:flex" aria-label={`Current day ${day}, date ${date}, time ${time}`}>
       <CalendarDays size={13} className="hidden shrink-0 text-cyan-700 sm:block" aria-hidden="true" />
       <span className="leading-tight">
         <span className="block truncate text-[8px] font-semibold uppercase tracking-wide text-cyan-700 sm:text-[9px]">{day}</span>

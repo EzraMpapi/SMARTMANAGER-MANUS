@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { ENV } from "./_core/env";
 import { sdk } from "./_core/sdk";
+import { httpStatusFromError } from "./_core/httpError";
 
 async function reconcileFreePlans() {
   if (!ENV.supabaseUrl || !ENV.supabaseSecretKey) {
@@ -30,7 +31,8 @@ export async function scheduledSubscriptionFreePlanLifecycleHandler(req: Request
     if (!user.isCron) return res.status(403).json({ error: "Unauthorized cron access." });
     const result = await reconcileFreePlans();
     return res.status(200).json({ ok: true, result });
-  } catch {
-    return res.status(500).json({ error: "Free plan lifecycle reconciliation failed." });
+  } catch (error) {
+    const status = httpStatusFromError(error);
+    return res.status(status).json({ error: status < 500 && error instanceof Error ? error.message : "Free plan lifecycle reconciliation failed." });
   }
 }
