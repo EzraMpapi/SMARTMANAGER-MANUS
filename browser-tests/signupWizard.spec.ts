@@ -13,7 +13,7 @@ async function dismissBlockingUi(page: Page) {
 
 async function openIsolatedDashboard(page: Page) {
   const session = await installIsolatedDashboardSession(page);
-  await page.goto("/app?auth=signup", { waitUntil: "domcontentloaded" });
+  await page.goto("/app", { waitUntil: "domcontentloaded" });
   await dismissBlockingUi(page);
   await expect(page.locator("button.dashboard-topbar-customize")).toHaveCount(0);
   if ((await page.evaluate(() => window.innerWidth)) < 1024) {
