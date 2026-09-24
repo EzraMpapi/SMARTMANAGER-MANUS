@@ -27,6 +27,7 @@ import { createThemePreset, deleteThemePreset, listThemePresets, recordThemePres
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
+import { inventoryProductImageInput, uploadInventoryProductImage } from "./inventoryImages";
 import { provisionPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
 import { listWebsiteFeedback, publicFeedbackInput, replyToWebsiteFeedback, websiteFeedbackReplyInput, submitPublicFeedback } from "./feedbackOperations";
@@ -986,6 +987,9 @@ export const appRouter = router({
     delete: protectedProcedure.input(themePresetIdInput).mutation(({ ctx, input }) => deleteThemePreset(ctx.req, input)),
     recordUsage: protectedProcedure.input(themePresetIdInput).mutation(({ ctx, input }) => recordThemePresetUsage(ctx.req, input)),
     toggleLike: protectedProcedure.input(themePresetIdInput).mutation(({ ctx, input }) => toggleThemePresetLike(ctx.req, input)),
+  }),
+  inventory: router({
+    uploadProductImage: protectedProcedure.input(inventoryProductImageInput).mutation(({ ctx, input }) => uploadInventoryProductImage(ctx.req, input)),
   }),
 
   teamWorkforce: router({

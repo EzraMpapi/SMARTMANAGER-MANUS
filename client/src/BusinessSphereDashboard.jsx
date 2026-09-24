@@ -1415,6 +1415,7 @@ export function mapInventoryRow(r) {
     qty: Number(r.qty_on_hand ?? r.quantity ?? data.qty_on_hand ?? data.quantity) || 0, reorder: Number(r.reorder_level ?? data.reorder_level) || 0,
     unitCost: Number(r.unit_cost ?? data.unit_cost ?? r.amount) || 0, unit: r.unit || data.unit || "unit",
     barcode: r.barcode || data.barcode || generateBarcode(sku), expiryDate: r.expiry_date || data.expiry_date || null,
+    imageUrl: r.image_url || data.image_url || data.imageUrl || null,
   };
 }
 
@@ -12461,6 +12462,7 @@ function Inventory({ inventory, suppliersHook }) {
   const [visibleStockColumns, setVisibleStockColumns] = usePersistentVisibleColumns("inventory_stock", ["item", "category", "warehouse", "onHand", "status", "expiry", "value", "detail"]);
   const stockColumns = [{ id: "item", label: "Item", required: true }, { id: "category", label: "Category" }, { id: "warehouse", label: "Warehouse" }, { id: "onHand", label: "On hand" }, { id: "status", label: "Status" }, { id: "expiry", label: "Expiry" }, { id: "value", label: "Value" }, { id: "detail", label: "Detail", required: true }];
   const { rows: items, setRows: setItems, loading, error } = inventory;
+  const uploadProductImage = trpc.inventory.uploadProductImage.useMutation();
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
   const warehouses = rowsOf(warehousesHook);
 
@@ -12530,6 +12532,16 @@ function Inventory({ inventory, suppliersHook }) {
 
   async function addItem(form) {
     const sku = form.sku || `HDW-${Math.floor(2300 + Math.random() * 600)}`;
+    let imageUrl = form.imageUrl || null;
+    if (form.imageUpload && IS_CONFIGURED) {
+      try {
+        const uploaded = await uploadProductImage.mutateAsync(form.imageUpload);
+        imageUrl = uploaded.url;
+      } catch (e) {
+        notify(e?.message || "Product image could not be uploaded. The item was not saved.", "error");
+        return false;
+      }
+    }
     const draft = {
       sku,
       name: form.name,
@@ -12540,7 +12552,7 @@ function Inventory({ inventory, suppliersHook }) {
       unitCost: Number(form.unitCost) || 0,
       unit: form.unit || "unit",
       barcode: generateBarcode(sku),
-      expiryDate: form.expiryDate || null,
+      expiryDate: form.expiryDate || null, imageUrl,
     };
 
     if (IS_CONFIGURED) {
@@ -12556,6 +12568,7 @@ function Inventory({ inventory, suppliersHook }) {
           unit: draft.unit,
           barcode: draft.barcode,
           expiry_date: draft.expiryDate,
+          image_url: draft.imageUrl,
         }).single().run();
         const confirmed = mapInventoryRow(saved);
         setItems((prev) => [confirmed, ...prev]);
@@ -12814,8 +12827,9 @@ function Inventory({ inventory, suppliersHook }) {
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
                       {visibleStockColumns.includes("item") && <td className="px-4 py-3">
-                        <p className="font-medium text-[#111827]">{it.name}</p>
+                        <div className="flex items-center gap-2.5"><span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100 text-slate-400">{it.imageUrl ? <img src={it.imageUrl} alt="" className="h-full w-full object-cover" /> : <Package size={15} />}</span><div className="min-w-0"><p className="truncate font-medium text-[#111827]">{it.name}</p>
                         <p className="text-[11px] text-slate-400 font-mono">{it.sku}</p>
+                        </div></div>
                       </td>}
                       {visibleStockColumns.includes("category") && <td className="px-4 py-3 text-slate-500">{it.category}</td>}
                       {visibleStockColumns.includes("warehouse") && <td className="px-4 py-3 text-slate-500">{wh?.city}</td>}
@@ -12941,6 +12955,7 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, onRaisePurchaseOrder, wa
         <div className="px-6 pt-6 pb-5 border-b border-slate-100">
           <div className="flex items-start justify-between mb-4">
             <div>
+              {item.imageUrl && <img src={item.imageUrl} alt={`${item.name} product`} className="mb-3 h-20 w-20 rounded-xl object-cover ring-1 ring-slate-200" />}
               <p className="text-[11px] text-slate-400 font-mono">{item.sku}</p>
               <h2 className="text-[17px] font-semibold text-[#111827] mt-0.5 leading-snug">{item.name}</h2>
             </div>
@@ -13082,7 +13097,7 @@ function ItemPanel({ item, onClose, onAdjust, onDelete, onRaisePurchaseOrder, wa
 
 function ItemFormPanel({ onClose, onSubmit, warehouses }) {
   const [form, setForm] = useState({
-    sku: "", name: "", category: "", warehouse: warehouses[0]?.id, qty: "", reorder: "", unitCost: "", unit: "unit",
+    sku: "", name: "", category: "", warehouse: warehouses[0]?.id, qty: "", reorder: "", unitCost: "", unit: "unit", imageUrl: null, imageUpload: null,
   });
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -13090,6 +13105,23 @@ function ItemFormPanel({ onClose, onSubmit, warehouses }) {
 
   function set(key, val) {
     setForm((f) => ({ ...f, [key]: val }));
+  }
+
+  function handleImageChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { notify("Choose a JPEG, PNG, or WebP product image.", "error"); return; }
+    if (file.size > 3 * 1024 * 1024) { notify("Product images must be under 3 MB.", "error"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      const base64 = dataUrl.split(",")[1];
+      if (!base64) { notify("The product image could not be read.", "error"); return; }
+      setForm((current) => ({ ...current, imageUrl: dataUrl, imageUpload: { fileName: file.name, mimeType: file.type, base64 } }));
+    };
+    reader.onerror = () => notify("The product image could not be read.", "error");
+    reader.readAsDataURL(file);
   }
 
   async function handleSubmit(e) {
@@ -13126,6 +13158,12 @@ function ItemFormPanel({ onClose, onSubmit, warehouses }) {
           <FormField label="Item name" required>
             <input className={inputClass} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Industrial water heater 50L" />
             {touched && !form.name.trim() && <p className="text-[11px] text-[#EF4444] mt-1">Item name is required.</p>}
+          </FormField>
+
+          <FormField label="Product image">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 p-3">
+              {form.imageUrl ? <div className="flex items-center gap-3"><img src={form.imageUrl} alt="Product preview" className="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200" /><div className="min-w-0 flex-1"><p className="truncate text-[11px] font-semibold text-slate-700">Image ready to upload</p><p className="text-[10px] text-slate-400">JPEG, PNG or WebP · max 3 MB</p></div><button type="button" onClick={() => setForm((current) => ({ ...current, imageUrl: null, imageUpload: null }))} className="rounded-md px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50">Remove</button></div> : <label className="flex cursor-pointer flex-col items-center justify-center gap-1 py-3 text-center"><UploadCloud size={20} className="text-slate-400" /><span className="text-[11px] font-semibold text-slate-600">Upload product image</span><span className="text-[10px] text-slate-400">JPEG, PNG or WebP · max 3 MB</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageChange} className="sr-only" /></label>}
+            </div>
           </FormField>
 
           <div className="grid grid-cols-2 gap-3">
