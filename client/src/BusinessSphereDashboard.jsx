@@ -36019,7 +36019,7 @@ function TeamWorkforceCenter({ enabled, canManage }) {
   );
 }
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, onOpenDashboardCustomization, darkMode, themeMode = "light", toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, onOpenDashboardCustomization, darkMode, themeMode = "light", toggleDarkMode, accentColor = "#22D3EE", onAccentColorChange, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
@@ -36903,6 +36903,16 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                 <p className="text-[12.5px] text-slate-500 mt-1">Real, not cosmetic — but honestly scoped to the sidebar and top navigation only. Rewriting every module colors across this entire application would risk a half-correct result, some screens right and others silently broken, which would be worse than not having this at all. Module content stays light-themed for now.</p>
               </div>
               <ToggleSwitch on={darkMode} onChange={toggleDarkMode} label={themeMode === "auto" ? "Auto" : darkMode ? "Dark" : "Light"} />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-100">
+              <div>
+                <p className="text-[13px] font-medium text-[#111827]">Custom accent color</p>
+                <p className="text-[11px] text-slate-400 mt-1">Used for active navigation, theme controls, focus rings and dark-mode highlights.</p>
+              </div>
+              <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2">
+                <input type="color" value={accentColor} onChange={(event) => onAccentColorChange?.(event.target.value.toUpperCase())} className="h-7 w-7 cursor-pointer rounded-md border-0 bg-transparent p-0" aria-label="Choose custom accent color" />
+                <span className="font-mono text-[11px] font-semibold text-slate-600">{accentColor}</span>
+              </label>
             </div>
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
               <div>
@@ -47891,6 +47901,12 @@ function SmartManager() {
   });
   const [themeClock, setThemeClock] = React.useState(() => Date.now());
   const darkMode = themeMode === "dark" || (themeMode === "auto" && (systemDarkMode || [18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].includes(new Date(themeClock).getHours())));
+  const [accentColor, setAccentColor] = React.useState(() => {
+    try {
+      const stored = localStorage.getItem("bs_accent_color");
+      return /^#[0-9a-f]{6}$/i.test(stored || "") ? stored.toUpperCase() : "#22D3EE";
+    } catch { return "#22D3EE"; }
+  });
   React.useEffect(() => {
     const media = window.matchMedia?.("(prefers-color-scheme: dark)");
     if (!media) return undefined;
@@ -47906,6 +47922,8 @@ function SmartManager() {
   React.useEffect(() => {
     const root = document.documentElement;
     localStorage.setItem("bs_theme_mode", themeMode);
+    root.style.setProperty("--sm-user-accent", accentColor);
+    localStorage.setItem("bs_accent_color", accentColor);
     if (darkMode) {
       root.classList.add("dark");
       localStorage.setItem("bs_dark_shell", "true");
@@ -47915,7 +47933,7 @@ function SmartManager() {
       localStorage.setItem("bs_dark_shell", "false");
       localStorage.setItem("bs_dark", "0");
     }
-  }, [darkMode]);
+  }, [darkMode, themeMode, accentColor]);
 
   // ── Smart Alert Engine — cross-module intelligence ─────────────────────
   // Each module passes its local table data here; the engine returns ranked alerts
@@ -48709,6 +48727,8 @@ function SmartManager() {
               darkMode={darkMode}
               themeMode={themeMode}
               toggleDarkMode={toggleDarkMode}
+              accentColor={accentColor}
+              onAccentColorChange={setAccentColor}
               textSize={textSize}
               onSetTextSize={setTextSize}
               highContrast={highContrast}

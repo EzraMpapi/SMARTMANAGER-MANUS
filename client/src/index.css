@@ -2735,3 +2735,79 @@
     background: #312e81 !important;
   }
 }
+
+/* User-selected accent token. It is written by the dashboard root so Light,
+   Dark, and Auto modes all consume the same preference without duplicating
+   theme state in individual components. */
+:root { --sm-user-accent: #22d3ee; }
+.dashboard-topbar-profile-trigger:focus-visible,
+.dashboard-topbar-icon-button:focus-visible,
+.dashboard-topbar-reference-control:focus-visible,
+.dashboard-profile-action:focus-visible {
+  outline: 2px solid var(--sm-user-accent) !important;
+  outline-offset: 2px;
+}
+
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] {
+  border-left-color: var(--sm-user-accent) !important;
+  box-shadow: inset 3px 0 0 var(--sm-user-accent), 0 4px 12px rgba(15, 23, 42, .06) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100 {
+  background: color-mix(in srgb, var(--sm-user-accent) 18%, white) !important;
+  color: color-mix(in srgb, var(--sm-user-accent) 70%, #0f172a) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+  border-color: color-mix(in srgb, var(--sm-user-accent) 42%, #e2e8f0) !important;
+  color: color-mix(in srgb, var(--sm-user-accent) 76%, #475569) !important;
+}
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-icon-button {
+  color: color-mix(in srgb, var(--sm-user-accent) 78%, #475569) !important;
+}
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-profile-trigger {
+  border-color: color-mix(in srgb, var(--sm-user-accent) 30%, #e2e8f0) !important;
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-icon-button,
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-trigger {
+  border-color: color-mix(in srgb, var(--sm-user-accent) 45%, #475569) !important;
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-icon-button {
+  color: var(--sm-user-accent) !important;
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-icon-button:hover,
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-trigger:hover {
+  background: color-mix(in srgb, var(--sm-user-accent) 18%, #1e293b) !important;
+  border-color: var(--sm-user-accent) !important;
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action:hover {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sm-user-accent) 13%, #1e293b), rgba(49, 46, 129, .34)) !important;
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action-icon {
+  color: var(--sm-user-accent) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sm-user-accent) 24%, transparent);
+}
+.dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] {
+  border-left-color: var(--sm-user-accent) !important;
+  background: linear-gradient(100deg, #1e293b, color-mix(in srgb, var(--sm-user-accent) 20%, #172554)) !important;
+  box-shadow: inset 3px 0 0 var(--sm-user-accent), 0 5px 16px rgba(0, 0, 0, .22) !important;
+}
+.dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+.dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+.dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-\[\#123457\] {
+  background: color-mix(in srgb, var(--sm-user-accent) 28%, #164e63) !important;
+  color: var(--sm-user-accent) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sm-user-accent) 32%, transparent), 0 4px 12px color-mix(in srgb, var(--sm-user-accent) 18%, transparent) !important;
+}
+.dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+.dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+  border-color: color-mix(in srgb, var(--sm-user-accent) 52%, #155e75) !important;
+  color: var(--sm-user-accent) !important;
+}
+.dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+.dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+  border-color: var(--sm-user-accent) !important;
+  background: color-mix(in srgb, var(--sm-user-accent) 24%, #164e63) !important;
+  color: color-mix(in srgb, var(--sm-user-accent) 72%, white) !important;
+}
