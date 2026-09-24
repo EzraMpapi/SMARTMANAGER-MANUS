@@ -36019,7 +36019,7 @@ function TeamWorkforceCenter({ enabled, canManage }) {
   );
 }
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, onOpenDashboardCustomization, darkMode, themeMode = "light", toggleDarkMode, accentColor = "#22D3EE", onAccentColorChange, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, onOpenDashboardCustomization, darkMode, themeMode = "light", onThemeModeChange, toggleDarkMode, accentColor = "#22D3EE", onAccentColorChange, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
@@ -36033,6 +36033,40 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
   const canManageCompanySettings = ["Organization Owner", "CEO", "Super Administrator"].includes(canonicalRoleId(currentUser.role));
   const dirty = JSON.stringify(draft) !== JSON.stringify(company) || Boolean(workflowWebhookSecret.trim());
   const currentRole = roleDefinitionFor(currentUser.role);
+  const applyThemePreset = (preset) => {
+    onAccentColorChange?.(preset.accentColor);
+    onThemeModeChange?.(preset.mode);
+  };
+  const exportThemePreset = () => {
+    const payload = { version: 1, name: "Smart Manager theme", mode: themeMode, accentColor, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "smart-manager-theme.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+  const importThemePreset = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const payload = JSON.parse(String(reader.result || "{}"));
+        const validMode = ["light", "dark", "auto"].includes(payload.mode);
+        const validAccent = /^#[0-9a-f]{6}$/i.test(payload.accentColor || "");
+        if (!validMode || !validAccent) throw new Error("Theme files must contain a Light, Dark, or Auto mode and a six-digit accent color.");
+        onAccentColorChange?.(payload.accentColor.toUpperCase());
+        onThemeModeChange?.(payload.mode);
+        notify("Theme preset imported successfully.");
+      } catch (error) {
+        notify(error.message || "Theme preset could not be imported.", "error");
+      }
+    };
+    reader.readAsText(file);
+  };
 
   useEffect(() => {
     setDraft(company);
@@ -36913,6 +36947,27 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                 <input type="color" value={accentColor} onChange={(event) => onAccentColorChange?.(event.target.value.toUpperCase())} className="h-7 w-7 cursor-pointer rounded-md border-0 bg-transparent p-0" aria-label="Choose custom accent color" />
                 <span className="font-mono text-[11px] font-semibold text-slate-600">{accentColor}</span>
               </label>
+            </div>
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-[13px] font-medium text-[#111827]">Theme presets</p>
+                  <p className="mt-1 text-[11px] text-slate-400">Apply a complete accent and Light/Dark/Auto combination, or move a preset between devices.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={exportThemePreset} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">Export theme</button>
+                  <label className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">Import theme<input type="file" accept="application/json,.json" onChange={importThemePreset} className="sr-only" /></label>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {THEME_PRESETS.map((preset) => {
+                  const selected = accentColor.toUpperCase() === preset.accentColor && themeMode === preset.mode;
+                  return <button key={preset.id} type="button" onClick={() => applyThemePreset(preset)} className={`group rounded-xl border p-3 text-left transition ${selected ? "border-slate-500 bg-slate-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"}`} aria-pressed={selected}>
+                    <span className="flex items-center gap-2"><span className="flex -space-x-1"><span className="h-5 w-5 rounded-full ring-2 ring-white" style={{ backgroundColor: preset.swatches[0] }} /><span className="h-5 w-5 rounded-full ring-2 ring-white" style={{ backgroundColor: preset.swatches[1] }} /></span><span className="text-[11.5px] font-bold text-slate-800">{preset.name}</span><span className="ml-auto text-[9px] font-bold uppercase tracking-[.1em] text-slate-400">{preset.mode}</span></span>
+                    <span className="mt-1 block text-[10px] leading-4 text-slate-500">{preset.description}</span>
+                  </button>;
+                })}
+              </div>
             </div>
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
               <div>
@@ -48726,6 +48781,7 @@ function SmartManager() {
               onOpenDashboardCustomization={() => setPreferencesDrawerOpen(true)}
               darkMode={darkMode}
               themeMode={themeMode}
+              onThemeModeChange={setThemeMode}
               toggleDarkMode={toggleDarkMode}
               accentColor={accentColor}
               onAccentColorChange={setAccentColor}
@@ -49120,3 +49176,12 @@ export default function App() {
     </>
   );
 }
+
+
+const THEME_PRESETS = [
+  { id: "oceanic", name: "Oceanic", description: "Cool cyan accents for a calm workspace.", accentColor: "#06B6D4", mode: "auto", swatches: ["#06B6D4", "#0F172A"] },
+  { id: "midnight", name: "Midnight Aurora", description: "Deep dark surfaces with violet focus accents.", accentColor: "#8B5CF6", mode: "dark", swatches: ["#8B5CF6", "#111827"] },
+  { id: "sunset", name: "Sunset Signal", description: "Warm orange highlights for action-heavy work.", accentColor: "#F97316", mode: "dark", swatches: ["#F97316", "#1C1917"] },
+  { id: "graphite", name: "Graphite", description: "Neutral light surfaces with a precise slate accent.", accentColor: "#64748B", mode: "light", swatches: ["#64748B", "#F8FAFC"] },
+  { id: "emerald", name: "Emerald Field", description: "A familiar, high-contrast operations palette.", accentColor: "#10B981", mode: "auto", swatches: ["#10B981", "#064E3B"] },
+];
