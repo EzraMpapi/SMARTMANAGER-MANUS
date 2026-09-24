@@ -36039,6 +36039,8 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
   const createCloudThemePreset = trpc.themePresets.create.useMutation({ onSuccess: () => themePresetUtils.themePresets.list.invalidate() });
   const updateCloudThemePreset = trpc.themePresets.update.useMutation({ onSuccess: () => themePresetUtils.themePresets.list.invalidate() });
   const deleteCloudThemePreset = trpc.themePresets.delete.useMutation({ onSuccess: () => themePresetUtils.themePresets.list.invalidate() });
+  const recordThemeUsage = trpc.themePresets.recordUsage.useMutation({ onSuccess: () => themePresetUtils.themePresets.list.invalidate() });
+  const toggleThemeLike = trpc.themePresets.toggleLike.useMutation({ onSuccess: () => themePresetUtils.themePresets.list.invalidate() });
   const [customThemeDraft, setCustomThemeDraft] = useState({ id: null, name: "", mode: themeMode, accentColor, isShared: false });
   const cloudThemePresets = Array.isArray(cloudThemePresetsQuery.data) ? cloudThemePresetsQuery.data : [];
   const resetCustomThemeDraft = () => setCustomThemeDraft({ id: null, name: "", mode: themeMode, accentColor, isShared: false });
@@ -36055,6 +36057,19 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
       resetCustomThemeDraft();
     } catch (error) { notify(error.message || "Cloud theme preset could not be saved.", "error"); }
   };
+  const previewCustomTheme = () => {
+    onAccentColorChange?.(customThemeDraft.accentColor.toUpperCase());
+    onThemeModeChange?.(customThemeDraft.mode);
+  };
+  const useCloudTheme = async (preset) => {
+    onAccentColorChange?.(String(preset.accent_color).toUpperCase());
+    onThemeModeChange?.(preset.mode);
+    if (cloudThemeEnabled && preset.id) { try { await recordThemeUsage.mutateAsync({ id: preset.id }); } catch { /* local theme use remains available */ } }
+  };
+  const toggleCloudThemeLike = async (id) => {
+    if (!cloudThemeEnabled) return;
+    try { await toggleThemeLike.mutateAsync({ id }); } catch (error) { notify(error.message || "Theme like could not be saved.", "error"); }
+  };
   const removeCustomTheme = async (id) => {
     try { await deleteCloudThemePreset.mutateAsync({ id }); notify("Cloud theme preset deleted."); if (customThemeDraft.id === id) resetCustomThemeDraft(); }
     catch (error) { notify(error.message || "Cloud theme preset could not be deleted.", "error"); }
@@ -36064,12 +36079,13 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
     onThemeModeChange?.(preset.mode);
   };
   const exportThemePreset = () => {
-    const payload = { version: 1, name: "Smart Manager theme", mode: themeMode, accentColor, exportedAt: new Date().toISOString() };
+    const presets = cloudThemePresets.map((preset) => ({ name: String(preset.name || "Imported theme"), mode: preset.mode, accentColor: String(preset.accent_color || "#22D3EE").toUpperCase(), isShared: preset.is_shared === true }));
+    const payload = { version: 2, exportedAt: new Date().toISOString(), presets: presets.length ? presets : [{ name: "Smart Manager theme", mode: themeMode, accentColor, isShared: false }] };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "smart-manager-theme.json";
+    link.download = "smart-manager-themes.json";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -36078,15 +36094,16 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
     event.target.value = "";
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const payload = JSON.parse(String(reader.result || "{}"));
-        const validMode = ["light", "dark", "auto"].includes(payload.mode);
-        const validAccent = /^#[0-9a-f]{6}$/i.test(payload.accentColor || "");
-        if (!validMode || !validAccent) throw new Error("Theme files must contain a Light, Dark, or Auto mode and a six-digit accent color.");
-        onAccentColorChange?.(payload.accentColor.toUpperCase());
-        onThemeModeChange?.(payload.mode);
-        notify("Theme preset imported successfully.");
+        const imported = Array.isArray(payload.presets) ? payload.presets : [payload];
+        const valid = imported.filter((item) => ["light", "dark", "auto"].includes(item.mode) && /^#[0-9a-f]{6}$/i.test(item.accentColor || "") && String(item.name || "").trim().length >= 2);
+        if (!valid.length) throw new Error("Theme files must contain at least one valid named preset.");
+        if (cloudThemeEnabled) { for (const item of valid) await createCloudThemePreset.mutateAsync({ name: String(item.name).trim().slice(0, 80), mode: item.mode, accentColor: item.accentColor.toUpperCase(), isShared: item.isShared === true }); }
+        const first = valid[0];
+        onAccentColorChange?.(first.accentColor.toUpperCase()); onThemeModeChange?.(first.mode);
+        notify(`${valid.length} theme preset${valid.length === 1 ? "" : "s"} imported${cloudThemeEnabled ? " to your profile" : " locally"}.`);
       } catch (error) {
         notify(error.message || "Theme preset could not be imported.", "error");
       }
@@ -37006,13 +37023,18 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                   <select value={customThemeDraft.mode} onChange={(event) => setCustomThemeDraft((current) => ({ ...current, mode: event.target.value }))} className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-[11.5px] text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200" aria-label="Custom theme preset mode"><option value="light">Light</option><option value="dark">Dark</option><option value="auto">Auto</option></select>
                   <label className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 text-[10.5px] text-slate-600"><input type="color" value={customThemeDraft.accentColor} onChange={(event) => setCustomThemeDraft((current) => ({ ...current, accentColor: event.target.value.toUpperCase() }))} className="h-5 w-5 cursor-pointer rounded border-0 p-0" aria-label="Custom preset accent color" /><span className="font-mono">{customThemeDraft.accentColor}</span></label>
                 </div>
+                <div className="mt-3 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 text-white shadow-inner" aria-label="Live theme preview">
+                  <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2" style={{ background: `linear-gradient(90deg, ${customThemeDraft.accentColor}, #0F172A)` }}><span className="h-2.5 w-2.5 rounded-full bg-white/90" /><span className="text-[10px] font-bold">Live preview · {customThemeDraft.mode}</span><span className="ml-auto rounded-md bg-white/15 px-2 py-1 text-[9px]">Workspace</span></div>
+                  <div className="flex items-center gap-2 px-3 py-2"><span className="grid h-7 w-7 place-items-center rounded-lg" style={{ backgroundColor: customThemeDraft.accentColor }}>W</span><span className="text-[10.5px] font-semibold">Your custom theme</span><span className="ml-auto rounded-md px-2 py-1 text-[9px] font-bold" style={{ backgroundColor: customThemeDraft.accentColor, color: "#fff" }}>Active accent</span></div>
+                </div>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                   <label className="inline-flex items-center gap-2 text-[10.5px] text-slate-600"><input type="checkbox" checked={customThemeDraft.isShared} onChange={(event) => setCustomThemeDraft((current) => ({ ...current, isShared: event.target.checked }))} className="accent-slate-700" /> Mark as shareable</label>
-                  <div className="flex gap-2"><button type="button" onClick={resetCustomThemeDraft} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10.5px] font-semibold text-slate-500">Clear</button><button type="button" onClick={saveCustomTheme} disabled={!cloudThemeEnabled || createCloudThemePreset.isPending || updateCloudThemePreset.isPending} className="rounded-lg bg-slate-900 px-2.5 py-1.5 text-[10.5px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-45">{customThemeDraft.id ? "Update preset" : "Save to cloud"}</button></div>
+                  <div className="flex gap-2"><button type="button" onClick={resetCustomThemeDraft} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10.5px] font-semibold text-slate-500">Clear</button><button type="button" onClick={previewCustomTheme} className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[10.5px] font-bold text-slate-700">Preview</button><button type="button" onClick={saveCustomTheme} disabled={!cloudThemeEnabled || createCloudThemePreset.isPending || updateCloudThemePreset.isPending} className="rounded-lg bg-slate-900 px-2.5 py-1.5 text-[10.5px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-45">{customThemeDraft.id ? "Update preset" : "Save to cloud"}</button></div>
                 </div>
               </div>
               {cloudThemePresetsQuery.isLoading && <p className="mt-2 text-[10.5px] text-slate-400">Loading your cloud presets…</p>}
-              {!cloudThemePresetsQuery.isLoading && cloudThemePresets.length > 0 && <div className="mt-3 grid gap-2 sm:grid-cols-2">{cloudThemePresets.map((preset) => <div key={preset.id} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5"><span className="h-7 w-7 shrink-0 rounded-lg" style={{ background: `linear-gradient(135deg, ${preset.accent_color}, #0F172A)` }} /><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-800">{preset.name}</span><span className="block text-[9.5px] text-slate-400">{preset.mode} · {preset.is_shared ? "shareable" : "private"}</span></span><button type="button" onClick={() => { onAccentColorChange?.(String(preset.accent_color).toUpperCase()); onThemeModeChange?.(preset.mode); }} className="rounded-md px-2 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-100">Use</button><button type="button" onClick={() => editCustomTheme(preset)} className="rounded-md px-2 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-100">Edit</button><button type="button" onClick={() => removeCustomTheme(preset.id)} className="rounded-md px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50">Delete</button></div>)}</div>}
+              {!cloudThemePresetsQuery.isLoading && cloudThemePresets.length > 0 && <div className="mt-3 grid gap-2 sm:grid-cols-2">{cloudThemePresets.map((preset) => <div key={preset.id} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5"><span className="h-7 w-7 shrink-0 rounded-lg" style={{ background: `linear-gradient(135deg, ${preset.accent_color}, #0F172A)` }} /><span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-bold text-slate-800">{preset.name}</span><span className="block text-[9.5px] text-slate-400">{preset.mode} · {preset.is_shared ? "shareable" : "private"} · {preset.usage_count || 0} uses · {preset.like_count || 0} likes</span></span><button type="button" onClick={() => useCloudTheme(preset)} className="rounded-md px-2 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-100">Use</button><button type="button" onClick={() => toggleCloudThemeLike(preset.id)} className="rounded-md px-2 py-1 text-[10px] font-bold text-pink-600 hover:bg-pink-50">Like</button><button type="button" onClick={() => editCustomTheme(preset)} className="rounded-md px-2 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-100">Edit</button><button type="button" onClick={() => removeCustomTheme(preset.id)} className="rounded-md px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50">Delete</button></div>)}</div>}
+              {!cloudThemePresetsQuery.isLoading && cloudThemePresets.length > 0 && <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">Company theme analytics</p><div className="mt-2 grid gap-2 sm:grid-cols-3">{[...cloudThemePresets].sort((a, b) => Number(b.usage_count || 0) - Number(a.usage_count || 0)).slice(0, 3).map((preset, index) => <div key={`analytics-${preset.id}`} className="rounded-lg bg-white px-2.5 py-2"><p className="truncate text-[10.5px] font-bold text-slate-700">#{index + 1} {preset.name}</p><p className="mt-0.5 text-[9.5px] text-slate-400">{preset.usage_count || 0} uses · {preset.like_count || 0} likes</p></div>)}</div></div>}
               {!cloudThemePresetsQuery.isLoading && cloudThemeEnabled && cloudThemePresets.length === 0 && <p className="mt-2 text-[10.5px] text-slate-400">No personal cloud presets yet. Save your first theme above.</p>}
             </div>
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">

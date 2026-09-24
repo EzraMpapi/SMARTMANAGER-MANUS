@@ -23,7 +23,7 @@ import { getWorkspaceSettings, saveWorkspaceSettings } from "./workspaceSettings
 import { dashboardPreferencesInput, getDashboardPreferences, resetDashboardPreferences, saveDashboardPreferences } from "./dashboardPreferences";
 import { dashboardLayoutAnalyticsInput, dashboardLayoutTelemetryEventInput, getDashboardLayoutAnalytics, recordDashboardLayoutTelemetry } from "./dashboardLayoutTelemetry";
 import { activateDashboardTeamPreset, createDashboardTeamPreset, dashboardTeamPresetIdInput, dashboardTeamPresetInput, deleteDashboardTeamPreset, listDashboardTeamPresets } from "./dashboardTeamPresets";
-import { createThemePreset, deleteThemePreset, listThemePresets, themePresetIdInput, themePresetInput, updateThemePreset, updateThemePresetInput } from "./themePresets";
+import { createThemePreset, deleteThemePreset, listThemePresets, recordThemePresetUsage, themePresetIdInput, themePresetInput, toggleThemePresetLike, updateThemePreset, updateThemePresetInput } from "./themePresets";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
@@ -984,6 +984,8 @@ export const appRouter = router({
     create: protectedProcedure.input(themePresetInput).mutation(({ ctx, input }) => createThemePreset(ctx.req, input)),
     update: protectedProcedure.input(updateThemePresetInput).mutation(({ ctx, input }) => updateThemePreset(ctx.req, input)),
     delete: protectedProcedure.input(themePresetIdInput).mutation(({ ctx, input }) => deleteThemePreset(ctx.req, input)),
+    recordUsage: protectedProcedure.input(themePresetIdInput).mutation(({ ctx, input }) => recordThemePresetUsage(ctx.req, input)),
+    toggleLike: protectedProcedure.input(themePresetIdInput).mutation(({ ctx, input }) => toggleThemePresetLike(ctx.req, input)),
   }),
 
   teamWorkforce: router({
