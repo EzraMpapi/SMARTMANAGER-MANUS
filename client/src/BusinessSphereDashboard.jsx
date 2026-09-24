@@ -36019,7 +36019,7 @@ function TeamWorkforceCenter({ enabled, canManage }) {
   );
 }
 
-function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, onOpenDashboardCustomization, darkMode, toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
+function SettingsPage({ company, setCompany, enabledModules, onToggleModule, moduleSettingPending, currentUser, setCurrentUser, roleChangeApprovalsQuery, canManage, canManageBilling, onOpenBilling, onOpenDashboardCustomization, darkMode, themeMode = "light", toggleDarkMode, exportData, textSize, onSetTextSize, highContrast, onToggleHighContrast, accountSession }) {
   const pendingOwnRoleChange = (roleChangeApprovalsQuery?.data?.approvals || []).find((row) => row.status === "Pending Review" && row.data?.targetUserId === currentUser.id);
   const [draft, setDraft] = useState(company);
   const [profileTab, setProfileTab] = useState("identity");
@@ -36902,7 +36902,7 @@ function SettingsPage({ company, setCompany, enabledModules, onToggleModule, mod
                 <h2 className="text-[14.5px] font-semibold text-[#111827]">Dark Mode</h2>
                 <p className="text-[12.5px] text-slate-500 mt-1">Real, not cosmetic — but honestly scoped to the sidebar and top navigation only. Rewriting every module colors across this entire application would risk a half-correct result, some screens right and others silently broken, which would be worse than not having this at all. Module content stays light-themed for now.</p>
               </div>
-              <ToggleSwitch on={darkMode} onChange={toggleDarkMode} label={darkMode ? "On" : "Off"} />
+              <ToggleSwitch on={darkMode} onChange={toggleDarkMode} label={themeMode === "auto" ? "Auto" : darkMode ? "Dark" : "Light"} />
             </div>
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
               <div>
@@ -47878,14 +47878,34 @@ function SmartManager() {
 
 
   // ── Dark mode ────────────────────────────────────────────────────────────
-  const [darkMode, setDarkMode] = React.useState(() => {
+  const [themeMode, setThemeMode] = React.useState(() => {
     try {
+      const preferredMode = localStorage.getItem("bs_theme_mode");
+      if (preferredMode === "light" || preferredMode === "dark" || preferredMode === "auto") return preferredMode;
       const stored = localStorage.getItem("bs_dark_shell");
-      return stored === null ? localStorage.getItem("bs_dark") === "1" : stored === "true";
-    } catch(_e){ return false; }
+      return stored === null ? (localStorage.getItem("bs_dark") === "1" ? "dark" : "light") : (stored === "true" ? "dark" : "light");
+    } catch(_e){ return "light"; }
   });
+  const [systemDarkMode, setSystemDarkMode] = React.useState(() => {
+    try { return window.matchMedia?.("(prefers-color-scheme: dark)").matches || false; } catch { return false; }
+  });
+  const [themeClock, setThemeClock] = React.useState(() => Date.now());
+  const darkMode = themeMode === "dark" || (themeMode === "auto" && (systemDarkMode || [18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].includes(new Date(themeClock).getHours())));
+  React.useEffect(() => {
+    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!media) return undefined;
+    const update = (event) => setSystemDarkMode(event.matches);
+    media.addEventListener?.("change", update);
+    return () => media.removeEventListener?.("change", update);
+  }, []);
+  React.useEffect(() => {
+    if (themeMode !== "auto") return undefined;
+    const timer = window.setInterval(() => setThemeClock(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, [themeMode]);
   React.useEffect(() => {
     const root = document.documentElement;
+    localStorage.setItem("bs_theme_mode", themeMode);
     if (darkMode) {
       root.classList.add("dark");
       localStorage.setItem("bs_dark_shell", "true");
@@ -48149,7 +48169,7 @@ function SmartManager() {
     return () => { window.removeEventListener("online", up); window.removeEventListener("offline", down); };
   }, []);
   function toggleDarkMode() {
-    setDarkMode((current) => !current);
+    setThemeMode((current) => current === "light" ? "dark" : current === "dark" ? "auto" : "light");
   }
 
   if (authChecking) {
@@ -48490,11 +48510,11 @@ function SmartManager() {
               type="button"
               onClick={toggleDarkMode}
               aria-pressed={darkMode}
-              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={`Theme mode: ${themeMode}. Activate to switch to ${themeMode === "light" ? "dark" : themeMode === "dark" ? "auto" : "light"} mode`}
                className="dashboard-topbar-icon-button grid shrink-0 place-items-center rounded-xl border bg-white text-slate-500 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
-              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              title={`Theme: ${themeMode === "auto" ? "Auto" : themeMode === "dark" ? "Dark" : "Light"} (click to change)`}
             >
-              {darkMode ? <Sun size={15}/> : <Moon size={15}/>}
+              {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
              <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
              <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label="Open messages" title="Messages">
@@ -48687,6 +48707,7 @@ function SmartManager() {
               onOpenBilling={() => go("billing")}
               onOpenDashboardCustomization={() => setPreferencesDrawerOpen(true)}
               darkMode={darkMode}
+              themeMode={themeMode}
               toggleDarkMode={toggleDarkMode}
               textSize={textSize}
               onSetTextSize={setTextSize}
