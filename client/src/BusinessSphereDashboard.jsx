@@ -47879,12 +47879,22 @@ function SmartManager() {
 
   // ── Dark mode ────────────────────────────────────────────────────────────
   const [darkMode, setDarkMode] = React.useState(() => {
-    try { return localStorage.getItem("bs_dark") === "1"; } catch(_e){ return false; }
+    try {
+      const stored = localStorage.getItem("bs_dark_shell");
+      return stored === null ? localStorage.getItem("bs_dark") === "1" : stored === "true";
+    } catch(_e){ return false; }
   });
   React.useEffect(() => {
     const root = document.documentElement;
-    if (darkMode) { root.classList.add("dark"); localStorage.setItem("bs_dark","1"); }
-    else { root.classList.remove("dark"); localStorage.setItem("bs_dark","0"); }
+    if (darkMode) {
+      root.classList.add("dark");
+      localStorage.setItem("bs_dark_shell", "true");
+      localStorage.setItem("bs_dark", "1");
+    } else {
+      root.classList.remove("dark");
+      localStorage.setItem("bs_dark_shell", "false");
+      localStorage.setItem("bs_dark", "0");
+    }
   }, [darkMode]);
 
   // ── Smart Alert Engine — cross-module intelligence ─────────────────────
@@ -48138,13 +48148,8 @@ function SmartManager() {
     window.addEventListener("online", up); window.addEventListener("offline", down);
     return () => { window.removeEventListener("online", up); window.removeEventListener("offline", down); };
   }, []);
-  useEffect(() => {
-    setDarkMode(window.localStorage.getItem("bs_dark_shell") === "true");
-  }, []);
   function toggleDarkMode() {
-    const next = !darkMode;
-    setDarkMode(next);
-    window.localStorage.setItem("bs_dark_shell", String(next));
+    setDarkMode((current) => !current);
   }
 
   if (authChecking) {

@@ -2499,3 +2499,104 @@
     color: #f8fafc !important;
   }
 }
+
+/* Expressive dark-mode accents: cool icon tones and distinct badges maintain
+   hierarchy without reverting to the old green-heavy treatment. */
+@media (min-width: 768px) {
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button {
+    color: #67e8f9 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button:hover {
+    background: rgba(34, 211, 238, .14) !important;
+    color: #a5f3fc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-messages {
+    color: #c4b5fd !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-messages:hover {
+    background: rgba(167, 139, 250, .16) !important;
+    color: #ddd6fe !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control:not(.dashboard-topbar-messages) {
+    color: #fcd34d !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control:not(.dashboard-topbar-messages):hover {
+    background: rgba(250, 204, 21, .15) !important;
+    color: #fef08a !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button > span,
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-badge {
+    border-color: #0f172a !important;
+    background: linear-gradient(135deg, #fb7185, #f97316) !important;
+    color: #fff7ed !important;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, .16), 0 3px 10px rgba(249, 115, 22, .26) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-messages .dashboard-topbar-reference-badge {
+    background: linear-gradient(135deg, #a78bfa, #6366f1) !important;
+    box-shadow: 0 0 0 2px rgba(129, 140, 248, .14), 0 3px 10px rgba(99, 102, 241, .28) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button {
+    color: #fbbf24 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button:hover {
+    color: #fde68a !important;
+    background: rgba(250, 204, 21, .14) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] {
+    border-left-color: #22d3ee !important;
+    background: linear-gradient(100deg, #1e293b, #172554) !important;
+    box-shadow: inset 3px 0 0 #22d3ee, 0 5px 16px rgba(0, 0, 0, .22) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-\[\#123457\] {
+    background: #164e63 !important;
+    color: #67e8f9 !important;
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, .22), 0 4px 12px rgba(8, 145, 178, .18) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover {
+    background: linear-gradient(90deg, rgba(30, 41, 59, .92), rgba(30, 58, 138, .34)) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button .bg-\[\#123457\] {
+    transition: background-color .16s ease, color .16s ease, box-shadow .16s ease;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button:not([aria-current="page"]):hover .bg-\[\#123457\] {
+    background: #164e63 !important;
+    color: #67e8f9 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button .bg-rose-400 {
+    background: linear-gradient(135deg, #fb7185, #f97316) !important;
+    color: #fff7ed !important;
+    box-shadow: 0 0 0 2px #0f172a, 0 3px 9px rgba(249, 115, 22, .28);
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+    color: #67e8f9 !important;
+    border-color: #155e75 !important;
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, .08), 0 4px 12px rgba(0, 0, 0, .2) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+    border-color: #22d3ee !important;
+    background: #164e63 !important;
+    color: #a5f3fc !important;
+  }
+}
