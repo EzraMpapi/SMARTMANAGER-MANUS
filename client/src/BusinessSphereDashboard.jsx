@@ -1419,6 +1419,35 @@ export function mapInventoryRow(r) {
   };
 }
 
+function compressInventoryProductImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("The product image could not be read."));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("The selected file is not a readable image."));
+      image.onload = () => {
+        const maxSide = 1280;
+        const sourceWidth = image.naturalWidth || image.width;
+        const sourceHeight = image.naturalHeight || image.height;
+        const scale = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+        canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+        const context = canvas.getContext("2d");
+        if (!context) { reject(new Error("Image compression is not supported in this browser.")); return; }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/webp", 0.82);
+        const base64 = dataUrl.split(",")[1];
+        if (!base64) { reject(new Error("The compressed image could not be created.")); return; }
+        resolve({ dataUrl, upload: { fileName: `${file.name.replace(/\.[^.]+$/, "") || "product"}.webp`, mimeType: "image/webp", base64 } });
+      };
+      image.src = String(reader.result || "");
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function mapWarehouseRow(r) {
   return { id: r.id, dbId: r.id, name: r.name, city: r.city || "" };
 }
@@ -12455,6 +12484,8 @@ function InventoryDashboard({ inventory, suppliersHook }) {
 function Inventory({ inventory, suppliersHook }) {
   const [tab, setTab] = useState("stock");
   const [warehouse, setWarehouse] = useState("all");
+  const [category, setCategory] = useState("all");
+  const [imagesOnly, setImagesOnly] = useState(false);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -12465,6 +12496,7 @@ function Inventory({ inventory, suppliersHook }) {
   const uploadProductImage = trpc.inventory.uploadProductImage.useMutation();
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
   const warehouses = rowsOf(warehousesHook);
+  const categories = useMemo(() => [...new Set(items.map((item) => item.category || "General"))].sort((a, b) => a.localeCompare(b)), [items]);
 
   // Real bulk import — genuinely creates inventory_items rows, the exact
   // same table and shape the manual "Add Item" form writes to. A missing
@@ -12508,13 +12540,15 @@ function Inventory({ inventory, suppliersHook }) {
   const filtered = useMemo(() => {
     return items.filter((it) => {
       const matchesWh = warehouse === "all" || it.warehouse === warehouse;
+      const matchesCategory = category === "all" || (it.category || "General") === category;
+      const matchesImage = !imagesOnly || Boolean(it.imageUrl);
       const matchesQ = !query.trim() ||
         it.name.toLowerCase().includes(query.toLowerCase()) ||
         it.sku.toLowerCase().includes(query.toLowerCase()) ||
         (it.barcode || "").includes(query.trim());
-      return matchesWh && matchesQ;
+      return matchesWh && matchesCategory && matchesImage && matchesQ;
     });
-  }, [items, warehouse, query]);
+  }, [items, warehouse, category, imagesOnly, query]);
 
   const stats = useMemo(() => {
     const totalValue = items.reduce((s, it) => s + it.qty * it.unitCost, 0);
@@ -12787,6 +12821,13 @@ function Inventory({ inventory, suppliersHook }) {
               className={operationalSearchInputClass}
             />
           </div>
+          <select value={category} onChange={(event) => setCategory(event.target.value)} className="min-h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-[12px] text-slate-600" aria-label="Filter inventory by category">
+            <option value="all">All categories</option>
+            {categories.map((itemCategory) => <option key={itemCategory} value={itemCategory}>{itemCategory}</option>)}
+          </select>
+          <button type="button" onClick={() => setImagesOnly((current) => !current)} className={`min-h-9 rounded-lg border px-3 text-[12px] font-semibold ${imagesOnly ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`} aria-pressed={imagesOnly}>
+            {imagesOnly ? "Images only" : "All images"}
+          </button>
           <button
             onClick={() => setShowImport(true)}
             className="btn-secondary text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shrink-0"
@@ -13113,15 +13154,10 @@ function ItemFormPanel({ onClose, onSubmit, warehouses }) {
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { notify("Choose a JPEG, PNG, or WebP product image.", "error"); return; }
     if (file.size > 3 * 1024 * 1024) { notify("Product images must be under 3 MB.", "error"); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || "");
-      const base64 = dataUrl.split(",")[1];
-      if (!base64) { notify("The product image could not be read.", "error"); return; }
-      setForm((current) => ({ ...current, imageUrl: dataUrl, imageUpload: { fileName: file.name, mimeType: file.type, base64 } }));
-    };
-    reader.onerror = () => notify("The product image could not be read.", "error");
-    reader.readAsDataURL(file);
+    compressInventoryProductImage(file).then(({ dataUrl, upload }) => {
+      setForm((current) => ({ ...current, imageUrl: dataUrl, imageUpload: upload }));
+      notify("Image compressed and ready to upload.", "info");
+    }).catch((error) => notify(error.message || "The product image could not be compressed.", "error"));
   }
 
   async function handleSubmit(e) {
@@ -29994,7 +30030,7 @@ function Analytics({ company, invoices, expenses, crm, inventory, employees, lea
       {tab === "executive" && <ExecutiveDashboard company={company} invoices={invoices} expenses={expenses} crm={crm} inventory={inventory} employees={employees} onNavigate={onNavigate} />}
       {tab === "financial" && <FinancialDashboard invoices={invoices} expenses={expenses} posTransactions={posTransactions} onNavigate={onNavigate} />}
       {tab === "hr" && <HRDashboard employees={employees} leaveRequests={leaveRequests} onNavigate={onNavigate} />}
-      {tab === "sales" && <SalesDashboard invoices={invoices} crm={crm} onNavigate={onNavigate} />}
+      {tab === "sales" && <SalesDashboard invoices={invoices} inventory={inventory} crm={crm} onNavigate={onNavigate} />}
       {tab === "operations" && <OperationsDashboard inventory={inventory} workOrders={workOrders} onNavigate={onNavigate} />}
       {tab === "kpis" && <CustomKPIs data={{ invoices, expenses, crm, inventory, employees }} />}
       {tab === "heatmaps" && <HeatMaps invoices={invoices} inventory={inventory} />}
@@ -30503,7 +30539,7 @@ function HRDashboard({ employees, leaveRequests, onNavigate }) {
 
 /* ------------------------- */
 
-function SalesDashboard({ invoices, crm, onNavigate }) {
+function SalesDashboard({ invoices, inventory, crm, onNavigate }) {
   const nav = onNavigate || (() => {});
 
   const STAGES = ["New","Contacted","Qualified","Proposal","Negotiation","Won"];
@@ -30526,6 +30562,21 @@ function SalesDashboard({ invoices, crm, onNavigate }) {
   const lostCount       = rowsOf(crm).filter(l=>l.stage==="Lost").length;
   const closedCount     = wonCount + lostCount;
   const winRate         = closedCount>0 ? Math.round(wonCount/closedCount*100) : 0;
+  const topSelling = useMemo(() => {
+    const byKey = new Map();
+    rowsOf(invoices).filter((invoice) => !/draft|cancelled|rejected/i.test(String(invoice.status || ""))).forEach((invoice) => (invoice.items || []).forEach((line) => {
+      const key = line.sku || line.name || "Unknown product";
+      const current = byKey.get(key) || { key, name: line.name || line.sku || "Unknown product", sku: line.sku || null, qty: 0, revenue: 0 };
+      current.qty += Number(line.qty) || 0;
+      current.revenue += (Number(line.qty) || 0) * (Number(line.rate) || 0);
+      byKey.set(key, current);
+    }));
+    return [...byKey.values()].map((item) => ({ ...item, imageUrl: rowsOf(inventory).find((stock) => (item.sku && stock.sku === item.sku) || (!item.sku && stock.name === item.name))?.imageUrl || null })).sort((a, b) => b.qty - a.qty || b.revenue - a.revenue).slice(0, 8);
+  }, [invoices, inventory]);
+  const printTopSellingReport = () => {
+    const rows = `<h2 style="font-size:16px;margin-bottom:12px">Top-selling products with images</h2><table><thead><tr><th>Product</th><th>SKU</th><th class="r">Units sold</th><th class="r">Revenue (TZS 000)</th></tr></thead><tbody>${topSelling.map((item) => `<tr><td class="bold">${item.imageUrl ? `<img src="${item.imageUrl}" alt="" style="width:34px;height:34px;object-fit:cover;border-radius:7px;vertical-align:middle;margin-right:8px"/>` : ""}${item.name}</td><td>${item.sku || "—"}</td><td class="r">${item.qty}</td><td class="r">TZS ${money(Math.round(item.revenue))}k</td></tr>`).join("") || `<tr><td colspan="4">No confirmed invoice line items yet.</td></tr>`}</tbody></table>`;
+    printReport("Top-selling Products Report", rows, window.__smartManagerCompany || {});
+  };
 
   // Monthly invoice revenue
   const months          = ["Feb","Mar","Apr","May","Jun","Jul"];
@@ -30591,6 +30642,10 @@ function SalesDashboard({ invoices, crm, onNavigate }) {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+      </div>
+      <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h3 className="text-[14px] font-semibold text-[#111827]">Top-selling products</h3><p className="mt-1 text-[11.5px] text-slate-400">Units sold from confirmed invoice lines, matched to inventory product images.</p></div><button type="button" onClick={printTopSellingReport} disabled={!topSelling.length} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#0D2214] px-3 py-2 text-[11px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><Printer size={13} /> Sales report</button></div>
+        {topSelling.length ? <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{topSelling.slice(0, 8).map((item, index) => <div key={item.key} className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/60 p-2.5"><span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-white text-slate-400">{item.imageUrl ? <img src={item.imageUrl} alt={`${item.name} product`} className="h-full w-full object-cover" /> : <Package size={15} />}</span><div className="min-w-0"><p className="truncate text-[11px] font-bold text-slate-700">#{index + 1} {item.name}</p><p className="mt-0.5 text-[10px] text-slate-400">{item.qty} sold · TZS {money(Math.round(item.revenue))}k</p></div></div>)}</div> : <p className="mt-4 rounded-lg bg-slate-50 px-3 py-4 text-center text-[11px] text-slate-400">No confirmed sales line items available yet.</p>}
       </div>
     </div>
   );
