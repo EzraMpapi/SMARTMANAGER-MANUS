@@ -12481,6 +12481,24 @@ function InventoryDashboard({ inventory, suppliersHook }) {
   );
 }
 
+function exportTopSellingExcelWithImages(filename, rows, company = {}) {
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
+  const body = rows.map((item) => `<tr><td>${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" style="width:48px;height:48px;object-fit:cover;border-radius:6px"/>` : "—"}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.sku || "")}</td><td>${item.qty}</td><td>${Math.round(item.revenue)}</td><td>${escapeHtml(item.imageUrl || "")}</td></tr>`).join("");
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial}table{border-collapse:collapse}th,td{border:1px solid #D1D5DB;padding:7px}th{background:#0D2214;color:#fff}td{vertical-align:middle}.summary{font-weight:700}</style></head><body><h2>${escapeHtml(company.name || "Smart Manager")} — Top-selling products</h2><p>Generated ${new Date().toLocaleDateString("en-GB")}</p><table><thead><tr><th>Image</th><th>Product</th><th>SKU</th><th>Units sold</th><th>Revenue (TZS 000)</th><th>Image URL</th></tr></thead><tbody>${body || `<tr><td colspan="6">No confirmed sales line items</td></tr>`}</tbody></table></body></html>`;
+  const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `${filename}.xls`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+  notify(`Exported ${rows.length} top-selling products with images to ${filename}.xls`);
+}
+
+function printBarcodeLabels(items) {
+  if (!items.length) { notify("Select or filter at least one product before printing barcode labels.", "error"); return; }
+  const win = window.open("", "_blank", "width=900,height=900");
+  if (!win) { notify("Pop-up blocked — allow pop-ups to print barcode labels.", "error"); return; }
+  const safe = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
+  const labels = items.map((item) => { const barcode = item.barcode || generateBarcode(item.sku); const bars = barcode.split("").map((digit, index) => `<span style="display:inline-block;width:${Number(digit) % 2 === 0 ? 3 : 1}px;height:${45 + Number(digit) * 3}px;background:#111;margin-right:1px"></span>`).join(""); return `<div class="label"><div class="name">${safe(item.name)}</div>${item.imageUrl ? `<img src="${safe(item.imageUrl)}" class="image"/>` : ""}<div class="bars">${bars}</div><div class="code">${safe(barcode)}</div><div class="sku">${safe(item.sku || "")}</div></div>`; }).join("");
+  win.document.write(`<html><head><title>Inventory barcode labels</title><style>@page{margin:8mm}body{font-family:Arial;margin:0}.sheet{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm}.label{min-height:42mm;border:1px dashed #9CA3AF;padding:5mm;text-align:center;break-inside:avoid}.name{font-size:11px;font-weight:700;min-height:14px}.image{width:28px;height:28px;object-fit:cover;border-radius:4px;margin:4px auto}.bars{height:52px;display:flex;align-items:flex-end;justify-content:center;margin-top:5px}.code{font-family:monospace;font-size:10px;letter-spacing:2px;margin-top:3px}.sku{font-size:9px;color:#6B7280;margin-top:2px}</style></head><body><div class="sheet">${labels}</div><script>window.onload=()=>window.print()</script></body></html>`); win.document.close();
+}
+
 function Inventory({ inventory, suppliersHook }) {
   const [tab, setTab] = useState("stock");
   const [warehouse, setWarehouse] = useState("all");
@@ -12557,6 +12575,7 @@ function Inventory({ inventory, suppliersHook }) {
     return { totalValue, lowStock, outOfStock, skuCount: items.length };
   }, [items]);
 
+  const lowStockAlerts = useMemo(() => items.filter((item) => Number(item.qty) <= 0 || (Number(item.reorder) > 0 && Number(item.qty) <= Number(item.reorder))).sort((a, b) => Number(a.qty) - Number(b.qty)), [items]);
   const INV_KPIS = [
     { label: "Stock Value", value: `TZS ${money(Math.round(stats.totalValue))}k`, icon: CircleDollarSign },
     { label: "Active SKUs", value: String(stats.skuCount), icon: Package },
@@ -12765,6 +12784,7 @@ function Inventory({ inventory, suppliersHook }) {
         </div>
       </div>
 
+      {lowStockAlerts.length > 0 && <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5" role="status" aria-live="polite"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div className="flex min-w-0 items-start gap-2.5"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-amber-500 text-white"><AlertCircle size={15} /></span><div><p className="text-[12px] font-bold text-amber-900">Low-stock alerts · {lowStockAlerts.length} item{lowStockAlerts.length === 1 ? "" : "s"} need attention</p><p className="mt-0.5 text-[10.5px] leading-5 text-amber-800">Products at or below their reorder level are listed automatically from confirmed inventory quantities.</p></div></div><button type="button" onClick={() => setCategory("all")} className="shrink-0 rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-[10.5px] font-bold text-amber-800">Review all alerts</button></div><div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{lowStockAlerts.slice(0, 8).map((item) => <button type="button" key={item.sku} onClick={() => setSelected(item)} className="flex min-w-0 items-center gap-2 rounded-lg border border-amber-200/80 bg-white/80 p-2 text-left hover:bg-white"><span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-md bg-amber-100 text-amber-700">{item.imageUrl ? <img src={item.imageUrl} alt="" className="h-full w-full object-cover" /> : <Package size={14} />}</span><span className="min-w-0"><span className="block truncate text-[10.5px] font-bold text-amber-950">{item.name}</span><span className="block text-[9.5px] text-amber-700">{Number(item.qty) <= 0 ? "Out of stock" : `${item.qty} ${item.unit || "units"} left · reorder at ${item.reorder}`}</span></span></button>)}</div></div>}
       {tab === "warehouses" && <Warehouses inventory={inventory} />}
       {tab === "analysis" && <InventoryAnalysisView inventory={inventory} />}
       {tab === "transfers" && <Transfers inventory={inventory} />}
@@ -12828,6 +12848,7 @@ function Inventory({ inventory, suppliersHook }) {
           <button type="button" onClick={() => setImagesOnly((current) => !current)} className={`min-h-9 rounded-lg border px-3 text-[12px] font-semibold ${imagesOnly ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}`} aria-pressed={imagesOnly}>
             {imagesOnly ? "Images only" : "All images"}
           </button>
+          <button type="button" onClick={() => printBarcodeLabels(filtered)} disabled={!filtered.length} className="btn-secondary text-[12px] font-semibold px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shrink-0 disabled:cursor-not-allowed disabled:opacity-40" title="Print labels for the currently filtered products"><QrCode size={14} /> Labels</button>
           <button
             onClick={() => setShowImport(true)}
             className="btn-secondary text-[13px] font-medium px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shrink-0"
@@ -30577,6 +30598,8 @@ function SalesDashboard({ invoices, inventory, crm, onNavigate }) {
     const rows = `<h2 style="font-size:16px;margin-bottom:12px">Top-selling products with images</h2><table><thead><tr><th>Product</th><th>SKU</th><th class="r">Units sold</th><th class="r">Revenue (TZS 000)</th></tr></thead><tbody>${topSelling.map((item) => `<tr><td class="bold">${item.imageUrl ? `<img src="${item.imageUrl}" alt="" style="width:34px;height:34px;object-fit:cover;border-radius:7px;vertical-align:middle;margin-right:8px"/>` : ""}${item.name}</td><td>${item.sku || "—"}</td><td class="r">${item.qty}</td><td class="r">TZS ${money(Math.round(item.revenue))}k</td></tr>`).join("") || `<tr><td colspan="4">No confirmed invoice line items yet.</td></tr>`}</tbody></table>`;
     printReport("Top-selling Products Report", rows, window.__smartManagerCompany || {});
   };
+  const exportTopSellingCsv = () => downloadCSV("top-selling-products", topSelling.map((item) => ({ product: item.name, sku: item.sku || "", unitsSold: item.qty, revenueTzs000: Math.round(item.revenue), imageUrl: item.imageUrl || "" })), [{ key: "product", label: "Product" }, { key: "sku", label: "SKU" }, { key: "unitsSold", label: "Units sold" }, { key: "revenueTzs000", label: "Revenue (TZS 000)" }, { key: "imageUrl", label: "Image URL" }]);
+  const exportTopSellingExcel = () => exportTopSellingExcelWithImages("top-selling-products", topSelling, window.__smartManagerCompany || {});
 
   // Monthly invoice revenue
   const months          = ["Feb","Mar","Apr","May","Jun","Jul"];
@@ -30644,7 +30667,7 @@ function SalesDashboard({ invoices, inventory, crm, onNavigate }) {
         </div>
       </div>
       <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h3 className="text-[14px] font-semibold text-[#111827]">Top-selling products</h3><p className="mt-1 text-[11.5px] text-slate-400">Units sold from confirmed invoice lines, matched to inventory product images.</p></div><button type="button" onClick={printTopSellingReport} disabled={!topSelling.length} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#0D2214] px-3 py-2 text-[11px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><Printer size={13} /> Sales report</button></div>
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h3 className="text-[14px] font-semibold text-[#111827]">Top-selling products</h3><p className="mt-1 text-[11.5px] text-slate-400">Units sold from confirmed invoice lines, matched to inventory product images.</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={exportTopSellingCsv} disabled={!topSelling.length} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"><FileSpreadsheet size={13} /> CSV</button><button type="button" onClick={exportTopSellingExcel} disabled={!topSelling.length} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"><FileSpreadsheet size={13} /> Excel + images</button><button type="button" onClick={printTopSellingReport} disabled={!topSelling.length} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#0D2214] px-3 py-2 text-[11px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><Printer size={13} /> PDF</button></div></div>
         {topSelling.length ? <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{topSelling.slice(0, 8).map((item, index) => <div key={item.key} className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/60 p-2.5"><span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-white text-slate-400">{item.imageUrl ? <img src={item.imageUrl} alt={`${item.name} product`} className="h-full w-full object-cover" /> : <Package size={15} />}</span><div className="min-w-0"><p className="truncate text-[11px] font-bold text-slate-700">#{index + 1} {item.name}</p><p className="mt-0.5 text-[10px] text-slate-400">{item.qty} sold · TZS {money(Math.round(item.revenue))}k</p></div></div>)}</div> : <p className="mt-4 rounded-lg bg-slate-50 px-3 py-4 text-center text-[11px] text-slate-400">No confirmed sales line items available yet.</p>}
       </div>
     </div>
