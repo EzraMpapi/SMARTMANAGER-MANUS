@@ -10,6 +10,27 @@ import { readStoredAccessToken } from "./lib/authSessionStorage";
 import { loadPublicSupabaseConfig } from "./lib/publicSupabaseConfig";
 import "./index.css";
 
+// Recover from stale chunks after a new deployment: reload once to fetch fresh assets.
+const CHUNK_RELOAD_KEY = "sm:chunk-reload-at";
+function reloadForStaleChunk() {
+  try {
+    const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
+    if (Date.now() - last < 10_000) return false;
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+  } catch {}
+  window.location.reload();
+  return true;
+}
+window.addEventListener("vite:preloadError", (event) => {
+  if (reloadForStaleChunk()) event.preventDefault();
+});
+window.addEventListener("unhandledrejection", (event) => {
+  const msg = String((event.reason as Error)?.message ?? event.reason ?? "");
+  if (/dynamically imported module|Importing a module script failed|Failed to fetch dynamically/i.test(msg)) {
+    if (reloadForStaleChunk()) event.preventDefault();
+  }
+});
+
 const queryClient = new QueryClient();
 const publicConfigPromise = loadPublicSupabaseConfig();
 
