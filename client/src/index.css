@@ -2811,3 +2811,60 @@
   background: color-mix(in srgb, var(--sm-user-accent) 24%, #164e63) !important;
   color: color-mix(in srgb, var(--sm-user-accent) 72%, white) !important;
 }
+
+/* ── Midnight Prestige: header + sidebar styling layer (visual only) ── */
+.dashboard-sidebar {
+  background: linear-gradient(180deg, oklch(0.22 0.04 264), oklch(0.18 0.035 264)) !important;
+  border-right-color: oklch(0.3 0.03 263) !important;
+  box-shadow: 8px 0 32px -18px oklch(0.15 0.04 264 / .6);
+}
+.dashboard-sidebar-brand,
+.dashboard-sidebar-footer {
+  background: oklch(0.19 0.035 264 / .85) !important;
+  border-color: oklch(0.3 0.03 263) !important;
+}
+.dashboard-flat-navigation button[aria-current="page"] {
+  border-color: oklch(0.72 0.16 158 / .35) !important;
+  background: oklch(0.72 0.16 158 / .12) !important;
+  color: oklch(0.85 0.13 158) !important;
+  box-shadow: inset 3px 0 0 oklch(0.72 0.16 158);
+}
+.dashboard-flat-navigation button[aria-current="page"] > span:first-child > span:first-child {
+  background: oklch(0.72 0.16 158) !important;
+  color: oklch(0.19 0.035 264) !important;
+}
+.dashboard-flat-navigation button:not([aria-current="page"]):hover {
+  background: oklch(0.27 0.035 263) !important;
+}
+.dashboard-flat-navigation button:focus-visible,
+.dashboard-sidebar button:focus-visible {
+  outline: 2px solid oklch(0.72 0.16 158);
+  outline-offset: 2px;
+}
+.dashboard-reference-topbar {
+  background: oklch(1 0 0 / .92);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom-color: oklch(0.912 0.012 155) !important;
+  box-shadow: 0 1px 2px oklch(0.24 0.05 160 / .05), 0 12px 32px -24px oklch(0.24 0.05 160 / .3);
+}
+.dashboard-topbar-primary-search {
+  border-radius: .75rem;
+  background: oklch(0.965 0.01 152 / .8);
+}
+.dashboard-topbar-primary-search:focus-within {
+  border-color: oklch(0.55 0.13 158);
+  box-shadow: 0 0 0 3px oklch(0.55 0.13 158 / .18);
+}
+.dashboard-topbar-presence,
+.dashboard-topbar-customize,
+.dashboard-topbar-notification-slot > div > button {
+  border-radius: .75rem;
+}
+.dashboard-reference-topbar button:focus-visible,
+.dashboard-reference-topbar input:focus-visible {
+  outline: 2px solid oklch(0.55 0.13 158);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-topbar-primary-search:hover { transform: none; }
+}
