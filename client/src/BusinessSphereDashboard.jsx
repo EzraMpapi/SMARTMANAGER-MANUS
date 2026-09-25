@@ -48967,6 +48967,21 @@ class ErrorBoundary extends React.Component {
     // safety net itself. console.error is the one logging mechanism with
     // no dependency on anything else in this app being in a working state.
     console.error("Smart Manager crashed:", error, info?.componentStack);
+    // A new deployment replaced the page files this tab was using —
+    // reload once to pick up the fresh version instead of showing an error.
+    const message = String(error?.message ?? "");
+    if (typeof window !== "undefined" && /dynamically imported module|Importing a module script failed|Failed to fetch dynamically|ChunkLoadError/i.test(message)) {
+      try {
+        const key = "sm:chunk-reload-at";
+        const last = Number(window.sessionStorage.getItem(key) || 0);
+        if (Date.now() - last > 10000) {
+          window.sessionStorage.setItem(key, String(Date.now()));
+          window.location.reload();
+        }
+      } catch {
+        window.location.reload();
+      }
+    }
   }
 
   handleReload = () => {
