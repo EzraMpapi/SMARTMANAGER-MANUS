@@ -1437,10 +1437,16 @@ function compressInventoryProductImage(file) {
         const context = canvas.getContext("2d");
         if (!context) { reject(new Error("Image compression is not supported in this browser.")); return; }
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/webp", 0.82);
+        let dataUrl = canvas.toDataURL("image/webp", 0.82);
+        let mimeType = /^data:(image\/(?:webp|png|jpeg));/i.exec(dataUrl)?.[1]?.toLowerCase() || "";
+        if (mimeType !== "image/webp") {
+          dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+          mimeType = "image/jpeg";
+        }
         const base64 = dataUrl.split(",")[1];
         if (!base64) { reject(new Error("The compressed image could not be created.")); return; }
-        resolve({ dataUrl, upload: { fileName: `${file.name.replace(/\.[^.]+$/, "") || "product"}.webp`, mimeType: "image/webp", base64 } });
+        const extension = mimeType === "image/webp" ? "webp" : "jpg";
+        resolve({ dataUrl, upload: { fileName: `${file.name.replace(/\.[^.]+$/, "") || "product"}.${extension}`, mimeType, base64 } });
       };
       image.src = String(reader.result || "");
     };
