@@ -3,6 +3,29 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { resolveVerifiedProfile } from "./aiApprovals";
 import { storagePut } from "./storage";
+import { ENV } from "./_core/env";
+
+const PRODUCT_IMAGE_BUCKET = "inventory-product-images";
+
+// Saves product images in the project database storage (public bucket) so they persist on any host.
+async function supabaseImagePut(path: string, bytes: Buffer, mimeType: string) {
+  const base = ENV.supabaseUrl.replace(/\/+$/, "");
+  const key = ENV.supabaseSecretKey;
+  const headers = { apikey: key, Authorization: `Bearer ${key}` };
+  const upload = () => fetch(`${base}/storage/v1/object/${PRODUCT_IMAGE_BUCKET}/${path}`, {
+    method: "POST", headers: { ...headers, "Content-Type": mimeType, "x-upsert": "true", "cache-control": "31536000" }, body: new Uint8Array(bytes),
+  });
+  let res = await upload();
+  if (res.status === 400 || res.status === 404) {
+    const text = await res.clone().text().catch(() => "");
+    if (/bucket/i.test(text) && /not.?found/i.test(text)) {
+      await fetch(`${base}/storage/v1/bucket`, { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ id: PRODUCT_IMAGE_BUCKET, name: PRODUCT_IMAGE_BUCKET, public: true, file_size_limit: 3 * 1024 * 1024, allowed_mime_types: ["image/jpeg", "image/png", "image/webp"] }) });
+      res = await upload();
+    }
+  }
+  if (!res.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Product image could not be saved (${res.status}).` });
+  return { key: path, url: `${base}/storage/v1/object/public/${PRODUCT_IMAGE_BUCKET}/${path}` };
+}
 
 export const inventoryProductImageInput = z.object({
   fileName: z.string().trim().min(1).max(180),
@@ -22,6 +45,9 @@ export async function uploadInventoryProductImage(req: CreateExpressContextOptio
       : bytes.subarray(0, 4).toString("ascii") === "RIFF" && bytes.subarray(8, 12).toString("ascii") === "WEBP";
   if (!signatureOk) throw new TRPCError({ code: "BAD_REQUEST", message: "The selected product image is not a valid JPEG, PNG, or WebP file." });
   const safeName = parsed.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const stored = await storagePut(`inventory-products/${profile.company_id}/${profile.id}/${Date.now()}-${safeName}`, bytes, parsed.mimeType);
+  const path = `${profile.company_id}/${profile.id}/${Date.now()}-${safeName}`;
+  const stored = ENV.supabaseUrl && ENV.supabaseSecretKey
+    ? await supabaseImagePut(path, bytes, parsed.mimeType)
+    : await storagePut(`inventory-products/${path}`, bytes, parsed.mimeType);
   return { url: stored.url, key: stored.key, mimeType: parsed.mimeType };
 }
