@@ -8,7 +8,7 @@ const tour = dashboardSource;
 
 describe("interactive onboarding tour", () => {
   it("introduces the verified high-value ERP modules with Kiswahili support", () => {
-    for (const moduleId of ["dashboard", "sales", "pos", "inventory", "finance", "collaboration", "ai"]) {
+    for (const moduleId of ["dashboard", "crm", "sales", "pos", "inventory", "procurement", "finance", "hr", "employee-portal", "collaboration", "reports", "notifications", "integrations", "settings", "support", "ai"]) {
       expect(tour).toContain(`moduleId: "${moduleId}"`);
     }
     expect(tour).toContain("activeSteps.length");
@@ -17,6 +17,14 @@ describe("interactive onboarding tour", () => {
     expect(tour).toContain("isSw ? \"Ziara ya Smart Manager\"");
     expect(tour).toContain("sw: \"Anzia kwenye kituo chako cha uendeshaji\"");
     expect(tour).toContain("Every permanent change is designed to wait for server confirmation.");
+  });
+
+  it("restores the command-bar trigger and filters the tour to authorized workspace modules", () => {
+    expect(source).toContain("preferences.showGuidedTour");
+    expect(source).toContain("<OnboardingTour");
+    expect(tour).toContain("permittedModuleIds");
+    expect(tour).toContain("roleDefinitionFor(userRole)");
+    expect(tour).toContain("dashboard-topbar-tour");
   });
 
   it("supports role-specific tour tracks and server-backed completion persistence", () => {
@@ -38,7 +46,7 @@ describe("interactive onboarding tour", () => {
 
   it("maps every tour step to a real dashboard spotlight target", () => {
     expect(tour).toContain('document.querySelector(`[data-tour-target="${step.moduleId}"]`)');
-    for (const moduleId of ["dashboard", "sales", "pos", "inventory", "finance", "collaboration", "ai"]) {
+    for (const moduleId of ["dashboard", "crm", "sales", "pos", "inventory", "procurement", "finance", "hr", "employee-portal", "collaboration", "reports", "notifications", "integrations", "settings", "support", "ai"]) {
       expect(source).toContain("data-tour-target={m.id}");
       expect(tour).toContain(`moduleId: "${moduleId}"`);
     }
