@@ -43,6 +43,19 @@ describe("dashboard customization role boundaries", () => {
     expect(personalized.flatMap((group) => group.items.map((item) => item.id))).not.toContain("settings");
   });
 
+  it("restricts HR Manager navigation to HR and Employee Portal workflows", () => {
+    const hr = roleDefinitionFor("HR Manager");
+    const visible = new Set(hr.allowedModules);
+    expect(hr.writeAccess).toBe("full");
+    expect(visible.has("dashboard")).toBe(true);
+    expect(visible.has("hr")).toBe(true);
+    expect(visible.has("employee-portal")).toBe(true);
+    expect([...visible].filter((id) => !["dashboard", "hr", "employee-portal", "notifications"].includes(id))).toEqual([]);
+    expect(visible.has("finance")).toBe(false);
+    expect(visible.has("sales")).toBe(false);
+    expect(visible.has("global-admin")).toBe(false);
+  });
+
   it("does not render the internal dashboard shell for an external client role, regardless of saved presentation choices", () => {
     const externalClient = roleDefinitionFor("External Client");
     expect(externalClient.category).toBe("External Portal");
