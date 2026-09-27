@@ -3555,8 +3555,8 @@ const ROLES = [
   },
   {
     id: "HR Manager", category: "Department Head",
-    description: "Sees every module for company-wide oversight; day-to-day work — recruitment, attendance, payroll, leave approvals — happens in HR.",
-    allowedModules: ALL_MODULE_IDS, primaryModules: ["hr", "analytics", "documents"], writeAccess: "full",
+    description: "Restricted people-operations workspace — HR management and the Employee Portal only, with dashboard context.",
+    allowedModules: ["dashboard", "hr", "employee-portal", "notifications"], primaryModules: ["hr", "employee-portal"], writeAccess: "full",
   },
   {
     id: "Sales Manager", category: "Department Head",
