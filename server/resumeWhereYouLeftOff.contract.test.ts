@@ -16,13 +16,13 @@ describe("resume where you left off contracts", () => {
     expect(dashboardSource).toContain("readResumeLocation");
     expect(dashboardSource).toContain("subscriptionFilteringReady");
     expect(dashboardSource).toContain("resumeRestoredRef.current === resumeRestoreKey");
-    expect(dashboardSource).toContain("const nextModule = allowedModuleIds.includes(candidate)");
+    expect(dashboardSource).toContain("const nextModule = normalizeNavigationTarget(candidate)");
     expect(dashboardSource).toContain("window.history.replaceState(null, \"\", buildResumeUrl");
   });
 
   it("persists the current location from the central module navigation boundary", () => {
     expect(dashboardSource).toContain("const persistResumeLocation = useCallback");
-    expect(dashboardSource).toContain("persistResumeLocation(id);");
+    expect(dashboardSource).toContain("persistResumeLocation(targetId);");
     expect(dashboardSource).toContain("clearResumeLocation(window.localStorage, session.userId, session.company.id)");
     expect(dashboardSource).toContain("NAVIGATION_ITEMS");
     for (const moduleId of requiredModules) expect(navigationSource).toContain(`id: "${moduleId}"`);

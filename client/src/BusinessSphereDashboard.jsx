@@ -33553,9 +33553,13 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
 }
 
 
-function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, workOrders, leaveRequests, onNavigate }) {
-  const [tab, setTab] = useState("channels");
-
+function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, workOrders, leaveRequests, onNavigate, intent, clearIntent }) {
+  const [tab, setTab] = useState(() => intent?.module === "collaboration" && intent.tab ? intent.tab : "channels");
+  useEffect(() => {
+    if (intent?.module !== "collaboration" || !intent.tab) return;
+    if (COLLAB_TABS.some((entry) => entry.id === intent.tab)) setTab(intent.tab);
+    clearIntent?.();
+  }, [intent, clearIntent]);
   return (
     <div className="space-y-5 h-full flex flex-col">
       <div>
@@ -48326,14 +48330,22 @@ function SmartManager() {
     }
   }, [currentUser.role]);
 
+  // WhatsApp is a focused tab inside Collaboration Hub, not a standalone
+  // shell module. Resolve legacy deep links and quick actions to the real
+  // parent route before entitlement and resume handling.
+  function normalizeNavigationTarget(id) {
+    return id === "whatsapp" ? "collaboration" : id;
+  }
+
   function go(id) {
-    if (id === "billing" && !canManageBilling) {
+    const targetId = normalizeNavigationTarget(id);
+    if (targetId === "billing" && !canManageBilling) {
       notify("Only an authorized billing administrator can open Subscription & Billing.", "error");
       return;
     }
-    const isOperationalModule = MODULES.some((module) => module.id === id);
+    const isOperationalModule = MODULES.some((module) => module.id === targetId);
     const subscriptionSafeDestination = new Set(["profile", "support", "notifications", "settings", "billing"]);
-    if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && subscriptionFilteringReady && !isPlatformAdministrator && isOperationalModule && id !== "dashboard" && !subscriptionSafeDestination.has(id) && !subscriptionAllowsModule(subscriptionAccess.access, id)) {
+    if (IS_CONFIGURED && !IS_ISOLATED_SIGNUP_E2E && subscriptionFilteringReady && !isPlatformAdministrator && isOperationalModule && targetId !== "dashboard" && !subscriptionSafeDestination.has(targetId) && !subscriptionAllowsModule(subscriptionAccess.access, targetId)) {
       if (canManageBilling) {
         notify("Activate or renew a company plan in Subscription & Billing to unlock this module.", "error");
         setActive("billing");
@@ -48344,8 +48356,9 @@ function SmartManager() {
       notify("This module is not included in the company’s server-confirmed subscription plan. Contact your billing administrator.", "error");
       return;
     }
-    setActive(id);
-    persistResumeLocation(id);
+    if (id === "whatsapp") setIntent({ module: "collaboration", tab: "whatsapp" });
+    setActive(targetId);
+    persistResumeLocation(targetId);
     setSidebarOpen(false);
   }
 
@@ -48387,7 +48400,7 @@ function SmartManager() {
     if (!subscriptionFilteringReady || resumeRestoredRef.current === resumeRestoreKey) return;
     const allowedModuleIds = visibleModules.map((module) => module.id);
     const fromUrl = typeof window !== "undefined"
-      ? getModuleFromUrl(window.location.search, allowedModuleIds, resumeSafeShellModules)
+      ? getModuleFromUrl(window.location.search, [...allowedModuleIds, "whatsapp"], resumeSafeShellModules)
       : null;
     const stored = typeof window !== "undefined"
       ? readResumeLocation(window.localStorage, {
@@ -48398,13 +48411,15 @@ function SmartManager() {
       })
       : null;
     const candidate = fromUrl || stored?.moduleId || "dashboard";
-    const nextModule = allowedModuleIds.includes(candidate) || resumeSafeShellModules.includes(candidate) ? candidate : "dashboard";
-    setActive(nextModule);
+    const nextModule = normalizeNavigationTarget(candidate);
+    const safeNextModule = allowedModuleIds.includes(nextModule) || resumeSafeShellModules.includes(nextModule) ? nextModule : "dashboard";
+    if (candidate === "whatsapp") setIntent({ module: "collaboration", tab: "whatsapp" });
+    setActive(safeNextModule);
     if (!fromUrl && stored && typeof window !== "undefined") {
-      window.history.replaceState(null, "", buildResumeUrl({ pathname: stored.pathname, search: stored.search, hash: stored.hash, moduleId: nextModule }));
+      window.history.replaceState(null, "", buildResumeUrl({ pathname: stored.pathname, search: stored.search, hash: stored.hash, moduleId: safeNextModule }));
     }
     resumeRestoredRef.current = resumeRestoreKey;
-    persistResumeLocation(nextModule);
+    persistResumeLocation(safeNextModule);
   }, [company?.id, currentUser?.id, persistResumeLocation, resumeRestoreKey, session?.accessToken, session?.demo, subscriptionFilteringReady, visibleModules]);
 
   useEffect(() => {
@@ -48414,8 +48429,12 @@ function SmartManager() {
   useEffect(() => {
     const handlePopState = () => {
       if (typeof window === "undefined") return;
-      const moduleId = getModuleFromUrl(window.location.search, visibleModules.map((module) => module.id), resumeSafeShellModules);
-      if (moduleId) setActive(moduleId);
+      const moduleId = getModuleFromUrl(window.location.search, [...visibleModules.map((module) => module.id), "whatsapp"], resumeSafeShellModules);
+      if (moduleId) {
+        const targetId = normalizeNavigationTarget(moduleId);
+        if (moduleId === "whatsapp") setIntent({ module: "collaboration", tab: "whatsapp" });
+        setActive(targetId);
+      }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -48429,8 +48448,9 @@ function SmartManager() {
   // re-fires on a later, unrelated visit to that module.
   const [intent, setIntent] = useState(null);
   function goWithIntent(id, payload) {
+    const targetId = normalizeNavigationTarget(id);
     go(id);
-    setIntent({ module: id, ...payload });
+    setIntent({ module: targetId, ...(id === "whatsapp" ? { tab: "whatsapp" } : {}), ...payload });
   }
   function clearIntent() {
     setIntent(null);
@@ -48969,7 +48989,7 @@ function SmartManager() {
             <WorkflowStudio company={company} invoices={invoices} expenses={expenses} inventory={inventory} />
           )}
           {active === "collaboration" && (
-            <CollaborationHub currentUser={currentUser} filesHook={files} employees={employees} invoices={invoices} crm={crm} workOrders={workOrders} leaveRequests={leaveRequests} onNavigate={go} />
+            <CollaborationHub currentUser={currentUser} filesHook={files} employees={employees} invoices={invoices} crm={crm} workOrders={workOrders} leaveRequests={leaveRequests} onNavigate={go} intent={intent} clearIntent={clearIntent} />
           )}
           {active === "tra_portal" && (
             <Suspense fallback={<div className="h-64 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading TRA portal" />}>

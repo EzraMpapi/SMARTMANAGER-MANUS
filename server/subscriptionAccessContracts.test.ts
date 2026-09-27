@@ -39,7 +39,7 @@ describe("platform subscription access contracts", () => {
     expect(dashboard).not.toContain('{ id: "billing", label: "Subscription Billing"');
     expect(dashboard).toContain('active === "billing"');
     expect(dashboard).toContain("canManageBilling");
-    expect(dashboard).toContain("subscriptionAllowsModule(subscriptionAccess.access, id)");
+    expect(dashboard).toContain("subscriptionAllowsModule(subscriptionAccess.access, targetId)");
     expect(dashboard).toContain("SubscriptionAccessBoundary");
     expect(dashboard).toContain("!IS_ISOLATED_SIGNUP_E2E");
     expect(profile).toContain('label="Subscription & Billing"');
@@ -78,8 +78,8 @@ describe("platform subscription access contracts", () => {
     expect(dashboard).toContain('id: "Platform Administrator", category: "System"');
     expect(dashboard).toContain('allowedModules: ["dashboard", "global-admin", "profile", "support", "notifications", "settings"]');
     expect(dashboard).toContain('const isPlatformAdministrator = currentRole.id === "Platform Administrator"');
-    expect(dashboard).toContain('!isPlatformAdministrator && isOperationalModule && id !== "dashboard"');
-    expect(dashboard).toContain('!subscriptionAllowsModule(subscriptionAccess.access, id)');
+    expect(dashboard).toContain('!isPlatformAdministrator && isOperationalModule && targetId !== "dashboard"');
+    expect(dashboard).toContain('!subscriptionAllowsModule(subscriptionAccess.access, targetId)');
     expect(dashboard).toContain('!canUseSubscriptionEscape && !isPlatformAdministrator');
   });
 });
