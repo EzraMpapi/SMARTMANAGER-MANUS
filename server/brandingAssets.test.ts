@@ -37,6 +37,7 @@ describe("Smart Manager branding assets", () => {
 
   it("declares optimized favicon, Apple touch, and PWA icon variants", () => {
     expect(documentHead).toContain('sizes="32x32" href="/brand/smart-manager-logo-32.png"');
+    expect(documentHead).toContain('href="/favicon.ico" sizes="any"');
     expect(documentHead).toContain('sizes="64x64" href="/brand/smart-manager-logo-64.png"');
     expect(documentHead).toContain('sizes="180x180" href="/brand/smart-manager-logo-180.png"');
     expect(manifest).toContain('"src": "/brand/smart-manager-logo-192.png"');
@@ -44,6 +45,13 @@ describe("Smart Manager branding assets", () => {
     expect(manifest).toContain('"src": "/brand/smart-manager-logo-512.png"');
     expect(manifest).toContain('"sizes": "512x512"');
     expect(manifest).not.toContain("1536x1024");
+  });
+
+  it("ships a real ICO favicon instead of relying on the SPA fallback", () => {
+    const faviconPath = path.join(repositoryRoot, "client/public/favicon.ico");
+    expect(fs.existsSync(faviconPath)).toBe(true);
+    expect(fs.readFileSync(faviconPath).subarray(0, 4)).toEqual(Buffer.from([0, 0, 1, 0]));
+    expect(fs.statSync(faviconPath).size).toBeGreaterThan(1000);
   });
 
   it("does not request the missing animation by default", () => {
