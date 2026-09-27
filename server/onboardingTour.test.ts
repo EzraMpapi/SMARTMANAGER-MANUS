@@ -19,12 +19,14 @@ describe("interactive onboarding tour", () => {
     expect(tour).toContain("Every permanent change is designed to wait for server confirmation.");
   });
 
-  it("restores the command-bar trigger and filters the tour to authorized workspace modules", () => {
-    expect(source).toContain("preferences.showGuidedTour");
+  it("shows the tour only for authenticated individual users and filters it to authorized modules", () => {
+    expect(source).toContain("enabled={isIndividualLogin}");
+    expect(source).toContain("showTrigger={isIndividualLogin}");
     expect(source).toContain("<OnboardingTour");
     expect(tour).toContain("permittedModuleIds");
     expect(tour).toContain("roleDefinitionFor(userRole)");
-    expect(tour).toContain("dashboard-topbar-tour");
+    expect(tour).toContain("dashboard-tour-trigger");
+    expect(tour).not.toContain("dashboard-topbar-tour");
   });
 
   it("supports role-specific tour tracks and server-backed completion persistence", () => {
