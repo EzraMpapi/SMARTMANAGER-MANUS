@@ -18,6 +18,11 @@ vi.mock("../client/src/lib/trpc", () => ({
 }));
 
 import { ProfileMenu } from "../client/src/components/ProfileIdentityCenter";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const profileMenuSource = readFileSync(resolve(process.cwd(), "client/src/components/ProfileIdentityCenter.jsx"), "utf8");
+const dashboardStyles = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
 
 describe("authenticated profile-menu click behavior", () => {
   afterEach(() => {
@@ -57,5 +62,11 @@ describe("authenticated profile-menu click behavior", () => {
     fireEvent.click(trigger);
     fireEvent.pointerDown(screen.getByRole("button", { name: "Workspace content remains clickable" }));
     expect(screen.queryByRole("dialog", { name: "Account identity center" })).toBeNull();
+  });
+
+  it("keeps the top-header profile trigger square and professional", () => {
+    expect(profileMenuSource).toContain("dashboard-topbar-profile-trigger group relative z-40 grid h-11 w-11 min-h-11 min-w-11 cursor-pointer place-items-center rounded-none");
+    expect(dashboardStyles).toContain(".dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger");
+    expect(dashboardStyles).toContain("border-radius: 0;");
   });
 });

@@ -1615,7 +1615,7 @@
   min-height: 2.75rem;
   min-width: 2.75rem;
   border: 1px solid rgb(226 232 240 / .92);
-  border-radius: .75rem;
+  border-radius: 0;
   background: rgb(255 255 255 / .92);
   box-shadow: 0 2px 8px rgb(15 23 42 / .05);
 }
