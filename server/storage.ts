@@ -1,5 +1,5 @@
 // Supabase Storage adapter for server-side uploads.
-// Objects stay private; the application returns same-origin /manus-storage/{key}
+// Objects stay private; the application returns same-origin /api/manus-storage/{key}
 // paths and signs reads only inside the server boundary.
 
 import { ENV } from "./_core/env";
@@ -104,14 +104,14 @@ export async function storagePut(
       `Supabase storage upload failed (${response.status}): ${message}`
     );
   }
-  return { key, url: `/manus-storage/${key}` };
+  return { key, url: `/api/manus-storage/${key}` };
 }
 
 export async function storageGet(
   relKey: string
 ): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
-  return { key, url: `/manus-storage/${key}` };
+  return { key, url: `/api/manus-storage/${key}` };
 }
 
 export async function storageGetSignedUrl(

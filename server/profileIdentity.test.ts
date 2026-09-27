@@ -82,18 +82,18 @@ describe("profile identity center service", () => {
   it("uploads avatar bytes to scoped storage and persists only the returned URL/key through the avatar RPC", async () => {
     resolveVerifiedProfile.mockResolvedValue({ profile: { id: "user-1", company_id: "company-1", role: "Employee", full_name: "Person Example", customer_ref: null }, token: "session-token" });
     installProfileFetch();
-    storagePut.mockResolvedValue({ key: "profile-avatars/company-1/user-1/avatar.jpg", url: "/manus-storage/profile-avatars/company-1/user-1/avatar.jpg" });
+    storagePut.mockResolvedValue({ key: "profile-avatars/company-1/user-1/avatar.jpg", url: "/api/manus-storage/profile-avatars/company-1/user-1/avatar.jpg" });
     const result = await uploadProfileAvatar(request(), { mimeType: "image/png", base64: png.toString("base64") });
     expect(storagePut).toHaveBeenCalledWith(expect.stringMatching(/^profile-avatars\/company-1\/user-1\//), png, "image/png");
     const avatarCall = (global.fetch as any).mock.calls.find((call: any[]) => String(call[0]).includes("set_current_profile_avatar"));
-    expect(JSON.parse(avatarCall[1].body)).toEqual({ p_avatar_url: "/manus-storage/profile-avatars/company-1/user-1/avatar.jpg", p_avatar_storage_key: "profile-avatars/company-1/user-1/avatar.jpg" });
+    expect(JSON.parse(avatarCall[1].body)).toEqual({ p_avatar_url: "/api/manus-storage/profile-avatars/company-1/user-1/avatar.jpg", p_avatar_storage_key: "profile-avatars/company-1/user-1/avatar.jpg" });
     expect(result.saved).toBe(true);
   });
 
   it("does not report avatar success when the database cannot confirm the storage reference", async () => {
     resolveVerifiedProfile.mockResolvedValue({ profile: { id: "user-1", company_id: "company-1", role: "Employee", full_name: "Person Example", customer_ref: null }, token: "session-token" });
     installProfileFetch({ avatarRpcStatus: 500 });
-    storagePut.mockResolvedValue({ key: "profile-avatars/company-1/user-1/avatar.jpg", url: "/manus-storage/profile-avatars/company-1/user-1/avatar.jpg" });
+    storagePut.mockResolvedValue({ key: "profile-avatars/company-1/user-1/avatar.jpg", url: "/api/manus-storage/profile-avatars/company-1/user-1/avatar.jpg" });
     await expect(uploadProfileAvatar(request(), { mimeType: "image/png", base64: png.toString("base64") })).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
     expect((global.fetch as any).mock.calls.filter((call: any[]) => String(call[0]).includes("get_current_profile_identity") && call[1]?.method === "POST")).toHaveLength(1);
   });

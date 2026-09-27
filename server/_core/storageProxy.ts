@@ -1,8 +1,8 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { storageGetSignedUrl } from "../storage";
 
 export function registerStorageProxy(app: Express) {
-  app.get("/manus-storage/*key", async (req, res) => {
+  const serveObject = async (req: Request, res: Response) => {
     const rawKey = (req.params as Record<string, string | string[]>).key;
     const key = Array.isArray(rawKey) ? rawKey.join("/") : rawKey;
     if (!key) {
@@ -18,5 +18,7 @@ export function registerStorageProxy(app: Express) {
       console.error("[StorageProxy] failed:", err);
       res.status(502).send("Storage backend error");
     }
-  });
+  };
+  app.get("/manus-storage/*key", serveObject);
+  app.get("/api/manus-storage/*key", serveObject);
 }
