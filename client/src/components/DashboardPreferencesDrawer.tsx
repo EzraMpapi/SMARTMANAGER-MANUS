@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Sliders, X, Check, RotateCcw, DollarSign, Sparkles, Send, Loader2, Globe, Clock, Search, CalendarDays, Compass, Download, Upload, AlertCircle } from "lucide-react";
+import { Sliders, X, Check, RotateCcw, DollarSign, Sparkles, Send, Loader2, Globe, Clock, Search, CalendarDays, Download, Upload, AlertCircle } from "lucide-react";
 import { useDashboardPreferences, type DashboardPreferences } from "../contexts/DashboardPreferencesContext";
 import { trpc } from "../lib/trpc";
 import { DashboardLayoutControls } from "./DashboardLayoutControls";
@@ -15,7 +15,6 @@ interface DashboardPreferencesDrawerProps {
 
 const topBarControls = [
   { key: "showTopBarSearch", label: "Workspace search", detail: "Show the expanded command search on wide screens", icon: Search },
-  { key: "showGuidedTour", label: "Guided tour", detail: "Keep the context-aware tour entry in the command bar", icon: Compass },
   { key: "showConnectionStatus", label: "Connection status", detail: "Show Live, Demo, or offline status when space allows", icon: Globe },
   { key: "showTopBarDate", label: "Current date", detail: "Show the local business date on extra-wide screens", icon: CalendarDays },
 ] as const;

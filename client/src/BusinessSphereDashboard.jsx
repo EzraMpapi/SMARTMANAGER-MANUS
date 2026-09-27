@@ -2281,7 +2281,7 @@ export function resolveDailyBriefingFetchState({ sources = [], usingDemoBriefing
 }
 
 function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
-  expenses, crm, employees, leaveRequests, workOrders, subscriptions, smartAlerts, enabledModules }) {
+  expenses, crm, employees, leaveRequests, workOrders, subscriptions, smartAlerts, enabledModules, initialOpen = true }) {
 
   const co = company || {};
   const currentDate = new Date();
@@ -2290,9 +2290,12 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
   // The briefing is a startup summary, so every account sees the real
   // workspace snapshot whenever the dashboard is opened. It can still be
   // dismissed and reopened from the existing Daily Brief controls.
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(initialOpen);
   const [printing, setPrinting] = useState(false);
   const [retryingData, setRetryingData] = useState(false);
+  useEffect(() => {
+    if (initialOpen) setOpen(true);
+  }, [initialOpen]);
 
   // Expose open trigger to topbar
   useEffect(() => {
@@ -47161,7 +47164,7 @@ function onboardingTourStorageKey(currentUser, company) {
   return `bs_onboarding_tour_${encodeURIComponent(String(userKey))}_${encodeURIComponent(String(workspaceKey))}`;
 }
 
-function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange }) {
+function OnboardingTour({ enabled = false, showTrigger = false, currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
   const userRole = canonicalRoleId(currentUser?.role || "Employee");
   const permittedModuleIds = useMemo(() => {
     const role = roleDefinitionFor(userRole);
@@ -47198,7 +47201,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
   const checkedKeyRef = useRef("");
   const [spotlightRect, setSpotlightRect] = useState(null);
   const storageKey = useMemo(() => onboardingTourStorageKey(currentUser, company), [currentUser?.id, currentUser?.name, company?.id, company?.name]);
-  const ready = IS_CONFIGURED ? Boolean(currentUser?.id && company?.id) : true;
+  const ready = enabled && (IS_CONFIGURED ? Boolean(currentUser?.id && company?.id) : Boolean(currentUser?.id));
   const step = activeSteps[stepIndex] || activeSteps[0];
   const StepIcon = step.icon;
   const available = permittedModuleIds.has(step.moduleId);
@@ -47208,16 +47211,24 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
     : (isSw ? `Hatua ${remainingSteps} zilizobaki` : `${remainingSteps} step${remainingSteps === 1 ? "" : "s"} remaining`);
 
   useEffect(() => {
+    if (!enabled) {
+      checkedKeyRef.current = "";
+      setOpen(false);
+      return;
+    }
     if (!ready || checkedKeyRef.current === storageKey) return;
     checkedKeyRef.current = storageKey;
     setStepIndex(0);
     try {
       const saved = window.localStorage.getItem(storageKey);
-      setOpen(!saved);
+      const needsTour = !saved;
+      setOpen(needsTour);
+      onTourFlowReady?.(needsTour);
     } catch (_error) {
       setOpen(true);
+      onTourFlowReady?.(true);
     }
-  }, [ready, storageKey]);
+  }, [enabled, ready, storageKey, onTourFlowReady]);
 
   useEffect(() => {
     onTourVisibilityChange?.(open);
@@ -47329,6 +47340,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
   function finishTour(status = "completed") {
     persistCompletion(status);
     setOpen(false);
+    onTourComplete?.(status);
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
   function goNext() {
@@ -47351,16 +47363,16 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
 
   return (
     <>
-      <button
+      {showTrigger && <button
         ref={triggerRef}
         type="button"
         onClick={restartTour}
-        className="dashboard-topbar-tour inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 text-[11.5px] font-bold text-emerald-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:from-emerald-100 hover:to-teal-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+        className="dashboard-tour-trigger fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-[11.5px] font-bold text-emerald-800 shadow-lg transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/40 sm:bottom-6 sm:right-24"
         aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : "Take the Smart Manager onboarding tour"}
         data-onboarding-trigger="true"
       >
         <Info size={13} /> {isSw ? "Anza Ziara" : "Take a Tour"}
-      </button>
+      </button>}
       {open && typeof document !== "undefined" && createPortal((
         <div
           className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${spotlightRect ? "bg-transparent" : "bg-slate-950/55 backdrop-blur-sm"}`}
@@ -47568,6 +47580,24 @@ function SmartManager() {
     customerRef: null,
     company: centralizedAuth.company,
   } : (IS_CONFIGURED ? null : { demo: true }));
+  const isIndividualLogin = Boolean(session && !session.demo && currentUser?.id);
+  const [tourGateResolved, setTourGateResolved] = useState(false);
+  const [tourNeedsCompletion, setTourNeedsCompletion] = useState(false);
+  const tourFlowReady = useCallback((needsTour) => {
+    setTourNeedsCompletion(Boolean(needsTour));
+    setTourGateResolved(true);
+  }, []);
+  const tourFlowComplete = useCallback(() => {
+    setTourNeedsCompletion(false);
+    setTourGateResolved(true);
+  }, []);
+  useEffect(() => {
+    if (!isIndividualLogin) {
+      setTourGateResolved(false);
+      setTourNeedsCompletion(false);
+    }
+  }, [isIndividualLogin]);
+  const dailyBriefingInitialOpen = tourGateResolved && (!isIndividualLogin || !tourNeedsCompletion);
   const adoptCentralizedSession = useCallback(async (candidate, fallback = null) => {
     if (candidate?.access_token && candidate?.refresh_token) {
       await centralizedAuth.adoptSession({ access_token: candidate.access_token, refresh_token: candidate.refresh_token });
@@ -48585,6 +48615,16 @@ function SmartManager() {
       <ConfirmDialog />
       <SendReceiptPanel />
       <PostCreateDispatch company={company} crm={crm} />
+      <OnboardingTour
+        enabled={isIndividualLogin}
+        showTrigger={isIndividualLogin}
+        currentUser={currentUser}
+        company={company}
+        visibleModules={visibleModules}
+        onNavigate={go}
+        onTourFlowReady={tourFlowReady}
+        onTourComplete={tourFlowComplete}
+      />
       <DailyBriefing
         company={company}
         currentUser={currentUser}
@@ -48793,14 +48833,6 @@ function SmartManager() {
 
            {/* Right — live status, quick actions, and identity */}
            <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
-             {preferences.showGuidedTour && (
-               <OnboardingTour
-                 currentUser={currentUser}
-                 company={company}
-                 visibleModules={visibleModules}
-                 onNavigate={go}
-               />
-             )}
              <RealtimeConnectivityBadge />
             <LiveDateTime />
             {/* Dark mode toggle */}
