@@ -47162,15 +47162,20 @@ function onboardingTourStorageKey(currentUser, company) {
 }
 
 function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange }) {
-  const userRole = String(currentUser?.role || "staff").toLowerCase();
-  const roleSteps = useMemo(() => {
-    return ONBOARDING_TOUR_STEPS.filter((item) => {
-      if (!Array.isArray(item.roles)) return true;
-      if (userRole === "owner" || userRole === "admin") return true;
-      return item.roles.includes(userRole);
-    });
-  }, [userRole]);
-  const activeSteps = roleSteps.length > 0 ? roleSteps : ONBOARDING_TOUR_STEPS;
+  const userRole = canonicalRoleId(currentUser?.role || "Employee");
+  const permittedModuleIds = useMemo(() => {
+    const role = roleDefinitionFor(userRole);
+    const ids = new Set(visibleModules.map((module) => module.id));
+    // Settings is a shell destination rather than a normal operational item.
+    // Keep it in the tour only for roles that can actually administer the workspace.
+    const canTourSettings = ["Platform Administrator", "Super Administrator", "Organization Owner", "CEO", "COO", "CFO", "CMO", "CTO"].includes(userRole);
+    if (canTourSettings && role.writeAccess === "full") ids.add("settings");
+    return ids;
+  }, [userRole, visibleModules]);
+  const activeSteps = useMemo(() => {
+    const permitted = ONBOARDING_TOUR_STEPS.filter((item) => permittedModuleIds.has(item.moduleId));
+    return permitted.length > 0 ? permitted : ONBOARDING_TOUR_STEPS.filter((item) => item.moduleId === "dashboard");
+  }, [permittedModuleIds]);
   const [lang, setLang] = useState(() => {
     try { return localStorage.getItem("bs_lang") || "en"; } catch (_e) { return "en"; }
   });
@@ -47196,7 +47201,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
   const ready = IS_CONFIGURED ? Boolean(currentUser?.id && company?.id) : true;
   const step = activeSteps[stepIndex] || activeSteps[0];
   const StepIcon = step.icon;
-  const available = visibleModules.some((module) => module.id === step.moduleId);
+  const available = permittedModuleIds.has(step.moduleId);
   const remainingSteps = Math.max(0, activeSteps.length - stepIndex - 1);
   const remainingLabel = remainingSteps === 0
     ? (isSw ? "Hatua ya mwisho" : "Final step")
@@ -47350,7 +47355,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
         ref={triggerRef}
         type="button"
         onClick={restartTour}
-        className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 text-[11.5px] font-bold text-emerald-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:from-emerald-100 hover:to-teal-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+        className="dashboard-topbar-tour inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 text-[11.5px] font-bold text-emerald-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:from-emerald-100 hover:to-teal-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
         aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : "Take the Smart Manager onboarding tour"}
         data-onboarding-trigger="true"
       >
@@ -47440,7 +47445,7 @@ function OnboardingTour({ currentUser, company, visibleModules = [], onNavigate,
                     </button>
                   )}
                   <button type="button" onClick={goNext} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/50">
-                    {stepIndex === ONBOARDING_TOUR_STEPS.length - 1 ? (isSw ? "Maliza ziara" : "Finish tour") : (isSw ? "Endelea" : "Next")} <ArrowRight size={14} />
+                    {stepIndex === activeSteps.length - 1 ? (isSw ? "Maliza ziara" : "Finish tour") : (isSw ? "Endelea" : "Next")} <ArrowRight size={14} />
                   </button>
                 </div>
               </div>
@@ -48674,7 +48679,7 @@ function SmartManager() {
           })}
           {!displayedNavigationGroups.some((group) => group.items.some((item) => item.id === "settings")) && <section className="space-y-1" aria-label="Workspace settings">
             {sidebarLabelsVisible && <div className="flex items-center gap-1.5 px-2.5 pt-2 text-[9px] font-bold uppercase tracking-[.16em] text-slate-400"><Settings size={12} className="text-cyan-300" aria-hidden="true" /><span>Workspace</span></div>}
-            <button type="button" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed && isDesktopNavigation ? "justify-center px-0" : ""} ${active === "settings" ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{sidebarLabelsVisible && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-cyan-100" : "text-slate-300"} />}</button>
+            <button type="button" data-tour-target="settings" onClick={() => go("settings")} aria-label="Open workspace settings" aria-current={active === "settings" ? "page" : undefined} title="Settings" className={`relative w-full flex items-center justify-between gap-2 rounded-lg border px-2.5 py-2.5 text-[12px] transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 ${sidebarCollapsed && isDesktopNavigation ? "justify-center px-0" : ""} ${active === "settings" ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${active === "settings" ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Settings size={14} strokeWidth={active === "settings" ? 2.2 : 1.9} /></span>{sidebarLabelsVisible && <span className="truncate">Settings</span>}</span>{!canManage && <Lock size={11} className={active === "settings" ? "text-cyan-100" : "text-slate-300"} />}</button>
           </section>}
         </nav>
 
@@ -48788,6 +48793,14 @@ function SmartManager() {
 
            {/* Right — live status, quick actions, and identity */}
            <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+             {preferences.showGuidedTour && (
+               <OnboardingTour
+                 currentUser={currentUser}
+                 company={company}
+                 visibleModules={visibleModules}
+                 onNavigate={go}
+               />
+             )}
              <RealtimeConnectivityBadge />
             <LiveDateTime />
             {/* Dark mode toggle */}

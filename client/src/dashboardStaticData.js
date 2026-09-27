@@ -709,6 +709,17 @@ const ONBOARDING_TOUR_STEPS = [
     illustration: "💼"
   },
   {
+    id: "crm",
+    moduleId: "crm",
+    roles: ["owner", "admin", "manager", "staff"],
+    title: { en: "Build a dependable customer pipeline", sw: "Jenga mkondo wa wateja unaotegemeka" },
+    description: { en: "Capture leads, qualify opportunities, and keep customer context connected to sales and invoicing.", sw: "Hifadhi leads, pima fursa, na unganisha taarifa za mteja na mauzo pamoja na ankara." },
+    icon: Users,
+    accent: "#F97316",
+    animation: "bounce-subtle",
+    illustration: "🤝"
+  },
+  {
     id: "pos",
     moduleId: "pos",
     roles: ["owner", "admin", "manager", "staff"],
@@ -751,6 +762,39 @@ const ONBOARDING_TOUR_STEPS = [
     illustration: "🪙"
   },
   {
+    id: "procurement",
+    moduleId: "procurement",
+    roles: ["owner", "admin", "manager"],
+    title: { en: "Control purchasing before it becomes cost", sw: "Dhibiti manunuzi kabla hayajawa gharama" },
+    description: { en: "Manage suppliers, purchase orders, approvals, and receiving from one traceable workspace.", sw: "Simamia wasambazaji, oda za manunuzi, approvals, na upokeaji katika eneo moja lenye ufuatiliaji." },
+    icon: ClipboardList,
+    accent: "#8B5CF6",
+    animation: "pulse-slow",
+    illustration: "🧾"
+  },
+  {
+    id: "hr",
+    moduleId: "hr",
+    roles: ["owner", "admin", "manager", "staff", "viewer"],
+    title: { en: "Run people operations with clear boundaries", sw: "Simamia shughuli za watu kwa mipaka iliyo wazi" },
+    description: { en: "Manage employees, departments, leave, invitations, approvals, and governed role access from HR.", sw: "Simamia wafanyakazi, idara, likizo, mialiko, approvals, na access ya roles kupitia HR." },
+    icon: Users,
+    accent: "#F59E0B",
+    animation: "float",
+    illustration: "👤"
+  },
+  {
+    id: "employee-portal",
+    moduleId: "employee-portal",
+    roles: ["owner", "admin", "manager", "staff", "viewer"],
+    title: { en: "Give every team member a focused portal", sw: "Mpe kila mshiriki wa timu portal iliyolenga kazi yake" },
+    description: { en: "Employees can review their own profile, leave, documents, attendance, and requests without seeing restricted modules.", sw: "Wafanyakazi wanaweza kuona profile, likizo, nyaraka, mahudhurio, na maombi yao bila kuona modules zilizozuiwa." },
+    icon: FileText,
+    accent: "#0EA5E9",
+    animation: "pulse-slow",
+    illustration: "🪪"
+  },
+  {
     id: "collaboration",
     moduleId: "collaboration",
     roles: ["owner", "admin", "manager", "staff", "viewer"],
@@ -763,6 +807,61 @@ const ONBOARDING_TOUR_STEPS = [
     accent: "#DB2777",
     animation: "bounce-subtle",
     illustration: "👥"
+  },
+  {
+    id: "reports",
+    moduleId: "reports",
+    roles: ["owner", "admin", "manager", "staff", "viewer"],
+    title: { en: "Turn confirmed records into decisions", sw: "Badili kumbukumbu zilizothibitishwa kuwa maamuzi" },
+    description: { en: "Use reports and analytics to review performance, trends, and operational readiness without invented numbers.", sw: "Tumia reports na analytics kukagua utendaji na mwenendo bila takwimu za kubuni." },
+    icon: TrendingUp,
+    accent: "#1D4ED8",
+    animation: "bounce-subtle",
+    illustration: "📈"
+  },
+  {
+    id: "notifications",
+    moduleId: "notifications",
+    roles: ["owner", "admin", "manager", "staff", "viewer"],
+    title: { en: "Keep attention on what needs action", sw: "Elekeza umakini kwenye kinachohitaji hatua" },
+    description: { en: "Review low stock, overdue work, approvals, and other confirmed attention items from one queue.", sw: "Kagua stock ndogo, kazi zilizochelewa, approvals, na mambo mengine yaliyothibitishwa katika foleni moja." },
+    icon: ReceiptText,
+    accent: "#DC2626",
+    animation: "pulse-slow",
+    illustration: "🔔"
+  },
+  {
+    id: "integrations",
+    moduleId: "integrations",
+    roles: ["owner", "admin"],
+    title: { en: "Connect tools without losing control", sw: "Unganisha tools bila kupoteza udhibiti" },
+    description: { en: "Review integrations, connection status, and server-confirmed sync boundaries before enabling external workflows.", sw: "Kagua integrations, hali ya connection, na mipaka ya sync iliyothibitishwa kabla ya kuwezesha workflows za nje." },
+    icon: Building2,
+    accent: "#0F766E",
+    animation: "spin-slow",
+    illustration: "🔗"
+  },
+  {
+    id: "settings",
+    moduleId: "settings",
+    roles: ["owner", "admin"],
+    title: { en: "Shape the workspace safely", sw: "Panga workspace kwa usalama" },
+    description: { en: "Update branding, access, departments, preferences, security, and role boundaries from governed settings.", sw: "Sasisha branding, access, idara, preferences, security, na mipaka ya roles kupitia settings salama." },
+    icon: ClipboardList,
+    accent: "#475569",
+    animation: "float",
+    illustration: "⚙️"
+  },
+  {
+    id: "support",
+    moduleId: "support",
+    roles: ["owner", "admin", "manager", "staff", "viewer"],
+    title: { en: "Know where to get help", sw: "Jua mahali pa kupata msaada" },
+    description: { en: "Open support when you need product guidance, account help, or a clear route for unresolved issues.", sw: "Fungua support unapohitaji mwongozo wa mfumo, msaada wa account, au njia ya kutatua changamoto." },
+    icon: MessageSquare,
+    accent: "#7C3AED",
+    animation: "bounce-subtle",
+    illustration: "🛟"
   },
   {
     id: "ai",
