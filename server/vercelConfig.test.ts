@@ -9,8 +9,9 @@ describe("Vercel static deployment configuration", () => {
     expect(config.framework).toBe("vite");
     expect(config.outputDirectory).toBe("dist/public");
     expect(config.rewrites).toEqual([
+      { source: "/manus-storage/(.*)", destination: "/api/manus-storage/$1" },
       { source: "/api/(.*)", destination: "/api" },
-      { source: "/(.*)", destination: "/index.html" },
+      { source: "/((?!assets/).*)", destination: "/index.html" },
     ]);
 
     const viteConfig = fs.readFileSync(path.resolve(process.cwd(), "vite.config.ts"), "utf8");
