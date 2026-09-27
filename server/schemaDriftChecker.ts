@@ -20,7 +20,7 @@ const contractManifest: Record<string, SchemaTableContract> = {
   },
   inventory_items: {
     tableName: "inventory_items",
-    expectedColumns: ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data"],
+    expectedColumns: ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data", "image_url"],
     requiredColumns: ["company_id", "name", "status", "amount", "data"],
     forbiddenColumns: [],
   },

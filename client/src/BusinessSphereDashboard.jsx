@@ -1408,14 +1408,14 @@ export function mapContactRow(r) {
 
 export function mapInventoryRow(r) {
   const data = r.data && typeof r.data === "object" ? r.data : {};
-  const sku = r.sku || r.item_sku || data.sku;
+  const sku = String(r.sku || r.item_sku || data.sku || "");
   return {
     sku, dbId: r.id,
     name: r.name || r.item_name || data.item_name || "", category: r.category || data.category || "General", warehouse: r.warehouse_id || r.location || data.warehouse_id || data.location,
     qty: Number(r.qty_on_hand ?? r.quantity ?? data.qty_on_hand ?? data.quantity) || 0, reorder: Number(r.reorder_level ?? data.reorder_level) || 0,
     unitCost: Number(r.unit_cost ?? data.unit_cost ?? r.amount) || 0, unit: r.unit || data.unit || "unit",
     barcode: r.barcode || data.barcode || generateBarcode(sku), expiryDate: r.expiry_date || data.expiry_date || null,
-    imageUrl: r.image_url || data.image_url || data.imageUrl || null,
+    imageUrl: r.image_url || r.imageUrl || data.image_url || data.imageUrl || null,
   };
 }
 
