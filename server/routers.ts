@@ -18,6 +18,7 @@ import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
 import { applyGlobalAdminControlAction, applyGlobalAdminLifecycleAction, getGlobalAdminControlSnapshot, getGlobalAdminExecutiveSnapshot, getGlobalAdminSnapshot, globalAdminActionInput, globalAdminControlInput, globalAdminLifecycleInput, recordGlobalAdminAction } from "./globalAdmin";
 import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
+import { createBusinessNetworkVerification, decidePlatformGovernanceRequest, listMyPlatformGovernanceRequests, listPlatformGovernanceRequests } from "./platformGovernance";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { getWorkspaceSettings, saveWorkspaceSettings } from "./workspaceSettings";
 import { dashboardPreferencesInput, getDashboardPreferences, resetDashboardPreferences, saveDashboardPreferences } from "./dashboardPreferences";
@@ -96,6 +97,11 @@ export const appRouter = router({
     .mutation(({ ctx, input }) => submitPublicFeedback(ctx.req, input)),
   traFiscal: traFiscalRouter,
   globalAdmin: router({
+    governanceQueue: protectedProcedure
+      .query(({ ctx }) => listPlatformGovernanceRequests(ctx.req)),
+    decideGovernance: protectedProcedure
+      .input(z.object({ requestId: z.string().uuid(), decision: z.enum(["approve", "reject"]), note: z.string().max(500).optional() }))
+      .mutation(({ ctx, input }) => decidePlatformGovernanceRequest(ctx.req, input)),
     feedback: protectedProcedure
       .query(({ ctx }) => listWebsiteFeedback(ctx.req)),
     replyFeedback: protectedProcedure
@@ -1118,6 +1124,12 @@ export const appRouter = router({
     decide: protectedProcedure.input(z.object({ approvalId: z.string().min(1), decision: z.enum(["approve", "reject"]), note: z.string().max(500).optional() })).mutation(({ ctx, input }) => decideRoleChangeApproval(ctx.req, input)),
     markRead: protectedProcedure.input(z.object({ notificationId: z.string().min(1) })).mutation(({ ctx, input }) => markNotificationRead(ctx.req, input)),
     dismiss: protectedProcedure.input(z.object({ notificationId: z.string().min(1) })).mutation(({ ctx, input }) => dismissNotification(ctx.req, input)),
+  }),
+  platformGovernance: router({
+    myRequests: protectedProcedure.query(({ ctx }) => listMyPlatformGovernanceRequests(ctx.req)),
+    requestNetworkVerification: protectedProcedure
+      .input(z.object({ networkName: z.string().max(160).optional(), domain: z.string().max(255).optional(), evidence: z.record(z.string(), z.unknown()).optional() }))
+      .mutation(({ ctx, input }) => createBusinessNetworkVerification(ctx.req, input)),
   }),
 
   reportSchedules: router({
