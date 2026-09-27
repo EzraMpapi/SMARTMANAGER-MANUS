@@ -54,7 +54,7 @@ describe("SMART MANAGER UI/UX transformation contract", () => {
 
   it("keeps the authenticated shell accessible and context-preserving", () => {
     expect(shell).toContain('aria-label="Open workspace settings"');
-    expect(shell).toContain('aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}');
+    expect(shell).toContain('aria-label={`Theme mode: ${themeMode}. Activate to switch to ${themeMode === "light" ? "dark" : themeMode === "dark" ? "auto" : "light"} mode`}');
     expect(shell).toContain("aria-pressed={darkMode}");
     expect(shell).toContain('className="sm-page dashboard-main dashboard-mobile-content');
     expect(shell).toContain('aria-label="Operational workspaces"');

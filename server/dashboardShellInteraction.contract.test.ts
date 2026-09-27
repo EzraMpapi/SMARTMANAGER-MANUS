@@ -99,7 +99,7 @@ describe("dashboard shell interaction refinement", () => {
   it("keeps direct application navigation behind the protected route and SPA rewrite", () => {
     expect(app).toContain('<Route path="/app">');
     expect(app).toContain('<ProtectedSurface>');
-    expect(vercelConfig).toContain('"source": "/(.*)"');
+    expect(vercelConfig).toContain('"source": "/((?!assets/).*)"');
     expect(vercelConfig).toContain('"destination": "/index.html"');
   });
 
