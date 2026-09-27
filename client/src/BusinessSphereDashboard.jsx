@@ -6169,7 +6169,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const roleChangeRows = roleChangeApprovalsQuery?.data?.approvals || [];
   const pendingRoleChangeRows = roleChangeRows.filter((row) => row.status === "Pending Review");
   const reviewableRoleChangeRows = pendingRoleChangeRows.filter((row) => row.data?.targetUserId !== currentUser.id);
-  const canReviewRoleChanges = PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role));
+  const canReviewRoleChanges = ["Platform Administrator", "Super Administrator"].includes(canonicalRoleId(currentUser.role));
   const decideRoleChangeMutation = trpc.decideRoleChangeApproval.useMutation({
     onSuccess: () => { roleChangeApprovalsQuery?.refetch?.(); notify("Role-change decision recorded ✓"); },
     onError: (error) => notify(error.message || "The role-change decision could not be saved.", "error"),
@@ -37520,7 +37520,7 @@ function RoleChangeApprovalPanel({ currentUser }) {
   const approvals = trpc.listRoleChangeApprovals.useQuery(undefined, { retry: false });
   const requestMutation = trpc.requestRoleChangeApproval.useMutation({ onSuccess: () => { setRequestedRole(""); setReason(""); approvals.refetch(); notify("Role change submitted for independent review. Your active access has not changed."); } });
   const decideMutation = trpc.decideRoleChangeApproval.useMutation({ onSuccess: () => { approvals.refetch(); notify("Role-change decision recorded. Approved access updates only after the server confirms it."); } });
-  const canDecide = PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role));
+  const canDecide = ["Platform Administrator", "Super Administrator"].includes(canonicalRoleId(currentUser.role));
   const rows = approvals.data?.approvals || [];
   const markReadMutation = trpc.roleChangeApprovals.markRead.useMutation({
     onSuccess: () => approvals.refetch(),
@@ -43383,6 +43383,28 @@ function MicrosoftGlyph({ size = 18 }) {
 
 const WORKSPACE_BRAND_SWATCHES = ["#0B5D3B", "#16A34A", "#2563EB", "#7C3AED", "#D97706", "#DC2626", "#0F766E", "#0F172A"];
 const JOIN_COMPANY_ROLE_OPTIONS = [
+  { id: "Platform Administrator", label: "Platform Administrator (approval required)" },
+  { id: "Super Administrator", label: "Super Administrator (approval required)" },
+  { id: "Organization Owner", label: "Organization Owner (approval required)" },
+  { id: "CEO", label: "CEO (approval required)" },
+  { id: "CFO", label: "CFO (approval required)" },
+  { id: "Finance Manager", label: "Finance Manager (approval required)" },
+  { id: "HR Manager", label: "HR Manager (approval required)" },
+  { id: "Sales Manager", label: "Sales Manager (approval required)" },
+  { id: "Institution Administrator", label: "Institution Administrator (approval required)" },
+  { id: "Branch Manager", label: "Branch Manager (approval required)" },
+  { id: "Money Agent Manager", label: "Money Agent Manager (approval required)" },
+  { id: "Property Administrator", label: "Property Administrator (approval required)" },
+  { id: "Property Manager", label: "Property Manager (approval required)" },
+  { id: "Procurement Officer", label: "Procurement Officer (approval required)" },
+  { id: "Warehouse Manager", label: "Warehouse Manager (approval required)" },
+  { id: "Project Manager", label: "Project Manager (approval required)" },
+  { id: "Customer Support Agent", label: "Customer Support Agent (approval required)" },
+  { id: "Clinic Administrator", label: "Clinic Administrator (approval required)" },
+  { id: "Doctor", label: "Doctor (approval required)" },
+  { id: "Nurse", label: "Nurse (approval required)" },
+  { id: "Pharmacist", label: "Pharmacist (approval required)" },
+  { id: "School Administrator", label: "School Administrator (approval required)" },
   { id: "Employee", label: "Employee" },
   { id: "External Client", label: "External Client" },
   { id: "Supplier", label: "Supplier" },
@@ -47986,7 +48008,7 @@ function SmartManager() {
 
   // Role-based access state initialized at the top of SmartManager to prevent temporal dead zones.
   const roleChangeApprovalsQuery = trpc.listRoleChangeApprovals.useQuery(undefined, {
-    enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id && PASSKEY_READINESS_ROLES.has(canonicalRoleId(currentUser.role))),
+    enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id),
     retry: false,
     refetchInterval: 10000,
   });

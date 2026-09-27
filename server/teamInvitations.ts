@@ -5,11 +5,13 @@ import { ENV } from "./_core/env";
 import { resolveVerifiedProfile } from "./aiApprovals";
 import { getBearerToken } from "./_core/authHeaders";
 import { sendTransactionalEmail } from "./transactionalEmail";
+import { createGovernanceRequestForProfile } from "./platformGovernance";
 
 const INVITATION_TABLE = "team_invitations";
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const INVITATION_MANAGER_ROLES = new Set(["Organization Owner", "CEO", "Super Administrator", "System Administrator", "HR Manager"]);
-const INVITABLE_ROLES = new Set(["Finance Manager", "HR Manager", "Sales Manager", "Sales Representative", "Warehouse Staff", "Accountant", "Viewer"]);
+const INVITABLE_ROLES = new Set(["Platform Administrator", "Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager", "HR Manager", "Sales Manager", "Sales Representative", "Institution Administrator", "Branch Manager", "Money Agent Manager", "Money Agent", "Supervisor", "Property Administrator", "Property Manager", "Landlord / Owner", "Property Agent", "Tenant", "Maintenance Staff", "Property Finance Officer", "Procurement Officer", "Warehouse Manager", "Warehouse Staff", "Project Manager", "Customer Support Agent", "Clinic Administrator", "Doctor", "Nurse", "Laboratory Technician", "Pharmacist", "Receptionist", "Billing Officer", "School Administrator", "Accountant", "Viewer", "Employee", "Auditor", "Customer", "External Client", "Supplier"]);
+const ELEVATED_INVITATION_ROLES = new Set(Array.from(INVITABLE_ROLES).filter((role) => !["Employee", "External Client", "Supplier", "Customer", "Tenant"].includes(role)));
 
 type InvitationStatus = "pending" | "accepted" | "revoked" | "expired" | "delivery_failed";
 type InviteInput = { fullName: string; email: string; role: string };
@@ -249,9 +251,11 @@ async function attachProfileToInvitation(profileId: string, companyId: string, r
   if (current[0]?.company_id && current[0].company_id !== companyId) throw new TRPCError({ code: "CONFLICT", message: "Your profile already belongs to another workspace." });
   const method = current[0]?.id ? "PATCH" : "POST";
   const path = current[0]?.id ? `profiles?id=eq.${encodeURIComponent(profileId)}` : "profiles";
-  const response = await fetch(`${url}/rest/v1/${path}`, { method, headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json", Prefer: "return=representation" }, body: JSON.stringify({ ...(current[0]?.id ? {} : { id: profileId, full_name: fullName }), company_id: companyId, role }) });
+  const effectiveRole = ELEVATED_INVITATION_ROLES.has(role) ? "Employee" : role;
+  const response = await fetch(`${url}/rest/v1/${path}`, { method, headers: { apikey: key, authorization: `Bearer ${key}`, "content-type": "application/json", Prefer: "return=representation" }, body: JSON.stringify({ ...(current[0]?.id ? {} : { id: profileId, full_name: fullName }), company_id: companyId, role: effectiveRole }) });
   const rows = await response.json().catch(() => []) as Array<{ id?: string }>;
   if (!response.ok || !rows[0]?.id) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The workspace could not be assigned to your profile." });
+  return { effectiveRole };
 }
 
 export async function acceptTeamInvitation(req: CreateExpressContextOptions["req"], tokenValue: string) {
@@ -262,7 +266,10 @@ export async function acceptTeamInvitation(req: CreateExpressContextOptions["req
   if (!row || row.status !== "pending" || isInvitationExpired(row.expires_at)) throw new TRPCError({ code: "NOT_FOUND", message: "This invitation is invalid or has expired." });
   const identity = await authenticatedIdentity(token);
   if (identity.email !== row.email) throw new TRPCError({ code: "FORBIDDEN", message: "Sign in with the email address that received this invitation." });
-  await attachProfileToInvitation(identity.id, row.company_id, row.role, row.full_name);
+  const attached = await attachProfileToInvitation(identity.id, row.company_id, row.role, row.full_name);
+  if (attached.effectiveRole !== row.role) {
+    await createGovernanceRequestForProfile({ id: identity.id, company_id: row.company_id, role: attached.effectiveRole, full_name: row.full_name, email: identity.email }, { requestType: "role_change", targetUserId: identity.id, payload: { kind: "invitation_role_request", requestedRole: row.role, currentRole: attached.effectiveRole, invitationId: row.invitation_id, reason: "Elevated role requested by team invitation." } });
+  }
   await updateInvitation(row.id, { status: "accepted", accepted_by_profile_id: identity.id });
-  return { companyId: row.company_id, role: row.role, fullName: row.full_name };
+  return { companyId: row.company_id, role: attached.effectiveRole, requestedRole: row.role, approvalPending: attached.effectiveRole !== row.role, fullName: row.full_name };
 }
