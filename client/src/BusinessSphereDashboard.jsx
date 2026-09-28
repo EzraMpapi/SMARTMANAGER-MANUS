@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, useContext, lazy, Suspense } from "react";
+import { useLanguage } from "./contexts/LanguageContext";
 import { createPortal } from "react-dom";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase, Share2,
@@ -47638,6 +47639,7 @@ function OfflineSyncBanner() {
 }
 
 function SmartManager() {
+  const { lang, setLang, languageOptions, t } = useLanguage();
   const centralizedAuth = useAuthContext();
   const { preferences, updatePreference, formatMoney } = useDashboardPreferences();
   useEffect(() => {
@@ -48934,7 +48936,7 @@ function SmartManager() {
                <span className="h-5 w-px bg-slate-200" aria-hidden="true" />
                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500"><ActiveModuleIcon size={15} strokeWidth={2} aria-hidden="true" /></span>
                <span className="min-w-0">
-                 <span className="block text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">Workspace area</span>
+                 <span className="block text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">{t("workspaceArea")}</span>
                  <span className="block max-w-[150px] truncate text-[12px] font-semibold text-slate-700">{activeModuleLabel}</span>
                </span>
              </div>
@@ -48942,6 +48944,14 @@ function SmartManager() {
 
            {/* Right — live status, quick actions, and identity */}
            <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+             <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")}>
+               <Globe size={14} className="text-emerald-700" aria-hidden="true" />
+               <span className="sr-only">{t("language")}</span>
+               <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="max-w-[92px] appearance-none bg-transparent pr-0 outline-none">
+                 {languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}
+               </select>
+               <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
+             </label>
              <RealtimeConnectivityBadge />
             <LiveDateTime />
             {/* Dark mode toggle */}
@@ -48956,11 +48966,11 @@ function SmartManager() {
               {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
              <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
-             <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label="Open messages" title="Messages">
+             <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label={t("messages")} title={t("messages")}>
                <MessageCircle size={17} strokeWidth={1.75} aria-hidden="true" />
                <span className="dashboard-topbar-reference-badge" aria-label="3 unread messages">3</span>
              </button>
-             <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label="Open help and support" title="Help and support">
+             <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label={t("helpSupport")} title={t("helpSupport")}>
                <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
              </button>
              <div className="dashboard-topbar-divider hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
@@ -48979,7 +48989,8 @@ function SmartManager() {
               title="Search everything"
             >
               <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
-              <span className="dashboard-topbar-search-label truncate">Search modules, records, and actions</span>
+              {/* Search modules, records, and actions — localized through the shared language context. */}
+              <span className="dashboard-topbar-search-label truncate">{t("searchEverything")}</span>
               <kbd className="ml-auto hidden shrink-0 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
               <ArrowRight size={14} className="ml-auto shrink-0 text-slate-300 sm:hidden" aria-hidden="true" />
             </button>

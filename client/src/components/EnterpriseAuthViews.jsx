@@ -95,8 +95,8 @@ export function writeAuthBranding(branding) {
 }
 
 export function EnterpriseAuthShell({ title, subtitle, children, asideTitle = "Your business, in command.", asideCopy = "Bring finance, sales, people, inventory, and insight together in one secure workspace.", motion = false, authSurface = "login" }) {
-  const { lang, setLang } = useLanguage();
-  const ui = copy[lang];
+  const { lang, setLang, languageOptions } = useLanguage();
+  const ui = copy[lang] || copy.en;
   const [industry, setIndustry] = useState(readRememberedOrganizationIndustryFocus);
   const [authBranding] = useState(readAuthBranding);
   const backgroundImage = authSurface === "onboarding" ? authBranding.onboardingBackgroundImage : authBranding.loginBackgroundImage;
@@ -115,7 +115,7 @@ export function EnterpriseAuthShell({ title, subtitle, children, asideTitle = "Y
       <main className="relative flex flex-1 items-center justify-center px-4 py-7 sm:px-8 sm:py-10 lg:px-14"><LoginModuleEcosystem variant="mobile" industry={industry} /><section className="relative z-10 w-full max-w-[470px]">
         <header className="sm-auth-mobile-brand mb-7 flex flex-col items-center text-center lg:hidden"><BrandLogo variant="full" priority className="w-[min(22rem,92vw)] rounded-[1.5rem] shadow-[0_16px_38px_rgba(0,120,73,.14)]" /><p className="sr-only">Simamia Biashara Yako. Popote, Wakati Wote.</p><div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-emerald-800"><TanzaniaMark />{ui.secure}</div></header>
         <div className={`sm-auth-card rounded-[28px] border border-emerald-950/8 bg-white/95 p-5 shadow-[0_24px_60px_rgba(19,58,42,.11)] backdrop-blur sm:p-8 ${motion ? "auth-card-enter" : ""}`}><div className="mb-7"><p className="mb-2 text-[10px] font-bold uppercase tracking-[.18em] text-emerald-700">{ui.workspace}</p><h2 className="text-[27px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins', sans-serif" }}>{title}</h2><p className="mt-2 text-[13.5px] leading-6 text-slate-500">{subtitle}</p></div>{children}</div>
-        <footer className="mt-5 flex flex-col items-center gap-3 text-center"><p className="flex items-center gap-2 text-[11px] leading-5 text-slate-500"><TanzaniaMark />{ui.madeIn} · {ui.protected}</p><label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm"><Globe2 size={14} aria-hidden="true" /><span className="sr-only">Language</span><select value={lang} onChange={(event) => setLang(event.target.value)} className="appearance-none bg-transparent pr-1 outline-none"><option value="sw">Kiswahili</option><option value="en">English</option></select><ChevronDown size={13} aria-hidden="true" /></label></footer>
+        <footer className="mt-5 flex flex-col items-center gap-3 text-center"><p className="flex items-center gap-2 text-[11px] leading-5 text-slate-500"><TanzaniaMark />{ui.madeIn} · {ui.protected}</p><label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm"><Globe2 size={14} aria-hidden="true" /><span className="sr-only">Language</span><select value={lang} onChange={(event) => setLang(event.target.value)} className="appearance-none bg-transparent pr-1 outline-none">{languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}</select><ChevronDown size={13} aria-hidden="true" /></label></footer>
       </section></main>
     </div>
   </div>;
@@ -133,7 +133,7 @@ export function PasswordStrengthMeter({ password }) {
 }
 
 export function EnterpriseLoginView({ onSignIn, onSignup, onForgot, onOAuth, onPasskey, onClearOAuthError, oauthProvider = "google", toMessage, configured, initialError = null, terminalDiagnostic = null }) {
-  const { lang } = useLanguage(); const ui = copy[lang];
+  const { lang } = useLanguage(); const ui = copy[lang] || copy.en;
   const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [rememberMe, setRememberMe] = useState(true); const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState(null);
   useEffect(() => { if (initialError) setError(initialError); }, [initialError]);
   async function submit(event) { event.preventDefault(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !password) { setError(lang === "sw" ? "Ingiza barua pepe ya kazi na nenosiri lako kuendelea." : "Enter your work email and password to continue."); return; } setBusy(true); setError(null); try { await onSignIn(email.trim(), password, rememberMe); } catch (signInError) { setError(toMessage(signInError)); } finally { setBusy(false); } }
