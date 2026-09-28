@@ -8577,6 +8577,19 @@ function CRM({ crm, invoices, expenses, suppliers }) {
     }
   }
 
+  async function shareInventoryReport() {
+    const reportItems = rowsOf(inventory);
+    const lowItems = reportItems.filter((item) => Number(item.qty) <= Number(item.reorder || 0));
+    const stockValue = reportItems.reduce((sum, item) => sum + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
+    const preview = reportItems.slice(0, 10).map((item) => `${item.name}: ${item.qty} ${item.unit || "units"} (${stockStatus(item.qty, item.reorder)})`).join("\n");
+    const result = await openDeviceShare({
+      title: "Inventory Stock Report",
+      text: `Inventory Stock Report\n${reportItems.length} SKUs · ${lowItems.length} low-stock items · Stock value TZS ${money(Math.round(stockValue))}k\n\n${preview || "No inventory items recorded."}`,
+      onFallback: () => notify("Inventory report copied. Choose WhatsApp or Email from your device to share it."),
+    });
+    if (result === "shared") notify("Share sheet opened for the inventory report — choose WhatsApp or Email");
+  }
+
   return (
     <div className="space-y-5">
       {IS_CONFIGURED && error && (
@@ -12814,6 +12827,9 @@ function Inventory({ inventory, suppliersHook }) {
             className="flex items-center gap-1.5 text-[12px] font-semibold text-[#16A34A] border border-[#16A34A]/25 bg-[#F0FDF4] px-3 py-2 rounded-lg">
             <Download size={12}/> CSV
           </button>
+          <button type="button" onClick={shareInventoryReport} className="flex items-center gap-1.5 text-[12px] font-semibold text-[#16A34A] border border-[#16A34A]/25 bg-[#F0FDF4] px-3 py-2 rounded-lg">
+            <Share2 size={12}/> Share
+          </button>
           <button onClick={()=>{
             const co2=window.__smartManagerCompany||{};
             const lowItems=rowsOf(inventory).filter(it=>it.qty<=(it.reorder||0));
@@ -14711,6 +14727,15 @@ function PurchaseOrderPanel({ order, onClose, onReceive, onCancel }) {
       setSaving(false);
     }
   }
+  async function sharePurchaseOrder() {
+    const lines = (order.items || []).map((item) => `• ${item.name}: ${item.qty} × TZS ${money(item.cost)}k = TZS ${money(Math.round(item.qty * item.cost))}k`).join("\n");
+    const result = await openDeviceShare({
+      title: `Purchase Order ${order.id}`,
+      text: `Purchase Order ${order.id}\nSupplier: ${order.supplier}\nStatus: ${order.status}\nExpected delivery: ${order.expectedDate || "Not specified"}\n\n${lines}\n\nTotal: TZS ${money(Math.round(total))}k`,
+      onFallback: () => notify("Purchase order copied. Choose WhatsApp or Email from your device to share it."),
+    });
+    if (result === "shared") notify(`Share sheet opened for purchase order ${order.id} — choose WhatsApp or Email`);
+  }
   return (
     <div className="fixed inset-0 z-30 flex justify-end">
       <div className="absolute inset-0 bg-[#111827]/20 backdrop-blur-[2px]" onClick={onClose} />
@@ -14746,6 +14771,9 @@ function PurchaseOrderPanel({ order, onClose, onReceive, onCancel }) {
           </div>
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex flex-col gap-2">
+          <button type="button" onClick={sharePurchaseOrder} className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-[#16A34A] border border-[#16A34A]/25 bg-[#F0FDF4] rounded-lg py-2.5 hover:bg-[#DCFCE7]">
+            <Share2 size={14} /> Share purchase order
+          </button>
           {order.status === "Approved" && (
             <button onClick={receiveOrder} disabled={saving} className="btn-primary text-white text-[13px] font-semibold rounded-lg py-2.5 disabled:opacity-50">{saving ? "Saving…" : "Mark Received"}</button>
           )}

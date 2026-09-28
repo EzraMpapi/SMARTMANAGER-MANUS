@@ -18,6 +18,18 @@ describe("share actions", () => {
     expect(dashboard).toContain("navigator.share");
   });
 
+  it("offers native sharing for inventory reports", () => {
+    expect(dashboard).toContain("async function shareInventoryReport()");
+    expect(dashboard).toContain('title: "Inventory Stock Report"');
+    expect(dashboard).toContain('<Share2 size={12}/> Share');
+  });
+
+  it("offers native sharing for client purchase orders", () => {
+    expect(dashboard).toContain("async function sharePurchaseOrder()");
+    expect(dashboard).toContain('title: `Purchase Order ${order.id}`');
+    expect(dashboard).toContain("Share purchase order");
+  });
+
   it("keeps direct WhatsApp and email links as explicit fallbacks", () => {
     expect(dashboard).toContain("https://wa.me/");
     expect(dashboard).toContain("mailto:");
