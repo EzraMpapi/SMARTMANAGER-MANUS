@@ -13,6 +13,16 @@ describe("Tanzania-first authentication branding and localization", () => {
     expect(languageSource).toContain('localStorage.setItem("smart_manager_lang", newLang)');
   });
 
+  it("supports the global international language registry and shared preference", () => {
+    expect(languageSource).toContain('"fr"');
+    expect(languageSource).toContain('"es"');
+    expect(languageSource).toContain('"pt"');
+    expect(languageSource).toContain('"zh"');
+    expect(languageSource).toContain('"ar"');
+    expect(languageSource).toContain('localStorage.setItem("bs_lang", newLang)');
+    expect(dashboardSource).toContain("dashboard-topbar-language-control");
+    expect(dashboardSource).toContain("languageOptions.map");
+  });
   it("keeps the approved lockup on the workspace-completion screen and auth background", () => {
     expect(dashboardSource).toContain('SMART <span className="text-[#008A45]">MANAGER</span>');
     expect(dashboardSource).toContain("Simamia Biashara Yako. Popote, Wakati Wote.");

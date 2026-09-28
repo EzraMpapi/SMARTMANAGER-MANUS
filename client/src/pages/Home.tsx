@@ -43,7 +43,7 @@ const PUBLIC_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
-  const { lang, setLang, t } = useLanguage();
+  const { lang, setLang, t, languageOptions } = useLanguage();
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyError, setPasskeyError] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -88,15 +88,13 @@ export default function Home() {
             >
               {theme === "dark" ? <Sun size={15} className="text-[#C9A96E]" /> : <Moon size={15} className="text-[#C9A96E]" />}
             </button>
-            <button
-              type="button"
-              onClick={() => setLang(lang === "en" ? "sw" : "en")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/10"
-              title="Switch language"
+            <label
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-white/10"
+              title={t("switchLanguage")}
             >
               <Globe size={14} className="text-[#16A34A]" />
-              <span>{lang.toUpperCase()}</span>
-            </button>
+              <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value as typeof lang)} className="max-w-[92px] appearance-none bg-transparent outline-none">{languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}</select>
+            </label>
           </div>
 
           <div className="flex items-center gap-2">
