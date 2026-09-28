@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, useContext, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import {
-  LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase,
+  LayoutDashboard, Users, ShoppingCart, Package, Wallet, Briefcase, Share2,
   Factory, Truck, Megaphone, Store, FileText, Brain, Settings,
   Search, Bell, ChevronDown, Plus, Phone, Mail, Building2, TrendingUp,
   TrendingDown, MoreHorizontal, ArrowUpRight, ArrowDownRight, Filter, X, Star,
@@ -3002,6 +3002,19 @@ function PostCreateDispatch({ company, crm }) {
   ].filter(l => l !== null).join("\n");
 
   // ── Actions ──────────────────────────────────────────────────────────
+  async function shareInvoice() {
+    const result = await openDeviceShare({
+      title: `Invoice ${inv.id}`,
+      text: `${waMsg}\n\n${emailBody}`,
+      onFallback: () => notify("Invoice details copied. Choose WhatsApp or Email from your device to share it."),
+    });
+    if (result === "shared") {
+      setSent(s => ({ ...s, share: true }));
+      notify(`Share sheet opened for invoice ${inv.id} — choose WhatsApp or Email`);
+      logAudit("Invoice share sheet opened", "Sales", co.owner || "System", `${inv.id} → ${inv.customer}`);
+    } else if (result === "copied") setSent(s => ({ ...s, share: true }));
+  }
+
   function sendWhatsApp() {
     if (!phone) {
       // No phone — open WA Center pre-loaded
@@ -3060,6 +3073,16 @@ function PostCreateDispatch({ company, crm }) {
 
   // ── Render ────────────────────────────────────────────────────────────
   const ACTIONS = [
+    {
+      id: "share",
+      label: "Share invoice",
+      sub: "Choose WhatsApp, Email, or another app",
+      icon: "↗",
+      color: "#16A34A",
+      bg: "#F0FDF4",
+      border: "#BBF7D0",
+      fn: shareInvoice,
+    },
     {
       id: "whatsapp",
       label: phone ? "Send via WhatsApp" : "WhatsApp Center",
@@ -3232,6 +3255,19 @@ function SendReceiptPanel() {
   );
   const subject = encodeURIComponent(`Receipt for ${receipt.invoiceId} — ${receipt.customer}`);
 
+  async function shareReceipt() {
+    const receiptText = `Receipt ${receipt.invoiceId}\nPayment of TZS ${money(Math.round(receipt.amount))}k received on ${receipt.date} via ${receipt.method}.\nCustomer: ${receipt.customer}`;
+    const result = await openDeviceShare({
+      title: `Receipt ${receipt.invoiceId}`,
+      text: receiptText,
+      onFallback: () => notify("Receipt details copied. Choose WhatsApp or Email from your device to share it."),
+    });
+    if (result === "shared") {
+      setSent((s) => ({ ...s, share: true }));
+      notify("Share sheet opened — choose WhatsApp or Email");
+    } else if (result === "copied") setSent((s) => ({ ...s, share: true }));
+  }
+
   function sendViaWhatsApp() {
     const num = phone.replace(/[\s\-\(\)]/g, "");
     window.open(`https://wa.me/${num}?text=${msg}`, "_blank");
@@ -3319,6 +3355,7 @@ function SendReceiptPanel() {
   }
 
   const CHANNELS = [
+    { id: "share", label: "Share", icon: Share2, color: "#16A34A", bg: "#F0FDF4", border: "#86EFAC", fn: shareReceipt, need: true, hint: "Choose WhatsApp, Email, or another app" },
     { id: "whatsapp", label: "WhatsApp", icon: MessageCircle, color: "#22C55E", bg: "#F0FDF4", border: "#86EFAC", fn: sendViaWhatsApp, need: phone, hint: "wa.me link — opens WhatsApp, you tap Send" },
     { id: "email", label: "Email", icon: Mail, color: "#3B82F6", bg: "#EFF6FF", border: "#93C5FD", fn: sendViaEmail, need: email, hint: "mailto: link — opens your email client" },
     { id: "sms", label: "SMS", icon: MessageSquare, color: "#F59E0B", bg: "#FFFBEB", border: "#FCD34D", fn: sendViaSMS, need: phone, hint: "sms: link — opens your SMS app" },
@@ -3349,7 +3386,7 @@ function SendReceiptPanel() {
           </div>
 
           {/* Channel buttons */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {CHANNELS.map((ch) => {
               const Icon = ch.icon;
               const done = sent[ch.id];
@@ -3818,6 +3855,30 @@ const seedLeads = [
 ];
 
 const money = (n) => new Intl.NumberFormat("en-US").format(n);
+
+// Use the operating system share sheet when available. On Android this gives
+// the user WhatsApp, Email, and every other installed sharing app in one
+// consistent place. Desktop browsers without Web Share fall back to copying
+// the message so sharing never silently fails.
+async function openDeviceShare({ title, text, url, onFallback }) {
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      await navigator.share({ title, text, ...(url ? { url } : {}) });
+      return "shared";
+    }
+  } catch (error) {
+    if (error?.name === "AbortError") return "cancelled";
+  }
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText([text, url].filter(Boolean).join("\n\n"));
+      onFallback?.();
+      return "copied";
+    }
+  } catch { /* clipboard is also optional in restricted browsers */ }
+  onFallback?.();
+  return "unavailable";
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SMART ALERT ENGINE
