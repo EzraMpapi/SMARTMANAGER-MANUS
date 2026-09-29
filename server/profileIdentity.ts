@@ -95,7 +95,7 @@ async function getIdentityRpc(token: string) {
 }
 
 async function basicProfile(token: string, profileId: string, companyId: string) {
-  const { response, body } = await requestJson<ProfileRow[]>(`profiles?select=id,company_id,full_name,email,role,customer_ref,is_active,created_at,updated_at&id=eq.${encodeURIComponent(profileId)}&company_id=eq.${encodeURIComponent(companyId)}&limit=1`, token);
+  const { response, body } = await requestJson<ProfileRow[]>(`profiles?select=id,company_id,full_name,email,role,customer_ref,is_active,preferred_language,created_at,updated_at&id=eq.${encodeURIComponent(profileId)}&company_id=eq.${encodeURIComponent(companyId)}&limit=1`, token);
   const rows = rowsOf<ProfileRow>(body);
   if (!response.ok || !rows[0]) throw new TRPCError({ code: "FORBIDDEN", message: "Your verified profile could not be read in this workspace." });
   return rows[0];

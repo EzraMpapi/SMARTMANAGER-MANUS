@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { trpc } from "../lib/trpc";
+import { useAuthContext } from "./AuthContext";
 
 export type Lang = "en" | "sw" | "fr" | "es" | "pt" | "zh" | "ar" | "de" | "hi" | "ja";
 
@@ -78,7 +80,42 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const auth = useAuthContext();
+  const liveSession = Boolean(auth.configured && auth.session?.access_token && auth.isAuthenticated);
+  const authenticatedUserId = auth.user?.id;
+  const profileQuery = trpc.profileIdentity.get.useQuery(undefined, {
+    enabled: liveSession,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+  const persistLanguageMutation = trpc.profileIdentity.update.useMutation();
   const [lang, setLangState] = useState<Lang>(initialLanguage);
+  const [profileHydrated, setProfileHydrated] = useState(!liveSession);
+
+  useEffect(() => {
+    if (liveSession) setProfileHydrated(false);
+  }, [authenticatedUserId, liveSession]);
+
+  useEffect(() => {
+    if (!liveSession) {
+      setProfileHydrated(true);
+      return;
+    }
+    if (profileQuery.isPending || profileQuery.isFetching) return;
+    const remoteProfile = profileQuery.data?.profile;
+    const remoteLanguage = remoteProfile && remoteProfile.id === authenticatedUserId
+      ? normalizeLanguage(profileQuery.data?.preferences?.language || remoteProfile.preferredLanguage)
+      : null;
+    if (remoteLanguage) {
+      setLangState(remoteLanguage);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("smart_manager_lang", remoteLanguage);
+        localStorage.setItem("bs_lang", remoteLanguage);
+      }
+    }
+    setProfileHydrated(true);
+  }, [authenticatedUserId, liveSession, profileQuery.data, profileQuery.isFetching, profileQuery.isPending]);
+
   const setLang = (newLang: Lang) => {
     setLangState(newLang);
     if (typeof window !== "undefined") {
@@ -87,6 +124,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.lang = newLang;
       document.documentElement.dir = LANGUAGE_OPTIONS.find((option) => option.code === newLang)?.dir || "ltr";
       window.dispatchEvent(new CustomEvent("smart-manager:language-changed", { detail: { lang: newLang } }));
+    }
+    if (liveSession && profileHydrated && profileQuery.data?.profile?.id === authenticatedUserId) {
+      persistLanguageMutation.mutate({ preferredLanguage: newLang });
     }
   };
   useEffect(() => {
