@@ -22,14 +22,15 @@ function installProfileFetch({ extended = true, includeEmployee = true, includeN
       return extended ? json({ id: "user-1", companyId: "company-1", fullName: "Person Example", email: "person@example.com", role: "Employee", isActive: true, preferredName: "Person", notificationPreferences: { email: true, push: true, sms: false }, updatedAt: "2026-08-23T08:00:00.000Z" }) : json({ message: "function not found" }, 404);
     }
     if (url.includes("/rest/v1/rpc/update_current_profile_identity")) {
-      expect(body).toEqual({ p_payload: { preferredName: "Asha" } });
+      if (body?.p_payload?.preferredName) expect(body).toEqual({ p_payload: { preferredName: "Asha" } });
+      if (body?.p_payload?.preferredLanguage) expect(body).toEqual({ p_payload: { preferredLanguage: "sw" } });
       return json({ id: "user-1", companyId: "company-1", fullName: "Asha Example", email: "person@example.com", role: "Employee", isActive: true, preferredName: "Asha", updatedAt: "2026-08-23T08:01:00.000Z" });
     }
     if (url.includes("/rest/v1/rpc/set_current_profile_avatar")) {
       if (avatarRpcStatus !== 200) return json({ message: "database confirmation failed" }, avatarRpcStatus);
       return json({ id: "user-1", companyId: "company-1", fullName: "Person Example", email: "person@example.com", role: "Employee", isActive: true, avatarUrl: "https://storage.example/avatar.jpg" });
     }
-    if (url.includes("/rest/v1/profiles?")) return json([{ id: "user-1", company_id: "company-1", full_name: "Person Example", email: "person@example.com", role: "Employee", is_active: true, updated_at: "2026-08-23T08:00:00.000Z" }]);
+    if (url.includes("/rest/v1/profiles?")) return json([{ id: "user-1", company_id: "company-1", full_name: "Person Example", email: "person@example.com", role: "Employee", is_active: true, preferred_language: "fr", updated_at: "2026-08-23T08:00:00.000Z" }]);
     if (url.includes("/rest/v1/companies?")) return json([{ id: "company-1", name: "Example Workspace", category: "services", region: "Dar es Salaam", country: "Tanzania" }]);
     if (url.includes("/rest/v1/hr_employees?")) return includeEmployee ? json([{ id: "employee-1", company_id: "company-1", profile_id: "user-1", employee_number: "EMP-001", department_id: "department-1", position_id: "position-1", timezone: "Africa/Dar_es_Salaam", status: "Active" }]) : json([]);
     if (url.includes("/rest/v1/hr_notifications?")) return includeNotifications ? json([{ id: "notification-1", title: "Welcome", body: "Welcome to the workspace", type: "system", read_at: null, created_at: "2026-08-23T07:00:00.000Z" }]) : json([]);
@@ -61,6 +62,17 @@ describe("profile identity center service", () => {
     const urls = (global.fetch as any).mock.calls.map((call: any[]) => String(call[0]));
     expect(urls.some((url: string) => url.includes("id=eq.user-1") && url.includes("company_id=eq.company-1"))).toBe(true);
     expect(urls.some((url: string) => url.includes("profile_id=eq.user-1") && url.includes("company_id=eq.company-1"))).toBe(true);
+  });
+
+  it("hydrates preferred language from the profile fallback and persists a new language", async () => {
+    resolveVerifiedProfile.mockResolvedValue({ profile: { id: "user-1", company_id: "company-1", role: "Employee", full_name: "Person Example", customer_ref: null }, token: "session-token" });
+    installProfileFetch({ extended: false });
+    const loaded = await getProfileIdentity(request());
+    expect(loaded.profile.preferredLanguage).toBe("fr");
+    installProfileFetch({ extended: true });
+    await updateProfileIdentity(request(), { preferredLanguage: "sw" });
+    const updateCall = (global.fetch as any).mock.calls.find((call: any[]) => String(call[0]).includes("update_current_profile_identity"));
+    expect(JSON.parse(updateCall[1].body)).toEqual({ p_payload: { preferredLanguage: "sw" } });
   });
 
   it("rejects a role/company mutation before any database write is attempted", async () => {
