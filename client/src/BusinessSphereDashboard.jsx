@@ -56,7 +56,6 @@ import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, Reset
 import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
 import { ScrollableModuleTabs } from "./components/EnterpriseLayout";
-import { getTraPortalLanguage } from "./lib/traPortalRoute";
 import { calculateCommunityLoan, splitCommunityRepayment, unwrapCommunityMutationResult } from "./lib/communityGroups";
 const HospitalityWorkspace = lazy(() => import("./components/HospitalityWorkspace").then((module) => ({ default: module.HospitalityWorkspace })));
 const SubscriptionBillingWorkspace = lazy(() => import("./components/SubscriptionBillingWorkspace").then((module) => ({ default: module.SubscriptionBillingWorkspace })));
@@ -47259,6 +47258,7 @@ function onboardingTourStorageKey(currentUser, company) {
 }
 
 function OnboardingTour({ enabled = false, showTrigger = false, currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
+  const { lang, t } = useLanguage();
   const userRole = canonicalRoleId(currentUser?.role || "Employee");
   const permittedModuleIds = useMemo(() => {
     const role = roleDefinitionFor(userRole);
@@ -47273,20 +47273,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
     const permitted = ONBOARDING_TOUR_STEPS.filter((item) => permittedModuleIds.has(item.moduleId));
     return permitted.length > 0 ? permitted : ONBOARDING_TOUR_STEPS.filter((item) => item.moduleId === "dashboard");
   }, [permittedModuleIds]);
-  const [lang, setLang] = useState(() => {
-    try { return localStorage.getItem("bs_lang") || "en"; } catch (_e) { return "en"; }
-  });
-  useEffect(() => {
-    function handleStorage() {
-      try { setLang(localStorage.getItem("bs_lang") || "en"); } catch (_e) {}
-    }
-    window.addEventListener("storage", handleStorage);
-    const interval = window.setInterval(handleStorage, 1000);
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.clearInterval(interval);
-    };
-  }, []);
   const isSw = lang === "sw";
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -47462,10 +47448,10 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
         type="button"
         onClick={restartTour}
         className="dashboard-tour-trigger fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-[11.5px] font-bold text-emerald-800 shadow-lg transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/40 sm:bottom-6 sm:right-24"
-        aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : "Take the Smart Manager onboarding tour"}
+        aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : t("takeTour")}
         data-onboarding-trigger="true"
       >
-        <Info size={13} /> {isSw ? "Anza Ziara" : "Take a Tour"}
+        <Info size={13} /> {isSw ? "Anza Ziara" : t("takeTour")}
       </button>}
       {open && typeof document !== "undefined" && createPortal((
         <div
@@ -47497,7 +47483,7 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
                 <BrandLogo variant="compact" className="h-7 w-7" />
                 {isSw ? "Ziara ya Smart Manager" : "Smart Manager tour"}
               </div>
-              <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" aria-label={isSw ? "Funga ziara ya mfumo" : "Close onboarding tour"}>
+              <button type="button" onClick={() => finishTour("dismissed")} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40" aria-label={isSw ? "Funga ziara ya mfumo" : t("closeTour")}>
                 <X size={17} />
               </button>
             </div>
@@ -49093,7 +49079,7 @@ function SmartManager() {
           )}
           {active === "tra_portal" && (
             <Suspense fallback={<div className="h-64 rounded-xl border border-slate-200/80 bg-white skeleton-shimmer" aria-label="Loading TRA portal" />}>
-              <LazyTraPortalModule companyId={company?.id || company?.companyId || "default-company"} lang={getTraPortalLanguage()} onNavigate={go} />
+              <LazyTraPortalModule companyId={company?.id || company?.companyId || "default-company"} lang={lang} onNavigate={go} />
             </Suspense>
           )}
           {active === "marketing" && <Marketing crm={crm} />}
