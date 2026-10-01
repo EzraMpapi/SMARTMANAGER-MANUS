@@ -79,7 +79,8 @@ test.describe("PWA offline fallback", () => {
     await expect(page.getByRole("heading", { name: "You’re offline" })).toBeVisible();
 
     await context.setOffline(false);
-    await page.reload({ waitUntil: "domcontentloaded" });
+    // Chromium emits the online event when connectivity is restored; the app
+    // performs its recovery navigation automatically. Wait for that outcome.
     await expect(page).toHaveTitle(/Smart Manager (— Offline|\| Enterprise ERP)/);
   });
 });
