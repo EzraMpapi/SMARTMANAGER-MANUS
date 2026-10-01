@@ -41,4 +41,13 @@ describe("Tanzania-first authentication branding and localization", () => {
     expect(dashboardSource).not.toContain("setInterval(handleStorage, 1000)");
     expect(traSource).toContain('const { lang: sharedLang } = useLanguage();');
   });
+  it("covers common operational labels and re-localizes dynamic attributes", () => {
+    expect(domLocalizationSource).toContain('"Outstanding"');
+    expect(domLocalizationSource).toContain('"Record Payment"');
+    expect(domLocalizationSource).toContain('"Human Resources"');
+    expect(domLocalizationSource).toContain('const originalKey = `data-i18n-original-${attribute}`;');
+    expect(domLocalizationSource).toContain('const original = element.getAttribute(originalKey) || current;');
+    expect(domLocalizationSource).toContain('if (!element.hasAttribute(originalKey)) element.setAttribute(originalKey, original);');
+    expect((domLocalizationSource.match(/^\s+"[^"\n]+": \{/gm) || []).length).toBeGreaterThan(90);
+  });
 });

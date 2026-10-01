@@ -52,6 +52,71 @@ const PHRASES: Record<string, Phrase> = {
   "Capabilities that radiate authority.": { sw: "Uwezo unaoleta mamlaka.", fr: "Des capacités qui inspirent l’autorité.", es: "Capacidades que transmiten autoridad.", pt: "Capacidades que irradiam autoridade.", zh: "彰显权威的能力。", ar: "قدرات تعكس السلطة.", de: "Funktionen, die Autorität ausstrahlen.", hi: "अधिकार प्रदर्शित करने वाली क्षमताएं।", ja: "権威を放つ機能。" },
   "Help us improve Smart Manager.": { sw: "Tusaidie kuboresha Smart Manager.", fr: "Aidez-nous à améliorer Smart Manager.", es: "Ayúdenos a mejorar Smart Manager.", pt: "Ajude-nos a melhorar o Smart Manager.", zh: "帮助我们改进 Smart Manager。", ar: "ساعدنا على تحسين Smart Manager.", de: "Helfen Sie uns, Smart Manager zu verbessern.", hi: "Smart Manager को बेहतर बनाने में हमारी मदद करें।", ja: "Smart Managerの改善にご協力ください。" },
   "Ready to enter the command center?": { sw: "Uko tayari kuingia kwenye kituo cha udhibiti?", fr: "Prêt à entrer dans le centre de commande ?", es: "¿Listo para entrar en el centro de mando?", pt: "Pronto para entrar no centro de comando?", zh: "准备进入指挥中心了吗？", ar: "هل أنت مستعد لدخول مركز القيادة؟", de: "Bereit für das Kommandozentrum?", hi: "कमांड सेंटर में प्रवेश के लिए तैयार हैं?", ja: "コマンドセンターに入る準備はできましたか？" },
+
+  "Status": { sw: "Hali", fr: "Statut", es: "Estado", pt: "Estado", zh: "状态", ar: "الحالة", de: "Status", hi: "स्थिति", ja: "ステータス" },
+  "Customer": { sw: "Mteja", fr: "Client", es: "Cliente", pt: "Cliente", zh: "客户", ar: "العميل", de: "Kunde", hi: "ग्राहक", ja: "顧客" },
+  "Loading...": { sw: "Inapakia...", fr: "Chargement...", es: "Cargando...", pt: "A carregar...", zh: "正在加载...", ar: "جار التحميل...", de: "Wird geladen...", hi: "लोड हो रहा है...", ja: "読み込み中..." },
+  "Total": { sw: "Jumla", fr: "Total", es: "Total", pt: "Total", zh: "总计", ar: "الإجمالي", de: "Gesamt", hi: "कुल", ja: "合計" },
+  "Date": { sw: "Tarehe", fr: "Date", es: "Fecha", pt: "Data", zh: "日期", ar: "التاريخ", de: "Datum", hi: "तारीख", ja: "日付" },
+  "Amount": { sw: "Kiasi", fr: "Montant", es: "Importe", pt: "Valor", zh: "金额", ar: "المبلغ", de: "Betrag", hi: "राशि", ja: "金額" },
+  "Category": { sw: "Kategoria", fr: "Catégorie", es: "Categoría", pt: "Categoria", zh: "类别", ar: "الفئة", de: "Kategorie", hi: "श्रेणी", ja: "カテゴリ" },
+  "Item": { sw: "Kipengee", fr: "Article", es: "Artículo", pt: "Item", zh: "项目", ar: "العنصر", de: "Artikel", hi: "आइटम", ja: "項目" },
+  "Items": { sw: "Vipengee", fr: "Articles", es: "Artículos", pt: "Itens", zh: "项目", ar: "العناصر", de: "Artikel", hi: "आइटम", ja: "項目" },
+  "Subtotal": { sw: "Jumla ndogo", fr: "Sous-total", es: "Subtotal", pt: "Subtotal", zh: "小计", ar: "المجموع الفرعي", de: "Zwischensumme", hi: "उप-योग", ja: "小計" },
+  "Outstanding": { sw: "Baki", fr: "Impayé", es: "Pendiente", pt: "Pendente", zh: "未结", ar: "مستحق", de: "Offen", hi: "बकाया", ja: "未払い" },
+  "Record Payment": { sw: "Rekodi malipo", fr: "Enregistrer le paiement", es: "Registrar pago", pt: "Registar pagamento", zh: "记录付款", ar: "تسجيل الدفعة", de: "Zahlung erfassen", hi: "भुगतान दर्ज करें", ja: "支払いを記録" },
+  "Invoice": { sw: "Ankara", fr: "Facture", es: "Factura", pt: "Fatura", zh: "发票", ar: "فاتورة", de: "Rechnung", hi: "चालान", ja: "請求書" },
+  "Invoices": { sw: "Ankara", fr: "Factures", es: "Facturas", pt: "Faturas", zh: "发票", ar: "الفواتير", de: "Rechnungen", hi: "चालान", ja: "請求書" },
+  "Description": { sw: "Maelezo", fr: "Description", es: "Descripción", pt: "Descrição", zh: "描述", ar: "الوصف", de: "Beschreibung", hi: "विवरण", ja: "説明" },
+  "Reject": { sw: "Kataa", fr: "Rejeter", es: "Rechazar", pt: "Rejeitar", zh: "拒绝", ar: "رفض", de: "Ablehnen", hi: "अस्वीकार करें", ja: "拒否" },
+  "Approve": { sw: "Idhinisha", fr: "Approuver", es: "Aprobar", pt: "Aprovar", zh: "批准", ar: "موافقة", de: "Genehmigen", hi: "स्वीकृत करें", ja: "承認" },
+  "Remove": { sw: "Ondoa", fr: "Supprimer", es: "Eliminar", pt: "Remover", zh: "移除", ar: "إزالة", de: "Entfernen", hi: "हटाएं", ja: "削除" },
+  "No data": { sw: "Hakuna data", fr: "Aucune donnée", es: "Sin datos", pt: "Sem dados", zh: "暂无数据", ar: "لا توجد بيانات", de: "Keine Daten", hi: "कोई डेटा नहीं", ja: "データなし" },
+  "Export": { sw: "Hamisha", fr: "Exporter", es: "Exportar", pt: "Exportar", zh: "导出", ar: "تصدير", de: "Exportieren", hi: "निर्यात करें", ja: "エクスポート" },
+  "Priority": { sw: "Kipaumbele", fr: "Priorité", es: "Prioridad", pt: "Prioridade", zh: "优先级", ar: "الأولوية", de: "Priorität", hi: "प्राथमिकता", ja: "優先度" },
+  "Method": { sw: "Njia", fr: "Méthode", es: "Método", pt: "Método", zh: "方式", ar: "الطريقة", de: "Methode", hi: "तरीका", ja: "方法" },
+  "Product": { sw: "Bidhaa", fr: "Produit", es: "Producto", pt: "Produto", zh: "产品", ar: "المنتج", de: "Produkt", hi: "उत्पाद", ja: "商品" },
+  "Supplier": { sw: "Msambazaji", fr: "Fournisseur", es: "Proveedor", pt: "Fornecedor", zh: "供应商", ar: "المورد", de: "Lieferant", hi: "आपूर्तिकर्ता", ja: "サプライヤー" },
+  "Type": { sw: "Aina", fr: "Type", es: "Tipo", pt: "Tipo", zh: "类型", ar: "النوع", de: "Typ", hi: "प्रकार", ja: "種類" },
+  "Employee": { sw: "Mfanyakazi", fr: "Employé", es: "Empleado", pt: "Funcionário", zh: "员工", ar: "الموظف", de: "Mitarbeiter", hi: "कर्मचारी", ja: "従業員" },
+  "Role": { sw: "Wajibu", fr: "Rôle", es: "Rol", pt: "Função", zh: "角色", ar: "الدور", de: "Rolle", hi: "भूमिका", ja: "役割" },
+  "Rate": { sw: "Kiwango", fr: "Taux", es: "Tasa", pt: "Taxa", zh: "费率", ar: "المعدل", de: "Satz", hi: "दर", ja: "率" },
+  "Bank": { sw: "Benki", fr: "Banque", es: "Banco", pt: "Banco", zh: "银行", ar: "البنك", de: "Bank", hi: "बैंक", ja: "銀行" },
+  "Value": { sw: "Thamani", fr: "Valeur", es: "Valor", pt: "Valor", zh: "价值", ar: "القيمة", de: "Wert", hi: "मूल्य", ja: "値" },
+  "Paid": { sw: "Imelipwa", fr: "Payé", es: "Pagado", pt: "Pago", zh: "已支付", ar: "مدفوع", de: "Bezahlt", hi: "भुगतान किया गया", ja: "支払済み" },
+  "Receipt": { sw: "Risiti", fr: "Reçu", es: "Recibo", pt: "Recibo", zh: "收据", ar: "إيصال", de: "Quittung", hi: "रसीद", ja: "領収書" },
+  "Department": { sw: "Idara", fr: "Département", es: "Departamento", pt: "Departamento", zh: "部门", ar: "القسم", de: "Abteilung", hi: "विभाग", ja: "部署" },
+  "Clear": { sw: "Futa", fr: "Effacer", es: "Limpiar", pt: "Limpar", zh: "清除", ar: "مسح", de: "Löschen", hi: "साफ़ करें", ja: "クリア" },
+  "Preview": { sw: "Hakiki", fr: "Aperçu", es: "Vista previa", pt: "Pré-visualização", zh: "预览", ar: "معاينة", de: "Vorschau", hi: "पूर्वावलोकन", ja: "プレビュー" },
+  "Change": { sw: "Badilisha", fr: "Modifier", es: "Cambiar", pt: "Alterar", zh: "更改", ar: "تغيير", de: "Ändern", hi: "बदलें", ja: "変更" },
+  "Approvals": { sw: "Idhini", fr: "Approbations", es: "Aprobaciones", pt: "Aprovações", zh: "审批", ar: "الموافقات", de: "Genehmigungen", hi: "अनुमोदन", ja: "承認" },
+  "Reference": { sw: "Kumbukumbu", fr: "Référence", es: "Referencia", pt: "Referência", zh: "参考", ar: "المرجع", de: "Referenz", hi: "संदर्भ", ja: "参照" },
+  "Summary": { sw: "Muhtasari", fr: "Résumé", es: "Resumen", pt: "Resumo", zh: "摘要", ar: "الملخص", de: "Zusammenfassung", hi: "सारांश", ja: "概要" },
+  "Account": { sw: "Akaunti", fr: "Compte", es: "Cuenta", pt: "Conta", zh: "账户", ar: "الحساب", de: "Konto", hi: "खाता", ja: "アカウント" },
+  "Active": { sw: "Hai", fr: "Actif", es: "Activo", pt: "Ativo", zh: "启用", ar: "نشط", de: "Aktiv", hi: "सक्रिय", ja: "有効" },
+  "Budget": { sw: "Bajeti", fr: "Budget", es: "Presupuesto", pt: "Orçamento", zh: "预算", ar: "الميزانية", de: "Budget", hi: "बजट", ja: "予算" },
+  "Member": { sw: "Mwanachama", fr: "Membre", es: "Miembro", pt: "Membro", zh: "成员", ar: "العضو", de: "Mitglied", hi: "सदस्य", ja: "メンバー" },
+  "Edit": { sw: "Hariri", fr: "Modifier", es: "Editar", pt: "Editar", zh: "编辑", ar: "تحرير", de: "Bearbeiten", hi: "संपादित करें", ja: "編集" },
+  "Refresh": { sw: "Onyesha upya", fr: "Actualiser", es: "Actualizar", pt: "Atualizar", zh: "刷新", ar: "تحديث", de: "Aktualisieren", hi: "रिफ्रेश करें", ja: "更新" },
+  "Done": { sw: "Imekamilika", fr: "Terminé", es: "Listo", pt: "Concluído", zh: "完成", ar: "تم", de: "Fertig", hi: "पूर्ण", ja: "完了" },
+  "Email": { sw: "Barua pepe", fr: "E-mail", es: "Correo electrónico", pt: "E-mail", zh: "电子邮件", ar: "البريد الإلكتروني", de: "E-Mail", hi: "ईमेल", ja: "メール" },
+  "Recent Activity": { sw: "Shughuli za hivi karibuni", fr: "Activité récente", es: "Actividad reciente", pt: "Atividade recente", zh: "最近活动", ar: "النشاط الأخير", de: "Letzte Aktivität", hi: "हाल की गतिविधि", ja: "最近のアクティビティ" },
+  "Open": { sw: "Fungua", fr: "Ouvert", es: "Abierto", pt: "Aberto", zh: "打开", ar: "مفتوح", de: "Offen", hi: "खुला", ja: "開く" },
+  "Import": { sw: "Ingiza", fr: "Importer", es: "Importar", pt: "Importar", zh: "导入", ar: "استيراد", de: "Importieren", hi: "आयात करें", ja: "インポート" },
+  "List": { sw: "Orodha", fr: "Liste", es: "Lista", pt: "Lista", zh: "列表", ar: "قائمة", de: "Liste", hi: "सूची", ja: "一覧" },
+  "Notes": { sw: "Maelezo", fr: "Notes", es: "Notas", pt: "Notas", zh: "备注", ar: "ملاحظات", de: "Notizen", hi: "नोट्स", ja: "メモ" },
+  "Orders": { sw: "Maagizo", fr: "Commandes", es: "Pedidos", pt: "Pedidos", zh: "订单", ar: "الطلبات", de: "Bestellungen", hi: "ऑर्डर", ja: "注文" },
+  "Returns": { sw: "Marejesho", fr: "Retours", es: "Devoluciones", pt: "Devoluções", zh: "退货", ar: "المرتجعات", de: "Rückgaben", hi: "रिटर्न", ja: "返品" },
+  "Subscription": { sw: "Usajili", fr: "Abonnement", es: "Suscripción", pt: "Subscrição", zh: "订阅", ar: "الاشتراك", de: "Abonnement", hi: "सदस्यता", ja: "サブスクリプション" },
+  "Credit": { sw: "Krediti", fr: "Crédit", es: "Crédito", pt: "Crédito", zh: "贷方", ar: "دائن", de: "Kredit", hi: "क्रेडिट", ja: "貸方" },
+  "Debit": { sw: "Debiti", fr: "Débit", es: "Débito", pt: "Débito", zh: "借方", ar: "مدين", de: "Lastschrift", hi: "डेबिट", ja: "借方" },
+  "Completed": { sw: "Imekamilika", fr: "Terminé", es: "Completado", pt: "Concluído", zh: "已完成", ar: "مكتمل", de: "Abgeschlossen", hi: "पूरा", ja: "完了" },
+  "Pending": { sw: "Inasubiri", fr: "En attente", es: "Pendiente", pt: "Pendente", zh: "待处理", ar: "معلق", de: "Ausstehend", hi: "लंबित", ja: "保留中" },
+  "Today": { sw: "Leo", fr: "Aujourd’hui", es: "Hoy", pt: "Hoje", zh: "今天", ar: "اليوم", de: "Heute", hi: "आज", ja: "今日" },
+  "Time": { sw: "Muda", fr: "Heure", es: "Hora", pt: "Hora", zh: "时间", ar: "الوقت", de: "Zeit", hi: "समय", ja: "時間" },
+  "Action": { sw: "Kitendo", fr: "Action", es: "Acción", pt: "Ação", zh: "操作", ar: "الإجراء", de: "Aktion", hi: "कार्यवाही", ja: "操作" },
+  "Branch": { sw: "Tawi", fr: "Agence", es: "Sucursal", pt: "Filial", zh: "分支机构", ar: "الفرع", de: "Filiale", hi: "शाखा", ja: "支店" },
+  "Dismiss": { sw: "Puuza", fr: "Ignorer", es: "Descartar", pt: "Dispensar", zh: "关闭", ar: "تجاهل", de: "Verwerfen", hi: "खारिज करें", ja: "閉じる" },
 };
 
 const originals = new WeakMap<Text, string>();
@@ -85,16 +150,19 @@ function visit(root: Node) {
   }
   if (root.nodeType !== Node.ELEMENT_NODE) return;
   const element = root as HTMLElement;
-  if (["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT", "OPTION"].includes(element.tagName)) return;
-  for (const child of Array.from(root.childNodes)) visit(child);
   for (const attribute of ["aria-label", "title", "placeholder"]) {
-    const value = element.getAttribute(attribute);
-    if (value && PHRASES[value.trim()]) {
-      const key = `data-i18n-original-${attribute}`;
-      if (!element.hasAttribute(key)) element.setAttribute(key, value);
-      element.setAttribute(attribute, translateValue(value));
+    const originalKey = `data-i18n-original-${attribute}`;
+    const current = element.getAttribute(attribute);
+    const original = element.getAttribute(originalKey) || current;
+    if (original && PHRASES[canonicalValue(original).trim()]) {
+      if (!element.hasAttribute(originalKey)) element.setAttribute(originalKey, original);
+      element.setAttribute(attribute, translateValue(original));
     }
   }
+  // Form controls have no user-facing text children, but their accessible
+  // attributes above still need localization. Never touch input values.
+  if (["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT", "OPTION"].includes(element.tagName)) return;
+  for (const child of Array.from(root.childNodes)) visit(child);
 }
 
 export function installDocumentLocalization(language: Lang) {
