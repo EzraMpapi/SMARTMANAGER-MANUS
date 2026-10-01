@@ -79,10 +79,7 @@ test.describe("PWA offline fallback", () => {
     await expect(page.getByRole("heading", { name: "You’re offline" })).toBeVisible();
 
     await context.setOffline(false);
-    const reload = page.waitForLoadState("domcontentloaded");
-    // Dispatch on the next task so evaluate can resolve before the app reloads.
-    await page.evaluate(() => window.setTimeout(() => window.dispatchEvent(new Event("online")), 0));
-    await reload;
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page).toHaveTitle(/Smart Manager (— Offline|\| Enterprise ERP)/);
   });
 });
