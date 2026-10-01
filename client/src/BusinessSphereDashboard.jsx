@@ -683,7 +683,7 @@ const GENERIC_STANDARD_COLUMNS = new Set([
 // read the same canonical values the UI writes.
 const GENERIC_TYPED_COLUMNS = {
   sales_quotations: new Set(["doc_number", "customer", "issue_date", "valid_until", "owner_id"]),
-  sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"]),
+  sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "quotation_id", "amount_paid"]),
   sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"]),
   sales_payments: new Set(["invoice_id", "method", "payment_date", "reference"]),
   sales_subscriptions: new Set(["doc_number", "customer", "plan", "cycle", "start_date", "next_billing_date"]),
@@ -1601,7 +1601,7 @@ function mapInvoiceRow(r) {
   return {
     id: r.doc_number || data.doc_number || r.id, dbId: r.id,
     customer: r.customer || data.customer || r.name, date: r.issue_date || data.issue_date || r.created_at, dueDate: r.due_date || data.due_date,
-    orderRef: r.order_id || data.order_id ? "linked" : "—", status: r.status || data.status,
+    orderRef: r.order_id || data.order_id ? "linked" : "—", quotationRef: r.quotation_id || data.quotation_id ? "linked" : "—", quotationDbId: r.quotation_id || data.quotation_id || null, status: r.status || data.status,
     amountPaid: Number(r.amount_paid ?? data.amount_paid) || 0,
     items: mapDocItems(r.items ?? r.sales_invoice_items ?? data.items),
     payments: (r.payments ?? r.sales_payments ?? []).map(mapPaymentRow).sort((a, b) => (a.date < b.date ? 1 : -1)),
@@ -10898,6 +10898,20 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
   }
 
   async function convertQuoteToInvoice(quote) {
+    if (!quote?.dbId) {
+      notify("This quotation is not linked to a confirmed server record. Refresh Sales before converting it.", "error");
+      return false;
+    }
+    if (quote.status === "Converted") {
+      notify(`${quote.id} has already been converted to an invoice.`, "error");
+      return false;
+    }
+    const existingInvoice = rowsOf(invoices).find((invoice) => invoice.quotationDbId === quote.dbId);
+    if (existingInvoice) {
+      quotations.setRows((prev) => prev.map((document) => (document.id === quote.id ? { ...document, status: "Converted" } : document)));
+      notify(`${quote.id} already has invoice ${existingInvoice.id}.`, "error");
+      return false;
+    }
     const dueD = new Date(TODAY); dueD.setDate(dueD.getDate()+30);
     const newInv = {
       id: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -10910,10 +10924,6 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
     };
 
     if (requiresConfirmedPersistence()) {
-      if (!quote.dbId) {
-        notify("This quotation is not linked to a confirmed server record. Refresh Sales before converting it.", "error");
-        return false;
-      }
       let invoiceHeader = null;
       try {
         invoiceHeader = await sb("sales_invoices").insert({
@@ -10922,6 +10932,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
           issue_date: newInv.date,
           due_date: newInv.dueDate,
           status: newInv.status,
+          quotation_id: quote.dbId,
           amount_paid: 0,
         }).single().run();
         if (!invoiceHeader?.id) throw buildConfirmedMutationError({ table: "sales_invoices", method: "POST", status: 200 });
