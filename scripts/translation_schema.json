@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "translations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": { "type": "string" },
+          "sw": { "type": "string" },
+          "fr": { "type": "string" },
+          "es": { "type": "string" },
+          "pt": { "type": "string" },
+          "zh": { "type": "string" },
+          "ar": { "type": "string" },
+          "de": { "type": "string" },
+          "hi": { "type": "string" },
+          "ja": { "type": "string" }
+        },
+        "required": [
+          "source",
+          "sw",
+          "fr",
+          "es",
+          "pt",
+          "zh",
+          "ar",
+          "de",
+          "hi",
+          "ja"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["translations"],
+  "additionalProperties": false
+}

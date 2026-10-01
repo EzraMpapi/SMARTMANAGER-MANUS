@@ -42,12 +42,12 @@ describe("Tanzania-first authentication branding and localization", () => {
     expect(traSource).toContain('const { lang: sharedLang } = useLanguage();');
   });
   it("covers common operational labels and re-localizes dynamic attributes", () => {
-    expect(domLocalizationSource).toContain('"Outstanding"');
+    expect(domLocalizationSource).toMatch(/(?:"Outstanding"|\bOutstanding\b)\s*:/);
     expect(domLocalizationSource).toContain('"Record Payment"');
     expect(domLocalizationSource).toContain('"Human Resources"');
-    expect(domLocalizationSource).toContain('const originalKey = `data-i18n-original-${attribute}`;');
-    expect(domLocalizationSource).toContain('const original = element.getAttribute(originalKey) || current;');
-    expect(domLocalizationSource).toContain('if (!element.hasAttribute(originalKey)) element.setAttribute(originalKey, original);');
-    expect((domLocalizationSource.match(/^\s+"[^"\n]+": \{/gm) || []).length).toBeGreaterThan(90);
+    expect(domLocalizationSource).toContain("const originalKey = `data-i18n-original-${attribute}`");
+    expect(domLocalizationSource).toContain("const original = element.getAttribute(originalKey) || current");
+    expect(domLocalizationSource).toMatch(/if \(!element\.hasAttribute\(originalKey\)\)/);
+    expect((domLocalizationSource.match(/^\s+(?:"[^"\n]+"|[A-Za-z_$][\w$]*): \{/gm) || []).length).toBeGreaterThan(400);
   });
 });
