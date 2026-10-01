@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { trpc } from "../lib/trpc";
 import { useAuthContext } from "./AuthContext";
+import { installDocumentLocalization, setDocumentLocalization } from "../lib/domLocalization";
 
 export type Lang = "en" | "sw" | "fr" | "es" | "pt" | "zh" | "ar" | "de" | "hi" | "ja";
 
@@ -30,14 +31,14 @@ const translations: Record<Lang, Record<string, string>> = {
     builtInControls: "Built-in Controls", builtInControlsDesc: "Role-aware access, audit visibility, and automated reporting for peace of mind.", ecosystemTitle: "The Noble Ecosystem", ecosystemHeading: "Capabilities that radiate authority.",
     ecosystemDesc: "Smart Manager keeps core business functions in reach while giving each team the dedicated workflows it needs to move work forward with precision.", readyCommandCenter: "Ready to enter the command center?", readyCommandCenterDesc: "Launch the Smart Manager ERP dashboard to work with connected modules and live operational data. Salama na Mwaminifu.",
     launchWorkspace: "Launch Workspace", madeInTanzania: "Made in Tanzania", copyright: "© 2026 Smart Manager · Enterprise Business Ecosystem",
-    language: "Language", workspaceArea: "Workspace area", searchEverything: "Search modules, records, and actions", helpSupport: "Help and support", messages: "Messages", theme: "Theme", switchLanguage: "Switch language",
+    language: "Language", workspaceArea: "Workspace area", searchEverything: "Search modules, records, and actions", helpSupport: "Help and support", messages: "Messages", theme: "Theme", switchLanguage: "Switch language", takeTour: "Take a Tour", closeTour: "Close onboarding tour",
   },
   sw: {
     brandTitle: "Smart Manager", brandSubtitle: "Mfumo wa Uendeshaji", capabilities: "Uwezo", whyUs: "Kwanini Sisi", launch: "Anza", launchApp: "Fungua Mfumo",
     heroBadge: "Bidhaa ya Kitanzania kwa Wafanyabiashara", heroTitle1: "Simamia kazi.", heroTitle2: "Ona biashara nzima.", heroSubtitle: "Simamia Biashara Yako. Popote, Wakati Wote. Smart Manager inaleta pamoja mifumo ya fedha, mauzo, na uendeshaji katika kituo kimoja thabiti.",
     exploreCapabilities: "Chunguza uwezo", liveOperationalData: "Data za uendeshaji za moja kwa moja", connectedModules: "Moduli zilizounganishwa", actionReadyWorkflows: "Mifumo ya vitendo", businessOverview: "Muhtasari wa Biashara", liveWorkspace: "Kituo cha Kazi", operationalMomentum: "Kasi ya Uendeshaji", nextBestAction: "Hatua Inayofuata", nextBestActionDesc: "Kagua vipaumbele vilivyotolewa na mifumo yako ya biashara.",
     oneWorkspace: "Sehemu Moja", oneWorkspaceDesc: "Unganisha wateja, bidhaa, fedha, na rasilimali watu katika sehemu moja.", liveDataPath: "Data za Moja kwa Moja", liveDataPathDesc: "Uunganishaji wa Supabase unahakikisha kila taarifa iko sahihi na salama.", builtInControls: "Udhibiti Madhubuti", builtInControlsDesc: "Ulinzi wa viwango vya watumiaji, ukaguzi, na ripoti za kiotomatiki.", ecosystemTitle: "Mfumo Thabiti", ecosystemHeading: "Uwezo unaoleta mamlaka katika biashara.", ecosystemDesc: "Smart Manager huweka shughuli zote za biashara mikononi mwako kwa usahihi na urahisi.", readyCommandCenter: "Uko tayari kuingia kwenye mfumo?", readyCommandCenterDesc: "Fungua dashibodi ya Smart Manager ili kufanya kazi na moduli zilizounganishwa na data halisi. Salama na Mwaminifu.", launchWorkspace: "Fungua Dashibodi", madeInTanzania: "Imetengenezwa Tanzania", copyright: "© 2026 Smart Manager · Mfumo wa Biashara",
-    language: "Lugha", workspaceArea: "Eneo la kazi", searchEverything: "Tafuta moduli, rekodi na vitendo", helpSupport: "Msaada", messages: "Ujumbe", theme: "Muonekano", switchLanguage: "Badilisha lugha",
+    language: "Lugha", workspaceArea: "Eneo la kazi", searchEverything: "Tafuta moduli, rekodi na vitendo", helpSupport: "Msaada", messages: "Ujumbe", theme: "Muonekano", switchLanguage: "Badilisha lugha", takeTour: "Anza Ziara", closeTour: "Funga ziara ya mfumo",
   },
   fr: { ...{}, brandTitle: "Smart Manager", brandSubtitle: "ERP opérationnel", capabilities: "Fonctionnalités", whyUs: "Pourquoi nous", launch: "Lancer", launchApp: "Ouvrir l’application", language: "Langue", workspaceArea: "Espace de travail", searchEverything: "Rechercher des modules, dossiers et actions", helpSupport: "Aide et support", messages: "Messages", theme: "Thème", switchLanguage: "Changer de langue" },
   es: { ...{}, brandTitle: "Smart Manager", brandSubtitle: "ERP operativo", capabilities: "Capacidades", whyUs: "Por qué nosotros", launch: "Iniciar", launchApp: "Abrir aplicación", language: "Idioma", workspaceArea: "Área de trabajo", searchEverything: "Buscar módulos, registros y acciones", helpSupport: "Ayuda y soporte", messages: "Mensajes", theme: "Tema", switchLanguage: "Cambiar idioma" },
@@ -135,6 +136,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.dir = LANGUAGE_OPTIONS.find((option) => option.code === lang)?.dir || "ltr";
     }
   }, [lang]);
+  useEffect(() => installDocumentLocalization(lang), []);
+  useEffect(() => setDocumentLocalization(lang), [lang]);
   const t = (key: string) => translations[lang]?.[key] || translations.en[key] || key;
   return <LanguageContext.Provider value={{ lang, setLang, t, languageOptions: LANGUAGE_OPTIONS }}>{children}</LanguageContext.Provider>;
 }

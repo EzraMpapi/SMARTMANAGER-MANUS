@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 const languageSource = readFileSync(new URL("../client/src/contexts/LanguageContext.tsx", import.meta.url), "utf8");
 const dashboardSource = readFileSync(new URL("../client/src/BusinessSphereDashboard.jsx", import.meta.url), "utf8");
+const domLocalizationSource = readFileSync(new URL("../client/src/lib/domLocalization.ts", import.meta.url), "utf8");
+const traSource = readFileSync(new URL("../client/src/components/TraPortalModule.jsx", import.meta.url), "utf8");
 const stylesSource = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 
 describe("Tanzania-first authentication branding and localization", () => {
@@ -29,5 +31,14 @@ describe("Tanzania-first authentication branding and localization", () => {
     expect(stylesSource).toContain("Tanzania-first public authentication treatment");
     expect(stylesSource).toContain("#FCD116");
     expect(stylesSource).toContain("prefers-reduced-motion: reduce");
+  });
+  it("localizes legacy and lazy-loaded UI without a refresh", () => {
+    expect(languageSource).toContain("installDocumentLocalization");
+    expect(languageSource).toContain("setDocumentLocalization(lang)");
+    expect(domLocalizationSource).toContain("new MutationObserver");
+    expect(domLocalizationSource).toContain("localizedPhraseCount");
+    expect(dashboardSource).toContain("const { lang, t } = useLanguage();");
+    expect(dashboardSource).not.toContain("setInterval(handleStorage, 1000)");
+    expect(traSource).toContain('const { lang: sharedLang } = useLanguage();');
   });
 });
