@@ -21,7 +21,7 @@ const EMAIL_SENDER_ROLES = new Set(["Organization Owner", "CEO", "Super Administ
 export const TRANSACTIONAL_EMAIL_DISABLED_MESSAGE = "Workspace email delivery is disabled. No email was sent.";
 
 export function isTransactionalEmailDeliveryEnabled() {
-  return false;
+  return Boolean(ENV.resendApiKey.trim() && ENV.resendFromEmail.trim());
 }
 
 export function assertTransactionalEmailDeliveryEnabled() {
@@ -115,5 +115,5 @@ export async function sendWorkspaceEmail(req: CreateExpressContextOptions["req"]
   const body = input.body.trim();
   if (!subject || subject.length > 160 || !body || body.length > 12_000) throw new TRPCError({ code: "BAD_REQUEST", message: "Enter a subject up to 160 characters and a message up to 12,000 characters." });
   const delivery = await sendTransactionalEmail({ to, cc, bcc, subject, text: body, html: workspaceEmailHtml({ title: subject, preheader: "Message from your Smart Manager workspace", body }), category: "manual" });
-  return { ...delivery, recipientCount: to.length + cc.length + bcc.length, companyId: profile.company_id };
+  return { ...delivery, recipientCount: to.length + cc.length + bcc.length, companyId: profile.company_id, from: ENV.resendFromEmail };
 }

@@ -5,6 +5,9 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: {
+    transactionalEmail: {
+      send: { useMutation: () => ({ isPending: false, mutateAsync: vi.fn() }) },
+    },
     emailTemplateWorkflow: {
       status: { useQuery: () => ({ data: { enabled: false } }) },
       dispatch: { useMutation: () => ({ isPending: false, mutate: vi.fn() }) },

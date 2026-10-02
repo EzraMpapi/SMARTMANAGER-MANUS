@@ -33203,7 +33203,7 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
   const [busy, setBusy]       = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [emailAttachments, setEmailAttachments] = useState([]);
-  const emailDeliveryDisabled = true;
+  const emailDelivery = trpc.transactionalEmail.send.useMutation();
   const workflowStatusQuery = trpc.emailTemplateWorkflow.status.useQuery(undefined, { enabled: Boolean(currentUser?.id), retry: false, staleTime: 30_000 });
   const workflowDispatchMutation = trpc.emailTemplateWorkflow.dispatch.useMutation();
   const linkIssues = useMemo(() => findEmailTemplateLinkIssues(body), [body]);
@@ -33302,7 +33302,21 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
   }
 
   async function sendEmail() {
-    notify("Email delivery is disabled. Save this message as a draft and configure an approved provider before sending.", "error");
+    if (emailDelivery.isPending) return;
+    if (!to.trim() || !subject.trim() || !body.trim()) {
+      notify("Add a recipient, subject, and message before sending.", "error");
+      return;
+    }
+    try {
+      const renderedBody = mergeTemplate(body);
+      const result = await emailDelivery.mutateAsync({ to, cc, bcc, subject, body: renderedBody });
+      setSent((items) => [{ id: result.deliveryId || `SENT-${Date.now()}`, to, cc, bcc, subject, body: renderedBody, sentAt: result.acceptedAt || new Date().toISOString(), from: result.from || co.email || "Smart Manager" }, ...items]);
+      setFolder("sent");
+      clearCompose();
+      notify(`Email accepted by the configured provider for ${result.recipientCount || 1} recipient${result.recipientCount === 1 ? "" : "s"}.`);
+    } catch (error) {
+      notify(error?.message || "Email was not sent. Check the approved server-side sender configuration.", "error");
+    }
   }
 
   function clearCompose() { setTo(""); setCc(""); setBcc(""); setSubject(""); setBody(""); setTmplId("custom"); }
@@ -33554,9 +33568,9 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
 
             {/* Actions */}
             <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center gap-2.5">
-              <button onClick={sendEmail} disabled={emailDeliveryDisabled || busy||!to.trim()||!subject.trim()} title="Email delivery is disabled"
+              <button onClick={sendEmail} disabled={emailDelivery.isPending || busy||!to.trim()||!subject.trim()||!body.trim()} title="Send through the approved server-side workspace email provider"
                 className="flex items-center gap-1.5 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl bg-[#2563EB] disabled:cursor-not-allowed disabled:opacity-40">
-                <Send size={14}/> Email delivery disabled
+                <Send size={14}/> {emailDelivery.isPending ? "Sending…" : "Send Email"}
               </button>
               <button onClick={saveDraft}
                 className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 border border-slate-200 px-3.5 py-2.5 rounded-xl hover:bg-white">
