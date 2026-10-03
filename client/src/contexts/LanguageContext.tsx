@@ -125,6 +125,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.lang = newLang;
       document.documentElement.dir = LANGUAGE_OPTIONS.find((option) => option.code === newLang)?.dir || "ltr";
       window.dispatchEvent(new CustomEvent("smart-manager:language-changed", { detail: { lang: newLang } }));
+      document.querySelectorAll<HTMLElement>(".dashboard-language-code, .sm-language-code").forEach((element) => {
+        element.textContent = newLang.toUpperCase();
+      });
     }
     if (liveSession && profileHydrated && profileQuery.data?.profile?.id === authenticatedUserId) {
       persistLanguageMutation.mutate({ preferredLanguage: newLang });
