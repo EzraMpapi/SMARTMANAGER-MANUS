@@ -1840,6 +1840,42 @@
   background: rgb(15 23 42 / .9);
 }
 
+/* Automatic shell palette: day keeps the current light UI language; night
+   moves only the persistent command surfaces to an adaptive navy/slate range.
+   Module content and business data remain untouched. */
+[data-theme-period="day"] .dashboard-topbar,
+[data-theme-period="day"] .dashboard-mobile-nav {
+  color-scheme: light;
+}
+[data-theme-period="night"] .dashboard-topbar,
+[data-theme-period="night"] .dashboard-mobile-nav {
+  color-scheme: dark;
+}
+[data-theme-period="night"] .dashboard-mobile-nav {
+  background: rgb(15 23 42 / .97) !important;
+  border-top-color: rgb(51 65 85 / .92) !important;
+  box-shadow: 0 -12px 28px rgb(2 6 23 / .28);
+}
+[data-theme-period="night"] .dashboard-mobile-nav > button {
+  color: rgb(148 163 184) !important;
+}
+[data-theme-period="night"] .dashboard-mobile-nav > button[aria-current="page"] {
+  color: rgb(110 231 183) !important;
+}
+[data-theme-period="night"] .dashboard-mobile-nav > button[aria-current="page"] span {
+  background: rgb(110 231 183) !important;
+}
+[data-theme-period="night"] .dashboard-topbar:not(.dark-shell) {
+  border-color: rgb(51 65 85 / .85) !important;
+  background: rgb(15 23 42 / .96) !important;
+  color: rgb(226 232 240) !important;
+}
+[data-theme-period="night"] .dashboard-sidebar:not(.dark-shell) {
+  background: #0f172a !important;
+  border-right-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+
 /* Collision guardrails: the top row must give the workspace identity and
    actions separate, predictable space at phone widths. The connectivity
    indicator keeps its accessible title/aria label while becoming icon-only. */
