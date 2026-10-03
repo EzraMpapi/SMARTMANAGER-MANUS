@@ -2784,6 +2784,146 @@
 .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action:hover {
   background: linear-gradient(90deg, color-mix(in srgb, var(--sm-user-accent) 13%, #1e293b), rgba(49, 46, 129, .34)) !important;
 }
+
+/* Responsive language controls: the native select remains the accessible input while
+   the short code keeps the control legible when the command bar is compressed. */
+.dashboard-topbar-language-control,
+.sm-language-control {
+  position: relative;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+.dashboard-topbar-language-control:hover,
+.sm-language-control:hover {
+  border-color: rgb(167 243 208);
+  background-color: rgb(236 253 245 / .78);
+}
+.dashboard-topbar-language-control:focus-within,
+.sm-language-control:focus-within {
+  border-color: rgb(16 185 129);
+  box-shadow: 0 0 0 3px rgb(16 185 129 / .16);
+}
+.dashboard-language-code,
+.sm-language-code {
+  display: none;
+  flex: 0 0 auto;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.dashboard-language-select,
+.sm-language-select {
+  min-height: 2.25rem;
+  cursor: pointer;
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-language-control {
+  border-color: rgb(71 85 105 / .9);
+  background: rgb(30 41 59 / .92);
+  color: rgb(226 232 240);
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-language-control:hover {
+  border-color: var(--sm-user-accent, #22d3ee);
+  background: rgb(15 23 42 / .96);
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-language-control .dashboard-language-code {
+  color: var(--sm-user-accent, #22d3ee);
+}
+@media (max-width: 767px) {
+  .dashboard-topbar-language-control {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    justify-content: center;
+    padding-inline: .5rem;
+  }
+  .dashboard-language-code {
+    display: inline-flex;
+  }
+  .dashboard-language-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    opacity: 0;
+  }
+  .dashboard-topbar-language-control > svg:last-child {
+    display: none;
+  }
+}
+@media (max-width: 479px) {
+  .dashboard-topbar-main {
+    grid-template-columns: 3.25rem minmax(0, 1fr) 3.25rem 3.25rem 3.25rem;
+  }
+  .dashboard-topbar-language-control {
+    grid-column: 3;
+    grid-row: 1;
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+  }
+  .dashboard-topbar-notification-slot {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .dashboard-topbar-profile-slot {
+    grid-column: 5;
+    grid-row: 1;
+  }
+  .dashboard-topbar-language-control > svg:first-child {
+    display: none;
+  }
+  .dashboard-language-code {
+    font-size: .72rem;
+  }
+}
+@media (max-width: 359px) {
+  .dashboard-topbar-main {
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem 2.75rem 2.75rem;
+    gap: .25rem;
+    padding-inline: .5rem;
+  }
+  .dashboard-topbar-menu-control,
+  .dashboard-topbar-language-control,
+  .dashboard-topbar-notification-slot > div > button,
+  .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar-profile-slot > div > button {
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+@media (max-width: 640px) {
+  .sm-language-control {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    justify-content: center;
+    padding-inline: .75rem;
+  }
+  .sm-language-code {
+    display: inline-flex;
+  }
+  .sm-language-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    opacity: 0;
+  }
+  .sm-language-control > svg:last-child {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-topbar-language-control,
+  .sm-language-control {
+    transition: none;
+  }
+}
 .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action-icon {
   color: var(--sm-user-accent) !important;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sm-user-accent) 24%, transparent);
