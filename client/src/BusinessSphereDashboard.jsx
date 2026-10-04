@@ -8577,19 +8577,6 @@ function CRM({ crm, invoices, expenses, suppliers }) {
     }
   }
 
-  async function shareInventoryReport() {
-    const reportItems = rowsOf(inventory);
-    const lowItems = reportItems.filter((item) => Number(item.qty) <= Number(item.reorder || 0));
-    const stockValue = reportItems.reduce((sum, item) => sum + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
-    const preview = reportItems.slice(0, 10).map((item) => `${item.name}: ${item.qty} ${item.unit || "units"} (${stockStatus(item.qty, item.reorder)})`).join("\n");
-    const result = await openDeviceShare({
-      title: "Inventory Stock Report",
-      text: `Inventory Stock Report\n${reportItems.length} SKUs · ${lowItems.length} low-stock items · Stock value TZS ${money(Math.round(stockValue))}k\n\n${preview || "No inventory items recorded."}`,
-      onFallback: () => notify("Inventory report copied. Choose WhatsApp or Email from your device to share it."),
-    });
-    if (result === "shared") notify("Share sheet opened for the inventory report — choose WhatsApp or Email");
-  }
-
   return (
     <div className="space-y-5">
       {IS_CONFIGURED && error && (
@@ -12609,6 +12596,19 @@ function Inventory({ inventory, suppliersHook }) {
   const warehousesHook = useCompanyTable("inventory_warehouses", WAREHOUSES, { order: { col: "name", ascending: true }, mapRow: mapWarehouseRow });
   const warehouses = rowsOf(warehousesHook);
   const categories = useMemo(() => [...new Set(items.map((item) => item.category || "General"))].sort((a, b) => a.localeCompare(b)), [items]);
+
+  async function shareInventoryReport() {
+    const reportItems = rowsOf(inventory);
+    const lowItems = reportItems.filter((item) => Number(item.qty) <= Number(item.reorder || 0));
+    const stockValue = reportItems.reduce((sum, item) => sum + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
+    const preview = reportItems.slice(0, 10).map((item) => `${item.name}: ${item.qty} ${item.unit || "units"} (${stockStatus(item.qty, item.reorder)})`).join("\n");
+    const result = await openDeviceShare({
+      title: "Inventory Stock Report",
+      text: `Inventory Stock Report\n${reportItems.length} SKUs · ${lowItems.length} low-stock items · Stock value TZS ${money(Math.round(stockValue))}k\n\n${preview || "No inventory items recorded."}`,
+      onFallback: () => notify("Inventory report copied. Choose WhatsApp or Email from your device to share it."),
+    });
+    if (result === "shared") notify("Share sheet opened for the inventory report — choose WhatsApp or Email");
+  }
 
   // Real bulk import — genuinely creates inventory_items rows, the exact
   // same table and shape the manual "Add Item" form writes to. A missing
