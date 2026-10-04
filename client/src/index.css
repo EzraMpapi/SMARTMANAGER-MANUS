@@ -298,6 +298,27 @@
     min-width: 0;
   }
 
+  /* Inventory has more local sections than a phone can show at once. Keep
+     each label intact and let the rail scroll, rather than shrinking buttons
+     until their text collides. */
+  .sm-inventory-tabs {
+    min-width: 0;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sm-inventory-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sm-inventory-tab {
+    flex: 0 0 auto;
+    min-width: max-content;
+    white-space: nowrap;
+  }
+
   .sm-table-scroll {
     width: 100%;
     max-width: 100%;
@@ -346,6 +367,18 @@
   .sm-mobile-action-group > button {
     min-width: 0;
     flex: 1 1 min(100%, 9.5rem);
+  }
+
+  .sm-inventory-tabs {
+    width: 100%;
+    max-width: 100%;
+    gap: .125rem;
+    padding: .25rem;
+  }
+
+  .sm-inventory-tab {
+    min-height: 40px;
+    padding-inline: .75rem;
   }
 
   /* Existing module headers share this Tailwind composition. Their action
