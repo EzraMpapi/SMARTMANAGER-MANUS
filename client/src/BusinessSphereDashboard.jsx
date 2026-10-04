@@ -12853,7 +12853,7 @@ function Inventory({ inventory, suppliersHook }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className={`${operationalFilterBarClass} w-full max-w-full overflow-x-auto sm:w-fit`}>
+        <div className={`${operationalFilterBarClass} sm-inventory-tabs w-full max-w-full overflow-x-auto sm:w-fit`} role="tablist" aria-label="Inventory sections">
           {INV_TABS.map((t) => {
             const Icon = t.icon;
             const isActive = tab === t.id;
@@ -12861,7 +12861,10 @@ function Inventory({ inventory, suppliersHook }) {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`sm-inventory-tab flex-none min-h-10 text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                   isActive ? "bg-white text-[#111827] shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
