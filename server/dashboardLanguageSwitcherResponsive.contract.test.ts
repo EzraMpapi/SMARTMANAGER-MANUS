@@ -8,6 +8,8 @@ const styles = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf
 describe("responsive dashboard language switcher", () => {
   it("keeps a native accessible select and a stable test hook", () => {
     expect(source).toContain('data-testid="dashboard-language-switcher"');
+    expect(source).toContain('data-language-source="smart-manager-localization"');
+    expect(source).toContain('data-testid="dashboard-language-select"');
     expect(source).toContain('className="dashboard-language-select');
     expect(source).toContain('aria-label={t("language")}');
     expect(source).toContain("onChange={(event) => setLang(event.target.value)}");

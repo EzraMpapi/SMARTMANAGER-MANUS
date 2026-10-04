@@ -22,6 +22,8 @@ describe("Tanzania-first authentication branding and localization", () => {
     expect(languageSource).toContain('"zh"');
     expect(languageSource).toContain('"ar"');
     expect(languageSource).toContain('localStorage.setItem("bs_lang", newLang)');
+    expect(languageSource).toContain('document.documentElement.dataset.smartManagerLanguage = newLang');
+    expect(languageSource).toContain('source: "smart-manager-localization"');
     expect(languageSource).toContain('querySelectorAll<HTMLElement>(".dashboard-language-code, .sm-language-code")');
     expect(dashboardSource).toContain("dashboard-topbar-language-control");
     expect(dashboardSource).toContain("languageOptions.map");
