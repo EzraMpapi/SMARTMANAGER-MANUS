@@ -48304,24 +48304,19 @@ function SmartManager() {
       return stored === null ? (localStorage.getItem("bs_dark") === "1" ? "dark" : "light") : (stored === "true" ? "dark" : "light");
     } catch(_e){ return "light"; }
   });
-  const [systemDarkMode, setSystemDarkMode] = React.useState(() => {
-    try { return window.matchMedia?.("(prefers-color-scheme: dark)").matches || false; } catch { return false; }
-  });
   const [themeClock, setThemeClock] = React.useState(() => Date.now());
-  const darkMode = themeMode === "dark" || (themeMode === "auto" && (systemDarkMode || [18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].includes(new Date(themeClock).getHours())));
+  // Auto follows the local clock so daylight uses the established light UI and
+  // evening/night uses the deeper adaptive shell palette. System preference is
+  // intentionally not mixed into this mode: a dark OS theme at noon must not
+  // make the business dashboard look like night.
+  const darkMode = themeMode === "dark" || (themeMode === "auto" && [18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].includes(new Date(themeClock).getHours()));
+  const themePeriod = darkMode ? "night" : "day";
   const [accentColor, setAccentColor] = React.useState(() => {
     try {
       const stored = localStorage.getItem("bs_accent_color");
       return /^#[0-9a-f]{6}$/i.test(stored || "") ? stored.toUpperCase() : "#22D3EE";
     } catch { return "#22D3EE"; }
   });
-  React.useEffect(() => {
-    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
-    if (!media) return undefined;
-    const update = (event) => setSystemDarkMode(event.matches);
-    media.addEventListener?.("change", update);
-    return () => media.removeEventListener?.("change", update);
-  }, []);
   React.useEffect(() => {
     if (themeMode !== "auto") return undefined;
     const timer = window.setInterval(() => setThemeClock(Date.now()), 60_000);
@@ -48330,6 +48325,8 @@ function SmartManager() {
   React.useEffect(() => {
     const root = document.documentElement;
     localStorage.setItem("bs_theme_mode", themeMode);
+    root.dataset.smartManagerTheme = themeMode;
+    root.dataset.smartManagerThemePeriod = themePeriod;
     root.style.setProperty("--sm-user-accent", accentColor);
     localStorage.setItem("bs_accent_color", accentColor);
     if (darkMode) {
@@ -48341,7 +48338,7 @@ function SmartManager() {
       localStorage.setItem("bs_dark_shell", "false");
       localStorage.setItem("bs_dark", "0");
     }
-  }, [darkMode, themeMode, accentColor]);
+  }, [darkMode, themeMode, themePeriod, accentColor]);
 
   // ── Smart Alert Engine — cross-module intelligence ─────────────────────
   // Each module passes its local table data here; the engine returns ranked alerts
@@ -48694,7 +48691,7 @@ function SmartManager() {
       {sharedTrialNoticeGate}
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
-    <div className={`dashboard-shell h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div data-theme-mode={themeMode} data-theme-period={themePeriod} className={`dashboard-shell h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Ambient background wash — subtle depth behind the content, the way
           Linear/Vercel-style dashboards avoid a flat, lifeless canvas. */}
       <div
@@ -48785,6 +48782,8 @@ function SmartManager() {
       <aside
         ref={sidebarRef}
         aria-hidden={sidebarHiddenFromAssistiveTech}
+        data-theme-mode={themeMode}
+        data-theme-period={themePeriod}
         className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen w-[min(86vw,320px)] ${sidebarCollapsed ? "lg:w-[80px]" : "lg:w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] pb-[env(safe-area-inset-bottom)] text-slate-100 will-change-[width,transform] transition-[width,transform,box-shadow] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
@@ -48871,7 +48870,7 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" data-theme-mode={themeMode} data-theme-period={themePeriod} className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-main">
            {/* Left — menu trigger, workspace identity, and current location */}
            <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
@@ -48955,10 +48954,11 @@ function SmartManager() {
 
            {/* Right — live status, quick actions, and identity */}
            <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
-             <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")}>
+             <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher">
                <Globe size={14} className="text-emerald-700" aria-hidden="true" />
                <span className="sr-only">{t("language")}</span>
-               <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="max-w-[92px] appearance-none bg-transparent pr-0 outline-none">
+               <span className="dashboard-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
+               <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="dashboard-language-select max-w-[92px] appearance-none bg-transparent pr-0 outline-none">
                  {languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}
                </select>
                <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
@@ -49030,7 +49030,7 @@ function SmartManager() {
             one thumb-tap away. Only renders on small screens where the
             sidebar is hidden. RBAC is automatic: tabs are built from the
             same visibleModules list the sidebar uses. */}
-        <nav className="dashboard-mobile-nav lg:hidden fixed bottom-0 inset-x-0 z-30 min-h-[64px] bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)", paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Mobile workspace navigation">
+        <nav data-theme-mode={themeMode} data-theme-period={themePeriod} className="dashboard-mobile-nav lg:hidden fixed bottom-0 inset-x-0 z-30 min-h-[64px] bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)", paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Mobile workspace navigation">
           {[...visibleModules.filter((m) => ["dashboard","sales","inventory","finance","hr"].includes(m.id)), ...visibleModules.filter((m) => !["dashboard","sales","inventory","finance","hr"].includes(m.id))].slice(0, 5).map((m) => {
             const Icon = m.icon;
             const on = active === m.id;
