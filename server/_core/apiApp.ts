@@ -2,6 +2,7 @@ import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
+import { registerEmailAttachmentRoutes } from "../emailAttachmentsApi";
 import { ENV } from "./env";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -73,6 +74,7 @@ export function createApiApp() {
   app.get("/api/payments/harakapay/status/:orderId", harakaPayStatusHandler);
   app.get("/api/payments/harakapay/balance", harakaPayBalanceHandler);
   registerStorageProxy(app);
+  registerEmailAttachmentRoutes(app);
   registerOAuthRoutes(app);
   app.post("/api/scheduled/dashboardReport", scheduledDashboardReportHandler);
   app.post("/api/scheduled/schemaDriftMonitor", scheduledSchemaDriftMonitorHandler);
