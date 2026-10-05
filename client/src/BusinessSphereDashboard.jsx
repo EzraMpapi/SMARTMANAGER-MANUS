@@ -769,6 +769,11 @@ export function sb(table) {
       params.set("order", `${col}.${ascending ? "asc" : "desc"}`);
       return builder;
     },
+    limit(value) {
+      const safeLimit = Math.max(0, Math.min(1000, Number(value) || 0));
+      params.set("limit", String(safeLimit));
+      return builder;
+    },
     insert(row) {
       method = "POST";
       payload = row;
