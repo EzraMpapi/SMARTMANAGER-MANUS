@@ -657,7 +657,7 @@ export async function callWorkspaceRpcWithSessionRefresh(name, params, accessTok
 export const GENERIC_COMPANY_TABLES = new Set(`
 approval_signatures bank_accounts bank_fixed_deposits bank_loans bank_standing_orders bank_transactions
 branches business_loans collab_messages community_contributions community_groups company_modules
-crm_contacts crm_interactions crm_leads customer_feedback departments digital_signatures documents
+crm_contacts crm_interactions crm_leads customer_communications customer_feedback departments digital_signatures documents
 ecommerce_orders ecommerce_products emails expense_budgets   flt_maintenance flt_trips flt_vehicles
   hc_appointments hc_doctors hc_invoices hc_lab_orders hc_patients hc_prescriptions hc_radiology hc_reports hc_visits hc_vitals
 hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_leave_requests hr_payroll_runs hr_performance_reviews
@@ -32439,6 +32439,7 @@ function PublishTemplatePanel({ workflow, onClose, onPublish }) {
 /* ---------------------------------- ENTERPRISE COLLABORATION HUB ---------------------------------- */
 
 const COLLAB_TABS = [
+  { id: "timeline",   label: "Customer Timeline",  icon: History },
   { id: "channels",   label: "Team Chat",          icon: MessageSquare },
   { id: "whatsapp",   label: "WhatsApp",            icon: MessageCircle },
   { id: "email",      label: "Email",               icon: Mail },
@@ -33670,8 +33671,107 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
 }
 
 
+function CustomerCommunicationTimeline({ currentUser, crm, company }) {
+  const [entries, setEntries] = useState([]);
+  const [channel, setChannel] = useState("email");
+  const [recipient, setRecipient] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const companyId = company?.id || company?.companyId || "";
+  const contacts = useMemo(() => (crm?.rows || crm || []).filter((row) => row.email).map((row) => ({
+    name: row.name || row.company || row.email,
+    email: row.email,
+  })), [crm]);
+
+  useEffect(() => {
+    if (!IS_CONFIGURED) return;
+    sb("customer_communications").select("*").order("created_at", { ascending: false }).limit(100).run()
+      .then((rows) => setEntries((rows || []).map((row) => ({ id: row.id, ...row.data, status: row.status, createdAt: row.created_at }))))
+      .catch(() => {});
+  }, [companyId]);
+
+  function clearComposer() {
+    setRecipient("");
+    setSubject("");
+    setBody("");
+  }
+
+  async function saveReference(nextEntry, message) {
+    setSaving(true);
+    try {
+      if (IS_CONFIGURED) {
+        const result = await runCompanyTableMutation("customer_communications", "insert", {
+          name: nextEntry.subject || `${nextEntry.channel} customer communication`,
+          status: nextEntry.status || "saved",
+          notes: nextEntry.body || nextEntry.reference || "",
+          data: nextEntry,
+          created_by: currentUser?.id || null,
+        });
+        if (result.error) throw result.error;
+        nextEntry = { ...nextEntry, id: result.data?.id || docId("COM"), createdAt: result.data?.created_at || new Date().toISOString() };
+      } else {
+        nextEntry = { ...nextEntry, id: docId("COM"), createdAt: new Date().toISOString() };
+      }
+      setEntries((prev) => [nextEntry, ...prev]);
+      clearComposer();
+      notify(message || "Communication reference saved.");
+    } catch (error) {
+      notify(`Reference was not saved. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function openGmailCompose() {
+    const to = recipient.trim();
+    if (!to || !subject.trim() || !body.trim() || saving) return;
+    const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject.trim())}&body=${encodeURIComponent(body.trim())}`;
+    window.open(composeUrl, "_blank", "noopener,noreferrer");
+    await saveReference({ channel: "email", direction: "outbound", recipient: to, subject: subject.trim(), body: body.trim(), sender: "smatimeneja@gmail.com", status: "gmail_compose_opened", reference: "Opened in Gmail compose; final send is completed in Gmail." }, "Gmail compose opened and reference saved.");
+  }
+
+  async function copyReference() {
+    const text = [channel.toUpperCase(), recipient, subject, body].filter(Boolean).join("\n");
+    if (!text.trim() || saving) return;
+    try { await navigator.clipboard?.writeText(text); } catch {}
+    await saveReference({ channel, direction: "outbound", recipient: recipient.trim(), subject: subject.trim(), body: body.trim(), status: "copied_saved" }, "Message copied and saved for customer history.");
+  }
+
+  return (
+    <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] gap-4 h-full min-h-[560px]">
+      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm flex flex-col min-h-0 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+          <div><p className="text-[13.5px] font-semibold text-[#111827]">Customer relationship timeline</p><p className="text-[11px] text-slate-400">One history for email, WhatsApp handoffs, and copied references.</p></div>
+          <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full bg-emerald-50 text-emerald-700 px-2 py-1">{entries.length} saved</span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {entries.length === 0 ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (
+            <article key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+              <div className="flex items-start justify-between gap-3"><div><span className="text-[10px] uppercase tracking-wide font-bold text-emerald-700">{entry.channel || "message"}</span><h3 className="text-[12.5px] font-semibold text-slate-800 mt-0.5">{entry.subject || entry.recipient || "Customer reference"}</h3></div><time className="text-[10px] text-slate-400 whitespace-nowrap">{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "Now"}</time></div>
+              <p className="text-[11.5px] text-slate-600 mt-2 whitespace-pre-wrap break-words">{entry.body || entry.reference || "No message body saved."}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-400"><span>{entry.recipient || "Internal reference"}</span><span>·</span><span>{entry.status || "saved"}</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 h-fit">
+        <div className="flex items-start gap-3 mb-4"><div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center"><Mail size={17} /></div><div><h2 className="text-[14px] font-semibold text-slate-800">New customer message</h2><p className="text-[11px] text-slate-400 mt-0.5">Gmail opens from <strong>smatimeneja@gmail.com</strong>; the timeline keeps the reference.</p></div></div>
+        <div className="space-y-3">
+          <div className="flex gap-1.5 p-1 bg-slate-100 rounded-lg"><button onClick={() => setChannel("email")} className={`flex-1 text-[11px] rounded-md py-1.5 ${channel === "email" ? "bg-white shadow-sm text-slate-800 font-semibold" : "text-slate-500"}`}>Email / Gmail</button><button onClick={() => setChannel("whatsapp")} className={`flex-1 text-[11px] rounded-md py-1.5 ${channel === "whatsapp" ? "bg-white shadow-sm text-slate-800 font-semibold" : "text-slate-500"}`}>WhatsApp reference</button></div>
+          <div><label className="text-[11px] font-medium text-slate-600">Recipient / phone</label><input value={recipient} onChange={(e) => setRecipient(e.target.value)} list="communication-contacts" className={inputClass} placeholder={channel === "email" ? "customer@example.com" : "+255…"} /><datalist id="communication-contacts">{contacts.map((contact) => <option key={contact.email} value={contact.email}>{contact.name}</option>)}</datalist></div>
+          <div><label className="text-[11px] font-medium text-slate-600">Subject / reference title</label><input value={subject} onChange={(e) => setSubject(e.target.value)} className={inputClass} placeholder="Follow-up on quotation" /></div>
+          <div><label className="text-[11px] font-medium text-slate-600">Message / copied note</label><textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} className={`${inputClass} resize-y`} placeholder="Write the message or paste the customer interaction here…" /></div>
+          <div className="flex flex-col sm:flex-row gap-2"><button onClick={channel === "email" ? openGmailCompose : copyReference} disabled={!recipient.trim() || !body.trim() || saving} className="flex-1 btn-primary text-white rounded-lg py-2.5 text-[11.5px] font-semibold disabled:opacity-50">{saving ? "Saving…" : channel === "email" ? "Open Gmail & save" : "Copy & save reference"}</button><button onClick={copyReference} disabled={!body.trim() || saving} className="flex-1 border border-slate-200 text-slate-700 rounded-lg py-2.5 text-[11.5px] font-semibold disabled:opacity-50">Save only</button></div>
+          <p className="text-[10.5px] leading-relaxed text-slate-400">WhatsApp is intentionally a reference/handoff channel here. A provider bot can be added later without losing this customer history.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, workOrders, leaveRequests, onNavigate, intent, clearIntent }) {
-  const [tab, setTab] = useState(() => intent?.module === "collaboration" && intent.tab ? intent.tab : "channels");
+  const [tab, setTab] = useState(() => intent?.module === "collaboration" && intent.tab ? intent.tab : "timeline");
   useEffect(() => {
     if (intent?.module !== "collaboration" || !intent.tab) return;
     if (COLLAB_TABS.some((entry) => entry.id === intent.tab)) setTab(intent.tab);
@@ -33697,6 +33797,7 @@ function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, wo
       </div>
 
       <div className="flex-1 min-h-0">
+        {tab === "timeline"   && <CustomerCommunicationTimeline currentUser={currentUser} crm={crm} company={window.__smartManagerCompany||{}} />}
         {tab === "channels"   && <ChannelsView currentUser={currentUser} employees={employees} />}
         {tab === "whatsapp"   && <WhatsAppCenter currentUser={currentUser} crm={crm} employees={employees} invoices={invoices} company={window.__smartManagerCompany||{}} />}
         {tab === "email"      && <EmailCenter currentUser={currentUser} crm={crm} employees={employees} invoices={invoices} company={window.__smartManagerCompany||{}} />}
