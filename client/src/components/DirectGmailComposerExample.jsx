@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, Link2, LoaderCircle, Mail, Paperclip, Send, X } from "lucide-react";
+import { directSendEligibility, formatBytes, uploadFileInChunks, validateEmailAttachment } from "../lib/emailAttachmentManager";
 
 /**
  * UI-only example for a future Gmail OAuth send endpoint.
@@ -7,6 +8,8 @@ import { AlertCircle, CheckCircle2, Link2, LoaderCircle, Mail, Paperclip, Send, 
  * Expected production integration:
  *   onSend({ to, cc, subject, body, attachments })
  *   -> POST /api/communications/email
+ *   onUploadAttachment({ file, chunk, chunkIndex, totalChunks, ... })
+ *   -> authenticated resumable object-storage upload endpoint
  *
  * The component deliberately does not contain OAuth tokens or Gmail API calls.
  */
@@ -15,6 +18,7 @@ export function DirectGmailComposerExample({
   connected = true,
   onConnectGmail,
   onSend,
+  onUploadAttachment,
   onSaveReference,
   onClose,
 }) {
@@ -22,6 +26,8 @@ export function DirectGmailComposerExample({
   const [attachments, setAttachments] = useState([]);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState({});
+  const uploadAbortRef = useRef(null);
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -29,12 +35,43 @@ export function DirectGmailComposerExample({
 
   function addAttachments(event) {
     const selected = Array.from(event.target.files || []);
-    setAttachments((current) => [...current, ...selected]);
+    const invalid = selected.map((file) => validateEmailAttachment(file)).find((result) => !result.ok);
+    if (invalid) setError(invalid.message);
+    else {
+      setError("");
+      setAttachments((current) => [...current, ...selected]);
+    }
     event.target.value = "";
   }
 
   function removeAttachment(fileName) {
     setAttachments((current) => current.filter((file) => file.name !== fileName));
+    setUploadProgress((current) => { const next = { ...current }; delete next[fileName]; return next; });
+  }
+
+  async function prepareAttachments() {
+    const eligibility = directSendEligibility(attachments);
+    const needsUpload = !eligibility.ok && eligibility.code === "TOTAL_TOO_LARGE_FOR_DIRECT_SEND"
+      ? attachments
+      : attachments.filter((file) => file.size > 24 * 1024 * 1024);
+    if (needsUpload.length && typeof onUploadAttachment !== "function") {
+      throw new Error("Large attachments require an authenticated upload endpoint. Save the email as a reference or configure onUploadAttachment.");
+    }
+    uploadAbortRef.current = new AbortController();
+    const prepared = [];
+    for (const file of attachments) {
+      if (!needsUpload.includes(file)) {
+        prepared.push({ file, name: file.name, mimeType: file.type, size: file.size, sendMode: "inline" });
+        continue;
+      }
+      const uploaded = await uploadFileInChunks(file, {
+        signal: uploadAbortRef.current.signal,
+        uploadChunk: (chunk) => onUploadAttachment(chunk),
+        onProgress: ({ percent, uploadedBytes, totalBytes }) => setUploadProgress((current) => ({ ...current, [file.name]: { percent, uploadedBytes, totalBytes } })),
+      });
+      prepared.push({ ...uploaded, file: undefined, sendMode: "secure_link" });
+    }
+    return prepared;
   }
 
   async function handleSubmit(event) {
@@ -48,12 +85,21 @@ export function DirectGmailComposerExample({
     setError("");
     setStatus("sending");
     try {
-      await onSend?.({ ...form, attachments });
+      const preparedAttachments = await prepareAttachments();
+      await onSend?.({ ...form, attachments: preparedAttachments });
       setStatus("sent");
     } catch (sendError) {
       setStatus("error");
       setError(sendError?.message || "Email could not be sent. Your draft is still available.");
+    } finally {
+      uploadAbortRef.current = null;
     }
+  }
+
+  function cancelUpload() {
+    uploadAbortRef.current?.abort();
+    setStatus("idle");
+    setError("Attachment upload cancelled. You can retry sending.");
   }
 
   async function saveReference() {
@@ -125,12 +171,15 @@ export function DirectGmailComposerExample({
             <input type="file" multiple className="sr-only" onChange={addAttachments} />
           </label>
           {attachments.map((file) => (
-            <span key={file.name} className="inline-flex max-w-full items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] text-slate-600">
-              <span className="max-w-40 truncate">{file.name}</span>
+            <span key={file.name} className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] text-slate-600">
+              <span className="max-w-40 truncate">{file.name} · {formatBytes(file.size)}</span>
+              {uploadProgress[file.name] && <span className="text-emerald-700">{uploadProgress[file.name].percent}%</span>}
               <button type="button" onClick={() => removeAttachment(file.name)} className="text-slate-400 hover:text-slate-700" aria-label={`Remove ${file.name}`}><X size={12} /></button>
             </span>
           ))}
         </div>
+
+        {Object.keys(uploadProgress).length > 0 && <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2 text-[10.5px] text-emerald-800"><div className="flex items-center justify-between gap-2"><span>Uploading large attachment securely…</span><button type="button" onClick={cancelUpload} className="font-semibold underline">Cancel</button></div>{Object.entries(uploadProgress).map(([name, progress]) => <div key={name} className="mt-1.5"><div className="mb-0.5 flex justify-between gap-2"><span className="max-w-[70%] truncate">{name}</span><span>{formatBytes(progress.uploadedBytes)} / {formatBytes(progress.totalBytes)}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-emerald-100"><div className="h-full bg-emerald-600 transition-all" style={{ width: `${progress.percent}%` }} /></div></div>)}</div>}
 
         {error && <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-[11.5px] text-red-700"><AlertCircle size={15} className="mt-0.5 shrink-0" />{error}</div>}
         {status === "sent" && <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-[11.5px] text-emerald-700"><CheckCircle2 size={15} />Email sent and added to the customer timeline.</div>}

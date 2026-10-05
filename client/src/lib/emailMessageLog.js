@@ -19,6 +19,12 @@ export function normalizeAttachmentMetadata(attachments = []) {
     name: file?.name || "attachment",
     mimeType: file?.type || file?.mimeType || "application/octet-stream",
     size: Number.isFinite(file?.size) ? file.size : null,
+    storageKey: file?.storageKey || null,
+    storageBucket: file?.storageBucket || null,
+    uploadSessionId: file?.uploadSessionId || null,
+    checksumSha256: file?.checksumSha256 || null,
+    status: file?.status || "ready",
+    sendMode: file?.sendMode || "inline",
   }));
 }
 
