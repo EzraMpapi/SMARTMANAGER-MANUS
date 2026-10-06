@@ -33691,6 +33691,8 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
   const [entries, setEntries] = useState([]);
   const [channel, setChannel] = useState("email");
   const [communicationFilter, setCommunicationFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [recipient, setRecipient] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -33713,8 +33715,17 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
     setLoadingEntries(true);
     setTimelineError("");
     try {
+      if (dateFrom && dateTo && dateFrom > dateTo) {
+        setTimelineError("The start date cannot be after the end date.");
+        setEntries([]);
+        setHasMoreEntries(false);
+        setNextCursor(null);
+        return;
+      }
       const query = sb("customer_communications").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }).limit(COMMUNICATION_PAGE_SIZE);
       if (communicationFilter !== "all") query.filter("data->>channel", "eq", communicationFilter);
+      if (dateFrom) query.filter("created_at", "gte", new Date(`${dateFrom}T00:00:00`).toISOString());
+      if (dateTo) query.filter("created_at", "lte", new Date(`${dateTo}T23:59:59.999`).toISOString());
       if (cursor?.createdAt && cursor?.id) {
         query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
       }
@@ -33733,14 +33744,14 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
       loadingEntriesRef.current = false;
       setLoadingEntries(false);
     }
-  }, [companyId, communicationFilter, hasMoreEntries]);
+  }, [companyId, communicationFilter, dateFrom, dateTo, hasMoreEntries]);
 
   useEffect(() => {
     setEntries([]);
     setNextCursor(null);
     setHasMoreEntries(true);
     if (IS_CONFIGURED) loadCommunicationPage(null, true);
-  }, [companyId, communicationFilter]);
+  }, [companyId, communicationFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;
@@ -33818,6 +33829,16 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
               {option.label}
             </button>
           ))}
+          <span className="mx-1 h-4 w-px shrink-0 bg-slate-200" />
+          <label className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-slate-500">
+            From
+            <input type="date" value={dateFrom} max={dateTo || undefined} onChange={(event) => setDateFrom(event.target.value)} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-normal text-slate-600 outline-none focus:border-emerald-500" aria-label="Filter communications from date" />
+          </label>
+          <label className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-slate-500">
+            To
+            <input type="date" value={dateTo} min={dateFrom || undefined} onChange={(event) => setDateTo(event.target.value)} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-normal text-slate-600 outline-none focus:border-emerald-500" aria-label="Filter communications to date" />
+          </label>
+          {(dateFrom || dateTo) && <button type="button" onClick={() => { setDateFrom(""); setDateTo(""); }} className="shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700">Clear dates</button>}
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {entries.length === 0 && !loadingEntries && !timelineError ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (
