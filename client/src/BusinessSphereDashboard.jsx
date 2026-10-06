@@ -28973,6 +28973,7 @@ function ManualJournalView({ currentUser }) {
   const [description, setDescription] = useState("");
   const [saved, setSaved] = useState([]);
   const [err, setErr] = useState(null);
+  const [posting, setPosting] = useState(false);
 
   const totalDebit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
   const totalCredit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
@@ -28987,6 +28988,10 @@ function ManualJournalView({ currentUser }) {
   async function saveEntry() {
     if (!description.trim()) { setErr("Add a description for this journal entry."); return; }
     if (!balanced) { setErr("Debits must equal credits before saving."); return; }
+    if (lines.some((line) => Number(line.debit) > 0 && Number(line.credit) > 0)) { setErr("Each journal line must contain a debit or a credit, not both."); return; }
+    if (posting) return;
+    setPosting(true);
+    setErr(null);
     const entry = {
       id: docId("JE"),
       date: entryDate,
@@ -28996,19 +29001,44 @@ function ManualJournalView({ currentUser }) {
       postedBy: currentUser?.name || "System",
       postedAt: new Date().toISOString(),
     };
-    setSaved((prev) => [entry, ...prev]);
-    setLines([emptyLine(), emptyLine()]);
-    setDescription("");
-    setErr(null);
-    notify("Journal entry posted: TZS " + money(Math.round(totalDebit)) + "k", "success");
-    logAudit("Manual journal entry: " + entry.id, "Finance", currentUser?.name || "System", description + " — TZS " + money(Math.round(totalDebit)) + "k");
-    if (IS_CONFIGURED) {
-      try {
-        await sb("journal_entries").insert({
-          entry_ref: entry.id, entry_date: entryDate, description,
-          total_amount: totalDebit, posted_by: entry.postedBy,
-        }).run();
-      } catch (_e) { notify("Saved locally — server sync failed.", "error"); }
+    try {
+      if (IS_CONFIGURED) {
+        const payload = {
+          p_payload: {
+            idempotencyKey: `manual-journal:${entry.id}`,
+            sourceModule: "MANUAL",
+            sourceType: "MANUAL_JOURNAL",
+            sourceTable: "manual_journal_entries",
+            sourceId: null,
+            businessDate: entryDate,
+            currency: "TZS",
+            narration: description.trim(),
+            entries: entry.lines.map((line) => ({
+              accountCode: line.account.split(" – ")[0].trim(),
+              entryType: Number(line.debit) > 0 ? "Debit" : "Credit",
+              amount: Number(Number(line.debit || line.credit).toFixed(2)),
+              memo: line.memo.trim() || null,
+            })),
+            metadata: { clientReference: entry.id },
+          },
+        };
+        const result = await callWorkspaceRpcWithSessionRefresh("fin_post_operational_entry", payload);
+        const posted = result?.data || result;
+        if (!posted?.ok || !posted?.batchId) throw new Error("The accounting server did not confirm this journal posting.");
+        entry.id = posted.batchNumber || entry.id;
+        entry.batchId = posted.batchId;
+        entry.totalDebit = Number(posted.debitTotal || totalDebit);
+      }
+      setSaved((prev) => [entry, ...prev]);
+      setLines([emptyLine(), emptyLine()]);
+      setDescription("");
+      notify("Journal entry posted: TZS " + money(Math.round(entry.totalDebit)), "success");
+      logAudit("Manual journal entry: " + entry.id, "Finance", currentUser?.name || "System", description + " — TZS " + money(Math.round(entry.totalDebit)));
+    } catch (error) {
+      setErr(error?.message || "The accounting server did not confirm this journal posting. Your entry remains open so you can retry.");
+      notify(error?.message || "The accounting server did not confirm this journal posting.", "error");
+    } finally {
+      setPosting(false);
     }
   }
 
@@ -29035,8 +29065,8 @@ function ManualJournalView({ currentUser }) {
           <table className="w-full text-[12.5px]">
             <thead><tr className="border-b border-slate-100">
               <th className="pb-2 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[40%]">Account</th>
-              <th className="pb-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[20%]">Debit (TZS k)</th>
-              <th className="pb-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[20%]">Credit (TZS k)</th>
+              <th className="pb-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[20%]">Debit (TZS)</th>
+              <th className="pb-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[20%]">Credit (TZS)</th>
               <th className="pb-2 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">Memo</th>
               <th className="pb-2 w-8" />
             </tr></thead>
@@ -29086,9 +29116,9 @@ function ManualJournalView({ currentUser }) {
           <button onClick={addLine} className="text-[12.5px] font-medium text-[#16A34A] hover:underline flex items-center gap-1"><Plus size={13} /> Add line</button>
           <div className="flex-1" />
           {err && <p className="text-[12px] text-[#EF4444] flex items-center gap-1"><AlertCircle size={12} />{err}</p>}
-          <button onClick={saveEntry} disabled={!balanced || !description.trim()}
+          <button onClick={saveEntry} disabled={!balanced || !description.trim() || posting}
             className="btn-primary text-white text-[12.5px] font-medium rounded-xl px-4 py-2.5 disabled:opacity-40">
-            Post Journal Entry
+            {posting ? "Posting…" : "Post Journal Entry"}
           </button>
         </div>
       </div>
