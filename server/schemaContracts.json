@@ -7,7 +7,7 @@
   },
   "sales_invoices": {
     "tableName": "sales_invoices",
-    "expectedColumns": ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data", "doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"],
+    "expectedColumns": ["id", "company_id", "name", "status", "amount", "notes", "created_at", "updated_at", "data", "doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid", "quotation_id"],
     "requiredColumns": ["company_id", "status", "amount", "doc_number", "customer", "issue_date", "due_date"],
     "forbiddenColumns": []
   },
