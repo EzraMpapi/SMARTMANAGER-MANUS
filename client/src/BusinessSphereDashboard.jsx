@@ -2295,6 +2295,12 @@ export function resolveDailyBriefingFetchState({ sources = [], usingDemoBriefing
   };
 }
 
+function dailyBriefDateOffset(dateString, days) {
+  const date = new Date(`${dateString}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+}
+
 function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
   expenses, crm, employees, leaveRequests, workOrders, subscriptions, smartAlerts, enabledModules, initialOpen = true }) {
 
@@ -2308,6 +2314,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
   const [open, setOpen] = useState(initialOpen);
   const [printing, setPrinting] = useState(false);
   const [retryingData, setRetryingData] = useState(false);
+  const [selectedBriefDate, setSelectedBriefDate] = useState(TODAY_STR);
   useEffect(() => {
     if (initialOpen) setOpen(true);
   }, [initialOpen]);
@@ -2356,7 +2363,9 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
   // ── Compute all section data ─────────────────────────────────────────
   const data = useMemo(() => {
     const fmt    = (n) => new Intl.NumberFormat("en-US").format(Math.round(n || 0));
-    const today  = TODAY_STR;
+    const today  = selectedBriefDate;
+    const nextSevenDays = dailyBriefDateOffset(today, 7);
+    const nextThirtyDays = dailyBriefDateOffset(today, 30);
     const invRows = invoices?.rows || [];
 
     // SALES
@@ -2394,9 +2403,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
     const onLeave   = (leaveRequests?.rows || []).filter(l =>
       l.status === "Approved" && l.startDate <= today && l.endDate >= today
     );
-    const expContracts = emps.filter(e =>
-      e.contractEndDate && e.contractEndDate <= new Date(Date.now()+30*86400000).toISOString().slice(0,10)
-    );
+    const expContracts = emps.filter(e => e.contractEndDate && e.contractEndDate >= today && e.contractEndDate <= nextThirtyDays);
 
     // MANUFACTURING
     const wos       = workOrders?.rows || [];
@@ -2404,7 +2411,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
 
     // SUBSCRIPTIONS
     const subs      = subscriptions?.rows || [];
-    const subsDue   = subs.filter(s => s.status === "Active" && s.nextBillingDate && s.nextBillingDate <= new Date(Date.now()+7*86400000).toISOString().slice(0,10));
+    const subsDue   = subs.filter(s => s.status === "Active" && s.nextBillingDate && s.nextBillingDate >= today && s.nextBillingDate <= nextSevenDays);
     const MRR       = subs.filter(s=>s.status==="Active").reduce((sum,s)=>{
       const mo={Monthly:1,Quarterly:3,Annual:12}[s.cycle]||1;
       return sum+(s.amount/mo);
@@ -2419,7 +2426,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
       grossPL, leads, newLeads, openOpps, pipeVal, activeEmps, onLeave,
       expContracts, wos, overdueWO, subs, subsDue, MRR, alerts,
     };
-  }, [invoices?.rows, inventory?.rows, expenses?.rows, crm?.rows,
+  }, [selectedBriefDate, invoices?.rows, inventory?.rows, expenses?.rows, crm?.rows,
       employees, leaveRequests?.rows, workOrders?.rows, subscriptions?.rows, smartAlerts]);
 
   if (!open) return null;
@@ -2696,7 +2703,26 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
                 <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</span>
               </div>
               <h1 className="text-white text-[19px] sm:text-[24px] font-black tracking-tight leading-tight">Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {(currentUser?.name||"").split(" ")[0]} 👋</h1>
-              <p className="text-[rgba(255,255,255,.5)] text-[12.5px] mt-1.5">Here is your daily business briefing for {co.name||"your company"}</p>
+              <p className="text-[rgba(255,255,255,.5)] text-[12.5px] mt-1.5">Here is your daily business briefing for {co.name||"your company"} on {new Date(`${selectedBriefDate}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <label className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+                  <Calendar size={14} className="text-[#4ADE80]" aria-hidden="true" />
+                  <span className="sr-only">Select Daily Brief date</span>
+                  <input
+                    type="date"
+                    value={selectedBriefDate}
+                    onChange={(event) => setSelectedBriefDate(event.target.value || TODAY_STR)}
+                    aria-label="Select Daily Brief date"
+                    className="min-w-0 bg-transparent text-[11px] font-bold text-white outline-none [color-scheme:dark] focus-visible:ring-2 focus-visible:ring-[#4ADE80]/70"
+                    data-testid="daily-brief-date"
+                  />
+                </label>
+                {selectedBriefDate !== TODAY_STR && (
+                  <button type="button" onClick={() => setSelectedBriefDate(TODAY_STR)} className="min-h-9 rounded-xl border border-white/15 px-3 text-[11px] font-bold text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4ADE80]/70">
+                    Today
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button onClick={printBriefing}
@@ -2733,7 +2759,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
               {l:"Gross P&L",         v:(data.grossPL>=0?"+":"")+fmtCur(Math.abs(data.grossPL)), col:data.grossPL>=0?"#16A34A":"#EF4444", sub:"Collected − Expenses"},
               {l:"Inventory Value",   v:fmtCur(data.stockValue),    col:"#111827", sub:(inventory?.rows||[]).length+" SKUs"},
               {l:"Low/Out of Stock",  v:String(data.lowStock.length),col:data.lowStock.length>0?"#EF4444":"#16A34A", sub:data.outOfStock.length+" completely out"},
-              {l:"Active Staff",      v:String(data.activeEmps.length),col:"#111827", sub:data.onLeave.length+" on leave today"},
+              {l:"Active Staff",      v:String(data.activeEmps.length),col:"#111827", sub:data.onLeave.length+" on leave on selected date"},
               {l:"Pipeline Value",    v:fmtCur(data.pipeVal),       col:"#7C3AED", sub:data.openOpps.length+" open opps"},
             ].map(({l,v,col,sub})=>(
               <div key={l} className="bg-white px-4 py-4">
@@ -2849,7 +2875,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
               <div className="space-y-2">
                 {[
                   ["Active Employees", activeEmps.length, "#111827"],
-                  ["On Leave Today",   onLeave.length,    onLeave.length>0?"#F59E0B":"#16A34A"],
+                  ["On Leave on Date", onLeave.length,    onLeave.length>0?"#F59E0B":"#16A34A"],
                   ["Expiring Contracts (30d)", expContracts.length, expContracts.length>0?"#EF4444":"#16A34A"],
                   ["Overdue Work Orders", data.overdueWO.length, data.overdueWO.length>0?"#EF4444":"#16A34A"],
                 ].map(([l,v,col])=>(
@@ -2864,7 +2890,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
               <h2 className="text-[14px] font-black text-[#111827] mb-3">📊 CRM & Revenue</h2>
               <div className="space-y-2">
                 {[
-                  ["New Leads Today",       newLeads.length,      "#2563EB"],
+                  ["New Leads on Date",     newLeads.length,      "#2563EB"],
                   ["Open Opportunities",    openOpps.length,      "#7C3AED"],
                   ["Pipeline Value",        fmtCur(pipeVal),      "#7C3AED"],
                   ["Monthly Recurring Rev", fmtCur(MRR),          "#16A34A"],
