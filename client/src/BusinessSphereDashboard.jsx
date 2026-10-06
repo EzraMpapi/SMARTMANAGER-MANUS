@@ -33697,6 +33697,7 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState("");
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [hasMoreEntries, setHasMoreEntries] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
@@ -33708,6 +33709,17 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
     name: row.name || row.company || row.email,
     email: row.email,
   })), [crm]);
+
+  const buildCommunicationQuery = useCallback((cursor = null, limit = COMMUNICATION_PAGE_SIZE) => {
+    const query = sb("customer_communications").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }).limit(limit);
+    if (communicationFilter !== "all") query.filter("data->>channel", "eq", communicationFilter);
+    if (dateFrom) query.filter("created_at", "gte", new Date(`${dateFrom}T00:00:00`).toISOString());
+    if (dateTo) query.filter("created_at", "lte", new Date(`${dateTo}T23:59:59.999`).toISOString());
+    if (cursor?.createdAt && cursor?.id) {
+      query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
+    }
+    return query;
+  }, [communicationFilter, dateFrom, dateTo]);
 
   const loadCommunicationPage = useCallback(async (cursor = null, replace = false) => {
     if (!IS_CONFIGURED || loadingEntriesRef.current || (!replace && !hasMoreEntries)) return;
@@ -33722,14 +33734,7 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
         setNextCursor(null);
         return;
       }
-      const query = sb("customer_communications").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }).limit(COMMUNICATION_PAGE_SIZE);
-      if (communicationFilter !== "all") query.filter("data->>channel", "eq", communicationFilter);
-      if (dateFrom) query.filter("created_at", "gte", new Date(`${dateFrom}T00:00:00`).toISOString());
-      if (dateTo) query.filter("created_at", "lte", new Date(`${dateTo}T23:59:59.999`).toISOString());
-      if (cursor?.createdAt && cursor?.id) {
-        query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
-      }
-      const rows = await query.run();
+      const rows = await buildCommunicationQuery(cursor).run();
       const page = (rows || []).map((row) => ({ id: row.id, ...row.data, status: row.status, createdAt: row.created_at }));
       setEntries((previous) => {
         if (replace) return page;
@@ -33744,7 +33749,7 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
       loadingEntriesRef.current = false;
       setLoadingEntries(false);
     }
-  }, [companyId, communicationFilter, dateFrom, dateTo, hasMoreEntries]);
+  }, [buildCommunicationQuery, companyId, hasMoreEntries]);
 
   useEffect(() => {
     setEntries([]);
@@ -33810,6 +33815,41 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
     await saveReference({ channel, direction: "outbound", recipient: recipient.trim(), subject: subject.trim(), body: body.trim(), status: "copied_saved" }, "Message copied and saved for customer history.");
   }
 
+  async function exportFilteredCommunications(format) {
+    if (!IS_CONFIGURED || exporting || (dateFrom && dateTo && dateFrom > dateTo)) {
+      if (dateFrom && dateTo && dateFrom > dateTo) notify("Choose a valid date range before exporting.", "error");
+      return;
+    }
+    setExporting(format);
+    try {
+      const allRows = [];
+      let cursor = null;
+      let page;
+      do {
+        page = await buildCommunicationQuery(cursor, 500).run();
+        allRows.push(...(page || []));
+        const last = page?.[page.length - 1];
+        cursor = last ? { createdAt: last.created_at, id: last.id } : null;
+      } while (page?.length === 500 && cursor && allRows.length < 10000);
+
+      const headers = ["ID", "Channel", "Direction", "Recipient", "Subject", "Message / Reference", "Status", "Created At"];
+      const rows = allRows.map((row) => {
+        const data = row.data || {};
+        return [row.id, data.channel || "", data.direction || "", data.recipient || "", data.subject || "", data.body || data.reference || row.notes || "", row.status || "", row.created_at || ""];
+      });
+      const filterPart = communicationFilter === "all" ? "all" : communicationFilter;
+      const datePart = [dateFrom || "start", dateTo || "end"].join("-now");
+      const filename = `customer-communications-${filterPart}-${datePart}`;
+      if (format === "csv") exportCSV(`${filename}.csv`, headers, rows);
+      else exportExcel(`${filename}.xlsx`, "Communications", headers, rows);
+      notify(`Exported ${rows.length} filtered communication${rows.length === 1 ? "" : "s"}.`);
+    } catch (error) {
+      notify(`Export failed. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setExporting("");
+    }
+  }
+
   return (
     <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] gap-4 h-full min-h-[560px]">
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm flex flex-col min-h-0 overflow-hidden">
@@ -33839,6 +33879,9 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
             <input type="date" value={dateTo} min={dateFrom || undefined} onChange={(event) => setDateTo(event.target.value)} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-normal text-slate-600 outline-none focus:border-emerald-500" aria-label="Filter communications to date" />
           </label>
           {(dateFrom || dateTo) && <button type="button" onClick={() => { setDateFrom(""); setDateTo(""); }} className="shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700">Clear dates</button>}
+          <span className="mx-1 h-4 w-px shrink-0 bg-slate-200" />
+          <button type="button" onClick={() => exportFilteredCommunications("csv")} disabled={Boolean(exporting) || loadingEntries || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45" title="Export all records matching the active filters as CSV"><Download size={11} />{exporting === "csv" ? "Exporting…" : "CSV"}</button>
+          <button type="button" onClick={() => exportFilteredCommunications("xlsx")} disabled={Boolean(exporting) || loadingEntries || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45" title="Export all records matching the active filters as Excel"><FileSpreadsheet size={11} />{exporting === "xlsx" ? "Exporting…" : "Excel"}</button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {entries.length === 0 && !loadingEntries && !timelineError ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (
