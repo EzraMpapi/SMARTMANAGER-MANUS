@@ -1031,6 +1031,7 @@ export const appRouter = router({
 
   transactionalEmail: router({
     send: publicProcedure.input(z.object({ to: z.string().min(3).max(6_000), cc: z.string().max(6_000).optional(), bcc: z.string().max(6_000).optional(), subject: z.string().min(1).max(160), body: z.string().min(1).max(12_000) })).mutation(({ ctx, input }) => sendWorkspaceEmail(ctx.req, input)),
+    sendExport: publicProcedure.input(z.object({ to: z.string().email(), subject: z.string().min(1).max(160), body: z.string().min(1).max(12_000), attachment: z.object({ filename: z.string().min(1).max(180), contentBase64: z.string().min(1).max(14_000_000), contentType: z.string().max(160).optional() }) })).mutation(({ ctx, input }) => sendWorkspaceEmail(ctx.req, input)),
   }),
 
   support: router({

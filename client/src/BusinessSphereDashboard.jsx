@@ -23819,6 +23819,39 @@ function exportExcel(filename, sheetName, headers, rows) {
   notify(`Exported ${filename}`);
 }
 
+function buildExportFile(filename, format, sheetName, headers, rows) {
+  if (format === "csv") {
+    const esc = (value) => {
+      const text = String(value ?? "");
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const content = `\ufeff${[headers, ...rows].map((row) => row.map(esc).join(",")).join("\n")}`;
+    return { filename, contentType: "text/csv;charset=utf-8", blob: new Blob([content], { type: "text/csv;charset=utf-8" }), contentBase64: encodeBase64(new TextEncoder().encode(content)) };
+  }
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.slice(0, 31));
+  const contentBase64 = XLSX.write(workbook, { bookType: "xlsx", type: "base64" });
+  const binary = Uint8Array.from(atob(contentBase64), (character) => character.charCodeAt(0));
+  return { filename, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", blob: new Blob([binary], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), contentBase64 };
+}
+
+function encodeBase64(bytes) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  return btoa(binary);
+}
+
+function downloadExportFile(file) {
+  const url = URL.createObjectURL(file.blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = file.filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 // Word recognizes HTML wrapped in its own XML namespace when given a
 // .doc extension — no docx-generation library exists in this environment
 // (mammoth, the one library available, only reads .docx, it does not write
@@ -33704,7 +33737,9 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
   const [timelineError, setTimelineError] = useState("");
   const loadMoreRef = useRef(null);
   const loadingEntriesRef = useRef(false);
+  const sendExportEmail = trpc.transactionalEmail.sendExport.useMutation();
   const companyId = company?.id || company?.companyId || "";
+  const administratorEmail = currentUser?.email || company?.owner_email || company?.ownerEmail || company?.admin_email || company?.adminEmail || company?.email || "";
   const contacts = useMemo(() => (crm?.rows || crm || []).filter((row) => row.email).map((row) => ({
     name: row.name || row.company || row.email,
     email: row.email,
@@ -33839,10 +33874,20 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
       });
       const filterPart = communicationFilter === "all" ? "all" : communicationFilter;
       const datePart = [dateFrom || "start", dateTo || "end"].join("-now");
-      const filename = `customer-communications-${filterPart}-${datePart}`;
-      if (format === "csv") exportCSV(`${filename}.csv`, headers, rows);
-      else exportExcel(`${filename}.xlsx`, "Communications", headers, rows);
+      const file = buildExportFile(`customer-communications-${filterPart}-${datePart}.${format === "csv" ? "csv" : "xlsx"}`, format, "Communications", headers, rows);
+      downloadExportFile(file);
       notify(`Exported ${rows.length} filtered communication${rows.length === 1 ? "" : "s"}.`);
+      if (administratorEmail && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(administratorEmail)) {
+        await sendExportEmail.mutateAsync({
+          to: administratorEmail,
+          subject: `Smart Manager customer communications export — ${filterPart}`,
+          body: `Attached is the filtered customer communications export generated from Smart Manager.\n\nChannel: ${filterPart}\nDate range: ${dateFrom || "Any"} to ${dateTo || "Any"}\nRecords: ${rows.length}`,
+          attachment: { filename: file.filename, contentBase64: file.contentBase64, contentType: file.contentType },
+        });
+        notify(`Export emailed to the administrator at ${administratorEmail}.`);
+      } else {
+        notify("The export was downloaded, but no valid administrator email is configured.", "error");
+      }
     } catch (error) {
       notify(`Export failed. ${error?.message || "Try again."}`, "error");
     } finally {
@@ -33880,8 +33925,8 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
           </label>
           {(dateFrom || dateTo) && <button type="button" onClick={() => { setDateFrom(""); setDateTo(""); }} className="shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700">Clear dates</button>}
           <span className="mx-1 h-4 w-px shrink-0 bg-slate-200" />
-          <button type="button" onClick={() => exportFilteredCommunications("csv")} disabled={Boolean(exporting) || loadingEntries || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45" title="Export all records matching the active filters as CSV"><Download size={11} />{exporting === "csv" ? "Exporting…" : "CSV"}</button>
-          <button type="button" onClick={() => exportFilteredCommunications("xlsx")} disabled={Boolean(exporting) || loadingEntries || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45" title="Export all records matching the active filters as Excel"><FileSpreadsheet size={11} />{exporting === "xlsx" ? "Exporting…" : "Excel"}</button>
+          <button type="button" onClick={() => exportFilteredCommunications("csv")} disabled={Boolean(exporting) || loadingEntries || sendExportEmail.isPending || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45" title="Download and email all records matching the active filters as CSV"><Download size={11} />{exporting === "csv" ? "Sending…" : "CSV + Email"}</button>
+          <button type="button" onClick={() => exportFilteredCommunications("xlsx")} disabled={Boolean(exporting) || loadingEntries || sendExportEmail.isPending || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45" title="Download and email all records matching the active filters as Excel"><FileSpreadsheet size={11} />{exporting === "xlsx" ? "Sending…" : "Excel + Email"}</button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {entries.length === 0 && !loadingEntries && !timelineError ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (

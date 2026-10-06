@@ -104,7 +104,7 @@ export async function sendTransactionalEmail(input: SendInput): Promise<{ delive
   return { deliveryId: payload.id, acceptedAt: new Date().toISOString() };
 }
 
-export async function sendWorkspaceEmail(req: CreateExpressContextOptions["req"], input: { to: string; cc?: string; bcc?: string; subject: string; body: string }) {
+export async function sendWorkspaceEmail(req: CreateExpressContextOptions["req"], input: { to: string; cc?: string; bcc?: string; subject: string; body: string; attachment?: { filename: string; contentBase64: string; contentType?: string } }) {
   const { profile } = await resolveVerifiedProfile(req);
   if (!EMAIL_SENDER_ROLES.has(profile.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Your workspace role cannot send company emails." });
   const to = parseEmailRecipients(input.to, "recipient");
@@ -114,6 +114,14 @@ export async function sendWorkspaceEmail(req: CreateExpressContextOptions["req"]
   const subject = input.subject.trim();
   const body = input.body.trim();
   if (!subject || subject.length > 160 || !body || body.length > 12_000) throw new TRPCError({ code: "BAD_REQUEST", message: "Enter a subject up to 160 characters and a message up to 12,000 characters." });
-  const delivery = await sendTransactionalEmail({ to, cc, bcc, subject, text: body, html: workspaceEmailHtml({ title: subject, preheader: "Message from your Smart Manager workspace", body }), category: "manual" });
+  const attachments = input.attachment ? [{
+    filename: input.attachment.filename.trim(),
+    content: Buffer.from(input.attachment.contentBase64, "base64"),
+    contentType: input.attachment.contentType,
+  }] : undefined;
+  if (attachments && input.attachment && (!attachments[0].filename || attachments[0].filename.length > 180 || !/^[A-Za-z0-9._ -]+$/.test(attachments[0].filename) || !/^[A-Za-z0-9+/]+={0,2}$/.test(input.attachment.contentBase64) || attachments[0].content.length > 10 * 1024 * 1024)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "The exported attachment is invalid or exceeds the 10 MB limit." });
+  }
+  const delivery = await sendTransactionalEmail({ to, cc, bcc, subject, text: body, html: workspaceEmailHtml({ title: subject, preheader: "Message from your Smart Manager workspace", body }), attachments, category: "manual" });
   return { ...delivery, recipientCount: to.length + cc.length + bcc.length, companyId: profile.company_id, from: ENV.resendFromEmail };
 }
