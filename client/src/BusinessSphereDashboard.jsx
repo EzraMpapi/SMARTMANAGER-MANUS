@@ -657,7 +657,7 @@ export async function callWorkspaceRpcWithSessionRefresh(name, params, accessTok
 export const GENERIC_COMPANY_TABLES = new Set(`
 approval_signatures bank_accounts bank_fixed_deposits bank_loans bank_standing_orders bank_transactions
 branches business_loans collab_messages community_contributions community_groups company_modules
-crm_contacts crm_interactions crm_leads customer_feedback departments digital_signatures documents
+crm_contacts crm_interactions crm_leads customer_communications customer_feedback departments digital_signatures documents
 ecommerce_orders ecommerce_products emails expense_budgets   flt_maintenance flt_trips flt_vehicles
   hc_appointments hc_doctors hc_invoices hc_lab_orders hc_patients hc_prescriptions hc_radiology hc_reports hc_visits hc_vitals
 hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_leave_requests hr_payroll_runs hr_performance_reviews
@@ -765,8 +765,23 @@ export function sb(table) {
       matchFilters.push({ col: normalizedColumn, val });
       return builder;
     },
+    filter(col, operator, value) {
+      if (col && operator && value !== undefined && value !== null) {
+        params.append(col, `${operator}.${value}`);
+      }
+      return builder;
+    },
+    or(expression) {
+      if (expression) params.set("or", expression.startsWith("(") ? expression : `(${expression})`);
+      return builder;
+    },
     order(col, { ascending = true } = {}) {
       params.set("order", `${col}.${ascending ? "asc" : "desc"}`);
+      return builder;
+    },
+    limit(value) {
+      const safeLimit = Math.max(0, Math.min(1000, Number(value) || 0));
+      params.set("limit", String(safeLimit));
       return builder;
     },
     insert(row) {
@@ -8603,19 +8618,6 @@ function CRM({ crm, invoices, expenses, suppliers }) {
     }
   }
 
-  async function shareInventoryReport() {
-    const reportItems = rowsOf(inventory);
-    const lowItems = reportItems.filter((item) => Number(item.qty) <= Number(item.reorder || 0));
-    const stockValue = reportItems.reduce((sum, item) => sum + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
-    const preview = reportItems.slice(0, 10).map((item) => `${item.name}: ${item.qty} ${item.unit || "units"} (${stockStatus(item.qty, item.reorder)})`).join("\n");
-    const result = await openDeviceShare({
-      title: "Inventory Stock Report",
-      text: `Inventory Stock Report\n${reportItems.length} SKUs · ${lowItems.length} low-stock items · Stock value TZS ${money(Math.round(stockValue))}k\n\n${preview || "No inventory items recorded."}`,
-      onFallback: () => notify("Inventory report copied. Choose WhatsApp or Email from your device to share it."),
-    });
-    if (result === "shared") notify("Share sheet opened for the inventory report — choose WhatsApp or Email");
-  }
-
   return (
     <div className="space-y-5">
       {IS_CONFIGURED && error && (
@@ -12636,6 +12638,19 @@ function Inventory({ inventory, suppliersHook }) {
   const warehouses = rowsOf(warehousesHook);
   const categories = useMemo(() => [...new Set(items.map((item) => item.category || "General"))].sort((a, b) => a.localeCompare(b)), [items]);
 
+  async function shareInventoryReport() {
+    const reportItems = rowsOf(inventory);
+    const lowItems = reportItems.filter((item) => Number(item.qty) <= Number(item.reorder || 0));
+    const stockValue = reportItems.reduce((sum, item) => sum + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
+    const preview = reportItems.slice(0, 10).map((item) => `${item.name}: ${item.qty} ${item.unit || "units"} (${stockStatus(item.qty, item.reorder)})`).join("\n");
+    const result = await openDeviceShare({
+      title: "Inventory Stock Report",
+      text: `Inventory Stock Report\n${reportItems.length} SKUs · ${lowItems.length} low-stock items · Stock value TZS ${money(Math.round(stockValue))}k\n\n${preview || "No inventory items recorded."}`,
+      onFallback: () => notify("Inventory report copied. Choose WhatsApp or Email from your device to share it."),
+    });
+    if (result === "shared") notify("Share sheet opened for the inventory report — choose WhatsApp or Email");
+  }
+
   // Real bulk import — genuinely creates inventory_items rows, the exact
   // same table and shape the manual "Add Item" form writes to. A missing
   // SKU gets a real generated one rather than being skipped, since a
@@ -12879,7 +12894,7 @@ function Inventory({ inventory, suppliersHook }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className={`${operationalFilterBarClass} w-full max-w-full overflow-x-auto sm:w-fit`}>
+        <div className={`${operationalFilterBarClass} sm-inventory-tabs w-full max-w-full overflow-x-auto sm:w-fit`} role="tablist" aria-label="Inventory sections">
           {INV_TABS.map((t) => {
             const Icon = t.icon;
             const isActive = tab === t.id;
@@ -12887,7 +12902,10 @@ function Inventory({ inventory, suppliersHook }) {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`sm-inventory-tab flex-none min-h-10 text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                   isActive ? "bg-white text-[#111827] shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
@@ -23827,6 +23845,39 @@ function exportExcel(filename, sheetName, headers, rows) {
   notify(`Exported ${filename}`);
 }
 
+function buildExportFile(filename, format, sheetName, headers, rows) {
+  if (format === "csv") {
+    const esc = (value) => {
+      const text = String(value ?? "");
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const content = `\ufeff${[headers, ...rows].map((row) => row.map(esc).join(",")).join("\n")}`;
+    return { filename, contentType: "text/csv;charset=utf-8", blob: new Blob([content], { type: "text/csv;charset=utf-8" }), contentBase64: encodeBase64(new TextEncoder().encode(content)) };
+  }
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.slice(0, 31));
+  const contentBase64 = XLSX.write(workbook, { bookType: "xlsx", type: "base64" });
+  const binary = Uint8Array.from(atob(contentBase64), (character) => character.charCodeAt(0));
+  return { filename, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", blob: new Blob([binary], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), contentBase64 };
+}
+
+function encodeBase64(bytes) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  return btoa(binary);
+}
+
+function downloadExportFile(file) {
+  const url = URL.createObjectURL(file.blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = file.filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 // Word recognizes HTML wrapped in its own XML namespace when given a
 // .doc extension — no docx-generation library exists in this environment
 // (mammoth, the one library available, only reads .docx, it does not write
@@ -32462,6 +32513,7 @@ function PublishTemplatePanel({ workflow, onClose, onPublish }) {
 /* ---------------------------------- ENTERPRISE COLLABORATION HUB ---------------------------------- */
 
 const COLLAB_TABS = [
+  { id: "timeline",   label: "Customer Timeline",  icon: History },
   { id: "channels",   label: "Team Chat",          icon: MessageSquare },
   { id: "whatsapp",   label: "WhatsApp",            icon: MessageCircle },
   { id: "email",      label: "Email",               icon: Mail },
@@ -33693,8 +33745,284 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
 }
 
 
+function CustomerCommunicationTimeline({ currentUser, crm, company }) {
+  const COMMUNICATION_PAGE_SIZE = 25;
+  const [entries, setEntries] = useState([]);
+  const [channel, setChannel] = useState("email");
+  const [communicationFilter, setCommunicationFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [recipient, setRecipient] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState("");
+  const [loadingEntries, setLoadingEntries] = useState(false);
+  const [hasMoreEntries, setHasMoreEntries] = useState(true);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [timelineError, setTimelineError] = useState("");
+  const loadMoreRef = useRef(null);
+  const loadingEntriesRef = useRef(false);
+  const sendExportEmail = trpc.transactionalEmail.sendExport.useMutation();
+  const companyId = company?.id || company?.companyId || "";
+  const administratorEmail = currentUser?.email || company?.owner_email || company?.ownerEmail || company?.admin_email || company?.adminEmail || company?.email || "";
+  const contacts = useMemo(() => (crm?.rows || crm || []).filter((row) => row.email).map((row) => ({
+    name: row.name || row.company || row.email,
+    email: row.email,
+  })), [crm]);
+  const communicationAnalytics = useMemo(() => {
+    const channelCounts = entries.reduce((counts, entry) => {
+      const key = entry.channel || "other";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
+    const directionCounts = entries.reduce((counts, entry) => {
+      const key = entry.direction || "unspecified";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
+    const statusCounts = entries.reduce((counts, entry) => {
+      const key = entry.status || "saved";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
+    return { channelCounts, directionCounts, statusCounts };
+  }, [entries]);
+
+  const buildCommunicationQuery = useCallback((cursor = null, limit = COMMUNICATION_PAGE_SIZE) => {
+    const query = sb("customer_communications").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }).limit(limit);
+    if (communicationFilter !== "all") query.filter("data->>channel", "eq", communicationFilter);
+    if (dateFrom) query.filter("created_at", "gte", new Date(`${dateFrom}T00:00:00`).toISOString());
+    if (dateTo) query.filter("created_at", "lte", new Date(`${dateTo}T23:59:59.999`).toISOString());
+    if (cursor?.createdAt && cursor?.id) {
+      query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
+    }
+    return query;
+  }, [communicationFilter, dateFrom, dateTo]);
+
+  const loadCommunicationPage = useCallback(async (cursor = null, replace = false) => {
+    if (!IS_CONFIGURED || loadingEntriesRef.current || (!replace && !hasMoreEntries)) return;
+    loadingEntriesRef.current = true;
+    setLoadingEntries(true);
+    setTimelineError("");
+    try {
+      if (dateFrom && dateTo && dateFrom > dateTo) {
+        setTimelineError("The start date cannot be after the end date.");
+        setEntries([]);
+        setHasMoreEntries(false);
+        setNextCursor(null);
+        return;
+      }
+      const rows = await buildCommunicationQuery(cursor).run();
+      const page = (rows || []).map((row) => ({ id: row.id, ...row.data, status: row.status, createdAt: row.created_at }));
+      setEntries((previous) => {
+        if (replace) return page;
+        const seen = new Set(previous.map((entry) => entry.id));
+        return [...previous, ...page.filter((entry) => !seen.has(entry.id))];
+      });
+      setHasMoreEntries(page.length === COMMUNICATION_PAGE_SIZE);
+      setNextCursor(page.length ? { createdAt: rows[rows.length - 1].created_at, id: rows[rows.length - 1].id } : null);
+    } catch (error) {
+      setTimelineError(error?.message || "Customer communication history could not be loaded.");
+    } finally {
+      loadingEntriesRef.current = false;
+      setLoadingEntries(false);
+    }
+  }, [buildCommunicationQuery, companyId, hasMoreEntries]);
+
+  useEffect(() => {
+    setEntries([]);
+    setNextCursor(null);
+    setHasMoreEntries(true);
+    if (IS_CONFIGURED) loadCommunicationPage(null, true);
+  }, [companyId, communicationFilter, dateFrom, dateTo]);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !hasMoreEntries) return undefined;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !loadingEntriesRef.current) loadCommunicationPage(nextCursor, false);
+    }, { rootMargin: "180px 0px" });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreEntries, nextCursor, loadCommunicationPage]);
+
+  function clearComposer() {
+    setRecipient("");
+    setSubject("");
+    setBody("");
+  }
+
+  async function saveReference(nextEntry, message) {
+    setSaving(true);
+    try {
+      if (IS_CONFIGURED) {
+        const result = await runCompanyTableMutation("customer_communications", "insert", {
+          name: nextEntry.subject || `${nextEntry.channel} customer communication`,
+          status: nextEntry.status || "saved",
+          notes: nextEntry.body || nextEntry.reference || "",
+          data: nextEntry,
+          created_by: currentUser?.id || null,
+        });
+        if (result.error) throw result.error;
+        nextEntry = { ...nextEntry, id: result.data?.id || docId("COM"), createdAt: result.data?.created_at || new Date().toISOString() };
+      } else {
+        nextEntry = { ...nextEntry, id: docId("COM"), createdAt: new Date().toISOString() };
+      }
+      setEntries((prev) => [nextEntry, ...prev]);
+      clearComposer();
+      notify(message || "Communication reference saved.");
+    } catch (error) {
+      notify(`Reference was not saved. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function openGmailCompose() {
+    const to = recipient.trim();
+    if (!to || !subject.trim() || !body.trim() || saving) return;
+    const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject.trim())}&body=${encodeURIComponent(body.trim())}`;
+    window.open(composeUrl, "_blank", "noopener,noreferrer");
+    await saveReference({ channel: "email", direction: "outbound", recipient: to, subject: subject.trim(), body: body.trim(), sender: "smatimeneja@gmail.com", status: "gmail_compose_opened", reference: "Opened in Gmail compose; final send is completed in Gmail." }, "Gmail compose opened and reference saved.");
+  }
+
+  async function copyReference() {
+    const text = [channel.toUpperCase(), recipient, subject, body].filter(Boolean).join("\n");
+    if (!text.trim() || saving) return;
+    try { await navigator.clipboard?.writeText(text); } catch {}
+    await saveReference({ channel, direction: "outbound", recipient: recipient.trim(), subject: subject.trim(), body: body.trim(), status: "copied_saved" }, "Message copied and saved for customer history.");
+  }
+
+  async function exportFilteredCommunications(format) {
+    if (!IS_CONFIGURED || exporting || (dateFrom && dateTo && dateFrom > dateTo)) {
+      if (dateFrom && dateTo && dateFrom > dateTo) notify("Choose a valid date range before exporting.", "error");
+      return;
+    }
+    setExporting(format);
+    try {
+      const allRows = [];
+      let cursor = null;
+      let page;
+      do {
+        page = await buildCommunicationQuery(cursor, 500).run();
+        allRows.push(...(page || []));
+        const last = page?.[page.length - 1];
+        cursor = last ? { createdAt: last.created_at, id: last.id } : null;
+      } while (page?.length === 500 && cursor && allRows.length < 10000);
+
+      const headers = ["ID", "Channel", "Direction", "Recipient", "Subject", "Message / Reference", "Status", "Created At"];
+      const rows = allRows.map((row) => {
+        const data = row.data || {};
+        return [row.id, data.channel || "", data.direction || "", data.recipient || "", data.subject || "", data.body || data.reference || row.notes || "", row.status || "", row.created_at || ""];
+      });
+      const filterPart = communicationFilter === "all" ? "all" : communicationFilter;
+      const datePart = [dateFrom || "start", dateTo || "end"].join("-now");
+      const file = buildExportFile(`customer-communications-${filterPart}-${datePart}.${format === "csv" ? "csv" : "xlsx"}`, format, "Communications", headers, rows);
+      downloadExportFile(file);
+      notify(`Exported ${rows.length} filtered communication${rows.length === 1 ? "" : "s"}.`);
+      if (administratorEmail && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(administratorEmail)) {
+        await sendExportEmail.mutateAsync({
+          to: administratorEmail,
+          subject: `Smart Manager customer communications export — ${filterPart}`,
+          body: `Attached is the filtered customer communications export generated from Smart Manager.\n\nChannel: ${filterPart}\nDate range: ${dateFrom || "Any"} to ${dateTo || "Any"}\nRecords: ${rows.length}`,
+          attachment: { filename: file.filename, contentBase64: file.contentBase64, contentType: file.contentType },
+        });
+        notify(`Export emailed to the administrator at ${administratorEmail}.`);
+      } else {
+        notify("The export was downloaded, but no valid administrator email is configured.", "error");
+      }
+    } catch (error) {
+      notify(`Export failed. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setExporting("");
+    }
+  }
+
+  return (
+    <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] gap-4 h-full min-h-[560px]">
+      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm flex flex-col min-h-0 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+          <div><p className="text-[13.5px] font-semibold text-[#111827]">Customer relationship timeline</p><p className="text-[11px] text-slate-400">One history for email, WhatsApp handoffs, and copied references.</p></div>
+          <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full bg-emerald-50 text-emerald-700 px-2 py-1">{entries.length} saved</span>
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-slate-100 px-4 py-2">
+          <span className="mr-1 shrink-0 text-[10.5px] font-semibold text-slate-500">Filter:</span>
+          {[{ id: "all", label: "All" }, { id: "email", label: "Email" }, { id: "call", label: "Call" }, { id: "note", label: "Note" }, { id: "whatsapp", label: "WhatsApp" }].map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setCommunicationFilter(option.id)}
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[10.5px] font-semibold transition ${communicationFilter === option.id ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+            >
+              {option.label}
+            </button>
+          ))}
+          <span className="mx-1 h-4 w-px shrink-0 bg-slate-200" />
+          <label className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-slate-500">
+            From
+            <input type="date" value={dateFrom} max={dateTo || undefined} onChange={(event) => setDateFrom(event.target.value)} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-normal text-slate-600 outline-none focus:border-emerald-500" aria-label="Filter communications from date" />
+          </label>
+          <label className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-slate-500">
+            To
+            <input type="date" value={dateTo} min={dateFrom || undefined} onChange={(event) => setDateTo(event.target.value)} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-normal text-slate-600 outline-none focus:border-emerald-500" aria-label="Filter communications to date" />
+          </label>
+          {(dateFrom || dateTo) && <button type="button" onClick={() => { setDateFrom(""); setDateTo(""); }} className="shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700">Clear dates</button>}
+          <span className="mx-1 h-4 w-px shrink-0 bg-slate-200" />
+          <button type="button" onClick={() => exportFilteredCommunications("csv")} disabled={Boolean(exporting) || loadingEntries || sendExportEmail.isPending || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45" title="Download and email all records matching the active filters as CSV"><Download size={11} />{exporting === "csv" ? "Sending…" : "CSV + Email"}</button>
+          <button type="button" onClick={() => exportFilteredCommunications("xlsx")} disabled={Boolean(exporting) || loadingEntries || sendExportEmail.isPending || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45" title="Download and email all records matching the active filters as Excel"><FileSpreadsheet size={11} />{exporting === "xlsx" ? "Sending…" : "Excel + Email"}</button>
+        </div>
+        <div className="border-b border-slate-100 bg-slate-50/70 px-4 py-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5"><Activity size={13} className="text-emerald-600" /><p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Filtered analytics</p></div>
+            <p className="text-[10px] text-slate-400">{dateFrom || dateTo ? `${dateFrom || "Any date"} → ${dateTo || "Any date"}` : "All dates"} · {communicationFilter === "all" ? "All channels" : communicationFilter}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Loaded</p><p className="mt-0.5 text-[16px] font-bold text-slate-800">{entries.length}</p><p className="text-[9.5px] text-slate-400">records</p></div>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Email</p><p className="mt-0.5 text-[16px] font-bold text-blue-700">{communicationAnalytics.channelCounts.email || 0}</p><p className="text-[9.5px] text-slate-400">communications</p></div>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Calls</p><p className="mt-0.5 text-[16px] font-bold text-violet-700">{communicationAnalytics.channelCounts.call || 0}</p><p className="text-[9.5px] text-slate-400">communications</p></div>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Notes</p><p className="mt-0.5 text-[16px] font-bold text-amber-700">{communicationAnalytics.channelCounts.note || 0}</p><p className="text-[9.5px] text-slate-400">communications</p></div>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
+            <span><strong className="text-slate-700">WhatsApp:</strong> {communicationAnalytics.channelCounts.whatsapp || 0}</span>
+            <span><strong className="text-slate-700">Outbound:</strong> {communicationAnalytics.directionCounts.outbound || 0}</span>
+            <span><strong className="text-slate-700">Inbound:</strong> {communicationAnalytics.directionCounts.inbound || 0}</span>
+            <span><strong className="text-slate-700">Statuses:</strong> {Object.entries(communicationAnalytics.statusCounts).map(([status, count]) => `${status} (${count})`).join(" · ") || "None"}</span>
+          </div>
+          {(loadingEntries || hasMoreEntries) && <p className="mt-2 text-[9.5px] text-slate-400">Analytics reflect the filtered records loaded so far and update as more pages load. Export includes all matching records.</p>}
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {entries.length === 0 && !loadingEntries && !timelineError ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (
+            <article key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+              <div className="flex items-start justify-between gap-3"><div><span className="text-[10px] uppercase tracking-wide font-bold text-emerald-700">{entry.channel || "message"}</span><h3 className="text-[12.5px] font-semibold text-slate-800 mt-0.5">{entry.subject || entry.recipient || "Customer reference"}</h3></div><time className="text-[10px] text-slate-400 whitespace-nowrap">{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "Now"}</time></div>
+              <p className="text-[11.5px] text-slate-600 mt-2 whitespace-pre-wrap break-words">{entry.body || entry.reference || "No message body saved."}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-400"><span>{entry.recipient || "Internal reference"}</span><span>·</span><span>{entry.status || "saved"}</span></div>
+            </article>
+          ))}
+          <div ref={loadMoreRef} className="min-h-8 flex items-center justify-center">
+            {loadingEntries && <span className="text-[11px] text-slate-400">Loading more history…</span>}
+            {!loadingEntries && timelineError && <button type="button" onClick={() => loadCommunicationPage(nextCursor, entries.length === 0)} className="text-[11px] font-semibold text-red-600 hover:underline">{timelineError} Retry</button>}
+            {!loadingEntries && !timelineError && entries.length > 0 && !hasMoreEntries && <span className="text-[10.5px] text-slate-400">You’ve reached the beginning of the customer history.</span>}
+          </div>
+        </div>
+      </section>
+      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 h-fit">
+        <div className="flex items-start gap-3 mb-4"><div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center"><Mail size={17} /></div><div><h2 className="text-[14px] font-semibold text-slate-800">New customer message</h2><p className="text-[11px] text-slate-400 mt-0.5">Gmail opens from <strong>smatimeneja@gmail.com</strong>; the timeline keeps the reference.</p></div></div>
+        <div className="space-y-3">
+          <div className="flex gap-1.5 p-1 bg-slate-100 rounded-lg"><button onClick={() => setChannel("email")} className={`flex-1 text-[11px] rounded-md py-1.5 ${channel === "email" ? "bg-white shadow-sm text-slate-800 font-semibold" : "text-slate-500"}`}>Email / Gmail</button><button onClick={() => setChannel("whatsapp")} className={`flex-1 text-[11px] rounded-md py-1.5 ${channel === "whatsapp" ? "bg-white shadow-sm text-slate-800 font-semibold" : "text-slate-500"}`}>WhatsApp reference</button></div>
+          <div><label className="text-[11px] font-medium text-slate-600">Recipient / phone</label><input value={recipient} onChange={(e) => setRecipient(e.target.value)} list="communication-contacts" className={inputClass} placeholder={channel === "email" ? "customer@example.com" : "+255…"} /><datalist id="communication-contacts">{contacts.map((contact) => <option key={contact.email} value={contact.email}>{contact.name}</option>)}</datalist></div>
+          <div><label className="text-[11px] font-medium text-slate-600">Subject / reference title</label><input value={subject} onChange={(e) => setSubject(e.target.value)} className={inputClass} placeholder="Follow-up on quotation" /></div>
+          <div><label className="text-[11px] font-medium text-slate-600">Message / copied note</label><textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} className={`${inputClass} resize-y`} placeholder="Write the message or paste the customer interaction here…" /></div>
+          <div className="flex flex-col sm:flex-row gap-2"><button onClick={channel === "email" ? openGmailCompose : copyReference} disabled={!recipient.trim() || !body.trim() || saving} className="flex-1 btn-primary text-white rounded-lg py-2.5 text-[11.5px] font-semibold disabled:opacity-50">{saving ? "Saving…" : channel === "email" ? "Open Gmail & save" : "Copy & save reference"}</button><button onClick={copyReference} disabled={!body.trim() || saving} className="flex-1 border border-slate-200 text-slate-700 rounded-lg py-2.5 text-[11.5px] font-semibold disabled:opacity-50">Save only</button></div>
+          <p className="text-[10.5px] leading-relaxed text-slate-400">WhatsApp is intentionally a reference/handoff channel here. A provider bot can be added later without losing this customer history.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, workOrders, leaveRequests, onNavigate, intent, clearIntent }) {
-  const [tab, setTab] = useState(() => intent?.module === "collaboration" && intent.tab ? intent.tab : "channels");
+  const [tab, setTab] = useState(() => intent?.module === "collaboration" && intent.tab ? intent.tab : "timeline");
   useEffect(() => {
     if (intent?.module !== "collaboration" || !intent.tab) return;
     if (COLLAB_TABS.some((entry) => entry.id === intent.tab)) setTab(intent.tab);
@@ -33720,6 +34048,7 @@ function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, wo
       </div>
 
       <div className="flex-1 min-h-0">
+        {tab === "timeline"   && <CustomerCommunicationTimeline currentUser={currentUser} crm={crm} company={window.__smartManagerCompany||{}} />}
         {tab === "channels"   && <ChannelsView currentUser={currentUser} employees={employees} />}
         {tab === "whatsapp"   && <WhatsAppCenter currentUser={currentUser} crm={crm} employees={employees} invoices={invoices} company={window.__smartManagerCompany||{}} />}
         {tab === "email"      && <EmailCenter currentUser={currentUser} crm={crm} employees={employees} invoices={invoices} company={window.__smartManagerCompany||{}} />}

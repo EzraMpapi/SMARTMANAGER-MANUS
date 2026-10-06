@@ -107,6 +107,55 @@ export async function storagePut(
   return { key, url: `/api/manus-storage/${key}` };
 }
 
+export async function storagePutAtKey(
+  relKey: string,
+  data: Buffer | Uint8Array | string,
+  contentType = "application/octet-stream",
+): Promise<{ key: string; url: string }> {
+  const config = getSupabaseStorageConfig();
+  await ensureBucket(config);
+  const key = normalizeKey(relKey);
+  const blob = typeof data === "string"
+    ? new Blob([data], { type: contentType })
+    : new Blob([data as any], { type: contentType });
+  const response = await fetch(objectPathUrl(config.supabaseUrl, config.bucket, key), {
+    method: "POST",
+    headers: { ...authHeaders(config.serviceKey), "Content-Type": contentType, "x-upsert": "true" },
+    body: blob,
+  });
+  if (!response.ok) {
+    const message = await response.text().catch(() => response.statusText);
+    throw new Error(`Supabase storage exact-key upload failed (${response.status}): ${message}`);
+  }
+  return { key, url: `/api/manus-storage/${key}` };
+}
+
+export async function storageDownload(relKey: string): Promise<Buffer> {
+  const config = getSupabaseStorageConfig();
+  const response = await fetch(objectPathUrl(config.supabaseUrl, config.bucket, normalizeKey(relKey)), {
+    method: "GET",
+    headers: authHeaders(config.serviceKey),
+  });
+  if (!response.ok) {
+    const message = await response.text().catch(() => response.statusText);
+    throw new Error(`Supabase storage download failed (${response.status}): ${message}`);
+  }
+  return Buffer.from(await response.arrayBuffer());
+}
+
+export async function storageDelete(relKey: string): Promise<void> {
+  const config = getSupabaseStorageConfig();
+  const response = await fetch(`${config.supabaseUrl}/storage/v1/object/${encodeURIComponent(config.bucket)}`, {
+    method: "DELETE",
+    headers: { ...authHeaders(config.serviceKey), "Content-Type": "application/json" },
+    body: JSON.stringify({ prefixes: [normalizeKey(relKey)] }),
+  });
+  if (!response.ok && response.status !== 404) {
+    const message = await response.text().catch(() => response.statusText);
+    throw new Error(`Supabase storage delete failed (${response.status}): ${message}`);
+  }
+}
+
 export async function storageGet(
   relKey: string
 ): Promise<{ key: string; url: string }> {
