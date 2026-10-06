@@ -765,6 +765,10 @@ export function sb(table) {
       matchFilters.push({ col: normalizedColumn, val });
       return builder;
     },
+    or(expression) {
+      if (expression) params.set("or", expression.startsWith("(") ? expression : `(${expression})`);
+      return builder;
+    },
     order(col, { ascending = true } = {}) {
       params.set("order", `${col}.${ascending ? "asc" : "desc"}`);
       return builder;
@@ -33677,24 +33681,68 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
 
 
 function CustomerCommunicationTimeline({ currentUser, crm, company }) {
+  const COMMUNICATION_PAGE_SIZE = 25;
   const [entries, setEntries] = useState([]);
   const [channel, setChannel] = useState("email");
   const [recipient, setRecipient] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingEntries, setLoadingEntries] = useState(false);
+  const [hasMoreEntries, setHasMoreEntries] = useState(true);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [timelineError, setTimelineError] = useState("");
+  const loadMoreRef = useRef(null);
+  const loadingEntriesRef = useRef(false);
   const companyId = company?.id || company?.companyId || "";
   const contacts = useMemo(() => (crm?.rows || crm || []).filter((row) => row.email).map((row) => ({
     name: row.name || row.company || row.email,
     email: row.email,
   })), [crm]);
 
+  const loadCommunicationPage = useCallback(async (cursor = null, replace = false) => {
+    if (!IS_CONFIGURED || loadingEntriesRef.current || (!replace && !hasMoreEntries)) return;
+    loadingEntriesRef.current = true;
+    setLoadingEntries(true);
+    setTimelineError("");
+    try {
+      const query = sb("customer_communications").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }).limit(COMMUNICATION_PAGE_SIZE);
+      if (cursor?.createdAt && cursor?.id) {
+        query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
+      }
+      const rows = await query.run();
+      const page = (rows || []).map((row) => ({ id: row.id, ...row.data, status: row.status, createdAt: row.created_at }));
+      setEntries((previous) => {
+        if (replace) return page;
+        const seen = new Set(previous.map((entry) => entry.id));
+        return [...previous, ...page.filter((entry) => !seen.has(entry.id))];
+      });
+      setHasMoreEntries(page.length === COMMUNICATION_PAGE_SIZE);
+      setNextCursor(page.length ? { createdAt: rows[rows.length - 1].created_at, id: rows[rows.length - 1].id } : null);
+    } catch (error) {
+      setTimelineError(error?.message || "Customer communication history could not be loaded.");
+    } finally {
+      loadingEntriesRef.current = false;
+      setLoadingEntries(false);
+    }
+  }, [companyId, hasMoreEntries]);
+
   useEffect(() => {
-    if (!IS_CONFIGURED) return;
-    sb("customer_communications").select("*").order("created_at", { ascending: false }).limit(100).run()
-      .then((rows) => setEntries((rows || []).map((row) => ({ id: row.id, ...row.data, status: row.status, createdAt: row.created_at }))))
-      .catch(() => {});
+    setEntries([]);
+    setNextCursor(null);
+    setHasMoreEntries(true);
+    if (IS_CONFIGURED) loadCommunicationPage(null, true);
   }, [companyId]);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !hasMoreEntries) return undefined;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !loadingEntriesRef.current) loadCommunicationPage(nextCursor, false);
+    }, { rootMargin: "180px 0px" });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreEntries, nextCursor, loadCommunicationPage]);
 
   function clearComposer() {
     setRecipient("");
@@ -33751,13 +33799,18 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
           <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full bg-emerald-50 text-emerald-700 px-2 py-1">{entries.length} saved</span>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {entries.length === 0 ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (
+          {entries.length === 0 && !loadingEntries && !timelineError ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (
             <article key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
               <div className="flex items-start justify-between gap-3"><div><span className="text-[10px] uppercase tracking-wide font-bold text-emerald-700">{entry.channel || "message"}</span><h3 className="text-[12.5px] font-semibold text-slate-800 mt-0.5">{entry.subject || entry.recipient || "Customer reference"}</h3></div><time className="text-[10px] text-slate-400 whitespace-nowrap">{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "Now"}</time></div>
               <p className="text-[11.5px] text-slate-600 mt-2 whitespace-pre-wrap break-words">{entry.body || entry.reference || "No message body saved."}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-400"><span>{entry.recipient || "Internal reference"}</span><span>·</span><span>{entry.status || "saved"}</span></div>
             </article>
           ))}
+          <div ref={loadMoreRef} className="min-h-8 flex items-center justify-center">
+            {loadingEntries && <span className="text-[11px] text-slate-400">Loading more history…</span>}
+            {!loadingEntries && timelineError && <button type="button" onClick={() => loadCommunicationPage(nextCursor, entries.length === 0)} className="text-[11px] font-semibold text-red-600 hover:underline">{timelineError} Retry</button>}
+            {!loadingEntries && !timelineError && entries.length > 0 && !hasMoreEntries && <span className="text-[10.5px] text-slate-400">You’ve reached the beginning of the customer history.</span>}
+          </div>
         </div>
       </section>
       <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 h-fit">
