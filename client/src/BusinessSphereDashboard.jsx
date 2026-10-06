@@ -33744,6 +33744,24 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
     name: row.name || row.company || row.email,
     email: row.email,
   })), [crm]);
+  const communicationAnalytics = useMemo(() => {
+    const channelCounts = entries.reduce((counts, entry) => {
+      const key = entry.channel || "other";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
+    const directionCounts = entries.reduce((counts, entry) => {
+      const key = entry.direction || "unspecified";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
+    const statusCounts = entries.reduce((counts, entry) => {
+      const key = entry.status || "saved";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
+    return { channelCounts, directionCounts, statusCounts };
+  }, [entries]);
 
   const buildCommunicationQuery = useCallback((cursor = null, limit = COMMUNICATION_PAGE_SIZE) => {
     const query = sb("customer_communications").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }).limit(limit);
@@ -33927,6 +33945,25 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
           <span className="mx-1 h-4 w-px shrink-0 bg-slate-200" />
           <button type="button" onClick={() => exportFilteredCommunications("csv")} disabled={Boolean(exporting) || loadingEntries || sendExportEmail.isPending || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45" title="Download and email all records matching the active filters as CSV"><Download size={11} />{exporting === "csv" ? "Sending…" : "CSV + Email"}</button>
           <button type="button" onClick={() => exportFilteredCommunications("xlsx")} disabled={Boolean(exporting) || loadingEntries || sendExportEmail.isPending || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45" title="Download and email all records matching the active filters as Excel"><FileSpreadsheet size={11} />{exporting === "xlsx" ? "Sending…" : "Excel + Email"}</button>
+        </div>
+        <div className="border-b border-slate-100 bg-slate-50/70 px-4 py-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5"><Activity size={13} className="text-emerald-600" /><p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Filtered analytics</p></div>
+            <p className="text-[10px] text-slate-400">{dateFrom || dateTo ? `${dateFrom || "Any date"} → ${dateTo || "Any date"}` : "All dates"} · {communicationFilter === "all" ? "All channels" : communicationFilter}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Loaded</p><p className="mt-0.5 text-[16px] font-bold text-slate-800">{entries.length}</p><p className="text-[9.5px] text-slate-400">records</p></div>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Email</p><p className="mt-0.5 text-[16px] font-bold text-blue-700">{communicationAnalytics.channelCounts.email || 0}</p><p className="text-[9.5px] text-slate-400">communications</p></div>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Calls</p><p className="mt-0.5 text-[16px] font-bold text-violet-700">{communicationAnalytics.channelCounts.call || 0}</p><p className="text-[9.5px] text-slate-400">communications</p></div>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Notes</p><p className="mt-0.5 text-[16px] font-bold text-amber-700">{communicationAnalytics.channelCounts.note || 0}</p><p className="text-[9.5px] text-slate-400">communications</p></div>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
+            <span><strong className="text-slate-700">WhatsApp:</strong> {communicationAnalytics.channelCounts.whatsapp || 0}</span>
+            <span><strong className="text-slate-700">Outbound:</strong> {communicationAnalytics.directionCounts.outbound || 0}</span>
+            <span><strong className="text-slate-700">Inbound:</strong> {communicationAnalytics.directionCounts.inbound || 0}</span>
+            <span><strong className="text-slate-700">Statuses:</strong> {Object.entries(communicationAnalytics.statusCounts).map(([status, count]) => `${status} (${count})`).join(" · ") || "None"}</span>
+          </div>
+          {(loadingEntries || hasMoreEntries) && <p className="mt-2 text-[9.5px] text-slate-400">Analytics reflect the filtered records loaded so far and update as more pages load. Export includes all matching records.</p>}
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {entries.length === 0 && !loadingEntries && !timelineError ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (
