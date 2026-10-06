@@ -7818,7 +7818,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               { id: "hr", label: "Human Resources", icon: UserCheck, status: pendingLeaves.length ? "attention" : (activeEmployees.length ? "tracking" : "noData"), metric: pendingLeaves.length ? `${pendingLeaves.length} leave request${pendingLeaves.length === 1 ? "" : "s"} pending` : (activeEmployees.length ? `${activeEmployees.length} active employee${activeEmployees.length === 1 ? "" : "s"}` : "No confirmed HR records"), detail: pendingLeaves.length ? "Review leave requests" : "Open HR records" },
               { id: "manufacturing", label: "Manufacturing", icon: Factory, status: overdueWorkOrders.length ? "attention" : (rowsOf(workOrders).length ? "tracking" : "noData"), metric: overdueWorkOrders.length ? `${overdueWorkOrders.length} work order${overdueWorkOrders.length === 1 ? "" : "s"} overdue` : (rowsOf(workOrders).length ? `${rowsOf(workOrders).length} work order${rowsOf(workOrders).length === 1 ? "" : "s"} tracked` : "No confirmed work orders"), detail: overdueWorkOrders.length ? "Review production schedule" : "Open manufacturing records" },
               { id: "projects", label: "Projects", icon: FolderKanban, status: "unavailable", metric: "No root-level signal", detail: "Open projects to review work" },
-              { id: "support", label: "Customer Support", icon: Headphones, status: "unavailable", metric: "Ticket data stays in Support", detail: "Open the support inbox" },
+              { id: "support", label: "Customer Support", icon: Headphones, status: "available", metric: "Confirmed support workspace", detail: "Open the support inbox" },
               { id: "analytics", label: "Analytics", icon: BarChart3, status: "available", metric: "Uses confirmed source modules", detail: "Open analytics views" },
               { id: "reports", label: "Reports", icon: FileText, status: "available", metric: "Exports confirmed dashboard data", detail: "Open reporting workspace" },
               { id: "pos", label: "Point of Sale", icon: ScanLine, status: rowsOf(posTransactions).length ? "tracking" : "noData", metric: rowsOf(posTransactions).length ? `${rowsOf(posTransactions).length} confirmed transaction${rowsOf(posTransactions).length === 1 ? "" : "s"}` : "No confirmed POS transactions", detail: "Open point of sale" },
@@ -28012,6 +28012,19 @@ function CustomerSupport({ company }) {
       <div>
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Customer Support</h1>
         <p className="text-[13px] text-slate-500 mt-1">Tickets, live chat, knowledge base, call log, and AI-drafted replies</p>
+      </div>
+      <div className={`rounded-2xl border px-4 py-3 sm:px-5 ${metricState === "ready" ? "border-emerald-200 bg-emerald-50/70" : metricState === "loading" ? "border-blue-200 bg-blue-50/70" : "border-amber-200 bg-amber-50/70"}`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${metricState === "ready" ? "bg-emerald-500" : metricState === "loading" ? "bg-blue-500" : "bg-amber-500"}`} />
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Operations pulse</p>
+              <p className="mt-1 text-[12px] font-semibold text-[#111827]">{metricState === "ready" ? `${supportMetrics.openCount} open · ${supportMetrics.urgentCount} urgent · ${supportMetrics.totalCount} confirmed` : unavailableMetricLabel}</p>
+              <p className="mt-1 text-[11px] leading-5 text-slate-500">Counts come from the tenant-scoped Support workspace. No browser-only ticket data is presented as confirmed.</p>
+            </div>
+          </div>
+          {metricState === "ready" && <span className="self-start rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">Server confirmed</span>}
+        </div>
       </div>
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">

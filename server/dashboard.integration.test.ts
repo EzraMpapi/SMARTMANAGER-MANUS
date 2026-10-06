@@ -293,7 +293,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("const statusConfig = {");
     expect(dashboardSource).toContain('currentRole.allowedModules.includes(module.id)');
     expect(dashboardSource).toContain("No root-level signal");
-    expect(dashboardSource).toContain("Ticket data stays in Support");
+    expect(dashboardSource).toContain("Confirmed support workspace");
     expect(dashboardSource).toContain("No confirmed POS transactions");
     expect(dashboardSource).toContain("No confirmed data");
     expect(dashboardSource).toContain("Not assessed");
