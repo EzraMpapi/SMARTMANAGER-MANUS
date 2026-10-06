@@ -765,6 +765,12 @@ export function sb(table) {
       matchFilters.push({ col: normalizedColumn, val });
       return builder;
     },
+    filter(col, operator, value) {
+      if (col && operator && value !== undefined && value !== null) {
+        params.append(col, `${operator}.${value}`);
+      }
+      return builder;
+    },
     or(expression) {
       if (expression) params.set("or", expression.startsWith("(") ? expression : `(${expression})`);
       return builder;
@@ -33684,6 +33690,7 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
   const COMMUNICATION_PAGE_SIZE = 25;
   const [entries, setEntries] = useState([]);
   const [channel, setChannel] = useState("email");
+  const [communicationFilter, setCommunicationFilter] = useState("all");
   const [recipient, setRecipient] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -33707,6 +33714,7 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
     setTimelineError("");
     try {
       const query = sb("customer_communications").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }).limit(COMMUNICATION_PAGE_SIZE);
+      if (communicationFilter !== "all") query.filter("data->>channel", "eq", communicationFilter);
       if (cursor?.createdAt && cursor?.id) {
         query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
       }
@@ -33725,14 +33733,14 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
       loadingEntriesRef.current = false;
       setLoadingEntries(false);
     }
-  }, [companyId, hasMoreEntries]);
+  }, [companyId, communicationFilter, hasMoreEntries]);
 
   useEffect(() => {
     setEntries([]);
     setNextCursor(null);
     setHasMoreEntries(true);
     if (IS_CONFIGURED) loadCommunicationPage(null, true);
-  }, [companyId]);
+  }, [companyId, communicationFilter]);
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;
@@ -33797,6 +33805,19 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
           <div><p className="text-[13.5px] font-semibold text-[#111827]">Customer relationship timeline</p><p className="text-[11px] text-slate-400">One history for email, WhatsApp handoffs, and copied references.</p></div>
           <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full bg-emerald-50 text-emerald-700 px-2 py-1">{entries.length} saved</span>
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-slate-100 px-4 py-2">
+          <span className="mr-1 shrink-0 text-[10.5px] font-semibold text-slate-500">Filter:</span>
+          {[{ id: "all", label: "All" }, { id: "email", label: "Email" }, { id: "call", label: "Call" }, { id: "note", label: "Note" }, { id: "whatsapp", label: "WhatsApp" }].map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setCommunicationFilter(option.id)}
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[10.5px] font-semibold transition ${communicationFilter === option.id ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {entries.length === 0 && !loadingEntries && !timelineError ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (
