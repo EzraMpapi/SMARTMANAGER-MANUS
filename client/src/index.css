@@ -3257,3 +3257,25 @@
     border-radius: 999px !important;
   }
 }
+
+/* Flat social-style icon language: header actions stay crisp without floating
+   shadows; focus rings and color changes still communicate interaction. */
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button,
+.dashboard-topbar-actions-polished .dashboard-topbar-reference-control,
+.dashboard-topbar-actions-polished .dashboard-topbar-language-control,
+.dashboard-topbar-actions-polished .dashboard-topbar-search-hero,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger,
+.dashboard-topbar-actions-polished [data-testid="realtime-connectivity-indicator"],
+.dashboard-topbar-actions-polished .dashboard-topbar-notification-slot > div > button {
+  box-shadow: none !important;
+  filter: none !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search-hero:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-reference-control:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger:hover {
+  box-shadow: none !important;
+}
+.dashboard-topbar-actions-polished svg {
+  filter: none !important;
+}
