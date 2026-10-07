@@ -42,6 +42,7 @@ import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
+import { resolveConnectedWorkspaceSnapshot } from "./lib/connectedWorkspaceSnapshot";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
@@ -5866,6 +5867,23 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // and expense rows by their date field, so every KPI on the dashboard
   // reflects the same window. "This session" is replaced by a real label.
   const [period, setPeriod] = useState("month");
+  const TODAY_STR = TODAY.toISOString().slice(0, 10);
+  const [connectedDate, setConnectedDate] = useState(TODAY_STR);
+  const connectedSnapshot = useMemo(() => resolveConnectedWorkspaceSnapshot({
+    date: connectedDate,
+    invoices: invoices.rows,
+    expenses: expenses.rows,
+    crm: crm.rows,
+    inventory: inventory.rows,
+    leaveRequests: leaveRequests.rows,
+    workOrders: workOrders.rows,
+    subscriptions: subscriptions.rows,
+    employees: employees.rows,
+    posTransactions: posTransactions.rows,
+  }), [connectedDate, invoices.rows, expenses.rows, crm.rows, inventory.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows, employees.rows, posTransactions.rows]);
+  const connectedDateLabel = connectedDate ? new Date(`${connectedDate}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Selected date";
+  const greetingName = (currentUser?.name || company?.owner || "there").trim().split(" ")[0] || "there";
+  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening";
   const periodStart = useMemo(() => {
     const d = new Date(TODAY);
     if (period === "day")   { return d.toISOString().slice(0, 10); }
@@ -6430,14 +6448,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-[0.16em]">Workspace overview</span>
+                <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-[0.16em]">Connected workspace</span>
                 <span className="text-[rgba(255,255,255,.3)]">·</span>
-                <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span>
+                <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{connectedDateLabel}</span>
               </div>
               <h1 className="text-white text-[22px] font-black tracking-tight leading-none">
-                {(()=>{const h=new Date().getHours();return h<12?"Habari za asubuhi":h<17?"Habari za mchana":"Habari za jioni";})()}, {(company.owner||"Welcome").split(" ")[0]} 👋
+                {greeting}, {greetingName} 👋
               </h1>
-              <p className="text-[rgba(255,255,255,.5)] text-[12px] mt-1">{company.name} · {currentUser.role}</p>
+              <p className="text-[rgba(255,255,255,.62)] text-[12px] mt-1">Here’s what’s happening with your business on {connectedDateLabel}, based only on confirmed workspace records.</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="relative">
@@ -6509,6 +6527,13 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             </div>
           </div>
 
+          <div className="mb-4 flex flex-wrap items-center gap-2.5 rounded-xl border border-white/10 bg-black/15 px-3 py-2.5" aria-label="Connected workspace date selector">
+            <CalendarDays size={14} className="text-emerald-300" aria-hidden="true" />
+            <label htmlFor="connected-workspace-date" className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/55">Inspect exact date</label>
+            <input id="connected-workspace-date" type="date" value={connectedDate} onChange={(event) => setConnectedDate(event.target.value)} className="rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-white/80" />
+            <span className="text-[10.5px] text-white/50">{connectedSnapshot.totalRecords} confirmed record{connectedSnapshot.totalRecords === 1 ? "" : "s"} on this date</span>
+            {connectedDate !== TODAY_STR && <button type="button" onClick={() => setConnectedDate(TODAY_STR)} className="ml-auto rounded-lg px-2 py-1 text-[10px] font-bold text-emerald-200 hover:bg-white/10">Back to today</button>}
+          </div>
 	          <div className="mb-4 flex flex-wrap items-center gap-2 text-[10.5px]">
 	            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/70"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live workspace data</span>
 	            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{PERIOD_LABELS[period]} reporting view</span>
@@ -6592,6 +6617,22 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           })()}
         </div>
       </div>
+
+      <section className="order-1 grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]" aria-label={`Confirmed workspace activity for ${connectedDateLabel}`}>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Selected date snapshot</p><h2 className="mt-1 text-[16px] font-bold text-slate-900">What happened on {connectedDateLabel}</h2><p className="mt-1 text-[11.5px] text-slate-500">Only server-confirmed workspace rows are included. No sample or forecast activity is shown.</p></div>
+            <div className="rounded-xl bg-slate-50 px-3 py-2 text-right"><p className="text-[10px] uppercase tracking-wide text-slate-400">Net movement</p><p className={`font-mono text-[15px] font-black ${connectedSnapshot.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{connectedSnapshot.net >= 0 ? "+" : "−"}{formatMoney(Math.abs(connectedSnapshot.net))}</p></div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {[['Revenue', connectedSnapshot.revenue, 'text-blue-600'], ['Expenses', connectedSnapshot.expensesTotal, 'text-amber-600'], ['Invoices', connectedSnapshot.invoices.length, 'text-slate-700'], ['Other records', connectedSnapshot.totalRecords - connectedSnapshot.invoices.length - connectedSnapshot.expenses.length, 'text-violet-600']].map(([label, value, color]) => <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"><p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p><p className={`mt-1 text-[17px] font-black ${color}`}>{label === "Revenue" || label === "Expenses" ? formatMoney(value) : value}</p></div>)}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Confirmed activity</p><h3 className="mt-1 text-[14px] font-bold text-slate-900">Timeline for this date</h3></div><Activity size={17} className="text-emerald-600" /></div>
+          {connectedSnapshot.activity.length === 0 ? <div className="py-7 text-center"><CheckCircle2 size={22} className="mx-auto text-slate-200" /><p className="mt-2 text-[12px] font-semibold text-slate-500">No confirmed activity on this date</p><p className="mt-1 text-[11px] text-slate-400">Choose another date to investigate a specific event.</p></div> : <div className="mt-3 max-h-40 space-y-1.5 overflow-y-auto">{connectedSnapshot.activity.slice(0, 8).map((item) => <div key={item.id} className="flex items-start gap-2 rounded-lg bg-slate-50/70 px-2.5 py-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" /><div className="min-w-0"><p className="truncate text-[11.5px] font-semibold text-slate-700">{item.label}</p><p className="truncate text-[10.5px] text-slate-400">{item.module} · {item.detail}</p></div></div>)}</div>}
+        </div>
+      </section>
 
       {canReviewRoleChanges && (
         <section className="order-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white shadow-sm overflow-hidden" aria-label="Pending role-change approvals">
