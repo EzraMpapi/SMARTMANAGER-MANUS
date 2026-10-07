@@ -71,6 +71,18 @@ function initialLanguage(): Lang {
   return "en";
 }
 
+function syncLanguageDocument(newLang: Lang) {
+  if (typeof document === "undefined") return;
+  const option = LANGUAGE_OPTIONS.find((item) => item.code === newLang);
+  document.documentElement.lang = newLang;
+  document.documentElement.dir = option?.dir || "ltr";
+  document.documentElement.dataset.smartManagerLanguage = newLang;
+  window.dispatchEvent(new CustomEvent("smart-manager:language-changed", { detail: { lang: newLang, source: "smart-manager-localization" } }));
+  document.querySelectorAll<HTMLElement>(".dashboard-language-code, .sm-language-code").forEach((element) => {
+    element.textContent = newLang.toUpperCase();
+  });
+}
+
 interface LanguageContextType {
   lang: Lang;
   setLang: (lang: Lang) => void;
@@ -122,22 +134,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       localStorage.setItem("smart_manager_lang", newLang);
       localStorage.setItem("bs_lang", newLang);
-      document.documentElement.lang = newLang;
-      document.documentElement.dir = LANGUAGE_OPTIONS.find((option) => option.code === newLang)?.dir || "ltr";
-      window.dispatchEvent(new CustomEvent("smart-manager:language-changed", { detail: { lang: newLang } }));
-      document.querySelectorAll<HTMLElement>(".dashboard-language-code, .sm-language-code").forEach((element) => {
-        element.textContent = newLang.toUpperCase();
-      });
     }
     if (liveSession && profileHydrated && profileQuery.data?.profile?.id === authenticatedUserId) {
       persistLanguageMutation.mutate({ preferredLanguage: newLang });
     }
   };
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.lang = lang;
-      document.documentElement.dir = LANGUAGE_OPTIONS.find((option) => option.code === lang)?.dir || "ltr";
-    }
+    syncLanguageDocument(lang);
   }, [lang]);
   useEffect(() => installDocumentLocalization(lang), []);
   useEffect(() => setDocumentLocalization(lang), [lang]);

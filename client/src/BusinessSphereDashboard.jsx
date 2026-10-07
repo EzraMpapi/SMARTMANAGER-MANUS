@@ -49352,11 +49352,11 @@ function SmartManager() {
 
            {/* Right — live status, quick actions, and identity */}
            <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
-             <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher">
+             <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
                <Globe size={14} className="text-emerald-700" aria-hidden="true" />
                <span className="sr-only">{t("language")}</span>
                <span className="dashboard-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
-               <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="dashboard-language-select max-w-[92px] appearance-none bg-transparent pr-0 outline-none">
+               <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="dashboard-language-select max-w-[92px] appearance-none bg-transparent pr-0 outline-none" data-testid="dashboard-language-select">
                  {languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}
                </select>
                <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
