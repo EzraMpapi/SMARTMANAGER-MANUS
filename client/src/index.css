@@ -3279,3 +3279,37 @@
 .dashboard-topbar-actions-polished svg {
   filter: none !important;
 }
+
+/* Neutral flat header icons: search now matches message styling instead of
+   using the green hero treatment; profile and theme remain shadow-free. */
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: rgb(100 116 139) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero {
+  border-radius: .65rem !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero > svg,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button > svg,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger > svg {
+  color: rgb(100 116 139) !important;
+  filter: none !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger:hover {
+  border-color: transparent !important;
+  background: rgb(248 250 252) !important;
+  color: rgb(15 23 42) !important;
+  box-shadow: none !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero:hover > svg,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button:hover > svg,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger:hover > svg {
+  color: rgb(15 23 42) !important;
+}
