@@ -49350,8 +49350,11 @@ function SmartManager() {
              </div>
           </div>
 
-           {/* Right — live status, quick actions, and identity */}
-           <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+           {/* Right — identity first, then compact workspace controls */}
+           <div className="dashboard-topbar-actions dashboard-topbar-actions-polished flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+             <div className="dashboard-topbar-profile-slot">
+               <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+             </div>
              <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
                <Globe size={14} className="text-emerald-700" aria-hidden="true" />
                <span className="sr-only">{t("language")}</span>
@@ -49361,9 +49364,7 @@ function SmartManager() {
                </select>
                <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
              </label>
-             <RealtimeConnectivityBadge />
-            <LiveDateTime />
-            {/* Dark mode toggle */}
+             {/* Dark mode toggle */}
             <button
               type="button"
               onClick={toggleDarkMode}
@@ -49374,23 +49375,15 @@ function SmartManager() {
             >
               {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
             </button>
-             <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+             <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label={t("helpSupport")} title={t("helpSupport")}>
+               <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
+             </button>
              <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label={t("messages")} title={t("messages")}>
                <MessageCircle size={17} strokeWidth={1.75} aria-hidden="true" />
                <span className="dashboard-topbar-reference-badge" aria-label="3 unread messages">3</span>
              </button>
-             <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label={t("helpSupport")} title={t("helpSupport")}>
-               <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
-             </button>
-             <div className="dashboard-topbar-divider hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
-             <div className="dashboard-topbar-profile-slot">
-               <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
-             </div>
-          </div>
-          {/* The search control gets its own row on smaller screens so it never
-              competes with the workspace and account controls for width. */}
-          <div className="dashboard-topbar-search-slot">
-            <button
+             <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
               className="dashboard-topbar-search dashboard-topbar-search-collapsed inline-flex min-w-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,.8)] transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
@@ -49400,7 +49393,7 @@ function SmartManager() {
             >
               <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
             </button>
-          </div>
+           </div>
           </div>
         </header>
 

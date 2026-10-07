@@ -3179,3 +3179,48 @@
   min-height: 100%;
   opacity: 0;
 }
+
+/* Final command-bar composition: the action rail owns the right side after the
+   workspace context; there is no detached centered search row. */
+@media (min-width: 768px) {
+  .dashboard-topbar-main {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas: "context actions" !important;
+  }
+  .dashboard-topbar-actions-polished {
+    grid-area: actions !important;
+    max-width: none !important;
+    justify-self: end;
+  }
+  .dashboard-topbar-search-slot {
+    display: none !important;
+  }
+}
+@media (max-width: 767px) {
+  .dashboard-topbar-main {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dashboard-topbar-context {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .dashboard-topbar-actions-polished {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    min-width: 0;
+    max-width: 58vw;
+    overflow-x: auto;
+    justify-content: flex-end;
+    gap: .25rem;
+    scrollbar-width: none;
+  }
+  .dashboard-topbar-actions-polished::-webkit-scrollbar {
+    display: none;
+  }
+  .dashboard-topbar-search-slot {
+    display: none !important;
+  }
+}
