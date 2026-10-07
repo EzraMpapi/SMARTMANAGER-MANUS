@@ -49393,15 +49393,12 @@ function SmartManager() {
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex min-w-0 w-full items-center justify-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,.8)] transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+              className="dashboard-topbar-search dashboard-topbar-search-collapsed inline-flex min-w-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,.8)] transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
               aria-label="Search everything"
               title="Search everything"
+              aria-expanded={paletteOpen}
             >
               <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
-              {/* Search modules, records, and actions — localized through the shared language context. */}
-              <span className="dashboard-topbar-search-label truncate">{t("searchEverything")}</span>
-              <kbd className="ml-auto hidden shrink-0 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
-              <ArrowRight size={14} className="ml-auto shrink-0 text-slate-300 sm:hidden" aria-hidden="true" />
             </button>
           </div>
           </div>
