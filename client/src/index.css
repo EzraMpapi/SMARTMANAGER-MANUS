@@ -2336,6 +2336,22 @@
 .dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .bg-cyan-400\/10 { background: #f1f5f9 !important; }
 .dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .ring-cyan-400\/20 { --tw-ring-color: #cbd5e1 !important; }
 .dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation { background: #ffffff; }
+.dashboard-layout-skeleton [data-slot="skeleton"] {
+  background: linear-gradient(100deg, rgb(226 232 240 / .72) 18%, rgb(241 245 249 / .95) 42%, rgb(226 232 240 / .72) 68%);
+  background-size: 240% 100%;
+  animation: dashboard-skeleton-shimmer 1.8s var(--sm-ease-out) infinite;
+}
+@keyframes dashboard-skeleton-shimmer {
+  0% { background-position: 120% 0; }
+  100% { background-position: -20% 0; }
+}
+[data-theme-period="night"] .dashboard-layout-skeleton [data-slot="skeleton"] {
+  background: linear-gradient(100deg, rgb(30 41 59 / .82) 18%, rgb(51 65 85 / .94) 42%, rgb(30 41 59 / .82) 68%);
+  background-size: 240% 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-layout-skeleton [data-slot="skeleton"] { animation: none !important; }
+}
 .dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-400,
 .dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-500 { color: #94a3b8 !important; }
 .dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-300 { color: #64748b !important; }
