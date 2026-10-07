@@ -198,7 +198,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("retains the professional executive command hierarchy and operational context without adding fabricated metrics", () => {
-    expect(dashboardSource).toContain(">Workspace overview<");
+    expect(dashboardSource).toContain(">Connected workspace<");
     expect(dashboardSource).toContain("Live workspace data");
     expect(dashboardSource).toContain("operational alert{alerts.length === 1 ? \"\" : \"s\"}");
     expect(dashboardSource).toContain("{PERIOD_LABELS[period]} reporting view");

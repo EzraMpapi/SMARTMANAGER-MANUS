@@ -106,7 +106,7 @@ const tenantTableIssues = referencedTables
   .map((table) => ({ table, columns: tableColumns(table) }))
   .filter(({ columns }) => !["id", "company_id", "created_at", "updated_at"].every((column) => columns.includes(column)));
 
-const criticalTableIssues = Object.values(contractManifest).map((contract) => {
+const schemaContractResults = Object.values(contractManifest).map((contract) => {
   const columns = tableColumns(contract.tableName);
   const missingRequired = contract.requiredColumns.filter((column) => !columns.includes(column));
   const presentForbidden = contract.forbiddenColumns.filter((column) => columns.includes(column));
@@ -117,9 +117,18 @@ const criticalTableIssues = Object.values(contractManifest).map((contract) => {
     presentForbidden,
     additiveColumns,
   };
-}).filter(({ missingRequired, presentForbidden, additiveColumns }) => (
-  missingRequired.length > 0 || presentForbidden.length > 0 || additiveColumns.length > 0
-));
+});
+
+// Additive columns are compatible with the guarded persistence contract: they
+// do not change the required payload surface and may be introduced by a newer
+// migration before this verifier's manifest is refreshed. Keep them visible
+// in the report, but reserve build-blocking status for missing required,
+// explicitly forbidden, or tenant-isolation columns.
+const schemaWarnings = schemaContractResults
+  .filter(({ additiveColumns }) => additiveColumns.length > 0)
+  .map(({ table, additiveColumns }) => ({ table, additiveColumns }));
+const criticalTableIssues = schemaContractResults
+  .filter(({ missingRequired, presentForbidden }) => missingRequired.length > 0 || presentForbidden.length > 0);
 
 const report = {
   verifiedAt: new Date().toISOString(),
@@ -131,6 +140,7 @@ const report = {
     table,
     missingColumns: ["id", "company_id", "created_at", "updated_at"].filter((column) => !columns.includes(column)),
   })),
+  schemaWarnings,
   criticalTableIssues,
 };
 

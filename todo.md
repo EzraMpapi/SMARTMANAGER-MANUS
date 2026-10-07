@@ -325,9 +325,9 @@
 - [ ] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements.
 
 ## Connected Workspace Date-Specific Overview
-- [ ] Audit the current workspace overview and confirmed-record aggregation boundaries.
-- [ ] Replace the generic overview copy with a time-aware Connected workspace view and personalized greeting.
-- [ ] Add an accessible date selector that scopes the overview to one exact calendar date.
-- [ ] Show confirmed workspace activity for the selected date only, with clear empty/loading/error states.
-- [ ] Add regression coverage for date scoping, greeting, confirmed-record language, and tenant-safe behavior.
-- [ ] Run focused/full tests, TypeScript checks, production build, and publish synchronization.
+- [x] Audit the current workspace overview and confirmed-record aggregation boundaries.
+- [x] Replace the generic overview copy with a time-aware Connected workspace view and personalized greeting.
+- [x] Add an accessible date selector that scopes the overview to one exact calendar date.
+- [x] Show confirmed workspace activity for the selected date only, with clear empty/loading/error states.
+- [x] Add regression coverage for date scoping, greeting, confirmed-record language, and tenant-safe behavior.
+- [x] Run focused/full tests, TypeScript checks, production build, and publish synchronization.

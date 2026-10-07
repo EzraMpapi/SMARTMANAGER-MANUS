@@ -42,6 +42,7 @@ describe("Supabase production schema contract guard", () => {
     expect(verifierSource).toContain("runCompanyTableMutation");
     expect(verifierSource).toContain("missingTables");
     expect(verifierSource).toContain("tenantTableIssues");
+    expect(verifierSource).toContain("schemaWarnings");
     expect(verifierSource).toContain("criticalTableIssues");
     expect(verifierSource).toContain("schemaContracts.json");
     expect(verifierSource).toContain("stableAuditExemptions");
