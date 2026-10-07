@@ -3224,3 +3224,36 @@
     display: none !important;
   }
 }
+
+/* Signature search action: visually distinct from utility controls while
+   remaining compact enough for the responsive command bar. */
+.dashboard-topbar-search.dashboard-topbar-search-hero {
+  width: 2.75rem !important;
+  min-width: 2.75rem !important;
+  height: 2.75rem !important;
+  padding: 0 !important;
+  border-color: rgb(16 185 129 / .35) !important;
+  background: linear-gradient(135deg, #0B5D3B 0%, #16A34A 55%, #22C55E 100%) !important;
+  color: white !important;
+  box-shadow: 0 8px 20px rgb(22 163 74 / .28), inset 0 1px 0 rgb(255 255 255 / .3) !important;
+}
+.dashboard-topbar-search.dashboard-topbar-search-hero:hover {
+  border-color: rgb(134 239 172 / .8) !important;
+  background: linear-gradient(135deg, #084B30 0%, #15803D 55%, #16A34A 100%) !important;
+  color: white !important;
+  box-shadow: 0 12px 26px rgb(22 163 74 / .38), inset 0 1px 0 rgb(255 255 255 / .35) !important;
+}
+.dashboard-topbar-search.dashboard-topbar-search-hero > svg {
+  color: white !important;
+}
+.dashboard-topbar-search.dashboard-topbar-search-hero .dashboard-search-tooltip {
+  transform: translateY(-3px);
+}
+@media (max-width: 479px) {
+  .dashboard-topbar-search.dashboard-topbar-search-hero {
+    width: 2.75rem !important;
+    min-width: 2.75rem !important;
+    height: 2.75rem !important;
+    border-radius: 999px !important;
+  }
+}

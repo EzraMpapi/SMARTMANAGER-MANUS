@@ -49386,12 +49386,13 @@ function SmartManager() {
              <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search dashboard-topbar-search-collapsed inline-flex min-w-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,.8)] transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+              className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-emerald-500/20 bg-[linear-gradient(135deg,#0B5D3B_0%,#16A34A_55%,#22C55E_100%)] px-3 text-[11px] font-medium text-white shadow-[0_8px_20px_rgba(22,163,74,.28),inset_0_1px_0_rgba(255,255,255,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(22,163,74,.38),inset_0_1px_0_rgba(255,255,255,.35)] active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2"
               aria-label="Search everything"
               title="Search everything"
               aria-expanded={paletteOpen}
             >
-              <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
+              <Search size={17} strokeWidth={2.35} className="shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.18)] transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+              <span className="dashboard-search-tooltip pointer-events-none absolute right-0 top-[calc(100%+10px)] z-50 whitespace-nowrap rounded-lg border border-slate-700/80 bg-slate-950 px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-xl transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">Search workspace <kbd className="ml-1 rounded border border-white/20 px-1 py-0.5 font-mono text-[9px] text-slate-300">⌘K</kbd></span>
             </button>
            </div>
           </div>
