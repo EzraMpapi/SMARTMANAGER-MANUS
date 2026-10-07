@@ -49350,50 +49350,50 @@ function SmartManager() {
              </div>
           </div>
 
-           {/* Right — identity first, then compact workspace controls */}
+           {/* Right — quick actions first, identity anchored at the far right */}
            <div className="dashboard-topbar-actions dashboard-topbar-actions-polished flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
-             <div className="dashboard-topbar-profile-slot">
-               <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
-             </div>
-             <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
-               <Globe size={14} className="text-emerald-700" aria-hidden="true" />
-               <span className="sr-only">{t("language")}</span>
-               <span className="dashboard-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
-               <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="dashboard-language-select max-w-[92px] appearance-none bg-transparent pr-0 outline-none" data-testid="dashboard-language-select">
-                 {languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}
-               </select>
-               <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
-             </label>
-             {/* Dark mode toggle */}
-            <button
-              type="button"
-              onClick={toggleDarkMode}
-              aria-pressed={darkMode}
-              aria-label={`Theme mode: ${themeMode}. Activate to switch to ${themeMode === "light" ? "dark" : themeMode === "dark" ? "auto" : "light"} mode`}
-               className="dashboard-topbar-icon-button grid shrink-0 place-items-center rounded-xl border bg-white text-slate-500 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
-              title={`Theme: ${themeMode === "auto" ? "Auto" : themeMode === "dark" ? "Dark" : "Light"} (click to change)`}
-            >
-              {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
-            </button>
-             <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label={t("helpSupport")} title={t("helpSupport")}>
-               <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
-             </button>
-             <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label={t("messages")} title={t("messages")}>
-               <MessageCircle size={17} strokeWidth={1.75} aria-hidden="true" />
-               <span className="dashboard-topbar-reference-badge" aria-label="3 unread messages">3</span>
-             </button>
-             <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
              <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-emerald-500/20 bg-[linear-gradient(135deg,#0B5D3B_0%,#16A34A_55%,#22C55E_100%)] px-3 text-[11px] font-medium text-white shadow-[0_8px_20px_rgba(22,163,74,.28),inset_0_1px_0_rgba(255,255,255,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(22,163,74,.38),inset_0_1px_0_rgba(255,255,255,.35)] active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2"
-              aria-label="Search everything"
-              title="Search everything"
-              aria-expanded={paletteOpen}
-            >
-              <Search size={17} strokeWidth={2.35} className="shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.18)] transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
-              <span className="dashboard-search-tooltip pointer-events-none absolute right-0 top-[calc(100%+10px)] z-50 whitespace-nowrap rounded-lg border border-slate-700/80 bg-slate-950 px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-xl transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">Search workspace <kbd className="ml-1 rounded border border-white/20 px-1 py-0.5 font-mono text-[9px] text-slate-300">⌘K</kbd></span>
-            </button>
+                           type="button"
+                           onClick={() => setPaletteOpen(true)}
+                           className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-emerald-500/20 bg-[linear-gradient(135deg,#0B5D3B_0%,#16A34A_55%,#22C55E_100%)] px-3 text-[11px] font-medium text-white shadow-[0_8px_20px_rgba(22,163,74,.28),inset_0_1px_0_rgba(255,255,255,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(22,163,74,.38),inset_0_1px_0_rgba(255,255,255,.35)] active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2"
+                           aria-label="Search everything"
+                           title="Search everything"
+                           aria-expanded={paletteOpen}
+                         >
+                           <Search size={17} strokeWidth={2.35} className="shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.18)] transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+                           <span className="dashboard-search-tooltip pointer-events-none absolute right-0 top-[calc(100%+10px)] z-50 whitespace-nowrap rounded-lg border border-slate-700/80 bg-slate-950 px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-xl transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">Search workspace <kbd className="ml-1 rounded border border-white/20 px-1 py-0.5 font-mono text-[9px] text-slate-300">⌘K</kbd></span>
+                         </button>
+             <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
+             <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label={t("messages")} title={t("messages")}>
+                            <MessageCircle size={17} strokeWidth={1.75} aria-hidden="true" />
+                            <span className="dashboard-topbar-reference-badge" aria-label="3 unread messages">3</span>
+                          </button>
+             <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label={t("helpSupport")} title={t("helpSupport")}>
+                            <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
+                          </button>
+             {/* Dark mode toggle */}
+                         <button
+                           type="button"
+                           onClick={toggleDarkMode}
+                           aria-pressed={darkMode}
+                           aria-label={`Theme mode: ${themeMode}. Activate to switch to ${themeMode === "light" ? "dark" : themeMode === "dark" ? "auto" : "light"} mode`}
+                            className="dashboard-topbar-icon-button grid shrink-0 place-items-center rounded-xl border bg-white text-slate-500 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
+                           title={`Theme: ${themeMode === "auto" ? "Auto" : themeMode === "dark" ? "Dark" : "Light"} (click to change)`}
+                         >
+                           {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
+                         </button>
+             <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
+                            <Globe size={14} className="text-emerald-700" aria-hidden="true" />
+                            <span className="sr-only">{t("language")}</span>
+                            <span className="dashboard-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
+                            <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="dashboard-language-select max-w-[92px] appearance-none bg-transparent pr-0 outline-none" data-testid="dashboard-language-select">
+                              {languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}
+                            </select>
+                            <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
+                          </label>
+             <div className="dashboard-topbar-profile-slot">
+                            <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+                          </div>
            </div>
           </div>
         </header>
