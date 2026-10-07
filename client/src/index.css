@@ -2352,6 +2352,22 @@
 @media (prefers-reduced-motion: reduce) {
   .dashboard-layout-skeleton [data-slot="skeleton"] { animation: none !important; }
 }
+.dashboard-shell-enter {
+  animation: dashboard-shell-enter 260ms var(--sm-ease-out) both;
+  transform-origin: top center;
+  will-change: opacity, transform;
+}
+@keyframes dashboard-shell-enter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-shell-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
 .dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-400,
 .dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-500 { color: #94a3b8 !important; }
 .dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-300 { color: #64748b !important; }
