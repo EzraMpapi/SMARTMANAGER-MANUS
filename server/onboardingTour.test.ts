@@ -19,13 +19,14 @@ describe("interactive onboarding tour", () => {
     expect(tour).toContain("Every permanent change is designed to wait for server confirmation.");
   });
 
-  it("shows the tour only for authenticated individual users and filters it to authorized modules", () => {
+  it("shows the tour automatically only for authenticated individual users and filters it to authorized modules", () => {
     expect(source).toContain("enabled={isIndividualLogin}");
-    expect(source).toContain("showTrigger={isIndividualLogin}");
     expect(source).toContain("<OnboardingTour");
+    expect(source).not.toContain("showTrigger={isIndividualLogin}");
     expect(tour).toContain("permittedModuleIds");
     expect(tour).toContain("roleDefinitionFor(userRole)");
-    expect(tour).toContain("dashboard-tour-trigger");
+    expect(tour).toContain("const needsTour = !saved");
+    expect(tour).not.toContain("dashboard-tour-trigger");
     expect(tour).not.toContain("dashboard-topbar-tour");
   });
 
@@ -55,7 +56,7 @@ describe("interactive onboarding tour", () => {
     expect(tour).toContain("data-tour-spotlight={step.moduleId}");
   });
 
-  it("provides dialog semantics, focus management, keyboard navigation, and restart access", () => {
+  it("provides dialog semantics, focus management, and keyboard navigation", () => {
     expect(tour).toContain('role="dialog"');
     expect(tour).toContain('aria-modal="true"');
     expect(tour).toContain('aria-labelledby="onboarding-tour-title"');
@@ -63,7 +64,7 @@ describe("interactive onboarding tour", () => {
     expect(tour).toContain('event.key === "ArrowRight"');
     expect(tour).toContain('event.key === "ArrowLeft"');
     expect(tour).toContain('event.key !== "Tab"');
-    expect(tour).toContain('data-onboarding-trigger="true"');
+    expect(tour).not.toContain('data-onboarding-trigger="true"');
   });
 });
 

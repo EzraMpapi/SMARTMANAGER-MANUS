@@ -47790,7 +47790,7 @@ function onboardingTourStorageKey(currentUser, company) {
   return `bs_onboarding_tour_${encodeURIComponent(String(userKey))}_${encodeURIComponent(String(workspaceKey))}`;
 }
 
-function OnboardingTour({ enabled = false, showTrigger = false, currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
+function OnboardingTour({ enabled = false, currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
   const { lang, t } = useLanguage();
   const userRole = canonicalRoleId(currentUser?.role || "Employee");
   const permittedModuleIds = useMemo(() => {
@@ -47810,7 +47810,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const dialogRef = useRef(null);
-  const triggerRef = useRef(null);
   const checkedKeyRef = useRef("");
   const [spotlightRect, setSpotlightRect] = useState(null);
   const storageKey = useMemo(() => onboardingTourStorageKey(currentUser, company), [currentUser?.id, currentUser?.name, company?.id, company?.name]);
@@ -47954,7 +47953,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
     persistCompletion(status);
     setOpen(false);
     onTourComplete?.(status);
-    window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
   function goNext() {
     if (stepIndex >= activeSteps.length - 1) finishTour("completed");
@@ -47962,10 +47960,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
   }
   function goPrevious() {
     setStepIndex((current) => Math.max(0, current - 1));
-  }
-  function restartTour() {
-    setStepIndex(0);
-    setOpen(true);
   }
   function openModule() {
     if (available && onNavigate) {
@@ -47976,16 +47970,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
 
   return (
     <>
-      {showTrigger && <button
-        ref={triggerRef}
-        type="button"
-        onClick={restartTour}
-        className="dashboard-tour-trigger fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-[11.5px] font-bold text-emerald-800 shadow-lg transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/40 sm:bottom-6 sm:right-24"
-        aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : t("takeTour")}
-        data-onboarding-trigger="true"
-      >
-        <Info size={13} /> {isSw ? "Anza Ziara" : t("takeTour")}
-      </button>}
       {open && typeof document !== "undefined" && createPortal((
         <div
           className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${spotlightRect ? "bg-transparent" : "bg-slate-950/55 backdrop-blur-sm"}`}
@@ -49244,7 +49228,6 @@ function SmartManager() {
       <PostCreateDispatch company={company} crm={crm} />
       <OnboardingTour
         enabled={isIndividualLogin}
-        showTrigger={isIndividualLogin}
         currentUser={currentUser}
         company={company}
         visibleModules={visibleModules}
