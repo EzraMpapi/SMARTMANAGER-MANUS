@@ -22,10 +22,12 @@ describe("interactive onboarding tour", () => {
   it("shows the tour automatically only for authenticated individual users and filters it to authorized modules", () => {
     expect(source).toContain("enabled={isIndividualLogin}");
     expect(source).toContain("<OnboardingTour");
+    expect(source).toContain("profile={centralizedAuth.profile}");
     expect(source).not.toContain("showTrigger={isIndividualLogin}");
     expect(tour).toContain("permittedModuleIds");
     expect(tour).toContain("roleDefinitionFor(userRole)");
-    expect(tour).toContain("const needsTour = !saved");
+    expect(tour).toContain("shouldOpenOnboardingTour");
+    expect(tour).toContain("profileCompletedAt");
     expect(tour).not.toContain("dashboard-tour-trigger");
     expect(tour).not.toContain("dashboard-topbar-tour");
   });

@@ -46,6 +46,7 @@ import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, reme
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneValidationError, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
+import { shouldOpenOnboardingTour } from "./lib/onboardingTourState";
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
@@ -47790,7 +47791,7 @@ function onboardingTourStorageKey(currentUser, company) {
   return `bs_onboarding_tour_${encodeURIComponent(String(userKey))}_${encodeURIComponent(String(workspaceKey))}`;
 }
 
-function OnboardingTour({ enabled = false, currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
+function OnboardingTour({ enabled = false, currentUser, profile, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
   const { lang, t } = useLanguage();
   const userRole = canonicalRoleId(currentUser?.role || "Employee");
   const permittedModuleIds = useMemo(() => {
@@ -47813,6 +47814,8 @@ function OnboardingTour({ enabled = false, currentUser, company, visibleModules 
   const checkedKeyRef = useRef("");
   const [spotlightRect, setSpotlightRect] = useState(null);
   const storageKey = useMemo(() => onboardingTourStorageKey(currentUser, company), [currentUser?.id, currentUser?.name, company?.id, company?.name]);
+  const profileCompletedAt = profile?.onboarding_tour_completed_at;
+  const completionCheckKey = `${storageKey}:${String(profileCompletedAt || "")}`;
   const ready = enabled && (IS_CONFIGURED ? Boolean(currentUser?.id && company?.id) : Boolean(currentUser?.id));
   const step = activeSteps[stepIndex] || activeSteps[0];
   const StepIcon = step.icon;
@@ -47828,19 +47831,20 @@ function OnboardingTour({ enabled = false, currentUser, company, visibleModules 
       setOpen(false);
       return;
     }
-    if (!ready || checkedKeyRef.current === storageKey) return;
-    checkedKeyRef.current = storageKey;
+    if (!ready || checkedKeyRef.current === completionCheckKey) return;
+    checkedKeyRef.current = completionCheckKey;
     setStepIndex(0);
     try {
       const saved = window.localStorage.getItem(storageKey);
-      const needsTour = !saved;
+      const needsTour = shouldOpenOnboardingTour({ localStorageValue: saved, profileCompletedAt });
       setOpen(needsTour);
       onTourFlowReady?.(needsTour);
     } catch (_error) {
-      setOpen(true);
-      onTourFlowReady?.(true);
+      const needsTour = shouldOpenOnboardingTour({ localStorageValue: null, profileCompletedAt });
+      setOpen(needsTour);
+      onTourFlowReady?.(needsTour);
     }
-  }, [enabled, ready, storageKey, onTourFlowReady]);
+  }, [enabled, ready, storageKey, completionCheckKey, profileCompletedAt, onTourFlowReady]);
 
   useEffect(() => {
     onTourVisibilityChange?.(open);
@@ -49229,6 +49233,7 @@ function SmartManager() {
       <OnboardingTour
         enabled={isIndividualLogin}
         currentUser={currentUser}
+        profile={centralizedAuth.profile}
         company={company}
         visibleModules={visibleModules}
         onNavigate={go}
