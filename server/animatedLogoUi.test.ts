@@ -28,5 +28,16 @@ describe("animated Smart Manager branding", () => {
     expect(dashboard).toContain("function BrandMark");
     expect(dashboard).toContain("return <BrandLogo variant=\"compact\"");
     expect(app).toContain("<BrandLogo variant=\"compact\" priority");
+    expect(app).toContain("sm-loading-screen");
+    expect(app).toContain("sm-loading-brand__orbit");
+    expect(app).toContain("sm-loading-progress");
+  });
+
+  it("provides layered motion and a static reduced-motion fallback for loading", () => {
+    expect(styles).toContain("@keyframes sm-loading-spin");
+    expect(styles).toContain("@keyframes sm-loading-breathe");
+    expect(styles).toContain("@keyframes sm-loading-progress");
+    expect(styles).toContain(".sm-loading-brand__logo");
+    expect(styles).toContain(".sm-loading-progress span { width: 55%; transform: none; }");
   });
 });
