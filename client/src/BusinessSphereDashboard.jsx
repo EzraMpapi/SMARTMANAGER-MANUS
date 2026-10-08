@@ -49415,6 +49415,7 @@ function SmartManager() {
                            <Search size={17} strokeWidth={2.35} className="shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.18)] transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
                            <span className="dashboard-search-tooltip pointer-events-none absolute right-0 top-[calc(100%+10px)] z-50 whitespace-nowrap rounded-lg border border-slate-700/80 bg-slate-950 px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-xl transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">Search workspace <kbd className="ml-1 rounded border border-white/20 px-1 py-0.5 font-mono text-[9px] text-slate-300">⌘K</kbd></span>
                          </button>
+             <span className="dashboard-topbar-divider" aria-hidden="true" />
              <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
              <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label={t("messages")} title={t("messages")}>
                             <MessageCircle size={17} strokeWidth={1.75} aria-hidden="true" />
@@ -49423,6 +49424,8 @@ function SmartManager() {
              <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label={t("helpSupport")} title={t("helpSupport")}>
                             <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
                           </button>
+             <span className="dashboard-topbar-divider" aria-hidden="true" />
+             {/* Preferences: appearance and language stay together before account identity. */}
              {/* Dark mode toggle */}
                          <button
                            type="button"
@@ -49443,6 +49446,7 @@ function SmartManager() {
                             </select>
                             <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
                           </label>}
+             <span className="dashboard-topbar-divider dashboard-topbar-profile-divider" aria-hidden="true" />
              <div className="dashboard-topbar-profile-slot">
                             <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
                           </div>

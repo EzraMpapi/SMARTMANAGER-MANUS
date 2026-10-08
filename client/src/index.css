@@ -1183,6 +1183,17 @@
   background: rgb(254 226 226);
 }
 
+.dashboard-topbar-divider {
+  width: 1px;
+  height: 1.5rem;
+  flex: 0 0 1px;
+  margin-inline: .25rem;
+  background: rgb(226 232 240 / .95);
+}
+.dashboard-topbar-profile-divider {
+  margin-left: .35rem;
+  margin-right: .1rem;
+}
 .dashboard-topbar-profile-slot {
   display: inline-flex;
   align-items: center;
@@ -1867,6 +1878,9 @@
   color: rgb(241 245 249);
 }
 
+.dashboard-topbar.dark-shell .dashboard-topbar-divider {
+  background: rgb(71 85 105 / .75);
+}
 .dashboard-topbar.dark-shell .dashboard-topbar-search {
   border-color: rgb(71 85 105 / .75);
   background: rgb(30 41 59 / .9);
