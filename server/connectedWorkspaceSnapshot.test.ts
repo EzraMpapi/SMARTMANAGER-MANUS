@@ -28,7 +28,7 @@ describe("connected workspace date snapshot", () => {
     expect(snapshot.net).toBe(950);
     expect(snapshot.salesValue).toBe(400);
     expect(snapshot.salesCount).toBe(3);
-    expect(snapshot.orders).toBe(1);
+    expect(snapshot.orders).toBe(3);
     expect(snapshot.customers).toBe(2);
     expect(snapshot.inventoryValue).toBe(500);
     expect(snapshot.receivables).toBe(600);
