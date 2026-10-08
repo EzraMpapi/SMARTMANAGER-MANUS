@@ -3327,3 +3327,101 @@
 .dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger:hover > svg {
   color: rgb(15 23 42) !important;
 }
+
+/* Sidebar polish: shared visual language for the navigation rail. These rules
+   only style existing RBAC-filtered buttons and groups; routing and permissions
+   remain owned by BusinessSphereDashboard. */
+.dashboard-sidebar .dashboard-sidebar-menu-summary {
+  min-height: 1.5rem;
+  align-items: center;
+}
+.dashboard-sidebar .dashboard-sidebar-menu-eyebrow,
+.dashboard-sidebar .dashboard-sidebar-group-toggle {
+  letter-spacing: .15em;
+}
+.dashboard-sidebar .dashboard-sidebar-menu-count {
+  min-width: 1.5rem;
+  text-align: center;
+  line-height: 1.25;
+}
+.dashboard-sidebar .dashboard-sidebar-group + .dashboard-sidebar-group {
+  margin-top: .8rem;
+  padding-top: .7rem;
+  border-top: 1px solid rgba(148, 163, 184, .14);
+}
+.dashboard-sidebar .dashboard-sidebar-group-toggle {
+  min-height: 1.75rem;
+  color: #94a3b8;
+  transition: background-color .16s ease, color .16s ease;
+}
+.dashboard-sidebar .dashboard-sidebar-group-toggle:hover {
+  color: #e2e8f0;
+}
+.dashboard-sidebar .dashboard-sidebar-nav-item {
+  min-height: 2.5rem;
+  border-color: transparent;
+  border-left-color: transparent;
+  letter-spacing: -.005em;
+}
+.dashboard-sidebar .dashboard-sidebar-nav-item:not([aria-current="page"]):hover {
+  transform: translateX(2px);
+}
+.dashboard-sidebar .dashboard-sidebar-nav-icon {
+  transition: background-color .16s ease, color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.dashboard-sidebar .dashboard-sidebar-nav-item:hover .dashboard-sidebar-nav-icon {
+  transform: scale(1.04);
+}
+.dashboard-sidebar .dashboard-sidebar-alert-badge {
+  box-shadow: 0 0 0 2px currentColor;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-group + .dashboard-sidebar-group {
+  border-top-color: #eef2f7;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-group-toggle {
+  color: #94a3b8 !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-group-toggle:hover {
+  color: #334155 !important;
+  background: #f8fafc !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-menu-count {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-nav-item:not([aria-current="page"]):hover {
+  box-shadow: 0 3px 10px rgba(15, 23, 42, .045);
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-alert-badge {
+  box-shadow: 0 0 0 2px #fff;
+}
+.dashboard-sidebar.dark-shell .dashboard-sidebar-group + .dashboard-sidebar-group {
+  border-top-color: rgba(71, 85, 105, .52);
+}
+.dashboard-sidebar.dark-shell .dashboard-sidebar-group-toggle:hover {
+  color: #f8fafc;
+}
+.dashboard-sidebar.dark-shell .dashboard-sidebar-menu-count {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+.dashboard-sidebar.dark-shell .dashboard-sidebar-alert-badge {
+  box-shadow: 0 0 0 2px #0f172a;
+}
+@media (min-width: 1024px) {
+  .dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-nav-item[aria-current="page"] {
+    box-shadow: inset 3px 0 0 var(--sm-user-accent), 0 5px 14px rgba(15, 23, 42, .065) !important;
+  }
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-nav-item[aria-current="page"] {
+    box-shadow: inset 3px 0 0 var(--sm-user-accent), 0 5px 16px rgba(0, 0, 0, .22) !important;
+  }
+}
+@media (max-width: 767px) {
+  .dashboard-sidebar .dashboard-sidebar-nav-item {
+    min-height: 2.75rem;
+  }
+  .dashboard-sidebar .dashboard-sidebar-group + .dashboard-sidebar-group {
+    margin-top: .65rem;
+    padding-top: .55rem;
+  }
+}
