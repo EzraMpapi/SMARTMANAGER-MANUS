@@ -6320,6 +6320,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [period, setPeriod] = useState("month");
   const TODAY_STR = TODAY.toISOString().slice(0, 10);
   const [connectedDate, setConnectedDate] = useState(TODAY_STR);
+  const [comparisonPeriod, setComparisonPeriod] = useState("day");
   const connectedSnapshot = useMemo(() => resolveConnectedWorkspaceSnapshot({
     date: connectedDate,
     invoices: invoices.rows,
@@ -6335,9 +6336,17 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const comparisonDate = useMemo(() => {
     if (!connectedDate) return "";
     const date = new Date(`${connectedDate}T12:00:00`);
-    date.setDate(date.getDate() - 1);
+    if (comparisonPeriod === "week") date.setDate(date.getDate() - 7);
+    else if (comparisonPeriod === "month") {
+      const originalDay = date.getDate();
+      date.setDate(1);
+      date.setMonth(date.getMonth() - 1);
+      const lastDayOfPreviousMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      date.setDate(Math.min(originalDay, lastDayOfPreviousMonth));
+    } else date.setDate(date.getDate() - 1);
     return date.toISOString().slice(0, 10);
-  }, [connectedDate]);
+  }, [connectedDate, comparisonPeriod]);
+  const comparisonPeriodLabel = comparisonPeriod === "week" ? "same date last week" : comparisonPeriod === "month" ? "same date last month" : "previous day";
   const previousConnectedSnapshot = useMemo(() => resolveConnectedWorkspaceSnapshot({
     date: comparisonDate,
     invoices: invoices.rows,
@@ -7165,7 +7174,16 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           <div className="mt-4 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-3.5" aria-label="Selected date analytics with previous day comparison">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700">Daily analytics</p><p className="mt-0.5 text-[11px] text-slate-500">Confirmed totals for {connectedDateLabel}</p></div>
-              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">Compared with {comparisonDate}</span>
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                <label className="flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">Compare with
+                  <select value={comparisonPeriod} onChange={(event) => setComparisonPeriod(event.target.value)} className="bg-transparent text-[10px] font-bold text-slate-700 outline-none" aria-label="Choose comparison period">
+                    <option value="day">Previous day</option>
+                    <option value="week">Same date last week</option>
+                    <option value="month">Same date last month</option>
+                  </select>
+                </label>
+                <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">{comparisonDate}</span>
+              </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
               {[
@@ -7182,12 +7200,12 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
                   <p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p>
                   <p className={`mt-1 text-[17px] font-black ${color}`}>{value === null || value === undefined ? "Not tracked" : currency ? formatMoney(value) : value}</p>
                   <p className={`mt-1 text-[10px] font-bold ${comparison.tone}`} title={`Previous day: ${previous === null || previous === undefined ? "No historical snapshot" : currency ? formatMoney(previous) : previous}`}>
-                    {comparison.label} <span className="font-normal text-slate-400">vs previous day</span>
+                    {comparison.label} <span className="font-normal text-slate-400">vs {comparisonPeriodLabel}</span>
                   </p>
                 </div>;
               })}
             </div>
-            <p className="mt-2 text-[10px] text-slate-400">Revenue, sales, net movement and receivables are compared from confirmed dated records. Inventory comparison requires dated inventory snapshots; otherwise it is shown as not tracked rather than estimated.</p>
+            <p className="mt-2 text-[10px] text-slate-400">Revenue, sales, net movement and receivables are compared from confirmed dated records against the {comparisonPeriodLabel}. Inventory comparison requires dated inventory snapshots; otherwise it is shown as not tracked rather than estimated.</p>
           </div>
         </div>
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
