@@ -97,7 +97,7 @@ test("opens the premium account popover and navigates to the responsive My Profi
   await expect(page.getByText("Security and access", { exact: true })).toBeVisible();
   await expect(page.getByText("Current session verified", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Preferences", exact: true }).click();
-  await expect(page.getByText("Display and localisation", { exact: true })).toBeVisible();
+  await expect(page.getByText("Display settings", { exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("heading", { name: "My Profile", exact: true })).toBeVisible();
   await page.screenshot({ path: "test-results/profile-identity-center-mobile.png", fullPage: true });

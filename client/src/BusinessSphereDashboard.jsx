@@ -49434,7 +49434,7 @@ function SmartManager() {
                          >
                            {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
                          </button>
-             <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
+             {active === "dashboard" && <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
                             <Globe size={14} className="text-emerald-700" aria-hidden="true" />
                             <span className="sr-only">{t("language")}</span>
                             <span className="dashboard-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
@@ -49442,7 +49442,7 @@ function SmartManager() {
                               {languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}
                             </select>
                             <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
-                          </label>
+                          </label>}
              <div className="dashboard-topbar-profile-slot">
                             <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
                           </div>
