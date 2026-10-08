@@ -40,4 +40,12 @@ describe("animated Smart Manager branding", () => {
     expect(styles).toContain(".sm-loading-brand__logo");
     expect(styles).toContain(".sm-loading-progress span { width: 55%; transform: none; }");
   });
+
+  it("uses a lighter mobile animation profile", () => {
+    expect(styles).toContain("@media (max-width: 639px)");
+    expect(styles).toContain(".sm-loading-brand__orbit--two");
+    expect(styles).toContain(".sm-loading-brand__halo { filter: none;");
+    expect(styles).toContain("will-change: transform, opacity");
+    expect(styles).toContain(".sm-loading-progress { width: 7rem; }");
+  });
 });

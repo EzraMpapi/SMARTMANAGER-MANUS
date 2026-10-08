@@ -575,6 +575,26 @@
 @keyframes sm-loading-progress { 0% { transform: translateX(-150%); } 100% { transform: translateX(340%); } }
 @keyframes sm-loading-sweep { 0%, 25% { transform: translateX(0); opacity: 0; } 45% { opacity: 1; } 75%, 100% { transform: translateX(470%); opacity: 0; } }
 @keyframes sm-loading-drift { 0%, 100% { transform: translate3d(-4%, 3%, 0) scale(.95); } 50% { transform: translate3d(4%, -3%, 0) scale(1.05); } }
+@media (max-width: 639px) {
+  /* Keep the mobile loading state calm and cheap: the logo's transform and
+     opacity motion carry the brand moment; the large ambient layers do not. */
+  .sm-loading-screen::before,
+  .sm-loading-screen::after,
+  .sm-loading-card::after,
+  .sm-loading-brand__orbit--two {
+    display: none;
+  }
+  .sm-loading-brand__halo { filter: none; box-shadow: 0 0 28px rgba(34, 197, 94, .24); }
+  .sm-loading-brand__logo,
+  .sm-loading-brand__orbit,
+  .sm-loading-brand__halo,
+  .sm-loading-progress span {
+    will-change: transform, opacity;
+  }
+  .sm-loading-brand__orbit { animation-duration: 6.5s; }
+  .sm-loading-brand__logo { animation-duration: 3.4s; }
+  .sm-loading-progress { width: 7rem; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .sm-animated-logo-video {
