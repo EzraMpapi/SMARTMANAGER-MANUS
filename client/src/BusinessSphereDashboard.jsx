@@ -6332,6 +6332,32 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     employees: employees.rows,
     posTransactions: posTransactions.rows,
   }), [connectedDate, invoices.rows, expenses.rows, crm.rows, inventory.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows, employees.rows, posTransactions.rows]);
+  const comparisonDate = useMemo(() => {
+    if (!connectedDate) return "";
+    const date = new Date(`${connectedDate}T12:00:00`);
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().slice(0, 10);
+  }, [connectedDate]);
+  const previousConnectedSnapshot = useMemo(() => resolveConnectedWorkspaceSnapshot({
+    date: comparisonDate,
+    invoices: invoices.rows,
+    expenses: expenses.rows,
+    crm: crm.rows,
+    inventory: inventory.rows,
+    leaveRequests: leaveRequests.rows,
+    workOrders: workOrders.rows,
+    subscriptions: subscriptions.rows,
+    employees: employees.rows,
+    posTransactions: posTransactions.rows,
+  }), [comparisonDate, invoices.rows, expenses.rows, crm.rows, inventory.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows, employees.rows, posTransactions.rows]);
+  const formatDayComparison = useCallback((current, previous, formatter = formatMoney) => {
+    if (current === null || current === undefined || previous === null || previous === undefined) return { label: "No prior snapshot", tone: "text-slate-400" };
+    const delta = Number(current || 0) - Number(previous || 0);
+    const sign = delta > 0 ? "+" : delta < 0 ? "−" : "";
+    const absoluteDelta = formatter(Math.abs(delta));
+    const percentage = Number(previous) === 0 ? (Number(current) === 0 ? "0%" : "New") : `${delta > 0 ? "+" : ""}${Math.round((delta / Math.abs(Number(previous))) * 100)}%`;
+    return { label: `${sign}${absoluteDelta} · ${percentage}`, tone: delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-600" : "text-slate-400" };
+  }, [formatMoney]);
   const connectedDateLabel = connectedDate ? new Date(`${connectedDate}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Selected date";
   const greetingName = (currentUser?.name || company?.owner || "there").trim().split(" ")[0] || "there";
   const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening";
@@ -7136,18 +7162,32 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Selected date snapshot</p><h2 className="mt-1 text-[16px] font-bold text-slate-900">What happened on {connectedDateLabel}</h2><p className="mt-1 text-[11.5px] text-slate-500">Only server-confirmed workspace rows are included. No sample or forecast activity is shown.</p></div>
             <div className="rounded-xl bg-slate-50 px-3 py-2 text-right"><p className="text-[10px] uppercase tracking-wide text-slate-400">Net movement</p><p className={`font-mono text-[15px] font-black ${connectedSnapshot.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{connectedSnapshot.net >= 0 ? "+" : "−"}{formatMoney(Math.abs(connectedSnapshot.net))}</p></div>
           </div>
-          <div className="mt-4 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-3.5" aria-label="Selected date financial summary">
+          <div className="mt-4 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-3.5" aria-label="Selected date analytics with previous day comparison">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700">Daily financial summary</p><p className="mt-0.5 text-[11px] text-slate-500">Confirmed totals for {connectedDateLabel}</p></div>
-              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">Selected date only</span>
+              <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700">Daily analytics</p><p className="mt-0.5 text-[11px] text-slate-500">Confirmed totals for {connectedDateLabel}</p></div>
+              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">Compared with {comparisonDate}</span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-blue-100 bg-white/80 px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">Total revenue</p><p className="mt-1 text-[19px] font-black text-blue-700">{formatMoney(connectedSnapshot.revenue)}</p></div>
-              <div className="rounded-lg border border-amber-100 bg-white/80 px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">Total expenses</p><p className="mt-1 text-[19px] font-black text-amber-700">{formatMoney(connectedSnapshot.expensesTotal)}</p></div>
+            <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
+              {[
+                ["Total revenue", connectedSnapshot.revenue, previousConnectedSnapshot.revenue, "text-blue-700", true],
+                ["Net movement", connectedSnapshot.net, previousConnectedSnapshot.net, connectedSnapshot.net >= 0 ? "text-emerald-700" : "text-rose-700", true],
+                ["Total sales", connectedSnapshot.salesValue, previousConnectedSnapshot.salesValue, "text-indigo-700", true],
+                ["Orders", connectedSnapshot.orders, previousConnectedSnapshot.orders, "text-violet-700", false],
+                ["Customers", connectedSnapshot.customers, previousConnectedSnapshot.customers, "text-cyan-700", false],
+                ["Inventory value", connectedSnapshot.inventoryValue, previousConnectedSnapshot.inventoryValue, "text-slate-800", true],
+                ["Receivable", connectedSnapshot.receivables, previousConnectedSnapshot.receivables, "text-rose-700", true],
+              ].map(([label, value, previous, color, currency]) => {
+                const comparison = formatDayComparison(value, previous, currency ? formatMoney : (amount) => String(Math.round(amount || 0)));
+                return <div key={label} className="rounded-lg border border-slate-100 bg-white/85 px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p>
+                  <p className={`mt-1 text-[17px] font-black ${color}`}>{value === null || value === undefined ? "Not tracked" : currency ? formatMoney(value) : value}</p>
+                  <p className={`mt-1 text-[10px] font-bold ${comparison.tone}`} title={`Previous day: ${previous === null || previous === undefined ? "No historical snapshot" : currency ? formatMoney(previous) : previous}`}>
+                    {comparison.label} <span className="font-normal text-slate-400">vs previous day</span>
+                  </p>
+                </div>;
+              })}
             </div>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {[['Revenue', connectedSnapshot.revenue, 'text-blue-600'], ['Expenses', connectedSnapshot.expensesTotal, 'text-amber-600'], ['Invoices', connectedSnapshot.invoices.length, 'text-slate-700'], ['Other records', connectedSnapshot.totalRecords - connectedSnapshot.invoices.length - connectedSnapshot.expenses.length, 'text-violet-600']].map(([label, value, color]) => <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"><p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p><p className={`mt-1 text-[17px] font-black ${color}`}>{label === "Revenue" || label === "Expenses" ? formatMoney(value) : value}</p></div>)}
+            <p className="mt-2 text-[10px] text-slate-400">Revenue, sales, net movement and receivables are compared from confirmed dated records. Inventory comparison requires dated inventory snapshots; otherwise it is shown as not tracked rather than estimated.</p>
           </div>
         </div>
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
