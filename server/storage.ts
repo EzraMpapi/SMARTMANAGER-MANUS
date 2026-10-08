@@ -61,12 +61,16 @@ async function ensureBucket(
         public: false,
       }),
     });
-    if (!response.ok && response.status !== 409) {
-      const message = await response.text().catch(() => response.statusText);
-      throw new Error(
-        `Supabase storage bucket setup failed (${response.status}): ${message}`
-      );
-    }
+    if (response.ok || response.status === 409) return;
+    const message = await response.text().catch(() => response.statusText);
+    const payload: { statusCode?: number | string; error?: string; code?: string } | null = (() => {
+      try { return JSON.parse(message) as { statusCode?: number | string; error?: string; code?: string }; } catch { return null; }
+    })();
+    const bucketAlreadyExists = payload?.statusCode === 409 || payload?.statusCode === "409" || payload?.error === "BucketAlreadyExists" || payload?.code === "BucketAlreadyExists" || /BucketAlreadyExists|resource already exists/i.test(message);
+    if (bucketAlreadyExists) return;
+    throw new Error(
+      `Supabase storage bucket setup failed (${response.status}): ${message}`
+    );
   })().catch(error => {
     bucketReady = null;
     throw error;
