@@ -1,0 +1,20 @@
+flowchart LR
+  A[Public brand and auth] --> B[Authenticated application shell]
+  B --> C[Role and tenant context]
+  C --> D[Executive and operational modules]
+  C --> E[Industry and portal modules]
+  C --> F[Governance, evidence, settings]
+  D --> D1[CRM / Sales / POS]
+  D --> D2[Inventory / Procurement / Finance]
+  D --> D3[HR / Projects / Support]
+  E --> E1[Healthcare / Pharmacy / School]
+  E --> E2[Hotel / Restaurant / Fleet / Property]
+  E --> E3[Microfinance / Banking / Money Agent]
+  E --> E4[VICOBA / SACCOS / Community Groups]
+  F --> F1[Reports / Analytics / AI]
+  F --> F2[Notifications / Activity / Audit]
+  F --> F3[Integrations / Workflows / Collaboration]
+  F --> F4[TRA Portal / Billing / Security]
+  D --> G[Shared Finance and audit links]
+  E --> G
+  F --> G

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { getBearerToken } from "./_core/authHeaders";
 import { createReportSchedule, deleteReportSchedule, listReportSchedules, sendReportScheduleNow, updateReportSchedule } from "./reportSchedules";
 import { listAuditLogs, recordAuditLog } from "./auditLogs";
 import { verifyDatabaseBackupStatus } from "./backupVerification";
@@ -14,14 +15,23 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { activateSchemaDriftMonitor, getSchemaDriftMonitor, listSchemaDriftRuns, runSchemaDriftCheck } from "./schemaDriftMonitor";
 import { AssistantProviderError, runSmartAssistant } from "./smartAssistant";
+import { applyGlobalAdminControlAction, applyGlobalAdminLifecycleAction, getGlobalAdminControlSnapshot, getGlobalAdminExecutiveSnapshot, getGlobalAdminSnapshot, globalAdminActionInput, globalAdminControlInput, globalAdminLifecycleInput, recordGlobalAdminAction } from "./globalAdmin";
 import { decideActionApproval, requestActionApproval, resolveVerifiedProfile } from "./aiApprovals";
 import { decideRoleChangeApproval, dismissNotification, listRoleChangeApprovals, markNotificationRead, requestRoleChangeApproval } from "./roleChangeApprovals";
+import { createBusinessNetworkVerification, decidePlatformGovernanceRequest, listMyPlatformGovernanceRequests, listPlatformGovernanceRequests } from "./platformGovernance";
 import { saveWorkspaceBranding } from "./workspaceBranding";
 import { getWorkspaceSettings, saveWorkspaceSettings } from "./workspaceSettings";
+import { dashboardPreferencesInput, getDashboardPreferences, resetDashboardPreferences, saveDashboardPreferences } from "./dashboardPreferences";
+import { dashboardLayoutAnalyticsInput, dashboardLayoutTelemetryEventInput, getDashboardLayoutAnalytics, recordDashboardLayoutTelemetry } from "./dashboardLayoutTelemetry";
+import { activateDashboardTeamPreset, createDashboardTeamPreset, dashboardTeamPresetIdInput, dashboardTeamPresetInput, deleteDashboardTeamPreset, listDashboardTeamPresets } from "./dashboardTeamPresets";
+import { createThemePreset, deleteThemePreset, listThemePresets, recordThemePresetUsage, themePresetIdInput, themePresetInput, toggleThemePresetLike, updateThemePreset, updateThemePresetInput } from "./themePresets";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
+import { getTeamWorkforceSnapshot } from "./teamWorkforce";
 import { sendWorkspaceEmail } from "./transactionalEmail";
-import { provisionConfirmedPasswordAccount } from "./passwordAccountProvisioning";
+import { inventoryProductImageInput, uploadInventoryProductImage } from "./inventoryImages";
+import { provisionPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
+import { listWebsiteFeedback, publicFeedbackInput, replyToWebsiteFeedback, websiteFeedbackReplyInput, submitPublicFeedback } from "./feedbackOperations";
 import { traFiscalRouter } from "./traFiscalRouter";
 import { canReadTenantPushDeliveryHistory, listTenantPushDeliveryHistory } from "./notificationHistory";
 import { getMarketIntelligenceSnapshot, marketIntelligenceConfig } from "./marketIntelligence";
@@ -37,8 +47,26 @@ import { getPatientSmsConsentPreferences, patientSmsConsentUpdateInput, updatePa
 import { clearPatientPortalReference, clearPatientPortalReferenceInput, linkPatientPortalReference, linkPatientPortalReferenceInput, listPortalReferenceReconciliation, portalReferenceListInput } from "./healthcarePortalReconciliation";
 import { applyPortalReferenceImport, decidePortalReferenceApproval, exportPortalReferenceErrors, getPortalReferenceDailySummary, getPortalReferenceSummarySettings, listPortalReferenceDeliveryHistory, listPortalReferenceWorkflow, portalReferenceApprovalDecisionInput, portalReferenceApprovalRequestInput, portalReferenceAuditSearchInput, portalReferenceCsvInput, portalReferenceDeliveryHistoryInput, portalReferenceErrorExportInput, portalReferenceImportApplyInput, portalReferenceSummarySettingsInput, portalReferenceWorkflowListInput, requestPortalReferenceReplacement, savePortalReferenceSummarySettings, searchPortalReferenceAudit, stagePortalReferenceCsvImport } from "./healthcarePortalReconciliationWorkflow";
 import { closeMicrofinanceCashSession, createMicrofinanceBorrower, createMicrofinanceCollateral, createMicrofinanceCollection, createMicrofinanceGroup, createMicrofinanceGuarantor, createMicrofinanceProduct, decideMicrofinanceApplication, disburseMicrofinanceLoan, getMicrofinanceCreditScoringSettings, getMicrofinanceEscalationSettings, listMicrofinanceAudit, listMicrofinanceDashboard, listMicrofinanceEscalationHistory, microfinanceApplicationInput, microfinanceBorrowerInput, microfinanceCashCloseInput, microfinanceCashOpenInput, microfinanceCollateralInput, microfinanceCollectionInput, microfinanceCreditScoringSettingsInput, microfinanceDecisionInput, microfinanceDisbursementInput, microfinanceEscalationSettingsInput, microfinanceGroupInput, microfinanceGuarantorInput, microfinanceListInput, microfinanceProductInput, microfinanceRepaymentInput, microfinanceSavingsInput, openMicrofinanceCashSession, recordMicrofinanceRepayment, recordMicrofinanceSavings, saveMicrofinanceCreditScoringSettings, saveMicrofinanceEscalationSettings, submitMicrofinanceApplication } from "./microfinanceOperations";
+import { getMoneyAgentCustomerSnapshot, getMoneyAgentSnapshot, moneyAgentActionInput, moneyAgentListInput, runMoneyAgentAction } from "./moneyAgentOperations";
+import { getPropertySnapshot, propertyActionInput, propertyDocumentUploadInput, propertyListInput, runPropertyAction, uploadPropertyDocument } from "./propertyManagementOperations";
 import { adjustPharmacyStock, archivePharmacyRecord, completePharmacySale, createPharmacyBrand, createPharmacyCategory, createPharmacyInsuranceClaim, createPharmacyMedicine, createPharmacyPurchaseOrder, createPharmacySupplier, createPharmacyTransfer, dispensePharmacyPrescription, getPharmacyAccess, getPharmacyClinicalQueue, getPharmacyDashboard, getPharmacyReports, listPharmacyAudit, listPharmacyRecords, markPharmacyNotificationRead, pharmacyAdjustmentInput, pharmacyArchiveInput, pharmacyBrandInput, pharmacyBrandUpdateInput, pharmacyCategoryInput, pharmacyCategoryUpdateInput, pharmacyClinicalQueueInput, pharmacyDispenseInput, pharmacyInsuranceClaimInput, pharmacyListInput, pharmacyMedicineInput, pharmacyMedicineUpdateInput, pharmacyNotificationInput, pharmacyPaymentInput, pharmacyPurchaseOrderInput, pharmacyReceiptInput, pharmacyReturnInput, pharmacySaleInput, pharmacySupplierInput, pharmacySupplierPaymentInput, pharmacySupplierUpdateInput, pharmacyTransferInput, receivePharmacyStock, recordPharmacySalePayment, recordPharmacySupplierPayment, returnPharmacySaleItems, updatePharmacyBrand, updatePharmacyCategory, updatePharmacyMedicine, updatePharmacySupplier } from "./pharmacyOperations";
 import { archiveSchoolRecord, assignSchoolService, createSchoolAcademicYear, createSchoolAdmission, createSchoolAnnouncement, createSchoolAssignment, createSchoolAssessment, createSchoolClass, createSchoolDepartment, createSchoolDisciplineRecord, createSchoolDocument, createSchoolFeeStructure, createSchoolGradingScale, createSchoolLibraryLoan, createSchoolServiceRecord, createSchoolStream, createSchoolSubject, createSchoolTeacher, createSchoolTeacherAssignment, createSchoolTerm, createSchoolTimetable, decideSchoolAdmission, decideSchoolApproval, decideSchoolScholarship, getSchoolAccess, getSchoolDashboard, getSchoolPortal, getSchoolReports, issueSchoolFeeInvoice, linkSchoolPortal, listSchoolAudit, listSchoolRecords, markSchoolNotificationRead, openSchoolAttendanceSession, publishSchoolReportCard, recordSchoolAssessmentScores, recordSchoolAttendance, recordSchoolInventoryMovement, recordSchoolPayment, requestSchoolApproval, requestSchoolScholarship, schoolAcademicYearInput, schoolAdmissionDecisionInput, schoolAdmissionInput, schoolAnnouncementInput, schoolApprovalDecisionInput, schoolApprovalRequestInput, schoolArchiveInput, schoolAssignmentInput, schoolAssignmentSubmissionInput, schoolAssessmentInput, schoolAttendanceInput, schoolAttendanceSessionInput, schoolClassInput, schoolDepartmentInput, schoolDisciplineInput, schoolDocumentInput, schoolDocumentUploadInput, schoolFeeStructureInput, schoolGradingScaleInput, schoolIdInput, schoolInventoryMovementInput, schoolInvoiceInput, schoolLibraryLoanInput, schoolListInput, schoolMessageInput, schoolPaymentInput, schoolPortalLinkInput, schoolReportCardInput, schoolScoreInput, schoolScholarshipDecisionInput, schoolScholarshipInput, schoolServiceAssignmentInput, schoolServiceInput, schoolStreamInput, schoolSubjectInput, schoolTeacherAssignmentInput, schoolTeacherInput, schoolTermInput, schoolTimetableInput, sendSchoolMessage, submitSchoolAssignment, uploadSchoolDocument } from "./schoolOperations";
+import { activateStandingOrder, addBeneficiary, addCollateral, addGroupMember, addGuarantor, approveStandingOrder, cancelStandingOrder, confirmStandingOrderProviderPayment, createAmlAlert, createGroup, createLoanProduct, createPaymentInstruction, createReconciliation, createStandingOrder, createAccountType as createBankAccountType, customerStatement, decideLoanApplication, disburseLoan, getStandingOrder, listBankMfiSnapshot, listStandingOrders, moveCash, pauseStandingOrder, recordSharePurchase, retryStandingOrderRun, resumeStandingOrder, runStandingOrders, scoreLoanApplication, openAccount, postTransaction, recordRepayment, registerCustomer, resolveAmlAlert, restructureLoan, runDailyControls, setupInstitution, submitLoanApplication, submitStandingOrder, updateKyc, writeOffLoan } from "./bankMfiOperations";
+import { getProfileIdentity, removeProfileAvatar, updateProfileIdentity, uploadProfileAvatar } from "./profileIdentity";
+import {
+  acceptPosSyncSequence,
+  completePosSale,
+  decideWorkforceRoleAssignment,
+  openPosShift,
+  posCashMovementInput,
+  posCompleteSaleInput,
+  posOpenShiftInput,
+  posSyncSequenceInput,
+  recordPosCashMovement,
+  requestWorkforceRoleAssignment,
+  workforceRoleAssignmentInput,
+  workforceRoleDecisionInput,
+} from "./posWorkforceRpcAdapters";
 
 const assistantRateWindows = new Map<string, { startedAt: number; requestCount: number }>();
 
@@ -64,7 +92,37 @@ async function requireVerifiedAuditCompany(req: Parameters<typeof resolveVerifie
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+  publicFeedback: publicProcedure
+    .input(publicFeedbackInput)
+    .mutation(({ ctx, input }) => submitPublicFeedback(ctx.req, input)),
   traFiscal: traFiscalRouter,
+  globalAdmin: router({
+    governanceQueue: protectedProcedure
+      .query(({ ctx }) => listPlatformGovernanceRequests(ctx.req)),
+    decideGovernance: protectedProcedure
+      .input(z.object({ requestId: z.string().uuid(), decision: z.enum(["approve", "reject"]), note: z.string().max(500).optional() }))
+      .mutation(({ ctx, input }) => decidePlatformGovernanceRequest(ctx.req, input)),
+    feedback: protectedProcedure
+      .query(({ ctx }) => listWebsiteFeedback(ctx.req)),
+    replyFeedback: protectedProcedure
+      .input(websiteFeedbackReplyInput)
+      .mutation(({ ctx, input }) => replyToWebsiteFeedback(ctx.req, input)),
+    snapshot: protectedProcedure
+      .query(({ ctx }) => getGlobalAdminSnapshot(ctx.req)),
+    executiveSnapshot: protectedProcedure
+      .query(({ ctx }) => getGlobalAdminExecutiveSnapshot(ctx.req)),
+    controlSnapshot: protectedProcedure
+      .query(({ ctx }) => getGlobalAdminControlSnapshot(ctx.req)),
+    recordAction: protectedProcedure
+      .input(globalAdminActionInput)
+      .mutation(({ ctx, input }) => recordGlobalAdminAction(ctx.req, input)),
+    applyLifecycleAction: protectedProcedure
+      .input(globalAdminLifecycleInput)
+      .mutation(({ ctx, input }) => applyGlobalAdminLifecycleAction(ctx.req, input)),
+    applyControlAction: protectedProcedure
+      .input(globalAdminControlInput)
+      .mutation(({ ctx, input }) => applyGlobalAdminControlAction(ctx.req, input)),
+  }),
   schemaContractAssertion: protectedProcedure
     .input(z.object({ tableName: z.string(), payload: z.record(z.string(), z.unknown()) }))
     .mutation(({ input }) => {
@@ -145,6 +203,22 @@ export const appRouter = router({
     createCollectionAction: protectedProcedure
       .input(microfinanceCollectionInput)
       .mutation(({ ctx, input }) => createMicrofinanceCollection(ctx.req, input)),
+  }),
+  propertyManagement: router({
+    snapshot: protectedProcedure.input(propertyListInput).query(({ ctx, input }) => getPropertySnapshot(ctx.req, input)),
+    action: protectedProcedure.input(propertyActionInput).mutation(({ ctx, input }) => runPropertyAction(ctx.req, input)),
+    uploadDocument: protectedProcedure.input(propertyDocumentUploadInput).mutation(({ ctx, input }) => uploadPropertyDocument(ctx.req, input)),
+  }),
+  moneyAgent: router({
+    snapshot: protectedProcedure
+      .input(moneyAgentListInput)
+      .query(({ ctx, input }) => getMoneyAgentSnapshot(ctx.req, input)),
+    customerSnapshot: protectedProcedure
+      .input(moneyAgentListInput)
+      .query(({ ctx, input }) => getMoneyAgentCustomerSnapshot(ctx.req, input)),
+    action: protectedProcedure
+      .input(moneyAgentActionInput)
+      .mutation(({ ctx, input }) => runMoneyAgentAction(ctx.req, input)),
   }),
   pharmacy: router({
     access: protectedProcedure.query(({ ctx }) => getPharmacyAccess(ctx.req)),
@@ -453,7 +527,7 @@ export const appRouter = router({
   accountRegistration: router({
     createConfirmedPasswordAccount: publicProcedure
       .input(z.object({ email: z.string().email().max(320), password: z.string().min(1).max(256) }))
-      .mutation(async ({ ctx, input }) => provisionConfirmedPasswordAccount(input, ctx.req.ip || ctx.req.socket.remoteAddress || "unknown")),
+      .mutation(async ({ ctx, input }) => provisionPasswordAccount(input, ctx.req.ip || ctx.req.socket.remoteAddress || "unknown")),
   }),
   passkeySecurity: router({
     notifyRegistered: protectedProcedure
@@ -840,6 +914,33 @@ export const appRouter = router({
     test: protectedProcedure.mutation(({ ctx }) => testEmailTemplateWorkflowWebhook(ctx.req)),
   }),
 
+  profileIdentity: router({
+    get: protectedProcedure.query(({ ctx }) => getProfileIdentity(ctx.req)),
+    update: protectedProcedure.input(z.object({
+      preferredName: z.string().trim().max(120).nullable().optional(),
+      firstName: z.string().trim().max(120).nullable().optional(),
+      middleName: z.string().trim().max(120).nullable().optional(),
+      lastName: z.string().trim().max(120).nullable().optional(),
+      fullName: z.string().trim().min(1).max(240).nullable().optional(),
+      dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      gender: z.string().trim().max(40).nullable().optional(),
+      phone: z.string().trim().max(40).regex(/^[+()\d\s.-]*$/).nullable().optional(),
+      address: z.string().trim().max(500).nullable().optional(),
+      country: z.string().trim().max(80).nullable().optional(),
+      preferredLanguage: z.string().trim().max(12).nullable().optional(),
+      currencyDisplay: z.string().trim().length(3).toUpperCase().nullable().optional(),
+      timezone: z.string().trim().max(100).nullable().optional(),
+      dateFormat: z.enum(["dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd"]).nullable().optional(),
+      theme: z.enum(["system", "light", "dark"]).nullable().optional(),
+      notificationPreferences: z.object({ email: z.boolean().optional(), push: z.boolean().optional(), sms: z.boolean().optional() }).strict().nullable().optional(),
+    }).strict()).mutation(({ ctx, input }) => updateProfileIdentity(ctx.req, input)),
+    uploadAvatar: protectedProcedure.input(z.object({
+      mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+      base64: z.string().min(1).max(2_800_000),
+    }).strict()).mutation(({ ctx, input }) => uploadProfileAvatar(ctx.req, input)),
+    removeAvatar: protectedProcedure.mutation(({ ctx }) => removeProfileAvatar(ctx.req)),
+  }),
+
   workspaceSettings: router({
     get: protectedProcedure.query(({ ctx }) => getWorkspaceSettings(ctx.req)),
     save: protectedProcedure.input(z.object({
@@ -857,13 +958,69 @@ export const appRouter = router({
         tagline: z.string().max(200).optional(), description: z.string().max(2_000).optional(), businessType: z.string().max(120).optional(), foundedYear: z.string().max(4).optional(), regNumber: z.string().max(160).optional(), postalCode: z.string().max(40).optional(),
         facebook: z.string().max(200).optional(), instagram: z.string().max(200).optional(), twitter: z.string().max(200).optional(), linkedin: z.string().max(200).optional(), tiktok: z.string().max(200).optional(), whatsappBusiness: z.string().max(80).optional(),
         bankName: z.string().max(160).optional(), bankAccountName: z.string().max(200).optional(), bankAccountNo: z.string().max(120).optional(), bankBranch: z.string().max(200).optional(), bankSwift: z.string().max(80).optional(),
-        businessHours: z.record(z.string(), z.object({ open: z.string().max(10).optional(), close: z.string().max(10).optional(), closed: z.boolean().optional() })).optional(), coverPhoto: z.string().url().max(2_000).nullable().optional(),
-        idleTimeoutMinutes: z.number().int().min(5).max(120).optional(), loginBackgroundImage: z.string().url().max(2_000).nullable().optional(), onboardingBackgroundImage: z.string().url().max(2_000).nullable().optional(),
+        businessHours: z.record(z.string(), z.object({ open: z.string().max(10).optional(), close: z.string().max(10).optional(), closed: z.boolean().optional() })).optional(), coverPhoto: z.string().max(2_000).refine((value) => value.startsWith("/api/manus-storage/") || value.startsWith("/manus-storage/") || /^https?:\/\//.test(value), "Invalid cover image URL").nullable().optional(),
+        idleTimeoutMinutes: z.number().int().min(5).max(120).optional(), loginBackgroundImage: z.string().max(2_000).refine((value) => value.startsWith("/api/manus-storage/") || value.startsWith("/manus-storage/") || /^https?:\/\//.test(value), "Invalid login background image URL").nullable().optional(), onboardingBackgroundImage: z.string().max(2_000).refine((value) => value.startsWith("/api/manus-storage/") || value.startsWith("/manus-storage/") || /^https?:\/\//.test(value), "Invalid onboarding background image URL").nullable().optional(),
         collaborationWorkflowWebhookEnabled: z.boolean().optional(), collaborationWorkflowWebhookUrl: z.string().url().max(2_000).or(z.literal("")).optional(), collaborationWorkflowWebhookSecret: z.string().max(512).optional(),
       }),
     })).mutation(({ ctx, input }) => saveWorkspaceSettings(ctx.req, input)),
   }),
 
+  dashboardPreferences: router({
+    get: protectedProcedure.query(({ ctx }) => getDashboardPreferences(ctx.req)),
+    save: protectedProcedure.input(dashboardPreferencesInput).mutation(({ ctx, input }) => saveDashboardPreferences(ctx.req, input)),
+    resetToTeamDefault: protectedProcedure.mutation(({ ctx }) => resetDashboardPreferences(ctx.req)),
+  }),
+
+  dashboardLayoutTelemetry: router({
+    record: protectedProcedure.input(dashboardLayoutTelemetryEventInput).mutation(({ ctx, input }) => recordDashboardLayoutTelemetry(ctx.req, input)),
+  }),
+
+  dashboardLayoutAnalytics: router({
+    summary: protectedProcedure.input(dashboardLayoutAnalyticsInput).query(({ ctx, input }) => getDashboardLayoutAnalytics(ctx.req, input)),
+  }),
+
+  dashboardTeamPresets: router({
+    list: protectedProcedure.query(({ ctx }) => listDashboardTeamPresets(ctx.req)),
+    create: protectedProcedure.input(dashboardTeamPresetInput).mutation(({ ctx, input }) => createDashboardTeamPreset(ctx.req, input)),
+    activate: protectedProcedure.input(dashboardTeamPresetIdInput).mutation(({ ctx, input }) => activateDashboardTeamPreset(ctx.req, input)),
+    delete: protectedProcedure.input(dashboardTeamPresetIdInput).mutation(({ ctx, input }) => deleteDashboardTeamPreset(ctx.req, input)),
+  }),
+
+  themePresets: router({
+    list: protectedProcedure.query(({ ctx }) => listThemePresets(ctx.req)),
+    create: protectedProcedure.input(themePresetInput).mutation(({ ctx, input }) => createThemePreset(ctx.req, input)),
+    update: protectedProcedure.input(updateThemePresetInput).mutation(({ ctx, input }) => updateThemePreset(ctx.req, input)),
+    delete: protectedProcedure.input(themePresetIdInput).mutation(({ ctx, input }) => deleteThemePreset(ctx.req, input)),
+    recordUsage: protectedProcedure.input(themePresetIdInput).mutation(({ ctx, input }) => recordThemePresetUsage(ctx.req, input)),
+    toggleLike: protectedProcedure.input(themePresetIdInput).mutation(({ ctx, input }) => toggleThemePresetLike(ctx.req, input)),
+  }),
+  inventory: router({
+    uploadProductImage: protectedProcedure.input(inventoryProductImageInput).mutation(({ ctx, input }) => uploadInventoryProductImage(ctx.req, input)),
+  }),
+
+  teamWorkforce: router({
+    snapshot: protectedProcedure.query(({ ctx }) => getTeamWorkforceSnapshot(ctx.req)),
+    requestRoleAssignment: protectedProcedure
+      .input(workforceRoleAssignmentInput)
+      .mutation(({ ctx, input }) => requestWorkforceRoleAssignment(ctx.req, input)),
+    decideRoleAssignment: protectedProcedure
+      .input(workforceRoleDecisionInput)
+      .mutation(({ ctx, input }) => decideWorkforceRoleAssignment(ctx.req, input)),
+  }),
+  pos: router({
+    openShift: protectedProcedure
+      .input(posOpenShiftInput)
+      .mutation(({ ctx, input }) => openPosShift(ctx.req, input)),
+    recordCashMovement: protectedProcedure
+      .input(posCashMovementInput)
+      .mutation(({ ctx, input }) => recordPosCashMovement(ctx.req, input)),
+    acceptSyncSequence: protectedProcedure
+      .input(posSyncSequenceInput)
+      .mutation(({ ctx, input }) => acceptPosSyncSequence(ctx.req, input)),
+    completeSale: protectedProcedure
+      .input(posCompleteSaleInput)
+      .mutation(({ ctx, input }) => completePosSale(ctx.req, input)),
+  }),
   teamInvitations: router({
     list: publicProcedure.query(({ ctx }) => listTeamInvitations(ctx.req)),
     create: publicProcedure.input(z.object({ fullName: z.string().min(2).max(120), email: z.string().email().max(320), role: z.string().min(2).max(80) })).mutation(({ ctx, input }) => createTeamInvitation(ctx.req, input)),
@@ -874,6 +1031,7 @@ export const appRouter = router({
 
   transactionalEmail: router({
     send: publicProcedure.input(z.object({ to: z.string().min(3).max(6_000), cc: z.string().max(6_000).optional(), bcc: z.string().max(6_000).optional(), subject: z.string().min(1).max(160), body: z.string().min(1).max(12_000) })).mutation(({ ctx, input }) => sendWorkspaceEmail(ctx.req, input)),
+    sendExport: publicProcedure.input(z.object({ to: z.string().email(), subject: z.string().min(1).max(160), body: z.string().min(1).max(12_000), attachment: z.object({ filename: z.string().min(1).max(180), contentBase64: z.string().min(1).max(14_000_000), contentType: z.string().max(160).optional() }) })).mutation(({ ctx, input }) => sendWorkspaceEmail(ctx.req, input)),
   }),
 
   support: router({
@@ -968,6 +1126,12 @@ export const appRouter = router({
     markRead: protectedProcedure.input(z.object({ notificationId: z.string().min(1) })).mutation(({ ctx, input }) => markNotificationRead(ctx.req, input)),
     dismiss: protectedProcedure.input(z.object({ notificationId: z.string().min(1) })).mutation(({ ctx, input }) => dismissNotification(ctx.req, input)),
   }),
+  platformGovernance: router({
+    myRequests: protectedProcedure.query(({ ctx }) => listMyPlatformGovernanceRequests(ctx.req)),
+    requestNetworkVerification: protectedProcedure
+      .input(z.object({ networkName: z.string().max(160).optional(), domain: z.string().max(255).optional(), evidence: z.record(z.string(), z.unknown()).optional() }))
+      .mutation(({ ctx, input }) => createBusinessNetworkVerification(ctx.req, input)),
+  }),
 
   reportSchedules: router({
     list: protectedProcedure.query(({ ctx }) => listReportSchedules(ctx.user.openId)),
@@ -1008,14 +1172,14 @@ export const appRouter = router({
         const profile = await requireVerifiedAuditCompany(ctx.req, input.companyId);
         const canReadSecurity = canReadTenantPushDeliveryHistory(profile.role);
         if (!canReadSecurity) throw new TRPCError({ code: "FORBIDDEN", message: "Only tenant security administrators can view push delivery history." });
-        return listTenantPushDeliveryHistory(input.companyId, input.limit);
+        return listTenantPushDeliveryHistory(input.companyId, input.limit, getSessionToken(ctx.req));
       }),
   }),
 
   auditLogs: router({
     list: protectedProcedure.input(z.object({ companyId: z.string().min(1), limit: z.number().int().positive().optional(), module: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() })).query(async ({ ctx, input }) => {
       await requireVerifiedAuditCompany(ctx.req, input.companyId);
-      const logs = await listAuditLogs(input.companyId, input.limit || 100);
+      const logs = await listAuditLogs(input.companyId, input.limit || 100, getSessionToken(ctx.req));
       return logs.filter(l => {
         if (input.module && l.module !== input.module) return false;
         if (input.startDate && new Date(l.createdAt) < new Date(input.startDate)) return false;
@@ -1028,7 +1192,7 @@ export const appRouter = router({
       if (approvalResult.profile.company_id !== input.companyId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You cannot export compliance evidence for another workspace." });
       }
-      const logs = await listAuditLogs(input.companyId, input.limit || 100);
+      const logs = await listAuditLogs(input.companyId, input.limit || 100, getSessionToken(ctx.req));
       const filteredLogs = logs.filter((log) => {
         if (input.module && log.module !== input.module) return false;
         if (input.startDate && new Date(log.createdAt) < new Date(input.startDate)) return false;
@@ -1039,12 +1203,57 @@ export const appRouter = router({
     }),
     record: protectedProcedure.input(z.object({ companyId: z.string().min(1), action: z.string().min(1), module: z.string().min(1), details: z.string().optional() })).mutation(async ({ ctx, input }) => {
       const profile = await requireVerifiedAuditCompany(ctx.req, input.companyId);
-      return recordAuditLog({ ...ctx.user, openId: profile.id, name: profile.full_name || ctx.user.name }, input);
+      return recordAuditLog({ ...ctx.user, openId: profile.id, name: profile.full_name || ctx.user.name }, input, getSessionToken(ctx.req));
     }),
   }),
 
+  bankMfi: router({
+    snapshot: protectedProcedure.query(({ ctx }) => listBankMfiSnapshot(ctx.req)),
+    createAccountType: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createBankAccountType(ctx.req, input.payload)),
+    createLoanProduct: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createLoanProduct(ctx.req, input.payload)),
+    setupInstitution: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => setupInstitution(ctx.req, input.payload)),
+    registerCustomer: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => registerCustomer(ctx.req, input.payload)),
+    updateKyc: protectedProcedure.input(z.object({ customerId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => updateKyc(ctx.req, input.customerId, input.payload)),
+    openAccount: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => openAccount(ctx.req, input.payload)),
+    postTransaction: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => postTransaction(ctx.req, input.payload)),
+    submitLoanApplication: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => submitLoanApplication(ctx.req, input.payload)),
+    scoreLoanApplication: protectedProcedure.input(z.object({ applicationId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => scoreLoanApplication(ctx.req, input.applicationId, input.payload)),
+    decideLoanApplication: protectedProcedure.input(z.object({ applicationId: z.string().uuid(), decision: z.enum(["APPROVED", "REJECTED"]), note: z.string().max(1000).optional() })).mutation(({ ctx, input }) => decideLoanApplication(ctx.req, input.applicationId, input.decision, input.note)),
+    disburseLoan: protectedProcedure.input(z.object({ applicationId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => disburseLoan(ctx.req, input.applicationId, input.payload)),
+    recordRepayment: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => recordRepayment(ctx.req, input.payload)),
+    addBeneficiary: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => addBeneficiary(ctx.req, input.payload)),
+    addGuarantor: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => addGuarantor(ctx.req, input.payload)),
+    addCollateral: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => addCollateral(ctx.req, input.payload)),
+    recordSharePurchase: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => recordSharePurchase(ctx.req, input.payload)),
+    customerStatement: protectedProcedure.input(z.object({ accountId: z.string().uuid(), from: z.string().date().optional(), to: z.string().date().optional() })).query(({ ctx, input }) => customerStatement(ctx.req, input.accountId, input.from, input.to)),
+    createPaymentInstruction: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createPaymentInstruction(ctx.req, input.payload)),
+    listStandingOrders: protectedProcedure.input(z.object({ status: z.string().max(40).optional(), search: z.string().max(100).optional(), limit: z.number().int().min(1).max(100).optional(), offset: z.number().int().min(0).optional() }).optional()).query(({ ctx, input }) => listStandingOrders(ctx.req, input ?? {})),
+    getStandingOrder: protectedProcedure.input(z.object({ orderId: z.string().uuid() })).query(({ ctx, input }) => getStandingOrder(ctx.req, input.orderId)),
+    createStandingOrder: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createStandingOrder(ctx.req, input.payload)),
+    submitStandingOrder: protectedProcedure.input(z.object({ orderId: z.string().uuid(), expectedVersion: z.number().int().nonnegative(), idempotencyKey: z.string().trim().min(12).max(200).optional() })).mutation(({ ctx, input }) => submitStandingOrder(ctx.req, input.orderId, input.expectedVersion, input.idempotencyKey)),
+    approveStandingOrder: protectedProcedure.input(z.object({ orderId: z.string().uuid(), decision: z.enum(["APPROVE", "APPROVED", "REJECT", "REJECTED"]), note: z.string().max(1000).optional(), expectedVersion: z.number().int().nonnegative(), idempotencyKey: z.string().trim().min(12).max(200).optional() })).mutation(({ ctx, input }) => approveStandingOrder(ctx.req, input.orderId, input.decision, input.note, input.expectedVersion, input.idempotencyKey)),
+    activateStandingOrder: protectedProcedure.input(z.object({ orderId: z.string().uuid(), expectedVersion: z.number().int().nonnegative(), idempotencyKey: z.string().trim().min(12).max(200).optional() })).mutation(({ ctx, input }) => activateStandingOrder(ctx.req, input.orderId, input.expectedVersion, input.idempotencyKey)),
+    pauseStandingOrder: protectedProcedure.input(z.object({ orderId: z.string().uuid(), reason: z.string().trim().min(1).max(1000), expectedVersion: z.number().int().nonnegative(), idempotencyKey: z.string().trim().min(12).max(200).optional() })).mutation(({ ctx, input }) => pauseStandingOrder(ctx.req, input.orderId, input.reason, input.expectedVersion, input.idempotencyKey)),
+    resumeStandingOrder: protectedProcedure.input(z.object({ orderId: z.string().uuid(), expectedVersion: z.number().int().nonnegative(), idempotencyKey: z.string().trim().min(12).max(200).optional() })).mutation(({ ctx, input }) => resumeStandingOrder(ctx.req, input.orderId, input.expectedVersion, input.idempotencyKey)),
+    cancelStandingOrder: protectedProcedure.input(z.object({ orderId: z.string().uuid(), reason: z.string().trim().min(1).max(1000), expectedVersion: z.number().int().nonnegative(), idempotencyKey: z.string().trim().min(12).max(200).optional() })).mutation(({ ctx, input }) => cancelStandingOrder(ctx.req, input.orderId, input.reason, input.expectedVersion, input.idempotencyKey)),
+    confirmStandingOrderProviderPayment: protectedProcedure.input(z.object({ runId: z.string().uuid(), providerReference: z.string().trim().min(1).max(200), providerStatus: z.string().trim().min(1).max(100), providerEventId: z.string().trim().min(1).max(200), idempotencyKey: z.string().trim().min(12).max(200) })).mutation(({ ctx, input }) => confirmStandingOrderProviderPayment(ctx.req, input.runId, input.providerReference, input.providerStatus, input.providerEventId, input.idempotencyKey)),
+    retryStandingOrderRun: protectedProcedure.input(z.object({ runId: z.string().uuid(), idempotencyKey: z.string().trim().min(12).max(200) })).mutation(({ ctx, input }) => retryStandingOrderRun(ctx.req, input.runId, input.idempotencyKey)),
+    createGroup: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createGroup(ctx.req, input.payload)),
+    addGroupMember: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => addGroupMember(ctx.req, input.payload)),
+    createReconciliation: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createReconciliation(ctx.req, input.payload)),
+    createAmlAlert: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => createAmlAlert(ctx.req, input.payload)),
+    resolveAmlAlert: protectedProcedure.input(z.object({ alertId: z.string().uuid(), decision: z.string().min(1).max(100), note: z.string().max(1000).optional() })).mutation(({ ctx, input }) => resolveAmlAlert(ctx.req, input.alertId, input.decision, input.note)),
+    writeOffLoan: protectedProcedure.input(z.object({ loanId: z.string().uuid(), note: z.string().min(1).max(1000) })).mutation(({ ctx, input }) => writeOffLoan(ctx.req, input.loanId, input.note)),
+    restructureLoan: protectedProcedure.input(z.object({ loanId: z.string().uuid(), payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => restructureLoan(ctx.req, input.loanId, input.payload)),
+    moveCash: protectedProcedure.input(z.object({ payload: z.record(z.string(), z.unknown()) })).mutation(({ ctx, input }) => moveCash(ctx.req, input.payload)),
+    runDailyControls: protectedProcedure.mutation(({ ctx }) => runDailyControls(ctx.req)),
+    runStandingOrders: protectedProcedure.input(z.object({ runDate: z.string().date().optional(), orderId: z.string().uuid().optional(), maxOrders: z.number().int().min(1).max(250).optional() }).optional()).mutation(({ ctx, input }) => runStandingOrders(ctx.req, input ?? {})),
+  }),
   admin: router({
-    verifyBackup: protectedProcedure.query(() => verifyDatabaseBackupStatus()),
+    verifyBackup: protectedProcedure.query(({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Only administrators can verify backup connectivity." });
+      return verifyDatabaseBackupStatus();
+    }),
     getSchemaDriftMonitor: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       return getSchemaDriftMonitor();
@@ -1105,11 +1314,11 @@ export const appRouter = router({
   }),
 });
 
-function getSessionToken(req: { headers: { cookie?: string; authorization?: string } }): string {
-  const cookieToken = parseCookie(req.headers.cookie ?? "")[COOKIE_NAME];
+function getSessionToken(req: { headers: { cookie?: string; authorization?: string | string[]; "x-supabase-authorization"?: string | string[] } }): string {
+  const headers = req?.headers || {};
+  const cookieToken = parseCookie(headers.cookie ?? "")[COOKIE_NAME];
   if (cookieToken) return cookieToken;
-  const authorization = req.headers.authorization;
-  return authorization?.startsWith("Bearer ") ? authorization.slice(7) : "";
+  return getBearerToken({ headers }) || "";
 }
 
 export type AppRouter = typeof appRouter;

@@ -1,0 +1,89 @@
+{
+  "project_info": {
+    "title": "Executive Summary",
+    "created": 1787603222.812,
+    "last_updated": 1787603443.443,
+    "total_slides": 7
+  },
+  "slides": [
+    {
+      "id": "executive_summary",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "audit_methodology",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "procurement_repairs",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "legacy_workflow_repairs",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "schema_reconciliation",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "validation_coverage",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "remaining_review_queue",
+      "state": "edited",
+      "pageNum": 7
+    }
+  ],
+  "outline": [
+    {
+      "id": "executive_summary",
+      "title": "Executive Summary",
+      "summary": "High-level overview of the audit scope, the 3,345 controls analyzed, the five major workflow repairs completed, and the zero-DDL schema reconciliation.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "audit_methodology",
+      "title": "Audit Methodology & Baseline",
+      "summary": "Explanation of the static scanner, the conservative placeholder review queue, and why runtime correctness requires feature-specific persistence contracts rather than generic writes.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "procurement_repairs",
+      "title": "Procurement & Pharmacy Repairs",
+      "summary": "Details of the verified repairs to the Inventory reorder workflow and the server-confirmed Pharmacy Add Drug and Dispense actions.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "legacy_workflow_repairs",
+      "title": "Legacy Workflow Repairs",
+      "summary": "Details of the newly connected Add OKR and Schedule Exam forms, their validation, and their generic-envelope mapping to existing HR and School tables.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "schema_reconciliation",
+      "title": "Live Schema Reconciliation",
+      "summary": "Confirmation that all required tables exist in the live Supabase project, justifying the decision to avoid speculative DDL or bulk migrations.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "validation_coverage",
+      "title": "Comprehensive Validation Coverage",
+      "summary": "Summary of the 26 targeted server-contract tests and 23 browser integration tests, demonstrating stable and verified end-to-end workflows.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "remaining_review_queue",
+      "title": "Remaining Review Queue",
+      "summary": "Identification of remaining legacy controls (e.g., Add Book, New Fixed Deposit) that still require feature-specific UX and authorization before implementation.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

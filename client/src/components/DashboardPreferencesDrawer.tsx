@@ -1,19 +1,33 @@
-import React, { useState } from "react";
-import { Sliders, X, Check, RotateCcw, DollarSign, Sparkles, Send, Loader2, Globe, Clock } from "lucide-react";
-import { useDashboardPreferences } from "../contexts/DashboardPreferencesContext";
+import React, { useRef, useState } from "react";
+import { Sliders, X, Check, RotateCcw, DollarSign, Sparkles, Send, Loader2, Globe, Clock, Search, CalendarDays, Download, Upload, AlertCircle } from "lucide-react";
+import { useDashboardPreferences, type DashboardPreferences } from "../contexts/DashboardPreferencesContext";
 import { trpc } from "../lib/trpc";
+import { DashboardLayoutControls } from "./DashboardLayoutControls";
+import { importDashboardLayout, serializeDashboardLayout } from "../lib/dashboardLayoutTransfer";
+import { TeamDashboardPresetManager } from "./TeamDashboardPresetManager";
 
 interface DashboardPreferencesDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  availableNavigationGroups?: Array<{ id: string; label: string; shortLabel?: string; itemCount?: number }>;
+  canManageTeamPresets?: boolean;
 }
 
-export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPreferencesDrawerProps) {
-  const { preferences, updatePreference, resetPreferences } = useDashboardPreferences();
+const topBarControls = [
+  { key: "showTopBarSearch", label: "Workspace search", detail: "Show the expanded command search on wide screens", icon: Search },
+  { key: "showConnectionStatus", label: "Connection status", detail: "Show Live, Demo, or offline status when space allows", icon: Globe },
+  { key: "showTopBarDate", label: "Current date", detail: "Show the local business date on extra-wide screens", icon: CalendarDays },
+] as const;
+
+export function DashboardPreferencesDrawer({ isOpen, onClose, availableNavigationGroups = [], canManageTeamPresets = false }: DashboardPreferencesDrawerProps) {
+  const { preferences, updatePreference, replacePreferences, resetPreferences, resetToTeamDefault, isPersisting, persistenceError } = useDashboardPreferences();
   const [activeTab, setActiveTab] = useState<"settings" | "ai">("settings");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [transferMessage, setTransferMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [aiGoal, setAiGoal] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<{ preferences: typeof preferences; explanation: string } | null>(null);
+  const [aiResult, setAiResult] = useState<{ preferences: Pick<typeof preferences, "compactDensity" | "showKpiBanner" | "showActivityTimeline" | "showPendingApprovals" | "accentColor" | "currency" | "timezone" | "fxRateOverride" | "departmentBudgets">; explanation: string } | null>(null);
 
   const configureAiMutation = trpc.ai.configurePreferences.useMutation({
     onSuccess: (data) => {
@@ -66,6 +80,43 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
     updatePreference("showActivityTimeline", aiResult.preferences.showActivityTimeline);
     updatePreference("showPendingApprovals", aiResult.preferences.showPendingApprovals);
     setActiveTab("settings");
+  };
+
+  const handleExport = () => {
+    const blob = new Blob([serializeDashboardLayout(preferences)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "smart-manager-dashboard-layout.json";
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setTransferMessage({ type: "success", text: "Dashboard layout exported. It contains presentation settings only." });
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const layout = importDashboardLayout(
+        await file.text(),
+        preferences,
+        availableNavigationGroups.length ? availableNavigationGroups.map((group) => group.id) : undefined,
+      );
+      replacePreferences(layout);
+      setTransferMessage({ type: "success", text: "Dashboard layout imported and filtered to this workspace’s authorized options." });
+    } catch (error) {
+      setTransferMessage({ type: "error", text: error instanceof Error ? error.message : "This dashboard layout could not be imported." });
+    }
+  };
+
+  const toggleNavigationGroup = (groupId: DashboardPreferences["visibleNavigationGroupIds"][number]) => {
+    if (groupId === "home") return;
+    const isVisible = preferences.visibleNavigationGroupIds.includes(groupId);
+    const nextGroups = isVisible
+      ? preferences.visibleNavigationGroupIds.filter((id) => id !== groupId)
+      : [...preferences.visibleNavigationGroupIds, groupId];
+    updatePreference("visibleNavigationGroupIds", nextGroups);
   };
 
   if (!isOpen) return null;
@@ -243,6 +294,49 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
                   </div>
                 </div>
               </div>
+              <DashboardLayoutControls preferences={preferences} updatePreference={updatePreference} />
+              {canManageTeamPresets && <TeamDashboardPresetManager preferences={preferences} />}
+              <div className="space-y-3">
+                <label className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">Workspace Navigation &amp; Command Bar</label>
+                <div className="space-y-3 rounded-xl border border-white/10 bg-[#0B1120] p-4">
+                  <div>
+                    <p className="text-[13px] font-semibold text-white">Navigation presentation</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#94A3B8]">This changes only your personal menu layout. Role, company, and subscription checks still control what opens.</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label="Sidebar presentation">
+                      {[{ id: "expanded", label: "Expanded" }, { id: "compact", label: "Compact" }].map((mode) => <button key={mode.id} type="button" aria-pressed={preferences.sidebarPresentation === mode.id} onClick={() => updatePreference("sidebarPresentation", mode.id as DashboardPreferences["sidebarPresentation"])} className={`min-h-10 rounded-lg border px-2 text-[11px] font-bold transition ${preferences.sidebarPresentation === mode.id ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]" : "border-white/10 text-[#94A3B8] hover:border-white/25 hover:text-white"}`}>{mode.label}</button>)}
+                    </div>
+                  </div>
+                  <div className="border-t border-white/10 pt-3">
+                    <p className="text-[13px] font-semibold text-white">Menu order</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label="Sidebar sort order">
+                      {[{ id: "priority", label: "Role priority" }, { id: "alphabetical", label: "A–Z" }].map((order) => <button key={order.id} type="button" aria-pressed={preferences.navigationSort === order.id} onClick={() => updatePreference("navigationSort", order.id as DashboardPreferences["navigationSort"])} className={`min-h-10 rounded-lg border px-2 text-[11px] font-bold transition ${preferences.navigationSort === order.id ? "border-[#C9A96E] bg-[#C9A96E]/15 text-[#C9A96E]" : "border-white/10 text-[#94A3B8] hover:border-white/25 hover:text-white"}`}>{order.label}</button>)}
+                    </div>
+                  </div>
+                  {availableNavigationGroups.length > 0 && <div className="border-t border-white/10 pt-3">
+                    <p className="text-[13px] font-semibold text-white">Visible menu groups</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#94A3B8]">Only groups already authorized for this role are listed. Home remains available as a safe return point.</p>
+                    <div className="mt-3 space-y-2">
+                      {availableNavigationGroups.map((group) => {
+                        const groupId = group.id as DashboardPreferences["visibleNavigationGroupIds"][number];
+                        const visible = preferences.visibleNavigationGroupIds.includes(groupId);
+                        const isHome = groupId === "home";
+                        return <button key={group.id} type="button" aria-pressed={visible} disabled={isHome} onClick={() => toggleNavigationGroup(groupId)} className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border px-3 text-left transition disabled:cursor-not-allowed disabled:opacity-75 ${visible ? "border-[#C9A96E]/45 bg-[#C9A96E]/10 text-white" : "border-white/10 text-[#94A3B8] hover:border-white/25 hover:text-white"}`}><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{group.label}</span><span className="mt-0.5 block text-[9.5px] text-[#94A3B8]">{isHome ? "Always available" : `${group.itemCount || 0} permitted workspace${group.itemCount === 1 ? "" : "s"}`}</span></span><span aria-hidden="true" className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${visible ? "border-[#C9A96E] bg-[#C9A96E] text-[#0B1120]" : "border-white/20"}`}>{visible && <Check size={13} />}</span></button>;
+                      })}
+                    </div>
+                  </div>}
+                  <div className="border-t border-white/10 pt-3">
+                    <p className="text-[13px] font-semibold text-white">Top-bar controls</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#94A3B8]">Choose optional context controls. Required account, notification, and security controls remain available.</p>
+                    <div className="mt-3 space-y-2">
+                      {topBarControls.map((control) => {
+                        const enabled = preferences[control.key];
+                        const Icon = control.icon;
+                        return <button key={control.key} type="button" aria-pressed={enabled} onClick={() => updatePreference(control.key, !enabled)} className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border px-3 text-left transition ${enabled ? "border-[#C9A96E]/45 bg-[#C9A96E]/10 text-white" : "border-white/10 text-[#94A3B8] hover:border-white/25 hover:text-white"}`}><span className="flex min-w-0 items-center gap-2.5"><Icon size={14} className={enabled ? "text-[#C9A96E]" : "text-[#94A3B8]"} /><span className="min-w-0"><span className="block truncate text-[11.5px] font-semibold">{control.label}</span><span className="mt-0.5 block truncate text-[9.5px] text-[#94A3B8]">{control.detail}</span></span></span><span aria-hidden="true" className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${enabled ? "border-[#C9A96E] bg-[#C9A96E] text-[#0B1120]" : "border-white/20"}`}>{enabled && <Check size={13} />}</span></button>;
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="mt-6 space-y-6">
@@ -318,19 +412,61 @@ export function DashboardPreferencesDrawer({ isOpen, onClose }: DashboardPrefere
           )}
         </div>
 
-        <div className="mt-8 border-t border-white/10 pt-4 flex items-center justify-between">
+        <div className="mt-8 border-t border-white/10 pt-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">Share layout</p>
+              <p className="mt-1 text-[11px] leading-5 text-[#94A3B8]">Export a portable setup for teammates. Import never grants access to restricted modules.</p>
+            </div>
+            <input ref={fileInputRef} type="file" accept="application/json,.json" onChange={handleImport} className="hidden" aria-label="Import dashboard layout file" />
+            <div className="flex shrink-0 gap-2">
+              <button type="button" onClick={handleExport} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-[11px] font-bold text-[#C9A96E] hover:border-[#C9A96E]/50 hover:bg-[#C9A96E]/10" aria-label="Export dashboard layout">
+                <Download size={14} /> Export
+              </button>
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-[11px] font-bold text-white hover:border-white/30" aria-label="Import dashboard layout">
+                <Upload size={14} /> Import
+              </button>
+            </div>
+          </div>
+          {transferMessage && <div role="status" className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-[11px] leading-4 ${transferMessage.type === "error" ? "border-red-400/30 bg-red-950/20 text-red-200" : "border-emerald-400/30 bg-emerald-950/20 text-emerald-200"}`}>
+            {transferMessage.type === "error" && <AlertCircle size={14} className="mt-0.5 shrink-0" />}
+            <span>{transferMessage.text}</span>
+          </div>}
+          {persistenceError && <p role="alert" className="text-[11px] leading-4 text-red-200">{persistenceError}</p>}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
           <button
+            type="button"
             onClick={resetPreferences}
-            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#94A3B8] hover:text-white transition-colors"
+            disabled={isPersisting}
+            className="inline-flex min-h-9 items-center gap-1.5 text-[12px] font-medium text-[#94A3B8] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
           >
-            <RotateCcw size={13} /> Reset Defaults
+            <RotateCcw size={13} /> Reset Built-in Defaults
           </button>
+          <button
+            type="button"
+            onClick={() => setResetConfirmOpen(true)}
+            disabled={isPersisting}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#C9A96E]/30 px-2.5 text-[11px] font-bold text-[#C9A96E] hover:border-[#C9A96E]/60 hover:bg-[#C9A96E]/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RotateCcw size={13} /> Reset to Team Default
+          </button>
+          </div>
           <button
             onClick={onClose}
             className="rounded-xl bg-white/10 hover:bg-white/15 px-5 py-2.5 text-[12.5px] font-bold text-white transition-colors"
           >
             Done
           </button>
+          </div>
+          {resetConfirmOpen && <div role="dialog" aria-modal="true" aria-labelledby="reset-team-default-title" className="rounded-xl border border-[#C9A96E]/30 bg-[#131C31] p-3">
+            <p id="reset-team-default-title" className="text-[12px] font-bold text-white">Restore the administrator default?</p>
+            <p className="mt-1 text-[11px] leading-4 text-[#94A3B8]">Your personal dashboard override will be removed. The active role or department preset will be restored; access permissions will not change.</p>
+            <div className="mt-3 flex justify-end gap-2">
+              <button type="button" onClick={() => setResetConfirmOpen(false)} className="min-h-9 rounded-lg border border-white/10 px-3 text-[11px] font-bold text-[#94A3B8]">Cancel</button>
+              <button type="button" disabled={isPersisting} onClick={() => { setResetConfirmOpen(false); setTransferMessage({ type: "success", text: "Restoring the active administrator default…" }); resetToTeamDefault(); }} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#C9A96E] px-3 text-[11px] font-bold text-[#0B1120] disabled:opacity-50">{isPersisting && <Loader2 size={13} className="animate-spin" />} Restore default</button>
+            </div>
+          </div>}
         </div>
       </div>
     </div>

@@ -1,0 +1,80 @@
+---
+title: SMART MANAGER — Module Ecosystem
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#ecfdf5'
+    primaryBorderColor: '#059669'
+    lineColor: '#64748b'
+---
+flowchart TB
+  SHELL["BusinessSphereDashboard\nshared navigation · module routing · command centers"]
+  subgraph COMMERCIAL["Commercial"]
+    SALES["Sales"]
+    CRM["CRM"]
+    MARKETING["Marketing"]
+    ECOM["E-Commerce"]
+  end
+  subgraph OPERATIONS["Operations"]
+    INV["Inventory"]
+    PROCUREMENT["Procurement"]
+    SUPPLY["Supply Chain"]
+    POS["POS"]
+    FLEET["Fleet"]
+  end
+  subgraph FINANCE["Finance and compliance"]
+    FIN["Finance"]
+    REPORTS["Reports"]
+    TRA["TRA Portal"]
+    INTEGRATIONS["Integration Hub"]
+  end
+  subgraph PEOPLE["People and collaboration"]
+    HR["HR / Payroll"]
+    PORTAL["Employee Portal"]
+    DOCS["Documents"]
+    WORKFLOW["Workflow Studio"]
+    COLLAB["Collaboration Hub"]
+  end
+  subgraph INCLUSION["Financial inclusion and cooperative"]
+    BANK["Bank & MFI"]
+    MICRO["Microfinance"]
+    SACCO["VICOBA / SACCOS"]
+    COMMUNITY["Community Groups"]
+  end
+  subgraph VERTICALS["Industry verticals"]
+    HEALTH["Healthcare"]
+    PHARMACY["Pharmacy"]
+    SCHOOL["School"]
+    HOTEL["Hotel"]
+    RESTAURANT["Restaurant"]
+  end
+  subgraph INTEL["Intelligence"]
+    SUPPORT["Customer Support"]
+    AI["AI Assistant"]
+  end
+  SHELL --> COMMERCIAL
+  SHELL --> OPERATIONS
+  SHELL --> FINANCE
+  SHELL --> PEOPLE
+  SHELL --> INCLUSION
+  SHELL --> VERTICALS
+  SHELL --> INTEL
+  SALES --> CRM --> MARKETING
+  SALES --> POS --> INV
+  ECOM --> INV
+  PROCUREMENT --> INV --> SUPPLY
+  BANK <--> MICRO
+  BANK <--> SACCO
+  SACCO <--> COMMUNITY
+  HEALTH --> PHARMACY
+  HOTEL --> RESTAURANT
+  SUPPORT --> CRM
+  AI --> REPORTS
+  classDef shell fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:2px;
+  classDef domain fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.4px;
+  classDef finance fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.4px;
+  classDef intel fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.4px;
+  class SHELL shell;
+  class SALES,CRM,MARKETING,ECOM,INV,PROCUREMENT,SUPPLY,POS,FLEET,HR,PORTAL,DOCS,WORKFLOW,COLLAB,BANK,MICRO,SACCO,COMMUNITY,HEALTH,PHARMACY,SCHOOL,HOTEL,RESTAURANT domain;
+  class FIN,REPORTS,TRA,INTEGRATIONS finance;
+  class SUPPORT,AI intel;

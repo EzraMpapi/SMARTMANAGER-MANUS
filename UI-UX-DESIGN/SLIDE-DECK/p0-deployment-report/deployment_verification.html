@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px; /* keep as required */
+            background-color: #ffffff;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #101828;
+            color: white;
+            padding: 40px 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+        }
+        .brand-small {
+            font-size: 18px;
+            font-weight: 700;
+            color: #38bdf8;
+            letter-spacing: 1px;
+        }
+        /* Reduced vertical inner padding to fit content within 720px (reduced top+bottom by 20px) */
+        .content {
+            padding: 20px 60px; /* was 30px 60px */
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            flex: 1;
+        }
+        .columns {
+            display: flex;
+            gap: 40px;
+            flex: 1;
+        }
+        .column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .section-title i {
+            color: #38bdf8;
+        }
+        .status-block {
+            background-color: #f8fafc;
+            border-left: 4px solid #cbd5e1;
+            padding: 16px 20px;
+        }
+        .status-block.success {
+            border-left-color: #10b981;
+            background-color: #ecfdf5;
+        }
+        .status-label {
+            font-size: 14px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .status-value {
+            font-size: 18px;
+            color: #0f172a;
+            font-weight: 500;
+            word-break: break-all;
+        }
+        .status-value.code {
+            font-family: monospace;
+            color: #0284c7;
+            font-weight: 600;
+        }
+        .status-value.highlight {
+            color: #065f46;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .insight-box {
+            background-color: #101828;
+            color: white;
+            padding: 20px 25px;
+            border-left: 6px solid #38bdf8;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            margin-top: auto;
+        }
+        .insight-icon {
+            font-size: 32px;
+            color: #38bdf8;
+            margin-top: 5px;
+        }
+        .insight-text h3 {
+            font-size: 22px;
+            margin-bottom: 8px;
+            color: #e0f2fe;
+        }
+        .insight-text p {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #cbd5e1;
+        }
+        .highlight-text {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1>Deployment Verification</h1>
+            <div class="brand-small">SMART MANAGER</div>
+        </div>
+        <div class="content">
+            <div class="columns">
+                <div class="column">
+                    <div class="section-title">
+                        <i class="fa-solid fa-server"></i> Vercel Target & Domain Health
+                    </div>
+                    <div class="status-block">
+                        <div class="status-label">Project & Team</div>
+                        <div class="status-value">menejajanja / EZRA MPAPI</div>
+                    </div>
+                    <div class="status-block">
+                        <div class="status-label">Required Domain</div>
+                        <div class="status-value">https://menejajanja.vercel.app</div>
+                    </div>
+                    <div class="status-block success">
+                        <div class="status-label">Domain Fetch Status</div>
+                        <div class="status-value highlight"><i class="fa-solid fa-circle-check"></i> HTTP 200 OK (text/html)</div>
+                        <div class="status-value" style="font-size: 14px; margin-top: 4px; color: #047857;">Vercel Cache HIT</div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="section-title">
+                        <i class="fa-solid fa-code-branch"></i> Git Ancestry & Deployment
+                    </div>
+                    <div class="status-block">
+                        <div class="status-label">Requested SHA</div>
+                        <div class="status-value code">a273450c200b8041bab45682d6c49f3b4c362171</div>
+                    </div>
+                    <div class="status-block success">
+                        <div class="status-label">Latest READY Production SHA</div>
+                        <div class="status-value code">a4a72ce18846e54fc426a9c4d13a562ef93f1e7c</div>
+                        <div class="status-value highlight" style="font-size: 14px; margin-top: 4px;"><i class="fa-solid fa-link"></i> Descendant of Requested SHA</div>
+                    </div>
+                    <div class="status-block">
+                        <div class="status-label">Final Pushed Evidence SHA</div>
+                        <div class="status-value code">96e4fc959d32b450cc094a2c4fe27a25cbd3ee80</div>
+                        <div class="status-value" style="font-size: 14px; margin-top: 4px; color: #475569;">Descendant of Latest READY SHA</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight-box">
+                <div class="insight-icon"><i class="fa-solid fa-shield-check"></i></div>
+                <div class="insight-text">
+                    <h3>Deployment Path Confirmed</h3>
+                    <p>The domain is healthy and serves Smart Manager HTML. The final verification found the exact existing project’s READY production deployment, which is a descendant of the requested commit. The requested application changes are <span class="highlight-text">live through the existing Git-linked deployment path</span>. No manual direct upload and no alternate Vercel project/domain were used.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

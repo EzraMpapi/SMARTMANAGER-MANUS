@@ -1,0 +1,17 @@
+<slide id="sales">
+  <background color="bg-content"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="slide-title" x="60" y="92" width="760" height="44" font="heading" size="34" color="brand" wrap="false">Sura 07: Mauzo yanahitaji mapitio</text>
+  <text id="sales-summary" x="60" y="145" width="720" height="95" font="body" size="20" color="ink-dark" line-height="1.32"><p>Hitaji la mteja huongoza hati. Uthibitishaji, rasimu, mapitio na uthibitisho wa mwisho hutenganishwa kwa makusudi.</p></text>
+  <shape id="concept-frame" type="rect" x="60" y="290" width="740" height="295" fill="surface" stroke="border" stroke-width="1"/>
+  <image id="sales-concept" src="https://private-us-east-1.manuscdn.com/sessionFile/clrc1zfRAjd1ZizZGBswnB/sandbox/slides_resource_ip60v2xrksc8vp2gnfxgg-68e88b70-e2b-prod-azure-central-us_1787778776233_na1fn_L2hvbWUvdWJ1bnR1L3NtYXJ0bWFuYWdlci10cmFpbmluZy1hc3NldHMvY2hhcHRlci0wMS9zYWxlcy13b3JrZmxvdy1jb25jZXB0.png?x-oss-process=image/resize,w_1560,h_1560/format,webp&Expires=1789430400&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvY2xyYzF6ZlJBamQxWml6WkdCc3duQi9zYW5kYm94L3NsaWRlc19yZXNvdXJjZV9pcDYwdjJ4cmtzYzh2cDJnbmZ4Z2ctNjhlODhiNzAtZTJiLXByb2QtYXp1cmUtY2VudHJhbC11c18xNzg3Nzc4Nzc2MjMzX25hMWZuX0wyaHZiV1V2ZFdKMWJuUjFMM050WVhKMGJXRnVZV2RsY2kxMGNtRnBibWx1WnkxaGMzTmxkSE12WTJoaGNIUmxjaTB3TVM5ellXeGxjeTEzYjNKclpteHZkeTFqYjI1alpYQjAucG5nP3gtb3NzLXByb2Nlc3M9aW1hZ2UvcmVzaXplLHdfMTU2MCxoXzE1NjAvZm9ybWF0LHdlYnAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3ODk0MzA0MDB9fX1dfQ__&Key-Pair-Id=K2QY5QTL8JSY6C&Signature=MEUCIB05IMCGJKJioT1WX6TlUKMHRI0UZvCJlmZAm3Axal38AiEAxV5zm6s1JKoKmw3YmoHbPs1swIWG3-G9VMuiFq0nwOs_" x="74" y="304" width="712" height="235" fit="contain"/>
+  <text id="concept-caption" x="74" y="548" width="712" height="20" font="caption" size="13" color="muted" align="center" wrap="false">TASWIRA YA MAELEZO • SI MUAMALA, ANKARA, MALIPO AU RISITI HALISI</text>
+  <shape id="review-card" type="rect" x="850" y="240" width="330" height="315" fill="#F6F0E4" stroke="#D8C597" stroke-width="1"/>
+  <text id="review-card-title" x="880" y="270" width="270" height="28" font="body" size="21" color="brand" wrap="false">Kanuni za Sura 07</text>
+  <text id="review-card-body" x="880" y="326" width="255" height="170" font="body" size="18" color="ink-dark" line-height="1.35"><p>• Rasimu si hatua ya mwisho.</p><p>• Mapitio yanahakikisha wajibu na ubora.</p><p>• Stock na fedha hutajwa pale inapowezeshwa.</p></text>
+  <shape id="boundary-note" type="rect" x="850" y="575" width="330" height="38" fill="brand"/>
+  <text id="boundary-note-text" x="868" y="584" width="294" height="18" font="caption" size="13" color="ink-light" align="center" wrap="false">Sales frame: orientation pekee</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="border" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="520" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 07–09 Commercial Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">04</text>
+</slide>

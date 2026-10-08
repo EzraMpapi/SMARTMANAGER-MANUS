@@ -1,0 +1,10 @@
+{
+  "task_kind": "new-document",
+  "output": "pdf",
+  "signals": [],
+  "content_features": {
+    "code_blocks": 0,
+    "defined_terms": 18,
+    "portrait_images": 1
+  }
+}

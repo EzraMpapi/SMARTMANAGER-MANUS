@@ -88,10 +88,60 @@
   --noble-emerald: #16A34A;
   --noble-slate: #0B1120;
   --noble-navy: #131C31;
+
+  /* SMART MANAGER semantic design-system tokens. Prefer these over page-local
+     hex values so the ERP remains visually coherent across modules. */
+  --sm-brand: #0B5D3B;
+  --sm-brand-strong: #064E3B;
+  --sm-emerald: #16A34A;
+  --sm-gold: #C9A96E;
+  --sm-ink: #0F172A;
+  --sm-slate: #475569;
+  --sm-canvas: #F4F7F6;
+  --sm-surface: #FFFFFF;
+  --sm-muted-surface: #F8FAFC;
+  --sm-success: #15803D;
+  --sm-success-surface: #DCFCE7;
+  --sm-warning: #B45309;
+  --sm-warning-surface: #FEF3C7;
+  --sm-danger: #B91C1C;
+  --sm-danger-surface: #FEE2E2;
+  --sm-info: #0369A1;
+  --sm-info-surface: #E0F2FE;
+  --sm-focus: #16A34A;
+  --sm-control-min: 2.75rem;
+  --sm-radius-panel: 1rem;
+  --sm-shadow-panel: 0 12px 34px rgba(15, 23, 42, .07);
+  --sm-shadow-float: 0 18px 46px rgba(15, 23, 42, .14);
+  --sm-ease-out: cubic-bezier(.23, 1, .32, 1);
 }
 
 .dark {
-  /* Dark mode is the default for this redesign */
+  /* Dark mode has its own semantic surfaces; it is not a raw inversion. */
+  --background: #0B1220;
+  --foreground: #F8FAFC;
+  --card: #111827;
+  --card-foreground: #F8FAFC;
+  --popover: #111827;
+  --popover-foreground: #F8FAFC;
+  --secondary: #1E293B;
+  --secondary-foreground: #F8FAFC;
+  --muted: #1E293B;
+  --muted-foreground: #CBD5E1;
+  --accent: #1F2937;
+  --accent-foreground: #F8FAFC;
+  --border: rgba(226, 232, 240, .16);
+  --input: rgba(226, 232, 240, .18);
+  --ring: #6EE7B7;
+  --sidebar: #0F172A;
+  --sidebar-foreground: #F8FAFC;
+  --sidebar-border: rgba(226, 232, 240, .14);
+  --sm-canvas: #0B1220;
+  --sm-surface: #111827;
+  --sm-muted-surface: #1E293B;
+  --sm-ink: #F8FAFC;
+  --sm-slate: #CBD5E1;
+  --sm-focus: #6EE7B7;
 }
 
 @layer base {
@@ -119,6 +169,11 @@
   .noble-button {
     @apply bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all duration-200 font-semibold;
   }
+  :where(button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--sm-focus);
+    outline-offset: 2px;
+  }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),
@@ -133,6 +188,64 @@
 }
 
 @layer components {
+  /* System surfaces and layout contracts for new and migrated module views. */
+  .sm-page {
+    min-width: 0;
+    color: var(--sm-ink);
+  }
+
+  .sm-panel {
+    min-width: 0;
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-radius: var(--sm-radius-panel);
+    background: var(--sm-surface);
+    box-shadow: var(--sm-shadow-panel);
+  }
+
+  .sm-panel-interactive {
+    transition: border-color 160ms ease-out, box-shadow 160ms ease-out, transform 160ms var(--sm-ease-out);
+  }
+
+  .sm-panel-interactive:hover {
+    border-color: color-mix(in srgb, var(--sm-emerald) 28%, var(--border));
+    box-shadow: var(--sm-shadow-float);
+    transform: translateY(-1px);
+  }
+
+  .sm-page-title {
+    color: var(--sm-ink);
+    font-family: 'Poppins', system-ui, sans-serif;
+    font-size: clamp(1.25rem, 1.05rem + .55vw, 1.75rem);
+    font-weight: 700;
+    letter-spacing: -.04em;
+    line-height: 1.2;
+  }
+
+  .sm-section-label {
+    color: var(--sm-slate);
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    line-height: 1.3;
+    text-transform: uppercase;
+  }
+
+  .sm-control {
+    min-height: var(--sm-control-min);
+  }
+
+  .sm-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /**
    * Custom container utility that centers content and adds responsive padding.
    *
@@ -185,6 +298,27 @@
     min-width: 0;
   }
 
+  /* Inventory has more local sections than a phone can show at once. Keep
+     each label intact and let the rail scroll, rather than shrinking buttons
+     until their text collides. */
+  .sm-inventory-tabs {
+    min-width: 0;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sm-inventory-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sm-inventory-tab {
+    flex: 0 0 auto;
+    min-width: max-content;
+    white-space: nowrap;
+  }
+
   .sm-table-scroll {
     width: 100%;
     max-width: 100%;
@@ -233,6 +367,18 @@
   .sm-mobile-action-group > button {
     min-width: 0;
     flex: 1 1 min(100%, 9.5rem);
+  }
+
+  .sm-inventory-tabs {
+    width: 100%;
+    max-width: 100%;
+    gap: .125rem;
+    padding: .25rem;
+  }
+
+  .sm-inventory-tab {
+    min-height: 40px;
+    padding-inline: .75rem;
   }
 
   /* Existing module headers share this Tailwind composition. Their action
@@ -620,4 +766,2550 @@
 }
 .animate-modal-fade {
   animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Repository-wide responsive hardening. These rules are scoped to the protected
+   dashboard so public/auth pages retain their existing composition. */
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
+  position: fixed;
+  z-index: 80;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) {
+  box-sizing: border-box;
+  min-height: 0;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.top-0, .sticky.bottom-0, .border-t),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.top-0, .sticky.bottom-0, .border-t) {
+  position: sticky;
+  z-index: 10;
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t) {
+  bottom: 0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: .625rem;
+  padding-bottom: max(.75rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+}
+
+.dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t) > :where(button, a, [role="button"]),
+.dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) > :where(form, .relative, [role="dialog"]):not(.absolute) > :where(.sticky.bottom-0, .border-t) > :where(button, a, [role="button"]) {
+  min-width: 0;
+  min-height: 44px;
+  flex: 1 1 9rem;
+  white-space: normal;
+  touch-action: manipulation;
+}
+
+@media (max-width: 639px) {
+  .dashboard-mobile-content {
+    min-width: 0;
+    width: 100%;
+    overflow-x: clip;
+  }
+
+  .dashboard-mobile-content :where(input, select, textarea, button, [role="button"], [role="combobox"]) {
+    max-width: 100%;
+  }
+
+  .dashboard-mobile-content :where(input, select, textarea) {
+    min-height: 44px;
+  }
+
+  .dashboard-mobile-content :where(img, svg, canvas) {
+    max-width: 100%;
+  }
+
+  .dashboard-mobile-content .recharts-responsive-container {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-mobile-content .sm-responsive-toolbar {
+    display: flex;
+    min-width: 0;
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: .5rem;
+  }
+
+  .dashboard-mobile-content .sm-responsive-toolbar > * {
+    min-width: 0;
+    flex: 1 1 min(100%, 10rem);
+  }
+
+  .dashboard-mobile-content .sm-responsive-form-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Legacy module forms and KPI groups frequently use fixed two/three-column
+     Tailwind grids. Collapse them on phones so labels and validation copy do
+     not compete for 320–479px of width. */
+  .dashboard-mobile-content :where(.grid.grid-cols-2, .grid.grid-cols-3) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-mobile-content :where(.grid.grid-cols-4, .grid.grid-cols-5, .grid.grid-cols-6) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-mobile-content .sm-responsive-dialog,
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, div):not(.absolute) {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: min(92svh, 46rem);
+    margin-top: auto;
+    border-radius: 1.5rem 1.5rem 0 0;
+  }
+
+  /* Shared popup behavior: module drawers and forms are often rendered as
+     direct children of a fixed overlay. On phones they must become a bounded
+     bottom sheet instead of preserving a desktop-height side panel that clips
+     fields, action buttons, or the close control. */
+  .dashboard-mobile-content .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
+    align-items: flex-end;
+    overflow: hidden;
+    padding: max(.75rem, env(safe-area-inset-top)) .75rem max(.75rem, env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(92svh, 46rem) !important;
+    min-height: 0;
+    margin: auto 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1.25rem 1.25rem 0 0;
+    border-left-width: 0;
+    border-right-width: 0;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.sticky.top-0, .sticky.bottom-0) {
+    position: sticky;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 :where(input, select, textarea, button) {
+    touch-action: manipulation;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.bottom-0 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .625rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+  }
+
+  /* Some lazy-loaded modules use a bordered action row instead of the sticky
+     footer utility. Apply the same wrapping and safe-area treatment to that
+     shared visual pattern so Sales, Finance, CRM, HR, Procurement, and sector
+     workspaces behave like Inventory on narrow screens. */
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .border-t {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: .625rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) > :where(button, a, [role="button"]) {
+    flex: 1 1 9rem;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+    touch-action: manipulation;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.bottom-0 > button {
+    flex: 1 1 9rem;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+  }
+
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > .sticky.top-0 button[aria-label],
+  .dashboard-mobile-content .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :first-child button[aria-label] {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  /* The dashboard shell also hosts lazy-loaded and portal-like module
+     dialogs outside the main content node. Keep the same form interaction
+     contract for those surfaces so every module gets identical behavior. */
+  .dashboard-shell .fixed.inset-0:has(> :where(form, .relative.overflow-y-auto, [role="dialog"])) {
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(92svh, 46rem) !important;
+    min-height: 0;
+    margin: auto 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1.25rem 1.25rem 0 0;
+  }
+
+  .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: .625rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, .06);
+  }
+
+  .dashboard-shell .fixed.inset-0 > :where(form, .relative, [role="dialog"], [role="alertdialog"]):not(.absolute) > :where(.border-t, .sticky.bottom-0) > :where(button, a, [role="button"]) {
+    flex: 1 1 9rem;
+    min-width: 0;
+    min-height: 44px;
+    white-space: normal;
+    touch-action: manipulation;
+  }
+
+  .dashboard-mobile-content .sm-responsive-table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+
+  .dashboard-mobile-content .sm-responsive-table > table {
+    min-width: max-content;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .dashboard-mobile-content .sm-responsive-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Step 8: mobile operational surfaces. These rules are scoped to the protected
+   dashboard so public pages and desktop layouts keep their existing rhythm. */
+@media (max-width: 639px) {
+  .dashboard-mobile-content .sm-mobile-filter-row {
+    align-items: stretch;
+  }
+
+  .dashboard-mobile-content .sm-mobile-filter-row > input,
+  .dashboard-mobile-content .sm-mobile-filter-row > select,
+  .dashboard-mobile-content .sm-mobile-filter-row > button,
+  .dashboard-mobile-content .sm-mobile-filter-row [role="combobox"] {
+    min-height: 44px;
+  }
+
+  .dashboard-mobile-content .sm-mobile-action-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .dashboard-mobile-content .sm-mobile-action-group > button {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  .dashboard-mobile-content .sm-mobile-table-wrap,
+  .dashboard-mobile-content .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .dashboard-mobile-content .sm-mobile-row-action {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+}
+
+
+/* Dashboard shell responsiveness: keep navigation usable without allowing the
+   header or workspace content to create horizontal page overflow. */
+.dashboard-shell {
+  min-height: 100dvh;
+  isolation: isolate;
+}
+
+.dashboard-topbar,
+.dashboard-main,
+.dashboard-mobile-nav,
+.dashboard-sidebar {
+  min-width: 0;
+}
+
+.dashboard-topbar-clock {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-topbar-clock {
+    display: flex !important;
+  }
+}
+
+.dashboard-topbar > :first-child,
+.dashboard-topbar > :last-child {
+  min-width: 0;
+}
+
+.dashboard-topbar-search {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  justify-content: center;
+}
+
+.dashboard-reference-topbar {
+  background: rgb(255 255 255 / .97);
+  border-bottom-color: rgb(226 232 240 / .9);
+}
+
+.dashboard-topbar-primary-search {
+  height: 2.25rem;
+  border-radius: .5rem;
+  background: rgb(248 250 252 / .82);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .82);
+  transition: background-color 160ms var(--ease-out, ease-out), border-color 160ms var(--ease-out, ease-out), color 160ms var(--ease-out, ease-out), transform 160ms var(--ease-out, ease-out);
+}
+
+.dashboard-topbar-primary-search:hover {
+  transform: translateY(-1px);
+}
+
+.dashboard-topbar-menu-control {
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-topbar-right-rail {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: .375rem;
+  padding-right: .75rem;
+  border-right: 1px solid rgb(226 232 240 / .86);
+}
+
+.dashboard-topbar-workspace {
+  min-height: 2.75rem;
+  border-left: 1px solid rgb(226 232 240 / .86);
+}
+
+.dashboard-topbar-presence,
+.dashboard-topbar-customize,
+.dashboard-topbar-notification-slot > div > button,
+.dashboard-topbar-alert {
+  display: inline-flex;
+  min-height: 2.25rem;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(226 232 240);
+  border-radius: .625rem;
+  background: rgb(248 250 252);
+  color: rgb(71 85 105);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .78);
+  transition: background-color 160ms var(--ease-out, ease-out), border-color 160ms var(--ease-out, ease-out), color 160ms var(--ease-out, ease-out), transform 160ms var(--ease-out, ease-out);
+}
+
+.dashboard-topbar-presence {
+  min-width: 2.25rem;
+  padding: 0;
+}
+
+.dashboard-topbar-customize:hover,
+.dashboard-topbar-notification-slot > div > button:hover {
+  border-color: rgb(167 243 208);
+  background: rgb(236 253 245);
+  color: rgb(5 150 105);
+}
+
+.dashboard-topbar-notification-slot > div > button:active,
+.dashboard-topbar-create:active,
+.dashboard-topbar-customize:active,
+.dashboard-topbar-alert:active {
+  transform: scale(.97);
+}
+
+.dashboard-topbar-alert {
+  gap: .3rem;
+  min-width: auto;
+  padding: 0 .6rem;
+  border-color: rgb(254 202 202);
+  background: rgb(254 242 242);
+  color: rgb(185 28 28);
+}
+
+.dashboard-topbar-alert:hover {
+  border-color: rgb(252 165 165);
+  background: rgb(254 226 226);
+}
+
+.dashboard-topbar-profile-slot {
+  display: inline-flex;
+  align-items: center;
+  padding-left: .125rem;
+}
+
+.dashboard-topbar-profile-slot > div > button {
+  min-height: 2.75rem;
+  border-radius: .625rem;
+  box-shadow: none;
+}
+
+.dashboard-main {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.dashboard-flat-navigation {
+  scrollbar-gutter: stable;
+}
+
+.dashboard-sidebar-order {
+  box-shadow: 0 1px 2px rgb(15 23 42 / .025);
+}
+
+.dashboard-flat-nav-item[data-role-primary="true"]::before {
+  content: "";
+  position: absolute;
+  left: .35rem;
+  top: 50%;
+  width: .2rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: rgb(16 185 129 / .55);
+  transform: translateY(-50%);
+}
+
+@media (min-width: 1024px) {
+  .dashboard-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 1rem;
+  }
+
+  .dashboard-topbar-context {
+    justify-self: start;
+  }
+
+  .dashboard-topbar-primary-search {
+    justify-self: center;
+  }
+
+  .dashboard-topbar-actions {
+    justify-self: end;
+    max-width: 100%;
+  }
+
+  .dashboard-workspace-column {
+    min-width: 42rem;
+  }
+
+  .dashboard-flat-navigation {
+    padding-top: 1rem;
+  }
+
+  .dashboard-topbar-context {
+    max-width: min(36rem, 44vw);
+  }
+
+  .dashboard-topbar-actions {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 1279px) {
+  .dashboard-topbar-profile-slot > div > button > span {
+    display: none;
+  }
+}
+
+@media (min-width: 1536px) {
+  .dashboard-flat-nav-item {
+    padding-top: .58rem;
+    padding-bottom: .58rem;
+  }
+
+  .dashboard-topbar-context {
+    max-width: 42rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-topbar {
+    column-gap: .45rem;
+    padding-left: max(.75rem, env(safe-area-inset-left));
+    padding-right: max(.75rem, env(safe-area-inset-right));
+  }
+
+  .dashboard-topbar-actions {
+    max-width: 100%;
+    overflow: visible;
+    scrollbar-width: none;
+  }
+
+  .dashboard-topbar-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-topbar-actions > * {
+    flex-shrink: 0;
+  }
+
+  .dashboard-topbar-context-title {
+    max-width: min(34vw, 10rem);
+  }
+
+  .dashboard-topbar-profile {
+    position: relative;
+    z-index: 60;
+  }
+
+  .dashboard-topbar-profile > button {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.dashboard-mobile-nav {
+  padding-left: max(.25rem, env(safe-area-inset-left));
+  padding-right: max(.25rem, env(safe-area-inset-right));
+}
+
+.dashboard-mobile-nav > button {
+  min-width: 0;
+  max-width: 20%;
+  touch-action: manipulation;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-shell {
+    min-height: 100dvh;
+  }
+
+  .dashboard-topbar-presence {
+    display: none;
+  }
+
+  .dashboard-sidebar {
+    width: min(86vw, 264px);
+  }
+
+  .dashboard-topbar {
+    position: relative;
+    z-index: 45;
+  }
+
+  .dashboard-topbar > :first-child {
+    flex: 1 1 auto;
+  }
+
+  .dashboard-topbar > :last-child {
+    flex: 0 1 auto;
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-topbar {
+    align-items: center;
+    min-height: 3.75rem;
+    gap: .5rem;
+    padding-left: max(.75rem, env(safe-area-inset-left));
+    padding-right: max(.75rem, env(safe-area-inset-right));
+  }
+
+  .dashboard-topbar-context {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: .375rem;
+  }
+
+  .dashboard-topbar-actions {
+    flex: 0 0 auto;
+    gap: .25rem;
+  }
+
+  .dashboard-topbar-right-rail {
+    gap: .25rem;
+    padding-right: .25rem;
+    border-right: 0;
+  }
+
+  .dashboard-topbar-menu-control,
+  .dashboard-topbar-ai-shortcut,
+  .dashboard-topbar-customize,
+  .dashboard-topbar-notification-slot > div > button {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+  }
+
+  .dashboard-topbar-create {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    padding-left: .5rem;
+    padding-right: .5rem;
+  }
+
+  .dashboard-topbar-profile-slot > div > button {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    padding: .25rem;
+  }
+
+  .dashboard-topbar-tour {
+    display: none;
+  }
+
+  .dashboard-topbar-search {
+    padding-left: .625rem;
+    padding-right: .625rem;
+  }
+
+  .dashboard-topbar-search kbd {
+    display: none;
+  }
+
+  .dashboard-main {
+    padding-left: max(.75rem, env(safe-area-inset-left));
+    padding-right: max(.75rem, env(safe-area-inset-right));
+  }
+
+  .dashboard-mobile-nav {
+    min-height: calc(4rem + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .dashboard-mobile-nav > button {
+    min-height: 4rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-topbar-ai-shortcut {
+    display: none;
+  }
+
+  .dashboard-topbar-context-logo {
+    display: none;
+  }
+
+  .dashboard-topbar-context-title {
+    max-width: 5.5rem;
+  }
+
+  .dashboard-topbar-tour,
+  .dashboard-topbar-alert {
+    display: none !important;
+  }
+}
+
+/* Reference-directed enterprise command center. The sidebar remains a true
+   navigation surface; these selectors only alter its visual hierarchy, never
+   the existing RBAC, tenant, or routing contracts in BusinessSphereDashboard. */
+.dashboard-sidebar {
+  background: linear-gradient(180deg, #062a2d 0%, #083b3b 58%, #075843 100%) !important;
+  border-right-color: rgba(255, 255, 255, .08) !important;
+  box-shadow: 8px 0 30px rgba(3, 20, 24, .18) !important;
+}
+
+.dashboard-sidebar .brand-wordmark,
+.dashboard-sidebar .text-slate-950,
+.dashboard-sidebar .text-slate-900,
+.dashboard-sidebar .text-slate-800,
+.dashboard-sidebar .text-slate-700 {
+  color: #f8fffb !important;
+}
+
+.dashboard-sidebar .text-slate-400,
+.dashboard-sidebar .text-slate-500 {
+  color: rgba(226, 255, 244, .67) !important;
+}
+
+.dashboard-sidebar .border-slate-100,
+.dashboard-sidebar .border-slate-200,
+.dashboard-sidebar .border-\[\#F3F4F6\] {
+  border-color: rgba(255, 255, 255, .09) !important;
+}
+
+.dashboard-sidebar .bg-white,
+.dashboard-sidebar .bg-slate-50,
+.dashboard-sidebar .bg-slate-100 {
+  background-color: rgba(255, 255, 255, .07) !important;
+}
+
+.dashboard-sidebar .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+.dashboard-sidebar .dashboard-flat-navigation > section > button:hover {
+  background: rgba(255, 255, 255, .08) !important;
+}
+
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"] {
+  border-color: rgba(100, 255, 181, .25) !important;
+  background: linear-gradient(90deg, rgba(17, 154, 96, .98), rgba(10, 116, 81, .98)) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .16) !important;
+}
+
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"] .bg-white,
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100 {
+  background-color: rgba(255, 255, 255, .14) !important;
+  color: #eafff0 !important;
+}
+
+.dashboard-sidebar .dashboard-sidebar-order {
+  background: rgba(0, 0, 0, .12) !important;
+}
+
+.dashboard-reference-layout {
+  --sm-surface: #fff;
+}
+
+.dashboard-reference-layout .dashboard-reference-panel,
+.dashboard-reference-layout .dashboard-reference-kpi {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .055);
+}
+
+.dashboard-reference-layout .dashboard-reference-kpi:hover {
+  box-shadow: 0 16px 30px rgba(15, 23, 42, .10);
+}
+
+.dashboard-reference-erp .dashboard-reference-kpi:active {
+  transform: translateY(0) scale(.985);
+}
+
+.dashboard-reference-erp table th,
+.dashboard-reference-erp table td {
+  vertical-align: middle;
+}
+
+.dashboard-reference-erp .recharts-default-legend {
+  display: flex;
+  justify-content: center;
+  gap: .75rem;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    width: min(84vw, 304px) !important;
+  }
+
+  .dashboard-reference-welcome {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 639px) {
+  .dashboard-reference-layout {
+    gap: 1rem;
+  }
+
+  .dashboard-reference-layout .dashboard-reference-kpi {
+    min-height: 136px;
+  }
+
+  .dashboard-reference-erp .recharts-legend-wrapper {
+    transform: translateY(1px);
+  }
+}
+
+/* Topbar refresh: keep the command surface calm at desktop widths and give
+   tablet/phone layouts a dedicated search row instead of squeezing controls
+   until labels become unreadable. */
+.dashboard-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 45;
+  display: flex !important;
+  min-height: 0 !important;
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  border-color: rgb(226 232 240 / .88) !important;
+  background: rgb(255 255 255 / .94) !important;
+  box-shadow: 0 1px 0 rgb(15 23 42 / .04), 0 14px 30px -24px rgb(15 23 42 / .42) !important;
+  backdrop-filter: blur(18px);
+}
+
+.dashboard-topbar-main {
+  display: flex;
+  min-width: 0;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: .75rem clamp(.75rem, 2.5vw, 2rem);
+}
+
+.dashboard-topbar-context {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none !important;
+}
+
+.dashboard-topbar-context > .relative {
+  min-width: 0;
+  max-width: min(100%, 22rem);
+}
+
+.dashboard-topbar-menu-control,
+.dashboard-topbar-icon-button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+.dashboard-topbar-workspace {
+  min-height: 2.75rem;
+  max-width: min(100%, 22rem);
+  border-color: rgb(226 232 240 / .92);
+  background: rgb(255 255 255 / .9);
+}
+
+.dashboard-topbar-workspace-copy {
+  line-height: 1.05;
+}
+
+.dashboard-topbar-actions {
+  flex: 0 0 auto !important;
+  max-width: 100%;
+}
+
+.dashboard-topbar-actions > * {
+  flex-shrink: 0;
+}
+
+.dashboard-topbar-icon-button {
+  border-color: rgb(226 232 240 / .92);
+  background: rgb(255 255 255 / .92);
+}
+
+.dashboard-topbar-notification-slot > button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border: 1px solid rgb(226 232 240 / .92);
+  border-radius: .75rem;
+  background: rgb(255 255 255 / .92);
+  box-shadow: 0 2px 8px rgb(15 23 42 / .05);
+}
+
+.dashboard-topbar-notification-slot > button:hover {
+  border-color: rgb(167 243 208);
+  background: rgb(236 253 245);
+  color: rgb(4 120 87);
+}
+
+.dashboard-topbar-profile-slot {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  border: 1px solid rgb(226 232 240 / .92);
+  border-radius: 0;
+  background: rgb(255 255 255 / .92);
+  box-shadow: 0 2px 8px rgb(15 23 42 / .05);
+}
+.dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger:hover {
+  border-color: rgb(167 243 208);
+  background: rgb(236 253 245);
+  color: rgb(4 120 87);
+}
+
+.dashboard-topbar-search-slot {
+  display: flex;
+  flex: 1 1 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  order: 3;
+  width: 100%;
+}
+
+.dashboard-topbar-search {
+  height: 2.75rem;
+}
+
+.dashboard-topbar-search-collapsed {
+  width: 2.75rem;
+  padding-inline: 0;
+}
+
+@media (min-width: 1280px) {
+  .dashboard-topbar-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 32vw) minmax(0, 1fr);
+    grid-template-areas: "context search actions";
+    align-items: center;
+    min-height: 3.25rem;
+    gap: clamp(.75rem, 1.8vw, 1.5rem);
+    padding: .35rem clamp(1rem, 2.5vw, 2rem);
+  }
+  .dashboard-topbar-context {
+    grid-area: context;
+    max-width: none !important;
+  }
+  .dashboard-topbar-actions {
+    grid-area: actions;
+    max-width: none !important;
+    min-width: 0;
+  }
+  .dashboard-topbar-search-slot {
+    grid-area: search;
+    flex: 0 1 auto;
+    order: initial;
+    position: static;
+    width: 100%;
+    transform: none;
+  }
+
+  .dashboard-topbar-actions {
+    justify-self: end;
+  }
+
+  .dashboard-topbar-search {
+    height: 2.4rem;
+  }
+
+  .dashboard-topbar-clock {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .dashboard-topbar-main {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) minmax(16rem, 34rem) minmax(12rem, 1fr);
+    grid-template-areas: "context search actions";
+    min-height: 3.25rem;
+    align-items: center;
+    gap: 1rem;
+    padding: .35rem 1.25rem;
+  }
+
+  .dashboard-topbar-context {
+    grid-area: context;
+    max-width: none !important;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: 100%;
+  }
+
+  .dashboard-topbar-actions {
+    grid-area: actions;
+    justify-self: end;
+    max-width: none;
+    gap: .35rem;
+  }
+
+  .dashboard-topbar-search-slot {
+    grid-area: search;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .dashboard-topbar-search {
+    height: 2.4rem;
+  }
+
+  .dashboard-topbar-clock {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-topbar-main {
+    min-height: 4rem;
+    gap: .5rem;
+    padding: .625rem max(.75rem, env(safe-area-inset-right)) .5rem max(.75rem, env(safe-area-inset-left));
+  }
+
+  .dashboard-topbar-context {
+    gap: .5rem;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: calc(100vw - 10rem);
+  }
+
+  .dashboard-topbar-workspace {
+    max-width: 100%;
+    padding: .375rem .5rem;
+  }
+
+  .dashboard-topbar-workspace > :first-child {
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .dashboard-topbar-workspace-copy {
+    max-width: min(40vw, 11rem);
+  }
+
+  .dashboard-topbar-workspace-copy > span:first-child {
+    max-width: 100%;
+    font-size: .7rem;
+  }
+
+  .dashboard-topbar-workspace-copy > span:last-child {
+    display: none;
+  }
+
+  .dashboard-topbar-actions {
+    gap: .25rem;
+  }
+
+  .dashboard-topbar-menu-control,
+  .dashboard-topbar-icon-button,
+  .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar-profile-slot > div > button {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+  }
+
+  .dashboard-topbar-divider {
+    display: none;
+  }
+
+  .dashboard-topbar-reference-control {
+    display: none !important;
+  }
+
+  .dashboard-topbar-search-slot {
+    width: 100%;
+    padding: 0 max(.75rem, env(safe-area-inset-left)) max(.625rem, env(safe-area-inset-bottom)) max(.75rem, env(safe-area-inset-right));
+  }
+
+  .dashboard-topbar-search {
+    height: 2.75rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-topbar-brand-mark {
+    display: none;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: calc(100vw - 8rem);
+  }
+
+  .dashboard-topbar-workspace-copy {
+    max-width: 34vw;
+  }
+
+  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+    display: none;
+  }
+}
+
+.dashboard-topbar.dark-shell {
+  border-color: rgb(51 65 85 / .85) !important;
+  background: rgb(15 23 42 / .96) !important;
+  box-shadow: 0 1px 0 rgb(148 163 184 / .08), 0 14px 30px -24px rgb(0 0 0 / .7) !important;
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-workspace,
+.dashboard-topbar.dark-shell .dashboard-topbar-icon-button,
+.dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button,
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button {
+  border-color: rgb(71 85 105 / .75);
+  background: rgb(30 41 59 / .9);
+  color: rgb(226 232 240);
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-workspace-copy > span:first-child,
+.dashboard-topbar.dark-shell .dashboard-topbar-page-context span:last-child {
+  color: rgb(241 245 249);
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-search {
+  border-color: rgb(71 85 105 / .75);
+  background: rgb(30 41 59 / .9);
+  color: rgb(203 213 225);
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-search kbd {
+  border-color: rgb(71 85 105 / .75);
+  background: rgb(15 23 42 / .9);
+}
+
+/* Automatic shell palette: day keeps the current light UI language; night
+   moves only the persistent command surfaces to an adaptive navy/slate range.
+   Module content and business data remain untouched. */
+[data-theme-period="day"] .dashboard-topbar,
+[data-theme-period="day"] .dashboard-mobile-nav {
+  color-scheme: light;
+}
+[data-theme-period="night"] .dashboard-topbar,
+[data-theme-period="night"] .dashboard-mobile-nav {
+  color-scheme: dark;
+}
+[data-theme-period="night"] .dashboard-mobile-nav {
+  background: rgb(15 23 42 / .97) !important;
+  border-top-color: rgb(51 65 85 / .92) !important;
+  box-shadow: 0 -12px 28px rgb(2 6 23 / .28);
+}
+[data-theme-period="night"] .dashboard-mobile-nav > button {
+  color: rgb(148 163 184) !important;
+}
+[data-theme-period="night"] .dashboard-mobile-nav > button[aria-current="page"] {
+  color: rgb(110 231 183) !important;
+}
+[data-theme-period="night"] .dashboard-mobile-nav > button[aria-current="page"] span {
+  background: rgb(110 231 183) !important;
+}
+[data-theme-period="night"] .dashboard-topbar:not(.dark-shell) {
+  border-color: rgb(51 65 85 / .85) !important;
+  background: rgb(15 23 42 / .96) !important;
+  color: rgb(226 232 240) !important;
+}
+[data-theme-period="night"] .dashboard-sidebar:not(.dark-shell) {
+  background: #0f172a !important;
+  border-right-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+/* Collision guardrails: the top row must give the workspace identity and
+   actions separate, predictable space at phone widths. The connectivity
+   indicator keeps its accessible title/aria label while becoming icon-only. */
+@media (max-width: 767px) {
+  .dashboard-topbar-main {
+    align-items: center;
+  }
+
+  .dashboard-topbar-context {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .dashboard-topbar-actions {
+    flex: 0 0 auto !important;
+    min-width: max-content;
+  }
+
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"] {
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    flex: 0 0 2.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    border-radius: .75rem;
+  }
+
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"] > span {
+    display: none;
+  }
+}
+
+@media (max-width: 479px) {
+  .dashboard-topbar {
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-topbar-main {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr) 3.25rem 3.25rem;
+    align-items: center;
+    gap: .5rem;
+    min-height: 5.25rem;
+    padding: .875rem max(.75rem, env(safe-area-inset-right)) .875rem max(.75rem, env(safe-area-inset-left));
+  }
+
+  .dashboard-topbar-context,
+  .dashboard-topbar-actions {
+    display: contents;
+  }
+
+  .dashboard-topbar-menu-control {
+    grid-column: 1;
+    grid-row: 1;
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+  }
+
+  .dashboard-topbar-context > .relative,
+  .dashboard-topbar-brand-mark,
+  .dashboard-topbar-actions .dashboard-topbar-icon-button,
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"],
+  .dashboard-topbar-clock,
+  .dashboard-topbar-divider {
+    display: none !important;
+  }
+
+  .dashboard-topbar-search-slot {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .dashboard-topbar-search {
+    height: 3.25rem;
+    border-radius: 999px;
+    background: rgb(255 255 255 / .96);
+    padding-inline: 1rem;
+    font-size: .875rem;
+  }
+
+  .dashboard-topbar-search .dashboard-topbar-search-label {
+    text-align: left;
+  }
+
+  .dashboard-topbar-search > svg:last-child {
+    display: none;
+  }
+
+  .dashboard-topbar-notification-slot {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .dashboard-topbar-notification-slot > div > button,
+  .dashboard-topbar-notification-slot > button {
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+  }
+
+  .dashboard-topbar-profile-slot {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .dashboard-topbar-profile-slot > div > button {
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+    padding: .25rem;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search {
+    background: rgb(30 41 59 / .96);
+  }
+}
+
+@media (max-width: 359px) {
+  .dashboard-topbar-main {
+    gap: .375rem;
+    padding-inline: .625rem;
+  }
+
+  .dashboard-topbar-context {
+    gap: .375rem;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: calc(100vw - 7rem);
+  }
+
+  .dashboard-topbar-workspace {
+    gap: .375rem;
+    padding-inline: .375rem;
+  }
+
+  .dashboard-topbar-workspace-copy {
+    max-width: 27vw;
+  }
+
+  .dashboard-topbar-actions {
+    gap: .125rem;
+  }
+}
+
+/* Wide-screen guardrails: explicit visual columns keep workspace context,
+   search, and account actions from competing for the same space. */
+@media (min-width: 1280px) {
+  .dashboard-topbar-main {
+    gap: clamp(1rem, 1.8vw, 2rem);
+  }
+  .dashboard-topbar-context {
+    overflow: hidden;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: min(20rem, 100%);
+  }
+
+  .dashboard-topbar-search-slot {
+    width: min(25rem, 30vw);
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1535px) {
+  .dashboard-topbar-page-context,
+  .dashboard-topbar-clock {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1536px) {
+  .dashboard-topbar-context > .relative {
+    max-width: 19rem;
+  }
+}
+
+/* Desktop/tablet command bar follows the supplied reference: the workspace
+   controls intentionally leave the left column quiet, the search is centered,
+   and the account/action controls stay in the right column. Mobile rules above
+   remain the source of truth below 768px. */
+@media (min-width: 768px) {
+  .dashboard-topbar.dashboard-shell-header:not(.dark-shell) {
+    border-color: rgb(226 232 240 / .88) !important;
+    background: rgb(255 255 255 / .94) !important;
+    box-shadow: 0 1px 0 rgb(15 23 42 / .04), 0 14px 30px -24px rgb(15 23 42 / .42) !important;
+  }
+
+  .dashboard-topbar-main {
+    grid-template-columns: minmax(0, 1fr) minmax(24rem, 31vw) minmax(0, 1fr);
+    gap: 1rem;
+    min-height: 3.25rem;
+    padding-block: .25rem;
+  }
+
+  .dashboard-topbar-context {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .dashboard-topbar-search {
+    height: 2.4rem;
+    border-color: rgb(226 232 240 / .92) !important;
+    background: rgb(248 250 252 / .96) !important;
+    color: rgb(100 116 139) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .8) !important;
+  }
+
+  .dashboard-topbar-search:hover {
+    border-color: rgb(203 213 225) !important;
+    background: rgb(241 245 249) !important;
+  }
+
+  .dashboard-topbar-search:hover > svg,
+  .dashboard-topbar-search:hover .dashboard-topbar-search-label {
+    color: rgb(71 85 105) !important;
+  }
+
+  .dashboard-topbar-search > svg,
+  .dashboard-topbar-search-label {
+    color: rgb(100 116 139) !important;
+  }
+
+  .dashboard-topbar-search kbd {
+    border-color: rgb(226 232 240) !important;
+    background: rgb(255 255 255) !important;
+    color: rgb(148 163 184) !important;
+  }
+
+  .dashboard-topbar-actions {
+    gap: .25rem;
+    color: rgb(100 116 139);
+  }
+
+  .dashboard-topbar-actions [data-testid="realtime-connectivity-indicator"],
+  .dashboard-topbar-actions .dashboard-topbar-clock,
+  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+    display: none !important;
+  }
+
+  .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar-reference-control {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    border: 0 !important;
+    border-radius: .65rem;
+    background: transparent !important;
+    color: rgb(100 116 139) !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-topbar-notification-slot > button:hover,
+  .dashboard-topbar-reference-control:hover {
+    background: rgb(248 250 252) !important;
+    color: rgb(15 23 42) !important;
+  }
+
+  .dashboard-topbar-notification-slot > button > span {
+    border-color: white !important;
+    background: #ef4444 !important;
+  }
+
+  .dashboard-topbar-reference-control {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .dashboard-topbar-reference-badge {
+    position: absolute;
+    top: .08rem;
+    right: .04rem;
+    display: grid;
+    min-width: 1rem;
+    height: 1rem;
+    padding-inline: .18rem;
+    place-items: center;
+    border: 1px solid white;
+    border-radius: 999px;
+    background: #ef4444;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .dashboard-topbar-divider {
+    background: rgb(226 232 240) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button {
+    min-height: 2.5rem;
+    border-color: transparent !important;
+    background: transparent !important;
+    color: rgb(100 116 139) !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button:hover {
+    background: rgb(248 250 252) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > span {
+    border-color: rgb(226 232 240) !important;
+    background: rgb(248 250 252) !important;
+    color: rgb(71 85 105) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button span span:first-child,
+  .dashboard-topbar-profile-slot > div > button span span:last-child {
+    color: rgb(51 65 85) !important;
+  }
+
+  .dashboard-topbar-profile-slot > div > button > svg {
+    color: rgb(148 163 184) !important;
+  }
+}
+
+
+/* Onboarding visual system: calm surfaces, clear progress, and mobile-first form rhythm. */
+.sm-onboarding {
+  background:
+    radial-gradient(900px circle at 70% -10%, rgba(34,197,94,.12), transparent 52%),
+    linear-gradient(135deg, #f8fbfa 0%, #f3f7f5 100%);
+}
+.sm-onboarding-content { position: relative; }
+.sm-onboarding-content > div { position: relative; z-index: 1; }
+.sm-onboarding-heading h2 { letter-spacing: -.055em; }
+.sm-onboarding-mode { background: rgba(255,255,255,.78); backdrop-filter: blur(12px); }
+.sm-onboarding-mode-button { min-height: 44px; }
+.sm-onboarding-mode-button.is-active { box-shadow: 0 6px 18px rgba(22,163,74,.12); }
+.sm-onboarding-card { box-shadow: 0 24px 70px rgba(15,23,42,.09), 0 2px 8px rgba(15,23,42,.03); }
+.sm-onboarding-card input,
+.sm-onboarding-card select,
+.sm-onboarding-card textarea { min-height: 46px; border-radius: .85rem; transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease; }
+.sm-onboarding-card input:focus,
+.sm-onboarding-card select:focus,
+.sm-onboarding-card textarea:focus { border-color: #16a34a; box-shadow: 0 0 0 4px rgba(22,163,74,.10); outline: none; }
+.sm-onboarding-form > button[type="submit"],
+.sm-onboarding-form > button:last-child { min-height: 50px; letter-spacing: -.01em; }
+.sm-onboarding-step { color: #94a3b8; }
+.sm-onboarding-step-number { background: #e2e8f0; color: #94a3b8; transition: all .2s ease; }
+.sm-onboarding-step-label { white-space: nowrap; }
+.sm-onboarding-step.is-active .sm-onboarding-step-number,
+.sm-onboarding-step.is-done .sm-onboarding-step-number { background: #16a34a; color: white; box-shadow: 0 0 0 5px rgba(22,163,74,.10); }
+.sm-onboarding-step.is-active .sm-onboarding-step-label { color: #0f172a; }
+.sm-onboarding-step.is-done .sm-onboarding-step-label { color: #15803d; }
+.sm-onboarding-step-line { background: #e2e8f0; }
+.sm-onboarding-step-line.is-done { background: #86efac; }
+.sm-onboarding-module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sm-onboarding-module { min-height: 76px; position: relative; }
+.sm-onboarding-module:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15,23,42,.06); }
+.sm-onboarding-module.is-active { box-shadow: inset 0 0 0 1px rgba(22,163,74,.12), 0 8px 20px rgba(22,163,74,.08); }
+.sm-onboarding-plan { background: linear-gradient(135deg, rgba(236,253,245,.92), rgba(239,246,255,.78)); }
+
+@media (max-width: 639px) {
+  .sm-onboarding { min-height: 100svh; }
+  .sm-onboarding-content { align-items: flex-start; padding: 1rem .875rem 2rem; }
+  .sm-onboarding-content > div { max-width: 100%; }
+  .sm-onboarding-heading { align-items: flex-start; gap: .75rem; }
+  .sm-onboarding-heading h2 { font-size: 1.7rem; line-height: 1.08; }
+  .sm-onboarding-heading p { max-width: 28rem; }
+  .sm-onboarding-back { padding: .6rem .7rem; white-space: nowrap; }
+  .sm-onboarding-mode { margin-inline: -.1rem; }
+  .sm-onboarding-mode-button { font-size: .7rem; padding-inline: .55rem; }
+  .sm-onboarding-steps { gap: .4rem; }
+  .sm-onboarding-step { gap: .35rem; }
+  .sm-onboarding-step-label { font-size: .65rem; }
+  .sm-onboarding-step-number { height: 1.8rem; width: 1.8rem; }
+  .sm-onboarding-card { border-radius: 1.35rem; padding: 1rem !important; }
+  .sm-onboarding-form { gap: 1rem; }
+  .sm-onboarding-module-grid { gap: .55rem; }
+  .sm-onboarding-module { min-height: 70px; padding: .65rem; }
+  .sm-onboarding-module span:nth-child(2) { min-width: 0; }
+  .sm-onboarding-module span:nth-child(2) span:first-child { white-space: normal; line-height: 1.15; }
+  .sm-onboarding-plan { padding: .85rem; }
+  .sm-onboarding-form--join .grid,
+  .sm-onboarding-form--account .grid,
+  .sm-onboarding-form--workspace .grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .sm-onboarding-content { padding-inline: 2rem; }
+  .sm-onboarding-card { max-height: calc(100svh - 3rem); overflow-y: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-onboarding-module,
+  .sm-onboarding-card input,
+  .sm-onboarding-card select,
+  .sm-onboarding-card textarea { transition: none; }
+}
+
+/* Light navigation rail: the sidebar now shares the neutral visual language
+   of the restored topbar while retaining the existing routing and RBAC logic. */
+.dashboard-sidebar:not(.dark-shell) {
+  background: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+  box-shadow: 8px 0 28px rgba(15, 23, 42, .06) !important;
+  color: #475569 !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand {
+  border-bottom-color: #e2e8f0 !important;
+  background: #ffffff !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .text-white,
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .brand-wordmark { color: #0f172a !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .text-cyan-300 { color: #64748b !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .bg-cyan-400\/10 { background: #f1f5f9 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand .ring-cyan-400\/20 { --tw-ring-color: #cbd5e1 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation { background: #ffffff; }
+.dashboard-layout-skeleton [data-slot="skeleton"] {
+  background: linear-gradient(100deg, rgb(226 232 240 / .72) 18%, rgb(241 245 249 / .95) 42%, rgb(226 232 240 / .72) 68%);
+  background-size: 240% 100%;
+  animation: dashboard-skeleton-shimmer 1.8s var(--sm-ease-out) infinite;
+}
+@keyframes dashboard-skeleton-shimmer {
+  0% { background-position: 120% 0; }
+  100% { background-position: -20% 0; }
+}
+[data-theme-period="night"] .dashboard-layout-skeleton [data-slot="skeleton"] {
+  background: linear-gradient(100deg, rgb(30 41 59 / .82) 18%, rgb(51 65 85 / .94) 42%, rgb(30 41 59 / .82) 68%);
+  background-size: 240% 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-layout-skeleton [data-slot="skeleton"] { animation: none !important; }
+}
+.dashboard-shell-enter {
+  animation: dashboard-shell-enter 260ms var(--sm-ease-out) both;
+  transform-origin: top center;
+  will-change: opacity, transform;
+}
+@keyframes dashboard-shell-enter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-shell-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-400,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-500 { color: #94a3b8 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .text-slate-300 { color: #64748b !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > div > button:not([aria-current="page"]),
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > button:not([aria-current="page"]) {
+  background: transparent !important;
+  color: #475569 !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] {
+  border-color: #cbd5e1 !important;
+  border-left-color: #0f172a !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, .06) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .bg-\[\#123457\] {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation .bg-\[\#1f4265\] {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer {
+  border-top-color: #e2e8f0 !important;
+  background: #ffffff !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer .text-slate-300,
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer .text-slate-400 { color: #94a3b8 !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-footer button:not([aria-current="page"]):hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+  border-color: #e2e8f0 !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .05) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+  border-color: #94a3b8 !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Close menu"] { color: #64748b !important; }
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Close menu"]:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Dark mode surface system for the navigation rail and command bar. The
+   existing toggle state remains the single source of truth; these rules only
+   provide the matching visual treatment and keep mobile layout contracts intact. */
+@media (min-width: 768px) {
+  .dashboard-topbar-actions .dashboard-topbar-icon-button {
+    display: grid !important;
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+    border-radius: .65rem;
+  }
+
+  .dashboard-topbar.dark-shell {
+    border-color: #334155 !important;
+    background: #0f172a !important;
+    box-shadow: 0 1px 0 rgba(148, 163, 184, .12), 0 14px 30px -24px rgba(0, 0, 0, .75) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search:hover {
+    border-color: #64748b !important;
+    background: #273449 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search > svg,
+  .dashboard-topbar.dark-shell .dashboard-topbar-search-label,
+  .dashboard-topbar.dark-shell .dashboard-topbar-search:hover > svg,
+  .dashboard-topbar.dark-shell .dashboard-topbar-search:hover .dashboard-topbar-search-label {
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-search kbd {
+    border-color: #475569 !important;
+    background: #0f172a !important;
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control,
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button {
+    border-color: #475569 !important;
+    background: transparent !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button:hover,
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control:hover,
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button:hover {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-divider {
+    background: #475569 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > span {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button,
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button span span:first-child,
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button span span:last-child {
+    color: #f8fafc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button:hover {
+    background: #1e293b !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-slot > div > button > svg {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-sidebar.dark-shell {
+    background: #0f172a !important;
+    border-right-color: #334155 !important;
+    box-shadow: 8px 0 28px rgba(0, 0, 0, .24) !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer {
+    background: #0f172a !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand {
+    border-bottom-color: #334155 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .text-white,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .brand-wordmark {
+    color: #f8fafc !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .text-cyan-300 {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand .bg-cyan-400\/10 {
+    background: #1e293b !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .text-slate-400,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .text-slate-500,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer .text-slate-400 {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .text-slate-300,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer .text-slate-300 {
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > div > button:not([aria-current="page"]),
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > button:not([aria-current="page"]) {
+    background: transparent !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer button:not([aria-current="page"]):hover {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] {
+    border-color: #475569 !important;
+    border-left-color: #94a3b8 !important;
+    background: #1e293b !important;
+    color: #f8fafc !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .2) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .bg-\[\#123457\] {
+    background: #334155 !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation .bg-\[\#1f4265\] {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-footer {
+    border-top-color: #334155 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+    border-color: #64748b !important;
+    background: #334155 !important;
+    color: #f8fafc !important;
+  }
+}
+
+/* Expressive dark-mode accents: cool icon tones and distinct badges maintain
+   hierarchy without reverting to the old green-heavy treatment. */
+@media (min-width: 768px) {
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button {
+    color: #67e8f9 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button:hover {
+    background: rgba(34, 211, 238, .14) !important;
+    color: #a5f3fc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-messages {
+    color: #c4b5fd !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-messages:hover {
+    background: rgba(167, 139, 250, .16) !important;
+    color: #ddd6fe !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control:not(.dashboard-topbar-messages) {
+    color: #fcd34d !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-control:not(.dashboard-topbar-messages):hover {
+    background: rgba(250, 204, 21, .15) !important;
+    color: #fef08a !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-notification-slot > button > span,
+  .dashboard-topbar.dark-shell .dashboard-topbar-reference-badge {
+    border-color: #0f172a !important;
+    background: linear-gradient(135deg, #fb7185, #f97316) !important;
+    color: #fff7ed !important;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, .16), 0 3px 10px rgba(249, 115, 22, .26) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-messages .dashboard-topbar-reference-badge {
+    background: linear-gradient(135deg, #a78bfa, #6366f1) !important;
+    box-shadow: 0 0 0 2px rgba(129, 140, 248, .14), 0 3px 10px rgba(99, 102, 241, .28) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button {
+    color: #fbbf24 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-icon-button:hover {
+    color: #fde68a !important;
+    background: rgba(250, 204, 21, .14) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] {
+    border-left-color: #22d3ee !important;
+    background: linear-gradient(100deg, #1e293b, #172554) !important;
+    box-shadow: inset 3px 0 0 #22d3ee, 0 5px 16px rgba(0, 0, 0, .22) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-\[\#123457\] {
+    background: #164e63 !important;
+    color: #67e8f9 !important;
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, .22), 0 4px 12px rgba(8, 145, 178, .18) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover {
+    background: linear-gradient(90deg, rgba(30, 41, 59, .92), rgba(30, 58, 138, .34)) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button .bg-\[\#123457\] {
+    transition: background-color .16s ease, color .16s ease, box-shadow .16s ease;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button:not([aria-current="page"]):hover .bg-\[\#123457\] {
+    background: #164e63 !important;
+    color: #67e8f9 !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-flat-navigation button .bg-rose-400 {
+    background: linear-gradient(135deg, #fb7185, #f97316) !important;
+    color: #fff7ed !important;
+    box-shadow: 0 0 0 2px #0f172a, 0 3px 9px rgba(249, 115, 22, .28);
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+    color: #67e8f9 !important;
+    border-color: #155e75 !important;
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, .08), 0 4px 12px rgba(0, 0, 0, .2) !important;
+  }
+
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+  .dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+    border-color: #22d3ee !important;
+    background: #164e63 !important;
+    color: #a5f3fc !important;
+  }
+}
+
+/* Smooth theme motion is intentionally limited to paint properties so layout,
+   menu placement, and form dimensions never jump during a mode change. */
+.dashboard-topbar,
+.dashboard-topbar-main,
+.dashboard-topbar-search,
+.dashboard-topbar-actions,
+.dashboard-topbar-profile-slot,
+.dashboard-sidebar,
+.dashboard-sidebar-brand,
+.dashboard-flat-navigation,
+.dashboard-sidebar-footer,
+.dashboard-profile-menu,
+.dashboard-profile-action,
+.dashboard-profile-action-icon {
+  transition-property: background-color, background, border-color, color, box-shadow;
+  transition-duration: .28s;
+  transition-timing-function: cubic-bezier(.22, 1, .36, 1);
+}
+
+.dashboard-topbar-profile-menu {
+  transform-origin: top right;
+  animation: dashboardProfileMenuIn .22s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@keyframes dashboardProfileMenuIn {
+  from { opacity: 0; transform: translateY(-6px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-topbar,
+  .dashboard-topbar-main,
+  .dashboard-topbar-search,
+  .dashboard-topbar-actions,
+  .dashboard-topbar-profile-slot,
+  .dashboard-sidebar,
+  .dashboard-sidebar-brand,
+  .dashboard-flat-navigation,
+  .dashboard-sidebar-footer,
+  .dashboard-profile-menu,
+  .dashboard-profile-action,
+  .dashboard-profile-action-icon {
+    transition-duration: 0s !important;
+  }
+  .dashboard-topbar-profile-menu { animation: none !important; }
+}
+
+@media (min-width: 768px) {
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu {
+    border-color: #334155 !important;
+    background: linear-gradient(180deg, #111c31 0%, #0f172a 100%) !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .42), 0 0 0 1px rgba(129, 140, 248, .08) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu > div:first-child {
+    border-bottom-color: #334155 !important;
+    background: linear-gradient(135deg, rgba(30, 41, 59, .82), rgba(30, 27, 75, .68));
+    border-radius: .8rem;
+    margin: .15rem;
+    padding: .7rem;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu > div:first-child p:first-child {
+    color: #f8fafc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu > div:first-child p:last-child {
+    color: #a5b4fc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action {
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action:hover {
+    background: linear-gradient(90deg, rgba(30, 41, 59, .96), rgba(49, 46, 129, .34)) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action-icon {
+    background: #1e293b !important;
+    color: #a5b4fc !important;
+    box-shadow: inset 0 0 0 1px rgba(129, 140, 248, .12);
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action:hover .dashboard-profile-action-icon {
+    background: #312e81 !important;
+    color: #c4b5fd !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action span span:first-child {
+    color: #f8fafc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action span span:last-child {
+    color: #94a3b8 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action > svg {
+    color: #64748b !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu > div:last-child {
+    border-top-color: #334155 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu > div:last-child button:first-child {
+    color: #cbd5e1 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu > div:last-child button:first-child:hover {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu > div:last-child button:last-child {
+    color: #fda4af !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-menu > div:last-child button:last-child:hover {
+    background: rgba(127, 29, 29, .32) !important;
+    color: #fecdd3 !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-trigger {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    box-shadow: 0 0 0 1px rgba(129, 140, 248, .08), 0 4px 12px rgba(0, 0, 0, .24) !important;
+  }
+
+  .dashboard-topbar.dark-shell .dashboard-topbar-profile-trigger:hover {
+    border-color: #818cf8 !important;
+    background: #312e81 !important;
+  }
+}
+
+/* User-selected accent token. It is written by the dashboard root so Light,
+   Dark, and Auto modes all consume the same preference without duplicating
+   theme state in individual components. */
+:root { --sm-user-accent: #22d3ee; }
+.dashboard-topbar-profile-trigger:focus-visible,
+.dashboard-topbar-icon-button:focus-visible,
+.dashboard-topbar-reference-control:focus-visible,
+.dashboard-profile-action:focus-visible {
+  outline: 2px solid var(--sm-user-accent) !important;
+  outline-offset: 2px;
+}
+
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] {
+  border-left-color: var(--sm-user-accent) !important;
+  box-shadow: inset 3px 0 0 var(--sm-user-accent), 0 4px 12px rgba(15, 23, 42, .06) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+.dashboard-sidebar:not(.dark-shell) .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100 {
+  background: color-mix(in srgb, var(--sm-user-accent) 18%, white) !important;
+  color: color-mix(in srgb, var(--sm-user-accent) 70%, #0f172a) !important;
+}
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+.dashboard-sidebar:not(.dark-shell) .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+  border-color: color-mix(in srgb, var(--sm-user-accent) 42%, #e2e8f0) !important;
+  color: color-mix(in srgb, var(--sm-user-accent) 76%, #475569) !important;
+}
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-icon-button {
+  color: color-mix(in srgb, var(--sm-user-accent) 78%, #475569) !important;
+}
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-profile-trigger {
+  border-color: color-mix(in srgb, var(--sm-user-accent) 30%, #e2e8f0) !important;
+}
+
+.dashboard-topbar.dark-shell .dashboard-topbar-icon-button,
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-trigger {
+  border-color: color-mix(in srgb, var(--sm-user-accent) 45%, #475569) !important;
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-icon-button {
+  color: var(--sm-user-accent) !important;
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-icon-button:hover,
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-trigger:hover {
+  background: color-mix(in srgb, var(--sm-user-accent) 18%, #1e293b) !important;
+  border-color: var(--sm-user-accent) !important;
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action:hover {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sm-user-accent) 13%, #1e293b), rgba(49, 46, 129, .34)) !important;
+}
+
+/* Responsive language controls: the native select remains the accessible input while
+   the short code keeps the control legible when the command bar is compressed. */
+.dashboard-topbar-language-control,
+.sm-language-control {
+  position: relative;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+.dashboard-topbar-language-control:hover,
+.sm-language-control:hover {
+  border-color: rgb(167 243 208);
+  background-color: rgb(236 253 245 / .78);
+}
+.dashboard-topbar-language-control:focus-within,
+.sm-language-control:focus-within {
+  border-color: rgb(16 185 129);
+  box-shadow: 0 0 0 3px rgb(16 185 129 / .16);
+}
+.dashboard-language-code,
+.sm-language-code {
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.dashboard-language-select,
+.sm-language-select {
+  min-height: 2.25rem;
+  cursor: pointer;
+}
+.dashboard-topbar-language-control {
+  min-width: 2.75rem;
+  justify-content: center;
+}
+.dashboard-language-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  opacity: 0;
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-language-control {
+  border-color: rgb(71 85 105 / .9);
+  background: rgb(30 41 59 / .92);
+  color: rgb(226 232 240);
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-language-control:hover {
+  border-color: var(--sm-user-accent, #22d3ee);
+  background: rgb(15 23 42 / .96);
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-language-control .dashboard-language-code {
+  color: var(--sm-user-accent, #22d3ee);
+}
+@media (max-width: 767px) {
+  .dashboard-topbar-language-control {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    justify-content: center;
+    padding-inline: .5rem;
+  }
+  .dashboard-topbar-language-control > svg:last-child {
+    display: none;
+  }
+}
+@media (max-width: 479px) {
+  .dashboard-topbar-main {
+    grid-template-columns: 3.25rem minmax(0, 1fr) 3.25rem 3.25rem 3.25rem;
+  }
+  .dashboard-topbar-language-control {
+    grid-column: 3;
+    grid-row: 1;
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
+    border-radius: 999px;
+  }
+  .dashboard-topbar-notification-slot {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .dashboard-topbar-profile-slot {
+    grid-column: 5;
+    grid-row: 1;
+  }
+  .dashboard-topbar-language-control > svg:first-child {
+    display: none;
+  }
+  .dashboard-language-code {
+    font-size: .72rem;
+  }
+}
+@media (max-width: 359px) {
+  .dashboard-topbar-main {
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem 2.75rem 2.75rem;
+    gap: .25rem;
+    padding-inline: .5rem;
+  }
+  .dashboard-topbar-menu-control,
+  .dashboard-topbar-language-control,
+  .dashboard-topbar-notification-slot > div > button,
+  .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar-profile-slot > div > button {
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+/* Tablet command bars have several persistent actions competing for the right
+   grid column. Keep the native select as the full accessible touch target, but
+   present only the two-letter code so long labels never push notifications or
+   the profile control off-canvas. Desktop widths retain the readable native
+   label; phone widths continue using the circular control above. */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .dashboard-topbar-language-control {
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    justify-content: center;
+    padding-inline: .5rem;
+    border-radius: .75rem;
+  }
+
+  .dashboard-language-code {
+    display: inline-flex;
+    font-size: .68rem;
+  }
+
+  .dashboard-language-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    opacity: 0;
+  }
+
+  .dashboard-topbar-language-control > svg:first-child,
+  .dashboard-topbar-language-control > svg:last-child {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .sm-language-control {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    justify-content: center;
+    padding-inline: .75rem;
+  }
+  .sm-language-code {
+    display: inline-flex;
+  }
+  .sm-language-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    opacity: 0;
+  }
+  .sm-language-control > svg:last-child {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-topbar-language-control,
+  .sm-language-control {
+    transition: none;
+  }
+}
+.dashboard-topbar.dark-shell .dashboard-topbar-profile-menu .dashboard-profile-action-icon {
+  color: var(--sm-user-accent) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sm-user-accent) 24%, transparent);
+}
+.dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] {
+  border-left-color: var(--sm-user-accent) !important;
+  background: linear-gradient(100deg, #1e293b, color-mix(in srgb, var(--sm-user-accent) 20%, #172554)) !important;
+  box-shadow: inset 3px 0 0 var(--sm-user-accent), 0 5px 16px rgba(0, 0, 0, .22) !important;
+}
+.dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-cyan-300,
+.dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-slate-100,
+.dashboard-sidebar.dark-shell .dashboard-flat-navigation button[aria-current="page"] .bg-\[\#123457\] {
+  background: color-mix(in srgb, var(--sm-user-accent) 28%, #164e63) !important;
+  color: var(--sm-user-accent) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sm-user-accent) 32%, transparent), 0 4px 12px color-mix(in srgb, var(--sm-user-accent) 18%, transparent) !important;
+}
+.dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"],
+.dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"] {
+  border-color: color-mix(in srgb, var(--sm-user-accent) 52%, #155e75) !important;
+  color: var(--sm-user-accent) !important;
+}
+.dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Collapse sidebar"]:hover,
+.dashboard-sidebar.dark-shell .dashboard-sidebar-brand > button[aria-label^="Expand sidebar"]:hover {
+  border-color: var(--sm-user-accent) !important;
+  background: color-mix(in srgb, var(--sm-user-accent) 24%, #164e63) !important;
+  color: color-mix(in srgb, var(--sm-user-accent) 72%, white) !important;
+}
+
+/* ── Midnight Prestige: header + sidebar styling layer (visual only) ── */
+.dashboard-sidebar {
+  background: linear-gradient(180deg, oklch(0.22 0.04 264), oklch(0.18 0.035 264)) !important;
+  border-right-color: oklch(0.3 0.03 263) !important;
+  box-shadow: 8px 0 32px -18px oklch(0.15 0.04 264 / .6);
+}
+.dashboard-sidebar-brand,
+.dashboard-sidebar-footer {
+  background: oklch(0.19 0.035 264 / .85) !important;
+  border-color: oklch(0.3 0.03 263) !important;
+}
+.dashboard-flat-navigation button[aria-current="page"] {
+  border-color: oklch(0.72 0.16 158 / .35) !important;
+  background: oklch(0.72 0.16 158 / .12) !important;
+  color: oklch(0.85 0.13 158) !important;
+  box-shadow: inset 3px 0 0 oklch(0.72 0.16 158);
+}
+.dashboard-flat-navigation button[aria-current="page"] > span:first-child > span:first-child {
+  background: oklch(0.72 0.16 158) !important;
+  color: oklch(0.19 0.035 264) !important;
+}
+.dashboard-flat-navigation button:not([aria-current="page"]):hover {
+  background: oklch(0.27 0.035 263) !important;
+}
+.dashboard-flat-navigation button:focus-visible,
+.dashboard-sidebar button:focus-visible {
+  outline: 2px solid oklch(0.72 0.16 158);
+  outline-offset: 2px;
+}
+.dashboard-reference-topbar {
+  background: oklch(1 0 0 / .92);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom-color: oklch(0.912 0.012 155) !important;
+  box-shadow: 0 1px 2px oklch(0.24 0.05 160 / .05), 0 12px 32px -24px oklch(0.24 0.05 160 / .3);
+}
+.dashboard-topbar-primary-search {
+  border-radius: .75rem;
+  background: oklch(0.965 0.01 152 / .8);
+}
+.dashboard-topbar-primary-search:focus-within {
+  border-color: oklch(0.55 0.13 158);
+  box-shadow: 0 0 0 3px oklch(0.55 0.13 158 / .18);
+}
+.dashboard-topbar-presence,
+.dashboard-topbar-customize,
+.dashboard-topbar-notification-slot > div > button {
+  border-radius: .75rem;
+}
+.dashboard-reference-topbar button:focus-visible,
+.dashboard-reference-topbar input:focus-visible {
+  outline: 2px solid oklch(0.55 0.13 158);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-topbar-primary-search:hover { transform: none; }
+}
+
+/* Compact topbar controls: search opens the full command palette; language keeps
+   the accessible native select but presents only the current locale initials. */
+.dashboard-topbar-search.dashboard-topbar-search-collapsed {
+  width: 2.75rem !important;
+  min-width: 2.75rem !important;
+  padding-inline: 0 !important;
+  justify-content: center !important;
+}
+.dashboard-topbar-search.dashboard-topbar-search-collapsed .dashboard-topbar-search-label,
+.dashboard-topbar-search.dashboard-topbar-search-collapsed kbd,
+.dashboard-topbar-search.dashboard-topbar-search-collapsed > svg:last-child {
+  display: none !important;
+}
+.dashboard-topbar-language-control {
+  min-width: 2.75rem;
+  justify-content: center;
+}
+.dashboard-topbar-language-control .dashboard-language-code {
+  display: inline-flex !important;
+}
+.dashboard-topbar-language-control .dashboard-language-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  opacity: 0;
+}
+
+/* Final command-bar composition: the action rail owns the right side after the
+   workspace context; there is no detached centered search row. */
+@media (min-width: 768px) {
+  .dashboard-topbar-main {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas: "context actions" !important;
+  }
+  .dashboard-topbar-actions-polished {
+    grid-area: actions !important;
+    max-width: none !important;
+    justify-self: end;
+  }
+  .dashboard-topbar-search-slot {
+    display: none !important;
+  }
+}
+@media (max-width: 767px) {
+  .dashboard-topbar-main {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dashboard-topbar-context {
+    display: flex !important;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .dashboard-topbar-actions-polished {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    min-width: 0;
+    max-width: 58vw;
+    overflow-x: auto;
+    justify-content: flex-end;
+    gap: .25rem;
+    scrollbar-width: none;
+  }
+  .dashboard-topbar-actions-polished::-webkit-scrollbar {
+    display: none;
+  }
+  .dashboard-topbar-search-slot {
+    display: none !important;
+  }
+}
+
+/* Signature search action: visually distinct from utility controls while
+   remaining compact enough for the responsive command bar. */
+.dashboard-topbar-search.dashboard-topbar-search-hero {
+  width: 2.75rem !important;
+  min-width: 2.75rem !important;
+  height: 2.75rem !important;
+  padding: 0 !important;
+  border-color: rgb(16 185 129 / .35) !important;
+  background: linear-gradient(135deg, #0B5D3B 0%, #16A34A 55%, #22C55E 100%) !important;
+  color: white !important;
+  box-shadow: 0 8px 20px rgb(22 163 74 / .28), inset 0 1px 0 rgb(255 255 255 / .3) !important;
+}
+.dashboard-topbar-search.dashboard-topbar-search-hero:hover {
+  border-color: rgb(134 239 172 / .8) !important;
+  background: linear-gradient(135deg, #084B30 0%, #15803D 55%, #16A34A 100%) !important;
+  color: white !important;
+  box-shadow: 0 12px 26px rgb(22 163 74 / .38), inset 0 1px 0 rgb(255 255 255 / .35) !important;
+}
+.dashboard-topbar-search.dashboard-topbar-search-hero > svg {
+  color: white !important;
+}
+.dashboard-topbar-search.dashboard-topbar-search-hero .dashboard-search-tooltip {
+  transform: translateY(-3px);
+}
+@media (max-width: 479px) {
+  .dashboard-topbar-search.dashboard-topbar-search-hero {
+    width: 2.75rem !important;
+    min-width: 2.75rem !important;
+    height: 2.75rem !important;
+    border-radius: 999px !important;
+  }
+}
+
+/* Flat social-style icon language: header actions stay crisp without floating
+   shadows; focus rings and color changes still communicate interaction. */
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button,
+.dashboard-topbar-actions-polished .dashboard-topbar-reference-control,
+.dashboard-topbar-actions-polished .dashboard-topbar-language-control,
+.dashboard-topbar-actions-polished .dashboard-topbar-search-hero,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger,
+.dashboard-topbar-actions-polished [data-testid="realtime-connectivity-indicator"],
+.dashboard-topbar-actions-polished .dashboard-topbar-notification-slot > div > button {
+  box-shadow: none !important;
+  filter: none !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search-hero:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-reference-control:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger:hover {
+  box-shadow: none !important;
+}
+.dashboard-topbar-actions-polished svg {
+  filter: none !important;
+}
+
+/* Neutral flat header icons: search now matches message styling instead of
+   using the green hero treatment; profile and theme remain shadow-free. */
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: rgb(100 116 139) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero {
+  border-radius: .65rem !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero > svg,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button > svg,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger > svg {
+  color: rgb(100 116 139) !important;
+  filter: none !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button:hover,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger:hover {
+  border-color: transparent !important;
+  background: rgb(248 250 252) !important;
+  color: rgb(15 23 42) !important;
+  box-shadow: none !important;
+}
+.dashboard-topbar-actions-polished .dashboard-topbar-search.dashboard-topbar-search-hero:hover > svg,
+.dashboard-topbar-actions-polished .dashboard-topbar-icon-button:hover > svg,
+.dashboard-topbar-actions-polished .dashboard-topbar-profile-trigger:hover > svg {
+  color: rgb(15 23 42) !important;
 }

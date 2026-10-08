@@ -1,0 +1,26 @@
+<slide id="stock_control">
+  <background color="paper"/>
+  <shape id="gold-rule" type="line" x="60" y="64" width="150" height="0" stroke="accent" stroke-width="3"/>
+  <text id="title" x="60" y="92" width="900" height="42" font="heading" size="34" color="brand" wrap="false">Sura 11: Stock Control inalinda mapitio ya tofauti</text>
+  <text id="subtitle" x="60" y="145" width="1070" height="46" font="body" size="20" color="muted">Idadi, rekodi, tofauti, marekebisho ya rekodi na idhini hutenganishwa kwa makusudi.</text>
+  <shape id="concept-card" type="rect" x="60" y="235" width="540" height="320" fill="surface" stroke="muted" stroke-width="1"/>
+  <text id="concept-heading" x="90" y="265" width="400" height="28" font="body" size="21" color="brand" wrap="false">Mchakato unaoruhusiwa wa dhana</text>
+  <shape id="count-node" type="rect" x="92" y="340" width="115" height="90" fill="paper" stroke="muted" stroke-width="1"/>
+  <text id="count-text" x="100" y="362" width="99" height="42" font="body" size="18" color="brand" align="center"><p>Idadi</p><p>(count)</p></text>
+  <shape id="arrow-count-diff" type="arrow" x="220" y="368" width="55" height="32" fill="accent" head-ratio="0.32"/>
+  <shape id="difference-node" type="rect" x="290" y="340" width="115" height="90" fill="paper" stroke="muted" stroke-width="1"/>
+  <text id="difference-text" x="298" y="354" width="99" height="54" font="body" size="16" color="brand" align="center"><p>Tofauti</p><p>inayoonekana</p></text>
+  <shape id="arrow-diff-review" type="arrow" x="418" y="368" width="55" height="32" fill="accent" head-ratio="0.32"/>
+  <shape id="review-node" type="rect" x="488" y="340" width="82" height="90" fill="brand"/>
+  <text id="review-text" x="495" y="354" width="68" height="50" font="body" size="15" color="white" align="center"><p>Mapitio</p><p>ya chanzo</p></text>
+  <text id="concept-note" x="90" y="470" width="450" height="50" font="body" size="18" color="ink" line-height="1.3">Tofauti huomba uchunguzi; haiamuru marekebisho ya rekodi.</text>
+  <shape id="excluded-card" type="rect" x="665" y="235" width="515" height="320" fill="#FFF8E8" stroke="accent" stroke-width="2"/>
+  <icon id="excluded-icon" name="lock" x="695" y="265" width="42" height="42" color="accent"/>
+  <text id="excluded-heading" x="758" y="273" width="330" height="28" font="body" size="21" color="brand" wrap="false">Detail UI bado haijapitishwa</text>
+  <text id="excluded-body" x="700" y="350" width="420" height="130" font="body" size="19" color="ink" line-height="1.35"><p>Hakuna count, item, location, value, adjustment, approval, user au audit outcome.</p><p>Hakuna action ya kubadilisha rekodi.</p></text>
+  <shape id="principle-band" type="rect" x="60" y="590" width="1120" height="38" fill="brand"/>
+  <text id="principle-text" x="80" y="600" width="1080" height="18" font="caption" size="14" color="white" align="center" wrap="false">Marekebisho ya rekodi yanahitaji chanzo, mapitio, jukumu sahihi na evidence gate.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="#E0D9CE" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="560" height="18" font="caption" color="muted" wrap="false">SMART MANAGER ERP • Sura 10–12 Operations Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="muted" align="right" wrap="false">05</text>
+</slide>

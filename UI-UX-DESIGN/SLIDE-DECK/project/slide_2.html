@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The blueprint starts with the real product</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F1F5F9;
+            font-family: 'Inter', sans-serif;
+            padding-top: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .header-container {
+            width: 1152px;
+            margin-bottom: 48px;
+        }
+        
+        h1 {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 48px;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+        
+        .subtitle {
+            color: #334155;
+            font-weight: 500;
+            font-size: 24px;
+            line-height: 1.4;
+            max-width: 900px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 32px;
+            width: 1152px;
+            margin-bottom: 48px;
+        }
+        
+        .metric-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            padding: 40px 32px;
+            position: relative;
+        }
+        
+        .metric-accent {
+            position: absolute;
+            left: 0;
+            top: 40px;
+            height: 64px;
+            width: 4px;
+            background-color: #008A45;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .metric-value {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 64px;
+            line-height: 1;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+        
+        .metric-label {
+            color: #334155;
+            font-weight: 500;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+        
+        .conclusion-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            width: 1152px;
+            padding: 32px 48px;
+            display: flex;
+            align-items: center;
+            border-left: 8px solid #0B1120;
+        }
+        
+        .conclusion-text {
+            color: #334155;
+            font-weight: 500;
+            font-size: 22px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-container">
+            <h1>The blueprint starts with the real product</h1>
+            <p class="subtitle">A source-first audit translated the existing application into a coherent design direction without pretending that every source ID is already an independent route.</p>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-accent"></div>
+                <div class="metric-value">39</div>
+                <div class="metric-label">Navigation<br>modules</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-accent"></div>
+                <div class="metric-value">36</div>
+                <div class="metric-label">Source-defined<br>roles</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-accent"></div>
+                <div class="metric-value">924</div>
+                <div class="metric-label">React / TS<br>components</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-accent"></div>
+                <div class="metric-value">234</div>
+                <div class="metric-label">Module screen<br>records</div>
+            </div>
+        </div>
+        
+        <div class="conclusion-card">
+            <p class="conclusion-text">The result is a design package that distinguishes implemented shared surfaces, specialized workspaces, and implementation follow-up.</p>
+        </div>
+    </div>
+</body>
+</html>

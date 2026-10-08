@@ -1,0 +1,33 @@
+<slide id="controls">
+  <background color="navy"/>
+  <shape id="top-grid" type="line" x="40" y="72" width="1200" height="0" stroke="grid" stroke-width="1"/>
+  <text id="report-label" x="40" y="28" width="420" height="22" font="caption" size="13" color="gold" wrap="false">SMART MANAGER · INTERACTION DESIGN</text>
+  <text id="title" x="40" y="105" width="1120" height="48" font="heading" size="34" color="paper" wrap="false">Accessible controls, predictable outcomes</text>
+  <text id="subtitle" x="40" y="160" width="1080" height="30" font="body" size="18" color="muted">The drawer keeps each configuration choice explicit, reversible, and constrained to a valid saved dashboard state.</text>
+  <shape id="range-card" type="rect" x="40" y="220" width="585" height="170" corner-radius="18" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="range-icon" name="calendar-range" x="70" y="253" width="34" height="34" color="gold"/>
+  <text id="range-title" x="124" y="248" width="360" height="24" font="body" size="21" color="paper" wrap="false">Default performance range</text>
+  <text id="range-copy" x="124" y="286" width="420" height="44" font="body" size="17" color="muted">Save 30D, 3M, 6M, or 1Y for confirmed dashboard collections and expenses.</text>
+  <shape id="range-tag" type="rect" x="124" y="340" width="246" height="28" corner-radius="10" fill="#D4AF3726"/>
+  <text id="range-tag-text" x="136" y="346" width="220" height="16" font="caption" size="13" color="gold" wrap="false">ENUM-VALIDATED WINDOW</text>
+  <shape id="kpi-card" type="rect" x="655" y="220" width="585" height="170" corner-radius="18" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="kpi-icon" name="chart-no-axes-column" x="685" y="253" width="34" height="34" color="gold"/>
+  <text id="kpi-title" x="739" y="248" width="360" height="24" font="body" size="21" color="paper" wrap="false">Visible KPI cards</text>
+  <text id="kpi-copy" x="739" y="286" width="430" height="44" font="body" size="17" color="muted">Choose relevant cards while the interface protects against an empty KPI strip.</text>
+  <shape id="kpi-tag" type="rect" x="739" y="340" width="260" height="28" corner-radius="10" fill="#0F4C3A"/>
+  <text id="kpi-tag-text" x="751" y="346" width="235" height="16" font="caption" size="13" color="#D8E5E0" wrap="false">ONE-OR-MORE SAFETY RULE</text>
+  <shape id="visibility-card" type="rect" x="40" y="415" width="585" height="170" corner-radius="18" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="visibility-icon" name="eye" x="70" y="448" width="34" height="34" color="gold"/>
+  <text id="visibility-title" x="124" y="443" width="360" height="24" font="body" size="21" color="paper" wrap="false">Panel visibility</text>
+  <text id="visibility-copy" x="124" y="481" width="420" height="44" font="body" size="17" color="muted">Show or hide a command-center panel with a labelled `aria-pressed` control and a visible state dot.</text>
+  <shape id="visibility-tag" type="rect" x="124" y="535" width="265" height="28" corner-radius="10" fill="#D4AF3726"/>
+  <text id="visibility-tag-text" x="136" y="541" width="240" height="16" font="caption" size="13" color="gold" wrap="false">SEMANTIC TOGGLE FEEDBACK</text>
+  <shape id="order-card" type="rect" x="655" y="415" width="585" height="170" corner-radius="18" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="order-icon" name="arrow-down-up" x="685" y="448" width="34" height="34" color="gold"/>
+  <text id="order-title" x="739" y="443" width="360" height="24" font="body" size="21" color="paper" wrap="false">Panel order</text>
+  <text id="order-copy" x="739" y="481" width="430" height="44" font="body" size="17" color="muted">Move panels up or down using labelled controls; boundary buttons disable at the first and last position.</text>
+  <shape id="order-tag" type="rect" x="739" y="535" width="288" height="28" corner-radius="10" fill="#0F4C3A"/>
+  <text id="order-tag-text" x="751" y="541" width="260" height="16" font="caption" size="13" color="#D8E5E0" wrap="false">KEYBOARD-REACHABLE ORDERING</text>
+  <text id="bottom-note" x="40" y="614" width="1080" height="22" font="caption" size="14" color="muted">Every update passes through the same preference normalization and save contract; legacy saved records are completed with safe defaults.</text>
+  <text id="page-number" x="1175" y="662" width="64" height="24" font="caption" size="14" color="muted" align="right" wrap="false">04 / 08</text>
+</slide>

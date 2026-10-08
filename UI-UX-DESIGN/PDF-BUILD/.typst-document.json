@@ -1,0 +1,10 @@
+{
+  "entry": "main.typ",
+  "metadata": {
+    "author": "Manus AI",
+    "subtitle": "Source-grounded enterprise product design package",
+    "title": "SMART MANAGER — Complete UI/UX Design System & Application Blueprint"
+  },
+  "mode": "report",
+  "theme": "report-theme.typ"
+}

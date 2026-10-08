@@ -1,0 +1,1160 @@
+{
+  "generatedAt": "2026-08-23T20:02:17.561Z",
+  "repositoryMigrationFiles": 73,
+  "repositoryDeclaredTables": 284,
+  "livePublicTables": 519,
+  "missingRepositoryDeclaredTables": [],
+  "duplicateDeclarations": [],
+  "productionMigrationCount": 129,
+  "unappliedLocalMigrations": [
+    "complete_erp_schema_baseline",
+    "fix_pos_return_audit_format",
+    "fix_pos_sale_audit_format",
+    "fk_index_optimization_p0_review",
+    "harden_pos_rpc_privileges",
+    "sales_document_contract_repair",
+    "sales_order_acceptance_followup"
+  ],
+  "latestProductionMigration": {
+    "name": "global_admin_control_center_20260823",
+    "version": "20260823195156"
+  },
+  "declarations": [
+    {
+      "name": "user_table_preferences",
+      "file": "20260816_003_user_table_preferences.sql"
+    },
+    {
+      "name": "pos_transaction_commits",
+      "file": "20260816_004_pos_transaction_engine.sql"
+    },
+    {
+      "name": "pos_return_commits",
+      "file": "20260816_005_pos_return_engine.sql"
+    },
+    {
+      "name": "pos_sync_events",
+      "file": "20260816_007_pos_sync_reconciliation.sql"
+    },
+    {
+      "name": "support_teams",
+      "file": "20260817_011_support_workflow_core.sql"
+    },
+    {
+      "name": "support_agents",
+      "file": "20260817_011_support_workflow_core.sql"
+    },
+    {
+      "name": "support_team_members",
+      "file": "20260817_011_support_workflow_core.sql"
+    },
+    {
+      "name": "support_ticket_notes",
+      "file": "20260817_011_support_workflow_core.sql"
+    },
+    {
+      "name": "support_ticket_activity",
+      "file": "20260817_011_support_workflow_core.sql"
+    },
+    {
+      "name": "support_sla_policies",
+      "file": "20260817_011_support_workflow_core.sql"
+    },
+    {
+      "name": "support_message_templates",
+      "file": "20260817_011_support_workflow_core.sql"
+    },
+    {
+      "name": "hr_positions",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_shifts",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_shift_assignments",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_holidays",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_leave_policies",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_leave_balances",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_timesheets",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_timesheet_entries",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_statutory_rules",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_payroll_items",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_payslips",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_benefit_plans",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_benefit_enrollments",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_expense_claims",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_goals",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_goal_updates",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_training_courses",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_training_assignments",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_employee_documents",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_announcements",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_announcement_reads",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_service_requests",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_notifications",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_approval_requests",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_approval_steps",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_onboarding_cases",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_onboarding_tasks",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hr_offboarding_cases",
+      "file": "20260821_013_employee_portal_core.sql"
+    },
+    {
+      "name": "hospitality_properties",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_amenities",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_room_types",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_rooms",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_guests",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_guest_kyc",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_rate_plans",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_taxes",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_reservations",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_folios",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_folio_lines",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_payments",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_housekeeping_tasks",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_maintenance_requests",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_restaurant_tables",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_menus",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_menu_items",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_orders",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_order_lines",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_minibar_postings",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_laundry_orders",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_event_venues",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_events",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_guest_requests",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_complaints",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_loyalty_accounts",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_notifications",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_audit_log",
+      "file": "20260822_018_hospitality_core.sql"
+    },
+    {
+      "name": "hospitality_finance_reconciliations",
+      "file": "20260822_022_hospitality_finance_reconciliation.sql"
+    },
+    {
+      "name": "billing_plans",
+      "file": "20260822_023_subscription_billing_harakapay_core.sql"
+    },
+    {
+      "name": "billing_profiles",
+      "file": "20260822_023_subscription_billing_harakapay_core.sql"
+    },
+    {
+      "name": "tenant_subscriptions",
+      "file": "20260822_023_subscription_billing_harakapay_core.sql"
+    },
+    {
+      "name": "subscription_payments",
+      "file": "20260822_023_subscription_billing_harakapay_core.sql"
+    },
+    {
+      "name": "subscription_invoices",
+      "file": "20260822_023_subscription_billing_harakapay_core.sql"
+    },
+    {
+      "name": "subscription_usage",
+      "file": "20260822_023_subscription_billing_harakapay_core.sql"
+    },
+    {
+      "name": "subscription_events",
+      "file": "20260822_023_subscription_billing_harakapay_core.sql"
+    },
+    {
+      "name": "billing_plan_audit_log",
+      "file": "20260822_028_subscription_trials_and_official_catalog.sql"
+    },
+    {
+      "name": "subscription_notifications",
+      "file": "20260822_028_subscription_trials_and_official_catalog.sql"
+    },
+    {
+      "name": "fleet_vehicle_categories",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_vehicles",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_vehicle_documents",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_drivers",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_driver_assignments",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_routes",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_trips",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_fuel_cards",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_fuel_transactions",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_workshops",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_maintenance_plans",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_maintenance_jobs",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_service_records",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_spare_parts",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_tyres",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_incidents",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_telematics_events",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_alerts",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "fleet_audit_events",
+      "file": "20260822_031_fleet_management_core.sql"
+    },
+    {
+      "name": "restaurant_outlets",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_dining_areas",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_tables",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_staff_roles",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_shifts",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_menu_categories",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_menu_items",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_recipe_ingredients",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_modifier_groups",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_modifier_options",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_customers",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_reservations",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_orders",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_order_lines",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_kitchen_tickets",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_payments",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_suppliers",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_purchase_requests",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_purchase_lines",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_wastage",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_alerts",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_audit_events",
+      "file": "20260822_032_restaurant_fnb_management_core.sql"
+    },
+    {
+      "name": "restaurant_combo_items",
+      "file": "20260822_033_restaurant_fnb_operations_extension.sql"
+    },
+    {
+      "name": "restaurant_promotions",
+      "file": "20260822_033_restaurant_fnb_operations_extension.sql"
+    },
+    {
+      "name": "restaurant_bill_splits",
+      "file": "20260822_033_restaurant_fnb_operations_extension.sql"
+    },
+    {
+      "name": "restaurant_refunds",
+      "file": "20260822_033_restaurant_fnb_operations_extension.sql"
+    },
+    {
+      "name": "money_agent_branches",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_agents",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_customers",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_wallets",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_services",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_fee_rules",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_commission_rules",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_limits",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_transactions",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_ledger_entries",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_approvals",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_settlements",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_reconciliations",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_alerts",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_audit_events",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_pin_credentials",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_receipts",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_notifications",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_risk_events",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "money_agent_daily_summaries",
+      "file": "20260823_001_money_agent_core.sql"
+    },
+    {
+      "name": "bank_institutions",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_branches",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_account_types",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_loan_products",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_customers",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_customer_documents",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_beneficial_owners",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_accounts",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_account_beneficiaries",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_idempotency_keys",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_journal_batches",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_journal_lines",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_transactions",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_tellers",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_cash_movements",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_agents",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_wallets",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_payment_instructions",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_loan_applications",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_loan_approvals",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_guarantors",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_collateral",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_loans",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_loan_schedules",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_loan_repayments",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_groups",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_group_members",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_shares",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_standing_orders",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_reconciliations",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_aml_alerts",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_audit_events",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "bank_notifications",
+      "file": "20260823_015_bank_mfi_core.sql"
+    },
+    {
+      "name": "community_groups",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_members",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_committees",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_committee_members",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_meetings",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_attendance",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_contributions",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_savings",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_welfare_claims",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_loans",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_loan_guarantors",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_loan_repayments",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_loan_penalties",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_announcements",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_messages",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_projects",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_fundraising",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_budgets",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_expenses",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_assets",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_income",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_votes",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_vote_options",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_vote_ballots",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_approvals",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_documents",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_events",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_notifications",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "community_group_audit_log",
+      "file": "20260823_035_community_groups_module.sql"
+    },
+    {
+      "name": "restaurant_tax_profiles",
+      "file": "20260823_035_restaurant_tanzania_fiscal_configuration.sql"
+    },
+    {
+      "name": "restaurant_fiscal_profiles",
+      "file": "20260823_035_restaurant_tanzania_fiscal_configuration.sql"
+    },
+    {
+      "name": "restaurant_fiscal_receipts",
+      "file": "20260823_035_restaurant_tanzania_fiscal_configuration.sql"
+    },
+    {
+      "name": "restaurant_mobile_money_profiles",
+      "file": "20260823_035_restaurant_tanzania_fiscal_configuration.sql"
+    },
+    {
+      "name": "restaurant_mobile_money_intents",
+      "file": "20260823_035_restaurant_tanzania_fiscal_configuration.sql"
+    },
+    {
+      "name": "property_portfolios",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_owners",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_buildings",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_plots",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_units",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_listings",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_agents",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_tenants",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_tenant_documents",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_applications",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_leases",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_inspections",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_inspection_items",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_handover_records",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_rent_schedules",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_tax_fee_rules",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_service_charges",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_utility_meters",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_meter_readings",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_invoices",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_invoice_lines",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_payments",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_receipts",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_contractors",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_maintenance_requests",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_work_orders",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_expenses",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_budgets",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_insurances",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_documents",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_notices",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_approvals",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_ledger_entries",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_reconciliations",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_notifications",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_integration_events",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "property_audit_log",
+      "file": "20260823_040_property_management_core.sql"
+    },
+    {
+      "name": "fin_periods",
+      "file": "20260824_050_fin_foundation.sql"
+    },
+    {
+      "name": "fin_accounts",
+      "file": "20260824_050_fin_foundation.sql"
+    },
+    {
+      "name": "fin_idempotency_keys",
+      "file": "20260824_050_fin_foundation.sql"
+    },
+    {
+      "name": "fin_approval_requests",
+      "file": "20260824_050_fin_foundation.sql"
+    },
+    {
+      "name": "fin_journal_batches",
+      "file": "20260824_051_fin_journal_core.sql"
+    },
+    {
+      "name": "fin_journal_lines",
+      "file": "20260824_051_fin_journal_core.sql"
+    },
+    {
+      "name": "fin_posting_links",
+      "file": "20260824_051_fin_journal_core.sql"
+    },
+    {
+      "name": "fin_reconciliation_batches",
+      "file": "20260824_052_fin_reconciliation_core.sql"
+    },
+    {
+      "name": "fin_reconciliation_items",
+      "file": "20260824_052_fin_reconciliation_core.sql"
+    },
+    {
+      "name": "pos_registers",
+      "file": "20260824_053_pos_register_control.sql"
+    },
+    {
+      "name": "pos_terminals",
+      "file": "20260824_053_pos_register_control.sql"
+    },
+    {
+      "name": "pos_shift_sessions",
+      "file": "20260824_053_pos_register_control.sql"
+    },
+    {
+      "name": "pos_shift_cash_movements",
+      "file": "20260824_053_pos_register_control.sql"
+    },
+    {
+      "name": "pos_sync_devices",
+      "file": "20260824_053_pos_register_control.sql"
+    },
+    {
+      "name": "pos_sale_headers",
+      "file": "20260824_055_pos_sales_returns.sql"
+    },
+    {
+      "name": "pos_sale_lines",
+      "file": "20260824_055_pos_sales_returns.sql"
+    },
+    {
+      "name": "pos_sale_tenders",
+      "file": "20260824_055_pos_sales_returns.sql"
+    },
+    {
+      "name": "pos_return_headers",
+      "file": "20260824_055_pos_sales_returns.sql"
+    },
+    {
+      "name": "pos_return_lines",
+      "file": "20260824_055_pos_sales_returns.sql"
+    },
+    {
+      "name": "pos_tax_rules",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_discount_rules",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_promotions",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_promotion_items",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_sale_adjustments",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_sale_tax_lines",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_loyalty_programs",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_loyalty_members",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_loyalty_ledger",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_loyalty_rewards",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "pos_loyalty_redemptions",
+      "file": "20260824_056_pos_pricing_loyalty.sql"
+    },
+    {
+      "name": "workforce_roles",
+      "file": "20260824_057_workforce_authorization.sql"
+    },
+    {
+      "name": "workforce_permissions",
+      "file": "20260824_057_workforce_authorization.sql"
+    },
+    {
+      "name": "workforce_role_permissions",
+      "file": "20260824_057_workforce_authorization.sql"
+    },
+    {
+      "name": "workforce_member_roles",
+      "file": "20260824_057_workforce_authorization.sql"
+    },
+    {
+      "name": "workforce_module_access",
+      "file": "20260824_057_workforce_authorization.sql"
+    },
+    {
+      "name": "workforce_data_scopes",
+      "file": "20260824_057_workforce_authorization.sql"
+    },
+    {
+      "name": "workforce_approval_limits",
+      "file": "20260824_057_workforce_authorization.sql"
+    },
+    {
+      "name": "workforce_permission_conflicts",
+      "file": "20260824_057_workforce_authorization.sql"
+    }
+  ]
+}

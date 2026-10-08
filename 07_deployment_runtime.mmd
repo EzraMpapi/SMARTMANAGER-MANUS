@@ -1,0 +1,32 @@
+---
+title: SMART MANAGER — Deployment and Runtime Topology
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#eff6ff'
+    primaryBorderColor: '#2563eb'
+    lineColor: '#64748b'
+---
+flowchart LR
+  DEV["Developer changes\nlocal workspace"]
+  REPO["GitHub main\nEzraMpapi/SMARTMANAGER-MANUS"]
+  CI["Quality gates\nVitest · TypeScript · build"]
+  HOST["Vercel / MANUS hosting\ncompiled frontend + server bundle"]
+  EDGE["Production URL\nHTTPS entrypoint"]
+  AUTH["OAuth provider"]
+  SUPA["Supabase PostgreSQL\nRLS + migrations + RPCs"]
+  OBJECT["Object storage"]
+  HEART["Heartbeat service\nscheduled callbacks"]
+  DEV --> REPO --> CI --> HOST --> EDGE
+  EDGE --> AUTH
+  EDGE --> SUPA
+  EDGE --> OBJECT
+  HEART --> EDGE
+  classDef source fill:#f8fafc,stroke:#334155,color:#0f172a,stroke-width:1.5px;
+  classDef build fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:1.6px;
+  classDef runtime fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.8px;
+  classDef data fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.6px;
+  class DEV,REPO source;
+  class CI build;
+  class HOST,EDGE,AUTH,HEART runtime;
+  class SUPA,OBJECT data;

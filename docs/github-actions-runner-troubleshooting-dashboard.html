@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GitHub Actions Runner Troubleshooting Dashboard</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #60708a;
+      --line: #dbe4ef;
+      --canvas: #f5f8fc;
+      --panel: #ffffff;
+      --navy: #18263d;
+      --blue: #2b6de0;
+      --blue-soft: #eaf2ff;
+      --amber: #a25b00;
+      --amber-soft: #fff4dd;
+      --red: #b42318;
+      --red-soft: #fff0ee;
+      --green: #18794e;
+      --green-soft: #e9f8f0;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--canvas); }
+    body { margin: 0; color: var(--ink); background: var(--canvas); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .shell { min-height: 100vh; }
+    .hero { background: var(--navy); color: #fff; padding: 42px 58px 36px; }
+    .hero-inner { max-width: 1440px; margin: 0 auto; }
+    .eyebrow { text-transform: uppercase; letter-spacing: .16em; font-size: 11px; color: #9fbae4; font-weight: 700; }
+    h1 { font-size: clamp(30px, 4vw, 54px); line-height: 1.02; letter-spacing: -.04em; margin: 14px 0 12px; max-width: 780px; }
+    .subtitle { color: #cfdbef; max-width: 780px; font-size: 16px; line-height: 1.6; margin: 0; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+    .chip { border: 1px solid rgba(255,255,255,.22); color: #e4ecfa; padding: 7px 11px; font-size: 12px; letter-spacing: .02em; }
+    main { max-width: 1440px; margin: 0 auto; padding: 28px 58px 64px; }
+    .status { display: grid; grid-template-columns: 1fr 280px; gap: 22px; background: var(--panel); border: 1px solid var(--line); border-top: 5px solid var(--red); padding: 22px 24px; margin-bottom: 22px; }
+    .status h2, section h2 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.02em; }
+    .status p { margin: 0; color: var(--muted); line-height: 1.55; }
+    .status-side { border-left: 1px solid var(--line); padding-left: 22px; }
+    .status-side strong { display: block; font-size: 25px; color: var(--red); letter-spacing: -.04em; }
+    .status-side span { color: var(--muted); font-size: 12px; }
+    .grid { display: grid; gap: 22px; }
+    .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 22px; }
+    .card { background: var(--panel); border: 1px solid var(--line); padding: 20px; }
+    .kpi-label { text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-size: 10px; font-weight: 800; }
+    .kpi-value { display: block; margin: 12px 0 5px; font-size: 30px; line-height: 1; letter-spacing: -.05em; color: var(--navy); }
+    .kpi-note { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .two-col { grid-template-columns: 1.05fr .95fr; margin-bottom: 22px; }
+    .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 15px; }
+    .section-head small { color: var(--muted); font-size: 11px; }
+    .flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: stretch; margin-top: 15px; }
+    .flow-step { border: 1px solid var(--line); padding: 15px; position: relative; }
+    .flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -16px; top: 37%; color: #91a5bf; font-size: 22px; z-index: 2; }
+    .flow-step .num { color: var(--blue); font-size: 11px; font-weight: 800; }
+    .flow-step strong { display: block; margin: 8px 0 5px; font-size: 14px; }
+    .flow-step span { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .failure { background: var(--red-soft); border-color: #f4c7c2; }
+    .warn { background: var(--amber-soft); border-color: #f0d18f; }
+    .ok { background: var(--green-soft); border-color: #b6e1c9; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; text-transform: uppercase; letter-spacing: .08em; font-size: 10px; color: var(--muted); border-bottom: 2px solid var(--line); padding: 9px 8px; }
+    td { border-bottom: 1px solid var(--line); padding: 10px 8px; vertical-align: top; }
+    td:first-child { font-weight: 700; color: var(--navy); }
+    .pill { display: inline-block; padding: 4px 7px; font-size: 10px; font-weight: 800; letter-spacing: .03em; }
+    .pill.red { color: var(--red); background: var(--red-soft); }
+    .pill.green { color: var(--green); background: var(--green-soft); }
+    .pill.blue { color: var(--blue); background: var(--blue-soft); }
+    .pill.amber { color: var(--amber); background: var(--amber-soft); }
+    .timeline { border-left: 2px solid #c9d7e8; margin: 6px 0 0 8px; padding-left: 21px; }
+    .event { position: relative; margin-bottom: 22px; }
+    .event::before { content: ""; position: absolute; left: -29px; top: 4px; width: 12px; height: 12px; background: var(--blue); border: 3px solid var(--canvas); outline: 2px solid var(--blue); }
+    .event time { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .event strong { display: block; margin: 5px 0; font-size: 13px; }
+    .event p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .action { border-top: 3px solid var(--blue); padding-top: 12px; }
+    .action strong { display: block; font-size: 13px; margin-bottom: 5px; }
+    .action span { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .footer { color: var(--muted); border-top: 1px solid var(--line); margin-top: 26px; padding-top: 18px; font-size: 11px; line-height: 1.6; }
+    a { color: var(--blue); }
+    @media (max-width: 980px) { .kpis { grid-template-columns: repeat(2, 1fr); } .two-col { grid-template-columns: 1fr; } .status { grid-template-columns: 1fr; } .status-side { border-left: 0; border-top: 1px solid var(--line); padding: 15px 0 0; } }
+    @media (max-width: 640px) { .hero { padding: 30px 22px; } main { padding: 20px 22px 44px; } .kpis, .flow, .actions { grid-template-columns: 1fr; } .flow-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -22px; } table { display: block; overflow-x: auto; white-space: nowrap; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div class="hero-inner">
+        <div class="eyebrow">SMART MANAGER · OPERATIONS CONTROL</div>
+        <h1>GitHub Actions runner troubleshooting</h1>
+        <p class="subtitle">A read-only evidence dashboard for the pre-run failures affecting the repository’s hosted workflows. Last verified 25 August 2026 at 18:59 UTC.</p>
+        <div class="hero-meta">
+          <span class="chip">Repository: EzraMpapi/SMARTMANAGER-MANUS</span>
+          <span class="chip">Branch: main</span>
+          <span class="chip">Runner target: ubuntu-latest</span>
+          <span class="chip">Evidence mode: API + workflow metadata</span>
+        </div>
+      </div>
+    </header>
+    <main>
+      <section class="status">
+        <div>
+          <h2>Current incident state</h2>
+          <p>Jobs are being created by GitHub but fail before checkout, setup, or any repository command. The same behavior appears across unrelated workflows and commits, including a manually dispatched read-only probe.</p>
+        </div>
+        <div class="status-side"><strong>PRE-RUN FAILURE</strong><span>Runner assignment is not observed.</span></div>
+      </section>
+
+      <div class="grid kpis">
+        <div class="card"><span class="kpi-label">Workflow definitions</span><strong class="kpi-value">11 / 11</strong><span class="kpi-note">Accepted by GitHub’s workflow API</span></div>
+        <div class="card"><span class="kpi-label">Hosted runner match</span><strong class="kpi-value">100%</strong><span class="kpi-note">All runner declarations use ubuntu-latest</span></div>
+        <div class="card"><span class="kpi-label">Self-hosted runners</span><strong class="kpi-value">0</strong><span class="kpi-note">No custom runner fallback is registered</span></div>
+        <div class="card"><span class="kpi-label">Billing visibility</span><strong class="kpi-value">403</strong><span class="kpi-note">Current token cannot inspect Actions billing</span></div>
+      </div>
+
+      <div class="grid two-col">
+        <section class="card">
+          <div class="section-head"><h2>Observed execution path</h2><small>Evidence from run metadata</small></div>
+          <div class="flow">
+            <div class="flow-step ok"><span class="num">01 · DISPATCH</span><strong>Workflow accepted</strong><span>GitHub creates the expected named job from valid YAML.</span></div>
+            <div class="flow-step failure"><span class="num">02 · RUNNER</span><strong>Assignment fails</strong><span><code>runner_name = null</code>; job ends within seconds.</span></div>
+            <div class="flow-step failure"><span class="num">03 · STEPS</span><strong>No step starts</strong><span><code>steps = []</code>; checkout and source evaluation never run.</span></div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="section-head"><h2>Repository controls</h2><small>Read-only settings checks</small></div>
+          <table>
+            <tbody>
+              <tr><td>Actions service</td><td><span class="pill green">ENABLED</span></td></tr>
+              <tr><td>Allowed actions</td><td><span class="pill green">ALL</span></td></tr>
+              <tr><td>Default workflow permissions</td><td><span class="pill blue">READ</span></td></tr>
+              <tr><td>Self-hosted runners</td><td><span class="pill blue">NONE</span></td></tr>
+              <tr><td>Billing endpoint</td><td><span class="pill amber">403 UNAVAILABLE</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <section class="card" style="margin-bottom:22px">
+        <div class="section-head"><h2>Workflow compatibility matrix</h2><small>Runner and permission configuration</small></div>
+        <table>
+          <thead><tr><th>Workflow</th><th>Jobs</th><th>Runner</th><th>Environment</th><th>Permission posture</th><th>Assessment</th></tr></thead>
+          <tbody>
+            <tr><td>CI &amp; Quality Gate</td><td>2</td><td><span class="pill green">ubuntu-latest</span></td><td>Production – smatimeneja</td><td>Read default; contents: read on browser job</td><td><span class="pill green">MATCH</span></td></tr>
+            <tr><td>Daily Production Smoke</td><td>1</td><td><span class="pill green">ubuntu-latest</span></td><td>None</td><td>contents: read; issues: write for alerting</td><td><span class="pill green">MATCH</span></td></tr>
+            <tr><td>Weekly Dependency Security</td><td>1</td><td><span class="pill green">ubuntu-latest</span></td><td>None</td><td>contents: read; issues: write for alerting</td><td><span class="pill green">MATCH</span></td></tr>
+            <tr><td>Read-only Schema Health</td><td>1</td><td><span class="pill green">ubuntu-latest</span></td><td>None</td><td>contents: read</td><td><span class="pill amber">PROBE FAILED PRE-RUN</span></td></tr>
+            <tr><td>Feature Branch CI</td><td>2</td><td><span class="pill green">ubuntu-latest</span></td><td>None</td><td>contents: read</td><td><span class="pill green">MATCH</span></td></tr>
+            <tr><td>Live Tenant Fixtures</td><td>1</td><td><span class="pill green">ubuntu-latest</span></td><td>live-e2e</td><td>contents: read</td><td><span class="pill green">MATCH</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="grid two-col">
+        <section class="card">
+          <div class="section-head"><h2>Evidence timeline</h2><small>UTC · 25 August 2026</small></div>
+          <div class="timeline">
+            <div class="event"><time>18:48</time><strong>Three workflows fail on b0af55c</strong><p>CI, production smoke, and weekly security jobs fail before any step with no runner assigned.</p></div>
+            <div class="event"><time>18:49</time><strong>Attempt-2 reruns reproduce the failure</strong><p>Reruns complete in seconds with the same empty-step metadata and unavailable logs.</p></div>
+            <div class="event"><time>18:54</time><strong>Failures continue across later commits</strong><p>Multiple unrelated main-branch revisions show the same pre-run pattern.</p></div>
+            <div class="event"><time>18:59</time><strong>Low-cost manual probe confirms persistence</strong><p>Read-only schema health workflow run 32887016724 fails before checkout on head e2df40e.</p></div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="section-head"><h2>Recommended next actions</h2><small>Do not weaken workflow security</small></div>
+          <div class="actions">
+            <div class="action"><strong>1 · Confirm billing</strong><span>Account owner checks Plans and usage because the API token cannot read billing or Actions-minute quota.</span></div>
+            <div class="action"><strong>2 · Probe once</strong><span>Dispatch one read-only workflow after account confirmation; avoid repeated production reruns during an outage.</span></div>
+            <div class="action"><strong>3 · Escalate evidence</strong><span>If runner_name remains null, provide run IDs and timestamps to GitHub Support for runner-assignment telemetry.</span></div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="footer">
+        <strong>Scope and limitations.</strong> This preview is an evidence summary, not a live monitoring feed. No credentials, secrets, raw payloads, or billing data are displayed. The repository is a personal-account repository, so organization-level runner and billing endpoints are not applicable. Source reports: <a href="github-actions-runner-startup-failure-analysis-20260825.md">runner failure analysis</a> and <a href="healthcare-lab-categories-sql-and-github-actions-validation-report-20260825.md">SQL/workflow validation report</a>. Workflow syntax reference: <a href="https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions">GitHub Actions documentation</a>.
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

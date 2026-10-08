@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280, initial-scale=1.0" />
+  <title>Advisor findings require targeted follow-up</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #0B1F33; color: #F5F8FB; font-family: Arial, Helvetica, sans-serif; position: relative; }
+    .content { padding: 56px 76px 0; }
+    .kicker { color: #22C7A5; font-size: 15px; letter-spacing: 2.4px; font-weight: 700; text-transform: uppercase; }
+    h2 { margin: 12px 0 0; font-size: 42px; line-height: 1.1; }
+    .lede { margin-top: 12px; color: #BFD0DC; font-size: 19px; line-height: 1.4; width: 950px; }
+
+    /* tightened vertical spacing to avoid overflow */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 24px; }
+    .column { border-top: 2px solid #2B5D72; padding-top: 12px; }
+    .col-title { font-size: 22px; color: #F5F8FB; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .big-number { font-size: 56px; color: #22C7A5; font-weight: 700; line-height: 1; margin-bottom: 24px; }
+    .big-number span { font-size: 20px; color: #86A1B4; font-weight: normal; letter-spacing: 0; margin-left: 8px; text-transform: uppercase; }
+
+    .breakdown-list { list-style: none; }
+    .breakdown-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #1A3A50; font-size: 18px; color: #BFD0DC; }
+    .breakdown-list li:last-child { border-bottom: none; }
+    .item-count { color: #F5F8FB; font-weight: 700; font-size: 20px; }
+
+    .strategy-box { margin-top: 24px; background: rgba(34, 199, 165, 0.08); border-left: 4px solid #22C7A5; padding: 16px 24px; }
+    .strategy-box h4 { color: #22C7A5; font-size: 20px; margin-bottom: 8px; }
+    .strategy-box p { color: #F5F8FB; font-size: 18px; line-height: 1.5; }
+
+    .source { color: #7895A8; font-size: 13px; width: 1128px; border-top: 1px solid #2B5D72; padding-top: 12px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="content">
+      <div class="kicker">08 / ADVISOR FINDINGS</div>
+      <h2>Advisor findings require targeted follow-up</h2>
+      <div class="lede">Supabase security and performance advisors identified historical configuration gaps. These require individual workload and product-intent review rather than automated blanket migrations.</div>
+
+      <div class="grid">
+        <div class="column">
+          <div class="col-title">Security</div>
+          <div class="big-number">117<span>Warnings</span></div>
+          <ul class="breakdown-list">
+            <li><span>Authenticated security-definer calls</span> <span class="item-count">110</span></li>
+            <li><span>Anonymous security-definer calls</span> <span class="item-count">6</span></li>
+            <li><span>Breached-password protection disabled</span> <span class="item-count">1</span></li>
+          </ul>
+        </div>
+
+        <div class="column">
+          <div class="col-title">Performance</div>
+          <div class="big-number">855<span>Findings</span></div>
+          <ul class="breakdown-list">
+            <li><span>Unindexed foreign keys</span> <span class="item-count">632</span></li>
+            <li><span>Multiple permissive policies</span> <span class="item-count">152</span></li>
+            <li><span>Unused indexes</span> <span class="item-count">61</span></li>
+            <li><span>Auth RLS init-plan warnings</span> <span class="item-count">10</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="strategy-box">
+        <h4>Why blanket changes were avoided</h4>
+        <p>Applying hundreds of indexes simultaneously creates severe write-lock and maintenance overhead. Revoking anonymous RPCs without reviewing intended public workflows (e.g., booking/seat availability) risks breaking legacy modules. Remediation must be targeted and evidence-based.</p>
+      </div>
+
+      <div class="source">Source: Supabase get_advisors (security and performance), 23 Aug 2026.</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<slide id="build_memory">
+  <background color="navy"/>
+  <shape id="top-grid" type="line" x="40" y="72" width="1200" height="0" stroke="grid" stroke-width="1"/>
+  <text id="report-label" x="40" y="28" width="470" height="22" font="caption" size="13" color="gold" wrap="false">SMART MANAGER · BUILD MEMORY DIAGNOSIS</text>
+  <text id="title" x="40" y="105" width="1120" height="44" font="heading" size="32" color="paper" wrap="false">Clean workers and report-free builds complete</text>
+  <text id="subtitle" x="40" y="157" width="1100" height="28" font="body" size="17" color="muted">The dashboard bundle is large, but measured sandbox pressure came from worker contention and a diagnostic gzip report—not emitted application behavior.</text>
+  <shape id="chart-panel" type="rect" x="40" y="220" width="730" height="375" corner-radius="18" fill="panel" stroke="grid" stroke-width="1"/>
+  <text id="chart-title" x="70" y="248" width="520" height="22" font="body" size="19" color="paper" wrap="false">Peak Vite RSS during chunk rendering</text>
+  <text id="chart-scale" x="600" y="250" width="135" height="18" font="caption" size="13" color="muted" align="right" wrap="false">0.0 — 2.0 GiB</text>
+  <text id="bar-one-label" x="70" y="302" width="190" height="18" font="caption" size="13" color="muted" wrap="false">Existing + watcher</text>
+  <shape id="bar-one" type="rect" x="280" y="298" width="266" height="18" corner-radius="9" fill="gold" opacity="0.7"/>
+  <text id="bar-one-value" x="560" y="298" width="70" height="18" font="caption" size="13" color="paper" wrap="false">1.52</text>
+  <text id="bar-two-label" x="70" y="350" width="190" height="18" font="caption" size="13" color="muted" wrap="false">Extra vendor chunks</text>
+  <shape id="bar-two" type="rect" x="280" y="346" width="324" height="18" corner-radius="9" fill="#A85D5D"/>
+  <text id="bar-two-value" x="618" y="346" width="70" height="18" font="caption" size="13" color="paper" wrap="false">1.85</text>
+  <text id="bar-three-label" x="70" y="398" width="190" height="18" font="caption" size="13" color="muted" wrap="false">No minification</text>
+  <shape id="bar-three" type="rect" x="280" y="394" width="315" height="18" corner-radius="9" fill="#A85D5D"/>
+  <text id="bar-three-value" x="609" y="394" width="70" height="18" font="caption" size="13" color="paper" wrap="false">1.80</text>
+  <text id="bar-four-label" x="70" y="446" width="190" height="18" font="caption" size="13" color="muted" wrap="false">1 GiB V8 cap</text>
+  <shape id="bar-four" type="rect" x="280" y="442" width="219" height="18" corner-radius="9" fill="#A85D5D"/>
+  <text id="bar-four-value" x="513" y="442" width="70" height="18" font="caption" size="13" color="paper" wrap="false">1.25</text>
+  <text id="bar-five-label" x="70" y="494" width="190" height="18" font="caption" size="13" color="muted" wrap="false">Clean worker, report-free</text>
+  <shape id="bar-five" type="rect" x="280" y="490" width="284" height="18" corner-radius="9" fill="#2F9271"/>
+  <text id="bar-five-value" x="578" y="490" width="70" height="18" font="caption" size="13" color="paper" wrap="false">passed</text>
+  <text id="chart-note" x="70" y="542" width="620" height="24" font="caption" size="13" color="muted">Values in GiB for profiled experiments. The final result suppresses diagnostics only; bundle output remains unchanged.</text>
+  <shape id="findings-card" type="rect" x="810" y="220" width="430" height="375" corner-radius="18" fill="evergreen" stroke="#2F6B58" stroke-width="1"/>
+  <icon id="finding-icon" name="cpu" x="842" y="250" width="34" height="34" color="gold"/>
+  <text id="findings-title" x="895" y="248" width="270" height="24" font="body" size="21" color="paper" wrap="false">Runbook decision</text>
+  <text id="findings-copy" x="842" y="310" width="348" height="190" font="body" size="17" color="#D8E5E0" line-height="1.35"><p><strong color="paper">Rejected:</strong> extra vendor splitting and disabled minification. Both increased peak RSS.</p><p><strong color="paper">Retained:</strong> current lazy boundaries and default minification.</p><p><strong color="paper">Adopted:</strong> clean worker plus `reportCompressedSize: false`.</p></text>
+  <shape id="status-strip" type="rect" x="40" y="620" width="1200" height="30" corner-radius="12" fill="#D4AF3720"/>
+  <text id="status-text" x="60" y="627" width="1140" height="16" font="caption" size="13" color="gold" wrap="false">2,703 modules transformed · 7.28 MB primary shell chunk · production client completed in 10.91 seconds</text>
+  <text id="page-number" x="1175" y="662" width="64" height="24" font="caption" size="14" color="muted" align="right" wrap="false">06 / 08</text>
+</slide>

@@ -11,7 +11,7 @@ const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/Busine
 
 describe("Hospitality production workflow contracts", () => {
   it("replaces the legacy hotel component with a secured snapshot-driven workspace", () => {
-    expect(dashboard).toContain('import { HospitalityWorkspace }');
+    expect(dashboard).toContain('const HospitalityWorkspace = lazy(() => import("./components/HospitalityWorkspace")');
     expect(dashboard).toContain('<HospitalityWorkspace rpc={rpc}');
     expect(workspace).toContain('rpc("hospitality_snapshot",{})');
     expect(workspace).toContain('rpc("hospitality_pos_snapshot",{})');

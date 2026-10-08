@@ -14,7 +14,7 @@ describe("passkey login UI", () => {
 
   it("persists only a confirmed native-passkey session through the existing login handoff", () => {
     expect(gateway).toContain("signInWithAccountPasskey");
-    expect(gateway).toContain("persistAuthSession(result, remember)");
+    expect(gateway).toContain("await auth.adoptSession({ access_token: result.access_token, refresh_token: result.refresh_token })");
     expect(gateway).toContain("window.location.assign(withoutAuthView())");
   });
 });

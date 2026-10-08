@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #ffffff;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #101828;
+            color: white;
+            padding: 40px 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+        }
+        .brand-small {
+            font-size: 18px;
+            font-weight: 700;
+            color: #38bdf8;
+            letter-spacing: 1px;
+        }
+        /* Reduced vertical padding and gaps to bring content height under threshold */
+        .content {
+            padding: 12px 60px; /* reduced from 25px */
+            display: flex;
+            flex-direction: column;
+            gap: 12px; /* reduced from 20px */
+            flex: 1;
+        }
+        .benchmark-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        /* Reduced cell padding to shrink row heights without changing font sizes */
+        .benchmark-table th, .benchmark-table td {
+            padding: 10px 12px; /* reduced from 14px 16px */
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .benchmark-table th {
+            background-color: #f1f5f9;
+            font-size: 16px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+        }
+        .benchmark-table td {
+            font-size: 15px;
+            color: #1e293b;
+        }
+        .benchmark-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .predicate-col {
+            font-family: monospace;
+            color: #0284c7;
+            font-weight: 600;
+            width: 30%;
+        }
+        .plan-node {
+            display: inline-block;
+            padding: 2px 6px; /* slightly reduced */
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .node-index { background-color: #dcfce7; color: #065f46; }
+        .node-bitmap { background-color: #e0f2fe; color: #0369a1; }
+        .node-seq { background-color: #fef3c7; color: #166534; border: 1px solid #fcd34d; background-color: #fef9c3; color: #92400e; }
+
+        .insight-box {
+            background-color: #101828;
+            color: white;
+            padding: 12px 16px; /* reduced from 20px 25px */
+            border-left: 6px solid #38bdf8;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            margin-top: 6px; /* reduced from 10px */
+        }
+        .insight-icon {
+            font-size: 32px;
+            color: #38bdf8;
+            margin-top: 5px;
+        }
+        .insight-text h3 {
+            font-size: 22px;
+            margin-bottom: 8px;
+            color: #e0f2fe;
+        }
+        .insight-text p {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #cbd5e1;
+        }
+        .highlight {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1>Performance Benchmarks</h1>
+            <div class="brand-small">SMART MANAGER</div>
+        </div>
+        <div class="content">
+            <table class="benchmark-table">
+                <thead>
+                    <tr>
+                        <th>Target & Predicate</th>
+                        <th>Pre-Application Plan</th>
+                        <th>Post-Application Plan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="predicate-col">role_permissions<br>company_id + approval_request_id</td>
+                        <td><span class="plan-node node-bitmap">Bitmap Heap Scan</span><br><span style="font-size: 13px; color: #64748b;">(company_role_status_idx)</span></td>
+                        <td><span class="plan-node node-index">Index Scan</span><br><span style="font-size: 13px; color: #64748b;">(new composite index)</span></td>
+                    </tr>
+                    <tr>
+                        <td class="predicate-col">role_permissions<br>company_id + granted_by</td>
+                        <td><span class="plan-node node-bitmap">Bitmap Heap Scan</span><br><span style="font-size: 13px; color: #64748b;">(existing company index)</span></td>
+                        <td><span class="plan-node node-bitmap">Bitmap Heap Scan</span><br><span style="font-size: 13px; color: #64748b;">(new granted_by index + company bitmap)</span></td>
+                    </tr>
+                    <tr>
+                        <td class="predicate-col">workforce_permissions<br>company_id + created_by</td>
+                        <td><span class="plan-node node-bitmap">Bitmap Heap Scan</span><br><span style="font-size: 13px; color: #64748b;">(existing company index)</span></td>
+                        <td><span class="plan-node node-bitmap">Bitmap Heap Scan</span><br><span style="font-size: 13px; color: #64748b;">(new created_by index + company bitmap)</span></td>
+                    </tr>
+                    <tr>
+                        <td class="predicate-col">role_permissions<br>revoked_by IS NULL</td>
+                        <td><span style="color: #94a3b8; font-style: italic;">Not captured (No baseline)</span></td>
+                        <td><span class="plan-node node-seq">Sequential Scan</span><br><span style="font-size: 13px; color: #64748b;">(Expected for NULL-heavy small table)</span></td>
+                    </tr>
+                    <tr>
+                        <td class="predicate-col">workforce_permissions<br>updated_by IS NULL</td>
+                        <td><span style="color: #94a3b8; font-style: italic;">Not captured (No baseline)</span></td>
+                        <td><span class="plan-node node-seq">Sequential Scan</span><br><span style="font-size: 13px; color: #64748b;">(Expected for NULL-heavy small table)</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="insight-box">
+                <div class="insight-icon"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="insight-text">
+                    <h3>Planner Execution Analysis</h3>
+                    <p>The new composite and actor indexes are <span class="highlight">successfully selected for exact predicates</span> in representative plans where the planner expects selective access. The two NULL-heavy audit columns correctly remain sequential scans because all observed rows match the NULL predicate and a sequential scan is cheaper for tables with under 500 rows. The indexes are positioned to address future selective history lookups as data volume grows.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

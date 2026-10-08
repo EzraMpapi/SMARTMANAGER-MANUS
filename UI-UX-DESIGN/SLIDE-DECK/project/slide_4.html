@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Role-aware UX turns permissions into understandable action</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F1F5F9;
+            font-family: 'Inter', sans-serif;
+            padding-top: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .header-container {
+            width: 1152px;
+            margin-bottom: 32px;
+        }
+        
+        h1 {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 44px;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+        
+        .subtitle {
+            color: #334155;
+            font-weight: 500;
+            font-size: 22px;
+            line-height: 1.4;
+            max-width: 1000px;
+        }
+        
+        .content-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            width: 1152px;
+            height: 460px;
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(11, 17, 32, 0.05);
+        }
+        
+        .text-panel {
+            width: 60%;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .modes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px 32px;
+        }
+        
+        .mode-item {
+            position: relative;
+            padding-left: 16px;
+        }
+        
+        .mode-rule {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            bottom: 4px;
+            width: 4px;
+            background-color: #008A45;
+            border-radius: 4px;
+        }
+        
+        .mode-title {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 18px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .mode-question {
+            color: #008A45;
+            font-weight: 900;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .mode-desc {
+            color: #334155;
+            font-weight: 500;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .image-panel {
+            width: 40%;
+            height: 100%;
+            background-color: #F8FAFC;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-left: 1px solid #E2E8F0;
+        }
+        
+        .reference-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-container">
+            <h1>Role-aware UX turns permissions into understandable action</h1>
+            <p class="subtitle">The 36-role model is expressed through both visibility and action-level communication.</p>
+        </div>
+        
+        <div class="content-card">
+            <div class="text-panel">
+                <div class="modes-grid">
+                    <div class="mode-item">
+                        <div class="mode-rule"></div>
+                        <div class="mode-title">Executive</div>
+                        <div class="mode-question">What needs attention now?</div>
+                        <div class="mode-desc">KPIs, exceptions, decisions</div>
+                    </div>
+                    
+                    <div class="mode-item">
+                        <div class="mode-rule"></div>
+                        <div class="mode-title">Operator</div>
+                        <div class="mode-question">What do I do next?</div>
+                        <div class="mode-desc">Queue, form, status, confirmation</div>
+                    </div>
+                    
+                    <div class="mode-item">
+                        <div class="mode-rule"></div>
+                        <div class="mode-title">Reviewer</div>
+                        <div class="mode-question">Is this correct & authorized?</div>
+                        <div class="mode-desc">Evidence, diffs, approvals</div>
+                    </div>
+                    
+                    <div class="mode-item">
+                        <div class="mode-rule"></div>
+                        <div class="mode-title">Frontline</div>
+                        <div class="mode-question">Can I finish quickly & safely?</div>
+                        <div class="mode-desc">Large actions, search, receipt, retry</div>
+                    </div>
+                    
+                    <div class="mode-item">
+                        <div class="mode-rule"></div>
+                        <div class="mode-title">Portal</div>
+                        <div class="mode-question">What belongs to me?</div>
+                        <div class="mode-desc">Narrow scope, plain language, mobile-first</div>
+                    </div>
+                    
+                    <div class="mode-item">
+                        <div class="mode-rule"></div>
+                        <div class="mode-title">Specialist</div>
+                        <div class="mode-question">Which state needs expertise?</div>
+                        <div class="mode-desc">Domain tabs, minimum-necessary data</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="image-panel">
+                <img class="reference-image" src="/home/ubuntu/SMARTMANAGER-MANUS/UI-UX-DESIGN/04-Workflows/role-access-map.png" alt="Role Access Map">
+            </div>
+        </div>
+    </div>
+</body>
+</html>

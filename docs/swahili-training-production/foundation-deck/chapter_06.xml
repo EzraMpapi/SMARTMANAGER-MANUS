@@ -1,0 +1,31 @@
+<slide id="chapter_06">
+  <background color="ivory"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <text id="slide-title" x="60" y="62" width="920" height="46" font="heading" size="34" color="emerald" wrap="false">Sura 06: Dashboard huanza na swali</text>
+  <text id="slide-subtitle" x="60" y="114" width="1120" height="52" font="body" size="20" color="slate">Dashibodi inafundishwa kama mzunguko wa uongozi: signal haina maana bila muktadha na review.</text>
+  <shape id="question-card" type="rect" x="60" y="250" width="250" height="220" fill="mist" stroke="hairline" stroke-width="1"/>
+  <icon id="question-icon" name="search" x="162" y="276" width="46" height="46" color="emerald"/>
+  <text id="question-title" x="84" y="344" width="202" height="28" font="body" size="23" color="emerald" align="center" wrap="false">1. Swali</text>
+  <text id="question-body" x="84" y="386" width="202" height="46" font="body" size="17" color="ink" align="center">Ni eneo gani linahitaji umakini leo?</text>
+  <shape id="arrow-one" type="arrow" x="322" y="331" width="38" height="42" fill="gold" head-ratio="0.38"/>
+  <shape id="signal-card" type="rect" x="372" y="250" width="250" height="220" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <icon id="signal-icon" name="chart-column" x="474" y="276" width="46" height="46" color="emerald"/>
+  <text id="signal-title" x="396" y="344" width="202" height="28" font="body" size="23" color="emerald" align="center" wrap="false">2. Signal</text>
+  <text id="signal-body" x="396" y="386" width="202" height="46" font="body" size="17" color="ink" align="center">Elewa kinachoonekana kabla ya kutafsiri.</text>
+  <shape id="arrow-two" type="arrow" x="634" y="331" width="38" height="42" fill="gold" head-ratio="0.38"/>
+  <shape id="context-card" type="rect" x="684" y="250" width="250" height="220" fill="mist" stroke="hairline" stroke-width="1"/>
+  <icon id="context-icon" name="clipboard-list" x="786" y="276" width="46" height="46" color="emerald"/>
+  <text id="context-title" x="708" y="344" width="202" height="28" font="body" size="23" color="emerald" align="center" wrap="false">3. Muktadha</text>
+  <text id="context-body" x="708" y="386" width="202" height="46" font="body" size="17" color="ink" align="center">Pitia range, chanzo, owner na ubora wa data.</text>
+  <shape id="arrow-three" type="arrow" x="946" y="331" width="38" height="42" fill="gold" head-ratio="0.38"/>
+  <shape id="action-card" type="rect" x="996" y="250" width="224" height="220" fill="emerald"/>
+  <icon id="action-icon" name="circle-check" x="1085" y="276" width="46" height="46" color="gold"/>
+  <text id="action-title" x="1018" y="344" width="180" height="28" font="body" size="23" color="ivory" align="center" wrap="false">4. Hatua</text>
+  <text id="action-body" x="1018" y="386" width="180" height="46" font="body" size="17" color="ivory" align="center">Chukua au idhinisha hatua kwa utaratibu.</text>
+  <shape id="caution-band" type="rect" x="60" y="535" width="1160" height="75" fill="#FFF7DE" stroke="#E6C86D" stroke-width="1"/>
+  <text id="caution-title" x="84" y="550" width="230" height="22" font="caption" size="14" color="emerald" wrap="false">MIPAKA YA FRAME ILIYOSAFISHWA</text>
+  <text id="caution-text" x="84" y="578" width="1080" height="22" font="body" size="18" color="ink" wrap="false">Hakuna KPI, value, date, alert, trend au tenant identity inayodaiwa na frame ya Dashboard iliyotumika kwenye mafunzo.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="slate" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="slate" align="right" wrap="false">07</text>
+</slide>

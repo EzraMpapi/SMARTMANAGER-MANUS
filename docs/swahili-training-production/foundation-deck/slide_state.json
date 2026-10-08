@@ -1,0 +1,122 @@
+{
+  "project_info": {
+    "title": "SMART MANAGER ERP: Msingi wa Kozi ya Kiswahili",
+    "created": 1787775952.349,
+    "last_updated": 1787776170.487,
+    "total_slides": 10
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "course_scale",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "evidence_rule",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "chapters_01_02",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "chapters_03_04",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "chapter_05",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "chapter_06",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "capture_validation",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "foundation_ready",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "next_path",
+      "state": "edited",
+      "pageNum": 10
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "SMART MANAGER ERP: Msingi wa Kozi ya Kiswahili",
+      "summary": "Cover slide for the evidence-based Chapters 01–06 training-course foundation.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "course_scale",
+      "title": "Kutoka maono hadi kozi ya saa 8:30",
+      "summary": "Summarize the 48-chapter, 510-minute course architecture and the status of the current foundation.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "evidence_rule",
+      "title": "Ushahidi unaongoza kila madai",
+      "summary": "Explain the distinction between conceptual 3D visuals, privacy-screened UI, and status-qualified capabilities.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "chapters_01_02",
+      "title": "Sura 01–02: Tatizo linaongoza mwanzo",
+      "summary": "Summarize the opening chapters: fragmented-records problem, ERP framing, course method, and safe character narrative.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "chapters_03_04",
+      "title": "Sura 03–04: Muktadha kabla ya action",
+      "summary": "Summarize the operating model and multi-tenant architecture concepts with explicit no-role-proof limits.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "chapter_05",
+      "title": "Sura 05: Usalama ni kanuni ya uzalishaji",
+      "summary": "Summarize credential protection, public-versus-private boundaries, and safe role/profile teaching.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "chapter_06",
+      "title": "Sura 06: Dashboard huanza na swali",
+      "summary": "Summarize dashboard interpretation as questions, signals, context, review, and action—not literal KPI claims.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "capture_validation",
+      "title": "Capture ya KMKM ilihifadhiwa kwa redaction",
+      "summary": "Show the validated controlled-redaction method and its strict module-shell-only evidence boundary.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "foundation_ready",
+      "title": "Msingi uko tayari kupanuka kwa udhibiti",
+      "summary": "Show the approved production components and the current Chapters 07–09 evidence gates.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "next_path",
+      "title": "Njia ya master course ni chapter-by-chapter",
+      "summary": "Close with the per-chapter production and QA route required before master assembly.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

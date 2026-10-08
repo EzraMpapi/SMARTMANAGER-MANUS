@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px; /* keep as required */
+            background-color: #ffffff;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #101828;
+            color: white;
+            padding: 40px 60px; /* upper padding must remain */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+        }
+        .brand-small {
+            font-size: 18px;
+            font-weight: 700;
+            color: #38bdf8;
+            letter-spacing: 1px;
+        }
+        /* Reduced content padding to lower total height */
+        .content {
+            padding: 20px 60px; /* reduced from 50 to 20 */
+            display: flex;
+            gap: 36px; /* reduced gap between columns */
+            flex: 1;
+        }
+        .left-col {
+            flex: 0 0 35%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px; /* reduced gap between metric cards */
+        }
+        .right-col {
+            flex: 1;
+        }
+        .metric-card {
+            background-color: #f8fafc;
+            border-left: 5px solid #38bdf8;
+            padding: 16px; /* reduced padding from 25 */
+        }
+        .metric-title {
+            font-size: 18px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px; /* reduced spacing */
+        }
+        .metric-value-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .metric-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .metric-change {
+            font-size: 24px;
+            font-weight: 600;
+            color: #10b981;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .metric-change.negative {
+            color: #0ea5e9; /* Blue for reduction in uncovered */
+        }
+        .section-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 12px; /* reduced */
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title i {
+            color: #38bdf8;
+        }
+        .index-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        /* Reduced cell padding to compact table height */
+        .index-table th, .index-table td {
+            padding: 12px 16px; /* reduced from 16/20 */
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .index-table th {
+            background-color: #f1f5f9;
+            font-size: 16px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+        }
+        .index-table td {
+            font-size: 16px;
+            color: #1e293b;
+            font-family: monospace;
+        }
+        .index-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .table-name {
+            color: #0284c7;
+            font-weight: 600;
+        }
+        .note {
+            margin-top: 16px; /* reduced from 30 */
+            padding: 12px; /* reduced from 20 */
+            background-color: #eff6ff;
+            color: #1e3a8a;
+            font-size: 18px;
+            border-left: 4px solid #3b82f6;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1>Database Impact & Coverage</h1>
+            <div class="brand-small">SMART MANAGER</div>
+        </div>
+        <div class="content">
+            <div class="left-col">
+                <div class="metric-card">
+                    <div class="metric-title">Total Foreign Keys</div>
+                    <div class="metric-value-row">
+                        <div class="metric-value">1,097</div>
+                        <div class="metric-change" style="color: #64748b; font-size: 18px;">Unchanged</div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Covered Relationships</div>
+                    <div class="metric-value-row">
+                        <div class="metric-value">462</div>
+                        <div class="metric-change"><i class="fa-solid fa-arrow-up"></i> +5</div>
+                    </div>
+                </div>
+                <div class="metric-card" style="border-left-color: #0ea5e9;">
+                    <div class="metric-title">Uncovered Relationships</div>
+                    <div class="metric-value-row">
+                        <div class="metric-value">635</div>
+                        <div class="metric-change negative"><i class="fa-solid fa-arrow-down"></i> -5</div>
+                    </div>
+                </div>
+            </div>
+            <div class="right-col">
+                <div class="section-title">
+                    <i class="fa-solid fa-database"></i> Applied P0 Indexes
+                </div>
+                <table class="index-table">
+                    <thead>
+                        <tr>
+                            <th>Table</th>
+                            <th>Indexed Columns</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="table-name">workforce_role_permissions</td>
+                            <td>(company_id, approval_request_id)</td>
+                        </tr>
+                        <tr>
+                            <td class="table-name">workforce_role_permissions</td>
+                            <td>(granted_by)</td>
+                        </tr>
+                        <tr>
+                            <td class="table-name">workforce_role_permissions</td>
+                            <td>(revoked_by)</td>
+                        </tr>
+                        <tr>
+                            <td class="table-name">workforce_permissions</td>
+                            <td>(created_by)</td>
+                        </tr>
+                        <tr>
+                            <td class="table-name">workforce_permissions</td>
+                            <td>(updated_by)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="note">
+                    <strong>Scope Verified:</strong> Migration <code>fk_index_optimization_p0_review_20260823</code> executed exactly these five statements. P1 and P2 backlogs remain intentionally untouched per authorization constraints.
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

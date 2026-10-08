@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800&family=Inter:wght@400&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #E0F2FE;
+            position: relative;
+            font-family: 'Inter', sans-serif;
+            color: #2D3748;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            overflow: hidden;
+        }
+        
+        .top-rule {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background-color: #B91C1C;
+        }
+        
+        .content-wrapper {
+            padding: 60px 80px 80px 80px;
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            align-items: end;
+            gap: 60px;
+        }
+        
+        .text-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 800;
+            font-size: 60px;
+            line-height: 1.1;
+            color: #0A3622;
+            margin-bottom: 32px;
+        }
+        
+        .summary {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #2D3748;
+        }
+        
+        .table-block {
+            width: 100%;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        th, td {
+            padding: 32px;
+            text-align: left;
+            border-bottom: 1px solid #CBD5E1;
+            font-size: 15px;
+        }
+        
+        th {
+            background-color: #0A3622;
+            color: #E0F2FE;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .pass-text {
+            color: #0A3622;
+            font-weight: 800;
+        }
+        
+        .warning-note {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #64748B;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="top-rule"></div>
+        <div class="content-wrapper">
+            <div class="text-block">
+                <h2>Quality Gates & CI Integration</h2>
+                <p class="summary">The implementation is protected by repeatable local and continuous quality checks guarding the PWA boundary.</p>
+                <p class="warning-note">Note: Oversized dashboard chunk warning is non-fatal and unrelated to the offline fallback.</p>
+            </div>
+            <div class="table-block">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Gate</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Vitest Regression Suite</td>
+                            <td><span class="pass-text">888 PASSED</span> (218 files)</td>
+                        </tr>
+                        <tr>
+                            <td>Supabase Schema Verification</td>
+                            <td><span class="pass-text">201 TABLES CHECKED</span> (0 issues)</td>
+                        </tr>
+                        <tr>
+                            <td>TypeScript & Production Build</td>
+                            <td><span class="pass-text">SUCCESSFUL</span></td>
+                        </tr>
+                        <tr>
+                            <td>Offline Playwright Suite</td>
+                            <td><span class="pass-text">4/4 PASSED</span> (Desktop & Mobile)</td>
+                        </tr>
+                        <tr>
+                            <td>GitHub Actions Workflow</td>
+                            <td><span class="pass-text">ADDED</span> (Continuous PWA Coverage)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

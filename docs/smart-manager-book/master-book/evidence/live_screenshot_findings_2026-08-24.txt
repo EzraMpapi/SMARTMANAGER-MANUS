@@ -1,0 +1,5 @@
+Visual screenshot findings:
+
+- live_architecture/live_homepage.png is a captured public Smart Manager landing page showing a dark navy/green hero, gold headline treatment, Tanzanian Swahili tagline, Launch App and Passkey CTAs, and a business-overview preview with customer, inventory, finance, live workflow, and built-in controls.
+- live_architecture/live_workspace_entry.png is a captured authenticated-entry experience showing a split dark-green/light layout, secure workspace copy, work email and password fields, remember-me control, forgot-password link, passkey sign-in, Google/Microsoft/Apple continuation, create-workspace link, tenant-aware and role-based labels, and English language control.
+- These are real captured screenshots and can be used in the master book with captions stating capture provenance; they are not synthetic application mockups.

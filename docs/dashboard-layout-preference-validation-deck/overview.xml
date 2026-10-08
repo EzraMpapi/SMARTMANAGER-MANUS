@@ -1,0 +1,29 @@
+<slide id="overview">
+  <background color="navy"/>
+  <shape id="top-grid" type="line" x="40" y="72" width="1200" height="0" stroke="grid" stroke-width="1"/>
+  <text id="report-label" x="40" y="28" width="420" height="22" font="caption" size="13" color="gold" wrap="false">SMART MANAGER · FEATURE EVIDENCE</text>
+  <text id="title" x="40" y="105" width="1120" height="48" font="heading" size="34" color="paper" wrap="false">Personalize presentation. Preserve the facts.</text>
+  <text id="subtitle" x="40" y="160" width="940" height="32" font="body" size="18" color="muted">The command center changes what a user sees—not the source, calculation, permission, or ownership of a business signal.</text>
+  <shape id="presentation-card" type="rect" x="40" y="220" width="570" height="280" corner-radius="20" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="sliders-icon" name="sliders-horizontal" x="72" y="252" width="34" height="34" color="gold"/>
+  <text id="presentation-title" x="124" y="250" width="390" height="30" font="body" size="22" color="paper" wrap="false">What each user can shape</text>
+  <text id="presentation-copy" x="72" y="306" width="490" height="142" font="body" size="19" color="muted" line-height="1.35"><p>• Default confirmed-data window</p><p>• Visible KPI cards</p><p>• Visible command-center panels</p><p>• Relative panel order</p></text>
+  <shape id="truth-card" type="rect" x="670" y="220" width="570" height="280" corner-radius="20" fill="evergreen" stroke="#2F6B58" stroke-width="1"/>
+  <icon id="shield-icon" name="shield-check" x="702" y="252" width="34" height="34" color="gold"/>
+  <text id="truth-title" x="754" y="250" width="400" height="30" font="body" size="22" color="paper" wrap="false">What remains protected</text>
+  <text id="truth-copy" x="702" y="306" width="480" height="142" font="body" size="19" color="#D8E5E0" line-height="1.35"><p>• Confirmed source records only</p><p>• Tenant and role boundaries</p><p>• Existing ERP drill-downs</p><p>• Loading, empty, and error states</p></text>
+  <text id="saved-label" x="40" y="526" width="260" height="20" font="caption" size="13" color="gold" wrap="false">PERSISTED COMMAND-CENTER CHOICES</text>
+  <shape id="choice-one" type="rect" x="40" y="560" width="280" height="82" corner-radius="14" fill="panel" stroke="grid" stroke-width="1"/>
+  <text id="choice-one-title" x="60" y="576" width="220" height="20" font="body" size="17" color="paper" wrap="false">Performance window</text>
+  <text id="choice-one-detail" x="60" y="604" width="220" height="18" font="caption" size="14" color="muted" wrap="false">30D · 3M · 6M · 1Y</text>
+  <shape id="choice-two" type="rect" x="340" y="560" width="280" height="82" corner-radius="14" fill="panel" stroke="grid" stroke-width="1"/>
+  <text id="choice-two-title" x="360" y="576" width="220" height="20" font="body" size="17" color="paper" wrap="false">KPI selection</text>
+  <text id="choice-two-detail" x="360" y="604" width="220" height="18" font="caption" size="14" color="muted" wrap="false">At least one card retained</text>
+  <shape id="choice-three" type="rect" x="640" y="560" width="280" height="82" corner-radius="14" fill="panel" stroke="grid" stroke-width="1"/>
+  <text id="choice-three-title" x="660" y="576" width="220" height="20" font="body" size="17" color="paper" wrap="false">Panel visibility</text>
+  <text id="choice-three-detail" x="660" y="604" width="220" height="18" font="caption" size="14" color="muted" wrap="false">Live visual status</text>
+  <shape id="choice-four" type="rect" x="940" y="560" width="300" height="82" corner-radius="14" fill="panel" stroke="grid" stroke-width="1"/>
+  <text id="choice-four-title" x="960" y="576" width="240" height="20" font="body" size="17" color="paper" wrap="false">Panel order</text>
+  <text id="choice-four-detail" x="960" y="604" width="240" height="18" font="caption" size="14" color="muted" wrap="false">Accessible up / down controls</text>
+  <text id="page-number" x="1175" y="662" width="64" height="24" font="caption" size="14" color="muted" align="right" wrap="false">02 / 08</text>
+</slide>

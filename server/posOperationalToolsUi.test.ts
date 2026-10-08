@@ -16,7 +16,7 @@ describe("POS operational tools UI integration", () => {
   });
 
   it("limits reconciliation export to manager-class roles and the currently filtered RLS-scoped outcomes", () => {
-    expect(reconciliation).toContain('["admin", "manager", "owner"]');
+    expect(reconciliation).toContain('const canExport = ["Super Administrator", "Organization Owner", "CEO", "CFO", "Finance Manager", "HR Manager", "Sales Manager", "Procurement Officer", "Warehouse Manager", "Project Manager"].includes(canonicalRoleId(currentUser?.role));');
     expect(reconciliation).toContain("buildPosReconciliationCsv(rows)");
     expect(reconciliation).toContain("posReconciliationExportFilename()");
     expect(reconciliation).toContain("Export CSV");

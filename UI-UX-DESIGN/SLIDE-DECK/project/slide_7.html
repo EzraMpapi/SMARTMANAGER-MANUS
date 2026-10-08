@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The same grammar scales across 39 domain workspaces</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F1F5F9;
+            font-family: 'Inter', sans-serif;
+            padding-top: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .header-container {
+            width: 1152px;
+            margin-bottom: 16px; /* reduced from 32px to remove overflow */
+        }
+        
+        h1 {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 44px;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+        
+        .subtitle {
+            color: #334155;
+            font-weight: 500;
+            font-size: 22px;
+            line-height: 1.4;
+            max-width: 1000px;
+        }
+        
+        .content-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            width: 1152px;
+            height: 440px;
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(11, 17, 32, 0.05);
+        }
+        
+        .text-panel {
+            width: 60%;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .domain-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+            flex-grow: 1;
+        }
+        
+        .domain-column {
+            position: relative;
+            padding-left: 16px;
+        }
+        
+        .column-rule {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #008A45;
+            border-radius: 4px;
+        }
+        
+        .column-title {
+            color: #0B1120;
+            font-weight: 900;
+            font-size: 18px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .domain-list {
+            list-style: none;
+        }
+        
+        .domain-list li {
+            color: #334155;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        
+        .conclusion-text {
+            color: #334155;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.5;
+            background-color: #F8FAFC;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #0B1120;
+        }
+        
+        .image-panel {
+            width: 40%;
+            height: 100%;
+            background-color: #E2E8F0;
+        }
+        
+        .reference-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: left top;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-container">
+            <h1>The same grammar scales across 39 domain workspaces</h1>
+            <p class="subtitle">The blueprint keeps the shell and interaction patterns stable while allowing domain-specific records and evidence.</p>
+        </div>
+        
+        <div class="content-card">
+            <div class="text-panel">
+                <div class="domain-grid">
+                    <div class="domain-column">
+                        <div class="column-rule"></div>
+                        <div class="column-title">Core commercial loop</div>
+                        <ul class="domain-list">
+                            <li>CRM, Sales, Billing, Inventory</li>
+                            <li>Procurement, Finance, Reports</li>
+                            <li>POS, Notifications, Audit</li>
+                            <li>Integrations, Workflow Studio</li>
+                        </ul>
+                    </div>
+                    <div class="domain-column">
+                        <div class="column-rule"></div>
+                        <div class="column-title">Specialist & vertical</div>
+                        <ul class="domain-list">
+                            <li>Healthcare, Pharmacy, School, Hotel</li>
+                            <li>Restaurant, Fleet, Property</li>
+                            <li>Banking & MFI, Microfinance, VICOBA</li>
+                            <li>Community Groups, TRA Portal, Employee Portal</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="conclusion-text">
+                    Community Groups and VICOBA/SACCOS share member-led savings, meetings, contributions, loans, approvals, and reporting patterns; TRA and Finance share tax/evidence handoffs.
+                </div>
+            </div>
+            
+            <div class="image-panel">
+                <img class="reference-image" src="/home/ubuntu/SMARTMANAGER-MANUS/UI-UX-DESIGN/05-Visual-Assets/05-community-groups.png" alt="Community Groups Workspace">
+            </div>
+        </div>
+    </div>
+</body>
+</html>

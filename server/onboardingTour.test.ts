@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const source = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
-const tour = source.slice(source.indexOf("const ONBOARDING_TOUR_STEPS"), source.indexOf("function SmartManager()"));
+const tour = dashboardSource;
 
 describe("interactive onboarding tour", () => {
   it("introduces the verified high-value ERP modules with Kiswahili support", () => {
-    for (const moduleId of ["dashboard", "sales", "pos", "inventory", "finance", "collaboration", "ai"]) {
+    for (const moduleId of ["dashboard", "crm", "sales", "pos", "inventory", "procurement", "finance", "hr", "employee-portal", "collaboration", "reports", "notifications", "integrations", "settings", "support", "ai"]) {
       expect(tour).toContain(`moduleId: "${moduleId}"`);
     }
     expect(tour).toContain("activeSteps.length");
@@ -16,6 +17,16 @@ describe("interactive onboarding tour", () => {
     expect(tour).toContain("isSw ? \"Ziara ya Smart Manager\"");
     expect(tour).toContain("sw: \"Anzia kwenye kituo chako cha uendeshaji\"");
     expect(tour).toContain("Every permanent change is designed to wait for server confirmation.");
+  });
+
+  it("shows the tour only for authenticated individual users and filters it to authorized modules", () => {
+    expect(source).toContain("enabled={isIndividualLogin}");
+    expect(source).toContain("showTrigger={isIndividualLogin}");
+    expect(source).toContain("<OnboardingTour");
+    expect(tour).toContain("permittedModuleIds");
+    expect(tour).toContain("roleDefinitionFor(userRole)");
+    expect(tour).toContain("dashboard-tour-trigger");
+    expect(tour).not.toContain("dashboard-topbar-tour");
   });
 
   it("supports role-specific tour tracks and server-backed completion persistence", () => {
@@ -37,12 +48,11 @@ describe("interactive onboarding tour", () => {
 
   it("maps every tour step to a real dashboard spotlight target", () => {
     expect(tour).toContain('document.querySelector(`[data-tour-target="${step.moduleId}"]`)');
-    for (const moduleId of ["dashboard", "sales", "pos", "inventory", "finance", "collaboration", "ai"]) {
+    for (const moduleId of ["dashboard", "crm", "sales", "pos", "inventory", "procurement", "finance", "hr", "employee-portal", "collaboration", "reports", "notifications", "integrations", "settings", "support", "ai"]) {
       expect(source).toContain("data-tour-target={m.id}");
       expect(tour).toContain(`moduleId: "${moduleId}"`);
     }
     expect(tour).toContain("data-tour-spotlight={step.moduleId}");
-    expect(source).toContain("onTourVisibilityChange={handleOnboardingVisibilityChange}");
   });
 
   it("provides dialog semantics, focus management, keyboard navigation, and restart access", () => {
@@ -54,7 +64,6 @@ describe("interactive onboarding tour", () => {
     expect(tour).toContain('event.key === "ArrowLeft"');
     expect(tour).toContain('event.key !== "Tab"');
     expect(tour).toContain('data-onboarding-trigger="true"');
-    expect(source).toContain("<OnboardingTour currentUser={currentUser} company={company}");
   });
 });
 

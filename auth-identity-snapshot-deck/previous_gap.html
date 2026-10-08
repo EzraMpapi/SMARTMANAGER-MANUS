@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    .slide-container { width: 1280px; min-height: 720px; background-color: #F0F4F8; background-image: radial-gradient(#C9D6E2 1px, transparent 1px); background-size: 20px 20px; color: #34495E; font-family: Arial, Helvetica, sans-serif; }
+    .frame { min-height: 720px; padding-top: 54px; padding-left: 72px; padding-right: 72px; display: flex; flex-direction: column; }
+    .eyebrow { color: #2ECC71; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    h1 { margin: 14px 0 0; color: #0F4C81; font-size: 42px; line-height: 1.08; letter-spacing: -0.8px; }
+    .thesis { margin: 14px 0 0; max-width: 860px; font-size: 20px; line-height: 1.35; font-weight: 300; }
+    /* Reduced bottom padding to shave vertical space */
+    .diagram { display: grid; grid-template-columns: 1fr 0.18fr 1fr; gap: 28px; align-items: center; flex: 1; padding-top: 34px; padding-bottom: 10px; }
+    .lane-column { display: grid; gap: 12px; }
+    .lane { border-top: 1px dashed #8EA8BC; padding-top: 10px; min-height: 58px; }
+    .lane strong { display: block; color: #0F4C81; font-size: 16px; margin-bottom: 5px; }
+    .lane span { font-size: 14px; line-height: 1.3; }
+    /* Slightly reduced joiner heights */
+    .joiner { display: grid; place-items: center; min-height: 250px; color: #8EA8BC; font-size: 30px; letter-spacing: 8px; }
+    .joiner .vertical { min-height: 200px; border-left: 2px solid #8EA8BC; }
+    .problem { border: 1px solid #B9C8D4; background: rgba(255,255,255,0.45); padding: 24px; min-height: 215px; }
+    .problem h2 { margin: 0; color: #0F4C81; font-size: 22px; }
+    .problem p { margin: 12px 0 0; font-size: 15px; line-height: 1.4; }
+    .problem .risk { margin-top: 22px; color: #8A4E3A; font-weight: 700; }
+    .solution { margin-top: 18px; border-top: 3px solid #2ECC71; padding-top: 15px; color: #0F4C81; font-size: 16px; font-weight: 700; }
+    /* Reduced bottom padding to remove a few pixels from page height */
+    .footer { display: flex; justify-content: space-between; border-top: 1px dashed #8EA8BC; padding-top: 14px; padding-bottom: 14px; font-size: 12px; color: #60798C; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">01 / DESIGN RATIONALE</div>
+      <h1>The previous gap: fragmented browser authority</h1>
+      <p class="thesis">Several individually reasonable reads created a dangerous combined assumption: incomplete tenant identity could still reach the protected shell.</p>
+      <div class="diagram">
+        <div class="lane-column">
+          <div class="lane"><strong>Session restore</strong><span>Managed session, legacy storage, and dashboard bootstrap.</span></div>
+          <div class="lane"><strong>Profile read</strong><span>Client joins to retrieve user and company identity.</span></div>
+          <div class="lane"><strong>Membership read</strong><span>Tenant relationship treated as nullable in hydration.</span></div>
+          <div class="lane"><strong>Role / grant read</strong><span>Raw role strings could look like effective authority.</span></div>
+        </div>
+        <div class="joiner"><div class="vertical"></div></div>
+        <div>
+          <div class="problem">
+            <h2>Risk boundary</h2>
+            <p>Browser-side joins were asked to infer whether the identity was complete, consistent, and authorized.</p>
+            <p class="risk">Failure mode: “missing” relationships were not always a denial.</p>
+          </div>
+          <div class="solution">Corrective path → one server-side identity snapshot</div>
+        </div>
+      </div>
+      <div class="footer"><span>Preserve existing modules; narrow the authority boundary</span><span>02</span></div>
+    </div>
+  </div>
+</body>
+</html>

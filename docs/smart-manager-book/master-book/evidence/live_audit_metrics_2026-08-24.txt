@@ -1,0 +1,6 @@
+live_table_count=542
+live_rls_enabled_count=535
+live_rls_disabled_count=7
+live_auth_table_count=23
+live_public_table_count=519
+migration_count=133

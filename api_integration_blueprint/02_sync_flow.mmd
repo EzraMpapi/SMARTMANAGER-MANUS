@@ -1,0 +1,27 @@
+---
+title: SMART MANAGER — External ERP Synchronization Flow
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#eff6ff'
+    primaryBorderColor: '#2563eb'
+    lineColor: '#64748b'
+---
+sequenceDiagram
+  participant E as External ERP
+  participant I as Integration Edge
+  participant Q as Inbox / Queue
+  participant V as Validator + Mapper
+  participant D as SMART MANAGER Domain Service
+  participant L as Ledger / Subledger
+  participant O as Outbox / Event Publisher
+  E->>I: POST /integrations/v1/{resource}
+  I->>I: Authenticate, rate-limit, trace
+  I->>Q: Store raw request + idempotency key
+  Q->>V: Deliver normalized work item
+  V->>V: Validate schema, tenant, references, version
+  V->>D: Apply domain command
+  D->>L: Post controlled financial effect when required
+  D->>O: Record domain event + sync cursor
+  O-->>E: Webhook delivery or pull acknowledgement
+  I-->>E: 202 Accepted + correlation_id

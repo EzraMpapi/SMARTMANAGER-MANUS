@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { dashboardSource } from "./dashboardSourceSnapshot";
 
 const workspace = fs.readFileSync(path.resolve(process.cwd(), "client/src/components/EmployeePortalWorkspace.jsx"), "utf8");
-const dashboard = fs.readFileSync(path.resolve(process.cwd(), "client/src/BusinessSphereDashboard.jsx"), "utf8");
+const dashboard = dashboardSource;
 const migration = fs.readFileSync(path.resolve(process.cwd(), "supabase/migrations/20260821_013_employee_portal_core.sql"), "utf8");
 
 describe("Employee Portal production contracts", () => {
@@ -12,8 +13,8 @@ describe("Employee Portal production contracts", () => {
     expect(workspace).toContain('rpc("employee_portal_action", { p_action: action, p_payload: payload })');
     expect(workspace).not.toContain("localStorage");
     expect(workspace).not.toContain("sessionStorage");
-    expect(dashboard).toContain('fetch(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`');
-    expect(dashboard).toContain('import { EmployeePortalWorkspace } from "./components/EmployeePortalWorkspace"');
+    expect(dashboard).toContain('fetchWithSupabaseAuthRecovery(`${SUPABASE_URL}/rest/v1/rpc/${procedure}`');
+    expect(dashboard).toContain('const EmployeePortalWorkspace = lazy(() => import("./components/EmployeePortalWorkspace")');
     expect(dashboard).toContain("return <EmployeePortalWorkspace");
     expect(dashboard).toContain('rpc={(procedure, payload) => callRpc(procedure, payload, getStoredAccessToken() || "")}');
     expect(dashboard).toContain("<EmployeePortal\n              currentUser={currentUser}");

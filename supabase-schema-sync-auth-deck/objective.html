@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280, initial-scale=1.0" />
+  <title>Synchronization objective</title>
+  <style>
+    * { box-sizing: border-box; }
+    /* keep the original rule but add a new class without the min-height
+       (we must not remove the original min-height declaration) */
+    .slide-container { width: 1280px; min-height: 720px; background: #0B1F33; color: #F5F8FB; font-family: Arial, Helvetica, sans-serif; }
+    .slide { width: 1280px; background: #0B1F33; color: #F5F8FB; font-family: Arial, Helvetica, sans-serif; }
+    body { margin: 8px; }
+    .content { padding: 58px 76px 0 76px; }
+    .kicker { color: #22C7A5; font-size: 15px; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700; }
+    h2 { margin: 12px 0 0 0; font-size: 42px; line-height: 1.1; letter-spacing: -.8px; }
+    .lede { margin-top: 14px; width: 800px; color: #BFD0DC; font-size: 19px; line-height: 1.45; }
+    .pipeline { display: grid; grid-template-columns: 1fr 46px 1fr 46px 1fr; align-items: center; margin-top: 68px; min-height: 230px; }
+    .stage { min-height: 230px; border-top: 3px solid #2B5D72; padding: 26px 22px 0 0; }
+    .stage .num { color: #22C7A5; font-size: 16px; letter-spacing: 2px; font-weight: 700; }
+    .stage h3 { margin: 18px 0 12px 0; font-size: 28px; }
+    .stage p { margin: 0; color: #BFD0DC; font-size: 17px; line-height: 1.45; width: 270px; }
+    .arrow { height: 1px; background: #4B7387; position: relative; }
+    .arrow::after { content: ""; position: absolute; right: 0; top: -4px; width: 8px; height: 8px; border-top: 1px solid #22C7A5; border-right: 1px solid #22C7A5; transform: rotate(45deg); }
+    .boundary { margin-top: 44px; border-top: 1px solid #2B5D72; padding-top: 20px; color: #F5F8FB; font-size: 20px; }
+    .boundary span { color: #22C7A5; font-weight: 700; }
+    .source { margin-top: 32px; color: #7895A8; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="content">
+      <div class="kicker">01 / CONTROLLED SYNCHRONIZATION</div>
+      <h2>One evidence chain, not a blind replay</h2>
+      <div class="lede">The synchronization pass aligns declared contracts with the verified live catalog, then validates the application path without resetting production or changing behavior by assumption.</div>
+      <div class="pipeline">
+        <div class="stage"><div class="num">01</div><h3>Repository</h3><p>Versioned migrations, AuthProvider contracts, tests, and schema references define the intended change.</p></div>
+        <div class="arrow"></div>
+        <div class="stage"><div class="num">02</div><h3>Supabase</h3><p>Live tables, keys, policies, indexes, triggers, functions, storage, and migration history are inspected first.</p></div>
+        <div class="arrow"></div>
+        <div class="stage"><div class="num">03</div><h3>Application</h3><p>Backend, frontend, build, focused browser tests, and protected auth transitions are checked after DDL.</p></div>
+      </div>
+      <div class="boundary"><span>Safety boundary:</span> apply only verified additive changes; preserve existing data, RLS, and module behavior.</div>
+      <div class="source">Source: Supabase connector catalog and SMART MANAGER repository reconciliation, 23 Aug 2026.</div>
+    </div>
+  </div>
+</body>
+</html>

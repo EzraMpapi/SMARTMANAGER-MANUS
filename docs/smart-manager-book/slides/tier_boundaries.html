@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280, initial-scale=1.0" />
+  <title>Sell the value. State the boundaries.</title>
+  <style>
+    * { box-sizing: border-box; }
+    html,body { height:100%; margin:0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7f9f6; color: #15291f; font-family: Arial, Helvetica, sans-serif; padding-top: 42px; padding-left: 78px; padding-right: 78px; }
+    .header { min-height: 34px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #cad8d0; }
+    .brand { color: #0b5d3b; font-size: 16px; letter-spacing: 1.7px; font-weight: 800; }
+    .eyebrow { color: #8a6a2f; font-size: 12px; letter-spacing: 2px; font-weight: 800; text-transform: uppercase; }
+    .content { display: grid; grid-template-columns: 37% 63%; gap: 30px; padding-top: 28px; }
+    h1 { margin: 0; color: #0b5d3b; font-size: 46px; line-height: 1.05; letter-spacing: -1.6px; }
+    .lead { margin: 8px 0 0; color: #52645c; font-size: 19px; line-height: 1.38; }
+    .rule { width: 168px; height: 5px; background: #1c79d3; margin-top: 10px; }
+    .safe-pitch { margin-top: 10px; color: #183428; font-size: 20px; line-height: 1.35; font-weight: 700; }
+    .safe-pitch span { color: #1c79d3; }
+    .note { margin-top: 10px; border-top: 1px solid #cad8d0; padding-top: 6px; color: #65776d; font-size: 13px; line-height: 1.4; }
+    .taxonomy { border-top: 5px solid #0b5d3b; }
+    .row { display: grid; grid-template-columns: 174px 1fr 195px; column-gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid #ccd8d1; padding: 8px 0; }
+    .status { font-size: 15px; font-weight: 800; letter-spacing: 0.5px; }
+    .status.impl { color: #0b5d3b; }
+    .status.partial { color: #1c79d3; }
+    .status.ui { color: #8a6a2f; }
+    .status.config { color: #5a6470; }
+    .status.external { color: #7a3f21; }
+    .status.plan { color: #7b6a84; }
+    .meaning { color: #41564b; font-size: 14px; line-height: 1.32; }
+    .speak { color: #0b5d3b; font-size: 13px; line-height: 1.3; font-weight: 700; }
+    .bottom { margin-top: 12px; min-height: 44px; border-top: 1px solid #cad8d0; display: flex; align-items: center; justify-content: space-between; color: #63756b; font-size: 13px; }
+    .bottom strong { color: #0b5d3b; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="header"><div class="brand">SMART MANAGER ERP</div><div class="eyebrow">Trust-led marketing playbook</div></div>
+    <div class="content">
+      <section>
+        <h1>Sell the value.<br />State the boundaries.</h1>
+        <p class="lead">Trust grows when customers see what exists now, what needs setup, and what is roadmap-only.</p>
+        <div class="rule"></div>
+        <div class="safe-pitch">“Start with the <span>verified foundation</span>, then expand with your real business needs.”</div>
+        <p class="note">Don't present every module, integration or AI path as turnkey in every tenant. The status language protects customers.</p>
+      </section>
+      <section class="taxonomy">
+        <div class="row"><div class="status impl">IMPLEMENTED</div><div class="meaning">A connected source, database object, or tested workflow exists.</div><div class="speak">“Available in the verified foundation.”</div></div>
+        <div class="row"><div class="status partial">PARTIALLY IMPLEMENTED</div><div class="meaning">Partial delivery; end-to-end contract not fully verified.</div><div class="speak">“Review scope with our team.”</div></div>
+        <div class="row"><div class="status ui">UI ONLY</div><div class="meaning">A visible surface without complete persistence or operations.</div><div class="speak">“Interface present; workflow scope to confirm.”</div></div>
+        <div class="row"><div class="status config">CONFIGURATION REQUIRED</div><div class="meaning">Roles, environment settings, storage, or provider setup are prerequisites.</div><div class="speak">“We configure this with your operating context.”</div></div>
+        <div class="row"><div class="status external">EXTERNAL SERVICE REQUIRED</div><div class="meaning">An external provider (TRA, AI, SMS, payments) must be onboarded and connected.</div><div class="speak">“Subject to provider onboarding and credentials.”</div></div>
+        <div class="row"><div class="status plan">PLANNED / NOT VERIFIED</div><div class="meaning">A future or unconfirmed surface; not a current guaranteed feature.</div><div class="speak">“Roadmap conversation, not a promise.”</div></div>
+      </section>
+    </div>
+    <div class="bottom"><div><strong>The sales advantage:</strong> customers buy clarity, not surprises.</div><div>VERIFY  •  CONFIGURE  •  EXPAND</div></div>
+  </div>
+</body>
+</html>

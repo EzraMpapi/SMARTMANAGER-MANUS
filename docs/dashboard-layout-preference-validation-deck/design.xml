@@ -1,0 +1,14 @@
+<design>
+  <size width="1280" height="720"></size>
+  <color name="navy" value="#0A192F"/>
+  <color name="evergreen" value="#0F4C3A"/>
+  <color name="panel" value="#1E293B"/>
+  <color name="paper" value="#F1F5F9"/>
+  <color name="muted" value="#94A3B8"/>
+  <color name="gold" value="#D4AF37"/>
+  <color name="grid" value="#334155"/>
+  <font name="display" family="Inter" size="48"/>
+  <font name="heading" family="Inter" size="32"/>
+  <font name="body" family="Inter" size="18"/>
+  <font name="caption" family="Inter" size="14"/>
+</design>

@@ -1,0 +1,19 @@
+<slide id="outcome">
+  <background color="paper"/>
+  <text id="outcome-breadcrumb" x="64" y="44" width="420" height="20" font="caption" size="12" color="muted" wrap="false">01  /  REDESIGN OUTCOME</text>
+  <text id="outcome-title" x="64" y="76" width="930" height="52" font="heading" size="34" color="ink" wrap="false">A redesigned executive surface, not a platform rewrite</text>
+  <text id="outcome-intro" x="64" y="132" width="900" height="36" font="body" size="18" color="muted">The work concentrates on composition, responsive navigation, and truthful dashboard states while preserving the protected workspace contract.</text>
+  <shape id="changed-panel" type="rect" x="64" y="204" width="540" height="390" fill="panel" stroke="hairline" stroke-width="1"/>
+  <shape id="changed-top-rule" type="rect" x="64" y="204" width="540" height="4" fill="accent"/>
+  <icon id="changed-icon" name="layout-dashboard" x="94" y="238" width="34" height="34" color="brand"/>
+  <text id="changed-label" x="146" y="241" width="360" height="20" font="caption" size="12" color="brand" wrap="false">WHAT CHANGED</text>
+  <text id="changed-heading" x="94" y="284" width="430" height="34" font="heading" size="24" color="ink" wrap="false">Executive work is easier to scan</text>
+  <text id="changed-points" x="94" y="338" width="438" height="180" font="body" size="18" color="ink" line-height="1.42"><ul bullet="•"><li>Reusable executive overview for the existing executive role view.</li><li>Persistent 264px desktop rail; overlay navigation remains below the desktop breakpoint.</li><li>Action-oriented KPI, trend, alert, activity, approval, and quick-action regions.</li><li>Explicit loading, partial-error, and empty states.</li></ul></text>
+  <shape id="preserved-panel" type="rect" x="676" y="204" width="540" height="390" fill="brand" stroke="#1A4331" stroke-width="1"/>
+  <shape id="preserved-top-rule" type="rect" x="676" y="204" width="540" height="4" fill="accent"/>
+  <icon id="preserved-icon" name="shield-check" x="706" y="238" width="34" height="34" color="accent"/>
+  <text id="preserved-label" x="758" y="241" width="360" height="20" font="caption" size="12" color="#D9E6DF" wrap="false">WHAT REMAINS AUTHORITATIVE</text>
+  <text id="preserved-heading" x="706" y="284" width="440" height="34" font="heading" size="24" color="#FFFFFF" wrap="false">The protected platform contract</text>
+  <text id="preserved-points" x="706" y="338" width="432" height="180" font="body" size="18" color="#D9E6DF" line-height="1.42"><ul bullet="•"><li>Routes, authentication redirects, session persistence, and recovery states.</li><li>Role-based navigation, subscription controls, company scoping, and offline write protection.</li><li>Existing queries, data models, callbacks, APIs, and production data boundaries.</li></ul></text>
+  <text id="outcome-page" x="1158" y="657" width="58" height="28" font="caption" size="14" color="muted" align="right" wrap="false">02</text>
+</slide>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Why Remediation Exists</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.slide-container{width:1280px;min-height:720px;background:#0b1220;color:#edf4f2;font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+.content{min-height:720px;margin:0 74px;padding-top:56px;display:flex;flex-direction:column}
+.kicker{font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#55d6be;font-weight:700}
+h2{font-size:42px;line-height:1.08;letter-spacing:-1px;margin-top:16px;font-weight:750}
+.intro{color:#9fb3b0;font-size:19px;line-height:1.45;max-width:790px;margin-top:17px}
+.rule{height:1px;background:#29403c;margin-top:34px}
+.chain{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;margin-top:48px}
+.item{min-height:190px;border-top:3px solid #55d6be;padding-top:17px}
+.item:nth-child(2){border-top-color:#8bcfc0}.item:nth-child(3){border-top-color:#f2b84b}.item:nth-child(4){border-top-color:#edf4f2}
+.num{font-size:48px;line-height:1;color:#55d6be;font-weight:750;letter-spacing:-2px}
+.item:nth-child(3) .num{color:#f2b84b}.item:nth-child(4) .num{color:#edf4f2}
+.item h3{font-size:21px;margin-top:18px;line-height:1.15}
+.item p{font-size:15px;line-height:1.45;color:#8fa4a0;margin-top:10px;max-width:235px}
+.objective{display:grid;grid-template-columns:1.2fr .8fr;gap:56px;margin-top:auto;border-top:1px solid #29403c;padding-top:25px;margin-bottom:29px}
+.objective-label{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#718987}
+.objective-main{font-size:27px;line-height:1.25;margin-top:9px;max-width:700px}
+.objective-main strong{color:#55d6be}
+.objective-note{font-size:15px;line-height:1.45;color:#9fb3b0;align-self:end}
+.footer{display:flex;justify-content:space-between;color:#617873;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding-top:15px;margin-bottom:0}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="content">
+    <div class="kicker">01 / Threat model</div>
+    <h2>Why remediation exists</h2>
+    <p class="intro">Provider callbacks are operational evidence, not permission to post money. The control plane must absorb retries while isolating signals that could indicate identity substitution or accounting risk.</p>
+    <div class="rule"></div>
+    <div class="chain">
+      <section class="item"><div class="num">01</div><h3>Provider retries</h3><p>Legitimate callbacks can arrive more than once or out of order.</p></section>
+      <section class="item"><div class="num">02</div><h3>Quarantine flood</h3><p>Stalls, unknown states, and broken correlation create a growing backlog.</p></section>
+      <section class="item"><div class="num">03</div><h3>Identity conflict</h3><p>A reused provider identity with a different fingerprint is never auto-settled.</p></section>
+      <section class="item"><div class="num">04</div><h3>Accounting objective</h3><p>One provider event can produce at most one financial outcome.</p></section>
+    </div>
+    <div class="objective">
+      <div><div class="objective-label">Operating principle</div><div class="objective-main">Preserve evidence. <strong>Classify conservatively.</strong> Delegate settlement only through the idempotent service path.</div></div>
+      <div class="objective-note">The remediation worker is a controlled recovery mechanism—not a second payment engine and not a balance-repair tool.</div>
+    </div>
+    <div class="footer"><span>Exactly-once settlement is the invariant</span><span>02 / 08</span></div>
+  </div>
+</div>
+</body>
+</html>

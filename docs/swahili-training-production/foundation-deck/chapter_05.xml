@@ -1,0 +1,21 @@
+<slide id="chapter_05">
+  <background color="ivory"/>
+  <shape id="top-accent" type="line" x="1020" y="56" width="200" height="0" stroke="gold" stroke-width="3"/>
+  <text id="slide-title" x="60" y="62" width="960" height="46" font="heading" size="34" color="emerald" wrap="false">Sura 05: Usalama ni kanuni ya uzalishaji</text>
+  <text id="slide-subtitle" x="60" y="114" width="1110" height="52" font="body" size="20" color="slate">Mafunzo salama hayaonyeshi siri; yanaeleza jinsi ya kutunza muktadha na mipaka ya kazi.</text>
+  <shape id="safe-panel" type="rect" x="60" y="190" width="510" height="340" fill="#EAF1EE" stroke="#B7D4C9" stroke-width="1"/>
+  <icon id="safe-icon" name="shield-check" x="90" y="220" width="48" height="48" color="emerald"/>
+  <text id="safe-title" x="156" y="228" width="330" height="28" font="body" size="24" color="emerald" wrap="false">Kinachofundishwa kwa usalama</text>
+  <text id="safe-body" x="90" y="302" width="424" height="180" font="body" size="19" color="ink" line-height="1.38"><p>• Tumia njia iliyoidhinishwa na shirika.</p><p>• Tofautisha public entry na workspace binafsi.</p><p>• Omba review ya role badala ya kutumia akaunti ya mtu mwingine.</p><p>• Sign-out kwenye mazingira ya pamoja.</p></text>
+  <shape id="prohibited-panel" type="rect" x="710" y="190" width="510" height="340" fill="#FFF7DE" stroke="#E6C86D" stroke-width="1"/>
+  <icon id="prohibited-icon" name="lock-keyhole" x="740" y="220" width="48" height="48" color="gold"/>
+  <text id="prohibited-title" x="806" y="228" width="340" height="28" font="body" size="24" color="emerald" wrap="false">Kile kinachozuiwa kwenye media</text>
+  <text id="prohibited-body" x="740" y="302" width="424" height="180" font="body" size="19" color="ink" line-height="1.38"><p>• Nenosiri, tokeni, session, OTP au recovery link.</p><p>• Email, profile halisi, browser identity au provider secret.</p><p>• Claim ya permission bila role-specific capture.</p><p>• Action ya ndani ya workspace bila privacy gate.</p></text>
+  <shape id="divider" type="line" x="640" y="206" width="0" height="300" stroke="gold" stroke-width="2"/>
+  <text id="divider-text" x="592" y="338" width="96" height="48" font="caption" size="14" color="slate" align="center"><p>FAHAMU</p><p>MPAKA</p></text>
+  <shape id="role-band" type="rect" x="60" y="565" width="1160" height="56" fill="emerald"/>
+  <text id="role-band-text" x="84" y="580" width="1110" height="24" font="body" size="18" color="ivory" align="center" wrap="false">Wasifu, role na permission hufundishwa kama dhana mpaka capture ya role husika ipitie ukaguzi.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="footer-course" x="60" y="675" width="460" height="20" font="caption" color="slate" wrap="false">SMART MANAGER ERP • Msingi wa Kozi ya Kiswahili</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="20" font="caption" color="slate" align="right" wrap="false">06</text>
+</slide>

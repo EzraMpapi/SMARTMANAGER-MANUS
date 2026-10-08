@@ -1,0 +1,31 @@
+{
+  "title": "SMART MANAGER ERP \u2014 Master System Book",
+  "edition": "Repository-Audited English and Tanzanian Swahili Edition",
+  "version": "1.0.0",
+  "documentation_date": "24 August 2026",
+  "owner_creator": "Ezra Mpapi",
+  "author": "Manus AI",
+  "source_commit": "07f66c9531ed30861ca49758d2733a9fade9c647",
+  "live_supabase": {
+    "project_id": "rlhngsrihahhyxnjxrxm",
+    "read_only": true,
+    "table_count": 542,
+    "public_count": 519,
+    "auth_count": 23,
+    "rls_enabled": 535,
+    "rls_disabled": 7,
+    "migration_count": 133,
+    "security_lints": 119,
+    "performance_lints": 851
+  },
+  "module_count": 44,
+  "deliverables": [
+    "SMART_MANAGER_MASTER_BOOK_EN_SW.md",
+    "SMART_MANAGER_MASTER_BOOK_EN_SW.docx",
+    "SMART_MANAGER_MASTER_BOOK_EN_SW.pdf",
+    "master_book.typ",
+    "evidence/",
+    "assets/"
+  ],
+  "evidence_boundary": "No live DDL, provider payment, external message, or credential was invoked during book generation."
+}

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #ffffff;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #101828;
+            color: white;
+            padding: 40px 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+        }
+        .brand-small {
+            font-size: 18px;
+            font-weight: 700;
+            color: #38bdf8;
+            letter-spacing: 1px;
+        }
+        .content {
+            padding: 30px 60px; /* reduced vertical padding to lower total height */
+            display: flex;
+            gap: 50px;
+            flex: 1;
+        }
+        .left-col {
+            flex: 0 0 40%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* slightly reduced gap */
+        }
+        .right-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* slightly reduced gap */
+        }
+        .metric-card {
+            background-color: #f8fafc;
+            border-left: 5px solid #38bdf8;
+            padding: 24px; /* reduced inner padding */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .metric-card.success {
+            border-left-color: #10b981;
+            background-color: #ecfdf5;
+        }
+        .metric-title {
+            font-size: 20px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .metric-card.success .metric-title {
+            color: #065f46;
+        }
+        .metric-value {
+            font-size: 64px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1;
+        }
+        .metric-card.success .metric-value {
+            color: #047857;
+        }
+        .metric-sub {
+            font-size: 18px;
+            color: #475569;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        .info-box {
+            background-color: #101828;
+            color: white;
+            padding: 28px 32px; /* reduced padding */
+            border-left: 6px solid #38bdf8;
+        }
+        .info-box-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #e0f2fe;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .info-box-title i {
+            color: #38bdf8;
+        }
+        .info-box-text {
+            font-size: 20px;
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+        .info-box-text strong {
+            color: #ffffff;
+        }
+        .secondary-box {
+            background-color: #f1f5f9;
+            padding: 24px 32px; /* reduced padding */
+            border-left: 6px solid #94a3b8;
+        }
+        .secondary-box-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .secondary-box-text {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #475569;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h1>Schema Reconciliation</h1>
+            <div class="brand-small">SMART MANAGER</div>
+        </div>
+        <div class="content">
+            <div class="left-col">
+                <div class="metric-card">
+                    <div class="metric-title">Live Public Tables</div>
+                    <div class="metric-value">519</div>
+                    <div class="metric-sub">Verified in Supabase Production</div>
+                </div>
+                <div class="metric-card success">
+                    <div class="metric-title">Missing Declared Tables</div>
+                    <div class="metric-value">0</div>
+                    <div class="metric-sub">Out of 285 Repository-Declared Tables</div>
+                </div>
+            </div>
+            <div class="right-col">
+                <div class="info-box">
+                    <div class="info-box-title">
+                        <i class="fa-solid fa-shield-check"></i> Verified No-Op Decision
+                    </div>
+                    <div class="info-box-text">
+                        Because <strong>zero repository-declared tables are missing</strong> from the live database, <strong>no table DDL was executed</strong>. This strict adherence to the reconciliation data prevents speculative disruption and ensures production stability.
+                    </div>
+                </div>
+                <div class="secondary-box">
+                    <div class="secondary-box-title">
+                        <i class="fa-solid fa-file-code"></i> Migration Ledger Integrity
+                    </div>
+                    <div class="secondary-box-text">
+                        The repository contains 76 SQL migration files. Although there are 8 local migration-name differences compared to the 130 production ledger entries, these were <strong>not blindly replayed</strong>. Table presence is already complete, and replaying historical or review-only artifacts without missing tables is unsafe.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

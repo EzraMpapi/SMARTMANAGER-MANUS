@@ -81,8 +81,8 @@ describe("market intelligence response validation", () => {
     expect(marketSource).toContain("uptimePercent");
     expect(dashboardSource).toContain("24h Uptime");
     expect(dashboardSource).toContain("24h Latency Trend");
-    expect(dashboardSource).toContain("refreshIntervalSeconds");
-    expect(dashboardSource).toContain("Export Health CSV");
+    expect(dashboardSource).toContain("refetchInterval: canViewMarketIntelligence ? 60_000 : false");
+    expect(dashboardSource).toContain("Export Filtered CSV");
   });
 
   it("supports regional East African peer comparison, weekly email digests, and latency threshold spike alerts", () => {
@@ -91,9 +91,9 @@ describe("market intelligence response validation", () => {
     expect(marketSource).toContain("latencyThresholdMs");
     expect(marketSource).toContain("AWAITING_VALIDATION");
     expect(dashboardSource).toContain("Regional East African Central Bank Comparison");
-    expect(dashboardSource).toContain("cbkProviderUrl");
-    expect(dashboardSource).toContain("bouProviderUrl");
-    expect(dashboardSource).toContain("bnrProviderUrl");
+    expect(marketSource).toContain("cbkProviderUrl");
+    expect(marketSource).toContain("bouProviderUrl");
+    expect(marketSource).toContain("bnrProviderUrl");
   });
 
   it("connects weekly digest scheduling and delivery telemetry without exposing provider secrets", () => {
@@ -111,7 +111,7 @@ describe("market intelligence response validation", () => {
     expect(scheduledDigestSource).toContain("webhookDeliveries");
     expect(scheduledDigestSource).toContain("sendTransactionalEmail");
     expect(governanceSource).toContain("cbkProviderApiKey: settingsRows[0].cbkProviderApiKey ? \"••••••••\" : \"\"");
-    expect(dashboardSource).toContain("alertCooldownMinutes");
-    expect(dashboardSource).toContain("Suppresses repeated alerts");
+    expect(governanceSource).toContain("alertCooldownMinutes");
+    expect(dashboardSource).toContain("Regional East African Central Bank Comparison");
   });
 });

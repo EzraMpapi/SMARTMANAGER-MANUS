@@ -1,0 +1,85 @@
+{
+  "audit_date": "2026-08-24",
+  "repository": "EzraMpapi/SMARTMANAGER-MANUS",
+  "scanner": {
+    "scanned_files": 150,
+    "total_button_tags": 3345,
+    "button_like_onclick_controls": 1780,
+    "flagged_no_handler_or_submit": 102,
+    "flagged_placeholder_copy": 583,
+    "flagged_direct_alert": 8,
+    "flagged_browser_storage_context": 10,
+    "interpretation": "Conservative static heuristics; findings include component definitions, wrappers, close buttons, validation alerts, demo surfaces, and dynamically generated JSX."
+  },
+  "verified_repairs": [
+    {
+      "area": "inventory",
+      "control": "Raise Purchase Order",
+      "status": "repaired",
+      "persistence": ["procurement_purchase_orders", "purchase_order_items"],
+      "safety": "Requires an active supplier, cleans up the header when line-item persistence fails, and closes only after confirmed success."
+    },
+    {
+      "area": "finance",
+      "control": "Receipt",
+      "status": "repaired",
+      "persistence": "Printable export through existing report helper",
+      "safety": "Escapes user-provided fields before inserting them into the print document."
+    },
+    {
+      "area": "presentation_inventory",
+      "control": "Download ZIP Archive",
+      "status": "repaired",
+      "persistence": "JSON manifest download",
+      "safety": "No longer reports a nonexistent quota-queued archive."
+    },
+    {
+      "area": "pharmacy",
+      "control": "Add Drug and Dispense",
+      "status": "repaired",
+      "persistence": ["phm_drugs", "phm_dispense", "phm_stock"],
+      "safety": "Configured mode updates local state only after server confirmation; dispensing validates live stock and quantity."
+    }
+  ],
+  "supabase": {
+    "project_ref": "rlhngsrihahhyxnjxrxm",
+    "verified_existing_action_tables": [
+      "bank_fixed_deposits",
+      "bank_standing_orders",
+      "crm_leads",
+      "hc_reports",
+      "hr_performance_reviews",
+      "phm_purchase_orders",
+      "phm_stock",
+      "procurement_purchase_orders",
+      "purchase_order_items",
+      "sch_books",
+      "sch_exams"
+    ],
+    "missing_verified_action_tables": [],
+    "table_ddl_executed": false,
+    "reason": "No genuinely missing repository-declared table was found; speculative schema was not created."
+  },
+  "remaining_review_queue": [
+    "Add OKR",
+    "Schedule Exam",
+    "Add Book",
+    "Receive Stock",
+    "Pharmacy Create Purchase Order",
+    "New Category",
+    "New Fixed Deposit",
+    "New Standing Order"
+  ],
+  "validation": {
+    "button_action_contract_tests": {"passed": 5, "failed": 0},
+    "typescript_check": "passed"
+  },
+  "changed_files": [
+    "client/src/BusinessSphereDashboard.jsx",
+    "client/src/dashboardAdditionalModules.jsx",
+    "server/buttonActionContracts.test.ts",
+    "BUTTON_ACTION_AUDIT_20260824.md",
+    "BUTTON_ACTION_AUDIT_20260824.json"
+  ],
+  "unrelated_artifacts": "Preserved and not staged."
+}

@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "title": "SMART MANAGER",
+    "created": 1787858573.786,
+    "last_updated": 1787858862.456,
+    "total_slides": 8
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "safe_boundary",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "measured_loading",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "responsive_header",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "accessibility",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "regression_proof",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "remaining_focus",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "closing",
+      "state": "edited",
+      "pageNum": 8
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "SMART MANAGER",
+      "summary": "Ripoti ya mwisho ya mobile performance, responsive design, na top-header accessibility; tarehe 27 Agosti 2026.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "safe_boundary",
+      "title": "Ukaguzi ulitumia isolated build salama",
+      "summary": "Eleza compiled e2e artifact, viewport ya 375 × 812, na network isolation kwa e2e.supabase.invalid pamoja na local API bila production tenant.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "measured_loading",
+      "title": "Dashboard-ready: sekunde 3.01 locally",
+      "summary": "Onyesha measured local artifact metrics: 8ms TTFB, 233ms DCL, 236ms load, 3.01s dashboard ready, 47 resources, na 2.32MB transfer; fafanua limitation ya si 4G telemetry.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "responsive_header",
+      "title": "Header imebaki wazi kwenye phone widths zote",
+      "summary": "Eleza 320–412px coverage, zero overlap, zero horizontal overflow, na Create-menu/backdrop stacking salama; tumia capture halisi ya isolated mobile dashboard.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "accessibility",
+      "title": "Header sasa iko keyboard-ready",
+      "summary": "Fupisha accessible names, focus, 40px targets, Notification Center aria state na Escape, Create menu aria relation/Escape/focus restoration, na Command Palette keyboard flow.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "regression_proof",
+      "title": "Coverage inathibitisha actions halisi",
+      "summary": "Onyesha 9 desktop/mobile interaction and a11y checks zilizopita, 5 expected project skips, pamoja na 1 focused performance check iliyopita; eleza isolation ya data.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "remaining_focus",
+      "title": "Bundle kubwa ndiyo follow-up ya performance",
+      "summary": "Eleza production build kufaulu lakini BusinessSphereDashboard kupita 2.5MB warning threshold; pendekeza real-device/4G measurement na workload-based code splitting bila kuhitimisha kuwa ni blocker ya sasa.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "closing",
+      "title": "Hali ya mwisho: responsive, accessible, na salama",
+      "summary": "Hitimisha kwamba mobile header, dashboard containment, interaction paths, a11y repairs, TypeScript na production build zimepita; hakuna schema/data/auth/RLS change.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

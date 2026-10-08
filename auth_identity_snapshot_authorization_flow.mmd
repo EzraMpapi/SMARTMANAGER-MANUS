@@ -1,0 +1,50 @@
+flowchart TD
+    A["Supabase Auth session"] --> B{"auth.uid() present?"}
+    B -- No --> X["Raise 42501<br/>No authenticated session"]
+    B -- Yes --> C["Load caller profile by id"]
+    C --> D{"Profile exists, active,<br/>company_id and role present?"}
+    D -- No --> R1["authorized=false<br/>PROFILE_MISSING / PROFILE_TENANT_INCOMPLETE / PROFILE_INACTIVE"]
+    D -- Yes --> E["Resolve current_company_id()"]
+    E --> F{"Context matches profile company?"}
+    F -- No --> R2["authorized=false<br/>TENANT_CONTEXT_MISMATCH"]
+    F -- Yes --> G{"Company exists?"}
+    G -- No --> R3["authorized=false<br/>COMPANY_MISSING"]
+    G -- Yes --> H{"Matching company_memberships row?"}
+    H -- No --> R4["authorized=false<br/>MEMBERSHIP_MISSING"]
+    H -- Yes --> I{"At least one workspace?"}
+    I -- No --> R5["authorized=false<br/>WORKSPACE_MISSING"]
+    I -- Yes --> J["Select active workforce member roles<br/>status Active + effective date"]
+    J --> K["Join active workforce roles"]
+    K --> L["Load active permission catalog"]
+    L --> M{"Allow path exists?"}
+    M -- No --> N["Permission excluded"]
+    M -- Yes --> O{"Active effective Deny exists?"}
+    O -- Yes --> N
+    O -- No --> P["Include permission code"]
+    N --> Q["Build limited JSONB snapshot"]
+    P --> Q
+    Q --> S["authorized=true<br/>Profile + company + membership + workspace + roles + permissions"]
+
+    subgraph AllowPaths["Effective Allow paths"]
+      L1["Active role permission grant"]
+      L2["Direct profile module access"]
+      L3["Active role module access"]
+    end
+    M -. evaluated against .-> AllowPaths
+
+    subgraph DenyPaths["Deny precedence"]
+      D1["Active role permission Deny"]
+      D2["Direct or role module Deny"]
+    end
+    O -. evaluated against .-> DenyPaths
+
+    T["Browser AuthProvider"] --> U{"RPC result"}
+    U -- authorized=true --> V["AUTHORIZED<br/>Render protected shell"]
+    U -- authorized=false --> W["INCOMPLETE_IDENTITY<br/>Setup-required UI"]
+    U -- RPC/network error --> Y["AUTH_ERROR<br/>Block shell and surface failure"]
+    S --> T
+    R1 --> T
+    R2 --> T
+    R3 --> T
+    R4 --> T
+    R5 --> T

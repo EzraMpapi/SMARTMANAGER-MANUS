@@ -1,0 +1,133 @@
+{
+  "project_info": {
+    "title": "The blueprint starts with the real product",
+    "created": 1787483660.411,
+    "last_updated": 1787483851.84,
+    "total_slides": 11
+  },
+  "slides": [
+    {
+      "id": "slide_1",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "slide_2",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "slide_3",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "slide_4",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "slide_5",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "slide_6",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "slide_7",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "slide_8",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "slide_9",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "slide_10",
+      "state": "edited",
+      "pageNum": 10
+    },
+    {
+      "id": "slide_11",
+      "state": "edited",
+      "pageNum": 11
+    }
+  ],
+  "outline": [
+    {
+      "id": "slide_1",
+      "title": "The blueprint starts with the real product",
+      "summary": "Source-grounded audit metrics showing 39 modules, 36 roles, 924 components, and 234 screen records to establish the truthfulness boundary.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_2",
+      "title": "One product language — Tanzania-first and enterprise-ready",
+      "summary": "The visual language principles: Noble shell, operational clarity, local readiness (TZS/TRA), and human-readable typography.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_3",
+      "title": "The persistent shell makes a broad platform navigable",
+      "summary": "The navigation model separating global context, module context, operational canvas, and the trust/recovery layers.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_4",
+      "title": "Role-aware UX turns permissions into understandable action",
+      "summary": "How the 36-role model maps to distinct experience modes (Executive, Operator, Reviewer, Frontline, Portal, Specialist).",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_5",
+      "title": "Every critical transaction follows one recoverable sequence",
+      "summary": "The canonical transaction model: Entry to Form to Validation to Confirmation to Processing to Success to Result, with safe error recovery.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_6",
+      "title": "A reusable component grammar keeps the system coherent",
+      "summary": "Component behavior specifications for tables, forms, actions, evidence timelines, and the accessibility contract.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_7",
+      "title": "The same grammar scales across 39 domain workspaces",
+      "summary": "How the core commercial loop shares interaction patterns with specialist verticals like Healthcare, VICOBA, and Community Groups.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_8",
+      "title": "Responsive design preserves operational usefulness",
+      "summary": "Responsive strategy across desktop, tablet, and mobile, prioritizing data safety and touch targets over simple column compression.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_9",
+      "title": "The package turns discovery into implementation-ready evidence",
+      "summary": "Final package metrics: 39 specs, 21 workflows, 20 mockups, 3 diagrams, and a 21-page verified master PDF.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_10",
+      "title": "Build the shared foundation before scaling the module surface",
+      "summary": "A pragmatic 5-step implementation sequence focusing on tokens, reusable components, and canonical patterns before scaling domains.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "slide_11",
+      "title": "SMART MANAGER can feel like one platform",
+      "summary": "Closing summary: One shell, clear roles, recoverable workflows, and Tanzania-ready operations.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

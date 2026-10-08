@@ -1,7 +1,16 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { lazy, Suspense, type ComponentType } from "react";
+import { lazy, Suspense, useState, type ComponentType, type ReactNode } from "react";
 import NotFound from "@/pages/NotFound";
+import { Route, Switch } from "wouter";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { BrandLogo } from "./components/BrandLogo";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import { DashboardPreferencesProvider } from "./contexts/DashboardPreferencesContext";
+import { AuthProvider, useAuthContext } from "./contexts/AuthContext";
+import { AUTH_STATES } from "./lib/authStateMachine";
+import Home from "./pages/Home";
 
 type LazyModule = { default: ComponentType<any> };
 
@@ -25,13 +34,6 @@ function lazyWithRecovery(load: () => Promise<LazyModule>, key: string) {
     }
   });
 }
-import { Route, Switch } from "wouter";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { BrandLogo } from "./components/BrandLogo";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import { LanguageProvider } from "./contexts/LanguageContext";
-import { DashboardPreferencesProvider } from "./contexts/DashboardPreferencesContext";
-import Home from "./pages/Home";
 
 const PublicAuthGateway = lazyWithRecovery(
   // @ts-expect-error The lightweight public auth gateway intentionally remains JavaScript.
@@ -42,6 +44,14 @@ const BusinessSphereDashboard = lazyWithRecovery(
   // @ts-expect-error The preserved single-file dashboard intentionally remains JavaScript.
   () => import("./BusinessSphereDashboard"),
   "business-sphere-dashboard",
+);
+const SignupPage = lazyWithRecovery(
+  async () => {
+    // @ts-expect-error The preserved signup wizard is a named JavaScript export.
+    const module = await import("./BusinessSphereDashboard");
+    return { default: module.SignupPage };
+  },
+  "signup-page",
 );
 const PatientSmsConsentSettings = lazyWithRecovery(
   // @ts-expect-error The patient preference experience is intentionally authored in JavaScript.
@@ -59,45 +69,86 @@ function DashboardRouteFallback() {
   </main>;
 }
 
-function isPublicAuthRequest() {
-  if (typeof window === "undefined") return false;
-  const params = new URLSearchParams(window.location.search);
-  let hasStoredSession = false;
-  try {
-    hasStoredSession = Boolean(
-      window.localStorage.getItem("bs_access_token") ||
-      window.sessionStorage.getItem("bs_session_access_token"),
-    );
-  } catch {}
-  return params.get("auth") !== "signup" && !hasStoredSession;
+function AuthenticationUnavailable({ onRetry }: { onRetry?: () => Promise<void> }) {
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    if (!onRetry || retrying) return;
+    setRetrying(true);
+    try { await onRetry(); } finally { setRetrying(false); }
+  };
+  return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6">
+    <section className="w-full max-w-md rounded-2xl border border-red-400/20 bg-slate-900 p-7 text-center shadow-2xl" role="alert">
+      <h1 className="text-lg font-semibold">Secure authentication is unavailable</h1>
+      <p className="mt-3 text-sm leading-6 text-slate-400">This workspace cannot verify the account identity required for tenant-scoped access. Retry secure recovery before signing out; no unverified workspace data is displayed.</p>
+      {onRetry && <button type="button" onClick={() => void retry()} disabled={retrying} className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60">{retrying ? "Recovering secure workspace…" : "Retry secure workspace recovery"}</button>}
+    </section>
+  </main>;
+}
+
+function IdentitySetupRequired({ reason, onRetry, onContinueOnboarding }: { reason?: string | null; onRetry?: () => Promise<void>; onContinueOnboarding?: () => void }) {
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    if (!onRetry || retrying) return;
+    setRetrying(true);
+    try { await onRetry(); } finally { setRetrying(false); }
+  };
+  return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6">
+    <section className="w-full max-w-md rounded-2xl border border-amber-300/20 bg-slate-900 p-7 text-center shadow-2xl" role="alert">
+      <h1 className="text-lg font-semibold">Secure workspace setup required</h1>
+      <p className="mt-3 text-sm leading-6 text-slate-400">Your Supabase session is valid, but the application could not verify the profile and workspace identity required for tenant-scoped access.</p>
+      {reason && <p className="mt-3 text-xs text-slate-500">Reference: {reason}</p>}
+      {onContinueOnboarding && <button type="button" onClick={onContinueOnboarding} className="mt-6 w-full rounded-xl border border-emerald-500/40 px-4 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/10">Continue workspace setup</button>}
+      {onRetry && <button type="button" onClick={() => void retry()} disabled={retrying} className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60">{retrying ? "Checking secure workspace…" : "Retry secure workspace access"}</button>}
+    </section>
+  </main>;
+}
+
+function requestedAuthScreen() {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("auth") || "";
+}
+
+function isPublicAuthScreen() {
+  return ["login", "forgot", "reset", "verify"].includes(requestedAuthScreen());
+}
+
+function ProtectedSurface({ children }: { children: ReactNode }) {
+  const auth = useAuthContext();
+  const authScreen = requestedAuthScreen();
+  const requestedSignup = authScreen === "signup";
+
+  if (auth.loading) return <DashboardRouteFallback />;
+  if (requestedSignup) {
+    return <Suspense fallback={<DashboardRouteFallback />}><SignupPage onAuthenticated={() => { window.location.assign("/app"); }} onSwitchToLogin={() => { window.location.assign("/app?auth=login"); }} /></Suspense>;
+  }
+  if (auth.status === "AUTH_ERROR") return <AuthenticationUnavailable onRetry={auth.session ? auth.refresh : undefined} />;
+  if (auth.reason === "EMAIL_UNCONFIRMED") return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
+  if (auth.status === "UNAUTHORIZED") {
+    const canResumeOnboarding = Boolean(auth.session && ["PROFILE_MISSING", "PROFILE_TENANT_INCOMPLETE", "MEMBERSHIP_MISSING", "WORKSPACE_MISSING"].includes(String(auth.reason || "")));
+    return <IdentitySetupRequired reason={typeof auth.reason === "string" ? auth.reason : null} onRetry={auth.session ? auth.refresh : undefined} onContinueOnboarding={canResumeOnboarding ? () => { window.location.assign("/app?auth=signup"); } : undefined} />;
+  }
+  if (authScreen === "forgot" || authScreen === "reset" || (isPublicAuthScreen() && !auth.isAuthenticated)) return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
+  if (!auth.configured && !auth.isAuthenticated) {
+    return <AuthenticationUnavailable />;
+  }
+  if (!auth.isAuthenticated) return <Suspense fallback={<DashboardRouteFallback />}><PublicAuthGateway /></Suspense>;
+  return <>{children}</>;
 }
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
-  return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/app"}>{() => <Suspense fallback={<DashboardRouteFallback />}>{isPublicAuthRequest() ? <PublicAuthGateway /> : <BusinessSphereDashboard />}</Suspense>}</Route>
-      <Route path={"/patient/sms-preferences"}>{() => <Suspense fallback={<DashboardRouteFallback />}><PatientSmsConsentSettings /></Suspense>}</Route>
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
-  );
+  return <Switch>
+    <Route path="/" component={Home} />
+    <Route path="/app">{() => <ProtectedSurface><Suspense fallback={<DashboardRouteFallback />}><BusinessSphereDashboard /></Suspense></ProtectedSurface>}</Route>
+    <Route path="/patient/sms-preferences">{() => <ProtectedSurface><Suspense fallback={<DashboardRouteFallback />}><PatientSmsConsentSettings /></Suspense></ProtectedSurface>}</Route>
+    <Route path="/404" component={NotFound} />
+    <Route component={NotFound} />
+  </Switch>;
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="dark"
-        switchable={true}
-      >
+  return <ErrorBoundary>
+    <AuthProvider>
+      <ThemeProvider defaultTheme="dark" switchable={true}>
         <LanguageProvider>
           <DashboardPreferencesProvider>
             <TooltipProvider>
@@ -107,8 +158,8 @@ function App() {
           </DashboardPreferencesProvider>
         </LanguageProvider>
       </ThemeProvider>
-    </ErrorBoundary>
-  );
+    </AuthProvider>
+  </ErrorBoundary>;
 }
 
 export default App;

@@ -1,0 +1,20 @@
+<slide id="next_path">
+  <background color="brand"/>
+  <shape id="gold-rule" type="line" x="60" y="74" width="180" height="0" stroke="accent" stroke-width="3"/>
+  <text id="label" x="160" y="132" width="960" height="22" font="caption" size="14" color="accent" align="center" wrap="false">NJIA YA OPERATIONS MASTER ILIYOIDHIBITIWA</text>
+  <text id="title" x="160" y="188" width="960" height="106" font="display" size="48" color="white" align="center" line-height="1.06"><p>Operations master</p><p>hujengwa kwa QA ya sura</p></text>
+  <text id="subtitle" x="220" y="314" width="840" height="45" font="body" size="22" color="#D6DFDA" align="center">Kila UI scene hupata nafasi baada ya ushahidi, faragha, VTT na audio sync kupitiwa.</text>
+  <shape id="stage-one" type="rect" x="150" y="400" width="245" height="72" fill="#254A42" stroke="#3B655B" stroke-width="1"/>
+  <text id="stage-one-text" x="166" y="416" width="213" height="38" font="body" size="18" color="white" align="center"><p>1. Script +</p><p>asset boundary</p></text>
+  <shape id="arrow-one" type="arrow" x="420" y="417" width="65" height="34" fill="accent" head-ratio="0.30"/>
+  <shape id="stage-two" type="rect" x="510" y="400" width="245" height="72" fill="#254A42" stroke="#3B655B" stroke-width="1"/>
+  <text id="stage-two-text" x="526" y="416" width="213" height="38" font="body" size="18" color="white" align="center"><p>2. Safe UI review</p><p>+ VTT + audio</p></text>
+  <shape id="arrow-two" type="arrow" x="780" y="417" width="65" height="34" fill="accent" head-ratio="0.30"/>
+  <shape id="stage-three" type="rect" x="870" y="400" width="245" height="72" fill="#254A42" stroke="#3B655B" stroke-width="1"/>
+  <text id="stage-three-text" x="886" y="416" width="213" height="38" font="body" size="18" color="white" align="center"><p>3. QA +</p><p>chapter approval</p></text>
+  <shape id="commitment-band" type="rect" x="150" y="535" width="965" height="54" fill="accent"/>
+  <text id="commitment-text" x="174" y="551" width="917" height="22" font="body" size="18" color="ink" align="center" wrap="false">Inventory, Stock Control na Reports haziitwi live, complete au role-specific kabla ya evidence gate.</text>
+  <shape id="footer-line" type="line" x="60" y="660" width="1160" height="0" stroke="#FFFFFF45" stroke-width="1"/>
+  <text id="footer-title" x="60" y="675" width="560" height="18" font="caption" color="#C3CEC9" wrap="false">SMART MANAGER ERP • Sura 10–12 Operations Foundation</text>
+  <text id="footer-page" x="1160" y="675" width="60" height="18" font="caption" color="#C3CEC9" align="right" wrap="false">08</text>
+</slide>

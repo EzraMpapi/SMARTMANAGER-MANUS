@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      POSTGRES_DB: lockbench
+      POSTGRES_USER: lockbench
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a disposable staging-only value}
+    ports:
+      - "${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - pg_lock_staging_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lockbench -d lockbench"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  instance_a:
+    build:
+      context: ../..
+      dockerfile: scripts/pg_lock_staging/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-}
+      DATABASE_DSN: postgresql://lockbench:${POSTGRES_PASSWORD}@postgres:5432/lockbench
+      RUN_ID: ${RUN_ID:-pg-lock-staging-run}
+      PROVIDER_ACCOUNT_KEY: ${PROVIDER_ACCOUNT_KEY:-staging-hot-account}
+      MODE: ${MODE:-duplicates}
+      PROVIDER: ${PROVIDER:-STAGING_TEST_PROVIDER}
+      PROCESSES: ${PROCESSES:-4}
+      BATCH_SIZE: ${BATCH_SIZE:-250}
+      HOLD_LOCK_MS: ${HOLD_LOCK_MS:-2}
+      JITTER_MIN_MS: ${JITTER_MIN_MS:-0}
+      JITTER_MAX_MS: ${JITTER_MAX_MS:-0}
+      OUTPUT: /results/instance-a.json
+    volumes:
+      - ../..:/workspace:ro
+      - pg_lock_staging_results:/results
+    command: ["--instance-name", "instance-a"]
+
+  instance_b:
+    build:
+      context: ../..
+      dockerfile: scripts/pg_lock_staging/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-}
+      DATABASE_DSN: postgresql://lockbench:${POSTGRES_PASSWORD}@postgres:5432/lockbench
+      RUN_ID: ${RUN_ID:-pg-lock-staging-run}
+      PROVIDER_ACCOUNT_KEY: ${PROVIDER_ACCOUNT_KEY:-staging-hot-account}
+      MODE: ${MODE:-duplicates}
+      PROVIDER: ${PROVIDER:-STAGING_TEST_PROVIDER}
+      PROCESSES: ${PROCESSES:-4}
+      BATCH_SIZE: ${BATCH_SIZE:-250}
+      HOLD_LOCK_MS: ${HOLD_LOCK_MS:-2}
+      JITTER_MIN_MS: ${JITTER_MIN_MS:-0}
+      JITTER_MAX_MS: ${JITTER_MAX_MS:-0}
+      OUTPUT: /results/instance-b.json
+    volumes:
+      - ../..:/workspace:ro
+      - pg_lock_staging_results:/results
+    command: ["--instance-name", "instance-b"]
+
+volumes:
+  pg_lock_staging_data:
+  pg_lock_staging_results:

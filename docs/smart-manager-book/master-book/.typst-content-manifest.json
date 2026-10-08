@@ -1,0 +1,10 @@
+{
+  "task_kind": "new-document",
+  "output": "pdf",
+  "signals": ["enterprise-report", "bilingual"],
+  "content_features": {
+    "code_blocks": 24,
+    "defined_terms": 140,
+    "portrait_images": 1
+  }
+}

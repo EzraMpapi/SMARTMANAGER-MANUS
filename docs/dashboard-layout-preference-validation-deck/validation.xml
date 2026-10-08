@@ -1,0 +1,33 @@
+<slide id="validation">
+  <background color="navy"/>
+  <shape id="top-grid" type="line" x="40" y="72" width="1200" height="0" stroke="grid" stroke-width="1"/>
+  <text id="report-label" x="40" y="28" width="450" height="22" font="caption" size="13" color="gold" wrap="false">SMART MANAGER · VALIDATION LAYERS</text>
+  <text id="title" x="40" y="105" width="1120" height="44" font="heading" size="32" color="paper" wrap="false">Validation is layered, not assumed</text>
+  <text id="subtitle" x="40" y="157" width="1100" height="28" font="body" size="17" color="muted">The preference feature is covered from source-level contracts through a true rendered dashboard interaction in an isolated browser session.</text>
+  <shape id="stack-one" type="rect" x="40" y="220" width="750" height="76" corner-radius="14" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="stack-one-icon" name="file-check-2" x="64" y="241" width="30" height="30" color="gold"/>
+  <text id="stack-one-title" x="118" y="235" width="350" height="22" font="body" size="19" color="paper" wrap="false">Full serialized regression</text>
+  <text id="stack-one-detail" x="118" y="261" width="480" height="18" font="caption" size="14" color="muted" wrap="false">Preference, shell, auth, RLS, build, and module regression contracts</text>
+  <text id="stack-one-result" x="612" y="246" width="143" height="22" font="body" size="20" color="gold" align="right" wrap="false">1,028 passed</text>
+  <shape id="stack-two" type="rect" x="40" y="315" width="750" height="76" corner-radius="14" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="stack-two-icon" name="braces" x="64" y="336" width="30" height="30" color="gold"/>
+  <text id="stack-two-title" x="118" y="330" width="350" height="22" font="body" size="19" color="paper" wrap="false">TypeScript contract</text>
+  <text id="stack-two-detail" x="118" y="356" width="480" height="18" font="caption" size="14" color="muted" wrap="false">Application, static verifier, and browser harness compile without type errors</text>
+  <text id="stack-two-result" x="640" y="341" width="115" height="22" font="body" size="20" color="gold" align="right" wrap="false">passed</text>
+  <shape id="stack-three" type="rect" x="40" y="410" width="750" height="76" corner-radius="14" fill="panel" stroke="grid" stroke-width="1"/>
+  <icon id="stack-three-icon" name="package-check" x="64" y="431" width="30" height="30" color="gold"/>
+  <text id="stack-three-title" x="118" y="425" width="350" height="22" font="body" size="19" color="paper" wrap="false">Clean-worker production build</text>
+  <text id="stack-three-detail" x="118" y="451" width="480" height="18" font="caption" size="14" color="muted" wrap="false">2,703 modules transformed with 2.3 GiB V8 cap and no gzip report</text>
+  <text id="stack-three-result" x="640" y="436" width="115" height="22" font="body" size="20" color="gold" align="right" wrap="false">10.91 s</text>
+  <shape id="stack-four" type="rect" x="40" y="505" width="750" height="76" corner-radius="14" fill="evergreen" stroke="#2F6B58" stroke-width="1"/>
+  <icon id="stack-four-icon" name="monitor-check" x="64" y="526" width="30" height="30" color="gold"/>
+  <text id="stack-four-title" x="118" y="520" width="350" height="22" font="body" size="19" color="paper" wrap="false">Isolated browser behavior</text>
+  <text id="stack-four-detail" x="118" y="546" width="480" height="18" font="caption" size="14" color="#D8E5E0" wrap="false">Drawer open, four preference mutations, mocked save, desktop + mobile</text>
+  <text id="stack-four-result" x="640" y="531" width="115" height="22" font="body" size="20" color="gold" align="right" wrap="false">6 passed</text>
+  <shape id="boundary-card" type="rect" x="830" y="220" width="410" height="361" corner-radius="18" fill="evergreen" stroke="#2F6B58" stroke-width="1"/>
+  <icon id="boundary-icon" name="lock-keyhole" x="862" y="253" width="36" height="36" color="gold"/>
+  <text id="boundary-title" x="920" y="250" width="240" height="24" font="body" size="21" color="paper" wrap="false">Safety boundary</text>
+  <text id="boundary-copy" x="862" y="315" width="325" height="180" font="body" size="17" color="#D8E5E0" line-height="1.35"><p><strong color="paper">No production tenant:</strong> the session uses a disposable user and company plus intercepted auth, REST, and tRPC calls.</p><p><strong color="paper">No schema change:</strong> existing JSON preferences and company/user RLS already satisfy the feature.</p><p><strong color="paper">No invented metrics:</strong> the test confirms controls, not fabricated operational totals.</p></text>
+  <text id="source-note" x="40" y="617" width="1040" height="18" font="caption" size="13" color="muted">Evidence sources: full Vitest suite, `pnpm check`, clean-worker Vite output, schema verifier, and Playwright desktop/mobile captures.</text>
+  <text id="page-number" x="1175" y="662" width="64" height="24" font="caption" size="14" color="muted" align="right" wrap="false">07 / 08</text>
+</slide>

@@ -1,0 +1,51 @@
+---
+title: SMART MANAGER — Integrations, Automation, and Scheduled Execution
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#f5f3ff'
+    primaryBorderColor: '#7c3aed'
+    lineColor: '#64748b'
+---
+flowchart LR
+  APP["SMART MANAGER application"]
+  subgraph INTERNAL["Internal services"]
+    OAUTH["OAuth / session"]
+    STORAGE["Storage proxy"]
+    NOTIFY["Notification service"]
+    HEART["Heartbeat scheduler"]
+    WEBHOOK["Webhook handlers"]
+  end
+  subgraph CHANNELS["Configured channels"]
+    MOBILE["Mobile-money-ready\nprovider + MSISDN + reference"]
+    BANK["Bank providers\nsettlement + reconciliation"]
+    TRA["TRA / tax workflows\nVAT + Z reports"]
+    EMAIL["Email / SMS / push-ready"]
+  end
+  subgraph JOBS["Scheduled jobs"]
+    REPORTS["Dashboard reports"]
+    REMINDERS["Appointment / payment reminders"]
+    CONTROLS["Arrears, PAR, standing orders, daily controls"]
+    MONITORS["Schema, market, tax, and integration monitors"]
+  end
+  APP --> OAUTH
+  APP --> STORAGE
+  APP --> NOTIFY
+  APP --> HEART
+  APP --> WEBHOOK
+  HEART --> REPORTS
+  HEART --> REMINDERS
+  HEART --> CONTROLS
+  HEART --> MONITORS
+  WEBHOOK --> MOBILE
+  WEBHOOK --> BANK
+  WEBHOOK --> TRA
+  NOTIFY --> EMAIL
+  classDef app fill:#eef2ff,stroke:#4338ca,color:#1e1b4b,stroke-width:2px;
+  classDef internal fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
+  classDef channel fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+  classDef job fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
+  class APP app;
+  class OAUTH,STORAGE,NOTIFY,HEART,WEBHOOK internal;
+  class MOBILE,BANK,TRA,EMAIL channel;
+  class REPORTS,REMINDERS,CONTROLS,MONITORS job;

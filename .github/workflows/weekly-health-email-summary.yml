@@ -1,0 +1,51 @@
+name: Weekly schema health email summary
+
+on:
+  schedule:
+    # Monday 05:30 UTC = Monday 08:30 GMT+3.
+    - cron: "30 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  email-summary:
+    name: Send read-only health summary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the reporting revision
+        uses: actions/checkout@v4
+
+      - name: Collect the preceding weekly health runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          since="$(date -u -d '7 days ago' '+%Y-%m-%dT%H:%M:%SZ')"
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/341811502/runs?created=>=${since}&per_page=100" \
+            --paginate > weekly-health-runs.json
+
+      - name: Send weekly email summary
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          HEALTH_RUNS_FILE: weekly-health-runs.json
+          SCHEMA_HEALTH_WEEKLY_EMAIL_TO: ${{ secrets.SCHEMA_HEALTH_WEEKLY_EMAIL_TO }}
+          SCHEMA_HEALTH_SMTP_FROM: ${{ secrets.SCHEMA_HEALTH_SMTP_FROM }}
+          SCHEMA_HEALTH_SMTP_HOST: ${{ secrets.SCHEMA_HEALTH_SMTP_HOST }}
+          SCHEMA_HEALTH_SMTP_PORT: ${{ secrets.SCHEMA_HEALTH_SMTP_PORT }}
+          SCHEMA_HEALTH_SMTP_USERNAME: ${{ secrets.SCHEMA_HEALTH_SMTP_USERNAME }}
+          SCHEMA_HEALTH_SMTP_PASSWORD: ${{ secrets.SCHEMA_HEALTH_SMTP_PASSWORD }}
+        run: python3 scripts/send-weekly-health-summary.py
+
+      - name: Record operating boundary
+        if: always()
+        run: |
+          {
+            echo "## Operating boundary"
+            echo
+            echo "> This summary reads GitHub Actions run metadata and sends a report only. It does not query business records, run migrations or seed scripts, alter Supabase, commit, push, tag, release, or deploy."
+          } >> "$GITHUB_STEP_SUMMARY"

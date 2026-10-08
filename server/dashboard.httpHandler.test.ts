@@ -30,4 +30,15 @@ describe("/api/scheduled/dashboardReport handler", () => {
     expect(response.status).toHaveBeenCalledWith(403);
     expect(response.json).toHaveBeenCalledWith({ error: "cron-only" });
   });
+
+  it("preserves authentication status without leaking scheduler internals", async () => {
+    vi.mocked(sdk.authenticateRequest).mockRejectedValue(Object.assign(new Error("Invalid session cookie"), { statusCode: 403 }));
+    const response = { json: vi.fn(), status: vi.fn() } as any;
+    response.status.mockReturnValue(response);
+
+    await scheduledDashboardReportHandler({ originalUrl: "/api/scheduled/dashboardReport", headers: {} } as any, response);
+
+    expect(response.status).toHaveBeenCalledWith(403);
+    expect(response.json).toHaveBeenCalledWith({ error: "Invalid session cookie" });
+  });
 });

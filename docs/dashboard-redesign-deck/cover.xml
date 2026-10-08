@@ -1,0 +1,13 @@
+<slide id="cover">
+  <background color="brand"/>
+  <shape id="cover-accent-line" type="rect" x="64" y="214" width="150" height="4" fill="accent"/>
+  <shape id="cover-rail" type="rect" x="1035" y="64" width="3" height="592" fill="#C5A05980"/>
+  <shape id="cover-block-one" type="rect" x="1080" y="144" width="112" height="112" fill="#FFFFFF12" stroke="#FFFFFF2A" stroke-width="1"/>
+  <shape id="cover-block-two" type="rect" x="1080" y="300" width="112" height="212" fill="#C5A05922" stroke="#C5A05955" stroke-width="1"/>
+  <shape id="cover-block-three" type="rect" x="1080" y="556" width="112" height="56" fill="#FFFFFF12" stroke="#FFFFFF2A" stroke-width="1"/>
+  <text id="cover-breadcrumb" x="64" y="48" width="520" height="22" font="caption" size="12" color="#D9E6DF" wrap="false">SMART MANAGER  /  PROTECTED WORKSPACE  /  VALIDATION REVIEW</text>
+  <text id="cover-title" x="64" y="258" width="850" height="132" font="display" size="54" color="#FFFFFF" line-height="1.02">Enterprise Dashboard Redesign</text>
+  <text id="cover-subtitle" x="64" y="418" width="720" height="62" font="body" size="22" color="#D9E6DF" line-height="1.35">Architecture, implementation evidence, audit findings, and the remaining safe path to protected-dashboard sign-off.</text>
+  <text id="cover-review-date" x="64" y="606" width="500" height="28" font="caption" size="14" color="#C5A059" wrap="false">EXECUTIVE REVIEW  •  24 AUGUST 2026</text>
+  <text id="cover-page" x="1158" y="657" width="58" height="28" font="caption" size="14" color="#D9E6DF" align="right" wrap="false">01</text>
+</slide>
