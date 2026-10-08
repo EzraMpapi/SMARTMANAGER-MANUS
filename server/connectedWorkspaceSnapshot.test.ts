@@ -19,6 +19,9 @@ describe("connected workspace date snapshot", () => {
     expect(snapshot.expenses.map((row) => row.id)).toEqual(["EXP-1"]);
     expect(snapshot.leads.map((row) => row.id)).toEqual(["LEAD-1"]);
     expect(snapshot.leaveRequests.map((row) => row.id)).toEqual(["LV-1"]);
+    expect(snapshot.revenue).toBe(1200);
+    expect(snapshot.expensesTotal).toBe(250);
+    expect(snapshot.net).toBe(950);
     expect(snapshot.totalRecords).toBe(4);
     expect(snapshot.activity).toHaveLength(4);
   });

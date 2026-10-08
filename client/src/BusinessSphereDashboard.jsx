@@ -7136,6 +7136,16 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Selected date snapshot</p><h2 className="mt-1 text-[16px] font-bold text-slate-900">What happened on {connectedDateLabel}</h2><p className="mt-1 text-[11.5px] text-slate-500">Only server-confirmed workspace rows are included. No sample or forecast activity is shown.</p></div>
             <div className="rounded-xl bg-slate-50 px-3 py-2 text-right"><p className="text-[10px] uppercase tracking-wide text-slate-400">Net movement</p><p className={`font-mono text-[15px] font-black ${connectedSnapshot.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{connectedSnapshot.net >= 0 ? "+" : "−"}{formatMoney(Math.abs(connectedSnapshot.net))}</p></div>
           </div>
+          <div className="mt-4 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-3.5" aria-label="Selected date financial summary">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700">Daily financial summary</p><p className="mt-0.5 text-[11px] text-slate-500">Confirmed totals for {connectedDateLabel}</p></div>
+              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">Selected date only</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-blue-100 bg-white/80 px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">Total revenue</p><p className="mt-1 text-[19px] font-black text-blue-700">{formatMoney(connectedSnapshot.revenue)}</p></div>
+              <div className="rounded-lg border border-amber-100 bg-white/80 px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">Total expenses</p><p className="mt-1 text-[19px] font-black text-amber-700">{formatMoney(connectedSnapshot.expensesTotal)}</p></div>
+            </div>
+          </div>
           <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {[['Revenue', connectedSnapshot.revenue, 'text-blue-600'], ['Expenses', connectedSnapshot.expensesTotal, 'text-amber-600'], ['Invoices', connectedSnapshot.invoices.length, 'text-slate-700'], ['Other records', connectedSnapshot.totalRecords - connectedSnapshot.invoices.length - connectedSnapshot.expenses.length, 'text-violet-600']].map(([label, value, color]) => <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"><p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p><p className={`mt-1 text-[17px] font-black ${color}`}>{label === "Revenue" || label === "Expenses" ? formatMoney(value) : value}</p></div>)}
           </div>

@@ -12,7 +12,11 @@ export function resolveConnectedWorkspaceSnapshot({ date, invoices = [], expense
     const end = String(row?.endDate || start).slice(0, 10);
     return day && start && start <= day && end >= day;
   });
-  const revenue = dayInvoices.reduce((sum, row) => sum + (row?.status === "Paid" ? (row.items || []).reduce((total, item) => total + Number(item?.qty || 0) * Number(item?.price || item?.unitPrice || 0), 0) : Number(row?.amountPaid || 0)), 0);
+  const revenue = dayInvoices.reduce((sum, row) => {
+    const lineTotal = (row.items || []).reduce((total, item) => total + Number(item?.qty || 0) * Number(item?.price || item?.unitPrice || 0), 0);
+    const confirmedPaidAmount = Number(row?.amountPaid || 0);
+    return sum + (row?.status === "Paid" ? (lineTotal || confirmedPaidAmount) : confirmedPaidAmount);
+  }, 0);
   const expensesTotal = dayExpenses.reduce((sum, row) => sum + Number(row?.amount || 0), 0);
   const activity = [
     ...dayInvoices.map((row) => ({ id: `invoice-${row.id}`, module: "Sales", label: row.status === "Paid" ? `Invoice ${row.id} paid` : `Invoice ${row.id} issued`, detail: row.customer || "Confirmed invoice" })),
