@@ -3,6 +3,7 @@
 // paths and signs reads only inside the server boundary.
 
 import { ENV } from "./_core/env";
+import { notifyStoragePermissionAlert } from "./storageAlerts";
 
 function getSupabaseStorageConfig() {
   const supabaseUrl = ENV.supabaseUrl.replace(/\/+$/, "");
@@ -117,6 +118,17 @@ async function ensureBucket(
       providerStatusCode: payload?.statusCode || "unknown",
       responsePreview: message.slice(0, 500),
     });
+    if (permissionFailure) {
+      await notifyStoragePermissionAlert({
+        requestId,
+        bucket: config.bucket,
+        supabaseHost,
+        status: response.status,
+        statusText: response.statusText,
+        providerCode: payload?.error || payload?.code || "unknown",
+        providerStatusCode: payload?.statusCode || "unknown",
+      });
+    }
     throw new Error(
       `Supabase storage bucket setup failed (${response.status})${permissionFailure ? " due to missing or invalid Storage permissions" : ""} (request ${requestId}).`
     );
