@@ -5764,7 +5764,7 @@ function KpiCard({ item }) {
   const neutral = item.trend === "neutral";
   const accent = neutral ? "#64748B" : item.up ? "#16A34A" : "#F59E0B";
   return (
-    <div className="sm-panel kpi-card relative min-h-[154px] bg-white rounded-xl p-5 flex flex-col gap-4 overflow-hidden group">
+    <div className="sm-panel dashboard-kpi-card kpi-card relative min-h-[154px] bg-white rounded-xl p-5 flex flex-col gap-4 overflow-hidden group">
       <div
         className="absolute inset-x-0 top-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ background: `linear-gradient(90deg, ${accent}, ${accent}00)` }}
@@ -7112,9 +7112,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             ];
 
             return (
-              <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-8" aria-label="Workspace overview metrics">
+              <div className="dashboard-kpi-grid grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-8" aria-label="Workspace overview metrics">
                 {cards.map((card) => (
-                  <button key={card.label} type="button" onClick={card.onClick} aria-label={`${card.label}: ${card.context}. ${card.action}.`} className="group min-h-[116px] rounded-xl border border-white/10 bg-black/20 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                  <button key={card.label} type="button" onClick={card.onClick} aria-label={`${card.label}: ${card.context}. ${card.action}.`} className="dashboard-overview-kpi-card group min-h-[116px] rounded-xl border border-white/10 bg-black/20 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-[9.5px] font-bold uppercase tracking-wide text-white/50">{card.label}</p>
                       <ChevronRight size={13} className="mt-0.5 shrink-0 text-white/30 transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" />
@@ -8997,8 +8997,8 @@ function CategoryPicker({ value, onChange }) {
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-[#111827] placeholder-slate-400 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 focus:shadow-sm";
 const operationalFilterBarClass = "sm-mobile-filter-row flex min-w-0 max-w-full items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-[inset_0_1px_1px_rgba(15,23,42,.025)]";
 const operationalSearchInputClass = "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-[13px] text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20";
-const operationalTableShellClass = "sm-responsive-table overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_3px_10px_rgba(15,23,42,.035)]";
-const operationalTableClass = "w-full text-[13px]";
+const operationalTableShellClass = "dashboard-table-shell sm-responsive-table overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_3px_10px_rgba(15,23,42,.035)]";
+const operationalTableClass = "dashboard-table w-full text-[13px]";
 
 // Real Excel/CSV import for Customers and Products — genuinely built to
 // close a specific, verified competitive gap: SokoBook own advertised
@@ -34094,7 +34094,7 @@ function CustomerCommunicationTimeline({ currentUser, crm, company }) {
               <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-400"><span>{entry.recipient || "Internal reference"}</span><span>·</span><span>{entry.status || "saved"}</span></div>
             </article>
           ))}
-          <div ref={loadMoreRef} className="min-h-8 flex items-center justify-center">
+          <div ref={loadMoreRef} className="dashboard-pagination-sentinel min-h-8 flex items-center justify-center" aria-live="polite">
             {loadingEntries && <span className="text-[11px] text-slate-400">Loading more history…</span>}
             {!loadingEntries && timelineError && <button type="button" onClick={() => loadCommunicationPage(nextCursor, entries.length === 0)} className="text-[11px] font-semibold text-red-600 hover:underline">{timelineError} Retry</button>}
             {!loadingEntries && !timelineError && entries.length > 0 && !hasMoreEntries && <span className="text-[10.5px] text-slate-400">You’ve reached the beginning of the customer history.</span>}
