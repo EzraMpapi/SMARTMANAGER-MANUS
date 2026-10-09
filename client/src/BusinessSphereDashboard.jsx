@@ -49355,7 +49355,7 @@ function SmartManager() {
           <div className="dashboard-topbar-main">
            {/* Left — product identity, menu trigger, workspace identity, and current location */}
            <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
-            <div className="dashboard-topbar-brand flex min-w-0 shrink items-center gap-2" aria-label="Smart Manager Enterprise Suite">
+            <div className="dashboard-topbar-brand hidden min-w-0 shrink items-center gap-2 md:flex" aria-label="Smart Manager Enterprise Suite">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-1.5 shadow-[0_5px_14px_rgba(11,93,59,.2)] ring-1 ring-emerald-200/40">
                 <BrandLogo variant="compact" priority className="h-6 w-6" />
               </span>
