@@ -49285,23 +49285,8 @@ function SmartManager() {
         }`}
         style={{ boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
       >
-        {/* Brand row */}
-        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarLabelsVisible ? "" : "min-h-[84px] justify-center px-2 pb-5"}`}>
-          <div className={`flex min-w-0 items-center gap-2.5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${sidebarCollapsed ? "translate-x-0" : "translate-x-0"}`}>
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white p-1.5 shadow-[0_6px_16px_rgba(0,0,0,.25)] ring-1 ring-white/15">
-              <BrandLogo variant="compact" priority className="h-7 w-7" />
-            </span>
-            {sidebarLabelsVisible && (
-              <div className="min-w-0 animate-in fade-in slide-in-from-left-1 duration-200 leading-tight motion-reduce:animate-none">
-                <span className="block truncate text-[15px] font-semibold tracking-tight text-white" style={{ fontFamily: "'Poppins'" }}>
-                  Smart Manager
-                </span>
-                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-cyan-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.16em] text-cyan-300 ring-1 ring-cyan-400/20">
-                  Enterprise Suite
-                </span>
-              </div>
-            )}
-          </div>
+        {/* Navigation controls remain in the rail; brand identity lives in the top header. */}
+        <div className={`dashboard-sidebar-brand relative flex min-h-[56px] items-center justify-end gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-3 py-3 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarLabelsVisible ? "" : "min-h-[84px] px-2 pb-5"}`}>
           <button className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={17} />
           </button>
@@ -49368,8 +49353,17 @@ function SmartManager() {
         {/* Topbar */}
         <header aria-label="Workspace command bar" data-theme-mode={themeMode} data-theme-period={themePeriod} className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-main">
-           {/* Left — menu trigger, workspace identity, and current location */}
+           {/* Left — product identity, menu trigger, workspace identity, and current location */}
            <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="dashboard-topbar-brand flex min-w-0 shrink items-center gap-2" aria-label="Smart Manager Enterprise Suite">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-1.5 shadow-[0_5px_14px_rgba(11,93,59,.2)] ring-1 ring-emerald-200/40">
+                <BrandLogo variant="compact" priority className="h-6 w-6" />
+              </span>
+              <span className="dashboard-topbar-brand-copy min-w-0 leading-tight">
+                <span className="block truncate text-[13px] font-extrabold tracking-[-.02em] text-slate-900" style={{ fontFamily: "'Poppins'" }}>SMART <span className="text-emerald-700">MANAGER</span></span>
+                <span className="dashboard-topbar-enterprise-badge mt-0.5 inline-flex items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[.14em] text-emerald-700 ring-1 ring-emerald-200/80">Enterprise Suite</span>
+              </span>
+            </div>
             <button
               type="button"
                className="dashboard-topbar-menu-control grid shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 lg:hidden"
@@ -49378,9 +49372,6 @@ function SmartManager() {
             >
               <MenuIcon />
             </button>
-             <div className="dashboard-topbar-brand-mark grid shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-2 shadow-[0_5px_14px_rgba(11,93,59,.2)] lg:hidden" aria-hidden="true">
-               <BrandLogo variant="compact" priority className="h-5 w-5" />
-             </div>
             <div ref={workspaceMenuRef} className="relative min-w-0">
               <button
                 type="button"
