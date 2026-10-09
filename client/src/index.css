@@ -2317,11 +2317,6 @@
     padding-block: .25rem;
   }
 
-  .dashboard-topbar-context {
-    visibility: hidden;
-    pointer-events: none;
-  }
-
   .dashboard-topbar-search {
     height: 2.4rem;
     border-color: rgb(226 232 240 / .92) !important;
