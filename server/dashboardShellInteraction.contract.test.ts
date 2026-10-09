@@ -68,8 +68,10 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('NotificationCenter');
     expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
-    expect(dashboard).toContain('dashboard-topbar-search inline-flex min-w-0 w-full');
-    expect(dashboard).toContain('border border-slate-200 bg-slate-50');
+    expect(dashboard).toContain('dashboard-topbar-search');
+    expect(dashboard).toContain('dashboard-topbar-search-collapsed');
+    expect(dashboard).toContain('inline-flex min-w-0');
+    expect(dashboard).toContain('bg-[linear-gradient(135deg,#0B5D3B_0%,#16A34A_55%,#22C55E_100%)]');
     expect(profileCenter).toContain('dashboard-topbar-profile relative z-40 shrink-0');
     expect(dashboardStyles).toContain('.dashboard-topbar-actions');
     expect(dashboardStyles).toContain('overflow: visible;');
@@ -79,7 +81,7 @@ describe("dashboard shell interaction refinement", () => {
     const topbar = dashboard.slice(dashboard.indexOf('aria-label="Workspace command bar"'), dashboard.indexOf('{IS_CONFIGURED && active !== "billing"'));
     expect(topbar).not.toContain('Live workspace');
     expect(topbar).not.toContain('company?.name || "Smart Manager"');
-    expect(topbar).toContain('Search modules, records, and actions');
+    expect(topbar).toContain('Search workspace');
     expect(topbar).not.toContain('>Create<');
     expect(topbar).not.toContain('Customize dashboard layout');
     expect(topbar).not.toContain('WorkspacePresenceBadge');

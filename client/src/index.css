@@ -516,11 +516,101 @@
 .sm-animated-logo-video {
   z-index: 1;
 }
+.sm-loading-screen {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, rgba(22, 163, 74, .18), transparent 23rem), radial-gradient(circle at 15% 100%, rgba(14, 116, 144, .16), transparent 30rem), #061712;
+}
+.sm-loading-screen::before,
+.sm-loading-screen::after {
+  position: absolute;
+  width: 34rem;
+  height: 34rem;
+  border: 1px solid rgba(134, 239, 172, .08);
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+}
+.sm-loading-screen::before { animation: sm-loading-drift 9s ease-in-out infinite; }
+.sm-loading-screen::after { width: 48rem; height: 48rem; opacity: .55; animation: sm-loading-drift 12s ease-in-out -3s infinite reverse; }
+.sm-loading-card {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(15, 47, 35, .92), rgba(7, 26, 20, .94));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+.sm-loading-card::after {
+  position: absolute;
+  top: 0;
+  left: -35%;
+  width: 30%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(167, 243, 208, .9), transparent);
+  content: "";
+  animation: sm-loading-sweep 3.2s ease-in-out infinite;
+}
+.sm-loading-brand { position: relative; display: grid; width: 6.5rem; height: 6.5rem; place-items: center; }
+.sm-loading-brand__halo { position: absolute; inset: .45rem; border-radius: 999px; background: rgba(34, 197, 94, .22); filter: blur(15px); animation: sm-loading-breathe 2.8s ease-in-out infinite; }
+.sm-loading-brand__logo {
+  position: relative;
+  z-index: 2;
+  width: 4.5rem;
+  height: 4.5rem;
+  border: 1px solid rgba(167, 243, 208, .55);
+  border-radius: 24%;
+  box-shadow: 0 0 0 5px rgba(22, 163, 74, .12), 0 12px 30px rgba(0, 0, 0, .28);
+  animation: sm-loading-logo 2.8s cubic-bezier(.45, .05, .55, .95) infinite;
+}
+.sm-loading-brand__orbit { position: absolute; inset: .05rem; border: 1px solid rgba(110, 231, 183, .42); border-radius: 999px; animation: sm-loading-spin 5s linear infinite; }
+.sm-loading-brand__orbit::before { position: absolute; inset: .55rem; border: 1px dashed rgba(52, 211, 153, .2); border-radius: inherit; content: ""; }
+.sm-loading-brand__orbit span { position: absolute; top: -.22rem; left: 50%; width: .42rem; height: .42rem; border: 2px solid #bbf7d0; border-radius: 999px; background: #16a34a; box-shadow: 0 0 12px rgba(74, 222, 128, .9); transform: translateX(-50%); }
+.sm-loading-brand__orbit--two { inset: .38rem; animation-duration: 3.8s; animation-direction: reverse; transform: rotate(52deg); }
+.sm-loading-brand__orbit--two span { top: auto; right: -.22rem; bottom: 14%; left: auto; transform: none; background: #d4a84f; box-shadow: 0 0 12px rgba(212, 168, 79, .8); }
+.sm-loading-progress { position: relative; width: 8.5rem; height: .2rem; overflow: hidden; border-radius: 999px; background: rgba(167, 243, 208, .12); }
+.sm-loading-progress span { display: block; width: 42%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #16a34a, #a7f3d0, #d4a84f); box-shadow: 0 0 12px rgba(74, 222, 128, .65); animation: sm-loading-progress 1.8s ease-in-out infinite; }
+@keyframes sm-loading-spin { to { transform: rotate(360deg); } }
+@keyframes sm-loading-breathe { 0%, 100% { opacity: .55; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.08); } }
+@keyframes sm-loading-logo { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.035); } }
+@keyframes sm-loading-progress { 0% { transform: translateX(-150%); } 100% { transform: translateX(340%); } }
+@keyframes sm-loading-sweep { 0%, 25% { transform: translateX(0); opacity: 0; } 45% { opacity: 1; } 75%, 100% { transform: translateX(470%); opacity: 0; } }
+@keyframes sm-loading-drift { 0%, 100% { transform: translate3d(-4%, 3%, 0) scale(.95); } 50% { transform: translate3d(4%, -3%, 0) scale(1.05); } }
+@media (max-width: 639px) {
+  /* Keep the mobile loading state calm and cheap: the logo's transform and
+     opacity motion carry the brand moment; the large ambient layers do not. */
+  .sm-loading-screen::before,
+  .sm-loading-screen::after,
+  .sm-loading-card::after,
+  .sm-loading-brand__orbit--two {
+    display: none;
+  }
+  .sm-loading-brand__halo { filter: none; box-shadow: 0 0 28px rgba(34, 197, 94, .24); }
+  .sm-loading-brand__logo,
+  .sm-loading-brand__orbit,
+  .sm-loading-brand__halo,
+  .sm-loading-progress span {
+    will-change: transform, opacity;
+  }
+  .sm-loading-brand__orbit { animation-duration: 6.5s; }
+  .sm-loading-brand__logo { animation-duration: 3.4s; }
+  .sm-loading-progress { width: 7rem; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .sm-animated-logo-video {
     display: none;
   }
+
+  .sm-loading-screen::before,
+  .sm-loading-screen::after,
+  .sm-loading-card::after,
+  .sm-loading-brand__halo,
+  .sm-loading-brand__logo,
+  .sm-loading-brand__orbit,
+  .sm-loading-progress span {
+    animation: none;
+  }
+  .sm-loading-progress span { width: 55%; transform: none; }
 
   main > section:has(> div.mb-8.flex.items-center.justify-between)::before,
   main > section:has(> div.mb-8.flex.items-center.justify-between)::after {
