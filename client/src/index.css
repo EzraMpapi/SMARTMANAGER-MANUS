@@ -1465,6 +1465,10 @@
     gap: .375rem;
   }
 
+  .dashboard-topbar-brand-copy {
+    max-width: 8rem;
+  }
+
   .dashboard-topbar-actions {
     flex: 0 0 auto;
     gap: .25rem;
@@ -1526,6 +1530,14 @@
 }
 
 @media (max-width: 380px) {
+  .dashboard-topbar-brand-copy {
+    max-width: 6.5rem;
+  }
+
+  .dashboard-topbar-enterprise-badge {
+    display: none;
+  }
+
   .dashboard-topbar-ai-shortcut {
     display: none;
   }
@@ -1686,6 +1698,15 @@
   flex: 1 1 auto;
   min-width: 0;
   max-width: none !important;
+}
+
+.dashboard-topbar-brand {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.dashboard-topbar-brand-copy {
+  max-width: 12rem;
 }
 
 .dashboard-topbar-context > .relative {
