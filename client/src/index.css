@@ -1147,6 +1147,75 @@
     min-width: 44px;
     touch-action: manipulation;
   }
+
+  /* Sales documents are dense on desktop but should read as cards on a phone.
+     This removes the forced 720px table width that was clipping Customer/Date
+     in narrow screenshots while keeping the normal table at sm and above. */
+  .dashboard-mobile-content .sm-sales-table {
+    min-width: 0 !important;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 .75rem;
+  }
+  .dashboard-mobile-content .sm-sales-table thead {
+    display: none;
+  }
+  .dashboard-mobile-content .sm-sales-table tbody,
+  .dashboard-mobile-content .sm-sales-table tr,
+  .dashboard-mobile-content .sm-sales-table td {
+    display: block;
+    width: 100%;
+  }
+  .dashboard-mobile-content .sm-sales-table tr {
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+    padding: .45rem .85rem;
+  }
+  .dashboard-mobile-content .sm-sales-table tr:hover {
+    background: #fff;
+  }
+  .dashboard-mobile-content .sm-sales-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    min-height: 2.75rem;
+    padding: .55rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .dashboard-mobile-content .sm-sales-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: #94a3b8;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    text-align: left;
+  }
+  .dashboard-mobile-content .sm-sales-table td:not([data-label])::before {
+    display: none;
+  }
+  .dashboard-mobile-content .sm-sales-table td[colspan] {
+    display: block;
+    text-align: center;
+  }
+  .dashboard-mobile-content .sm-sales-table td:last-child {
+    border-bottom: 0;
+  }
+  .dashboard-mobile-content .sm-sales-table td[data-label="Open"] {
+    justify-content: flex-end;
+    min-height: 2.5rem;
+  }
+  .dashboard-mobile-content .sm-sales-table td[data-label="Open"]::before {
+    content: "Open document";
+    margin-right: auto;
+  }
 }
 
 

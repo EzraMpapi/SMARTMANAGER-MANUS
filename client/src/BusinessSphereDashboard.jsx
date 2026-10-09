@@ -11409,7 +11409,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
 
           <div className={operationalTableShellClass}>
         <div className="overflow-x-auto">
-        <table className={`${operationalTableClass} min-w-[720px]`}>
+        <table className={`${operationalTableClass} sm-sales-table min-w-[720px]`}>
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
               {visibleSalesColumns.includes("document") && <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>}
@@ -11435,13 +11435,13 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
                       onClick={() => setSelected({ ...doc, kind: tab })}
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
-                      {visibleSalesColumns.includes("document") && <td className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>}
-                      {visibleSalesColumns.includes("customer") && <td className="px-4 py-3 text-slate-700">{doc.customer}</td>}
-                      {visibleSalesColumns.includes("date") && <td className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>}
-                      {visibleSalesColumns.includes("reference") && <td className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>}
-                      {visibleSalesColumns.includes("status") && <td className="px-4 py-3"><DocStatusPill status={doc.status} /></td>}
-                      {visibleSalesColumns.includes("total") && <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>}
-                      {visibleSalesColumns.includes("detail") && <td className="px-4 py-3 text-right">
+                      {visibleSalesColumns.includes("document") && <td data-label={columnLabel[0]} className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>}
+                      {visibleSalesColumns.includes("customer") && <td data-label="Customer" className="px-4 py-3 text-slate-700">{doc.customer}</td>}
+                      {visibleSalesColumns.includes("date") && <td data-label="Date" className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>}
+                      {visibleSalesColumns.includes("reference") && <td data-label={columnLabel[1]} className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>}
+                      {visibleSalesColumns.includes("status") && <td data-label="Status" className="px-4 py-3"><DocStatusPill status={doc.status} /></td>}
+                      {visibleSalesColumns.includes("total") && <td data-label="Total" className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>}
+                      {visibleSalesColumns.includes("detail") && <td data-label="Open" className="px-4 py-3 text-right">
                         <ChevronRight size={15} className="text-slate-300 inline" />
                       </td>}
                     </tr>
