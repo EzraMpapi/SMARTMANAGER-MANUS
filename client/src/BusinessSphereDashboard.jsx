@@ -49371,7 +49371,7 @@ function SmartManager() {
                 onClick={() => setWorkspaceMenuOpen((open) => !open)}
                 aria-expanded={workspaceMenuOpen}
                 aria-haspopup="menu"
-                aria-label={`Open workspace details for ${company?.name || "BusinessSphere"}`}
+                aria-label="Open workspace details"
                 title={`${workspaceMenuOpen ? "Close" : "Open"} workspace switcher`}
                  className={`dashboard-topbar-workspace group flex min-w-0 items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-[12px] shadow-[0_4px_14px_rgba(15,23,42,.06)] transition-all duration-150 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 sm:gap-2.5 sm:px-2.5 sm:text-[13px] ${workspaceMenuOpen ? "border-emerald-200 bg-emerald-50/80 text-emerald-900" : "border-slate-200/80 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-emerald-900"}`}
               >
@@ -49379,7 +49379,7 @@ function SmartManager() {
                   <Building2 size={15} strokeWidth={2.1} aria-hidden="true" />
                 </span>
                  <span className="dashboard-topbar-workspace-copy min-w-0">
-                   <span className="block max-w-[220px] truncate font-semibold tracking-[-.01em] text-slate-800">{company?.name || "BusinessSphere"}</span>
+                   <span className="block max-w-[220px] truncate font-semibold tracking-[-.01em] text-slate-800">Workspace</span>
                    <span className="mt-0.5 block truncate text-[9px] font-semibold uppercase tracking-[.12em] text-slate-400">{currentUser?.role || "Administrator"}</span>
                  </span>
                  <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform duration-200 ${workspaceMenuOpen ? "rotate-180 text-emerald-700" : "group-hover:text-emerald-700"}`} aria-hidden="true" />
