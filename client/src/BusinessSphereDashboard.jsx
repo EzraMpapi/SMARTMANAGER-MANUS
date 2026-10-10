@@ -3170,7 +3170,7 @@ function PostCreateDispatch({ company, crm }) {
   ];
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 transition-all duration-280 ${closing ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}
+    <div className={`sm-mobile-invoice-dispatch fixed bottom-6 right-6 z-50 transition-all duration-280 ${closing ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}
       style={{animation: closing ? undefined : "slideUp .28s cubic-bezier(.22,1,.36,1)"}}>
       <div className="w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden">
 
@@ -3557,7 +3557,7 @@ function Toasts() {
   if (!toasts.length) return null;
 
   return (
-    <div className="fixed bottom-24 sm:bottom-6 right-4 z-[60] flex flex-col gap-2.5 w-[calc(100vw-2rem)] sm:w-[360px] pointer-events-none">
+    <div className="sm-mobile-toast-stack fixed bottom-24 sm:bottom-6 right-4 z-[60] flex flex-col gap-2.5 w-[calc(100vw-2rem)] sm:w-[360px] pointer-events-none">
       {toasts.map((t) => {
         const s = TOAST_STYLE[t.type] || TOAST_STYLE.info;
         const Icon = s.Icon;

@@ -1628,6 +1628,24 @@
   }
 }
 
+/* Transient panels must clear both the fixed mobile navigation and the AI
+   shortcut. The invoice dispatch was previously 340px wide and bottom:24px,
+   which could overflow a 320px phone and sit directly over the nav. */
+@media (max-width: 639px) {
+  .sm-mobile-invoice-dispatch {
+    right: .75rem;
+    bottom: calc(9rem + env(safe-area-inset-bottom));
+    width: calc(100vw - 1.5rem);
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .sm-mobile-toast-stack {
+    right: .75rem;
+    bottom: calc(9rem + env(safe-area-inset-bottom));
+    width: calc(100vw - 1.5rem);
+  }
+}
+
 @media (max-width: 380px) {
   .dashboard-topbar-brand-copy {
     max-width: 6.5rem;
