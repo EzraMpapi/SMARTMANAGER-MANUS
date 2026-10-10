@@ -2317,6 +2317,11 @@
     padding-block: .25rem;
   }
 
+  .dashboard-topbar-context {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
   .dashboard-topbar-search {
     height: 2.4rem;
     border-color: rgb(226 232 240 / .92) !important;
@@ -3192,6 +3197,27 @@
     min-height: 2.75rem;
   }
 }
+
+/* Keep the account control above compact mobile command-bar layers. */
+@media (max-width: 767px) {
+  .dashboard-topbar-profile-slot,
+  .dashboard-topbar-profile-slot > .dashboard-topbar-profile {
+    position: relative;
+    z-index: 70;
+    pointer-events: auto;
+  }
+
+  .dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger {
+    position: relative;
+    z-index: 71;
+    display: grid;
+    pointer-events: auto;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+  }
+}
+
 /* Tablet command bars have several persistent actions competing for the right
    grid column. Keep the native select as the full accessible touch target, but
    present only the two-letter code so long labels never push notifications or

@@ -69,4 +69,11 @@ describe("authenticated profile-menu click behavior", () => {
     expect(dashboardStyles).toContain(".dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger");
     expect(dashboardStyles).toContain("border-radius: 0;");
   });
+
+  it("keeps the profile trigger clickable on small screens", () => {
+    expect(dashboardStyles).toContain(".dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger");
+    expect(dashboardStyles).toContain("pointer-events: auto;");
+    expect(dashboardStyles).toContain("touch-action: manipulation;");
+    expect(dashboardStyles).toContain("z-index: 71;");
+  });
 });
