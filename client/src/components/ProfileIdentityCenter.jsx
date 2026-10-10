@@ -197,6 +197,9 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
   const profile = profileCenter.query.data?.profile;
   const displayName = String(profile?.preferredName || profile?.fullName || currentUser?.name || "Workspace user");
   const role = String(profile?.role || currentUser?.role || "Workspace member");
+  const avatarFileRef = useRef(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarNotice, setAvatarNotice] = useState(null);
   const pendingApprovals = (roleChangeApprovalsQuery?.data?.approvals || []).filter((row) => row.status === "Pending Review").length;
 
   useEffect(() => {
@@ -226,6 +229,48 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
     setOpen(false);
     onNavigate?.(id, options);
   };
+  async function uploadAvatarFile(file) {
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { setAvatarNotice({ type: "error", text: "Choose a PNG, JPEG, or WebP image." }); return; }
+    if (file.size > 2 * 1024 * 1024) { setAvatarNotice({ type: "error", text: "Your profile photo must be under 2 MB." }); return; }
+    setAvatarBusy(true); setAvatarNotice(null);
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("The selected file could not be read."));
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = () => reject(new Error("The selected image could not be decoded."));
+          image.onload = () => {
+            const side = Math.min(image.naturalWidth, image.naturalHeight);
+            const canvas = document.createElement("canvas"); canvas.width = 512; canvas.height = 512;
+            const context = canvas.getContext("2d");
+            if (!context) { reject(new Error("Your browser could not prepare this image.")); return; }
+            context.drawImage(image, (image.naturalWidth - side) / 2, (image.naturalHeight - side) / 2, side, side, 0, 0, 512, 512);
+            resolve(canvas.toDataURL("image/jpeg", 0.9));
+          };
+          image.src = String(reader.result);
+        };
+        reader.readAsDataURL(file);
+      });
+      await profileCenter.upload.mutateAsync({ mimeType: "image/jpeg", base64: String(dataUrl).split(",")[1] });
+      setAvatarNotice({ type: "success", text: "Profile photo updated." });
+    } catch (error) {
+      setAvatarNotice({ type: "error", text: error?.message || "The profile photo could not be uploaded." });
+    } finally { setAvatarBusy(false); }
+  }
+  function onAvatarFileChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    void uploadAvatarFile(file);
+  }
+  async function removeAvatar() {
+    if (!profile?.avatarUrl) return;
+    setAvatarBusy(true); setAvatarNotice(null);
+    try { await profileCenter.remove.mutateAsync(); setAvatarNotice({ type: "success", text: "Profile photo removed." }); }
+    catch (error) { setAvatarNotice({ type: "error", text: error?.message || "The profile photo could not be removed." }); }
+    finally { setAvatarBusy(false); }
+  }
   const actions = [
     { label: "View My Profile", detail: "Identity and work settings", icon: UserRound, onClick: () => go("profile") },
     { label: "Security & access", detail: "Session and recovery controls", icon: ShieldCheck, onClick: () => go("profile", { profileTab: "security" }) },
@@ -242,9 +287,11 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
         <span className={topbar ? "hidden min-w-0 max-w-32 text-left sm:block" : "min-w-0 flex-1"}><span className={`block truncate text-[11.5px] font-bold ${topbar ? "text-slate-800" : "text-white"}`}>{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span>
         <ChevronRight size={14} className={`shrink-0 text-slate-400 transition ${open ? "-rotate-90 text-emerald-600" : ""}`} aria-hidden="true" />
       </button>
+      {topbar && <><input ref={avatarFileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onAvatarFileChange} /><button type="button" aria-label="Upload profile photo" title="Upload profile photo" disabled={avatarBusy || !profileCenter.enabled} onClick={(event) => { event.stopPropagation(); avatarFileRef.current?.click(); }} className="absolute bottom-0 left-6 z-50 grid h-4 w-4 place-items-center rounded-full border border-white bg-emerald-600 text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60"><ImagePlus size={9} /></button></>}
       {open && (
         <section ref={menuRef} id="workspace-profile-menu" role="dialog" aria-label="Account identity center" className={`dashboard-profile-menu ${topbar ? "dashboard-topbar-profile-menu absolute right-0 top-full mt-2 sm:mt-3" : "bottom-full left-0 mb-2"} z-50 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_24px_60px_rgba(15,23,42,.18)]`}>
-          <div className="flex items-center gap-2.5 border-b border-slate-100 px-2.5 pb-3 pt-2"><Avatar profile={profile} name={displayName} size="md" /><div className="min-w-0 flex-1"><p className="truncate text-[12.5px] font-bold text-slate-900">{displayName}</p><p className="mt-0.5 truncate text-[10px] text-slate-500">{role} · {company?.name || "Current workspace"}</p></div><StatusPill active={profile?.isActive !== false} /></div>
+          <div className="flex items-center gap-2.5 border-b border-slate-100 px-2.5 pb-3 pt-2"><Avatar profile={profile} name={displayName} size="md" /><div className="min-w-0 flex-1"><p className="truncate text-[12.5px] font-bold text-slate-900">{displayName}</p><p className="mt-0.5 truncate text-[10px] text-slate-500">{role} · {company?.name || "Current workspace"}</p><div className="mt-2 flex flex-wrap gap-1.5"><button type="button" onClick={() => avatarFileRef.current?.click()} disabled={avatarBusy || !profileCenter.enabled} className="inline-flex min-h-7 items-center gap-1 rounded-lg bg-emerald-50 px-2 text-[9.5px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"><ImagePlus size={11} />{avatarBusy ? "Uploading…" : "Change photo"}</button>{profile?.avatarUrl && <button type="button" onClick={removeAvatar} disabled={avatarBusy} className="inline-flex min-h-7 items-center gap-1 rounded-lg bg-slate-50 px-2 text-[9.5px] font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-50"><Trash2 size={11} />Remove</button>}</div></div><StatusPill active={profile?.isActive !== false} /></div>
+          {avatarNotice && <p className={`mx-2 mt-2 rounded-lg px-2.5 py-2 text-[10px] ${avatarNotice.type === "error" ? "bg-rose-50 text-rose-700" : avatarNotice.type === "success" ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-600"}`}>{avatarNotice.text}</p>}
           <div className="mt-1 max-h-[min(58vh,360px)] overscroll-contain overflow-y-auto p-1">
             {actions.map((action) => {
               const Icon = action.icon;
