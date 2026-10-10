@@ -8,31 +8,29 @@ import { trpc } from "./lib/trpc";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient } from "./lib/supabaseAuthClient";
 import { readStoredAccessToken } from "./lib/authSessionStorage";
 import { loadPublicSupabaseConfig } from "./lib/publicSupabaseConfig";
+import { reloadIfGithubUpdated, startGithubUpdateMonitor } from "./lib/githubUpdateReload";
 import "./index.css";
 
-// Recover from stale chunks after a new deployment: reload once to fetch fresh assets.
-const CHUNK_RELOAD_KEY = "sm:chunk-reload-at";
-function reloadForStaleChunk() {
-  try {
-    const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
-    if (Date.now() - last < 10_000) return false;
-    sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
-  } catch {}
-  window.location.reload();
-  return true;
-}
+// A stale chunk is recoverable only when the server reports a new GitHub
+// revision. Incidental browser or network errors never trigger a reload.
 window.addEventListener("vite:preloadError", (event) => {
-  if (reloadForStaleChunk()) event.preventDefault();
+  event.preventDefault();
+  void reloadIfGithubUpdated();
 });
 window.addEventListener("unhandledrejection", (event) => {
   const msg = String((event.reason as Error)?.message ?? event.reason ?? "");
   if (/dynamically imported module|Importing a module script failed|Failed to fetch dynamically/i.test(msg)) {
-    if (reloadForStaleChunk()) event.preventDefault();
+    event.preventDefault();
+    void reloadIfGithubUpdated();
   }
 });
 
 const queryClient = new QueryClient();
 const publicConfigPromise = loadPublicSupabaseConfig();
+
+if (import.meta.env.MODE === "production") {
+  startGithubUpdateMonitor();
+}
 
 function hasStoredSupabaseSession() {
   try {

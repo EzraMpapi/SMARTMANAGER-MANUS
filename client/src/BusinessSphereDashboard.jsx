@@ -107,6 +107,7 @@ const EnterpriseDashboardOverview = lazy(() => import("./components/EnterpriseDa
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
 import { applyOfflineMutationToCache, discardOfflineMutation, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, resolveOfflineConflict, retryOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
+import { reloadIfGithubUpdated } from "./lib/githubUpdateReload";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -139,23 +140,15 @@ async function clearStaleShellCaches() {
   }
 }
 
-function lazyWorkspaceWithRecovery(load, key) {
+function lazyWorkspaceWithRecovery(load, _key) {
   return lazy(async () => {
-    const retryKey = `smart-manager-workspace-lazy-retry:${key}`;
     try {
       const module = await load();
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       return module;
     } catch (error) {
-      let alreadyRetried = false;
-      try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
-      if (!alreadyRetried && typeof window !== "undefined") {
-        try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
-        await clearStaleShellCaches();
-        window.location.reload();
+      if (typeof window !== "undefined" && await reloadIfGithubUpdated({ beforeReload: clearStaleShellCaches })) {
         return new Promise(() => {});
       }
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       throw error;
     }
   });
@@ -49731,20 +49724,11 @@ class ErrorBoundary extends React.Component {
     // safety net itself. console.error is the one logging mechanism with
     // no dependency on anything else in this app being in a working state.
     console.error("Smart Manager crashed:", error, info?.componentStack);
-    // A new deployment replaced the page files this tab was using —
-    // reload once to pick up the fresh version instead of showing an error.
+    // A new GitHub deployment may have replaced the page files this tab was
+    // using. Reload only after the server confirms that revision changed.
     const message = String(error?.message ?? "");
     if (typeof window !== "undefined" && /dynamically imported module|Importing a module script failed|Failed to fetch dynamically|ChunkLoadError/i.test(message)) {
-      try {
-        const key = "sm:chunk-reload-at";
-        const last = Number(window.sessionStorage.getItem(key) || 0);
-        if (Date.now() - last > 10000) {
-          window.sessionStorage.setItem(key, String(Date.now()));
-          window.location.reload();
-        }
-      } catch {
-        window.location.reload();
-      }
+      void reloadIfGithubUpdated({ beforeReload: clearStaleShellCaches });
     }
   }
 

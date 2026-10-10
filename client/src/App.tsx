@@ -10,26 +10,23 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { DashboardPreferencesProvider } from "./contexts/DashboardPreferencesContext";
 import { AuthProvider, useAuthContext } from "./contexts/AuthContext";
 import { AUTH_STATES } from "./lib/authStateMachine";
+import { reloadIfGithubUpdated } from "./lib/githubUpdateReload";
 import Home from "./pages/Home";
 
 type LazyModule = { default: ComponentType<any> };
 
-function lazyWithRecovery(load: () => Promise<LazyModule>, key: string) {
+function lazyWithRecovery(load: () => Promise<LazyModule>, _key: string) {
   return lazy(async () => {
-    const retryKey = `smart-manager-lazy-retry:${key}`;
     try {
       const module = await load();
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       return module;
     } catch (error) {
-      let alreadyRetried = false;
-      try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
-      if (!alreadyRetried && typeof window !== "undefined") {
-        try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
-        window.location.reload();
+      // A failed dynamic import can be caused by a transient network issue.
+      // Only recover with a full reload when the server confirms a new GitHub
+      // revision is deployed; otherwise surface the existing error boundary.
+      if (typeof window !== "undefined" && await reloadIfGithubUpdated()) {
         return new Promise(() => {});
       }
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       throw error;
     }
   });
