@@ -154,8 +154,8 @@ function LegacyProfileMenu({ currentUser, session, company, onSignOut, onNavigat
   const profileCenter = useProfileIdentity(session, onProfileUpdated);
   const profile = profileCenter.query.data?.profile;
   useEffect(() => { if (profileCenter.query.data) onProfileUpdatedRef.current?.(profileCenter.query.data); }, [profileCenter.query.data?.profile?.updatedAt]);
-  const displayName = profile?.preferredName || profile?.fullName || currentUser?.name || "Workspace user";
-  const role = profile?.role || currentUser?.role || "Workspace member";
+  const displayName = String(profile?.preferredName || profile?.fullName || currentUser?.name || "Workspace user");
+  const role = String(profile?.role || currentUser?.role || "Workspace member");
   const pendingApprovals = (roleChangeApprovalsQuery?.data?.approvals || []).filter((row) => row.status === "Pending Review").length;
   const go = (id, options = {}) => { setOpen(false); onNavigate?.(id, options); };
   const active = profile?.isActive !== false;
@@ -195,8 +195,8 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
   onProfileUpdatedRef.current = onProfileUpdated;
   const profileCenter = useProfileIdentity(session, onProfileUpdated);
   const profile = profileCenter.query.data?.profile;
-  const displayName = profile?.preferredName || profile?.fullName || currentUser?.name || "Workspace user";
-  const role = profile?.role || currentUser?.role || "Workspace member";
+  const displayName = String(profile?.preferredName || profile?.fullName || currentUser?.name || "Workspace user");
+  const role = String(profile?.role || currentUser?.role || "Workspace member");
   const pendingApprovals = (roleChangeApprovalsQuery?.data?.approvals || []).filter((row) => row.status === "Pending Review").length;
 
   useEffect(() => {
@@ -237,9 +237,10 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
 
   return (
       <div className={topbar ? "dashboard-topbar-profile relative z-40 shrink-0" : "relative w-full"}>
-      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className={topbar ? "dashboard-topbar-profile-trigger group relative z-40 grid h-11 w-11 min-h-11 min-w-11 cursor-pointer place-items-center rounded-none border text-left transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" : "group flex w-full min-h-11 items-center gap-2.5 rounded-xl border-0 bg-transparent px-1.5 py-1.5 text-left shadow-none transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"} aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center" title={displayName}>
+      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className={topbar ? "dashboard-topbar-profile-trigger group relative z-40 flex h-11 min-h-11 min-w-11 w-auto cursor-pointer items-center gap-2 rounded-none border px-1.5 text-left transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" : "group flex w-full min-h-11 items-center gap-2.5 rounded-xl border-0 bg-transparent px-1.5 py-1.5 text-left shadow-none transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"} aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center" title={`${displayName} · ${role}`}>
         <Avatar profile={profile} name={displayName} size={topbar ? "topbar" : "md"} />
-        {!topbar && <><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-white">{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span><ChevronRight size={14} className={`shrink-0 text-slate-400 transition ${open ? "-rotate-90 text-cyan-300" : ""}`} aria-hidden="true" /></>}
+        <span className={topbar ? "hidden min-w-0 max-w-32 text-left sm:block" : "min-w-0 flex-1"}><span className={`block truncate text-[11.5px] font-bold ${topbar ? "text-slate-800" : "text-white"}`}>{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span>
+        <ChevronRight size={14} className={`shrink-0 text-slate-400 transition ${open ? "-rotate-90 text-emerald-600" : ""}`} aria-hidden="true" />
       </button>
       {open && (
         <section ref={menuRef} id="workspace-profile-menu" role="dialog" aria-label="Account identity center" className={`dashboard-profile-menu ${topbar ? "dashboard-topbar-profile-menu absolute right-0 top-full mt-2 sm:mt-3" : "bottom-full left-0 mb-2"} z-50 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_24px_60px_rgba(15,23,42,.18)]`}>
