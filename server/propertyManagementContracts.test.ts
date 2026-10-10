@@ -110,7 +110,7 @@ describe("Property Management contracts", () => {
     expect(workspace).toContain("Property Management access is restricted.");
     expect(workspace).not.toContain("Apply the controlled migration");
     expect(dashboard).toContain("lazyWorkspaceWithRecovery");
-    expect(dashboard).toContain("smart-manager-workspace-lazy-retry:${key}");
+    expect(dashboard).toContain("beforeReload: clearStaleShellCaches");
     expect(dashboard).toContain('"property-management"');
   });
 

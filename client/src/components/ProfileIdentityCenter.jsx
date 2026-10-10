@@ -154,8 +154,8 @@ function LegacyProfileMenu({ currentUser, session, company, onSignOut, onNavigat
   const profileCenter = useProfileIdentity(session, onProfileUpdated);
   const profile = profileCenter.query.data?.profile;
   useEffect(() => { if (profileCenter.query.data) onProfileUpdatedRef.current?.(profileCenter.query.data); }, [profileCenter.query.data?.profile?.updatedAt]);
-  const displayName = profile?.preferredName || profile?.fullName || currentUser?.name || "Workspace user";
-  const role = profile?.role || currentUser?.role || "Workspace member";
+  const displayName = String(profile?.preferredName || profile?.fullName || currentUser?.name || "Workspace user");
+  const role = String(profile?.role || currentUser?.role || "Workspace member");
   const pendingApprovals = (roleChangeApprovalsQuery?.data?.approvals || []).filter((row) => row.status === "Pending Review").length;
   const go = (id, options = {}) => { setOpen(false); onNavigate?.(id, options); };
   const active = profile?.isActive !== false;
@@ -195,8 +195,15 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
   onProfileUpdatedRef.current = onProfileUpdated;
   const profileCenter = useProfileIdentity(session, onProfileUpdated);
   const profile = profileCenter.query.data?.profile;
-  const displayName = profile?.preferredName || profile?.fullName || currentUser?.name || "Workspace user";
-  const role = profile?.role || currentUser?.role || "Workspace member";
+  const displayName = String(profile?.preferredName || profile?.fullName || currentUser?.name || "Workspace user");
+  const role = String(profile?.role || currentUser?.role || "Workspace member");
+  const avatarFileRef = useRef(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarNotice, setAvatarNotice] = useState(null);
+  const [cropSource, setCropSource] = useState(null);
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropPosition, setCropPosition] = useState({ x: 50, y: 50 });
+  const cropDragRef = useRef(null);
   const pendingApprovals = (roleChangeApprovalsQuery?.data?.approvals || []).filter((row) => row.status === "Pending Review").length;
 
   useEffect(() => {
@@ -226,6 +233,72 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
     setOpen(false);
     onNavigate?.(id, options);
   };
+  async function prepareAvatarFile(file) {
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { setAvatarNotice({ type: "error", text: "Choose a PNG, JPEG, or WebP image." }); return; }
+    if (file.size > 2 * 1024 * 1024) { setAvatarNotice({ type: "error", text: "Your profile photo must be under 2 MB." }); return; }
+    setAvatarNotice(null);
+    try {
+      const source = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("The selected file could not be read."));
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = () => reject(new Error("The selected image could not be decoded."));
+          image.onload = () => resolve({ src: String(reader.result), width: image.naturalWidth, height: image.naturalHeight });
+          image.src = String(reader.result);
+        };
+        reader.readAsDataURL(file);
+      });
+      setCropSource(source); setCropZoom(1); setCropPosition({ x: 50, y: 50 }); setOpen(false);
+    } catch (error) { setAvatarNotice({ type: "error", text: error?.message || "The selected image could not be prepared." }); }
+  }
+  function onAvatarFileChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    void prepareAvatarFile(file);
+  }
+  function handleCropPointerDown(event) {
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    cropDragRef.current = { clientX: event.clientX, clientY: event.clientY, x: cropPosition.x, y: cropPosition.y };
+  }
+  function handleCropPointerMove(event) {
+    const start = cropDragRef.current;
+    if (!start) return;
+    setCropPosition({ x: Math.max(0, Math.min(100, start.x - (event.clientX - start.clientX) / 2.4)), y: Math.max(0, Math.min(100, start.y - (event.clientY - start.clientY) / 2.4)) });
+  }
+  function handleCropPointerUp() { cropDragRef.current = null; }
+  async function confirmCrop() {
+    if (!cropSource || avatarBusy) return;
+    setAvatarBusy(true); setAvatarNotice(null);
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onerror = () => reject(new Error("The crop preview could not be decoded."));
+        image.onload = () => {
+          const sourceSide = Math.min(cropSource.width, cropSource.height) / cropZoom;
+          const sourceX = Math.max(0, Math.min(cropSource.width - sourceSide, (cropPosition.x / 100) * (cropSource.width - sourceSide)));
+          const sourceY = Math.max(0, Math.min(cropSource.height - sourceSide, (cropPosition.y / 100) * (cropSource.height - sourceSide)));
+          const canvas = document.createElement("canvas"); canvas.width = 512; canvas.height = 512;
+          const context = canvas.getContext("2d");
+          if (!context) { reject(new Error("Your browser could not prepare this image.")); return; }
+          context.drawImage(image, sourceX, sourceY, sourceSide, sourceSide, 0, 0, 512, 512);
+          resolve(canvas.toDataURL("image/jpeg", 0.9));
+        };
+        image.src = cropSource.src;
+      });
+      await profileCenter.upload.mutateAsync({ mimeType: "image/jpeg", base64: String(dataUrl).split(",")[1] });
+      setCropSource(null); setAvatarNotice({ type: "success", text: "Profile photo updated." });
+    } catch (error) { setAvatarNotice({ type: "error", text: error?.message || "The profile photo could not be uploaded." }); }
+    finally { setAvatarBusy(false); }
+  }
+  async function removeAvatar() {
+    if (!profile?.avatarUrl) return;
+    setAvatarBusy(true); setAvatarNotice(null);
+    try { await profileCenter.remove.mutateAsync(); setAvatarNotice({ type: "success", text: "Profile photo removed." }); }
+    catch (error) { setAvatarNotice({ type: "error", text: error?.message || "The profile photo could not be removed." }); }
+    finally { setAvatarBusy(false); }
+  }
   const actions = [
     { label: "View My Profile", detail: "Identity and work settings", icon: UserRound, onClick: () => go("profile") },
     { label: "Security & access", detail: "Session and recovery controls", icon: ShieldCheck, onClick: () => go("profile", { profileTab: "security" }) },
@@ -237,13 +310,17 @@ function ProfileMenu({ currentUser, session, company, onSignOut, onNavigate, onO
 
   return (
       <div className={topbar ? "dashboard-topbar-profile relative z-40 shrink-0" : "relative w-full"}>
-      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className={topbar ? "dashboard-topbar-profile-trigger group relative z-40 grid h-11 w-11 min-h-11 min-w-11 cursor-pointer place-items-center rounded-none border text-left transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" : "group flex w-full min-h-11 items-center gap-2.5 rounded-xl border-0 bg-transparent px-1.5 py-1.5 text-left shadow-none transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"} aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center" title={displayName}>
+      {cropSource && <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Crop profile photo"><div className="w-full max-w-sm rounded-3xl bg-white p-4 shadow-2xl sm:p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-[13px] font-bold text-slate-900">Adjust profile photo</p><p className="mt-1 text-[10.5px] text-slate-500">Drag the image and use zoom to choose the best square crop.</p></div><button type="button" onClick={() => setCropSource(null)} disabled={avatarBusy} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50" aria-label="Cancel crop"><X size={16} /></button></div><div className="relative mx-auto mt-4 h-64 w-64 touch-none select-none overflow-hidden rounded-2xl bg-slate-100 ring-4 ring-emerald-50 sm:h-72 sm:w-72" onPointerDown={handleCropPointerDown} onPointerMove={handleCropPointerMove} onPointerUp={handleCropPointerUp} onPointerCancel={handleCropPointerUp} onPointerLeave={handleCropPointerUp}><img src={cropSource.src} alt="Profile crop preview" draggable="false" className="pointer-events-none h-full w-full object-cover" style={{ objectPosition: `${cropPosition.x}% ${cropPosition.y}%`, transform: `scale(${cropZoom})`, transformOrigin: "center" }} /><div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-white/90 shadow-[inset_0_0_0_999px_rgba(15,23,42,.08)]" /></div><label className="mt-4 block text-[10.5px] font-bold text-slate-600">Zoom <input type="range" min="1" max="3" step="0.05" value={cropZoom} onChange={(event) => setCropZoom(Number(event.target.value))} className="mt-2 w-full accent-emerald-600" /></label><div className="mt-4 flex gap-2"><button type="button" onClick={() => setCropSource(null)} disabled={avatarBusy} className="min-h-10 flex-1 rounded-xl border border-slate-200 px-3 text-[11px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50">Cancel</button><button type="button" onClick={confirmCrop} disabled={avatarBusy} className="min-h-10 flex-1 rounded-xl bg-emerald-600 px-3 text-[11px] font-bold text-white hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60">{avatarBusy ? "Uploading…" : "Use this photo"}</button></div></div></div>}
+      <button ref={triggerRef} type="button" onClick={() => setOpen((value) => !value)} className={topbar ? "dashboard-topbar-profile-trigger group relative z-40 flex h-11 min-h-11 min-w-11 w-auto cursor-pointer items-center gap-2 rounded-none border px-1.5 text-left transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" : "group flex w-full min-h-11 items-center gap-2.5 rounded-xl border-0 bg-transparent px-1.5 py-1.5 text-left shadow-none transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"} aria-expanded={open} aria-haspopup="menu" aria-controls="workspace-profile-menu" aria-label="Open account identity center" title={`${displayName} · ${role}`}>
         <Avatar profile={profile} name={displayName} size={topbar ? "topbar" : "md"} />
-        {!topbar && <><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-bold text-white">{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span><ChevronRight size={14} className={`shrink-0 text-slate-400 transition ${open ? "-rotate-90 text-cyan-300" : ""}`} aria-hidden="true" /></>}
+        <span className={topbar ? "hidden min-w-0 max-w-32 text-left sm:block" : "min-w-0 flex-1"}><span className={`block truncate text-[11.5px] font-bold ${topbar ? "text-slate-800" : "text-white"}`}>{displayName}</span><span className="block truncate text-[10px] text-slate-400">{role}</span></span>
+        <ChevronRight size={14} className={`shrink-0 text-slate-400 transition ${open ? "-rotate-90 text-emerald-600" : ""}`} aria-hidden="true" />
       </button>
+      {topbar && <><input ref={avatarFileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onAvatarFileChange} /><button type="button" aria-label="Upload profile photo" title="Upload profile photo" disabled={avatarBusy || !profileCenter.enabled} onClick={(event) => { event.stopPropagation(); avatarFileRef.current?.click(); }} className="absolute bottom-0 left-6 z-50 grid h-4 w-4 place-items-center rounded-full border border-white bg-emerald-600 text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60"><ImagePlus size={9} /></button></>}
       {open && (
         <section ref={menuRef} id="workspace-profile-menu" role="dialog" aria-label="Account identity center" className={`dashboard-profile-menu ${topbar ? "dashboard-topbar-profile-menu absolute right-0 top-full mt-2 sm:mt-3" : "bottom-full left-0 mb-2"} z-50 max-h-[calc(100dvh-5.5rem)] w-[min(92vw,360px)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_24px_60px_rgba(15,23,42,.18)]`}>
-          <div className="flex items-center gap-2.5 border-b border-slate-100 px-2.5 pb-3 pt-2"><Avatar profile={profile} name={displayName} size="md" /><div className="min-w-0 flex-1"><p className="truncate text-[12.5px] font-bold text-slate-900">{displayName}</p><p className="mt-0.5 truncate text-[10px] text-slate-500">{role} · {company?.name || "Current workspace"}</p></div><StatusPill active={profile?.isActive !== false} /></div>
+          <div className="flex items-center gap-2.5 border-b border-slate-100 px-2.5 pb-3 pt-2"><Avatar profile={profile} name={displayName} size="md" /><div className="min-w-0 flex-1"><p className="truncate text-[12.5px] font-bold text-slate-900">{displayName}</p><p className="mt-0.5 truncate text-[10px] text-slate-500">{role} · {company?.name || "Current workspace"}</p><div className="mt-2 flex flex-wrap gap-1.5"><button type="button" onClick={() => avatarFileRef.current?.click()} disabled={avatarBusy || !profileCenter.enabled} className="inline-flex min-h-7 items-center gap-1 rounded-lg bg-emerald-50 px-2 text-[9.5px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"><ImagePlus size={11} />{avatarBusy ? "Uploading…" : "Change photo"}</button>{profile?.avatarUrl && <button type="button" onClick={removeAvatar} disabled={avatarBusy} className="inline-flex min-h-7 items-center gap-1 rounded-lg bg-slate-50 px-2 text-[9.5px] font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-50"><Trash2 size={11} />Remove</button>}</div></div><StatusPill active={profile?.isActive !== false} /></div>
+          {avatarNotice && <p className={`mx-2 mt-2 rounded-lg px-2.5 py-2 text-[10px] ${avatarNotice.type === "error" ? "bg-rose-50 text-rose-700" : avatarNotice.type === "success" ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-600"}`}>{avatarNotice.text}</p>}
           <div className="mt-1 max-h-[min(58vh,360px)] overscroll-contain overflow-y-auto p-1">
             {actions.map((action) => {
               const Icon = action.icon;

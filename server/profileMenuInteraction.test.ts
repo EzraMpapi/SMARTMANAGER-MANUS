@@ -65,8 +65,15 @@ describe("authenticated profile-menu click behavior", () => {
   });
 
   it("keeps the top-header profile trigger square and professional", () => {
-    expect(profileMenuSource).toContain("dashboard-topbar-profile-trigger group relative z-40 grid h-11 w-11 min-h-11 min-w-11 cursor-pointer place-items-center rounded-none");
+    expect(profileMenuSource).toContain("dashboard-topbar-profile-trigger group relative z-40 flex h-11 min-h-11 min-w-11 w-auto cursor-pointer items-center gap-2 rounded-none");
     expect(dashboardStyles).toContain(".dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger");
     expect(dashboardStyles).toContain("border-radius: 0;");
+  });
+
+  it("keeps the profile trigger clickable on small screens", () => {
+    expect(dashboardStyles).toContain(".dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger");
+    expect(dashboardStyles).toContain("pointer-events: auto;");
+    expect(dashboardStyles).toContain("touch-action: manipulation;");
+    expect(dashboardStyles).toContain("z-index: 71;");
   });
 });

@@ -46,6 +46,7 @@ import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, reme
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneValidationError, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
+import { shouldOpenOnboardingTour } from "./lib/onboardingTourState";
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
@@ -107,6 +108,7 @@ const EnterpriseDashboardOverview = lazy(() => import("./components/EnterpriseDa
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
 import { applyOfflineMutationToCache, discardOfflineMutation, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, resolveOfflineConflict, retryOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
+import { reloadIfGithubUpdated } from "./lib/githubUpdateReload";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -139,23 +141,15 @@ async function clearStaleShellCaches() {
   }
 }
 
-function lazyWorkspaceWithRecovery(load, key) {
+function lazyWorkspaceWithRecovery(load, _key) {
   return lazy(async () => {
-    const retryKey = `smart-manager-workspace-lazy-retry:${key}`;
     try {
       const module = await load();
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       return module;
     } catch (error) {
-      let alreadyRetried = false;
-      try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
-      if (!alreadyRetried && typeof window !== "undefined") {
-        try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
-        await clearStaleShellCaches();
-        window.location.reload();
+      if (typeof window !== "undefined" && await reloadIfGithubUpdated({ beforeReload: clearStaleShellCaches })) {
         return new Promise(() => {});
       }
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       throw error;
     }
   });
@@ -3170,7 +3164,7 @@ function PostCreateDispatch({ company, crm }) {
   ];
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 transition-all duration-280 ${closing ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}
+    <div className={`sm-mobile-invoice-dispatch fixed bottom-6 right-6 z-50 transition-all duration-280 ${closing ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}
       style={{animation: closing ? undefined : "slideUp .28s cubic-bezier(.22,1,.36,1)"}}>
       <div className="w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden">
 
@@ -3557,7 +3551,7 @@ function Toasts() {
   if (!toasts.length) return null;
 
   return (
-    <div className="fixed bottom-24 sm:bottom-6 right-4 z-[60] flex flex-col gap-2.5 w-[calc(100vw-2rem)] sm:w-[360px] pointer-events-none">
+    <div className="sm-mobile-toast-stack fixed bottom-24 sm:bottom-6 right-4 z-[60] flex flex-col gap-2.5 w-[calc(100vw-2rem)] sm:w-[360px] pointer-events-none">
       {toasts.map((t) => {
         const s = TOAST_STYLE[t.type] || TOAST_STYLE.info;
         const Icon = s.Icon;
@@ -6321,6 +6315,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   const [period, setPeriod] = useState("month");
   const TODAY_STR = TODAY.toISOString().slice(0, 10);
   const [connectedDate, setConnectedDate] = useState(TODAY_STR);
+  const [comparisonPeriod, setComparisonPeriod] = useState("day");
   const connectedSnapshot = useMemo(() => resolveConnectedWorkspaceSnapshot({
     date: connectedDate,
     invoices: invoices.rows,
@@ -6333,6 +6328,40 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     employees: employees.rows,
     posTransactions: posTransactions.rows,
   }), [connectedDate, invoices.rows, expenses.rows, crm.rows, inventory.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows, employees.rows, posTransactions.rows]);
+  const comparisonDate = useMemo(() => {
+    if (!connectedDate) return "";
+    const date = new Date(`${connectedDate}T12:00:00`);
+    if (comparisonPeriod === "week") date.setDate(date.getDate() - 7);
+    else if (comparisonPeriod === "month") {
+      const originalDay = date.getDate();
+      date.setDate(1);
+      date.setMonth(date.getMonth() - 1);
+      const lastDayOfPreviousMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      date.setDate(Math.min(originalDay, lastDayOfPreviousMonth));
+    } else date.setDate(date.getDate() - 1);
+    return date.toISOString().slice(0, 10);
+  }, [connectedDate, comparisonPeriod]);
+  const comparisonPeriodLabel = comparisonPeriod === "week" ? "same date last week" : comparisonPeriod === "month" ? "same date last month" : "previous day";
+  const previousConnectedSnapshot = useMemo(() => resolveConnectedWorkspaceSnapshot({
+    date: comparisonDate,
+    invoices: invoices.rows,
+    expenses: expenses.rows,
+    crm: crm.rows,
+    inventory: inventory.rows,
+    leaveRequests: leaveRequests.rows,
+    workOrders: workOrders.rows,
+    subscriptions: subscriptions.rows,
+    employees: employees.rows,
+    posTransactions: posTransactions.rows,
+  }), [comparisonDate, invoices.rows, expenses.rows, crm.rows, inventory.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows, employees.rows, posTransactions.rows]);
+  const formatDayComparison = useCallback((current, previous, formatter = formatMoney) => {
+    if (current === null || current === undefined || previous === null || previous === undefined) return { label: "No prior snapshot", tone: "text-slate-400" };
+    const delta = Number(current || 0) - Number(previous || 0);
+    const sign = delta > 0 ? "+" : delta < 0 ? "−" : "";
+    const absoluteDelta = formatter(Math.abs(delta));
+    const percentage = Number(previous) === 0 ? (Number(current) === 0 ? "0%" : "New") : `${delta > 0 ? "+" : ""}${Math.round((delta / Math.abs(Number(previous))) * 100)}%`;
+    return { label: `${sign}${absoluteDelta} · ${percentage}`, tone: delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-600" : "text-slate-400" };
+  }, [formatMoney]);
   const connectedDateLabel = connectedDate ? new Date(`${connectedDate}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Selected date";
   const exportConnectedWorkspaceCsv = useCallback(() => {
     const csv = buildConnectedWorkspaceCsv(connectedSnapshot);
@@ -7153,18 +7182,41 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               <div className="rounded-xl bg-slate-50 px-3 py-2 text-right"><p className="text-[10px] uppercase tracking-wide text-slate-400">Net movement</p><p className={`font-mono text-[15px] font-black ${connectedSnapshot.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{connectedSnapshot.net >= 0 ? "+" : "−"}{formatMoney(Math.abs(connectedSnapshot.net))}</p></div>
             </div>
           </div>
-          <div className="mt-4 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-3.5" aria-label="Selected date financial summary">
+          <div className="mt-4 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-3.5" aria-label="Selected date analytics with previous day comparison">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700">Daily financial summary</p><p className="mt-0.5 text-[11px] text-slate-500">Confirmed totals for {connectedDateLabel}</p></div>
-              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">Selected date only</span>
+              <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700">Daily analytics</p><p className="mt-0.5 text-[11px] text-slate-500">Confirmed totals for {connectedDateLabel}</p></div>
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                <label className="flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">Compare with
+                  <select value={comparisonPeriod} onChange={(event) => setComparisonPeriod(event.target.value)} className="bg-transparent text-[10px] font-bold text-slate-700 outline-none" aria-label="Choose comparison period">
+                    <option value="day">Previous day</option>
+                    <option value="week">Same date last week</option>
+                    <option value="month">Same date last month</option>
+                  </select>
+                </label>
+                <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">{comparisonDate}</span>
+              </div>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-blue-100 bg-white/80 px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">Total revenue</p><p className="mt-1 text-[19px] font-black text-blue-700">{formatMoney(connectedSnapshot.revenue)}</p></div>
-              <div className="rounded-lg border border-amber-100 bg-white/80 px-3 py-2.5"><p className="text-[10px] uppercase tracking-wide text-slate-400">Total expenses</p><p className="mt-1 text-[19px] font-black text-amber-700">{formatMoney(connectedSnapshot.expensesTotal)}</p></div>
+            <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
+              {[
+                ["Total revenue", connectedSnapshot.revenue, previousConnectedSnapshot.revenue, "text-blue-700", true],
+                ["Net movement", connectedSnapshot.net, previousConnectedSnapshot.net, connectedSnapshot.net >= 0 ? "text-emerald-700" : "text-rose-700", true],
+                ["Total sales", connectedSnapshot.salesValue, previousConnectedSnapshot.salesValue, "text-indigo-700", true],
+                ["Orders", connectedSnapshot.orders, previousConnectedSnapshot.orders, "text-violet-700", false],
+                ["Customers", connectedSnapshot.customers, previousConnectedSnapshot.customers, "text-cyan-700", false],
+                ["Inventory value", connectedSnapshot.inventoryValue, previousConnectedSnapshot.inventoryValue, "text-slate-800", true],
+                ["Receivable", connectedSnapshot.receivables, previousConnectedSnapshot.receivables, "text-rose-700", true],
+              ].map(([label, value, previous, color, currency]) => {
+                const comparison = formatDayComparison(value, previous, currency ? formatMoney : (amount) => String(Math.round(amount || 0)));
+                return <div key={label} className="rounded-lg border border-slate-100 bg-white/85 px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p>
+                  <p className={`mt-1 text-[17px] font-black ${color}`}>{value === null || value === undefined ? "Not tracked" : currency ? formatMoney(value) : value}</p>
+                  <p className={`mt-1 text-[10px] font-bold ${comparison.tone}`} title={`Previous day: ${previous === null || previous === undefined ? "No historical snapshot" : currency ? formatMoney(previous) : previous}`}>
+                    {comparison.label} <span className="font-normal text-slate-400">vs {comparisonPeriodLabel}</span>
+                  </p>
+                </div>;
+              })}
             </div>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {[['Revenue', connectedSnapshot.revenue, 'text-blue-600'], ['Expenses', connectedSnapshot.expensesTotal, 'text-amber-600'], ['Invoices', connectedSnapshot.invoices.length, 'text-slate-700'], ['Other records', connectedSnapshot.totalRecords - connectedSnapshot.invoices.length - connectedSnapshot.expenses.length, 'text-violet-600']].map(([label, value, color]) => <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"><p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p><p className={`mt-1 text-[17px] font-black ${color}`}>{label === "Revenue" || label === "Expenses" ? formatMoney(value) : value}</p></div>)}
+            <p className="mt-2 text-[10px] text-slate-400">Revenue, sales, net movement and receivables are compared from confirmed dated records against the {comparisonPeriodLabel}. Inventory comparison requires dated inventory snapshots; otherwise it is shown as not tracked rather than estimated.</p>
           </div>
         </div>
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
@@ -11367,7 +11419,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
 
           <div className={operationalTableShellClass}>
         <div className="overflow-x-auto">
-        <table className={`${operationalTableClass} min-w-[720px]`}>
+        <table className={`${operationalTableClass} sm-sales-table min-w-[720px]`}>
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
               {visibleSalesColumns.includes("document") && <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>}
@@ -11393,13 +11445,13 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
                       onClick={() => setSelected({ ...doc, kind: tab })}
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
-                      {visibleSalesColumns.includes("document") && <td className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>}
-                      {visibleSalesColumns.includes("customer") && <td className="px-4 py-3 text-slate-700">{doc.customer}</td>}
-                      {visibleSalesColumns.includes("date") && <td className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>}
-                      {visibleSalesColumns.includes("reference") && <td className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>}
-                      {visibleSalesColumns.includes("status") && <td className="px-4 py-3"><DocStatusPill status={doc.status} /></td>}
-                      {visibleSalesColumns.includes("total") && <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>}
-                      {visibleSalesColumns.includes("detail") && <td className="px-4 py-3 text-right">
+                      {visibleSalesColumns.includes("document") && <td data-label={columnLabel[0]} className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>}
+                      {visibleSalesColumns.includes("customer") && <td data-label="Customer" className="px-4 py-3 text-slate-700">{doc.customer}</td>}
+                      {visibleSalesColumns.includes("date") && <td data-label="Date" className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>}
+                      {visibleSalesColumns.includes("reference") && <td data-label={columnLabel[1]} className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>}
+                      {visibleSalesColumns.includes("status") && <td data-label="Status" className="px-4 py-3"><DocStatusPill status={doc.status} /></td>}
+                      {visibleSalesColumns.includes("total") && <td data-label="Total" className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>}
+                      {visibleSalesColumns.includes("detail") && <td data-label="Open" className="px-4 py-3 text-right">
                         <ChevronRight size={15} className="text-slate-300 inline" />
                       </td>}
                     </tr>
@@ -47749,7 +47801,7 @@ function onboardingTourStorageKey(currentUser, company) {
   return `bs_onboarding_tour_${encodeURIComponent(String(userKey))}_${encodeURIComponent(String(workspaceKey))}`;
 }
 
-function OnboardingTour({ enabled = false, showTrigger = false, currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
+function OnboardingTour({ enabled = false, currentUser, profile, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
   const { lang, t } = useLanguage();
   const userRole = canonicalRoleId(currentUser?.role || "Employee");
   const permittedModuleIds = useMemo(() => {
@@ -47769,10 +47821,11 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const dialogRef = useRef(null);
-  const triggerRef = useRef(null);
   const checkedKeyRef = useRef("");
   const [spotlightRect, setSpotlightRect] = useState(null);
   const storageKey = useMemo(() => onboardingTourStorageKey(currentUser, company), [currentUser?.id, currentUser?.name, company?.id, company?.name]);
+  const profileCompletedAt = profile?.onboarding_tour_completed_at;
+  const completionCheckKey = `${storageKey}:${String(profileCompletedAt || "")}`;
   const ready = enabled && (IS_CONFIGURED ? Boolean(currentUser?.id && company?.id) : Boolean(currentUser?.id));
   const step = activeSteps[stepIndex] || activeSteps[0];
   const StepIcon = step.icon;
@@ -47788,19 +47841,20 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
       setOpen(false);
       return;
     }
-    if (!ready || checkedKeyRef.current === storageKey) return;
-    checkedKeyRef.current = storageKey;
+    if (!ready || checkedKeyRef.current === completionCheckKey) return;
+    checkedKeyRef.current = completionCheckKey;
     setStepIndex(0);
     try {
       const saved = window.localStorage.getItem(storageKey);
-      const needsTour = !saved;
+      const needsTour = shouldOpenOnboardingTour({ localStorageValue: saved, profileCompletedAt });
       setOpen(needsTour);
       onTourFlowReady?.(needsTour);
     } catch (_error) {
-      setOpen(true);
-      onTourFlowReady?.(true);
+      const needsTour = shouldOpenOnboardingTour({ localStorageValue: null, profileCompletedAt });
+      setOpen(needsTour);
+      onTourFlowReady?.(needsTour);
     }
-  }, [enabled, ready, storageKey, onTourFlowReady]);
+  }, [enabled, ready, storageKey, completionCheckKey, profileCompletedAt, onTourFlowReady]);
 
   useEffect(() => {
     onTourVisibilityChange?.(open);
@@ -47913,7 +47967,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
     persistCompletion(status);
     setOpen(false);
     onTourComplete?.(status);
-    window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
   function goNext() {
     if (stepIndex >= activeSteps.length - 1) finishTour("completed");
@@ -47921,10 +47974,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
   }
   function goPrevious() {
     setStepIndex((current) => Math.max(0, current - 1));
-  }
-  function restartTour() {
-    setStepIndex(0);
-    setOpen(true);
   }
   function openModule() {
     if (available && onNavigate) {
@@ -47935,16 +47984,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
 
   return (
     <>
-      {showTrigger && <button
-        ref={triggerRef}
-        type="button"
-        onClick={restartTour}
-        className="dashboard-tour-trigger fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-[11.5px] font-bold text-emerald-800 shadow-lg transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/40 sm:bottom-6 sm:right-24"
-        aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : t("takeTour")}
-        data-onboarding-trigger="true"
-      >
-        <Info size={13} /> {isSw ? "Anza Ziara" : t("takeTour")}
-      </button>}
       {open && typeof document !== "undefined" && createPortal((
         <div
           className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${spotlightRect ? "bg-transparent" : "bg-slate-950/55 backdrop-blur-sm"}`}
@@ -49203,8 +49242,8 @@ function SmartManager() {
       <PostCreateDispatch company={company} crm={crm} />
       <OnboardingTour
         enabled={isIndividualLogin}
-        showTrigger={isIndividualLogin}
         currentUser={currentUser}
+        profile={centralizedAuth.profile}
         company={company}
         visibleModules={visibleModules}
         onNavigate={go}
@@ -49256,23 +49295,8 @@ function SmartManager() {
         }`}
         style={{ boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
       >
-        {/* Brand row */}
-        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarLabelsVisible ? "" : "min-h-[84px] justify-center px-2 pb-5"}`}>
-          <div className={`flex min-w-0 items-center gap-2.5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${sidebarCollapsed ? "translate-x-0" : "translate-x-0"}`}>
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white p-1.5 shadow-[0_6px_16px_rgba(0,0,0,.25)] ring-1 ring-white/15">
-              <BrandLogo variant="compact" priority className="h-7 w-7" />
-            </span>
-            {sidebarLabelsVisible && (
-              <div className="min-w-0 animate-in fade-in slide-in-from-left-1 duration-200 leading-tight motion-reduce:animate-none">
-                <span className="block truncate text-[15px] font-semibold tracking-tight text-white" style={{ fontFamily: "'Poppins'" }}>
-                  Smart Manager
-                </span>
-                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-cyan-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.16em] text-cyan-300 ring-1 ring-cyan-400/20">
-                  Enterprise Suite
-                </span>
-              </div>
-            )}
-          </div>
+        {/* Navigation controls remain in the rail; brand identity lives in the top header. */}
+        <div className={`dashboard-sidebar-brand relative flex min-h-[56px] items-center justify-end gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-3 py-3 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarLabelsVisible ? "" : "min-h-[84px] px-2 pb-5"}`}>
           <button className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={17} />
           </button>
@@ -49339,8 +49363,17 @@ function SmartManager() {
         {/* Topbar */}
         <header aria-label="Workspace command bar" data-theme-mode={themeMode} data-theme-period={themePeriod} className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-main">
-           {/* Left — menu trigger, workspace identity, and current location */}
+           {/* Left — product identity, menu trigger, workspace identity, and current location */}
            <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="dashboard-topbar-brand hidden min-w-0 shrink items-center gap-2 md:flex" aria-label="Smart Manager Enterprise Suite">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-1.5 shadow-[0_5px_14px_rgba(11,93,59,.2)] ring-1 ring-emerald-200/40">
+                <BrandLogo variant="compact" priority className="h-6 w-6" />
+              </span>
+              <span className="dashboard-topbar-brand-copy min-w-0 leading-tight">
+                <span className="block truncate text-[13px] font-extrabold tracking-[-.02em] text-slate-900" style={{ fontFamily: "'Poppins'" }}>SMART <span className="text-emerald-700">MANAGER</span></span>
+                <span className="dashboard-topbar-enterprise-badge mt-0.5 inline-flex items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[.14em] text-emerald-700 ring-1 ring-emerald-200/80">Enterprise Suite</span>
+              </span>
+            </div>
             <button
               type="button"
                className="dashboard-topbar-menu-control grid shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 lg:hidden"
@@ -49438,12 +49471,12 @@ function SmartManager() {
             one thumb-tap away. Only renders on small screens where the
             sidebar is hidden. RBAC is automatic: tabs are built from the
             same visibleModules list the sidebar uses. */}
-        <nav data-theme-mode={themeMode} data-theme-period={themePeriod} className="dashboard-mobile-nav lg:hidden fixed bottom-0 inset-x-0 z-30 min-h-[64px] bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)", paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Mobile workspace navigation">
+        <nav data-theme-mode={themeMode} data-theme-period={themePeriod} className="dashboard-mobile-nav lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)" }} aria-label="Mobile workspace navigation">
           {[...visibleModules.filter((m) => ["dashboard","sales","inventory","finance","hr"].includes(m.id)), ...visibleModules.filter((m) => !["dashboard","sales","inventory","finance","hr"].includes(m.id))].slice(0, 5).map((m) => {
             const Icon = m.icon;
             const on = active === m.id;
             return (
-              <button key={m.id} type="button" onClick={() => go(m.id)} aria-current={on ? "page" : undefined} className="flex-1 min-h-[64px] min-w-0 px-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/45" style={{ color: on ? "#16A34A" : "#9CA3AF" }}>
+              <button key={m.id} type="button" onClick={() => go(m.id)} aria-label={m.id === "dashboard" ? "Dashboard" : m.label} aria-current={on ? "page" : undefined} className="flex-1 min-w-0 flex flex-col items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/45" style={{ color: on ? "#16A34A" : "#9CA3AF" }}>
                 <div className="relative">
                   <Icon size={on ? 22 : 20} strokeWidth={on ? 2.2 : 1.75} />
                   {on && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#16A34A]" />}
@@ -49458,7 +49491,7 @@ function SmartManager() {
           <button
             onClick={() => go("ai")}
             aria-label="Open AI Command Center"
-            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 min-h-14 min-w-14 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#16A34A] sm:bottom-6 sm:right-6"
+            className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 min-h-14 min-w-14 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#16A34A] sm:bottom-6 sm:right-6"
             style={{ background: "linear-gradient(135deg, #16A34A, #22C55E)" }}
           >
             <Sparkles size={22} />
@@ -49466,7 +49499,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
+        <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-6">
           <Suspense fallback={<div role="status" aria-label="Loading workspace module" className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white p-6 text-sm font-medium text-slate-500 shadow-sm">Loading workspace module…</div>}>
           {active === "dashboard" && (
             <Dashboard
@@ -49657,20 +49690,11 @@ class ErrorBoundary extends React.Component {
     // safety net itself. console.error is the one logging mechanism with
     // no dependency on anything else in this app being in a working state.
     console.error("Smart Manager crashed:", error, info?.componentStack);
-    // A new deployment replaced the page files this tab was using —
-    // reload once to pick up the fresh version instead of showing an error.
+    // A new GitHub deployment may have replaced the page files this tab was
+    // using. Reload only after the server confirms that revision changed.
     const message = String(error?.message ?? "");
     if (typeof window !== "undefined" && /dynamically imported module|Importing a module script failed|Failed to fetch dynamically|ChunkLoadError/i.test(message)) {
-      try {
-        const key = "sm:chunk-reload-at";
-        const last = Number(window.sessionStorage.getItem(key) || 0);
-        if (Date.now() - last > 10000) {
-          window.sessionStorage.setItem(key, String(Date.now()));
-          window.location.reload();
-        }
-      } catch {
-        window.location.reload();
-      }
+      void reloadIfGithubUpdated({ beforeReload: clearStaleShellCaches });
     }
   }
 

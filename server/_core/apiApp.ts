@@ -45,6 +45,16 @@ import {
 export function createApiApp() {
   const app = express();
 
+  app.get("/api/app-version", (_req, res) => {
+    const githubRevision = [
+      process.env.GITHUB_SHA,
+      process.env.VERCEL_GIT_COMMIT_SHA,
+      process.env.GIT_COMMIT_SHA,
+      process.env.COMMIT_SHA,
+    ].find((value) => typeof value === "string" && value.trim().length > 0)?.trim() || null;
+    res.set("Cache-Control", "no-store, max-age=0, must-revalidate").json({ githubRevision });
+  });
+
   app.post("/api/webhooks/healthcare-sms-delivery", express.raw({ type: "application/json", limit: "64kb" }), healthcareReminderDeliveryWebhookHandler);
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

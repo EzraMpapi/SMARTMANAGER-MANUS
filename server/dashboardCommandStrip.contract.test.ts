@@ -26,12 +26,16 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("dashboard-topbar-context");
     expect(dashboard).toContain("dashboard-topbar-search");
     expect(dashboard).toContain("dashboard-topbar-actions");
+    expect(dashboard).toContain("dashboard-topbar-brand");
+    expect(dashboard).toContain('aria-label="Smart Manager Enterprise Suite"');
     expect(dashboard).toContain("SMART MANAGER");
     expect(dashboard).toContain("Enterprise Suite");
     expect(dashboard).toContain("<NotificationCenter");
     expect(dashboard).toContain("onClick={toggleDarkMode}");
     expect(dashboard).toContain("dashboard-topbar-profile");
     expect(dashboard).toContain("dashboard-sidebar-brand");
+    const sidebarBrand = dashboard.slice(dashboard.indexOf("dashboard-sidebar-brand"), dashboard.indexOf("{/* Navigation groups */}"));
+    expect(sidebarBrand).not.toContain("Enterprise Suite");
     expect(dashboard).toContain("<PremiumProfileMenu");
   });
 
