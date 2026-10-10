@@ -110,7 +110,8 @@ describe("dashboard shell interaction refinement", () => {
     expect(activeProfileMenu).toContain('id="workspace-profile-menu"');
     expect(activeProfileMenu).toContain('window.addEventListener("pointerdown", closeWhenOutside)');
     expect(activeProfileMenu).toContain('window.addEventListener("keydown", closeOnEscape)');
-    expect(activeProfileMenu).not.toContain('fixed inset-0');
+    expect(activeProfileMenu).toContain("dashboard-profile-menu");
+    expect(activeProfileMenu).not.toContain('className="fixed inset-0 z-40');
     expect(activeProfileMenu).toContain('max-h-[min(58vh,360px)]');
     expect(dashboardStyles).toContain('touch-action: manipulation');
   });

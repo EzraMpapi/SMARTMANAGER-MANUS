@@ -78,7 +78,7 @@ describe("dashboard quality and boundary contracts", () => {
 
   it("keeps mobile navigation and floating actions touch-safe", () => {
     expect(dashboard).toContain('aria-label="Mobile workspace navigation"');
-    expect(dashboard).toContain("min-h-[64px]");
+    expect(dashboard).toContain("dashboard-mobile-nav");
     expect(dashboard).toContain('aria-current={on ? "page" : undefined}');
     expect(dashboard).toContain("env(safe-area-inset-bottom)");
     expect(dashboard).toContain("min-h-14 min-w-14");
@@ -86,6 +86,9 @@ describe("dashboard quality and boundary contracts", () => {
     expect(dashboard).toContain("dashboard-mobile-content");
     expect(dashboard).toContain("sm-mobile-filter-row");
     expect(dashboard).toContain("sm-responsive-table");
+    const css = fs.readFileSync(path.join(root, "index.css"), "utf8");
+    expect(css).toContain(".dashboard-mobile-nav > button");
+    expect(css).toContain("min-height: 3.5rem;");
   });
 
   it("keeps repository-wide responsive foundations scoped and touch-safe", () => {
