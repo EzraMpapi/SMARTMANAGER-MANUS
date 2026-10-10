@@ -50,6 +50,7 @@ import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { resolveConnectedWorkspaceSnapshot } from "./lib/connectedWorkspaceSnapshot";
+import { buildConnectedWorkspaceCsv, connectedWorkspaceExportFilename } from "./lib/connectedWorkspaceExport";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { AuthContext, useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
@@ -6333,6 +6334,19 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
     posTransactions: posTransactions.rows,
   }), [connectedDate, invoices.rows, expenses.rows, crm.rows, inventory.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows, employees.rows, posTransactions.rows]);
   const connectedDateLabel = connectedDate ? new Date(`${connectedDate}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Selected date";
+  const exportConnectedWorkspaceCsv = useCallback(() => {
+    const csv = buildConnectedWorkspaceCsv(connectedSnapshot);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = connectedWorkspaceExportFilename(connectedDate);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    notify(`Downloaded workspace records for ${connectedDateLabel}.`);
+  }, [connectedSnapshot, connectedDate, connectedDateLabel, notify]);
   const greetingName = (currentUser?.name || company?.owner || "there").trim().split(" ")[0] || "there";
   const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening";
   const periodStart = useMemo(() => {
@@ -7134,7 +7148,10 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Selected date snapshot</p><h2 className="mt-1 text-[16px] font-bold text-slate-900">What happened on {connectedDateLabel}</h2><p className="mt-1 text-[11.5px] text-slate-500">Only server-confirmed workspace rows are included. No sample or forecast activity is shown.</p></div>
-            <div className="rounded-xl bg-slate-50 px-3 py-2 text-right"><p className="text-[10px] uppercase tracking-wide text-slate-400">Net movement</p><p className={`font-mono text-[15px] font-black ${connectedSnapshot.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{connectedSnapshot.net >= 0 ? "+" : "−"}{formatMoney(Math.abs(connectedSnapshot.net))}</p></div>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={exportConnectedWorkspaceCsv} className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10.5px] font-bold text-emerald-700 transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" aria-label={`Download CSV report for ${connectedDateLabel}`}><Download size={13} /> CSV report</button>
+              <div className="rounded-xl bg-slate-50 px-3 py-2 text-right"><p className="text-[10px] uppercase tracking-wide text-slate-400">Net movement</p><p className={`font-mono text-[15px] font-black ${connectedSnapshot.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{connectedSnapshot.net >= 0 ? "+" : "−"}{formatMoney(Math.abs(connectedSnapshot.net))}</p></div>
+            </div>
           </div>
           <div className="mt-4 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-3.5" aria-label="Selected date financial summary">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -49332,66 +49349,12 @@ function SmartManager() {
             >
               <MenuIcon />
             </button>
-             <div className="dashboard-topbar-brand-mark grid shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-2 shadow-[0_5px_14px_rgba(11,93,59,.2)] lg:hidden" aria-hidden="true">
-               <BrandLogo variant="compact" priority className="h-5 w-5" />
+             <div className="dashboard-topbar-brand flex min-w-0 items-center gap-2.5" aria-label="Smart Manager">
+               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white p-1.5 shadow-[0_5px_16px_rgba(255,255,255,.62)] ring-1 ring-white/80">
+                 <BrandLogo variant="compact" priority className="h-6 w-6" />
+               </span>
+               <span className="truncate text-[15px] font-bold tracking-[-.02em] text-slate-800" style={{ fontFamily: "Poppins,sans-serif" }}>Smart Manager</span>
              </div>
-            <div ref={workspaceMenuRef} className="relative min-w-0">
-              <button
-                type="button"
-                onClick={() => setWorkspaceMenuOpen((open) => !open)}
-                aria-expanded={workspaceMenuOpen}
-                aria-haspopup="menu"
-                aria-label={`Open workspace details for ${company?.name || "BusinessSphere"}`}
-                title={`${workspaceMenuOpen ? "Close" : "Open"} workspace switcher`}
-                 className={`dashboard-topbar-workspace group flex min-w-0 items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-[12px] shadow-[0_4px_14px_rgba(15,23,42,.06)] transition-all duration-150 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 sm:gap-2.5 sm:px-2.5 sm:text-[13px] ${workspaceMenuOpen ? "border-emerald-200 bg-emerald-50/80 text-emerald-900" : "border-slate-200/80 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-emerald-900"}`}
-              >
-                 <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors ${workspaceMenuOpen ? "bg-emerald-700 text-white shadow-sm" : "bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100"}`}>
-                  <Building2 size={15} strokeWidth={2.1} aria-hidden="true" />
-                </span>
-                 <span className="dashboard-topbar-workspace-copy min-w-0">
-                   <span className="block max-w-[220px] truncate font-semibold tracking-[-.01em] text-slate-800">{company?.name || "BusinessSphere"}</span>
-                   <span className="mt-0.5 block truncate text-[9px] font-semibold uppercase tracking-[.12em] text-slate-400">{currentUser?.role || "Administrator"}</span>
-                 </span>
-                 <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform duration-200 ${workspaceMenuOpen ? "rotate-180 text-emerald-700" : "group-hover:text-emerald-700"}`} aria-hidden="true" />
-              </button>
-              {workspaceMenuOpen && (
-                <section role="menu" aria-label="Workspace details" className="absolute left-0 top-full z-50 mt-2 max-h-[min(70dvh,520px)] w-[min(92vw,340px)] max-w-[calc(100vw-1rem)] touch-pan-y overscroll-contain overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,.18)]">
-                  <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-700"><Building2 size={17} aria-hidden="true" /></span>
-                    <div className="min-w-0">
-                      <p className="truncate text-[13px] font-bold text-slate-900">{company?.name || "BusinessSphere"}</p>
-                      <p className="mt-0.5 truncate text-[10.5px] text-slate-500">{company?.industry || company?.businessType || "Business workspace"}</p>
-                    </div>
-                  </div>
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 text-[11px]">
-                    <div><dt className="text-slate-400">Location</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{[company?.city, company?.country].filter(Boolean).join(", ") || "Not set"}</dd></div>
-                    <div><dt className="text-slate-400">Currency</dt><dd className="mt-0.5 font-semibold text-slate-700">{company?.currency || company?.currencyCode || "TZS"}</dd></div>
-                    <div><dt className="text-slate-400">Timezone</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company?.timezone || "Africa/Dar_es_Salaam"}</dd></div>
-                    <div><dt className="text-slate-400">Role</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{currentUser?.role || "Administrator"}</dd></div>
-                    <div><dt className="text-slate-400">Subscription</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{subscriptionStateLabel(subscriptionAccess.access)}</dd></div>
-                    <div><dt className="text-slate-400">Plan</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{subscriptionAccess.access.plan?.name || subscriptionAccess.access.plan?.display_name || subscriptionAccess.access.plan?.code || "Not confirmed"}</dd></div>
-                    {(company?.activeBranchName || company?.branchName || company?.activeBranch?.name) && <div><dt className="text-slate-400">Active branch</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company.activeBranchName || company.branchName || company.activeBranch.name}</dd></div>}
-                  </dl>
-                  <div className="border-t border-slate-100 pt-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Switch branch</p>
-                      {branchesLoading && <LoaderCircle size={13} className="animate-spin text-cyan-600" aria-label="Loading branches" />}
-                    </div>
-                    {!branchesLoading && workspaceBranches.length === 0 && <p className="mt-2 text-[11px] leading-4 text-slate-500">No active branches are available for this workspace.</p>}
-                    {workspaceBranches.length > 0 && <div className="mt-2 space-y-1" role="group" aria-label="Available branches">
-                      {workspaceBranches.map((branch) => {
-                        const selected = String(branch.id) === String(activeBranchId);
-                        return <button key={branch.id} type="button" role="menuitemradio" aria-checked={selected} onClick={() => switchWorkspaceBranch(branch)} className={`flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left text-[11px] transition ${selected ? "bg-cyan-50 text-cyan-800" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
-                          <span className="min-w-0 truncate font-semibold">{branch.name || "Unnamed branch"}</span>
-                          {selected && <Check size={14} className="shrink-0 text-cyan-700" aria-label="Active branch" />}
-                        </button>;
-                      })}
-                    </div>}
-                  </div>
-                  {(company?.phone || company?.email) && <div className="border-t border-slate-100 pt-2 text-[10.5px] text-slate-500">{company?.phone && <p className="truncate">{company.phone}</p>}{company?.email && <p className="truncate">{company.email}</p>}</div>}
-                </section>
-              )}
-            </div>
              <div className="dashboard-topbar-page-context hidden min-w-0 items-center gap-2 xl:flex" aria-label={`Current workspace area: ${activeModuleLabel}`}>
                <span className="h-5 w-px bg-slate-200" aria-hidden="true" />
                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500"><ActiveModuleIcon size={15} strokeWidth={2} aria-hidden="true" /></span>
