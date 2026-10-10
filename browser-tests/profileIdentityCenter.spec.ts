@@ -140,3 +140,38 @@ test("supports mobile touch gestures and dropdown dismissal", async ({ page }, t
   await expect(page.getByRole("heading", { name: "My Profile", exact: true })).toBeVisible();
   await expect(page.getByText("Display settings", { exact: true })).toBeVisible();
 });
+
+test("matches the mobile profile dropdown visual baseline", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-mobile", "Mobile visual coverage runs in the mobile project only.");
+  await setupIdentityPage(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => document.fonts?.ready);
+
+  const trigger = page.getByRole("button", { name: "Open account identity center", exact: true });
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveScreenshot("mobile-profile-trigger-closed.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixels: 80,
+  });
+
+  await trigger.tap();
+  const dialog = page.getByRole("dialog", { name: "Account identity center" });
+  await expect(dialog).toBeVisible();
+  await page.waitForTimeout(400);
+  await dialog.evaluate((element) => {
+    Object.assign((element as HTMLElement).style, {
+      position: "fixed",
+      top: "76px",
+      right: "12px",
+      left: "auto",
+      transform: "none",
+      zIndex: "9999",
+    });
+  });
+  await expect(dialog).toHaveScreenshot("mobile-profile-dropdown-open.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixels: 300,
+  });
+});
