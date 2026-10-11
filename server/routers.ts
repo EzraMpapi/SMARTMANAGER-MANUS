@@ -27,7 +27,7 @@ import { activateDashboardTeamPreset, createDashboardTeamPreset, dashboardTeamPr
 import { createThemePreset, deleteThemePreset, listThemePresets, recordThemePresetUsage, themePresetIdInput, themePresetInput, toggleThemePresetLike, updateThemePreset, updateThemePresetInput } from "./themePresets";
 import { acceptTeamInvitation, createTeamInvitation, listTeamInvitations, resendTeamInvitation, revokeTeamInvitation } from "./teamInvitations";
 import { getTeamWorkforceSnapshot } from "./teamWorkforce";
-import { sendWorkspaceEmail } from "./transactionalEmail";
+import { sendWelcomeEmail, sendWorkspaceEmail } from "./transactionalEmail";
 import { inventoryProductImageInput, uploadInventoryProductImage } from "./inventoryImages";
 import { provisionPasswordAccount } from "./passwordAccountProvisioning";
 import { addSupportInternalNote, createSupportTicket, draftSupportTicketReply, getSupportWhatsAppProviderReadiness, testSupportWhatsAppProviderConfig, listSupportSlaPolicies, listSupportTicketTimeline, listSupportTickets, listSupportWorkflowPolicies, saveSupportSlaPolicy, saveSupportWorkflowPolicy, searchSupportTickets, updateSupportTicket } from "./supportOperations";
@@ -528,6 +528,12 @@ export const appRouter = router({
     createConfirmedPasswordAccount: publicProcedure
       .input(z.object({ email: z.string().email().max(320), password: z.string().min(1).max(256) }))
       .mutation(async ({ ctx, input }) => provisionPasswordAccount(input, ctx.req.ip || ctx.req.socket.remoteAddress || "unknown")),
+    sendWelcomeEmail: protectedProcedure
+      .input(z.object({ fullName: z.string().trim().min(1).max(160), companyName: z.string().trim().min(1).max(200), companyId: z.string().uuid().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user?.email) return { sent: false, reason: "authenticated_email_unavailable" as const };
+        return sendWelcomeEmail({ to: ctx.user.email, fullName: input.fullName, companyName: input.companyName, companyId: input.companyId });
+      }),
   }),
   passkeySecurity: router({
     notifyRegistered: protectedProcedure

@@ -79,7 +79,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(enterpriseAuthSource).toContain('rememberMe');
     expect(dashboardSource).toContain('import { BrandLogo } from "./components/BrandLogo"');
     expect(dashboardSource).toContain('function BrandMark({ size = 80 })');
-    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="h-7 w-7');
+    expect(dashboardSource).toContain('<BrandLogo variant="compact" priority className="shrink-0"');
     expect(appSource).toContain('<BrandLogo variant="compact" priority');
     expect(indexHtmlSource).toContain('rel="icon" type="image/png" sizes="32x32" href="/brand/smart-manager-logo-32.png"');
     expect(indexHtmlSource).toContain('<title>Smart Manager | Enterprise ERP</title>');

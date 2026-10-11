@@ -191,7 +191,7 @@ const SUPABASE_CONFIG = { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY };
 // Slice 1 is deliberately opt-in: the established Settings/HR/invitation
 // flow remains the safe rollback path until the workforce projection passes
 // staging and tenant-isolation verification.
-const TEAM_WORKFORCE_CENTER_ENABLED = import.meta.env.VITE_TEAM_WORKFORCE_CENTER === "true";
+const TEAM_WORKFORCE_CENTER_ENABLED = import.meta.env.VITE_TEAM_WORKFORCE_CENTER !== "false";
 const IS_ISOLATED_SIGNUP_E2E = import.meta.env.MODE === "e2e";
 const GUARDED_WRITE_TABLES = new Set(["finance_expenses", "sales_invoices", "inventory_items", "crm_leads"]);
 const ACCESS_TOKEN_STORAGE_KEY = "bs_access_token";
@@ -36202,7 +36202,7 @@ function TeamWorkforceCenter({ enabled, canManage }) {
     ["Pending invitations", overview.pendingInvitations ?? 0, Mail, "bg-amber-50 text-amber-700"],
     ["Suspended accounts", overview.suspendedAccounts ?? 0, ShieldCheck, "bg-rose-50 text-rose-700"],
   ];
-  const nav = [["overview", "Team Overview"], ["members", "All Members"], ["invitations", "Pending Invitations"]];
+  const nav = [["overview", "Team Overview"], ["members", "All Members"], ["roles", "Custom Roles"], ["invitations", "Pending Invitations"]];
   return (
     <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden" data-testid="team-workforce-center">
       <div className="px-5 py-5 border-b border-slate-100 bg-gradient-to-r from-[#F0FDF4] to-white">
@@ -36229,6 +36229,24 @@ function TeamWorkforceCenter({ enabled, canManage }) {
           </div>
         ) : view === "members" ? (
           <div><div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[12.5px] font-bold text-[#111827]">All Members</p><p className="mt-1 text-[11px] text-slate-500">{filteredEmployees.length} of {employees.length} confirmed employee records.</p></div><div className="relative w-full sm:w-72"><Search size={13} className="absolute left-3 top-2.5 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full rounded-lg border border-slate-200 py-2 pl-8 pr-3 text-[11.5px] outline-none focus:border-[#16A34A]" placeholder="Search name, role, department..." aria-label="Search workforce members" /></div></div><div className="overflow-x-auto rounded-xl border border-slate-100"><table className="min-w-full text-left"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400"><tr><th className="px-3 py-2.5">Member</th><th className="px-3 py-2.5">Role</th><th className="px-3 py-2.5">Department</th><th className="px-3 py-2.5">Status</th><th className="px-3 py-2.5">Profile</th></tr></thead><tbody className="divide-y divide-slate-100">{filteredEmployees.map((employee) => <tr key={employee.id} className="text-[11.5px] text-slate-600"><td className="px-3 py-3"><p className="font-semibold text-slate-800">{employee.name}</p><p className="mt-0.5 text-[10.5px] text-slate-400">{employee.email} · {employee.employeeNumber}</p></td><td className="px-3 py-3">{employee.role}</td><td className="px-3 py-3">{employee.department}<span className="block text-[10.5px] text-slate-400">{employee.position}</span></td><td className="px-3 py-3"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${employee.status.toLowerCase() === "active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{employee.status}</span></td><td className="px-3 py-3 font-semibold">{employee.profileCompletion}%</td></tr>)}{filteredEmployees.length === 0 && <tr><td colSpan="5" className="px-3 py-8 text-center text-[11.5px] text-slate-400">No confirmed members match this search.</td></tr>}</tbody></table></div></div>
+        ) : view === "roles" ? (
+          <div>
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div><p className="text-[12.5px] font-bold text-[#111827]">Custom Roles & permissions</p><p className="mt-1 max-w-2xl text-[11px] leading-5 text-slate-500">Assign a least-privilege role profile instead of sharing a generic Administrator account. Role changes remain server-reviewed and approval notifications appear in Notifications.</p></div>
+              <span className="w-fit rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Server-governed</span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {ROLES.filter((role) => role.id !== "Super Administrator").map((role) => {
+                const definition = roleDefinitionFor(role.id);
+                return <article key={role.id} className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 transition hover:border-emerald-200 hover:bg-white">
+                  <div className="flex items-start justify-between gap-3"><div><h3 className="text-[12.5px] font-bold text-slate-800">{role.id}</h3><p className="mt-1 text-[10.5px] text-slate-500">{role.category}</p></div><span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500">{definition?.writeAccess === "none" ? "Read only" : definition?.writeAccess === "full" ? "Operational" : "Limited"}</span></div>
+                  <p className="mt-3 text-[11px] leading-5 text-slate-600">{role.description}</p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">{(definition?.allowedModules || []).slice(0, 6).map((moduleId) => <span key={moduleId} className="rounded-md bg-white px-2 py-1 text-[10px] font-medium text-slate-500">{moduleId}</span>)}{(definition?.allowedModules || []).length > 6 && <span className="rounded-md bg-white px-2 py-1 text-[10px] font-medium text-slate-400">+{definition.allowedModules.length - 6} more</span>}</div>
+                </article>;
+              })}
+            </div>
+            <div className="mt-4 rounded-xl border border-cyan-100 bg-cyan-50/70 p-3.5 text-[11px] leading-5 text-cyan-900"><strong>How assignment works:</strong> select a role when inviting a member, or submit a role-change request below. The server checks tenant membership, prevents self-approval, and records approve/reject outcomes for in-app notifications.</div>
+          </div>
         ) : (
           <div><div className="mb-4"><p className="text-[12.5px] font-bold text-[#111827]">Pending Invitations</p><p className="mt-1 text-[11px] text-slate-500">Invitation delivery and expiry state comes from the existing secure invitation service.</p></div>{invitations.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center"><Mail size={18} className="mx-auto mb-2 text-slate-300" /><p className="text-[11.5px] text-slate-400">No pending invitations require attention.</p></div> : <div className="space-y-2">{invitations.map((invitation) => <div key={invitation.id} className="flex flex-col gap-2 rounded-xl border border-slate-100 p-3 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-[12px] font-semibold text-slate-800">{invitation.fullName}</p><p className="text-[10.5px] text-slate-400">{invitation.email} · {invitation.role}</p></div><span className="w-fit rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700">{invitation.status}</span><span className="text-[10.5px] text-slate-400">Expires {invitation.expiresAt ? new Date(invitation.expiresAt).toLocaleDateString() : "—"}</span></div>)}</div>}</div>
         )}
@@ -42268,6 +42286,20 @@ function useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workO
 function NotificationCenter({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions, onNavigate, className = "" }) {
   const [open, setOpen] = useState(false);
   const alerts = useBusinessAlerts({ inventory, invoices, expenses, leaveRequests, workOrders, subscriptions });
+  const [readIds, setReadIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("bs_read_notifs") || "[]")); } catch (_error) { return new Set(); }
+  });
+  const unreadAlerts = alerts.filter((alert) => !readIds.has(alert.id));
+  const unreadCount = unreadAlerts.length;
+
+  function markRead(id) {
+    setReadIds((previous) => {
+      const next = new Set(previous);
+      next.add(id);
+      try { localStorage.setItem("bs_read_notifs", JSON.stringify([...next].slice(-200))); } catch (_error) {}
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!open) return undefined;
@@ -42284,12 +42316,12 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="dashboard-topbar-notifications relative flex h-10 w-10 items-center justify-center rounded-lg border-0 bg-transparent text-slate-500 shadow-none transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
-        aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "")}
+        aria-label={"Notifications" + (unreadCount ? " (" + unreadCount + " unread)" : "")}
         aria-expanded={open}
       >
         <Bell size={17} strokeWidth={1.75} />
-        {alerts.length > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 bg-[#EF4444] rounded-full ring-1 ring-white flex items-center justify-center text-[9px] font-bold text-white leading-none">{alerts.length > 9 ? "9+" : alerts.length}</span>
+        {unreadCount > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#EF4444] px-0.5 text-[9px] font-bold leading-none text-white ring-2 ring-white" aria-label={`${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}>{unreadCount > 99 ? "99+" : unreadCount}</span>
         )}
       </button>
 
@@ -42302,7 +42334,7 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
           >
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-[13px] font-semibold text-[#111827]">Notifications</h3>
-              {alerts.length > 0 && <span className="text-[11px] text-slate-400 font-mono">{alerts.length}</span>}
+              {unreadCount > 0 && <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">{unreadCount} unread</span>}
             </div>
             <div className="max-h-[min(52dvh,360px)] overscroll-contain overflow-y-auto">
               {alerts.length === 0 ? (
@@ -42316,16 +42348,17 @@ function NotificationCenter({ inventory, invoices, expenses, leaveRequests, work
                   return (
                     <button
                       key={a.id}
-                      onClick={() => { onNavigate(a.target); setOpen(false); }}
-                      className="flex min-h-12 w-full items-start gap-3 border-b border-slate-50 px-3 py-3 text-left transition-colors hover:bg-slate-50/70 sm:px-4 last:border-0"
+                      onClick={() => { markRead(a.id); onNavigate(a.target); setOpen(false); }}
+                      className={`flex min-h-12 w-full items-start gap-3 border-b border-slate-50 px-3 py-3 text-left transition-colors hover:bg-slate-50/70 sm:px-4 last:border-0 ${readIds.has(a.id) ? "opacity-60" : "bg-rose-50/35"}`}
                     >
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${a.color}14` }}>
                         <Icon size={15} style={{ color: a.color }} />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="text-[12.5px] font-medium text-[#111827]">{a.title}</p>
                         <p className="text-[11.5px] text-slate-400 truncate">{a.subtitle}</p>
                       </div>
+                      {!readIds.has(a.id) && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-rose-500" aria-label="Unread" />}
                     </button>
                   );
                 })
@@ -43662,6 +43695,7 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
     ...(onboardingProgress?.company || {}), logo: null,
   });
   const directPasswordSignupMutation = trpc.accountRegistration.createConfirmedPasswordAccount.useMutation();
+  const welcomeEmailMutation = trpc.accountRegistration.sendWelcomeEmail.useMutation();
   const workspaceBrandingMutation = trpc.workspaceBranding.save.useMutation();
   const passkeyNotificationMutation = trpc.passkeySecurity.notifyRegistered.useMutation();
   const [selectedModules, setSelectedModules] = useState(() => new Set(onboardingProgress ? onboardingProgress.selectedModules : onboardingModuleIds));
@@ -43877,6 +43911,15 @@ export function SignupPage({ onAuthenticated, onSwitchToLogin }) {
         try { await sb("profiles").eq("id", signUpResult.user.id).update({ phone: account.phone.trim() }).run(); } catch (_e) { /* non-blocking */ }
       }
 
+      if (mode === "create") {
+        try {
+          const welcome = await welcomeEmailMutation.mutateAsync({ fullName: account.fullName.trim(), companyName: rpcResult.name || company.name.trim(), companyId: rpcResult.id });
+          authDebug("Workspace welcome email processed", { sent: welcome.sent, reason: welcome.reason || null });
+        } catch (welcomeError) {
+          authDebug("Workspace welcome email could not be sent", { message: welcomeError?.message || "unknown" });
+        }
+      }
+
       authDebug("Workspace setup confirmed", { mode, companyId: rpcResult.id });
       clearStoredAuthSession();
       clearOnboardingProgress();
@@ -44017,6 +44060,7 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
   const [customerRef, setCustomerRef] = useState("");
   const [preferredPlanCode, setPreferredPlanCode] = useState("FREE_15");
   const [onboardingPlans, setOnboardingPlans] = useState([]);
+  const welcomeEmailMutation = trpc.accountRegistration.sendWelcomeEmail.useMutation();
 
   useEffect(() => {
     if (!IS_CONFIGURED) return undefined;
@@ -44076,6 +44120,12 @@ function OAuthCompanySetup({ oauthUser, onAuthenticated, onCancel }) {
         } catch (_freePlanError) {
           freePlanWarning = "Your workspace is ready, but its FREE_15 access could not be confirmed yet. Open Subscription & Billing from the account menu after sign-in to retry safely.";
         }
+      }
+
+      if (mode === "create") {
+        try {
+          await welcomeEmailMutation.mutateAsync({ fullName: fullName.trim(), companyName: rpcResult.name || company.name.trim(), companyId: rpcResult.id });
+        } catch (_welcomeError) { /* welcome delivery is non-blocking */ }
       }
 
       onAuthenticated({
@@ -48765,23 +48815,8 @@ function SmartManager() {
         }`}
         style={{ boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
       >
-        {/* Brand row */}
-        <div className={`dashboard-sidebar-brand relative flex items-center justify-between gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarLabelsVisible ? "" : "min-h-[84px] justify-center px-2 pb-5"}`}>
-          <div className={`flex min-w-0 items-center gap-2.5 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${sidebarCollapsed ? "translate-x-0" : "translate-x-0"}`}>
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white p-1.5 shadow-[0_6px_16px_rgba(0,0,0,.25)] ring-1 ring-white/15">
-              <BrandLogo variant="compact" priority className="h-7 w-7" />
-            </span>
-            {sidebarLabelsVisible && (
-              <div className="min-w-0 animate-in fade-in slide-in-from-left-1 duration-200 leading-tight motion-reduce:animate-none">
-                <span className="block truncate text-[15px] font-semibold tracking-tight text-white" style={{ fontFamily: "'Poppins'" }}>
-                  Smart Manager
-                </span>
-                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-cyan-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.16em] text-cyan-300 ring-1 ring-cyan-400/20">
-                  Enterprise Suite
-                </span>
-              </div>
-            )}
-          </div>
+        {/* Navigation controls — product branding is intentionally hidden here. */}
+        <div className={`dashboard-sidebar-brand relative flex items-center justify-end gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarLabelsVisible ? "" : "min-h-[84px] justify-center px-2 pb-5"}`}>
           <button className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
             <X size={17} />
           </button>
@@ -48858,9 +48893,6 @@ function SmartManager() {
             >
               <MenuIcon />
             </button>
-             <div className="dashboard-topbar-brand-mark grid shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-2 shadow-[0_5px_14px_rgba(11,93,59,.2)] lg:hidden" aria-hidden="true">
-               <BrandLogo variant="compact" priority className="h-5 w-5" />
-             </div>
             <div ref={workspaceMenuRef} className="relative min-w-0">
               <button
                 type="button"

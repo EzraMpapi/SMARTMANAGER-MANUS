@@ -7,8 +7,8 @@ const router = readFileSync(resolve(process.cwd(), "server/routers.ts"), "utf8")
 const service = readFileSync(resolve(process.cwd(), "server/teamWorkforce.ts"), "utf8");
 
 describe("Team & Workforce read-only slice", () => {
-  it("is opt-in and keeps the existing Settings/HR path as the fallback", () => {
-    expect(dashboard).toContain('const TEAM_WORKFORCE_CENTER_ENABLED = import.meta.env.VITE_TEAM_WORKFORCE_CENTER === "true";');
+  it("is enabled by default with an explicit rollback switch and keeps the existing Settings/HR path", () => {
+    expect(dashboard).toContain('const TEAM_WORKFORCE_CENTER_ENABLED = import.meta.env.VITE_TEAM_WORKFORCE_CENTER !== "false";');
     expect(dashboard).toContain("TEAM_WORKFORCE_CENTER_ENABLED && canManage");
     expect(dashboard).toContain("TeamManagement currentUser={currentUser} canManage={canManage}");
     expect(dashboard).toContain('data-testid="team-workforce-center"');

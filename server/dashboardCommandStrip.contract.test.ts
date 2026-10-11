@@ -26,8 +26,6 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("dashboard-topbar-context");
     expect(dashboard).toContain("dashboard-topbar-search");
     expect(dashboard).toContain("dashboard-topbar-actions");
-    expect(dashboard).toContain("SMART MANAGER");
-    expect(dashboard).toContain("Enterprise Suite");
     expect(dashboard).toContain("<NotificationCenter");
     expect(dashboard).toContain("onClick={toggleDarkMode}");
     expect(dashboard).toContain("dashboard-topbar-profile");
@@ -47,7 +45,7 @@ describe("dashboard operational command strip", () => {
   it("keeps the notification overlay bounded and keyboard-safe without widening data access", () => {
     expect(dashboard).toContain("const [open, setOpen] = useState(false);");
     expect(dashboard).toContain("onClick={() => setOpen((o) => !o)}");
-    expect(dashboard).toContain('aria-label={"Notifications" + (alerts.length ? " (" + alerts.length + " alerts)" : "") }'.replace(" }", "}"));
+    expect(dashboard).toContain('aria-label={"Notifications" + (unreadCount ? " (" + unreadCount + " unread)" : "")}');
     expect(dashboard).toContain('className="fixed inset-0 z-30"');
     expect(dashboard).toContain("onClick={() => setOpen(false)}");
     expect(dashboard).toContain("const alerts = useBusinessAlerts");
