@@ -1,6 +1,7 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type HtmlTagDescriptor, type Plugin, type ViteDevServer } from "vite";
@@ -161,7 +162,30 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+function deploymentVersion() {
+  return process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || (() => {
+    try {
+      return execFileSync("git", ["rev-parse", "HEAD"], { cwd: PROJECT_ROOT, encoding: "utf8" }).trim();
+    } catch {
+      return "development";
+    }
+  })();
+}
+
+function vitePluginDeploymentVersion(): Plugin {
+  return {
+    name: "smart-manager-deployment-version",
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "build-version.json",
+        source: JSON.stringify({ version: deploymentVersion() }),
+      });
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginDeploymentVersion()];
 
 export default defineConfig({
   plugins,

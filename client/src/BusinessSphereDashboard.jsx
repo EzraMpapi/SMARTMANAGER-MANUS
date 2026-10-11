@@ -48504,8 +48504,6 @@ function SmartManager() {
   const [isDesktopNavigation, setIsDesktopNavigation] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const sidebarHiddenFromAssistiveTech = !isDesktopNavigation && !sidebarOpen;
   const sidebarRef = useRef(null);
-  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
-  const workspaceMenuRef = useRef(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       const savedPreferences = window.localStorage.getItem("smart_manager_dashboard_prefs");
@@ -48564,21 +48562,6 @@ function SmartManager() {
       window.clearTimeout(focusTimer);
     };
   }, [isDesktopNavigation, sidebarOpen]);
-  useEffect(() => {
-    if (!workspaceMenuOpen) return undefined;
-    const closeWorkspaceMenu = (event) => {
-      if (!workspaceMenuRef.current?.contains(event.target)) setWorkspaceMenuOpen(false);
-    };
-    const closeOnEscape = (event) => {
-      if (event.key === "Escape") setWorkspaceMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", closeWorkspaceMenu);
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeWorkspaceMenu);
-      window.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [workspaceMenuOpen]);
   useEffect(() => {
     try { window.localStorage.setItem("smart-manager:sidebar-collapsed", String(sidebarCollapsed)); } catch {}
   }, [sidebarCollapsed]);
@@ -48655,54 +48638,6 @@ function SmartManager() {
       Sun:{open:"",close:"",closed:true},
     },
   };});
-  const [workspaceBranches, setWorkspaceBranches] = useState([]);
-  const [branchesLoading, setBranchesLoading] = useState(false);
-  const [activeBranchId, setActiveBranchId] = useState("");
-  useEffect(() => {
-    let cancelled = false;
-    const companyId = session?.company?.id;
-    if (!IS_CONFIGURED || !session?.accessToken || session?.demo || !companyId) {
-      setWorkspaceBranches([]);
-      setActiveBranchId("");
-      return undefined;
-    }
-    setBranchesLoading(true);
-    (async () => {
-      try {
-        const rows = await sb("branches").select("*").eq("company_id", companyId).order("name", { ascending: true }).run();
-        if (cancelled) return;
-        const usable = (Array.isArray(rows) ? rows : []).filter((branch) => String(branch?.status || "Active").toLowerCase() !== "inactive");
-        setWorkspaceBranches(usable);
-        let remembered = "";
-        try { remembered = window.localStorage.getItem(`smart-manager:active-branch:${companyId}`) || ""; } catch {}
-        const preferredId = remembered || company?.activeBranchId || company?.active_branch_id || "";
-        const preferred = usable.find((branch) => String(branch.id) === String(preferredId)) || usable.find((branch) => branch.isHeadquarters || branch.is_headquarters) || usable[0];
-        if (preferred) {
-          setActiveBranchId(String(preferred.id));
-          setCompany((current) => ({ ...current, activeBranchId: preferred.id, activeBranchName: preferred.name, activeBranch: preferred }));
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setWorkspaceBranches([]);
-          authDebug("Workspace branch list unavailable", { message: error?.message || "unknown" });
-        }
-      } finally {
-        if (!cancelled) setBranchesLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [session?.accessToken, session?.demo, session?.company?.id]);
-  const switchWorkspaceBranch = useCallback((branch) => {
-    if (!branch?.id) return;
-    const nextId = String(branch.id);
-    setActiveBranchId(nextId);
-    setCompany((current) => ({ ...current, activeBranchId: branch.id, activeBranchName: branch.name, activeBranch: branch }));
-    try { window.localStorage.setItem(`smart-manager:active-branch:${company?.id || session?.company?.id}`, nextId); } catch {}
-    window.dispatchEvent(new CustomEvent("smart-manager:active-branch-changed", { detail: { branchId: branch.id, branchName: branch.name, companyId: company?.id || session?.company?.id } }));
-    setWorkspaceMenuOpen(false);
-    notify(`Active branch changed to ${branch.name}.`);
-  }, [company?.id, session?.company?.id]);
-
   // Role-based access state initialized at the top of SmartManager to prevent temporal dead zones.
   const roleChangeApprovalsQuery = trpc.listRoleChangeApprovals.useQuery(undefined, {
     enabled: Boolean(IS_CONFIGURED && session?.accessToken && !session?.demo && currentUser?.id),
@@ -49432,63 +49367,6 @@ function SmartManager() {
             >
               <MenuIcon />
             </button>
-            <div ref={workspaceMenuRef} className="relative min-w-0">
-              <button
-                type="button"
-                onClick={() => setWorkspaceMenuOpen((open) => !open)}
-                aria-expanded={workspaceMenuOpen}
-                aria-haspopup="menu"
-                aria-label={`Open workspace details for ${company?.name || "BusinessSphere"}`}
-                title={`${workspaceMenuOpen ? "Close" : "Open"} workspace switcher`}
-                 className={`dashboard-topbar-workspace group flex min-w-0 items-center gap-2 rounded-xl border px-2 py-1.5 text-left text-[12px] shadow-[0_4px_14px_rgba(15,23,42,.06)] transition-all duration-150 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 sm:gap-2.5 sm:px-2.5 sm:text-[13px] ${workspaceMenuOpen ? "border-emerald-200 bg-emerald-50/80 text-emerald-900" : "border-slate-200/80 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-emerald-900"}`}
-              >
-                 <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors ${workspaceMenuOpen ? "bg-emerald-700 text-white shadow-sm" : "bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100"}`}>
-                  <Building2 size={15} strokeWidth={2.1} aria-hidden="true" />
-                </span>
-                 <span className="dashboard-topbar-workspace-copy min-w-0">
-                   <span className="block max-w-[220px] truncate font-semibold tracking-[-.01em] text-slate-800">{company?.name || "BusinessSphere"}</span>
-                   <span className="mt-0.5 block truncate text-[9px] font-semibold uppercase tracking-[.12em] text-slate-400">{currentUser?.role || "Administrator"}</span>
-                 </span>
-                 <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform duration-200 ${workspaceMenuOpen ? "rotate-180 text-emerald-700" : "group-hover:text-emerald-700"}`} aria-hidden="true" />
-              </button>
-              {workspaceMenuOpen && (
-                <section role="menu" aria-label="Workspace details" className="absolute left-0 top-full z-50 mt-2 max-h-[min(70dvh,520px)] w-[min(92vw,340px)] max-w-[calc(100vw-1rem)] touch-pan-y overscroll-contain overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,.18)]">
-                  <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-700"><Building2 size={17} aria-hidden="true" /></span>
-                    <div className="min-w-0">
-                      <p className="truncate text-[13px] font-bold text-slate-900">{company?.name || "BusinessSphere"}</p>
-                      <p className="mt-0.5 truncate text-[10.5px] text-slate-500">{company?.industry || company?.businessType || "Business workspace"}</p>
-                    </div>
-                  </div>
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 text-[11px]">
-                    <div><dt className="text-slate-400">Location</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{[company?.city, company?.country].filter(Boolean).join(", ") || "Not set"}</dd></div>
-                    <div><dt className="text-slate-400">Currency</dt><dd className="mt-0.5 font-semibold text-slate-700">{company?.currency || company?.currencyCode || "TZS"}</dd></div>
-                    <div><dt className="text-slate-400">Timezone</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company?.timezone || "Africa/Dar_es_Salaam"}</dd></div>
-                    <div><dt className="text-slate-400">Role</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{currentUser?.role || "Administrator"}</dd></div>
-                    <div><dt className="text-slate-400">Subscription</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{subscriptionStateLabel(subscriptionAccess.access)}</dd></div>
-                    <div><dt className="text-slate-400">Plan</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{subscriptionAccess.access.plan?.name || subscriptionAccess.access.plan?.display_name || subscriptionAccess.access.plan?.code || "Not confirmed"}</dd></div>
-                    {(company?.activeBranchName || company?.branchName || company?.activeBranch?.name) && <div><dt className="text-slate-400">Active branch</dt><dd className="mt-0.5 truncate font-semibold text-slate-700">{company.activeBranchName || company.branchName || company.activeBranch.name}</dd></div>}
-                  </dl>
-                  <div className="border-t border-slate-100 pt-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Switch branch</p>
-                      {branchesLoading && <LoaderCircle size={13} className="animate-spin text-cyan-600" aria-label="Loading branches" />}
-                    </div>
-                    {!branchesLoading && workspaceBranches.length === 0 && <p className="mt-2 text-[11px] leading-4 text-slate-500">No active branches are available for this workspace.</p>}
-                    {workspaceBranches.length > 0 && <div className="mt-2 space-y-1" role="group" aria-label="Available branches">
-                      {workspaceBranches.map((branch) => {
-                        const selected = String(branch.id) === String(activeBranchId);
-                        return <button key={branch.id} type="button" role="menuitemradio" aria-checked={selected} onClick={() => switchWorkspaceBranch(branch)} className={`flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left text-[11px] transition ${selected ? "bg-cyan-50 text-cyan-800" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
-                          <span className="min-w-0 truncate font-semibold">{branch.name || "Unnamed branch"}</span>
-                          {selected && <Check size={14} className="shrink-0 text-cyan-700" aria-label="Active branch" />}
-                        </button>;
-                      })}
-                    </div>}
-                  </div>
-                  {(company?.phone || company?.email) && <div className="border-t border-slate-100 pt-2 text-[10.5px] text-slate-500">{company?.phone && <p className="truncate">{company.phone}</p>}{company?.email && <p className="truncate">{company.email}</p>}</div>}
-                </section>
-              )}
-            </div>
              <div className="dashboard-topbar-page-context hidden min-w-0 items-center gap-2 xl:flex" aria-label={`Current workspace area: ${activeModuleLabel}`}>
                <span className="h-5 w-px bg-slate-200" aria-hidden="true" />
                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500"><ActiveModuleIcon size={15} strokeWidth={2} aria-hidden="true" /></span>
