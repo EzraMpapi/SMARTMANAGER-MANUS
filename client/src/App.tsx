@@ -10,26 +10,23 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { DashboardPreferencesProvider } from "./contexts/DashboardPreferencesContext";
 import { AuthProvider, useAuthContext } from "./contexts/AuthContext";
 import { AUTH_STATES } from "./lib/authStateMachine";
+import { reloadIfGithubUpdated } from "./lib/githubUpdateReload";
 import Home from "./pages/Home";
 
 type LazyModule = { default: ComponentType<any> };
 
-function lazyWithRecovery(load: () => Promise<LazyModule>, key: string) {
+function lazyWithRecovery(load: () => Promise<LazyModule>, _key: string) {
   return lazy(async () => {
-    const retryKey = `smart-manager-lazy-retry:${key}`;
     try {
       const module = await load();
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       return module;
     } catch (error) {
-      let alreadyRetried = false;
-      try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
-      if (!alreadyRetried && typeof window !== "undefined") {
-        try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
-        window.location.reload();
+      // A failed dynamic import can be caused by a transient network issue.
+      // Only recover with a full reload when the server confirms a new GitHub
+      // revision is deployed; otherwise surface the existing error boundary.
+      if (typeof window !== "undefined" && await reloadIfGithubUpdated()) {
         return new Promise(() => {});
       }
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       throw error;
     }
   });
@@ -60,11 +57,17 @@ const PatientSmsConsentSettings = lazyWithRecovery(
 );
 
 function DashboardRouteFallback() {
-  return <main className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center p-6" role="status" aria-live="polite">
-    <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900/80 p-6 text-center shadow-2xl">
-      <BrandLogo variant="compact" priority className="mx-auto h-11 w-11 animate-pulse ring-1 ring-emerald-300/30" />
-      <h1 className="mt-4 text-base font-semibold">Preparing Smart Manager</h1>
-      <p className="mt-1 text-sm text-slate-400">Loading your secure business workspace.</p>
+  return <main className="sm-loading-screen grid min-h-screen place-items-center p-6 text-slate-100" role="status" aria-live="polite">
+    <div className="sm-loading-card w-full max-w-sm rounded-[28px] border border-white/10 p-8 text-center shadow-2xl">
+      <div className="sm-loading-brand mx-auto" aria-hidden="true">
+        <span className="sm-loading-brand__halo" />
+        <span className="sm-loading-brand__orbit sm-loading-brand__orbit--one"><span /></span>
+        <span className="sm-loading-brand__orbit sm-loading-brand__orbit--two"><span /></span>
+        <BrandLogo variant="compact" priority className="sm-loading-brand__logo" />
+      </div>
+      <h1 className="mt-6 text-base font-semibold tracking-[-.01em]">Preparing Smart Manager</h1>
+      <p className="mt-2 text-sm text-slate-400">Loading your secure business workspace.</p>
+      <div className="sm-loading-progress mx-auto mt-6" aria-hidden="true"><span /></div>
     </div>
   </main>;
 }

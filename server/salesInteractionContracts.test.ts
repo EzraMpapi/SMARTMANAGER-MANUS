@@ -34,6 +34,13 @@ describe("Sales interaction and persistence contracts", () => {
     expect(salesSource).not.toContain("<button className=\"flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium border border-slate-200 rounded-lg py-2.5 hover:bg-slate-50 transition-colors\">\n              <Printer");
   });
 
+  it("converts a confirmed quotation once and preserves its source on the invoice", () => {
+    expect(salesSource).toContain('if (quote.status === "Converted")');
+    expect(salesSource).toContain("invoice.quotationDbId === quote.dbId");
+    expect(salesSource).toContain("quotation_id: quote.dbId");
+    expect(dashboardSource).toContain('quotationDbId: r.quotation_id || data.quotation_id || null');
+  });
+
   it("shows authorization and offline denials as recoverable server outcomes without weakening persistence requirements", () => {
     expect(dashboardSource).toContain("was denied by your workspace permissions. The server did not save this change.");
     expect(dashboardSource).toContain("could not be sent because this browser is offline. No server change was made.");
@@ -76,7 +83,7 @@ describe("Sales interaction and persistence contracts", () => {
   });
 
   it("keeps the repaired typed Invoice contract out of generic JSON normalization", () => {
-    expect(dashboardSource).toContain('sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"])');
+    expect(dashboardSource).toContain('sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "quotation_id", "amount_paid"])');
     expect(dashboardSource).toContain('sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"])');
     expect(dashboardSource).toContain('return GENERIC_COMPANY_TABLES.has(table) && !genericAllowedColumns(table).has(column)');
     expect(dashboardSource).toContain("const typedFields = Object.fromEntries(Object.entries(record).filter(([key]) => typedColumns.has(key)));");

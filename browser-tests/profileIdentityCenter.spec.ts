@@ -97,7 +97,7 @@ test("opens the premium account popover and navigates to the responsive My Profi
   await expect(page.getByText("Security and access", { exact: true })).toBeVisible();
   await expect(page.getByText("Current session verified", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Preferences", exact: true }).click();
-  await expect(page.getByText("Display and localisation", { exact: true })).toBeVisible();
+  await expect(page.getByText("Display settings", { exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("heading", { name: "My Profile", exact: true })).toBeVisible();
   await page.screenshot({ path: "test-results/profile-identity-center-mobile.png", fullPage: true });
@@ -108,4 +108,70 @@ test("signs out through the real session action from the account popover", async
   await page.getByRole("button", { name: "Open account identity center" }).click();
   await page.getByRole("dialog", { name: "Account identity center" }).getByRole("button").filter({ hasText: /Sign out|Exit demo/ }).click();
   await expect(page.getByRole("button", { name: "Sign in securely", exact: true })).toBeVisible();
+});
+
+test("supports mobile touch gestures and dropdown dismissal", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-mobile", "Touch gesture coverage runs in the mobile project only.");
+  await setupIdentityPage(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const trigger = page.getByRole("button", { name: "Open account identity center", exact: true });
+  await expect(trigger).toBeVisible();
+  await trigger.tap();
+  const dialog = page.getByRole("dialog", { name: "Account identity center" });
+  await expect(dialog).toBeVisible();
+  const preferencesAction = dialog.getByRole("button", { name: /Preferences Display and notification settings/ });
+  await expect(preferencesAction).toBeVisible();
+
+  const dialogBox = await dialog.boundingBox();
+  if (!dialogBox) throw new Error("Account identity center did not expose a touchable bounding box.");
+  const outsideX = Math.max(2, dialogBox.x - 18);
+  const outsideY = Math.min(780, dialogBox.y + Math.max(80, dialogBox.height / 2));
+  await page.touchscreen.tap(outsideX, outsideY);
+  await expect(dialog).toBeHidden();
+
+  await trigger.tap();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  await trigger.tap();
+  await dialog.getByRole("button", { name: /Preferences Display and notification settings/ }).tap();
+  await expect(page.getByRole("heading", { name: "My Profile", exact: true })).toBeVisible();
+  await expect(page.getByText("Display settings", { exact: true })).toBeVisible();
+});
+
+test("matches the mobile profile dropdown visual baseline", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-mobile", "Mobile visual coverage runs in the mobile project only.");
+  await setupIdentityPage(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => document.fonts?.ready);
+
+  const trigger = page.getByRole("button", { name: "Open account identity center", exact: true });
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveScreenshot("mobile-profile-trigger-closed.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixels: 80,
+  });
+
+  await trigger.tap();
+  const dialog = page.getByRole("dialog", { name: "Account identity center" });
+  await expect(dialog).toBeVisible();
+  await page.waitForTimeout(400);
+  await dialog.evaluate((element) => {
+    Object.assign((element as HTMLElement).style, {
+      position: "fixed",
+      top: "76px",
+      right: "12px",
+      left: "auto",
+      transform: "none",
+      zIndex: "9999",
+    });
+  });
+  await expect(dialog).toHaveScreenshot("mobile-profile-dropdown-open.png", {
+    animations: "disabled",
+    caret: "hide",
+    maxDiffPixels: 300,
+  });
 });

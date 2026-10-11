@@ -46,12 +46,16 @@ import { ORGANIZATION_INDUSTRY_OPTIONS, normalizeOrganizationIndustryFocus, reme
 import { buildEmailTemplateHtml, buildSafeEmailTemplateSegments, escapeEmailHtml, findEmailTemplateLinkIssues, validateEmailHyperlink } from "./lib/emailTemplateSafety";
 import { getGuardedPersistenceCompanyId, guardedPersistenceClient, setGuardedPersistenceCompanyId } from "./lib/guardedPersistenceClient";
 import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneValidationError, hasOnboardingProgress, readOnboardingProgress, writeOnboardingProgress } from "./lib/onboardingProgress";
+import { shouldOpenOnboardingTour } from "./lib/onboardingTourState";
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
 import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
+import { resolveConnectedWorkspaceSnapshot } from "./lib/connectedWorkspaceSnapshot";
+import { buildConnectedWorkspaceCsv, connectedWorkspaceExportFilename } from "./lib/connectedWorkspaceExport";
+import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
 import { AuthContext, useAuthContext } from "./contexts/AuthContext";
 import { fetchWithSupabaseAuthRecovery, getSupabaseAuthClient, isDefinitiveSupabaseAuthFailure, refreshSupabaseSession } from "./lib/supabaseAuthClient";
-import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics";
+import { DashboardLayoutAnalytics } from "./components/DashboardLayoutAnalytics"
 import { EnterpriseLoginView, PasswordRecoveryView, PasswordStrengthMeter, ResetPasswordView, EmailConfirmationView, readAuthBranding, writeAuthBranding } from "./components/EnterpriseAuthViews";
 import { BrandLogo } from "./components/BrandLogo";
 import { EnterpriseColumnCustomizer } from "./components/EnterpriseColumnCustomizer";
@@ -104,6 +108,7 @@ const EnterpriseDashboardOverview = lazy(() => import("./components/EnterpriseDa
 import { getNavigationGroups, getPresentationNavigationGroups, getQuickCreateActions, groupContainsActiveItem, NAVIGATION_ITEMS } from "./navigation/enterpriseNavigation";
 import { buildResumeUrl, clearResumeLocation, getModuleFromUrl, readResumeLocation, writeResumeLocation } from "./lib/resumeSession";
 import { applyOfflineMutationToCache, discardOfflineMutation, enqueueOfflineMutation, hydrateOfflineStorage, offlineQueueSummary, offlineScope, readOfflineTableCache, replayOfflineMutations, removeOfflineMutation, resolveOfflineConflict, retryOfflineMutation, updateOfflineMutation, writeOfflineTableCache } from "./lib/offlineSync";
+import { reloadIfGithubUpdated } from "./lib/githubUpdateReload";
 
 const { ACTIVITY_MODULE_COLORS, BRIEFING_EXEC_ROLES, ASSET_CATEGORIES, EXPENSE_CATEGORIES_LIST, RECRUITMENT_STAGES, TICKET_CATEGORIES, KB_CATEGORIES, OFFICIAL_MARKETPLACE_TEMPLATES, APPROVER_ROLES, CMD_ITEMS, MFI_LOAN_PRODUCTS, MFI_CLIENT_SEED, MFI_LOAN_SEED, MARKETPLACE_CATEGORIES, WA_TEMPLATES, WHATSAPP_MESSAGE_SEED, EMAIL_TEMPLATES, CALENDAR_CATEGORIES, CONGRATS_TEMPLATES, PASSKEY_READINESS_ROLES, SMS_CATEGORIES, COMPANY_CATEGORIES, ONBOARDING_MODULES, VICOBA_MEMBER_SEED, VICOBA_LOAN_SEED, VICOBA_MEETING_SEED, HC_PATIENTS_SEED, HC_DOCTORS_SEED, HC_APPTS_SEED, HC_VISITS_SEED, HC_PRESCRIPTIONS_SEED, HC_REPORTS_SEED, HC_LAB_CATEGORIES, VITAL_SEED, RADIOLOGY_SEED, SCH_STUDENTS_SEED, SCH_TEACHERS_SEED, SCH_CLASSES_SEED, SCH_EXAMS_SEED, SCH_FEES_SEED, SCH_BOOKS_SEED, SCH_TRANSPORT_SEED, PHM_DRUGS_SEED, PHM_STOCK_SEED, PHM_DISPENSE_SEED, PHM_SUPPLIERS_SEED, DRUG_CATEGORIES, HTL_ROOMS_SEED, HTL_BOOKINGS_SEED, BANK_ACCOUNTS_SEED, BANK_TRANSACTIONS_SEED, BANK_LOANS_SEED, BANK_FIXED_DEPOSITS_SEED, BANK_STANDING_ORDERS_SEED, RST_TABLES_SEED, RST_MENU_SEED, RST_ORDERS_SEED, RST_RESERVATIONS_SEED, RST_WAITERS, MENU_CATEGORIES, TABLE_ZONES, TZS_FMT, ANN_CAT_COLORS, EXPENSE_CATEGORIES_PERSONAL, ONBOARDING_TOUR_STEPS } = createDashboardStaticData({
   Brain,
@@ -136,23 +141,15 @@ async function clearStaleShellCaches() {
   }
 }
 
-function lazyWorkspaceWithRecovery(load, key) {
+function lazyWorkspaceWithRecovery(load, _key) {
   return lazy(async () => {
-    const retryKey = `smart-manager-workspace-lazy-retry:${key}`;
     try {
       const module = await load();
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       return module;
     } catch (error) {
-      let alreadyRetried = false;
-      try { alreadyRetried = window.sessionStorage.getItem(retryKey) === "1"; } catch {}
-      if (!alreadyRetried && typeof window !== "undefined") {
-        try { window.sessionStorage.setItem(retryKey, "1"); } catch {}
-        await clearStaleShellCaches();
-        window.location.reload();
+      if (typeof window !== "undefined" && await reloadIfGithubUpdated({ beforeReload: clearStaleShellCaches })) {
         return new Promise(() => {});
       }
-      try { window.sessionStorage.removeItem(retryKey); } catch {}
       throw error;
     }
   });
@@ -657,7 +654,7 @@ export async function callWorkspaceRpcWithSessionRefresh(name, params, accessTok
 export const GENERIC_COMPANY_TABLES = new Set(`
 approval_signatures bank_accounts bank_fixed_deposits bank_loans bank_standing_orders bank_transactions
 branches business_loans collab_messages community_contributions community_groups company_modules
-crm_contacts crm_interactions crm_leads customer_feedback departments digital_signatures documents
+crm_contacts crm_interactions crm_leads customer_communications customer_feedback departments digital_signatures documents
 ecommerce_orders ecommerce_products emails expense_budgets   flt_maintenance flt_trips flt_vehicles
   hc_appointments hc_doctors hc_invoices hc_lab_orders hc_patients hc_prescriptions hc_radiology hc_reports hc_visits hc_vitals
 hr_attendance hr_benefits hr_candidates hr_duties hr_employees hr_leave_requests hr_payroll_runs hr_performance_reviews
@@ -683,7 +680,7 @@ const GENERIC_STANDARD_COLUMNS = new Set([
 // read the same canonical values the UI writes.
 const GENERIC_TYPED_COLUMNS = {
   sales_quotations: new Set(["doc_number", "customer", "issue_date", "valid_until", "owner_id"]),
-  sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "amount_paid"]),
+  sales_invoices: new Set(["doc_number", "customer", "issue_date", "due_date", "order_id", "quotation_id", "amount_paid"]),
   sales_invoice_items: new Set(["invoice_id", "item_name", "item_sku", "qty", "rate", "sort_order"]),
   sales_payments: new Set(["invoice_id", "method", "payment_date", "reference"]),
   sales_subscriptions: new Set(["doc_number", "customer", "plan", "cycle", "start_date", "next_billing_date"]),
@@ -765,8 +762,23 @@ export function sb(table) {
       matchFilters.push({ col: normalizedColumn, val });
       return builder;
     },
+    filter(col, operator, value) {
+      if (col && operator && value !== undefined && value !== null) {
+        params.append(col, `${operator}.${value}`);
+      }
+      return builder;
+    },
+    or(expression) {
+      if (expression) params.set("or", expression.startsWith("(") ? expression : `(${expression})`);
+      return builder;
+    },
     order(col, { ascending = true } = {}) {
       params.set("order", `${col}.${ascending ? "asc" : "desc"}`);
+      return builder;
+    },
+    limit(value) {
+      const safeLimit = Math.max(0, Math.min(1000, Number(value) || 0));
+      params.set("limit", String(safeLimit));
       return builder;
     },
     insert(row) {
@@ -1601,7 +1613,7 @@ function mapInvoiceRow(r) {
   return {
     id: r.doc_number || data.doc_number || r.id, dbId: r.id,
     customer: r.customer || data.customer || r.name, date: r.issue_date || data.issue_date || r.created_at, dueDate: r.due_date || data.due_date,
-    orderRef: r.order_id || data.order_id ? "linked" : "—", status: r.status || data.status,
+    orderRef: r.order_id || data.order_id ? "linked" : "—", quotationRef: r.quotation_id || data.quotation_id ? "linked" : "—", quotationDbId: r.quotation_id || data.quotation_id || null, status: r.status || data.status,
     amountPaid: Number(r.amount_paid ?? data.amount_paid) || 0,
     items: mapDocItems(r.items ?? r.sales_invoice_items ?? data.items),
     payments: (r.payments ?? r.sales_payments ?? []).map(mapPaymentRow).sort((a, b) => (a.date < b.date ? 1 : -1)),
@@ -2280,6 +2292,12 @@ export function resolveDailyBriefingFetchState({ sources = [], usingDemoBriefing
   };
 }
 
+function dailyBriefDateOffset(dateString, days) {
+  const date = new Date(`${dateString}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+}
+
 function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
   expenses, crm, employees, leaveRequests, workOrders, subscriptions, smartAlerts, enabledModules, initialOpen = true }) {
 
@@ -2293,6 +2311,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
   const [open, setOpen] = useState(initialOpen);
   const [printing, setPrinting] = useState(false);
   const [retryingData, setRetryingData] = useState(false);
+  const [selectedBriefDate, setSelectedBriefDate] = useState(TODAY_STR);
   useEffect(() => {
     if (initialOpen) setOpen(true);
   }, [initialOpen]);
@@ -2341,7 +2360,9 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
   // ── Compute all section data ─────────────────────────────────────────
   const data = useMemo(() => {
     const fmt    = (n) => new Intl.NumberFormat("en-US").format(Math.round(n || 0));
-    const today  = TODAY_STR;
+    const today  = selectedBriefDate;
+    const nextSevenDays = dailyBriefDateOffset(today, 7);
+    const nextThirtyDays = dailyBriefDateOffset(today, 30);
     const invRows = invoices?.rows || [];
 
     // SALES
@@ -2379,9 +2400,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
     const onLeave   = (leaveRequests?.rows || []).filter(l =>
       l.status === "Approved" && l.startDate <= today && l.endDate >= today
     );
-    const expContracts = emps.filter(e =>
-      e.contractEndDate && e.contractEndDate <= new Date(Date.now()+30*86400000).toISOString().slice(0,10)
-    );
+    const expContracts = emps.filter(e => e.contractEndDate && e.contractEndDate >= today && e.contractEndDate <= nextThirtyDays);
 
     // MANUFACTURING
     const wos       = workOrders?.rows || [];
@@ -2389,7 +2408,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
 
     // SUBSCRIPTIONS
     const subs      = subscriptions?.rows || [];
-    const subsDue   = subs.filter(s => s.status === "Active" && s.nextBillingDate && s.nextBillingDate <= new Date(Date.now()+7*86400000).toISOString().slice(0,10));
+    const subsDue   = subs.filter(s => s.status === "Active" && s.nextBillingDate && s.nextBillingDate >= today && s.nextBillingDate <= nextSevenDays);
     const MRR       = subs.filter(s=>s.status==="Active").reduce((sum,s)=>{
       const mo={Monthly:1,Quarterly:3,Annual:12}[s.cycle]||1;
       return sum+(s.amount/mo);
@@ -2404,7 +2423,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
       grossPL, leads, newLeads, openOpps, pipeVal, activeEmps, onLeave,
       expContracts, wos, overdueWO, subs, subsDue, MRR, alerts,
     };
-  }, [invoices?.rows, inventory?.rows, expenses?.rows, crm?.rows,
+  }, [selectedBriefDate, invoices?.rows, inventory?.rows, expenses?.rows, crm?.rows,
       employees, leaveRequests?.rows, workOrders?.rows, subscriptions?.rows, smartAlerts]);
 
   if (!open) return null;
@@ -2681,7 +2700,26 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
                 <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</span>
               </div>
               <h1 className="text-white text-[19px] sm:text-[24px] font-black tracking-tight leading-tight">Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {(currentUser?.name||"").split(" ")[0]} 👋</h1>
-              <p className="text-[rgba(255,255,255,.5)] text-[12.5px] mt-1.5">Here is your daily business briefing for {co.name||"your company"}</p>
+              <p className="text-[rgba(255,255,255,.5)] text-[12.5px] mt-1.5">Here is your daily business briefing for {co.name||"your company"} on {new Date(`${selectedBriefDate}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <label className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+                  <Calendar size={14} className="text-[#4ADE80]" aria-hidden="true" />
+                  <span className="sr-only">Select Daily Brief date</span>
+                  <input
+                    type="date"
+                    value={selectedBriefDate}
+                    onChange={(event) => setSelectedBriefDate(event.target.value || TODAY_STR)}
+                    aria-label="Select Daily Brief date"
+                    className="min-w-0 bg-transparent text-[11px] font-bold text-white outline-none [color-scheme:dark] focus-visible:ring-2 focus-visible:ring-[#4ADE80]/70"
+                    data-testid="daily-brief-date"
+                  />
+                </label>
+                {selectedBriefDate !== TODAY_STR && (
+                  <button type="button" onClick={() => setSelectedBriefDate(TODAY_STR)} className="min-h-9 rounded-xl border border-white/15 px-3 text-[11px] font-bold text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4ADE80]/70">
+                    Today
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button onClick={printBriefing}
@@ -2718,7 +2756,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
               {l:"Gross P&L",         v:(data.grossPL>=0?"+":"")+fmtCur(Math.abs(data.grossPL)), col:data.grossPL>=0?"#16A34A":"#EF4444", sub:"Collected − Expenses"},
               {l:"Inventory Value",   v:fmtCur(data.stockValue),    col:"#111827", sub:(inventory?.rows||[]).length+" SKUs"},
               {l:"Low/Out of Stock",  v:String(data.lowStock.length),col:data.lowStock.length>0?"#EF4444":"#16A34A", sub:data.outOfStock.length+" completely out"},
-              {l:"Active Staff",      v:String(data.activeEmps.length),col:"#111827", sub:data.onLeave.length+" on leave today"},
+              {l:"Active Staff",      v:String(data.activeEmps.length),col:"#111827", sub:data.onLeave.length+" on leave on selected date"},
               {l:"Pipeline Value",    v:fmtCur(data.pipeVal),       col:"#7C3AED", sub:data.openOpps.length+" open opps"},
             ].map(({l,v,col,sub})=>(
               <div key={l} className="bg-white px-4 py-4">
@@ -2834,7 +2872,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
               <div className="space-y-2">
                 {[
                   ["Active Employees", activeEmps.length, "#111827"],
-                  ["On Leave Today",   onLeave.length,    onLeave.length>0?"#F59E0B":"#16A34A"],
+                  ["On Leave on Date", onLeave.length,    onLeave.length>0?"#F59E0B":"#16A34A"],
                   ["Expiring Contracts (30d)", expContracts.length, expContracts.length>0?"#EF4444":"#16A34A"],
                   ["Overdue Work Orders", data.overdueWO.length, data.overdueWO.length>0?"#EF4444":"#16A34A"],
                 ].map(([l,v,col])=>(
@@ -2849,7 +2887,7 @@ function DailyBriefing({ company, currentUser, canManage, invoices, inventory,
               <h2 className="text-[14px] font-black text-[#111827] mb-3">📊 CRM & Revenue</h2>
               <div className="space-y-2">
                 {[
-                  ["New Leads Today",       newLeads.length,      "#2563EB"],
+                  ["New Leads on Date",     newLeads.length,      "#2563EB"],
                   ["Open Opportunities",    openOpps.length,      "#7C3AED"],
                   ["Pipeline Value",        fmtCur(pipeVal),      "#7C3AED"],
                   ["Monthly Recurring Rev", fmtCur(MRR),          "#16A34A"],
@@ -3126,7 +3164,7 @@ function PostCreateDispatch({ company, crm }) {
   ];
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 transition-all duration-280 ${closing ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}
+    <div className={`sm-mobile-invoice-dispatch fixed bottom-6 right-6 z-50 transition-all duration-280 ${closing ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}
       style={{animation: closing ? undefined : "slideUp .28s cubic-bezier(.22,1,.36,1)"}}>
       <div className="w-[340px] bg-white rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden">
 
@@ -3513,7 +3551,7 @@ function Toasts() {
   if (!toasts.length) return null;
 
   return (
-    <div className="fixed bottom-24 sm:bottom-6 right-4 z-[60] flex flex-col gap-2.5 w-[calc(100vw-2rem)] sm:w-[360px] pointer-events-none">
+    <div className="sm-mobile-toast-stack fixed bottom-24 sm:bottom-6 right-4 z-[60] flex flex-col gap-2.5 w-[calc(100vw-2rem)] sm:w-[360px] pointer-events-none">
       {toasts.map((t) => {
         const s = TOAST_STYLE[t.type] || TOAST_STYLE.info;
         const Icon = s.Icon;
@@ -5721,7 +5759,7 @@ function KpiCard({ item }) {
   const neutral = item.trend === "neutral";
   const accent = neutral ? "#64748B" : item.up ? "#16A34A" : "#F59E0B";
   return (
-    <div className="sm-panel kpi-card relative min-h-[154px] bg-white rounded-xl p-5 flex flex-col gap-4 overflow-hidden group">
+    <div className="sm-panel dashboard-kpi-card kpi-card relative min-h-[154px] bg-white rounded-xl p-5 flex flex-col gap-4 overflow-hidden group">
       <div
         className="absolute inset-x-0 top-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ background: `linear-gradient(90deg, ${accent}, ${accent}00)` }}
@@ -6275,6 +6313,71 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
   // and expense rows by their date field, so every KPI on the dashboard
   // reflects the same window. "This session" is replaced by a real label.
   const [period, setPeriod] = useState("month");
+  const TODAY_STR = TODAY.toISOString().slice(0, 10);
+  const [connectedDate, setConnectedDate] = useState(TODAY_STR);
+  const [comparisonPeriod, setComparisonPeriod] = useState("day");
+  const connectedSnapshot = useMemo(() => resolveConnectedWorkspaceSnapshot({
+    date: connectedDate,
+    invoices: invoices.rows,
+    expenses: expenses.rows,
+    crm: crm.rows,
+    inventory: inventory.rows,
+    leaveRequests: leaveRequests.rows,
+    workOrders: workOrders.rows,
+    subscriptions: subscriptions.rows,
+    employees: employees.rows,
+    posTransactions: posTransactions.rows,
+  }), [connectedDate, invoices.rows, expenses.rows, crm.rows, inventory.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows, employees.rows, posTransactions.rows]);
+  const comparisonDate = useMemo(() => {
+    if (!connectedDate) return "";
+    const date = new Date(`${connectedDate}T12:00:00`);
+    if (comparisonPeriod === "week") date.setDate(date.getDate() - 7);
+    else if (comparisonPeriod === "month") {
+      const originalDay = date.getDate();
+      date.setDate(1);
+      date.setMonth(date.getMonth() - 1);
+      const lastDayOfPreviousMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      date.setDate(Math.min(originalDay, lastDayOfPreviousMonth));
+    } else date.setDate(date.getDate() - 1);
+    return date.toISOString().slice(0, 10);
+  }, [connectedDate, comparisonPeriod]);
+  const comparisonPeriodLabel = comparisonPeriod === "week" ? "same date last week" : comparisonPeriod === "month" ? "same date last month" : "previous day";
+  const previousConnectedSnapshot = useMemo(() => resolveConnectedWorkspaceSnapshot({
+    date: comparisonDate,
+    invoices: invoices.rows,
+    expenses: expenses.rows,
+    crm: crm.rows,
+    inventory: inventory.rows,
+    leaveRequests: leaveRequests.rows,
+    workOrders: workOrders.rows,
+    subscriptions: subscriptions.rows,
+    employees: employees.rows,
+    posTransactions: posTransactions.rows,
+  }), [comparisonDate, invoices.rows, expenses.rows, crm.rows, inventory.rows, leaveRequests.rows, workOrders.rows, subscriptions.rows, employees.rows, posTransactions.rows]);
+  const formatDayComparison = useCallback((current, previous, formatter = formatMoney) => {
+    if (current === null || current === undefined || previous === null || previous === undefined) return { label: "No prior snapshot", tone: "text-slate-400" };
+    const delta = Number(current || 0) - Number(previous || 0);
+    const sign = delta > 0 ? "+" : delta < 0 ? "−" : "";
+    const absoluteDelta = formatter(Math.abs(delta));
+    const percentage = Number(previous) === 0 ? (Number(current) === 0 ? "0%" : "New") : `${delta > 0 ? "+" : ""}${Math.round((delta / Math.abs(Number(previous))) * 100)}%`;
+    return { label: `${sign}${absoluteDelta} · ${percentage}`, tone: delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-600" : "text-slate-400" };
+  }, [formatMoney]);
+  const connectedDateLabel = connectedDate ? new Date(`${connectedDate}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Selected date";
+  const exportConnectedWorkspaceCsv = useCallback(() => {
+    const csv = buildConnectedWorkspaceCsv(connectedSnapshot);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = connectedWorkspaceExportFilename(connectedDate);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    notify(`Downloaded workspace records for ${connectedDateLabel}.`);
+  }, [connectedSnapshot, connectedDate, connectedDateLabel, notify]);
+  const greetingName = (currentUser?.name || company?.owner || "there").trim().split(" ")[0] || "there";
+  const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening";
   const periodStart = useMemo(() => {
     const d = new Date(TODAY);
     if (period === "day")   { return d.toISOString().slice(0, 10); }
@@ -6900,14 +7003,14 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-[0.16em]">Workspace overview</span>
+                <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-[0.16em]">Connected workspace</span>
                 <span className="text-[rgba(255,255,255,.3)]">·</span>
-                <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span>
+                <span className="text-[10.5px] text-[rgba(255,255,255,.4)] font-mono">{connectedDateLabel}</span>
               </div>
               <h1 className="text-white text-[22px] font-black tracking-tight leading-none">
-                {(()=>{const h=new Date().getHours();return h<12?"Habari za asubuhi":h<17?"Habari za mchana":"Habari za jioni";})()}, {(company.owner||"Welcome").split(" ")[0]} 👋
+                {greeting}, {greetingName} 👋
               </h1>
-              <p className="text-[rgba(255,255,255,.5)] text-[12px] mt-1">{company.name} · {currentUser.role}</p>
+              <p className="text-[rgba(255,255,255,.62)] text-[12px] mt-1">Here’s what’s happening with your business on {connectedDateLabel}, based only on confirmed workspace records.</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="relative">
@@ -6979,6 +7082,13 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             </div>
           </div>
 
+          <div className="mb-4 flex flex-wrap items-center gap-2.5 rounded-xl border border-white/10 bg-black/15 px-3 py-2.5" aria-label="Connected workspace date selector">
+            <CalendarDays size={14} className="text-emerald-300" aria-hidden="true" />
+            <label htmlFor="connected-workspace-date" className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/55">Inspect exact date</label>
+            <input id="connected-workspace-date" type="date" value={connectedDate} onChange={(event) => setConnectedDate(event.target.value)} className="rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-white outline-none focus-visible:ring-2 focus-visible:ring-white/80" />
+            <span className="text-[10.5px] text-white/50">{connectedSnapshot.totalRecords} confirmed record{connectedSnapshot.totalRecords === 1 ? "" : "s"} on this date</span>
+            {connectedDate !== TODAY_STR && <button type="button" onClick={() => setConnectedDate(TODAY_STR)} className="ml-auto rounded-lg px-2 py-1 text-[10px] font-bold text-emerald-200 hover:bg-white/10">Back to today</button>}
+          </div>
 	          <div className="mb-4 flex flex-wrap items-center gap-2 text-[10.5px]">
 	            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/70"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live workspace data</span>
 	            <span className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-white/60">{PERIOD_LABELS[period]} reporting view</span>
@@ -7045,9 +7155,9 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
             ];
 
             return (
-              <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-8" aria-label="Workspace overview metrics">
+              <div className="dashboard-kpi-grid grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-8" aria-label="Workspace overview metrics">
                 {cards.map((card) => (
-                  <button key={card.label} type="button" onClick={card.onClick} aria-label={`${card.label}: ${card.context}. ${card.action}.`} className="group min-h-[116px] rounded-xl border border-white/10 bg-black/20 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                  <button key={card.label} type="button" onClick={card.onClick} aria-label={`${card.label}: ${card.context}. ${card.action}.`} className="dashboard-overview-kpi-card group min-h-[116px] rounded-xl border border-white/10 bg-black/20 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-[9.5px] font-bold uppercase tracking-wide text-white/50">{card.label}</p>
                       <ChevronRight size={13} className="mt-0.5 shrink-0 text-white/30 transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" />
@@ -7062,6 +7172,58 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
           })()}
         </div>
       </div>
+
+      <section className="order-1 grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]" aria-label={`Confirmed workspace activity for ${connectedDateLabel}`}>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Selected date snapshot</p><h2 className="mt-1 text-[16px] font-bold text-slate-900">What happened on {connectedDateLabel}</h2><p className="mt-1 text-[11.5px] text-slate-500">Only server-confirmed workspace rows are included. No sample or forecast activity is shown.</p></div>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={exportConnectedWorkspaceCsv} className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10.5px] font-bold text-emerald-700 transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40" aria-label={`Download CSV report for ${connectedDateLabel}`}><Download size={13} /> CSV report</button>
+              <div className="rounded-xl bg-slate-50 px-3 py-2 text-right"><p className="text-[10px] uppercase tracking-wide text-slate-400">Net movement</p><p className={`font-mono text-[15px] font-black ${connectedSnapshot.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{connectedSnapshot.net >= 0 ? "+" : "−"}{formatMoney(Math.abs(connectedSnapshot.net))}</p></div>
+            </div>
+          </div>
+          <div className="mt-4 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-3.5" aria-label="Selected date analytics with previous day comparison">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700">Daily analytics</p><p className="mt-0.5 text-[11px] text-slate-500">Confirmed totals for {connectedDateLabel}</p></div>
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                <label className="flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">Compare with
+                  <select value={comparisonPeriod} onChange={(event) => setComparisonPeriod(event.target.value)} className="bg-transparent text-[10px] font-bold text-slate-700 outline-none" aria-label="Choose comparison period">
+                    <option value="day">Previous day</option>
+                    <option value="week">Same date last week</option>
+                    <option value="month">Same date last month</option>
+                  </select>
+                </label>
+                <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500 shadow-sm">{comparisonDate}</span>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
+              {[
+                ["Total revenue", connectedSnapshot.revenue, previousConnectedSnapshot.revenue, "text-blue-700", true],
+                ["Net movement", connectedSnapshot.net, previousConnectedSnapshot.net, connectedSnapshot.net >= 0 ? "text-emerald-700" : "text-rose-700", true],
+                ["Total sales", connectedSnapshot.salesValue, previousConnectedSnapshot.salesValue, "text-indigo-700", true],
+                ["Orders", connectedSnapshot.orders, previousConnectedSnapshot.orders, "text-violet-700", false],
+                ["Customers", connectedSnapshot.customers, previousConnectedSnapshot.customers, "text-cyan-700", false],
+                ["Inventory value", connectedSnapshot.inventoryValue, previousConnectedSnapshot.inventoryValue, "text-slate-800", true],
+                ["Receivable", connectedSnapshot.receivables, previousConnectedSnapshot.receivables, "text-rose-700", true],
+              ].map(([label, value, previous, color, currency]) => {
+                const comparison = formatDayComparison(value, previous, currency ? formatMoney : (amount) => String(Math.round(amount || 0)));
+                return <div key={label} className="rounded-lg border border-slate-100 bg-white/85 px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-400">{label}</p>
+                  <p className={`mt-1 text-[17px] font-black ${color}`}>{value === null || value === undefined ? "Not tracked" : currency ? formatMoney(value) : value}</p>
+                  <p className={`mt-1 text-[10px] font-bold ${comparison.tone}`} title={`Previous day: ${previous === null || previous === undefined ? "No historical snapshot" : currency ? formatMoney(previous) : previous}`}>
+                    {comparison.label} <span className="font-normal text-slate-400">vs {comparisonPeriodLabel}</span>
+                  </p>
+                </div>;
+              })}
+            </div>
+            <p className="mt-2 text-[10px] text-slate-400">Revenue, sales, net movement and receivables are compared from confirmed dated records against the {comparisonPeriodLabel}. Inventory comparison requires dated inventory snapshots; otherwise it is shown as not tracked rather than estimated.</p>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Confirmed activity</p><h3 className="mt-1 text-[14px] font-bold text-slate-900">Timeline for this date</h3></div><Activity size={17} className="text-emerald-600" /></div>
+          {connectedSnapshot.activity.length === 0 ? <div className="py-7 text-center"><CheckCircle2 size={22} className="mx-auto text-slate-200" /><p className="mt-2 text-[12px] font-semibold text-slate-500">No confirmed activity on this date</p><p className="mt-1 text-[11px] text-slate-400">Choose another date to investigate a specific event.</p></div> : <div className="mt-3 max-h-40 space-y-1.5 overflow-y-auto">{connectedSnapshot.activity.slice(0, 8).map((item) => <div key={item.id} className="flex items-start gap-2 rounded-lg bg-slate-50/70 px-2.5 py-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" /><div className="min-w-0"><p className="truncate text-[11.5px] font-semibold text-slate-700">{item.label}</p><p className="truncate text-[10.5px] text-slate-400">{item.module} · {item.detail}</p></div></div>)}</div>}
+        </div>
+      </section>
 
       {canReviewRoleChanges && (
         <section className="order-2 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white shadow-sm overflow-hidden" aria-label="Pending role-change approvals">
@@ -7777,7 +7939,7 @@ function Dashboard({ company, invoices, inventory, crm, expenses, leaveRequests,
               { id: "hr", label: "Human Resources", icon: UserCheck, status: pendingLeaves.length ? "attention" : (activeEmployees.length ? "tracking" : "noData"), metric: pendingLeaves.length ? `${pendingLeaves.length} leave request${pendingLeaves.length === 1 ? "" : "s"} pending` : (activeEmployees.length ? `${activeEmployees.length} active employee${activeEmployees.length === 1 ? "" : "s"}` : "No confirmed HR records"), detail: pendingLeaves.length ? "Review leave requests" : "Open HR records" },
               { id: "manufacturing", label: "Manufacturing", icon: Factory, status: overdueWorkOrders.length ? "attention" : (rowsOf(workOrders).length ? "tracking" : "noData"), metric: overdueWorkOrders.length ? `${overdueWorkOrders.length} work order${overdueWorkOrders.length === 1 ? "" : "s"} overdue` : (rowsOf(workOrders).length ? `${rowsOf(workOrders).length} work order${rowsOf(workOrders).length === 1 ? "" : "s"} tracked` : "No confirmed work orders"), detail: overdueWorkOrders.length ? "Review production schedule" : "Open manufacturing records" },
               { id: "projects", label: "Projects", icon: FolderKanban, status: "unavailable", metric: "No root-level signal", detail: "Open projects to review work" },
-              { id: "support", label: "Customer Support", icon: Headphones, status: "unavailable", metric: "Ticket data stays in Support", detail: "Open the support inbox" },
+              { id: "support", label: "Customer Support", icon: Headphones, status: "available", metric: "Confirmed support workspace", detail: "Open the support inbox" },
               { id: "analytics", label: "Analytics", icon: BarChart3, status: "available", metric: "Uses confirmed source modules", detail: "Open analytics views" },
               { id: "reports", label: "Reports", icon: FileText, status: "available", metric: "Exports confirmed dashboard data", detail: "Open reporting workspace" },
               { id: "pos", label: "Point of Sale", icon: ScanLine, status: rowsOf(posTransactions).length ? "tracking" : "noData", metric: rowsOf(posTransactions).length ? `${rowsOf(posTransactions).length} confirmed transaction${rowsOf(posTransactions).length === 1 ? "" : "s"}` : "No confirmed POS transactions", detail: "Open point of sale" },
@@ -8577,19 +8739,6 @@ function CRM({ crm, invoices, expenses, suppliers }) {
     }
   }
 
-  async function shareInventoryReport() {
-    const reportItems = rowsOf(inventory);
-    const lowItems = reportItems.filter((item) => Number(item.qty) <= Number(item.reorder || 0));
-    const stockValue = reportItems.reduce((sum, item) => sum + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
-    const preview = reportItems.slice(0, 10).map((item) => `${item.name}: ${item.qty} ${item.unit || "units"} (${stockStatus(item.qty, item.reorder)})`).join("\n");
-    const result = await openDeviceShare({
-      title: "Inventory Stock Report",
-      text: `Inventory Stock Report\n${reportItems.length} SKUs · ${lowItems.length} low-stock items · Stock value TZS ${money(Math.round(stockValue))}k\n\n${preview || "No inventory items recorded."}`,
-      onFallback: () => notify("Inventory report copied. Choose WhatsApp or Email from your device to share it."),
-    });
-    if (result === "shared") notify("Share sheet opened for the inventory report — choose WhatsApp or Email");
-  }
-
   return (
     <div className="space-y-5">
       {IS_CONFIGURED && error && (
@@ -8917,8 +9066,8 @@ function CategoryPicker({ value, onChange }) {
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13px] text-[#111827] placeholder-slate-400 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 focus:shadow-sm";
 const operationalFilterBarClass = "sm-mobile-filter-row flex min-w-0 max-w-full items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-[inset_0_1px_1px_rgba(15,23,42,.025)]";
 const operationalSearchInputClass = "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-[13px] text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,.025)] outline-none transition hover:border-slate-300 focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20";
-const operationalTableShellClass = "sm-responsive-table overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_3px_10px_rgba(15,23,42,.035)]";
-const operationalTableClass = "w-full text-[13px]";
+const operationalTableShellClass = "dashboard-table-shell sm-responsive-table overflow-hidden rounded-[18px] border border-slate-200/80 bg-white shadow-[0_3px_10px_rgba(15,23,42,.035)]";
+const operationalTableClass = "dashboard-table w-full text-[13px]";
 
 // Real Excel/CSV import for Customers and Products — genuinely built to
 // close a specific, verified competitive gap: SokoBook own advertised
@@ -10898,6 +11047,20 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
   }
 
   async function convertQuoteToInvoice(quote) {
+    if (!quote?.dbId) {
+      notify("This quotation is not linked to a confirmed server record. Refresh Sales before converting it.", "error");
+      return false;
+    }
+    if (quote.status === "Converted") {
+      notify(`${quote.id} has already been converted to an invoice.`, "error");
+      return false;
+    }
+    const existingInvoice = rowsOf(invoices).find((invoice) => invoice.quotationDbId === quote.dbId);
+    if (existingInvoice) {
+      quotations.setRows((prev) => prev.map((document) => (document.id === quote.id ? { ...document, status: "Converted" } : document)));
+      notify(`${quote.id} already has invoice ${existingInvoice.id}.`, "error");
+      return false;
+    }
     const dueD = new Date(TODAY); dueD.setDate(dueD.getDate()+30);
     const newInv = {
       id: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -10910,10 +11073,6 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
     };
 
     if (requiresConfirmedPersistence()) {
-      if (!quote.dbId) {
-        notify("This quotation is not linked to a confirmed server record. Refresh Sales before converting it.", "error");
-        return false;
-      }
       let invoiceHeader = null;
       try {
         invoiceHeader = await sb("sales_invoices").insert({
@@ -10922,6 +11081,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
           issue_date: newInv.date,
           due_date: newInv.dueDate,
           status: newInv.status,
+          quotation_id: quote.dbId,
           amount_paid: 0,
         }).single().run();
         if (!invoiceHeader?.id) throw buildConfirmedMutationError({ table: "sales_invoices", method: "POST", status: 200 });
@@ -11259,7 +11419,7 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
 
           <div className={operationalTableShellClass}>
         <div className="overflow-x-auto">
-        <table className={`${operationalTableClass} min-w-[720px]`}>
+        <table className={`${operationalTableClass} sm-sales-table min-w-[720px]`}>
           <thead>
             <tr className="border-b border-slate-100 text-left text-[11px] text-slate-400 uppercase tracking-wide">
               {visibleSalesColumns.includes("document") && <th className="px-4 py-3 font-medium">{columnLabel[0]}</th>}
@@ -11285,13 +11445,13 @@ function Sales({ invoices, inventory, subscriptionsHook, quotationsHook, crm, cu
                       onClick={() => setSelected({ ...doc, kind: tab })}
                       className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 cursor-pointer transition-colors"
                     >
-                      {visibleSalesColumns.includes("document") && <td className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>}
-                      {visibleSalesColumns.includes("customer") && <td className="px-4 py-3 text-slate-700">{doc.customer}</td>}
-                      {visibleSalesColumns.includes("date") && <td className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>}
-                      {visibleSalesColumns.includes("reference") && <td className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>}
-                      {visibleSalesColumns.includes("status") && <td className="px-4 py-3"><DocStatusPill status={doc.status} /></td>}
-                      {visibleSalesColumns.includes("total") && <td className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>}
-                      {visibleSalesColumns.includes("detail") && <td className="px-4 py-3 text-right">
+                      {visibleSalesColumns.includes("document") && <td data-label={columnLabel[0]} className="px-4 py-3 font-mono text-[#111827] font-medium">{doc.id}</td>}
+                      {visibleSalesColumns.includes("customer") && <td data-label="Customer" className="px-4 py-3 text-slate-700">{doc.customer}</td>}
+                      {visibleSalesColumns.includes("date") && <td data-label="Date" className="px-4 py-3 text-slate-500 font-mono">{doc.date}</td>}
+                      {visibleSalesColumns.includes("reference") && <td data-label={columnLabel[1]} className="px-4 py-3 text-slate-500 font-mono">{secondCol}</td>}
+                      {visibleSalesColumns.includes("status") && <td data-label="Status" className="px-4 py-3"><DocStatusPill status={doc.status} /></td>}
+                      {visibleSalesColumns.includes("total") && <td data-label="Total" className="px-4 py-3 text-right font-mono">{money(totals.total)}</td>}
+                      {visibleSalesColumns.includes("detail") && <td data-label="Open" className="px-4 py-3 text-right">
                         <ChevronRight size={15} className="text-slate-300 inline" />
                       </td>}
                     </tr>
@@ -12599,6 +12759,19 @@ function Inventory({ inventory, suppliersHook }) {
   const warehouses = rowsOf(warehousesHook);
   const categories = useMemo(() => [...new Set(items.map((item) => item.category || "General"))].sort((a, b) => a.localeCompare(b)), [items]);
 
+  async function shareInventoryReport() {
+    const reportItems = rowsOf(inventory);
+    const lowItems = reportItems.filter((item) => Number(item.qty) <= Number(item.reorder || 0));
+    const stockValue = reportItems.reduce((sum, item) => sum + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0);
+    const preview = reportItems.slice(0, 10).map((item) => `${item.name}: ${item.qty} ${item.unit || "units"} (${stockStatus(item.qty, item.reorder)})`).join("\n");
+    const result = await openDeviceShare({
+      title: "Inventory Stock Report",
+      text: `Inventory Stock Report\n${reportItems.length} SKUs · ${lowItems.length} low-stock items · Stock value TZS ${money(Math.round(stockValue))}k\n\n${preview || "No inventory items recorded."}`,
+      onFallback: () => notify("Inventory report copied. Choose WhatsApp or Email from your device to share it."),
+    });
+    if (result === "shared") notify("Share sheet opened for the inventory report — choose WhatsApp or Email");
+  }
+
   // Real bulk import — genuinely creates inventory_items rows, the exact
   // same table and shape the manual "Add Item" form writes to. A missing
   // SKU gets a real generated one rather than being skipped, since a
@@ -12842,7 +13015,7 @@ function Inventory({ inventory, suppliersHook }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className={`${operationalFilterBarClass} w-full max-w-full overflow-x-auto sm:w-fit`}>
+        <div className={`${operationalFilterBarClass} sm-inventory-tabs w-full max-w-full overflow-x-auto sm:w-fit`} role="tablist" aria-label="Inventory sections">
           {INV_TABS.map((t) => {
             const Icon = t.icon;
             const isActive = tab === t.id;
@@ -12850,7 +13023,10 @@ function Inventory({ inventory, suppliersHook }) {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`sm-inventory-tab flex-none min-h-10 text-[12px] font-medium px-3 py-1.5 rounded-md flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                   isActive ? "bg-white text-[#111827] shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
@@ -23790,6 +23966,39 @@ function exportExcel(filename, sheetName, headers, rows) {
   notify(`Exported ${filename}`);
 }
 
+function buildExportFile(filename, format, sheetName, headers, rows) {
+  if (format === "csv") {
+    const esc = (value) => {
+      const text = String(value ?? "");
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const content = `\ufeff${[headers, ...rows].map((row) => row.map(esc).join(",")).join("\n")}`;
+    return { filename, contentType: "text/csv;charset=utf-8", blob: new Blob([content], { type: "text/csv;charset=utf-8" }), contentBase64: encodeBase64(new TextEncoder().encode(content)) };
+  }
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.slice(0, 31));
+  const contentBase64 = XLSX.write(workbook, { bookType: "xlsx", type: "base64" });
+  const binary = Uint8Array.from(atob(contentBase64), (character) => character.charCodeAt(0));
+  return { filename, contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", blob: new Blob([binary], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), contentBase64 };
+}
+
+function encodeBase64(bytes) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  return btoa(binary);
+}
+
+function downloadExportFile(file) {
+  const url = URL.createObjectURL(file.blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = file.filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 // Word recognizes HTML wrapped in its own XML namespace when given a
 // .doc extension — no docx-generation library exists in this environment
 // (mammoth, the one library available, only reads .docx, it does not write
@@ -27925,6 +28134,19 @@ function CustomerSupport({ company }) {
         <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#111827] tracking-tight">Customer Support</h1>
         <p className="text-[13px] text-slate-500 mt-1">Tickets, live chat, knowledge base, call log, and AI-drafted replies</p>
       </div>
+      <div className={`rounded-2xl border px-4 py-3 sm:px-5 ${metricState === "ready" ? "border-emerald-200 bg-emerald-50/70" : metricState === "loading" ? "border-blue-200 bg-blue-50/70" : "border-amber-200 bg-amber-50/70"}`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${metricState === "ready" ? "bg-emerald-500" : metricState === "loading" ? "bg-blue-500" : "bg-amber-500"}`} />
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Operations pulse</p>
+              <p className="mt-1 text-[12px] font-semibold text-[#111827]">{metricState === "ready" ? `${supportMetrics.openCount} open · ${supportMetrics.urgentCount} urgent · ${supportMetrics.totalCount} confirmed` : unavailableMetricLabel}</p>
+              <p className="mt-1 text-[11px] leading-5 text-slate-500">Counts come from the tenant-scoped Support workspace. No browser-only ticket data is presented as confirmed.</p>
+            </div>
+          </div>
+          {metricState === "ready" && <span className="self-start rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">Server confirmed</span>}
+        </div>
+      </div>
 
       <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 overflow-x-auto w-fit max-w-full">
         {SUPPORT_TABS.map((t) => {
@@ -28872,6 +29094,7 @@ function ManualJournalView({ currentUser }) {
   const [description, setDescription] = useState("");
   const [saved, setSaved] = useState([]);
   const [err, setErr] = useState(null);
+  const [posting, setPosting] = useState(false);
 
   const totalDebit = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
   const totalCredit = lines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
@@ -28886,6 +29109,10 @@ function ManualJournalView({ currentUser }) {
   async function saveEntry() {
     if (!description.trim()) { setErr("Add a description for this journal entry."); return; }
     if (!balanced) { setErr("Debits must equal credits before saving."); return; }
+    if (lines.some((line) => Number(line.debit) > 0 && Number(line.credit) > 0)) { setErr("Each journal line must contain a debit or a credit, not both."); return; }
+    if (posting) return;
+    setPosting(true);
+    setErr(null);
     const entry = {
       id: docId("JE"),
       date: entryDate,
@@ -28895,19 +29122,44 @@ function ManualJournalView({ currentUser }) {
       postedBy: currentUser?.name || "System",
       postedAt: new Date().toISOString(),
     };
-    setSaved((prev) => [entry, ...prev]);
-    setLines([emptyLine(), emptyLine()]);
-    setDescription("");
-    setErr(null);
-    notify("Journal entry posted: TZS " + money(Math.round(totalDebit)) + "k", "success");
-    logAudit("Manual journal entry: " + entry.id, "Finance", currentUser?.name || "System", description + " — TZS " + money(Math.round(totalDebit)) + "k");
-    if (IS_CONFIGURED) {
-      try {
-        await sb("journal_entries").insert({
-          entry_ref: entry.id, entry_date: entryDate, description,
-          total_amount: totalDebit, posted_by: entry.postedBy,
-        }).run();
-      } catch (_e) { notify("Saved locally — server sync failed.", "error"); }
+    try {
+      if (IS_CONFIGURED) {
+        const payload = {
+          p_payload: {
+            idempotencyKey: `manual-journal:${entry.id}`,
+            sourceModule: "MANUAL",
+            sourceType: "MANUAL_JOURNAL",
+            sourceTable: "manual_journal_entries",
+            sourceId: null,
+            businessDate: entryDate,
+            currency: "TZS",
+            narration: description.trim(),
+            entries: entry.lines.map((line) => ({
+              accountCode: line.account.split(" – ")[0].trim(),
+              entryType: Number(line.debit) > 0 ? "Debit" : "Credit",
+              amount: Number(Number(line.debit || line.credit).toFixed(2)),
+              memo: line.memo.trim() || null,
+            })),
+            metadata: { clientReference: entry.id },
+          },
+        };
+        const result = await callWorkspaceRpcWithSessionRefresh("fin_post_operational_entry", payload);
+        const posted = result?.data || result;
+        if (!posted?.ok || !posted?.batchId) throw new Error("The accounting server did not confirm this journal posting.");
+        entry.id = posted.batchNumber || entry.id;
+        entry.batchId = posted.batchId;
+        entry.totalDebit = Number(posted.debitTotal || totalDebit);
+      }
+      setSaved((prev) => [entry, ...prev]);
+      setLines([emptyLine(), emptyLine()]);
+      setDescription("");
+      notify("Journal entry posted: TZS " + money(Math.round(entry.totalDebit)), "success");
+      logAudit("Manual journal entry: " + entry.id, "Finance", currentUser?.name || "System", description + " — TZS " + money(Math.round(entry.totalDebit)));
+    } catch (error) {
+      setErr(error?.message || "The accounting server did not confirm this journal posting. Your entry remains open so you can retry.");
+      notify(error?.message || "The accounting server did not confirm this journal posting.", "error");
+    } finally {
+      setPosting(false);
     }
   }
 
@@ -28934,8 +29186,8 @@ function ManualJournalView({ currentUser }) {
           <table className="w-full text-[12.5px]">
             <thead><tr className="border-b border-slate-100">
               <th className="pb-2 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[40%]">Account</th>
-              <th className="pb-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[20%]">Debit (TZS k)</th>
-              <th className="pb-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[20%]">Credit (TZS k)</th>
+              <th className="pb-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[20%]">Debit (TZS)</th>
+              <th className="pb-2 text-right text-[10.5px] font-medium uppercase tracking-wide text-slate-400 w-[20%]">Credit (TZS)</th>
               <th className="pb-2 text-left text-[10.5px] font-medium uppercase tracking-wide text-slate-400">Memo</th>
               <th className="pb-2 w-8" />
             </tr></thead>
@@ -28985,9 +29237,9 @@ function ManualJournalView({ currentUser }) {
           <button onClick={addLine} className="text-[12.5px] font-medium text-[#16A34A] hover:underline flex items-center gap-1"><Plus size={13} /> Add line</button>
           <div className="flex-1" />
           {err && <p className="text-[12px] text-[#EF4444] flex items-center gap-1"><AlertCircle size={12} />{err}</p>}
-          <button onClick={saveEntry} disabled={!balanced || !description.trim()}
+          <button onClick={saveEntry} disabled={!balanced || !description.trim() || posting}
             className="btn-primary text-white text-[12.5px] font-medium rounded-xl px-4 py-2.5 disabled:opacity-40">
-            Post Journal Entry
+            {posting ? "Posting…" : "Post Journal Entry"}
           </button>
         </div>
       </div>
@@ -32425,6 +32677,7 @@ function PublishTemplatePanel({ workflow, onClose, onPublish }) {
 /* ---------------------------------- ENTERPRISE COLLABORATION HUB ---------------------------------- */
 
 const COLLAB_TABS = [
+  { id: "timeline",   label: "Customer Timeline",  icon: History },
   { id: "channels",   label: "Team Chat",          icon: MessageSquare },
   { id: "whatsapp",   label: "WhatsApp",            icon: MessageCircle },
   { id: "email",      label: "Email",               icon: Mail },
@@ -33192,7 +33445,7 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
   const [busy, setBusy]       = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [emailAttachments, setEmailAttachments] = useState([]);
-  const emailDeliveryDisabled = true;
+  const emailDelivery = trpc.transactionalEmail.send.useMutation();
   const workflowStatusQuery = trpc.emailTemplateWorkflow.status.useQuery(undefined, { enabled: Boolean(currentUser?.id), retry: false, staleTime: 30_000 });
   const workflowDispatchMutation = trpc.emailTemplateWorkflow.dispatch.useMutation();
   const linkIssues = useMemo(() => findEmailTemplateLinkIssues(body), [body]);
@@ -33291,7 +33544,21 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
   }
 
   async function sendEmail() {
-    notify("Email delivery is disabled. Save this message as a draft and configure an approved provider before sending.", "error");
+    if (emailDelivery.isPending) return;
+    if (!to.trim() || !subject.trim() || !body.trim()) {
+      notify("Add a recipient, subject, and message before sending.", "error");
+      return;
+    }
+    try {
+      const renderedBody = mergeTemplate(body);
+      const result = await emailDelivery.mutateAsync({ to, cc, bcc, subject, body: renderedBody });
+      setSent((items) => [{ id: result.deliveryId || `SENT-${Date.now()}`, to, cc, bcc, subject, body: renderedBody, sentAt: result.acceptedAt || new Date().toISOString(), from: result.from || co.email || "Smart Manager" }, ...items]);
+      setFolder("sent");
+      clearCompose();
+      notify(`Email accepted by the configured provider for ${result.recipientCount || 1} recipient${result.recipientCount === 1 ? "" : "s"}.`);
+    } catch (error) {
+      notify(error?.message || "Email was not sent. Check the approved server-side sender configuration.", "error");
+    }
   }
 
   function clearCompose() { setTo(""); setCc(""); setBcc(""); setSubject(""); setBody(""); setTmplId("custom"); }
@@ -33543,9 +33810,9 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
 
             {/* Actions */}
             <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center gap-2.5">
-              <button onClick={sendEmail} disabled={emailDeliveryDisabled || busy||!to.trim()||!subject.trim()} title="Email delivery is disabled"
+              <button onClick={sendEmail} disabled={emailDelivery.isPending || busy||!to.trim()||!subject.trim()||!body.trim()} title="Send through the approved server-side workspace email provider"
                 className="flex items-center gap-1.5 text-[13px] font-bold text-white px-5 py-2.5 rounded-xl bg-[#2563EB] disabled:cursor-not-allowed disabled:opacity-40">
-                <Send size={14}/> Email delivery disabled
+                <Send size={14}/> {emailDelivery.isPending ? "Sending…" : "Send Email"}
               </button>
               <button onClick={saveDraft}
                 className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 border border-slate-200 px-3.5 py-2.5 rounded-xl hover:bg-white">
@@ -33642,8 +33909,284 @@ export function EmailCenter({ currentUser, crm, employees, invoices, company }) 
 }
 
 
+function CustomerCommunicationTimeline({ currentUser, crm, company }) {
+  const COMMUNICATION_PAGE_SIZE = 25;
+  const [entries, setEntries] = useState([]);
+  const [channel, setChannel] = useState("email");
+  const [communicationFilter, setCommunicationFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [recipient, setRecipient] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState("");
+  const [loadingEntries, setLoadingEntries] = useState(false);
+  const [hasMoreEntries, setHasMoreEntries] = useState(true);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [timelineError, setTimelineError] = useState("");
+  const loadMoreRef = useRef(null);
+  const loadingEntriesRef = useRef(false);
+  const sendExportEmail = trpc.transactionalEmail.sendExport.useMutation();
+  const companyId = company?.id || company?.companyId || "";
+  const administratorEmail = currentUser?.email || company?.owner_email || company?.ownerEmail || company?.admin_email || company?.adminEmail || company?.email || "";
+  const contacts = useMemo(() => (crm?.rows || crm || []).filter((row) => row.email).map((row) => ({
+    name: row.name || row.company || row.email,
+    email: row.email,
+  })), [crm]);
+  const communicationAnalytics = useMemo(() => {
+    const channelCounts = entries.reduce((counts, entry) => {
+      const key = entry.channel || "other";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
+    const directionCounts = entries.reduce((counts, entry) => {
+      const key = entry.direction || "unspecified";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
+    const statusCounts = entries.reduce((counts, entry) => {
+      const key = entry.status || "saved";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
+    return { channelCounts, directionCounts, statusCounts };
+  }, [entries]);
+
+  const buildCommunicationQuery = useCallback((cursor = null, limit = COMMUNICATION_PAGE_SIZE) => {
+    const query = sb("customer_communications").select("*").order("created_at", { ascending: false }).order("id", { ascending: false }).limit(limit);
+    if (communicationFilter !== "all") query.filter("data->>channel", "eq", communicationFilter);
+    if (dateFrom) query.filter("created_at", "gte", new Date(`${dateFrom}T00:00:00`).toISOString());
+    if (dateTo) query.filter("created_at", "lte", new Date(`${dateTo}T23:59:59.999`).toISOString());
+    if (cursor?.createdAt && cursor?.id) {
+      query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
+    }
+    return query;
+  }, [communicationFilter, dateFrom, dateTo]);
+
+  const loadCommunicationPage = useCallback(async (cursor = null, replace = false) => {
+    if (!IS_CONFIGURED || loadingEntriesRef.current || (!replace && !hasMoreEntries)) return;
+    loadingEntriesRef.current = true;
+    setLoadingEntries(true);
+    setTimelineError("");
+    try {
+      if (dateFrom && dateTo && dateFrom > dateTo) {
+        setTimelineError("The start date cannot be after the end date.");
+        setEntries([]);
+        setHasMoreEntries(false);
+        setNextCursor(null);
+        return;
+      }
+      const rows = await buildCommunicationQuery(cursor).run();
+      const page = (rows || []).map((row) => ({ id: row.id, ...row.data, status: row.status, createdAt: row.created_at }));
+      setEntries((previous) => {
+        if (replace) return page;
+        const seen = new Set(previous.map((entry) => entry.id));
+        return [...previous, ...page.filter((entry) => !seen.has(entry.id))];
+      });
+      setHasMoreEntries(page.length === COMMUNICATION_PAGE_SIZE);
+      setNextCursor(page.length ? { createdAt: rows[rows.length - 1].created_at, id: rows[rows.length - 1].id } : null);
+    } catch (error) {
+      setTimelineError(error?.message || "Customer communication history could not be loaded.");
+    } finally {
+      loadingEntriesRef.current = false;
+      setLoadingEntries(false);
+    }
+  }, [buildCommunicationQuery, companyId, hasMoreEntries]);
+
+  useEffect(() => {
+    setEntries([]);
+    setNextCursor(null);
+    setHasMoreEntries(true);
+    if (IS_CONFIGURED) loadCommunicationPage(null, true);
+  }, [companyId, communicationFilter, dateFrom, dateTo]);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !hasMoreEntries) return undefined;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !loadingEntriesRef.current) loadCommunicationPage(nextCursor, false);
+    }, { rootMargin: "180px 0px" });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreEntries, nextCursor, loadCommunicationPage]);
+
+  function clearComposer() {
+    setRecipient("");
+    setSubject("");
+    setBody("");
+  }
+
+  async function saveReference(nextEntry, message) {
+    setSaving(true);
+    try {
+      if (IS_CONFIGURED) {
+        const result = await runCompanyTableMutation("customer_communications", "insert", {
+          name: nextEntry.subject || `${nextEntry.channel} customer communication`,
+          status: nextEntry.status || "saved",
+          notes: nextEntry.body || nextEntry.reference || "",
+          data: nextEntry,
+          created_by: currentUser?.id || null,
+        });
+        if (result.error) throw result.error;
+        nextEntry = { ...nextEntry, id: result.data?.id || docId("COM"), createdAt: result.data?.created_at || new Date().toISOString() };
+      } else {
+        nextEntry = { ...nextEntry, id: docId("COM"), createdAt: new Date().toISOString() };
+      }
+      setEntries((prev) => [nextEntry, ...prev]);
+      clearComposer();
+      notify(message || "Communication reference saved.");
+    } catch (error) {
+      notify(`Reference was not saved. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function openGmailCompose() {
+    const to = recipient.trim();
+    if (!to || !subject.trim() || !body.trim() || saving) return;
+    const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject.trim())}&body=${encodeURIComponent(body.trim())}`;
+    window.open(composeUrl, "_blank", "noopener,noreferrer");
+    await saveReference({ channel: "email", direction: "outbound", recipient: to, subject: subject.trim(), body: body.trim(), sender: "smatimeneja@gmail.com", status: "gmail_compose_opened", reference: "Opened in Gmail compose; final send is completed in Gmail." }, "Gmail compose opened and reference saved.");
+  }
+
+  async function copyReference() {
+    const text = [channel.toUpperCase(), recipient, subject, body].filter(Boolean).join("\n");
+    if (!text.trim() || saving) return;
+    try { await navigator.clipboard?.writeText(text); } catch {}
+    await saveReference({ channel, direction: "outbound", recipient: recipient.trim(), subject: subject.trim(), body: body.trim(), status: "copied_saved" }, "Message copied and saved for customer history.");
+  }
+
+  async function exportFilteredCommunications(format) {
+    if (!IS_CONFIGURED || exporting || (dateFrom && dateTo && dateFrom > dateTo)) {
+      if (dateFrom && dateTo && dateFrom > dateTo) notify("Choose a valid date range before exporting.", "error");
+      return;
+    }
+    setExporting(format);
+    try {
+      const allRows = [];
+      let cursor = null;
+      let page;
+      do {
+        page = await buildCommunicationQuery(cursor, 500).run();
+        allRows.push(...(page || []));
+        const last = page?.[page.length - 1];
+        cursor = last ? { createdAt: last.created_at, id: last.id } : null;
+      } while (page?.length === 500 && cursor && allRows.length < 10000);
+
+      const headers = ["ID", "Channel", "Direction", "Recipient", "Subject", "Message / Reference", "Status", "Created At"];
+      const rows = allRows.map((row) => {
+        const data = row.data || {};
+        return [row.id, data.channel || "", data.direction || "", data.recipient || "", data.subject || "", data.body || data.reference || row.notes || "", row.status || "", row.created_at || ""];
+      });
+      const filterPart = communicationFilter === "all" ? "all" : communicationFilter;
+      const datePart = [dateFrom || "start", dateTo || "end"].join("-now");
+      const file = buildExportFile(`customer-communications-${filterPart}-${datePart}.${format === "csv" ? "csv" : "xlsx"}`, format, "Communications", headers, rows);
+      downloadExportFile(file);
+      notify(`Exported ${rows.length} filtered communication${rows.length === 1 ? "" : "s"}.`);
+      if (administratorEmail && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(administratorEmail)) {
+        await sendExportEmail.mutateAsync({
+          to: administratorEmail,
+          subject: `Smart Manager customer communications export — ${filterPart}`,
+          body: `Attached is the filtered customer communications export generated from Smart Manager.\n\nChannel: ${filterPart}\nDate range: ${dateFrom || "Any"} to ${dateTo || "Any"}\nRecords: ${rows.length}`,
+          attachment: { filename: file.filename, contentBase64: file.contentBase64, contentType: file.contentType },
+        });
+        notify(`Export emailed to the administrator at ${administratorEmail}.`);
+      } else {
+        notify("The export was downloaded, but no valid administrator email is configured.", "error");
+      }
+    } catch (error) {
+      notify(`Export failed. ${error?.message || "Try again."}`, "error");
+    } finally {
+      setExporting("");
+    }
+  }
+
+  return (
+    <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] gap-4 h-full min-h-[560px]">
+      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm flex flex-col min-h-0 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+          <div><p className="text-[13.5px] font-semibold text-[#111827]">Customer relationship timeline</p><p className="text-[11px] text-slate-400">One history for email, WhatsApp handoffs, and copied references.</p></div>
+          <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full bg-emerald-50 text-emerald-700 px-2 py-1">{entries.length} saved</span>
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto border-b border-slate-100 px-4 py-2">
+          <span className="mr-1 shrink-0 text-[10.5px] font-semibold text-slate-500">Filter:</span>
+          {[{ id: "all", label: "All" }, { id: "email", label: "Email" }, { id: "call", label: "Call" }, { id: "note", label: "Note" }, { id: "whatsapp", label: "WhatsApp" }].map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setCommunicationFilter(option.id)}
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[10.5px] font-semibold transition ${communicationFilter === option.id ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+            >
+              {option.label}
+            </button>
+          ))}
+          <span className="mx-1 h-4 w-px shrink-0 bg-slate-200" />
+          <label className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-slate-500">
+            From
+            <input type="date" value={dateFrom} max={dateTo || undefined} onChange={(event) => setDateFrom(event.target.value)} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-normal text-slate-600 outline-none focus:border-emerald-500" aria-label="Filter communications from date" />
+          </label>
+          <label className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-slate-500">
+            To
+            <input type="date" value={dateTo} min={dateFrom || undefined} onChange={(event) => setDateTo(event.target.value)} className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-normal text-slate-600 outline-none focus:border-emerald-500" aria-label="Filter communications to date" />
+          </label>
+          {(dateFrom || dateTo) && <button type="button" onClick={() => { setDateFrom(""); setDateTo(""); }} className="shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700">Clear dates</button>}
+          <span className="mx-1 h-4 w-px shrink-0 bg-slate-200" />
+          <button type="button" onClick={() => exportFilteredCommunications("csv")} disabled={Boolean(exporting) || loadingEntries || sendExportEmail.isPending || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45" title="Download and email all records matching the active filters as CSV"><Download size={11} />{exporting === "csv" ? "Sending…" : "CSV + Email"}</button>
+          <button type="button" onClick={() => exportFilteredCommunications("xlsx")} disabled={Boolean(exporting) || loadingEntries || sendExportEmail.isPending || !entries.length} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45" title="Download and email all records matching the active filters as Excel"><FileSpreadsheet size={11} />{exporting === "xlsx" ? "Sending…" : "Excel + Email"}</button>
+        </div>
+        <div className="border-b border-slate-100 bg-slate-50/70 px-4 py-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5"><Activity size={13} className="text-emerald-600" /><p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Filtered analytics</p></div>
+            <p className="text-[10px] text-slate-400">{dateFrom || dateTo ? `${dateFrom || "Any date"} → ${dateTo || "Any date"}` : "All dates"} · {communicationFilter === "all" ? "All channels" : communicationFilter}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Loaded</p><p className="mt-0.5 text-[16px] font-bold text-slate-800">{entries.length}</p><p className="text-[9.5px] text-slate-400">records</p></div>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Email</p><p className="mt-0.5 text-[16px] font-bold text-blue-700">{communicationAnalytics.channelCounts.email || 0}</p><p className="text-[9.5px] text-slate-400">communications</p></div>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Calls</p><p className="mt-0.5 text-[16px] font-bold text-violet-700">{communicationAnalytics.channelCounts.call || 0}</p><p className="text-[9.5px] text-slate-400">communications</p></div>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2"><p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Notes</p><p className="mt-0.5 text-[16px] font-bold text-amber-700">{communicationAnalytics.channelCounts.note || 0}</p><p className="text-[9.5px] text-slate-400">communications</p></div>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
+            <span><strong className="text-slate-700">WhatsApp:</strong> {communicationAnalytics.channelCounts.whatsapp || 0}</span>
+            <span><strong className="text-slate-700">Outbound:</strong> {communicationAnalytics.directionCounts.outbound || 0}</span>
+            <span><strong className="text-slate-700">Inbound:</strong> {communicationAnalytics.directionCounts.inbound || 0}</span>
+            <span><strong className="text-slate-700">Statuses:</strong> {Object.entries(communicationAnalytics.statusCounts).map(([status, count]) => `${status} (${count})`).join(" · ") || "None"}</span>
+          </div>
+          {(loadingEntries || hasMoreEntries) && <p className="mt-2 text-[9.5px] text-slate-400">Analytics reflect the filtered records loaded so far and update as more pages load. Export includes all matching records.</p>}
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {entries.length === 0 && !loadingEntries && !timelineError ? <div className="h-full min-h-48 flex items-center justify-center text-center"><div><History size={24} className="mx-auto text-slate-300 mb-2" /><p className="text-[12.5px] text-slate-500">No customer communications saved yet.</p><p className="text-[11px] text-slate-400 mt-1">Compose or copy a message to start the history.</p></div></div> : entries.map((entry) => (
+            <article key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+              <div className="flex items-start justify-between gap-3"><div><span className="text-[10px] uppercase tracking-wide font-bold text-emerald-700">{entry.channel || "message"}</span><h3 className="text-[12.5px] font-semibold text-slate-800 mt-0.5">{entry.subject || entry.recipient || "Customer reference"}</h3></div><time className="text-[10px] text-slate-400 whitespace-nowrap">{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "Now"}</time></div>
+              <p className="text-[11.5px] text-slate-600 mt-2 whitespace-pre-wrap break-words">{entry.body || entry.reference || "No message body saved."}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-400"><span>{entry.recipient || "Internal reference"}</span><span>·</span><span>{entry.status || "saved"}</span></div>
+            </article>
+          ))}
+          <div ref={loadMoreRef} className="dashboard-pagination-sentinel min-h-8 flex items-center justify-center" aria-live="polite">
+            {loadingEntries && <span className="text-[11px] text-slate-400">Loading more history…</span>}
+            {!loadingEntries && timelineError && <button type="button" onClick={() => loadCommunicationPage(nextCursor, entries.length === 0)} className="text-[11px] font-semibold text-red-600 hover:underline">{timelineError} Retry</button>}
+            {!loadingEntries && !timelineError && entries.length > 0 && !hasMoreEntries && <span className="text-[10.5px] text-slate-400">You’ve reached the beginning of the customer history.</span>}
+          </div>
+        </div>
+      </section>
+      <section className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 h-fit">
+        <div className="flex items-start gap-3 mb-4"><div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center"><Mail size={17} /></div><div><h2 className="text-[14px] font-semibold text-slate-800">New customer message</h2><p className="text-[11px] text-slate-400 mt-0.5">Gmail opens from <strong>smatimeneja@gmail.com</strong>; the timeline keeps the reference.</p></div></div>
+        <div className="space-y-3">
+          <div className="flex gap-1.5 p-1 bg-slate-100 rounded-lg"><button onClick={() => setChannel("email")} className={`flex-1 text-[11px] rounded-md py-1.5 ${channel === "email" ? "bg-white shadow-sm text-slate-800 font-semibold" : "text-slate-500"}`}>Email / Gmail</button><button onClick={() => setChannel("whatsapp")} className={`flex-1 text-[11px] rounded-md py-1.5 ${channel === "whatsapp" ? "bg-white shadow-sm text-slate-800 font-semibold" : "text-slate-500"}`}>WhatsApp reference</button></div>
+          <div><label className="text-[11px] font-medium text-slate-600">Recipient / phone</label><input value={recipient} onChange={(e) => setRecipient(e.target.value)} list="communication-contacts" className={inputClass} placeholder={channel === "email" ? "customer@example.com" : "+255…"} /><datalist id="communication-contacts">{contacts.map((contact) => <option key={contact.email} value={contact.email}>{contact.name}</option>)}</datalist></div>
+          <div><label className="text-[11px] font-medium text-slate-600">Subject / reference title</label><input value={subject} onChange={(e) => setSubject(e.target.value)} className={inputClass} placeholder="Follow-up on quotation" /></div>
+          <div><label className="text-[11px] font-medium text-slate-600">Message / copied note</label><textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} className={`${inputClass} resize-y`} placeholder="Write the message or paste the customer interaction here…" /></div>
+          <div className="flex flex-col sm:flex-row gap-2"><button onClick={channel === "email" ? openGmailCompose : copyReference} disabled={!recipient.trim() || !body.trim() || saving} className="flex-1 btn-primary text-white rounded-lg py-2.5 text-[11.5px] font-semibold disabled:opacity-50">{saving ? "Saving…" : channel === "email" ? "Open Gmail & save" : "Copy & save reference"}</button><button onClick={copyReference} disabled={!body.trim() || saving} className="flex-1 border border-slate-200 text-slate-700 rounded-lg py-2.5 text-[11.5px] font-semibold disabled:opacity-50">Save only</button></div>
+          <p className="text-[10.5px] leading-relaxed text-slate-400">WhatsApp is intentionally a reference/handoff channel here. A provider bot can be added later without losing this customer history.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, workOrders, leaveRequests, onNavigate, intent, clearIntent }) {
-  const [tab, setTab] = useState(() => intent?.module === "collaboration" && intent.tab ? intent.tab : "channels");
+  const [tab, setTab] = useState(() => intent?.module === "collaboration" && intent.tab ? intent.tab : "timeline");
   useEffect(() => {
     if (intent?.module !== "collaboration" || !intent.tab) return;
     if (COLLAB_TABS.some((entry) => entry.id === intent.tab)) setTab(intent.tab);
@@ -33669,6 +34212,7 @@ function CollaborationHub({ currentUser, filesHook, employees, invoices, crm, wo
       </div>
 
       <div className="flex-1 min-h-0">
+        {tab === "timeline"   && <CustomerCommunicationTimeline currentUser={currentUser} crm={crm} company={window.__smartManagerCompany||{}} />}
         {tab === "channels"   && <ChannelsView currentUser={currentUser} employees={employees} />}
         {tab === "whatsapp"   && <WhatsAppCenter currentUser={currentUser} crm={crm} employees={employees} invoices={invoices} company={window.__smartManagerCompany||{}} />}
         {tab === "email"      && <EmailCenter currentUser={currentUser} crm={crm} employees={employees} invoices={invoices} company={window.__smartManagerCompany||{}} />}
@@ -47307,7 +47851,7 @@ function onboardingTourStorageKey(currentUser, company) {
   return `bs_onboarding_tour_${encodeURIComponent(String(userKey))}_${encodeURIComponent(String(workspaceKey))}`;
 }
 
-function OnboardingTour({ enabled = false, showTrigger = false, currentUser, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
+function OnboardingTour({ enabled = false, currentUser, profile, company, visibleModules = [], onNavigate, onTourVisibilityChange, onTourFlowReady, onTourComplete }) {
   const { lang, t } = useLanguage();
   const userRole = canonicalRoleId(currentUser?.role || "Employee");
   const permittedModuleIds = useMemo(() => {
@@ -47327,10 +47871,11 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const dialogRef = useRef(null);
-  const triggerRef = useRef(null);
   const checkedKeyRef = useRef("");
   const [spotlightRect, setSpotlightRect] = useState(null);
   const storageKey = useMemo(() => onboardingTourStorageKey(currentUser, company), [currentUser?.id, currentUser?.name, company?.id, company?.name]);
+  const profileCompletedAt = profile?.onboarding_tour_completed_at;
+  const completionCheckKey = `${storageKey}:${String(profileCompletedAt || "")}`;
   const ready = enabled && (IS_CONFIGURED ? Boolean(currentUser?.id && company?.id) : Boolean(currentUser?.id));
   const step = activeSteps[stepIndex] || activeSteps[0];
   const StepIcon = step.icon;
@@ -47346,19 +47891,20 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
       setOpen(false);
       return;
     }
-    if (!ready || checkedKeyRef.current === storageKey) return;
-    checkedKeyRef.current = storageKey;
+    if (!ready || checkedKeyRef.current === completionCheckKey) return;
+    checkedKeyRef.current = completionCheckKey;
     setStepIndex(0);
     try {
       const saved = window.localStorage.getItem(storageKey);
-      const needsTour = !saved;
+      const needsTour = shouldOpenOnboardingTour({ localStorageValue: saved, profileCompletedAt });
       setOpen(needsTour);
       onTourFlowReady?.(needsTour);
     } catch (_error) {
-      setOpen(true);
-      onTourFlowReady?.(true);
+      const needsTour = shouldOpenOnboardingTour({ localStorageValue: null, profileCompletedAt });
+      setOpen(needsTour);
+      onTourFlowReady?.(needsTour);
     }
-  }, [enabled, ready, storageKey, onTourFlowReady]);
+  }, [enabled, ready, storageKey, completionCheckKey, profileCompletedAt, onTourFlowReady]);
 
   useEffect(() => {
     onTourVisibilityChange?.(open);
@@ -47471,7 +48017,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
     persistCompletion(status);
     setOpen(false);
     onTourComplete?.(status);
-    window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
   function goNext() {
     if (stepIndex >= activeSteps.length - 1) finishTour("completed");
@@ -47479,10 +48024,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
   }
   function goPrevious() {
     setStepIndex((current) => Math.max(0, current - 1));
-  }
-  function restartTour() {
-    setStepIndex(0);
-    setOpen(true);
   }
   function openModule() {
     if (available && onNavigate) {
@@ -47493,16 +48034,6 @@ function OnboardingTour({ enabled = false, showTrigger = false, currentUser, com
 
   return (
     <>
-      {showTrigger && <button
-        ref={triggerRef}
-        type="button"
-        onClick={restartTour}
-        className="dashboard-tour-trigger fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-[11.5px] font-bold text-emerald-800 shadow-lg transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/40 sm:bottom-6 sm:right-24"
-        aria-label={isSw ? "Anza ziara ya mfumo wa Smart Manager" : t("takeTour")}
-        data-onboarding-trigger="true"
-      >
-        <Info size={13} /> {isSw ? "Anza Ziara" : t("takeTour")}
-      </button>}
       {open && typeof document !== "undefined" && createPortal((
         <div
           className={`fixed inset-0 z-[100] flex items-center justify-center p-4 ${spotlightRect ? "bg-transparent" : "bg-slate-950/55 backdrop-blur-sm"}`}
@@ -48329,24 +48860,19 @@ function SmartManager() {
       return stored === null ? (localStorage.getItem("bs_dark") === "1" ? "dark" : "light") : (stored === "true" ? "dark" : "light");
     } catch(_e){ return "light"; }
   });
-  const [systemDarkMode, setSystemDarkMode] = React.useState(() => {
-    try { return window.matchMedia?.("(prefers-color-scheme: dark)").matches || false; } catch { return false; }
-  });
   const [themeClock, setThemeClock] = React.useState(() => Date.now());
-  const darkMode = themeMode === "dark" || (themeMode === "auto" && (systemDarkMode || [18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].includes(new Date(themeClock).getHours())));
+  // Auto follows the local clock so daylight uses the established light UI and
+  // evening/night uses the deeper adaptive shell palette. System preference is
+  // intentionally not mixed into this mode: a dark OS theme at noon must not
+  // make the business dashboard look like night.
+  const darkMode = themeMode === "dark" || (themeMode === "auto" && [18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].includes(new Date(themeClock).getHours()));
+  const themePeriod = darkMode ? "night" : "day";
   const [accentColor, setAccentColor] = React.useState(() => {
     try {
       const stored = localStorage.getItem("bs_accent_color");
       return /^#[0-9a-f]{6}$/i.test(stored || "") ? stored.toUpperCase() : "#22D3EE";
     } catch { return "#22D3EE"; }
   });
-  React.useEffect(() => {
-    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
-    if (!media) return undefined;
-    const update = (event) => setSystemDarkMode(event.matches);
-    media.addEventListener?.("change", update);
-    return () => media.removeEventListener?.("change", update);
-  }, []);
   React.useEffect(() => {
     if (themeMode !== "auto") return undefined;
     const timer = window.setInterval(() => setThemeClock(Date.now()), 60_000);
@@ -48355,6 +48881,8 @@ function SmartManager() {
   React.useEffect(() => {
     const root = document.documentElement;
     localStorage.setItem("bs_theme_mode", themeMode);
+    root.dataset.smartManagerTheme = themeMode;
+    root.dataset.smartManagerThemePeriod = themePeriod;
     root.style.setProperty("--sm-user-accent", accentColor);
     localStorage.setItem("bs_accent_color", accentColor);
     if (darkMode) {
@@ -48366,7 +48894,7 @@ function SmartManager() {
       localStorage.setItem("bs_dark_shell", "false");
       localStorage.setItem("bs_dark", "0");
     }
-  }, [darkMode, themeMode, accentColor]);
+  }, [darkMode, themeMode, themePeriod, accentColor]);
 
   // ── Smart Alert Engine — cross-module intelligence ─────────────────────
   // Each module passes its local table data here; the engine returns ranked alerts
@@ -48719,7 +49247,7 @@ function SmartManager() {
       {sharedTrialNoticeGate}
       {idleWarningOpen && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-[2px]" role="alertdialog" aria-modal="true" aria-labelledby="idle-session-title" aria-describedby="idle-session-description"><div className="w-full max-w-md rounded-3xl border border-amber-100 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,.22)]"><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-amber-100 text-amber-700"><Clock size={22} aria-hidden="true" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Security reminder</p><h2 id="idle-session-title" className="mt-1 text-[22px] font-bold tracking-[-.04em] text-slate-950" style={{ fontFamily: "'Poppins',sans-serif" }}>Your session is about to expire</h2></div></div><p id="idle-session-description" className="mt-4 text-[13px] leading-6 text-slate-600">For your protection, Smart Manager will sign out this administrative session after inactivity. Continue working to keep your tenant data secure.</p><div className="mt-5 flex items-center justify-between rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"><span className="text-[11px] font-semibold text-amber-900">Automatic sign-out in</span><span className="font-mono text-[22px] font-bold tabular-nums text-amber-800">{Math.floor(idleSecondsRemaining / 60).toString().padStart(2, "0")}:{(idleSecondsRemaining % 60).toString().padStart(2, "0")}</span></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><button type="button" onClick={keepAdministrativeSessionActive} className="rounded-2xl bg-[#0B5D3B] px-4 py-3 text-[12.5px] font-bold text-white transition hover:bg-[#084B30]">Stay signed in</button><button type="button" onClick={handleSignOut} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">Sign out now</button></div></div></div>}
       {/* CommandPalette mounted with paletteOpen state below in the topbar area */}
-    <div className={`dashboard-shell h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div data-theme-mode={themeMode} data-theme-period={themePeriod} className={`dashboard-shell h-screen w-full flex text-slate-800 overflow-hidden relative text-size-${textSize} ${darkMode ? "dark bg-[#0F172A]" : "bg-[#f5f7f6]"} ${highContrast ? "high-contrast" : ""}`} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Ambient background wash — subtle depth behind the content, the way
           Linear/Vercel-style dashboards avoid a flat, lifeless canvas. */}
       <div
@@ -48764,8 +49292,8 @@ function SmartManager() {
       <PostCreateDispatch company={company} crm={crm} />
       <OnboardingTour
         enabled={isIndividualLogin}
-        showTrigger={isIndividualLogin}
         currentUser={currentUser}
+        profile={centralizedAuth.profile}
         company={company}
         visibleModules={visibleModules}
         onNavigate={go}
@@ -48810,6 +49338,8 @@ function SmartManager() {
       <aside
         ref={sidebarRef}
         aria-hidden={sidebarHiddenFromAssistiveTech}
+        data-theme-mode={themeMode}
+        data-theme-period={themePeriod}
         className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen w-[min(86vw,320px)] ${sidebarCollapsed ? "lg:w-[80px]" : "lg:w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] pb-[env(safe-area-inset-bottom)] text-slate-100 will-change-[width,transform] transition-[width,transform,box-shadow] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
@@ -48830,21 +49360,21 @@ function SmartManager() {
 
         {/* Navigation groups */}
         <nav className="dashboard-flat-navigation relative flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-4 transition-[padding] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none" aria-label="Operational workspaces">
-          <div className={`mb-2 flex items-center justify-between px-2.5 ${sidebarLabelsVisible ? "" : "hidden"}`}><span className="text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
+          <div className={`dashboard-sidebar-menu-summary mb-2 flex items-center justify-between px-2.5 ${sidebarLabelsVisible ? "" : "hidden"}`}><span className="dashboard-sidebar-menu-eyebrow text-[9px] font-bold uppercase tracking-[.18em] text-slate-400">Application menu</span><span className="dashboard-sidebar-menu-count rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] font-bold text-cyan-100">{flatNavigationItems.length}</span></div>
           {displayedNavigationGroups.map((group) => {
             const GroupIcon = group.icon;
             const expanded = !isDesktopNavigation || sidebarCollapsed || expandedNavigationGroups.has(group.id);
-            return <section key={group.id} className="space-y-1" aria-label={`${group.label} navigation group`}>
-              {sidebarLabelsVisible && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-[#123457] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40">
+            return <section key={group.id} className="dashboard-sidebar-group space-y-1" aria-label={`${group.label} navigation group`}>
+              {sidebarLabelsVisible && <button type="button" onClick={() => toggleNavigationGroup(group.id)} aria-expanded={expanded} className="dashboard-sidebar-group-toggle flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[9px] font-bold uppercase tracking-[.16em] text-slate-400 transition hover:bg-[#123457] hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40">
                 <span className="flex min-w-0 items-center gap-1.5"><GroupIcon size={12} className="text-cyan-300" aria-hidden="true" /><span className="truncate">{group.label}</span></span><span className="flex items-center gap-1.5"><span className="rounded-full bg-[#1f4265] px-1.5 py-0.5 text-[9px] tracking-normal text-slate-200">{group.items.length}</span>{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>
               </button>}
               {expanded && <div className="space-y-1">{group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = active === item.id;
                 const alertCount = smartAlerts.filter((alert) => alert.module === item.id).length;
-                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`group relative flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-l-[3px] px-3 py-2.5 text-[12px] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 lg:min-h-0 lg:rounded-lg lg:px-2.5 lg:py-2 ${sidebarCollapsed && isDesktopNavigation ? "justify-center px-0" : ""} ${isActive ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}>
-                  <span className="flex min-w-0 items-center gap-2.5"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition lg:h-7 lg:w-7 lg:rounded-md ${isActive ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Icon size={15} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{sidebarLabelsVisible && <span className="truncate">{item.label}</span>}</span>
-                  <span className="flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-500" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-rose-400 px-1 text-[9px] font-bold text-rose-950" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
+                return <button key={item.id} type="button" data-tour-target={item.id} onClick={() => go(item.id)} aria-current={isActive ? "page" : undefined} title={item.label} className={`dashboard-sidebar-nav-item group relative flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-l-[3px] px-3 py-2.5 text-[12px] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 lg:min-h-0 lg:rounded-lg lg:px-2.5 lg:py-2 ${sidebarCollapsed && isDesktopNavigation ? "justify-center px-0" : ""} ${isActive ? "border-cyan-400/30 border-l-cyan-300 bg-[#173a5c] font-semibold text-white shadow-[0_4px_14px_rgba(0,0,0,.18)]" : "border-transparent border-l-transparent text-slate-300 hover:bg-[#123457] hover:text-white"}`}>
+                  <span className="dashboard-sidebar-nav-label flex min-w-0 items-center gap-2.5"><span className={`dashboard-sidebar-nav-icon grid h-8 w-8 shrink-0 place-items-center rounded-lg transition lg:h-7 lg:w-7 lg:rounded-md ${isActive ? "bg-cyan-300 text-[#0a1d34] shadow-sm" : "bg-[#123457] text-slate-300 group-hover:bg-[#1d4d75] group-hover:text-cyan-100"}`}><Icon size={15} strokeWidth={isActive ? 2.2 : 1.9} aria-hidden="true" /></span>{sidebarLabelsVisible && <span className="truncate">{item.label}</span>}</span>
+                  <span className="dashboard-sidebar-nav-meta flex shrink-0 items-center gap-1.5">{item.locked && <Lock size={11} className="text-slate-500" aria-label="Restricted workspace" />}{alertCount > 0 && <span className="dashboard-sidebar-alert-badge grid h-4 min-w-4 place-items-center rounded-full bg-rose-400 px-1 text-[9px] font-bold text-rose-950" aria-label={`${alertCount} attention item${alertCount === 1 ? "" : "s"}`}>{alertCount}</span>}</span>
                 </button>;
               })}</div>}
             </section>;
@@ -48881,10 +49411,19 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" data-theme-mode={themeMode} data-theme-period={themePeriod} className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`}>
           <div className="dashboard-topbar-main">
-           {/* Left — menu trigger, workspace identity, and current location */}
+           {/* Left — product identity, menu trigger, workspace identity, and current location */}
            <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="dashboard-topbar-brand hidden min-w-0 shrink items-center gap-2 md:flex" aria-label="Smart Manager Enterprise Suite">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-1.5 shadow-[0_5px_14px_rgba(11,93,59,.2)] ring-1 ring-emerald-200/40">
+                <BrandLogo variant="compact" priority className="h-6 w-6" />
+              </span>
+              <span className="dashboard-topbar-brand-copy min-w-0 leading-tight">
+                <span className="block truncate text-[13px] font-extrabold tracking-[-.02em] text-slate-900" style={{ fontFamily: "'Poppins'" }}>SMART <span className="text-emerald-700">MANAGER</span></span>
+                <span className="dashboard-topbar-enterprise-badge mt-0.5 inline-flex items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[.14em] text-emerald-700 ring-1 ring-emerald-200/80">Enterprise Suite</span>
+              </span>
+            </div>
             <button
               type="button"
                className="dashboard-topbar-menu-control grid shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 lg:hidden"
@@ -48960,59 +49499,55 @@ function SmartManager() {
              </div>
           </div>
 
-           {/* Right — live status, quick actions, and identity */}
-           <div className="dashboard-topbar-actions flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
-             <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")}>
-               <Globe size={14} className="text-emerald-700" aria-hidden="true" />
-               <span className="sr-only">{t("language")}</span>
-               <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="max-w-[92px] appearance-none bg-transparent pr-0 outline-none">
-                 {languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}
-               </select>
-               <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
-             </label>
-             <RealtimeConnectivityBadge />
-            <LiveDateTime />
-            {/* Dark mode toggle */}
-            <button
-              type="button"
-              onClick={toggleDarkMode}
-              aria-pressed={darkMode}
-              aria-label={`Theme mode: ${themeMode}. Activate to switch to ${themeMode === "light" ? "dark" : themeMode === "dark" ? "auto" : "light"} mode`}
-               className="dashboard-topbar-icon-button grid shrink-0 place-items-center rounded-xl border bg-white text-slate-500 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
-              title={`Theme: ${themeMode === "auto" ? "Auto" : themeMode === "dark" ? "Dark" : "Light"} (click to change)`}
-            >
-              {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
-            </button>
+           {/* Right — quick actions first, identity anchored at the far right */}
+           <div className="dashboard-topbar-actions dashboard-topbar-actions-polished flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1 sm:gap-1.5">
+             <button
+                           type="button"
+                           onClick={() => setPaletteOpen(true)}
+                           className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-emerald-500/20 bg-[linear-gradient(135deg,#0B5D3B_0%,#16A34A_55%,#22C55E_100%)] px-3 text-[11px] font-medium text-white shadow-[0_8px_20px_rgba(22,163,74,.28),inset_0_1px_0_rgba(255,255,255,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(22,163,74,.38),inset_0_1px_0_rgba(255,255,255,.35)] active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2"
+                           aria-label="Search everything"
+                           title="Search everything"
+                           aria-expanded={paletteOpen}
+                         >
+                           <Search size={17} strokeWidth={2.35} className="shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.18)] transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+                           <span className="dashboard-search-tooltip pointer-events-none absolute right-0 top-[calc(100%+10px)] z-50 whitespace-nowrap rounded-lg border border-slate-700/80 bg-slate-950 px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-xl transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">Search workspace <kbd className="ml-1 rounded border border-white/20 px-1 py-0.5 font-mono text-[9px] text-slate-300">⌘K</kbd></span>
+                         </button>
+             <span className="dashboard-topbar-divider" aria-hidden="true" />
              <NotificationCenter className="dashboard-topbar-notification-slot" inventory={inventory} invoices={invoices} expenses={expenses} leaveRequests={leaveRequests} workOrders={workOrders} subscriptions={subscriptions} onNavigate={go} />
              <button type="button" className="dashboard-topbar-reference-control dashboard-topbar-messages" onClick={() => go("whatsapp")} aria-label={t("messages")} title={t("messages")}>
-               <MessageCircle size={17} strokeWidth={1.75} aria-hidden="true" />
-               <span className="dashboard-topbar-reference-badge" aria-label="3 unread messages">3</span>
-             </button>
+                            <MessageCircle size={17} strokeWidth={1.75} aria-hidden="true" />
+                            <span className="dashboard-topbar-reference-badge" aria-label="3 unread messages">3</span>
+                          </button>
              <button type="button" className="dashboard-topbar-reference-control" onClick={() => go("support")} aria-label={t("helpSupport")} title={t("helpSupport")}>
-               <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
-             </button>
-             <div className="dashboard-topbar-divider hidden h-8 w-px shrink-0 bg-slate-200 sm:block" aria-hidden="true" />
+                            <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" />
+                          </button>
+             <span className="dashboard-topbar-divider" aria-hidden="true" />
+             {/* Preferences: appearance and language stay together before account identity. */}
+             {/* Dark mode toggle */}
+                         <button
+                           type="button"
+                           onClick={toggleDarkMode}
+                           aria-pressed={darkMode}
+                           aria-label={`Theme mode: ${themeMode}. Activate to switch to ${themeMode === "light" ? "dark" : themeMode === "dark" ? "auto" : "light"} mode`}
+                            className="dashboard-topbar-icon-button grid shrink-0 place-items-center rounded-xl border bg-white text-slate-500 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
+                           title={`Theme: ${themeMode === "auto" ? "Auto" : themeMode === "dark" ? "Dark" : "Light"} (click to change)`}
+                         >
+                           {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
+                         </button>
+             {active === "dashboard" && <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
+                            <Globe size={14} className="text-emerald-700" aria-hidden="true" />
+                            <span className="sr-only">{t("language")}</span>
+                            <span className="dashboard-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
+                            <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="dashboard-language-select max-w-[92px] appearance-none bg-transparent pr-0 outline-none" data-testid="dashboard-language-select">
+                              {languageOptions.map((option) => <option key={option.code} value={option.code}>{option.nativeLabel}</option>)}
+                            </select>
+                            <ChevronDown size={12} className="text-slate-400" aria-hidden="true" />
+                          </label>}
+             <span className="dashboard-topbar-divider dashboard-topbar-profile-divider" aria-hidden="true" />
              <div className="dashboard-topbar-profile-slot">
-               <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
-             </div>
-          </div>
-          {/* The search control gets its own row on smaller screens so it never
-              competes with the workspace and account controls for width. */}
-          <div className="dashboard-topbar-search-slot">
-            <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              className="dashboard-topbar-search inline-flex min-w-0 w-full items-center justify-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-[11px] font-medium text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,.8)] transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
-              aria-label="Search everything"
-              title="Search everything"
-            >
-              <Search size={15} className="shrink-0 text-slate-400" aria-hidden="true" />
-              {/* Search modules, records, and actions — localized through the shared language context. */}
-              <span className="dashboard-topbar-search-label truncate">{t("searchEverything")}</span>
-              <kbd className="ml-auto hidden shrink-0 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 lg:inline-block">⌘K</kbd>
-              <ArrowRight size={14} className="ml-auto shrink-0 text-slate-300 sm:hidden" aria-hidden="true" />
-            </button>
-          </div>
+                            <PremiumProfileMenu topbar currentUser={currentUser} session={session} company={company} canManageBilling={canManageBilling} onSignOut={handleSignOut} onNavigate={(id, options) => options?.profileTab ? goWithIntent(id, { profileTab: options.profileTab }) : go(id)} onOpenPasswordRecovery={() => { const email = session?.email || currentUser?.email || ""; handleSignOut(); navigateAuthView("forgot", email); }} roleChangeApprovalsQuery={roleChangeApprovalsQuery} onProfileUpdated={(data) => { const next = data?.profile; if (next?.fullName) setCurrentUser((previous) => ({ ...previous, name: next.preferredName || next.fullName, role: next.role || previous.role })); }} />
+                          </div>
+           </div>
           </div>
         </header>
 
@@ -49037,12 +49572,12 @@ function SmartManager() {
             one thumb-tap away. Only renders on small screens where the
             sidebar is hidden. RBAC is automatic: tabs are built from the
             same visibleModules list the sidebar uses. */}
-        <nav className="dashboard-mobile-nav lg:hidden fixed bottom-0 inset-x-0 z-30 min-h-[64px] bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)", paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Mobile workspace navigation">
+        <nav data-theme-mode={themeMode} data-theme-period={themePeriod} className="dashboard-mobile-nav lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200/80 flex" style={{ backdropFilter: "blur(12px)" }} aria-label="Mobile workspace navigation">
           {[...visibleModules.filter((m) => ["dashboard","sales","inventory","finance","hr"].includes(m.id)), ...visibleModules.filter((m) => !["dashboard","sales","inventory","finance","hr"].includes(m.id))].slice(0, 5).map((m) => {
             const Icon = m.icon;
             const on = active === m.id;
             return (
-              <button key={m.id} type="button" onClick={() => go(m.id)} aria-current={on ? "page" : undefined} className="flex-1 min-h-[64px] min-w-0 px-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/45" style={{ color: on ? "#16A34A" : "#9CA3AF" }}>
+              <button key={m.id} type="button" onClick={() => go(m.id)} aria-label={m.id === "dashboard" ? "Dashboard" : m.label} aria-current={on ? "page" : undefined} className="flex-1 min-w-0 flex flex-col items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/45" style={{ color: on ? "#16A34A" : "#9CA3AF" }}>
                 <div className="relative">
                   <Icon size={on ? 22 : 20} strokeWidth={on ? 2.2 : 1.75} />
                   {on && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#16A34A]" />}
@@ -49057,7 +49592,7 @@ function SmartManager() {
           <button
             onClick={() => go("ai")}
             aria-label="Open AI Command Center"
-            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 min-h-14 min-w-14 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#16A34A] sm:bottom-6 sm:right-6"
+            className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 min-h-14 min-w-14 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#16A34A] sm:bottom-6 sm:right-6"
             style={{ background: "linear-gradient(135deg, #16A34A, #22C55E)" }}
           >
             <Sparkles size={22} />
@@ -49065,7 +49600,7 @@ function SmartManager() {
         )}
 
         {/* Content */}
-        <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
+        <main key={active} className="sm-page dashboard-main dashboard-mobile-content module-fade min-h-0 flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 xl:p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-6">
           <Suspense fallback={<div role="status" aria-label="Loading workspace module" className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white p-6 text-sm font-medium text-slate-500 shadow-sm">Loading workspace module…</div>}>
           {active === "dashboard" && (
             <Dashboard
@@ -49256,20 +49791,11 @@ class ErrorBoundary extends React.Component {
     // safety net itself. console.error is the one logging mechanism with
     // no dependency on anything else in this app being in a working state.
     console.error("Smart Manager crashed:", error, info?.componentStack);
-    // A new deployment replaced the page files this tab was using —
-    // reload once to pick up the fresh version instead of showing an error.
+    // A new GitHub deployment may have replaced the page files this tab was
+    // using. Reload only after the server confirms that revision changed.
     const message = String(error?.message ?? "");
     if (typeof window !== "undefined" && /dynamically imported module|Importing a module script failed|Failed to fetch dynamically|ChunkLoadError/i.test(message)) {
-      try {
-        const key = "sm:chunk-reload-at";
-        const last = Number(window.sessionStorage.getItem(key) || 0);
-        if (Date.now() - last > 10000) {
-          window.sessionStorage.setItem(key, String(Date.now()));
-          window.location.reload();
-        }
-      } catch {
-        window.location.reload();
-      }
+      void reloadIfGithubUpdated({ beforeReload: clearStaleShellCaches });
     }
   }
 

@@ -23,7 +23,7 @@ export function BrandLogo({ variant = "full", className = "", style, decorative 
     ? "absolute inset-0 h-full w-full object-contain p-[5%]"
     : "pointer-events-none absolute inset-0 z-1 h-full w-full object-contain";
   const wrapperClass = variant === "compact"
-    ? `relative isolate block aspect-square shrink-0 overflow-hidden rounded-[22%] bg-white ${className}`
+    ? `relative isolate block aspect-square shrink-0 overflow-hidden rounded-[22%] bg-transparent ${className}`
     : `relative isolate block overflow-hidden ${className}`;
   const image = <img src={variant === "compact" ? SMART_MANAGER_MARK_URL : SMART_MANAGER_LOGO_URL} alt={decorative ? "" : label} width={512} height={512} loading={priority ? "eager" : "lazy"} decoding="async" className={`${imageClass} sm-animated-logo-fallback`.trim()} />;
   const video = animated && !animationFailed ? <video

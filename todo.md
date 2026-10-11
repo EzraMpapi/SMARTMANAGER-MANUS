@@ -324,6 +324,14 @@
 - [x] Enable required checks for pull requests into `main` and verify the effective branch-protection configuration: one approval, stale-review dismissal, administrator enforcement, conversation resolution, no force pushes/deletions, and the current unit/build plus browser preference checks are required.
 - [x] Run relevant workflow validation, commit, push, and publish the completed repository-quality improvements. Local checks are green and the workflow files trigger correctly; hosted jobs still terminate before runner execution because of the separate GitHub Actions account constraint.
 
+## Connected Workspace Date-Specific Overview
+- [x] Audit the current workspace overview and confirmed-record aggregation boundaries.
+- [x] Replace the generic overview copy with a time-aware Connected workspace view and personalized greeting.
+- [x] Add an accessible date selector that scopes the overview to one exact calendar date.
+- [x] Show confirmed workspace activity for the selected date only, with clear empty/loading/error states.
+- [x] Add regression coverage for date scoping, greeting, confirmed-record language, and tenant-safe behavior.
+- [x] Run focused/full tests, TypeScript checks, production build, and publish synchronization.
+
 ## User-Approved Public Repository and Quality Gate Activation
 - [x] Run a final tracked-file secret and signing-key scan before changing repository visibility; environment files contain placeholders only and flagged code values are explicit non-production test fixtures, with no tracked private key or credential token detected.
 - [x] Change `EzraMpapi/SMARTMANAGER-MANUS` to public visibility as explicitly approved by the repository owner.

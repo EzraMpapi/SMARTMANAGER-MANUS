@@ -47,19 +47,12 @@ describe("dashboard shell interaction refinement", () => {
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
     expect(dashboard).toContain('aria-label="Open menu"');
     expect(dashboard).toContain('aria-label="Search everything"');
-    expect(dashboard).toContain('aria-label={`Open workspace details for');
-    expect(dashboard).toContain('aria-label="Workspace details"');
-    expect(dashboard).toContain('workspaceMenuOpen');
-    expect(dashboard).toContain('closeWorkspaceMenu');
-    expect(dashboard).toContain('max-h-[min(70dvh,520px)]');
-    expect(dashboard).toContain('overscroll-contain overflow-y-auto');
-    expect(dashboard).toContain('subscriptionStateLabel(subscriptionAccess.access)');
-    expect(dashboard).toContain('Active branch');
-    expect(dashboard).toContain('Switch branch');
-    expect(dashboard).toContain('smart-manager:active-branch:');
-    expect(dashboard).toContain('smart-manager:active-branch-changed');
-    expect(dashboard).toContain('role="menuitemradio"');
-    expect(dashboard).toContain('switchWorkspaceBranch');
+    expect(dashboard).toContain('aria-label="Smart Manager"');
+    expect(dashboard).toContain('shadow-[0_5px_16px_rgba(255,255,255,.62)]');
+    expect(dashboard).toContain('>Smart Manager</span>');
+    expect(dashboard).not.toContain('dashboard-topbar-workspace');
+    expect(dashboard).not.toContain('aria-label="Workspace details"');
+    expect(dashboard).not.toContain('Open workspace details for');
     expect(dashboard).toContain('event.key.toLowerCase() !== "b"');
     expect(dashboard).toContain('Ctrl+B');
     expect(dashboard).toContain('target?.isContentEditable');
@@ -68,8 +61,8 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('NotificationCenter');
     expect(dashboard).toContain('onClick={toggleDarkMode}');
     expect(dashboard).toContain('aria-pressed={darkMode}');
-    expect(dashboard).toContain('dashboard-topbar-search inline-flex min-w-0 w-full');
-    expect(dashboard).toContain('border border-slate-200 bg-slate-50');
+    expect(dashboard).toContain('dashboard-topbar-search');
+    expect(dashboard).toContain('aria-label="Search everything"');
     expect(profileCenter).toContain('dashboard-topbar-profile relative z-40 shrink-0');
     expect(dashboardStyles).toContain('.dashboard-topbar-actions');
     expect(dashboardStyles).toContain('overflow: visible;');
@@ -79,7 +72,7 @@ describe("dashboard shell interaction refinement", () => {
     const topbar = dashboard.slice(dashboard.indexOf('aria-label="Workspace command bar"'), dashboard.indexOf('{IS_CONFIGURED && active !== "billing"'));
     expect(topbar).not.toContain('Live workspace');
     expect(topbar).not.toContain('company?.name || "Smart Manager"');
-    expect(topbar).toContain('Search modules, records, and actions');
+    expect(topbar).toContain('Search workspace');
     expect(topbar).not.toContain('>Create<');
     expect(topbar).not.toContain('Customize dashboard layout');
     expect(topbar).not.toContain('WorkspacePresenceBadge');
@@ -108,7 +101,8 @@ describe("dashboard shell interaction refinement", () => {
     expect(activeProfileMenu).toContain('id="workspace-profile-menu"');
     expect(activeProfileMenu).toContain('window.addEventListener("pointerdown", closeWhenOutside)');
     expect(activeProfileMenu).toContain('window.addEventListener("keydown", closeOnEscape)');
-    expect(activeProfileMenu).not.toContain('fixed inset-0');
+    expect(activeProfileMenu).toContain("dashboard-profile-menu");
+    expect(activeProfileMenu).not.toContain('className="fixed inset-0 z-40');
     expect(activeProfileMenu).toContain('max-h-[min(58vh,360px)]');
     expect(dashboardStyles).toContain('touch-action: manipulation');
   });

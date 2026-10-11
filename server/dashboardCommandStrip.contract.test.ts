@@ -30,6 +30,8 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("onClick={toggleDarkMode}");
     expect(dashboard).toContain("dashboard-topbar-profile");
     expect(dashboard).toContain("dashboard-sidebar-brand");
+    const sidebarBrand = dashboard.slice(dashboard.indexOf("dashboard-sidebar-brand"), dashboard.indexOf("{/* Navigation groups */}"));
+    expect(sidebarBrand).not.toContain("Enterprise Suite");
     expect(dashboard).toContain("<PremiumProfileMenu");
   });
 

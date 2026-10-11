@@ -96,13 +96,12 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(invitationServiceSource).not.toContain("input.companyId");
   });
 
-  it("does not retain browser SMTP credentials or offer a false manual-email send state while delivery is disabled", () => {
-    expect(dashboardSource).toContain("const emailDeliveryDisabled = true");
-    expect(dashboardSource).toContain("Email delivery is disabled");
-    expect(dashboardSource).toContain("Email delivery disabled");
+  it("does not retain browser SMTP credentials and sends only through the protected server provider", () => {
+    expect(dashboardSource).toContain("trpc.transactionalEmail.send.useMutation");
+    expect(dashboardSource).toContain("Email accepted by the configured provider");
+    expect(dashboardSource).toContain("approved server-side workspace email provider");
     expect(dashboardSource).not.toContain('localStorage.getItem("smtp_cfg")');
     expect(dashboardSource).not.toContain('localStorage.setItem("smtp_cfg"');
-    expect(dashboardSource).not.toContain("Email accepted by the delivery provider");
     expect(dashboardSource).not.toContain("Email opened in your mail client");
     expect(dashboardSource).toContain("Payment reminder is ready in Collaboration → Email for secure delivery.");
   });
@@ -212,7 +211,7 @@ describe("BusinessSphere launch and live-data integration", () => {
   });
 
   it("retains the professional executive command hierarchy and operational context without adding fabricated metrics", () => {
-    expect(dashboardSource).toContain(">Workspace overview<");
+    expect(dashboardSource).toContain(">Connected workspace<");
     expect(dashboardSource).toContain("Live workspace data");
     expect(dashboardSource).toContain("operational alert{alerts.length === 1 ? \"\" : \"s\"}");
     expect(dashboardSource).toContain("{PERIOD_LABELS[period]} reporting view");
@@ -294,7 +293,7 @@ describe("BusinessSphere launch and live-data integration", () => {
     expect(dashboardSource).toContain("const statusConfig = {");
     expect(dashboardSource).toContain('currentRole.allowedModules.includes(module.id)');
     expect(dashboardSource).toContain("No root-level signal");
-    expect(dashboardSource).toContain("Ticket data stays in Support");
+    expect(dashboardSource).toContain("Confirmed support workspace");
     expect(dashboardSource).toContain("No confirmed POS transactions");
     expect(dashboardSource).toContain("No confirmed data");
     expect(dashboardSource).toContain("Not assessed");

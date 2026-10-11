@@ -2,6 +2,7 @@ import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
+import { registerEmailAttachmentRoutes } from "../emailAttachmentsApi";
 import { ENV } from "./env";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -44,6 +45,16 @@ import {
 export function createApiApp() {
   const app = express();
 
+  app.get("/api/app-version", (_req, res) => {
+    const githubRevision = [
+      process.env.GITHUB_SHA,
+      process.env.VERCEL_GIT_COMMIT_SHA,
+      process.env.GIT_COMMIT_SHA,
+      process.env.COMMIT_SHA,
+    ].find((value) => typeof value === "string" && value.trim().length > 0)?.trim() || null;
+    res.set("Cache-Control", "no-store, max-age=0, must-revalidate").json({ githubRevision });
+  });
+
   app.post("/api/webhooks/healthcare-sms-delivery", express.raw({ type: "application/json", limit: "64kb" }), healthcareReminderDeliveryWebhookHandler);
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -73,6 +84,7 @@ export function createApiApp() {
   app.get("/api/payments/harakapay/status/:orderId", harakaPayStatusHandler);
   app.get("/api/payments/harakapay/balance", harakaPayBalanceHandler);
   registerStorageProxy(app);
+  registerEmailAttachmentRoutes(app);
   registerOAuthRoutes(app);
   app.post("/api/scheduled/dashboardReport", scheduledDashboardReportHandler);
   app.post("/api/scheduled/schemaDriftMonitor", scheduledSchemaDriftMonitorHandler);
