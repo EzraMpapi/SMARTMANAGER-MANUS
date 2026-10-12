@@ -11,6 +11,7 @@ export const SHELL_COLOR_PRESETS = {
 } as const;
 
 export type ShellColor = keyof typeof SHELL_COLOR_PRESETS;
+export type CustomShellColor = string | null;
 
 export interface DashboardPreferences {
   compactDensity: boolean;
@@ -20,6 +21,8 @@ export interface DashboardPreferences {
   accentColor: "gold" | "emerald";
   headerColor: ShellColor;
   sidebarColor: ShellColor;
+  headerCustomColor: CustomShellColor;
+  sidebarCustomColor: CustomShellColor;
   currency: "TZS" | "USD";
   timezone: string;
   fxRateOverride: number;
@@ -80,6 +83,8 @@ const defaultPreferences: DashboardPreferences = {
   accentColor: "gold",
   headerColor: "emerald",
   sidebarColor: "navy",
+  headerCustomColor: null,
+  sidebarCustomColor: null,
   currency: "TZS",
   timezone: "Africa/Dar_es_Salaam",
   fxRateOverride: 2600,
@@ -114,6 +119,8 @@ export function normalizePreferences(value: Partial<DashboardPreferences> | null
     accentColor: value?.accentColor === "emerald" ? "emerald" : "gold",
     headerColor: value?.headerColor && value.headerColor in SHELL_COLOR_PRESETS ? value.headerColor as ShellColor : defaultPreferences.headerColor,
     sidebarColor: value?.sidebarColor && value.sidebarColor in SHELL_COLOR_PRESETS ? value.sidebarColor as ShellColor : defaultPreferences.sidebarColor,
+    headerCustomColor: typeof value?.headerCustomColor === "string" && /^#[0-9a-f]{6}$/i.test(value.headerCustomColor) ? value.headerCustomColor.toUpperCase() as CustomShellColor : null,
+    sidebarCustomColor: typeof value?.sidebarCustomColor === "string" && /^#[0-9a-f]{6}$/i.test(value.sidebarCustomColor) ? value.sidebarCustomColor.toUpperCase() as CustomShellColor : null,
     currency: value?.currency === "USD" ? "USD" : "TZS",
     timezone: typeof value?.timezone === "string" && value.timezone.trim() ? value.timezone.trim() : defaultPreferences.timezone,
     fxRateOverride: Number.isFinite(Number(value?.fxRateOverride)) && Number(value?.fxRateOverride) > 0 ? Number(value?.fxRateOverride) : defaultPreferences.fxRateOverride,

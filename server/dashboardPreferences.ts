@@ -16,6 +16,7 @@ export const DASHBOARD_SHELL_COLORS = ["emerald", "navy", "slate", "plum", "burg
 const dashboardWidgetId = z.enum(DASHBOARD_WIDGET_IDS);
 const dashboardKpiId = z.enum(DASHBOARD_KPI_IDS);
 const dashboardNavigationGroupId = z.enum(DASHBOARD_NAVIGATION_GROUP_IDS);
+const customShellColor = z.string().regex(/^#[0-9a-f]{6}$/i).transform((value) => value.toUpperCase()).nullable();
 
 export const dashboardPreferencesInput = z.object({
   compactDensity: z.boolean(),
@@ -25,6 +26,8 @@ export const dashboardPreferencesInput = z.object({
   accentColor: z.enum(["gold", "emerald"]),
   headerColor: z.enum(DASHBOARD_SHELL_COLORS),
   sidebarColor: z.enum(DASHBOARD_SHELL_COLORS),
+  headerCustomColor: customShellColor,
+  sidebarCustomColor: customShellColor,
   currency: z.enum(["TZS", "USD"]),
   timezone: z.string().trim().min(1).max(100),
   fxRateOverride: z.number().finite().min(1).max(1_000_000),
@@ -58,6 +61,8 @@ export const DEFAULT_DASHBOARD_PREFERENCES: DashboardPreferences = {
   accentColor: "gold",
   headerColor: "emerald",
   sidebarColor: "navy",
+  headerCustomColor: null,
+  sidebarCustomColor: null,
   currency: "TZS",
   timezone: "Africa/Dar_es_Salaam",
   fxRateOverride: 2600,
@@ -110,6 +115,8 @@ function normalizePreferences(value: unknown): DashboardPreferences {
     accentColor: candidate.accentColor === "emerald" ? "emerald" : "gold",
     headerColor: DASHBOARD_SHELL_COLORS.includes(candidate.headerColor as typeof DASHBOARD_SHELL_COLORS[number]) ? candidate.headerColor as DashboardPreferences["headerColor"] : DEFAULT_DASHBOARD_PREFERENCES.headerColor,
     sidebarColor: DASHBOARD_SHELL_COLORS.includes(candidate.sidebarColor as typeof DASHBOARD_SHELL_COLORS[number]) ? candidate.sidebarColor as DashboardPreferences["sidebarColor"] : DEFAULT_DASHBOARD_PREFERENCES.sidebarColor,
+    headerCustomColor: typeof candidate.headerCustomColor === "string" && /^#[0-9a-f]{6}$/i.test(candidate.headerCustomColor) ? candidate.headerCustomColor.toUpperCase() : null,
+    sidebarCustomColor: typeof candidate.sidebarCustomColor === "string" && /^#[0-9a-f]{6}$/i.test(candidate.sidebarCustomColor) ? candidate.sidebarCustomColor.toUpperCase() : null,
     currency: candidate.currency === "USD" ? "USD" : "TZS",
     timezone: typeof candidate.timezone === "string" && candidate.timezone.trim() ? candidate.timezone.trim().slice(0, 100) : DEFAULT_DASHBOARD_PREFERENCES.timezone,
     fxRateOverride: Math.min(1_000_000, Math.max(1, Number(candidate.fxRateOverride) || DEFAULT_DASHBOARD_PREFERENCES.fxRateOverride)),

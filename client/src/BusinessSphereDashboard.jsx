@@ -48802,8 +48802,10 @@ function SmartManager() {
   // make the business dashboard look like night.
   const darkMode = themeMode === "dark" || (themeMode === "auto" && [18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].includes(new Date(themeClock).getHours()));
   const themePeriod = darkMode ? "night" : "day";
-  const shellHeaderColor = SHELL_COLOR_PRESETS[preferences.headerColor] || SHELL_COLOR_PRESETS.emerald;
-  const shellSidebarColor = SHELL_COLOR_PRESETS[preferences.sidebarColor] || SHELL_COLOR_PRESETS.navy;
+  const shellHeaderPreset = SHELL_COLOR_PRESETS[preferences.headerColor] || SHELL_COLOR_PRESETS.emerald;
+  const shellSidebarPreset = SHELL_COLOR_PRESETS[preferences.sidebarColor] || SHELL_COLOR_PRESETS.navy;
+  const shellHeaderColor = { value: preferences.headerCustomColor || shellHeaderPreset.value, soft: shellHeaderPreset.soft };
+  const shellSidebarColor = { value: preferences.sidebarCustomColor || shellSidebarPreset.value, soft: shellSidebarPreset.soft };
   const [accentColor, setAccentColor] = React.useState(() => {
     try {
       const stored = localStorage.getItem("bs_accent_color");

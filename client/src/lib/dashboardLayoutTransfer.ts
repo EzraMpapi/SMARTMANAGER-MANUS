@@ -11,6 +11,8 @@ const transferableKeys = [
   "accentColor",
   "headerColor",
   "sidebarColor",
+  "headerCustomColor",
+  "sidebarCustomColor",
   "currency",
   "timezone",
   "fxRateOverride",

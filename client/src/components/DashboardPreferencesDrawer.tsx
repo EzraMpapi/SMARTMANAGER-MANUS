@@ -112,6 +112,17 @@ export function DashboardPreferencesDrawer({ isOpen, onClose, availableNavigatio
     }
   };
 
+  const setShellColor = (key: "headerColor" | "sidebarColor", colorKey: ShellColor) => {
+    replacePreferences({ [key]: colorKey, [key === "headerColor" ? "headerCustomColor" : "sidebarCustomColor"]: null });
+  };
+
+  const setCustomShellColor = (key: "headerCustomColor" | "sidebarCustomColor", value: string) => {
+    const normalized = value.trim().toUpperCase();
+    if (!normalized || /^#[0-9A-F]{0,6}$/.test(normalized)) {
+      updatePreference(key, normalized.length === 7 ? normalized as `#${string}` : null);
+    }
+  };
+
   const toggleNavigationGroup = (groupId: DashboardPreferences["visibleNavigationGroupIds"][number]) => {
     if (groupId === "home") return;
     const isVisible = preferences.visibleNavigationGroupIds.includes(groupId);
@@ -186,13 +197,33 @@ export function DashboardPreferencesDrawer({ isOpen, onClose, availableNavigatio
                           aria-label={`${color.label} ${key === "headerColor" ? "top header" : "left navigation"} color`}
                           aria-pressed={preferences[key] === colorKey}
                           title={color.label}
-                          onClick={() => updatePreference(key, colorKey)}
+                          onClick={() => setShellColor(key, colorKey)}
                           className={`group rounded-lg border p-1.5 transition ${preferences[key] === colorKey ? "border-white shadow-[0_0_0_2px_rgba(201,169,110,.7)]" : "border-white/10 hover:border-white/40"}`}
                         >
                           <span className="block h-7 rounded-md" style={{ background: `linear-gradient(135deg, ${color.value}, ${color.soft})` }} />
                           <span className="mt-1 block truncate text-[9px] font-semibold text-slate-400 group-hover:text-white">{color.label}</span>
                         </button>
                       ))}
+                    </div>
+                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[.03] p-2.5">
+                      <input
+                        type="color"
+                        aria-label={`Choose custom ${key === "headerColor" ? "top header" : "left navigation"} color`}
+                        value={preferences[key === "headerColor" ? "headerCustomColor" : "sidebarCustomColor"] || (key === "headerColor" ? SHELL_COLOR_PRESETS.emerald.value : SHELL_COLOR_PRESETS.navy.value)}
+                        onChange={(event) => updatePreference(key === "headerColor" ? "headerCustomColor" : "sidebarCustomColor", event.target.value.toUpperCase())}
+                        className="h-8 w-9 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
+                      />
+                      <input
+                        type="text"
+                        inputMode="text"
+                        maxLength={7}
+                        aria-label={`Custom HEX ${key === "headerColor" ? "top header" : "left navigation"} color`}
+                        value={preferences[key === "headerColor" ? "headerCustomColor" : "sidebarCustomColor"] || ""}
+                        onChange={(event) => setCustomShellColor(key === "headerColor" ? "headerCustomColor" : "sidebarCustomColor", event.target.value)}
+                        placeholder="#0B5D3B"
+                        className="min-w-0 flex-1 rounded-md border border-white/15 bg-white/5 px-2.5 py-1.5 font-mono text-[12px] uppercase tracking-wider text-white placeholder:text-slate-500 focus:border-[#C9A96E] focus:outline-none"
+                      />
+                      <span className="text-[10px] text-slate-500">Custom HEX</span>
                     </div>
                   </div>
                 ))}
