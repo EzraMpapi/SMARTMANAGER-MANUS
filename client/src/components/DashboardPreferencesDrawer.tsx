@@ -20,6 +20,13 @@ const topBarControls = [
 ] as const;
 
 const shellColorOptions = Object.entries(SHELL_COLOR_PRESETS) as Array<[ShellColor, (typeof SHELL_COLOR_PRESETS)[ShellColor]]>;
+const quickShellThemes = [
+  { id: "emerald-command", label: "Emerald Command", detail: "Professional operations", headerColor: "emerald", sidebarColor: "navy" },
+  { id: "midnight-pro", label: "Midnight Pro", detail: "Focused dark workspace", headerColor: "navy", sidebarColor: "slate" },
+  { id: "plum-studio", label: "Plum Studio", detail: "Distinctive and creative", headerColor: "plum", sidebarColor: "burgundy" },
+  { id: "burgundy-executive", label: "Burgundy Executive", detail: "Warm executive contrast", headerColor: "burgundy", sidebarColor: "navy" },
+  { id: "slate-minimal", label: "Slate Minimal", detail: "Calm neutral surfaces", headerColor: "slate", sidebarColor: "navy" },
+] as const;
 
 export function DashboardPreferencesDrawer({ isOpen, onClose, availableNavigationGroups = [], canManageTeamPresets = false }: DashboardPreferencesDrawerProps) {
   const { preferences, updatePreference, replacePreferences, resetPreferences, resetToTeamDefault, isPersisting, persistenceError } = useDashboardPreferences();
@@ -123,6 +130,10 @@ export function DashboardPreferencesDrawer({ isOpen, onClose, availableNavigatio
     }
   };
 
+  const applyShellTheme = (theme: (typeof quickShellThemes)[number]) => {
+    replacePreferences({ headerColor: theme.headerColor, sidebarColor: theme.sidebarColor, headerCustomColor: null, sidebarCustomColor: null });
+  };
+
   const toggleNavigationGroup = (groupId: DashboardPreferences["visibleNavigationGroupIds"][number]) => {
     if (groupId === "home") return;
     const isVisible = preferences.visibleNavigationGroupIds.includes(groupId);
@@ -184,6 +195,41 @@ export function DashboardPreferencesDrawer({ isOpen, onClose, availableNavigatio
               <div>
                 <h4 id="shell-colors-title" className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">Workspace shell colors</h4>
                 <p className="mt-1 text-[11px] leading-5 text-[#94A3B8]">Choose the colors used by the top header and left navigation bar. Your choice is saved with your dashboard preferences.</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-[#0B1120] p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[12px] font-bold text-white">Quick themes</p>
+                    <p className="mt-0.5 text-[10px] text-[#94A3B8]">Apply a coordinated header and sidebar palette in one click.</p>
+                  </div>
+                  <Sparkles size={15} className="shrink-0 text-[#C9A96E]" aria-hidden="true" />
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {quickShellThemes.map((theme) => {
+                    const header = SHELL_COLOR_PRESETS[theme.headerColor];
+                    const sidebar = SHELL_COLOR_PRESETS[theme.sidebarColor];
+                    const selected = !preferences.headerCustomColor && !preferences.sidebarCustomColor && preferences.headerColor === theme.headerColor && preferences.sidebarColor === theme.sidebarColor;
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        aria-label={`Apply ${theme.label} theme`}
+                        aria-pressed={selected}
+                        onClick={() => applyShellTheme(theme)}
+                        className={`overflow-hidden rounded-lg border text-left transition hover:-translate-y-0.5 ${selected ? "border-[#C9A96E] shadow-[0_0_0_1px_rgba(201,169,110,.7)]" : "border-white/10 hover:border-white/35"}`}
+                      >
+                        <span className="flex h-7">
+                          <span className="flex-1" style={{ background: header.value }} />
+                          <span className="w-1/3" style={{ background: sidebar.value }} />
+                        </span>
+                        <span className="block px-2 py-1.5">
+                          <span className="block truncate text-[10px] font-semibold text-white">{theme.label}</span>
+                          <span className="mt-0.5 block truncate text-[9px] text-slate-500">{theme.detail}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div className="grid gap-3 rounded-xl border border-white/10 bg-[#0B1120] p-4">
                 {(["headerColor", "sidebarColor"] as const).map((key) => (
