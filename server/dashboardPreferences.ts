@@ -11,6 +11,7 @@ export const DASHBOARD_WIDGET_IDS = ["revenue", "salesMix", "quickActions", "pro
 export const DASHBOARD_KPI_IDS = ["revenue", "expenses", "net-result", "orders", "receivables"] as const;
 export const DASHBOARD_PERFORMANCE_WINDOWS = ["30d", "3m", "6m", "1y"] as const;
 export const DASHBOARD_NAVIGATION_GROUP_IDS = ["home", "sales-crm", "operations", "finance", "people", "specialized", "analytics", "administration"] as const;
+export const DASHBOARD_SHELL_COLORS = ["emerald", "navy", "slate", "plum", "burgundy"] as const;
 
 const dashboardWidgetId = z.enum(DASHBOARD_WIDGET_IDS);
 const dashboardKpiId = z.enum(DASHBOARD_KPI_IDS);
@@ -22,6 +23,8 @@ export const dashboardPreferencesInput = z.object({
   showActivityTimeline: z.boolean(),
   showPendingApprovals: z.boolean(),
   accentColor: z.enum(["gold", "emerald"]),
+  headerColor: z.enum(DASHBOARD_SHELL_COLORS),
+  sidebarColor: z.enum(DASHBOARD_SHELL_COLORS),
   currency: z.enum(["TZS", "USD"]),
   timezone: z.string().trim().min(1).max(100),
   fxRateOverride: z.number().finite().min(1).max(1_000_000),
@@ -53,6 +56,8 @@ export const DEFAULT_DASHBOARD_PREFERENCES: DashboardPreferences = {
   showActivityTimeline: true,
   showPendingApprovals: true,
   accentColor: "gold",
+  headerColor: "emerald",
+  sidebarColor: "navy",
   currency: "TZS",
   timezone: "Africa/Dar_es_Salaam",
   fxRateOverride: 2600,
@@ -103,6 +108,8 @@ function normalizePreferences(value: unknown): DashboardPreferences {
     showActivityTimeline: candidate.showActivityTimeline !== false,
     showPendingApprovals: candidate.showPendingApprovals !== false,
     accentColor: candidate.accentColor === "emerald" ? "emerald" : "gold",
+    headerColor: DASHBOARD_SHELL_COLORS.includes(candidate.headerColor as typeof DASHBOARD_SHELL_COLORS[number]) ? candidate.headerColor as DashboardPreferences["headerColor"] : DEFAULT_DASHBOARD_PREFERENCES.headerColor,
+    sidebarColor: DASHBOARD_SHELL_COLORS.includes(candidate.sidebarColor as typeof DASHBOARD_SHELL_COLORS[number]) ? candidate.sidebarColor as DashboardPreferences["sidebarColor"] : DEFAULT_DASHBOARD_PREFERENCES.sidebarColor,
     currency: candidate.currency === "USD" ? "USD" : "TZS",
     timezone: typeof candidate.timezone === "string" && candidate.timezone.trim() ? candidate.timezone.trim().slice(0, 100) : DEFAULT_DASHBOARD_PREFERENCES.timezone,
     fxRateOverride: Math.min(1_000_000, Math.max(1, Number(candidate.fxRateOverride) || DEFAULT_DASHBOARD_PREFERENCES.fxRateOverride)),

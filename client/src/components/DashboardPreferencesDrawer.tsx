@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Sliders, X, Check, RotateCcw, DollarSign, Sparkles, Send, Loader2, Globe, Clock, Search, CalendarDays, Download, Upload, AlertCircle } from "lucide-react";
-import { useDashboardPreferences, type DashboardPreferences } from "../contexts/DashboardPreferencesContext";
+import { SHELL_COLOR_PRESETS, useDashboardPreferences, type DashboardPreferences, type ShellColor } from "../contexts/DashboardPreferencesContext";
 import { trpc } from "../lib/trpc";
 import { DashboardLayoutControls } from "./DashboardLayoutControls";
 import { importDashboardLayout, serializeDashboardLayout } from "../lib/dashboardLayoutTransfer";
@@ -18,6 +18,8 @@ const topBarControls = [
   { key: "showConnectionStatus", label: "Connection status", detail: "Show Live, Demo, or offline status when space allows", icon: Globe },
   { key: "showTopBarDate", label: "Current date", detail: "Show the local business date on extra-wide screens", icon: CalendarDays },
 ] as const;
+
+const shellColorOptions = Object.entries(SHELL_COLOR_PRESETS) as Array<[ShellColor, (typeof SHELL_COLOR_PRESETS)[ShellColor]]>;
 
 export function DashboardPreferencesDrawer({ isOpen, onClose, availableNavigationGroups = [], canManageTeamPresets = false }: DashboardPreferencesDrawerProps) {
   const { preferences, updatePreference, replacePreferences, resetPreferences, resetToTeamDefault, isPersisting, persistenceError } = useDashboardPreferences();
@@ -165,6 +167,38 @@ export function DashboardPreferencesDrawer({ isOpen, onClose, availableNavigatio
               <Sparkles size={14} /> AI Assistant
             </button>
           </div>
+
+          {activeTab === "settings" && (
+            <section className="mt-6 space-y-3" aria-labelledby="shell-colors-title">
+              <div>
+                <h4 id="shell-colors-title" className="text-[12px] font-bold uppercase tracking-wider text-[#C9A96E]">Workspace shell colors</h4>
+                <p className="mt-1 text-[11px] leading-5 text-[#94A3B8]">Choose the colors used by the top header and left navigation bar. Your choice is saved with your dashboard preferences.</p>
+              </div>
+              <div className="grid gap-3 rounded-xl border border-white/10 bg-[#0B1120] p-4">
+                {(["headerColor", "sidebarColor"] as const).map((key) => (
+                  <div key={key}>
+                    <p className="mb-2 text-[12px] font-semibold text-white">{key === "headerColor" ? "Top header" : "Left navigation"}</p>
+                    <div className="grid grid-cols-5 gap-2">
+                      {shellColorOptions.map(([colorKey, color]) => (
+                        <button
+                          key={colorKey}
+                          type="button"
+                          aria-label={`${color.label} ${key === "headerColor" ? "top header" : "left navigation"} color`}
+                          aria-pressed={preferences[key] === colorKey}
+                          title={color.label}
+                          onClick={() => updatePreference(key, colorKey)}
+                          className={`group rounded-lg border p-1.5 transition ${preferences[key] === colorKey ? "border-white shadow-[0_0_0_2px_rgba(201,169,110,.7)]" : "border-white/10 hover:border-white/40"}`}
+                        >
+                          <span className="block h-7 rounded-md" style={{ background: `linear-gradient(135deg, ${color.value}, ${color.soft})` }} />
+                          <span className="mt-1 block truncate text-[9px] font-semibold text-slate-400 group-hover:text-white">{color.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {activeTab === "settings" ? (
             <div className="mt-6 space-y-6">

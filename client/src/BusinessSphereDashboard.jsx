@@ -49,7 +49,7 @@ import { clearOnboardingProgress, getSignupProgressionStep, getSignupStepOneVali
 import { shouldOpenOnboardingTour } from "./lib/onboardingTourState";
 import { subscriptionStateLabel, subscriptionAllowsModule, useSubscriptionAccess } from "./lib/subscriptionAccess";
 import { FreeTrialBanner } from "./components/FreeTrialBanner";
-import { useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
+import { SHELL_COLOR_PRESETS, useDashboardPreferences } from "./contexts/DashboardPreferencesContext";
 import { resolveConnectedWorkspaceSnapshot } from "./lib/connectedWorkspaceSnapshot";
 import { buildConnectedWorkspaceCsv, connectedWorkspaceExportFilename } from "./lib/connectedWorkspaceExport";
 import { WorkspacePresenceBadge } from "./components/WorkspacePresenceBadge";
@@ -48802,6 +48802,8 @@ function SmartManager() {
   // make the business dashboard look like night.
   const darkMode = themeMode === "dark" || (themeMode === "auto" && [18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6].includes(new Date(themeClock).getHours()));
   const themePeriod = darkMode ? "night" : "day";
+  const shellHeaderColor = SHELL_COLOR_PRESETS[preferences.headerColor] || SHELL_COLOR_PRESETS.emerald;
+  const shellSidebarColor = SHELL_COLOR_PRESETS[preferences.sidebarColor] || SHELL_COLOR_PRESETS.navy;
   const [accentColor, setAccentColor] = React.useState(() => {
     try {
       const stored = localStorage.getItem("bs_accent_color");
@@ -49275,10 +49277,11 @@ function SmartManager() {
         aria-hidden={sidebarHiddenFromAssistiveTech}
         data-theme-mode={themeMode}
         data-theme-period={themePeriod}
+        data-shell-color-custom="true"
         className={`dashboard-sidebar dashboard-shell-rail fixed z-40 inset-y-0 left-0 h-screen w-[min(86vw,320px)] ${sidebarCollapsed ? "lg:w-[80px]" : "lg:w-[292px]"} shrink-0 flex flex-col border-r border-[#1f3d5a] bg-[#0e2440] pb-[env(safe-area-inset-bottom)] text-slate-100 will-change-[width,transform] transition-[width,transform,box-shadow] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none overflow-hidden lg:relative lg:inset-y-auto lg:top-0 lg:z-30 lg:sticky lg:translate-x-0 ${darkMode ? "dark-shell" : ""} ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
+        style={{ "--sm-shell-sidebar": shellSidebarColor.value, "--sm-shell-sidebar-soft": shellSidebarColor.soft, boxShadow: "10px 0 32px rgba(6, 20, 36, .22)" }}
       >
         {/* Navigation controls — product branding is intentionally hidden here. */}
         <div className={`dashboard-sidebar-brand relative flex items-center justify-end gap-2 border-b border-[#1f3d5a] bg-[#0a1d34] px-4 py-4 transition-[padding,min-height] duration-[220ms] ease-[cubic-bezier(.23,1,.32,1)] motion-reduce:transition-none ${sidebarLabelsVisible ? "" : "min-h-[84px] justify-center px-2 pb-5"}`}>
@@ -49346,7 +49349,7 @@ function SmartManager() {
           width only on mobile, where the sidebar is a drawer. */}
       <div className="relative z-10 flex min-w-0 min-h-screen flex-1 flex-col">
         {/* Topbar */}
-        <header aria-label="Workspace command bar" data-theme-mode={themeMode} data-theme-period={themePeriod} className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`}>
+        <header aria-label="Workspace command bar" data-shell-color-custom="true" data-theme-mode={themeMode} data-theme-period={themePeriod} className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`} style={{ "--sm-shell-header": shellHeaderColor.value, "--sm-shell-header-soft": shellHeaderColor.soft }}>
           <div className="dashboard-topbar-main">
            {/* Left — product identity, menu trigger, workspace identity, and current location */}
            <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">

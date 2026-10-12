@@ -2,12 +2,24 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import { trpc } from "../lib/trpc";
 import { useAuthContext } from "./AuthContext";
 
+export const SHELL_COLOR_PRESETS = {
+  emerald: { label: "Emerald", value: "#0B5D3B", soft: "#0A4A30" },
+  navy: { label: "Navy", value: "#123457", soft: "#0A1D34" },
+  slate: { label: "Slate", value: "#334155", soft: "#1E293B" },
+  plum: { label: "Plum", value: "#5B3568", soft: "#3B2148" },
+  burgundy: { label: "Burgundy", value: "#762B3F", soft: "#4A1C2B" },
+} as const;
+
+export type ShellColor = keyof typeof SHELL_COLOR_PRESETS;
+
 export interface DashboardPreferences {
   compactDensity: boolean;
   showKpiBanner: boolean;
   showActivityTimeline: boolean;
   showPendingApprovals: boolean;
   accentColor: "gold" | "emerald";
+  headerColor: ShellColor;
+  sidebarColor: ShellColor;
   currency: "TZS" | "USD";
   timezone: string;
   fxRateOverride: number;
@@ -66,6 +78,8 @@ const defaultPreferences: DashboardPreferences = {
   showActivityTimeline: true,
   showPendingApprovals: true,
   accentColor: "gold",
+  headerColor: "emerald",
+  sidebarColor: "navy",
   currency: "TZS",
   timezone: "Africa/Dar_es_Salaam",
   fxRateOverride: 2600,
@@ -98,6 +112,8 @@ export function normalizePreferences(value: Partial<DashboardPreferences> | null
     ...defaultPreferences,
     ...(value || {}),
     accentColor: value?.accentColor === "emerald" ? "emerald" : "gold",
+    headerColor: value?.headerColor && value.headerColor in SHELL_COLOR_PRESETS ? value.headerColor as ShellColor : defaultPreferences.headerColor,
+    sidebarColor: value?.sidebarColor && value.sidebarColor in SHELL_COLOR_PRESETS ? value.sidebarColor as ShellColor : defaultPreferences.sidebarColor,
     currency: value?.currency === "USD" ? "USD" : "TZS",
     timezone: typeof value?.timezone === "string" && value.timezone.trim() ? value.timezone.trim() : defaultPreferences.timezone,
     fxRateOverride: Number.isFinite(Number(value?.fxRateOverride)) && Number(value?.fxRateOverride) > 0 ? Number(value?.fxRateOverride) : defaultPreferences.fxRateOverride,

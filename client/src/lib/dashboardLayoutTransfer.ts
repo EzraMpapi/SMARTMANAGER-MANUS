@@ -9,6 +9,8 @@ const transferableKeys = [
   "showActivityTimeline",
   "showPendingApprovals",
   "accentColor",
+  "headerColor",
+  "sidebarColor",
   "currency",
   "timezone",
   "fxRateOverride",

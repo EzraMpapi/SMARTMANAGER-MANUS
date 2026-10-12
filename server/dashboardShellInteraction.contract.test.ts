@@ -47,9 +47,9 @@ describe("dashboard shell interaction refinement", () => {
   it("keeps top-bar controls responsive instead of allowing them to crowd narrow screens", () => {
     expect(dashboard).toContain('aria-label="Open menu"');
     expect(dashboard).toContain('aria-label="Search everything"');
-    expect(dashboard).toContain('aria-label="Smart Manager"');
-    expect(dashboard).toContain('shadow-[0_5px_16px_rgba(255,255,255,.62)]');
-    expect(dashboard).toContain('>Smart Manager</span>');
+    expect(dashboard).toContain('aria-label="Smart Manager Enterprise Suite"');
+    expect(dashboard).toContain('shadow-[0_5px_14px_rgba(11,93,59,.2)]');
+    expect(dashboard).toContain('>SMART <span className="text-emerald-700">MANAGER</span>');
     expect(dashboard).not.toContain('dashboard-topbar-workspace');
     expect(dashboard).not.toContain('aria-label="Workspace details"');
     expect(dashboard).not.toContain('Open workspace details for');

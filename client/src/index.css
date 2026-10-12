@@ -3808,3 +3808,75 @@
     padding-right: .75rem !important;
   }
 }
+
+/* User-selected shell colors: these rules intentionally sit after the adaptive
+   day/night palette so personal appearance choices remain visible everywhere. */
+.dashboard-topbar[data-shell-color-custom="true"] {
+  background: var(--sm-shell-header) !important;
+  border-color: color-mix(in srgb, var(--sm-shell-header) 72%, white) !important;
+  color: white !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-brand-copy,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-brand-copy .text-slate-900,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-page-context,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-page-context .text-slate-500,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-page-context .text-slate-700,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button {
+  color: white !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-enterprise-badge,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-page-context > span:nth-child(2),
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-notification-slot > button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button {
+  background: color-mix(in srgb, var(--sm-shell-header-soft) 78%, white 22%) !important;
+  border-color: color-mix(in srgb, var(--sm-shell-header) 62%, white) !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search {
+  background: color-mix(in srgb, var(--sm-shell-header) 78%, white 22%) !important;
+  border-color: color-mix(in srgb, var(--sm-shell-header) 58%, white) !important;
+  color: white !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search::placeholder,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search kbd,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-clock {
+  color: color-mix(in srgb, white 78%, var(--sm-shell-header)) !important;
+}
+.dashboard-sidebar[data-shell-color-custom="true"] {
+  background: var(--sm-shell-sidebar) !important;
+  border-right-color: color-mix(in srgb, var(--sm-shell-sidebar) 72%, white) !important;
+  color: white !important;
+}
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-brand,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer {
+  background: var(--sm-shell-sidebar-soft) !important;
+  border-color: color-mix(in srgb, var(--sm-shell-sidebar) 68%, white) !important;
+}
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation > section > div > button:not([aria-current="page"]),
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation > section > button:not([aria-current="page"]),
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer button:not([aria-current="page"]) {
+  color: color-mix(in srgb, white 84%, var(--sm-shell-sidebar)) !important;
+}
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer button:not([aria-current="page"]):hover {
+  background: color-mix(in srgb, var(--sm-shell-sidebar) 70%, white 30%) !important;
+  color: white !important;
+}
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation button[aria-current="page"],
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer button[aria-current="page"] {
+  background: color-mix(in srgb, var(--sm-shell-sidebar) 58%, white 42%) !important;
+  border-color: color-mix(in srgb, var(--sm-shell-sidebar) 42%, white) !important;
+  border-left-color: white !important;
+  color: white !important;
+}
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-nav-icon,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation .bg-\[\#123457\],
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation .bg-\[\#1f4265\] {
+  background: color-mix(in srgb, var(--sm-shell-sidebar) 55%, white 45%) !important;
+  color: white !important;
+}
