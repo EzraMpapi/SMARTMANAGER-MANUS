@@ -1806,7 +1806,7 @@
   min-height: 4.5rem;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: .75rem clamp(.75rem, 2.5vw, 2rem);
 }
@@ -1824,10 +1824,6 @@
 
 .dashboard-topbar-brand-copy {
   max-width: 12rem;
-}
-.dashboard-topbar-brand > span:first-child {
-  background: #fff;
-  box-shadow: 0 5px 14px rgb(255 255 255 / .82), 0 1px 3px rgb(15 23 42 / .12);
 }
 
 .dashboard-topbar-context > .relative {
@@ -2012,14 +2008,37 @@
   }
 
   .dashboard-topbar-context {
-    flex: 0 1 auto;
     gap: .5rem;
-    max-width: 50%;
+  }
+
+  .dashboard-topbar-context > .relative {
+    max-width: calc(100vw - 10rem);
+  }
+
+  .dashboard-topbar-workspace {
+    max-width: 100%;
+    padding: .375rem .5rem;
+  }
+
+  .dashboard-topbar-workspace > :first-child {
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .dashboard-topbar-workspace-copy {
+    max-width: min(40vw, 11rem);
+  }
+
+  .dashboard-topbar-workspace-copy > span:first-child {
+    max-width: 100%;
+    font-size: .7rem;
+  }
+
+  .dashboard-topbar-workspace-copy > span:last-child {
+    display: none;
   }
 
   .dashboard-topbar-actions {
-    flex: 1 1 auto !important;
-    min-width: 0;
     gap: .25rem;
   }
 
@@ -2046,27 +2065,6 @@
 
   .dashboard-topbar-search {
     height: 2.75rem;
-  }
-}
-
-@media (max-width: 479px) {
-  .dashboard-topbar-main {
-    gap: .375rem;
-    padding-inline: .625rem;
-  }
-
-  .dashboard-topbar-context {
-    max-width: none;
-  }
-
-  .dashboard-topbar-page-context,
-  .dashboard-topbar-profile-divider,
-  .dashboard-topbar-language-control {
-    display: none !important;
-  }
-
-  .dashboard-topbar-actions {
-    gap: .125rem;
   }
 }
 

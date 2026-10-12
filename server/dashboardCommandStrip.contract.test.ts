@@ -38,8 +38,7 @@ describe("dashboard operational command strip", () => {
   it("separates the desktop header context from its action rail and preserves 40px mobile targets", () => {
     expect(dashboardCss).toContain("grid-template-columns: minmax(0, 1fr) auto;");
     expect(dashboardCss).toContain(".dashboard-topbar-right-rail");
-    expect(dashboardCss).toContain(".dashboard-topbar-brand > span:first-child");
-    expect(dashboardCss).toContain("rgb(255 255 255 / .82)");
+    expect(dashboardCss).toContain(".dashboard-topbar-workspace");
     expect(dashboardCss).toContain(".dashboard-topbar-presence,");
     expect(dashboardCss).toContain("min-height: 2.5rem;");
     expect(dashboardCss).toContain(".dashboard-topbar-ai-shortcut {");

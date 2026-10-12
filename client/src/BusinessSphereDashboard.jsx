@@ -49353,10 +49353,10 @@ function SmartManager() {
         {/* Topbar */}
         <header aria-label="Workspace command bar" data-shell-color-custom="true" data-theme-mode={themeMode} data-theme-period={themePeriod} className={`dashboard-topbar dashboard-shell-header sticky top-0 ${createMenuOpen ? "z-50" : "z-30"} ${darkMode ? "dark-shell" : ""}`} style={{ "--sm-shell-header": shellHeaderColor.value, "--sm-shell-header-soft": shellHeaderColor.soft }}>
           <div className="dashboard-topbar-main">
-           {/* Left — product identity, menu trigger, and current location */}
+           {/* Left — product identity, menu trigger, workspace identity, and current location */}
            <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="dashboard-topbar-brand hidden min-w-0 shrink items-center gap-2 md:flex" aria-label="Smart Manager Enterprise Suite">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white p-1.5 shadow-[0_5px_14px_rgba(255,255,255,.8)] ring-1 ring-white/90">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-1.5 shadow-[0_5px_14px_rgba(11,93,59,.2)] ring-1 ring-emerald-200/40">
                 <BrandLogo variant="compact" priority className="h-6 w-6" />
               </span>
               <span className="dashboard-topbar-brand-copy min-w-0 leading-tight">
