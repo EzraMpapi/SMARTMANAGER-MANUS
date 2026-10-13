@@ -1849,6 +1849,17 @@
   color: rgb(4 120 87);
 }
 
+/* Header icons should sit cleanly on the command bar without a white halo. */
+.dashboard-topbar-menu-control,
+.dashboard-topbar-icon-button,
+.dashboard-topbar-language-control,
+.dashboard-topbar-notification-slot > div > button,
+.dashboard-topbar-notification-slot > button,
+.dashboard-topbar-reference-control,
+.dashboard-topbar-profile-trigger {
+  box-shadow: none !important;
+}
+
 .dashboard-topbar-search-slot {
   display: flex;
   flex: 1 1 100%;
