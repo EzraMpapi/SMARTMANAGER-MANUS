@@ -3,6 +3,7 @@ import { AlertTriangle, RotateCcw } from "lucide-react";
 import { Component, ReactNode, ErrorInfo } from "react";
 import { BrandLogo } from "./BrandLogo";
 import { reportRuntimeError } from "../lib/runtimeTelemetry";
+import { recoverFromRuntimeError } from "../lib/githubUpdateReload";
 
 interface Props {
   children: ReactNode;
@@ -26,6 +27,7 @@ class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ErrorBoundary caught an error", error, errorInfo);
     reportRuntimeError(error, errorInfo);
+    void recoverFromRuntimeError(error);
   }
 
   render() {

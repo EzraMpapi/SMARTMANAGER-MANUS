@@ -2,6 +2,8 @@ const VERSION_ENDPOINT = "/api/app-version";
 const REVISION_STORAGE_KEY = "sm:github-revision";
 const RELOAD_GUARD_KEY = "sm:github-reload-at";
 const RELOAD_GUARD_WINDOW_MS = 10_000;
+const RUNTIME_RECOVERY_KEY = "sm:runtime-recovery-at";
+const RUNTIME_RECOVERY_WINDOW_MS = 60_000;
 const UPDATE_POLL_INTERVAL_MS = 60_000;
 
 type AppVersionResponse = {
@@ -58,6 +60,46 @@ function reloadOnce() {
   } catch {
     // Continue without the guard when session storage is unavailable.
   }
+  window.location.reload();
+  return true;
+}
+
+function likelyStaleRuntimeError(error: unknown) {
+  const value = error instanceof Error ? `${error.message}\n${error.stack || ""}` : String(error || "");
+  return /react-runtime|react-dom|Minified React error|ChunkLoadError|dynamically imported module|Importing a module script failed|Failed to fetch dynamically/i.test(value);
+}
+
+async function clearRuntimeCaches() {
+  if (typeof window === "undefined") return;
+  try {
+    if ("caches" in window) {
+      const cacheKeys = await window.caches.keys();
+      await Promise.all(cacheKeys.map((key) => window.caches.delete(key)));
+    }
+  } catch {
+    // Cache access can be unavailable in private browsing; reload still helps.
+  }
+  try {
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+  } catch {
+    // Service-worker access is best effort and must never mask the original error.
+  }
+}
+
+/** Recover once from a stale React/chunk runtime without an infinite reload loop. */
+export async function recoverFromRuntimeError(error: unknown) {
+  if (typeof window === "undefined" || !likelyStaleRuntimeError(error)) return false;
+  try {
+    const lastRecovery = Number(window.sessionStorage.getItem(RUNTIME_RECOVERY_KEY) || 0);
+    if (Date.now() - lastRecovery < RUNTIME_RECOVERY_WINDOW_MS) return false;
+    window.sessionStorage.setItem(RUNTIME_RECOVERY_KEY, String(Date.now()));
+  } catch {
+    // If session storage is blocked, continue with a single best-effort recovery.
+  }
+  await clearRuntimeCaches();
   window.location.reload();
   return true;
 }
