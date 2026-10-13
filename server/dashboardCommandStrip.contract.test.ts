@@ -49,6 +49,8 @@ describe("dashboard operational command strip", () => {
     expect(dashboardCss).toContain("box-shadow: none !important;");
     expect(dashboardCss).toContain("filter: none !important;");
     expect(dashboardCss).toContain("backdrop-filter: none !important;");
+    expect(dashboardCss).toContain(".dashboard-topbar.dark-shell .dashboard-topbar-search,");
+    expect(dashboardCss).toContain(".dashboard-topbar.dark-shell .dashboard-topbar-reference-badge,");
   });
 
   it("keeps the notification overlay bounded and keyboard-safe without widening data access", () => {
