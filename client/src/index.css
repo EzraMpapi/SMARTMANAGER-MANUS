@@ -3924,3 +3924,35 @@
   background: color-mix(in srgb, var(--sm-shell-sidebar) 55%, white 45%) !important;
   color: white !important;
 }
+
+/* Mobile shell: the compact header stays light and calm even when a saved
+   desktop shell preset uses a saturated header color. */
+@media (max-width: 767px) {
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) {
+    background: rgb(255 255 255 / .98) !important;
+    border-color: rgb(226 232 240 / .92) !important;
+    color: rgb(15 23 42) !important;
+  }
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-brand-copy,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-page-context,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-menu-control,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-icon-button,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-profile-slot > div > button,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-language-control {
+    color: rgb(71 85 105) !important;
+  }
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-enterprise-badge,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-menu-control,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-icon-button,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-notification-slot > button,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-profile-slot > div > button,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-search {
+    background: rgb(255 255 255 / .96) !important;
+    border-color: rgb(226 232 240 / .92) !important;
+  }
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-search,
+  .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) .dashboard-topbar-search > svg {
+    color: rgb(71 85 105) !important;
+  }
+}
