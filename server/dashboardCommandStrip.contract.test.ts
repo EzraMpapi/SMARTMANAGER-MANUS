@@ -44,6 +44,15 @@ describe("dashboard operational command strip", () => {
     expect(dashboardCss).toContain(".dashboard-topbar-ai-shortcut {");
   });
 
+  it("keeps the top header surface flat without shadow, filter, or blur effects", () => {
+    expect(dashboardCss).toContain(".dashboard-topbar,");
+    expect(dashboardCss).toContain("box-shadow: none !important;");
+    expect(dashboardCss).toContain("filter: none !important;");
+    expect(dashboardCss).toContain("backdrop-filter: none !important;");
+    expect(dashboardCss).toContain(".dashboard-topbar.dark-shell .dashboard-topbar-search,");
+    expect(dashboardCss).toContain(".dashboard-topbar.dark-shell .dashboard-topbar-reference-badge,");
+  });
+
   it("keeps the notification overlay bounded and keyboard-safe without widening data access", () => {
     expect(dashboard).toContain("const [open, setOpen] = useState(false);");
     expect(dashboard).toContain("onClick={() => setOpen((o) => !o)}");

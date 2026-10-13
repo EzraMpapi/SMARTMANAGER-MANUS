@@ -49366,7 +49366,7 @@ function SmartManager() {
             </div>
             <button
               type="button"
-               className="dashboard-topbar-menu-control grid shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 lg:hidden"
+               className="dashboard-topbar-menu-control grid shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -49387,7 +49387,7 @@ function SmartManager() {
              <button
                            type="button"
                            onClick={() => setPaletteOpen(true)}
-                           className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 hover:shadow-[0_6px_16px_rgba(15,23,42,.1)] active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 focus-visible:ring-offset-2"
+                           className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 focus-visible:ring-offset-2"
                            aria-label="Search everything"
                            title="Search everything"
                            aria-expanded={paletteOpen}
@@ -49412,12 +49412,12 @@ function SmartManager() {
                            onClick={toggleDarkMode}
                            aria-pressed={darkMode}
                            aria-label={`Theme mode: ${themeMode}. Activate to switch to ${themeMode === "light" ? "dark" : themeMode === "dark" ? "auto" : "light"} mode`}
-                            className="dashboard-topbar-icon-button grid shrink-0 place-items-center rounded-xl border bg-white text-slate-500 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
+                            className="dashboard-topbar-icon-button grid shrink-0 place-items-center rounded-xl border bg-white text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40"
                            title={`Theme: ${themeMode === "auto" ? "Auto" : themeMode === "dark" ? "Dark" : "Light"} (click to change)`}
                          >
                            {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
                          </button>
-             {active === "dashboard" && <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
+             {active === "dashboard" && <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
                             <Globe size={14} className="text-slate-500" aria-hidden="true" />
                             <span className="sr-only">{t("language")}</span>
                             <span className="dashboard-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
