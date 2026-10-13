@@ -3621,6 +3621,19 @@
   color: rgb(15 23 42) !important;
 }
 
+/* Keep the command bar visually flat: no container halo, blur veil, or
+   legacy search glow should compete with the header content. */
+.dashboard-topbar,
+.dashboard-topbar-primary-search,
+.dashboard-topbar-workspace,
+.dashboard-topbar-clock,
+.dashboard-topbar-search,
+.dashboard-topbar-actions-polished .dashboard-topbar-search-hero {
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
 /* Sidebar polish: shared visual language for the navigation rail. These rules
    only style existing RBAC-filtered buttons and groups; routing and permissions
    remain owned by BusinessSphereDashboard. */
