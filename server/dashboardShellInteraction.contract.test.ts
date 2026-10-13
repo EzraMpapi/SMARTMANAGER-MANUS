@@ -48,8 +48,8 @@ describe("dashboard shell interaction refinement", () => {
     expect(dashboard).toContain('aria-label="Open menu"');
     expect(dashboard).toContain('aria-label="Search everything"');
     expect(dashboard).toContain('aria-label="Smart Manager Enterprise Suite"');
-    expect(dashboard).toContain('shadow-[0_5px_14px_rgba(11,93,59,.2)]');
-    expect(dashboard).toContain('>SMART <span className="text-emerald-700">MANAGER</span>');
+    expect(dashboard).toContain('shadow-[0_5px_14px_rgba(15,23,42,.12)]');
+    expect(dashboard).toContain('>SMART <span className="text-slate-700">MANAGER</span>');
     expect(dashboard).not.toContain('dashboard-topbar-workspace');
     expect(dashboard).not.toContain('aria-label="Workspace details"');
     expect(dashboard).not.toContain('Open workspace details for');

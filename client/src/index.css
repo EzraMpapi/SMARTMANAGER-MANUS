@@ -2086,6 +2086,50 @@
   }
 }
 
+/* Clean command-bar treatment: keep the application chrome white and quiet;
+   green remains reserved for business status and primary module actions. */
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-search-hero,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-menu-control,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-icon-button,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-notification-slot > button,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-language-control {
+  border-color: rgb(226 232 240 / .92) !important;
+  background: rgb(255 255 255 / .96) !important;
+  color: rgb(71 85 105) !important;
+  box-shadow: 0 2px 8px rgb(15 23 42 / .05) !important;
+}
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-search-hero:hover,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-menu-control:hover,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-icon-button:hover,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-notification-slot > button:hover,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger:hover,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-language-control:hover {
+  border-color: rgb(203 213 225) !important;
+  background: rgb(248 250 252) !important;
+  color: rgb(15 23 42) !important;
+}
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-search-hero:focus-visible,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-menu-control:focus-visible,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-icon-button:focus-visible,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-notification-slot > button:focus-visible,
+.dashboard-topbar:not(.dark-shell) .dashboard-topbar-profile-slot > div > button.dashboard-topbar-profile-trigger:focus-visible {
+  outline-color: rgb(100 116 139) !important;
+  --tw-ring-color: rgb(148 163 184 / .45) !important;
+}
+
+@media (min-width: 1280px) {
+  .dashboard-topbar-main {
+    min-height: 4rem;
+    grid-template-columns: minmax(18rem, 1fr) minmax(0, 1fr) minmax(18rem, 1fr);
+    gap: clamp(1rem, 2vw, 2rem);
+    padding-inline: clamp(1.25rem, 3vw, 2.5rem);
+  }
+  .dashboard-topbar-actions-polished {
+    gap: .5rem;
+  }
+}
+
 .dashboard-topbar.dark-shell {
   border-color: rgb(51 65 85 / .85) !important;
   background: rgb(15 23 42 / .96) !important;

@@ -49356,17 +49356,17 @@ function SmartManager() {
            {/* Left — product identity, menu trigger, workspace identity, and current location */}
            <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="dashboard-topbar-brand hidden min-w-0 shrink items-center gap-2 md:flex" aria-label="Smart Manager Enterprise Suite">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#0B5D3B] p-1.5 shadow-[0_5px_14px_rgba(11,93,59,.2)] ring-1 ring-emerald-200/40">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white p-1.5 shadow-[0_5px_14px_rgba(15,23,42,.12)] ring-1 ring-slate-200">
                 <BrandLogo variant="compact" priority className="h-6 w-6" />
               </span>
               <span className="dashboard-topbar-brand-copy min-w-0 leading-tight">
-                <span className="block truncate text-[13px] font-extrabold tracking-[-.02em] text-slate-900" style={{ fontFamily: "'Poppins'" }}>SMART <span className="text-emerald-700">MANAGER</span></span>
-                <span className="dashboard-topbar-enterprise-badge mt-0.5 inline-flex items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[.14em] text-emerald-700 ring-1 ring-emerald-200/80">Enterprise Suite</span>
+                <span className="block truncate text-[13px] font-extrabold tracking-[-.02em] text-slate-900" style={{ fontFamily: "'Poppins'" }}>SMART <span className="text-slate-700">MANAGER</span></span>
+                <span className="dashboard-topbar-enterprise-badge mt-0.5 inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[.14em] text-slate-600 ring-1 ring-slate-200">Enterprise Suite</span>
               </span>
             </div>
             <button
               type="button"
-               className="dashboard-topbar-menu-control grid shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 lg:hidden"
+               className="dashboard-topbar-menu-control grid shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)] transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/40 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -49387,12 +49387,12 @@ function SmartManager() {
              <button
                            type="button"
                            onClick={() => setPaletteOpen(true)}
-                           className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-emerald-500/20 bg-[linear-gradient(135deg,#0B5D3B_0%,#16A34A_55%,#22C55E_100%)] px-3 text-[11px] font-medium text-white shadow-[0_8px_20px_rgba(22,163,74,.28),inset_0_1px_0_rgba(255,255,255,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(22,163,74,.38),inset_0_1px_0_rgba(255,255,255,.35)] active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2"
+                           className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 hover:shadow-[0_6px_16px_rgba(15,23,42,.1)] active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 focus-visible:ring-offset-2"
                            aria-label="Search everything"
                            title="Search everything"
                            aria-expanded={paletteOpen}
                          >
-                           <Search size={17} strokeWidth={2.35} className="shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,.18)] transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+                           <Search size={17} strokeWidth={2.35} className="shrink-0 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
                            <span className="dashboard-search-tooltip pointer-events-none absolute right-0 top-[calc(100%+10px)] z-50 whitespace-nowrap rounded-lg border border-slate-700/80 bg-slate-950 px-2.5 py-1.5 text-[10px] font-semibold text-white opacity-0 shadow-xl transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">Search workspace <kbd className="ml-1 rounded border border-white/20 px-1 py-0.5 font-mono text-[9px] text-slate-300">⌘K</kbd></span>
                          </button>
              <span className="dashboard-topbar-divider" aria-hidden="true" />
@@ -49418,7 +49418,7 @@ function SmartManager() {
                            {themeMode === "auto" ? <Circle size={15} strokeWidth={2.2}/> : darkMode ? <Sun size={15}/> : <Moon size={15}/>}
                          </button>
              {active === "dashboard" && <label className="dashboard-topbar-language-control inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 text-[10px] font-bold text-slate-600 shadow-[0_2px_8px_rgba(15,23,42,.05)]" title={t("switchLanguage")} data-testid="dashboard-language-switcher" data-language={lang} data-language-source="smart-manager-localization">
-                            <Globe size={14} className="text-emerald-700" aria-hidden="true" />
+                            <Globe size={14} className="text-slate-500" aria-hidden="true" />
                             <span className="sr-only">{t("language")}</span>
                             <span className="dashboard-language-code" aria-hidden="true">{lang.toUpperCase()}</span>
                             <select aria-label={t("language")} value={lang} onChange={(event) => setLang(event.target.value)} className="dashboard-language-select max-w-[92px] appearance-none bg-transparent pr-0 outline-none" data-testid="dashboard-language-select">
