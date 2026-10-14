@@ -3985,3 +3985,85 @@
     color: rgb(71 85 105) !important;
   }
 }
+
+/* The dashboard command bar is intentionally neutral even when a saved shell
+   preset uses the legacy green accent. White surfaces keep the header calm and
+   the slate foreground preserves contrast and accessible control states. */
+.dashboard-topbar[data-shell-color-custom="true"],
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-brand-copy,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-brand-copy .text-slate-900,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-brand-copy .text-slate-700,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-page-context,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-page-context .text-slate-500,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-page-context .text-slate-700,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-notification-slot > button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-language-control,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search > svg {
+  color: #475569 !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-enterprise-badge,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-page-context > span:nth-child(2),
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-notification-slot > button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-language-control,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-notification-slot > button:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-language-control:hover {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search:hover > svg,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control:hover > svg,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button:hover > svg {
+  color: #0f172a !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-language-control:focus-within {
+  border-color: #94a3b8 !important;
+  box-shadow: 0 0 0 3px rgb(148 163 184 / .18) !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search-hero {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search-hero > svg {
+  color: #475569 !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-search,
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-icon-button,
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-notification-slot > button,
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-reference-control,
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-profile-slot > div > button,
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-language-control {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-search > svg,
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-icon-button > svg,
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-reference-control > svg,
+.dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-profile-slot > div > button > svg {
+  color: #475569 !important;
+}
