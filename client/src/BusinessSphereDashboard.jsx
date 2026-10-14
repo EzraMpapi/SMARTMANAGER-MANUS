@@ -49356,11 +49356,11 @@ function SmartManager() {
            {/* Left — product identity, menu trigger, workspace identity, and current location */}
            <div className="dashboard-topbar-context flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="dashboard-topbar-brand hidden min-w-0 shrink items-center gap-2 md:flex" aria-label="Smart Manager Enterprise Suite">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white p-1.5 shadow-[0_5px_14px_rgba(15,23,42,.12)] ring-1 ring-slate-200">
+              <span className="dashboard-topbar-brand-mark grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white p-1.5 shadow-[0_5px_14px_rgba(15,23,42,.12)] ring-1 ring-slate-200">
                 <BrandLogo variant="compact" priority className="h-6 w-6" />
               </span>
               <span className="dashboard-topbar-brand-copy min-w-0 leading-tight">
-                <span className="block truncate text-[13px] font-extrabold tracking-[-.02em] text-slate-900" style={{ fontFamily: "'Poppins'" }}>SMART <span className="text-slate-700">MANAGER</span></span>
+                <span className="dashboard-topbar-brand-name block truncate text-[13px] font-extrabold tracking-[-.02em] text-slate-900" style={{ fontFamily: "'Poppins'" }}>SMART <span className="text-slate-700">MANAGER</span></span>
                 <span className="dashboard-topbar-enterprise-badge mt-0.5 inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[.14em] text-slate-600 ring-1 ring-slate-200">Enterprise Suite</span>
               </span>
             </div>

@@ -35,6 +35,16 @@ describe("dashboard operational command strip", () => {
     expect(dashboard).toContain("<PremiumProfileMenu");
   });
 
+  it("keeps the Smart Manager lockup at the header edges with an accessible 3D neon motion treatment", () => {
+    expect(dashboard).toContain("dashboard-topbar-brand-mark");
+    expect(dashboard).toContain("dashboard-topbar-brand-name");
+    expect(dashboardCss).toContain("@keyframes dashboard-brand-name-neon");
+    expect(dashboardCss).toContain("perspective(420px)");
+    expect(dashboardCss).toContain("prefers-reduced-motion: reduce");
+    expect(dashboardCss).toContain("padding: .35rem max(.5rem, env(safe-area-inset-left))");
+    expect(dashboardCss).toContain("env(safe-area-inset-right));");
+  });
+
   it("separates the desktop header context from its action rail and preserves 40px mobile targets", () => {
     expect(dashboardCss).toContain("grid-template-columns: minmax(0, 1fr) auto;");
     expect(dashboardCss).toContain(".dashboard-topbar-right-rail");
