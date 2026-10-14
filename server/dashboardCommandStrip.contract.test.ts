@@ -53,6 +53,14 @@ describe("dashboard operational command strip", () => {
     expect(dashboardCss).toContain(".dashboard-topbar.dark-shell .dashboard-topbar-reference-badge,");
   });
 
+  it("keeps saved shell presets from restoring green header controls", () => {
+    expect(dashboardCss).toContain('.dashboard-topbar[data-shell-color-custom="true"],');
+    expect(dashboardCss).toContain("background: #ffffff !important;");
+    expect(dashboardCss).toContain("border-color: #e2e8f0 !important;");
+    expect(dashboardCss).toContain('.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search-hero');
+    expect(dashboardCss).toContain("background: #ffffff !important;");
+  });
+
   it("keeps the notification overlay bounded and keyboard-safe without widening data access", () => {
     expect(dashboard).toContain("const [open, setOpen] = useState(false);");
     expect(dashboard).toContain("onClick={() => setOpen((o) => !o)}");
