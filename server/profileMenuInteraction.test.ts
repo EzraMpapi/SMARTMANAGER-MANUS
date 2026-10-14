@@ -70,6 +70,11 @@ describe("authenticated profile-menu click behavior", () => {
     expect(dashboardStyles).toContain("border-radius: 0;");
   });
 
+  it("keeps the topbar avatar free of a stray upload overlay while retaining menu photo upload", () => {
+    expect(profileMenuSource).not.toContain('aria-label="Upload profile photo"');
+    expect(profileMenuSource).toContain("Change photo");
+  });
+
   it("keeps the profile trigger clickable on small screens", () => {
     expect(dashboardStyles).toContain(".dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger");
     expect(dashboardStyles).toContain("pointer-events: auto;");
