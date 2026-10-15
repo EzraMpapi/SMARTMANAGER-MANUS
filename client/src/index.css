@@ -3990,6 +3990,39 @@
 /* Mobile shell: the compact header stays light and calm even when a saved
    desktop shell preset uses a saturated header color. */
 @media (max-width: 767px) {
+  .dashboard-topbar-main {
+    flex-wrap: nowrap !important;
+    min-height: 4.25rem;
+    gap: .5rem;
+    overflow: visible;
+  }
+  .dashboard-topbar-context {
+    flex: 0 0 auto !important;
+    max-width: none !important;
+  }
+  .dashboard-topbar-actions-polished {
+    flex: 0 0 auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+    justify-content: flex-end;
+    gap: .25rem;
+  }
+  .dashboard-topbar-actions-polished .dashboard-topbar-reference-control,
+  .dashboard-topbar-actions-polished .dashboard-topbar-divider,
+  .dashboard-topbar-actions-polished .dashboard-topbar-icon-button,
+  .dashboard-topbar-actions-polished .dashboard-topbar-language-control {
+    display: none !important;
+  }
+  .dashboard-topbar-profile-menu {
+    position: fixed !important;
+    top: calc(4.25rem + env(safe-area-inset-top)) !important;
+    right: .75rem !important;
+    left: auto !important;
+    z-index: 9999 !important;
+    margin-top: 0 !important;
+    width: min(92vw, 360px) !important;
+    max-height: calc(100dvh - 5.25rem - env(safe-area-inset-top)) !important;
+  }
   .dashboard-topbar[data-shell-color-custom="true"]:not(.dark-shell) {
     background: rgb(255 255 255 / .98) !important;
     border-color: rgb(226 232 240 / .92) !important;
