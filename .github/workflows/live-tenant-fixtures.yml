@@ -66,7 +66,7 @@ jobs:
 
       - name: Set up pnpm
       
-        uses: pnpm/action-setup@0c17529a66aca453f9227af23103ed11469b1e47 # v4.0.0
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v4.0.0
         
         with:
         
