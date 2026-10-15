@@ -77,6 +77,13 @@ describe("dashboard operational command strip", () => {
     expect(dashboardCss).toContain("box-shadow: none !important;");
   });
 
+  it("keeps the left navigation rail on the same clean white surface as the header", () => {
+    expect(dashboardCss).toContain(".dashboard-sidebar.dark-shell,");
+    expect(dashboardCss).toContain("background: #ffffff !important;");
+    expect(dashboardCss).toContain("border-right-color: #e2e8f0 !important;");
+    expect(dashboardCss).toContain(".dashboard-sidebar button[aria-current=\"page\"] .dashboard-sidebar-nav-icon");
+  });
+
   it("keeps the notification overlay bounded and keyboard-safe without widening data access", () => {
     expect(dashboard).toContain("const [open, setOpen] = useState(false);");
     expect(dashboard).toContain("onClick={() => setOpen((o) => !o)}");

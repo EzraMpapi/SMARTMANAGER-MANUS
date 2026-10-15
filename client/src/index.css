@@ -4144,3 +4144,63 @@
 .dashboard-topbar[data-shell-color-custom="true"].dark-shell .dashboard-topbar-profile-slot > div > button > svg {
   color: #475569 !important;
 }
+
+/* Keep the navigation rail aligned with the clean white command header.
+   This intentionally wins over saved dark/custom shell presets so the left
+   navigation remains calm, readable, and visually connected to the header. */
+.dashboard-sidebar,
+.dashboard-sidebar.dark-shell,
+.dashboard-sidebar[data-shell-color-custom="true"] {
+  background: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar .dashboard-sidebar-brand,
+.dashboard-sidebar .dashboard-flat-navigation,
+.dashboard-sidebar .dashboard-sidebar-footer,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-brand,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+.dashboard-sidebar .dashboard-sidebar-group-toggle,
+.dashboard-sidebar.dark-shell .dashboard-sidebar-group-toggle,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-group-toggle {
+  color: #64748b !important;
+}
+.dashboard-sidebar .dashboard-sidebar-group-toggle:hover,
+.dashboard-sidebar.dark-shell .dashboard-sidebar-group-toggle:hover,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-group-toggle:hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar .dashboard-flat-navigation > section > div > button:not([aria-current="page"]),
+.dashboard-sidebar .dashboard-flat-navigation > section > button:not([aria-current="page"]),
+.dashboard-sidebar .dashboard-sidebar-footer button:not([aria-current="page"]),
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation > section > div > button:not([aria-current="page"]),
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation > section > button:not([aria-current="page"]),
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer button:not([aria-current="page"]) {
+  color: #475569 !important;
+}
+.dashboard-sidebar .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+.dashboard-sidebar .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover,
+.dashboard-sidebar .dashboard-sidebar-footer button:not([aria-current="page"]):hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar .dashboard-flat-navigation button[aria-current="page"],
+.dashboard-sidebar .dashboard-sidebar-footer button[aria-current="page"] {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  border-left-color: var(--sm-user-accent) !important;
+  color: #0f172a !important;
+}
+.dashboard-sidebar .dashboard-sidebar-nav-icon {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+.dashboard-sidebar button[aria-current="page"] .dashboard-sidebar-nav-icon {
+  background: color-mix(in srgb, var(--sm-user-accent) 16%, white) !important;
+  color: var(--sm-user-accent) !important;
+}
