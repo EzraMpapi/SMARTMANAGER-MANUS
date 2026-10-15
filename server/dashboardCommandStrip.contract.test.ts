@@ -71,6 +71,12 @@ describe("dashboard operational command strip", () => {
     expect(dashboardCss).toContain("background: #ffffff !important;");
   });
 
+  it("keeps topbar icon controls free of decorative white shadows", () => {
+    expect(dashboardCss).toContain(".dashboard-topbar-icon-button,");
+    expect(dashboardCss).toContain(".dashboard-topbar-profile-trigger {");
+    expect(dashboardCss).toContain("box-shadow: none !important;");
+  });
+
   it("keeps the notification overlay bounded and keyboard-safe without widening data access", () => {
     expect(dashboard).toContain("const [open, setOpen] = useState(false);");
     expect(dashboard).toContain("onClick={() => setOpen((o) => !o)}");
