@@ -4204,3 +4204,41 @@
   background: color-mix(in srgb, var(--sm-user-accent) 16%, white) !important;
   color: var(--sm-user-accent) !important;
 }
+
+/* Mobile account control: keep the avatar centered in the same compact tile
+   as search and notifications; the chevron is unnecessary at this size and
+   must not wrap onto a second row. */
+@media (max-width: 767px) {
+  .dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0 !important;
+    width: 2.75rem !important;
+    min-width: 2.75rem !important;
+    height: 2.75rem !important;
+    min-height: 2.75rem !important;
+    padding: 0 !important;
+    border-radius: .8rem !important;
+    border-color: #e2e8f0 !important;
+    background: #ffffff !important;
+    color: #334155 !important;
+    box-shadow: none !important;
+  }
+  .dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger:hover,
+  .dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger:active {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+  }
+  .dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger > svg {
+    display: none !important;
+  }
+  .dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger > div:first-child {
+    width: 2rem !important;
+    height: 2rem !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .14) !important;
+  }
+  .dashboard-topbar-profile-slot > .dashboard-topbar-profile > button[aria-label="Upload profile photo"] {
+    display: none !important;
+  }
+}

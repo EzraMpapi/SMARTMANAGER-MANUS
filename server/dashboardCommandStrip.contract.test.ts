@@ -84,6 +84,13 @@ describe("dashboard operational command strip", () => {
     expect(dashboardCss).toContain(".dashboard-sidebar button[aria-current=\"page\"] .dashboard-sidebar-nav-icon");
   });
 
+  it("keeps the mobile account control compact and prevents the chevron from wrapping", () => {
+    expect(dashboardCss).toContain("width: 2.75rem !important;");
+    expect(dashboardCss).toContain("border-radius: .8rem !important;");
+    expect(dashboardCss).toContain(".dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger > svg");
+    expect(dashboardCss).toContain("display: none !important;");
+  });
+
   it("keeps the notification overlay bounded and keyboard-safe without widening data access", () => {
     expect(dashboard).toContain("const [open, setOpen] = useState(false);");
     expect(dashboard).toContain("onClick={() => setOpen((o) => !o)}");
