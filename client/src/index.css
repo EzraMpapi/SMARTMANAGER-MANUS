@@ -4242,3 +4242,86 @@
     display: none !important;
   }
 }
+
+/* Smart Manager system palette: keep the shell visually connected to the
+   product tokens instead of mixing legacy navy, arbitrary slate, and page
+   local accents. Header controls stay white for clarity; canvas, emerald
+   accent, cyan information tone, and ink/surface values come from one system. */
+.dashboard-topbar[data-shell-color-custom="true"] {
+  background: color-mix(in srgb, var(--sm-surface) 94%, var(--sm-canvas)) !important;
+  border-bottom-color: color-mix(in srgb, var(--sm-brand) 18%, var(--border)) !important;
+  color: var(--sm-ink) !important;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--sm-brand) 8%, transparent), 0 8px 24px rgb(15 23 42 / .04) !important;
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-brand-mark {
+  border-color: color-mix(in srgb, var(--sm-brand) 22%, white) !important;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--sm-brand) 12%, transparent) !important;
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-page-context > span:nth-child(2),
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search > svg,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control:hover > svg,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button:hover > svg {
+  color: var(--sm-brand) !important;
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-menu-control:focus-visible,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-icon-button:focus-visible,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search:focus-visible,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-reference-control:focus-visible,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button:focus-visible,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-language-control:focus-within {
+  border-color: var(--sm-focus) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sm-focus) 20%, transparent) !important;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] {
+  background: var(--sm-surface) !important;
+  border-right-color: color-mix(in srgb, var(--sm-brand) 18%, var(--border)) !important;
+  color: var(--sm-ink) !important;
+  box-shadow: 8px 0 26px color-mix(in srgb, var(--sm-brand) 7%, transparent) !important;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-brand,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer {
+  background: color-mix(in srgb, var(--sm-surface) 96%, var(--sm-canvas)) !important;
+  border-color: color-mix(in srgb, var(--sm-brand) 14%, var(--border)) !important;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-menu-count,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-group-toggle .rounded-full {
+  background: color-mix(in srgb, var(--sm-info) 10%, var(--sm-surface)) !important;
+  color: var(--sm-info) !important;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-group-toggle:hover,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation > section > div > button:not([aria-current="page"]):hover,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation > section > button:not([aria-current="page"]):hover,
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer button:not([aria-current="page"]):hover {
+  background: color-mix(in srgb, var(--sm-brand) 6%, var(--sm-surface)) !important;
+  color: var(--sm-brand-strong) !important;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-flat-navigation button[aria-current="page"],
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-footer button[aria-current="page"] {
+  background: color-mix(in srgb, var(--sm-emerald) 9%, var(--sm-surface)) !important;
+  border-color: color-mix(in srgb, var(--sm-emerald) 22%, var(--border)) !important;
+  border-left-color: var(--sm-emerald) !important;
+  color: var(--sm-brand-strong) !important;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] .dashboard-sidebar-nav-icon {
+  background: color-mix(in srgb, var(--sm-info) 8%, var(--sm-surface)) !important;
+  color: var(--sm-info) !important;
+}
+
+.dashboard-sidebar[data-shell-color-custom="true"] button[aria-current="page"] .dashboard-sidebar-nav-icon {
+  background: color-mix(in srgb, var(--sm-emerald) 16%, var(--sm-surface)) !important;
+  color: var(--sm-brand) !important;
+}
+
+.dashboard-shell > .fixed.top-0 {
+  background: linear-gradient(90deg, var(--sm-brand-strong), var(--sm-emerald) 58%, var(--sm-gold)) !important;
+}
