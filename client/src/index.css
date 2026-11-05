@@ -4479,3 +4479,124 @@
     box-shadow: none !important;
   }
 }
+
+
+/* Public pre-login surface: the landing page shares the same semantic palette
+   as the authenticated ERP shell while preserving its content and auth actions. */
+.sm-public-landing {
+  background: var(--sm-canvas) !important;
+  color: var(--sm-ink) !important;
+}
+
+.sm-public-landing [class~="bg-[#0B1120]"],
+.sm-public-landing [class~="bg-[#131C31]"],
+.sm-public-landing [class~="bg-[#131C31]/30"],
+.sm-public-landing [class~="bg-[#131C31]/50"] {
+  background: var(--sm-surface) !important;
+}
+
+.sm-public-landing [class~="bg-[#16A34A]"],
+.sm-public-landing [class~="bg-[#16A34A]/10"] {
+  background: color-mix(in srgb, var(--sm-emerald) 10%, var(--sm-surface)) !important;
+}
+
+.sm-public-landing [class~="bg-[#16A34A]/[0.06]"],
+.sm-public-landing [class~="bg-[#16A34A]/5"] {
+  background: color-mix(in srgb, var(--sm-emerald) 6%, var(--sm-surface)) !important;
+}
+
+.sm-public-landing [class~="bg-[#C9A96E]"],
+.sm-public-landing [class~="bg-[#C9A96E]/5"],
+.sm-public-landing [class~="bg-[#C9A96E]/10"] {
+  background: color-mix(in srgb, var(--sm-gold) 10%, var(--sm-surface)) !important;
+}
+
+.sm-public-landing [class~="bg-[#C9A96E]"]:not([class*="/" ]),
+.sm-public-landing [class~="bg-[#16A34A]"]:not([class*="/" ]) {
+  background: var(--sm-gold) !important;
+}
+
+.sm-public-landing [class~="text-white"],
+.sm-public-landing [class~="text-[#F8FAFC]"],
+.sm-public-landing [class~="text-[#0B1120]"] {
+  color: var(--sm-ink) !important;
+}
+
+.sm-public-landing [class~="text-[#94A3B8]"],
+.sm-public-landing [class~="text-[#64748B]"],
+.sm-public-landing [class~="text-[#475569]"] {
+  color: var(--sm-slate) !important;
+}
+
+.sm-public-landing [class~="text-[#C9A96E]"] {
+  color: var(--sm-gold) !important;
+}
+
+.sm-public-landing [class~="text-[#16A34A]"],
+.sm-public-landing [class~="text-[#D1FAE5]"] {
+  color: var(--sm-brand) !important;
+}
+
+.sm-public-landing [class~="border-white/5"],
+.sm-public-landing [class~="border-white/10"],
+.sm-public-landing [class~="border-[#C9A96E]/10"],
+.sm-public-landing [class~="border-[#C9A96E]/20"],
+.sm-public-landing [class~="border-[#16A34A]/20"],
+.sm-public-landing [class~="border-[#16A34A]/35"] {
+  border-color: color-mix(in srgb, var(--sm-brand) 18%, var(--border)) !important;
+}
+
+.sm-public-landing [class~="border-[#C9A96E]/30"] {
+  border-color: color-mix(in srgb, var(--sm-gold) 34%, var(--border)) !important;
+}
+
+.sm-public-landing [class~="hover:bg-white/10"]:hover,
+.sm-public-landing [class~="bg-white/5"] {
+  background: color-mix(in srgb, var(--sm-brand) 6%, var(--sm-surface)) !important;
+}
+
+.sm-public-landing [class~="hover:text-[#C9A96E]"]:hover,
+.sm-public-landing [class~="hover:border-[#C9A96E]/30"]:hover {
+  color: var(--sm-gold) !important;
+}
+
+.sm-public-landing [class~="shadow-2xl"],
+.sm-public-landing [class~="shadow-xl"],
+.sm-public-landing [class~="shadow-lg"],
+.sm-public-landing .gold-glow {
+  box-shadow: var(--sm-shadow-float) !important;
+}
+
+.sm-public-landing [class*="bg-[radial-gradient"],
+.sm-public-landing [class*="bg-gradient-to-br"] {
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--sm-brand) 8%, var(--sm-surface)), var(--sm-surface)) !important;
+}
+
+.sm-public-landing [class~="from-[#131C31]"],
+.sm-public-landing [class~="to-[#0B1120]"] {
+  --tw-gradient-from: var(--sm-surface) !important;
+  --tw-gradient-to: var(--sm-canvas) !important;
+}
+
+.sm-public-landing header,
+.sm-public-landing footer {
+  color: var(--sm-ink) !important;
+}
+
+.sm-public-landing .sm-language-control select {
+  color: var(--sm-ink) !important;
+}
+
+.sm-public-landing .sm-language-control option {
+  background: var(--sm-surface);
+  color: var(--sm-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-public-landing .gold-glow,
+  .sm-public-landing [class~="shadow-2xl"],
+  .sm-public-landing [class~="shadow-xl"],
+  .sm-public-landing [class~="shadow-lg"] {
+    box-shadow: var(--sm-shadow-panel) !important;
+  }
+}
