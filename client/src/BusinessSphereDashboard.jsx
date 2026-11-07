@@ -49387,7 +49387,7 @@ function SmartManager() {
              <button
                            type="button"
                            onClick={() => setPaletteOpen(true)}
-                           className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-[11px] font-medium text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 focus-visible:ring-offset-2"
+                           className="dashboard-topbar-search dashboard-topbar-search-collapsed dashboard-topbar-search-hero group relative inline-flex h-10 w-10 min-w-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-transparent hover:text-slate-950 active:translate-y-0 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 focus-visible:ring-offset-2"
                            aria-label="Search everything"
                            title="Search everything"
                            aria-expanded={paletteOpen}

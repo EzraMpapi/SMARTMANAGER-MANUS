@@ -4760,3 +4760,51 @@
   .dashboard-sidebar[data-shell-color-custom="true"],
   .dashboard-mobile-nav { box-shadow: none !important; }
 }
+
+
+/* Borderless command controls: search and account identity remain standalone
+   controls rather than cards, matching the compact Manus-style topbar. */
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search-hero,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-trigger {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-trigger {
+  color: var(--sm-slate) !important;
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button:hover,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-trigger:hover {
+  background: color-mix(in srgb, var(--sm-brand) 6%, transparent) !important;
+  color: var(--sm-brand-strong) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search:focus-visible,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-slot > div > button:focus-visible,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-trigger:focus-visible {
+  outline: none !important;
+  border: 0 !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sm-focus) 22%, transparent) !important;
+}
+
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-search > svg,
+.dashboard-topbar[data-shell-color-custom="true"] .dashboard-topbar-profile-trigger > svg {
+  color: currentColor !important;
+}
+
+@media (max-width: 767px) {
+  .dashboard-topbar-profile-slot > .dashboard-topbar-profile > .dashboard-topbar-profile-trigger {
+    width: auto !important;
+    min-width: 2.75rem !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
